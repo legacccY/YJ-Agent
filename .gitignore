@@ -40,3 +40,5 @@ runs/
 .DS_Store
 Thumbs.db
 *.log
+data/cache_*.npy
+*.npy

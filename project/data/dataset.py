@@ -25,6 +25,7 @@ class SkinPairedDataset(Dataset):
         img_size: int = 256,
         transform=None,
         levels: list[str] | None = None,
+        cache_dir: str | Path | None = None,
     ):
         self.df = pd.read_csv(csv_path)
         if levels:
@@ -32,20 +33,37 @@ class SkinPairedDataset(Dataset):
         self.img_size = img_size
         self.transform = transform or _DEFAULT_TRANSFORM
 
+        # memmap 缓存路径（懒加载，在 worker 进程里首次访问时才打开）
+        self._cache_dir = None
+        self._cache_deg = self._cache_clean = self._cache_meta = None
+        if cache_dir is not None:
+            cache_dir = Path(cache_dir)
+            if (cache_dir/"cache_deg.npy").exists() and (cache_dir/"cache_meta.npy").exists():
+                self._cache_dir = cache_dir  # 只存路径，不在主进程打开
+
     def __len__(self) -> int:
         return len(self.df)
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        row = self.df.iloc[idx]
+        if self._cache_dir is not None:
+            # 懒加载：第一次访问时在当前 worker 进程里打开 memmap
+            if self._cache_deg is None:
+                self._cache_deg   = np.load(self._cache_dir / "cache_deg.npy",   mmap_mode="r")
+                self._cache_clean = np.load(self._cache_dir / "cache_clean.npy", mmap_mode="r")
+                self._cache_meta  = np.load(self._cache_dir / "cache_meta.npy",  mmap_mode="r")
+            deg_np    = self._cache_deg[idx]
+            clean_idx = int(self._cache_meta[idx, 0])
+            clean_np  = self._cache_clean[clean_idx]
+            label     = torch.tensor(self._cache_meta[idx, 1:].copy())
+            return self.transform(deg_np), self.transform(clean_np), label
 
+        row = self.df.iloc[idx]
         deg_key = "degraded_path" if "degraded_path" in row else "image_path"
         degraded = self._load(row[deg_key])
-
         if "original_path" in row and pd.notna(row["original_path"]):
             original = self._load(row["original_path"])
         else:
             original = degraded.clone()
-
         label = torch.tensor(row[SCORE_COLS].values.astype(np.float32))
         return degraded, original, label
 

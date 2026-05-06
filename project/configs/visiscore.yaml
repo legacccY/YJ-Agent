@@ -1,0 +1,34 @@
+# Phase 3: VisiScore-Net training config
+
+data:
+  paired_dir: D:/YJ-Agent/data/paired_dataset
+  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  cache_dir: D:/YJ-Agent/data
+  num_workers: 2
+  pin_memory: false
+
+model:
+  backbone: mobilenetv3_large_100
+  pretrained: true
+  num_quality_dims: 5
+
+train:
+  epochs: 20
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  seed: 42
+  amp: true
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints
+  log_dir: D:/YJ-Agent/log
+
+wandb:
+  project: visiskin-agent
+  entity: null
+  mode: online
+
+device:
+  cuda: true
+  gpu_id: 0

@@ -82,67 +82,14 @@
 
 ---
 
-## 实验运行流水线（run-experiment skill）
+## 实验运行流水线
 
-### 触发方式
-
-每次要跑训练实验，必须用 `/loop` 前缀触发（不是普通命令）：
+训练实验必须用 `/loop` 前缀触发（ScheduleWakeup 依赖 loop dynamic 模式）：
 
 ```
-/loop /run-experiment src/train_visiscore.py configs/visiscore.yaml
+/loop /run-experiment project/train_visiscore.py project/configs/visiscore.yaml
 ```
-
-`/loop` 是必须的——5 分钟自动检查依赖 ScheduleWakeup，而 ScheduleWakeup 只在 loop dynamic 模式下有效。
 
 **提醒规则**：当用户说「开始训练」「跑实验」「train 一下」「跑一下」「开始跑」等语句时，主动提示使用上述命令，不要直接用裸 `python` 命令启动训练。
 
-### 流程概述
-
-1. **pytest 测试**：有失败会询问是否继续
-2. **Haiku agent 启动**：省 token，机械性地启动进程 + 写状态文件
-3. **Monitor 实时可视化**：训练输出流式显示在会话里，不是黑盒后台
-4. **每 270 秒自动检查**：Haiku agent 解析 epoch/loss，检查进程存活
-5. **自动修复**（小问题，最多 3 次）：OOM / 路径 / 参数 / wandb 断线
-6. **上报用户**（大问题）：架构 shape 不匹配 / NaN / 数据格式 / 未知崩溃
-
-### 自动修复规则
-
-| 错误 | 触发关键词 | 自动处理 |
-|------|-----------|---------|
-| OOM | CUDA out of memory | batch_size 减半，带 --resume 重启 |
-| 路径不存在 | FileNotFoundError | mkdir -p 缺失目录，重启 |
-| Config 非法字段 | ConfigAttributeError | 删除非法字段，重启 |
-| wandb 连接失败 | wandb: ERROR | WANDB_MODE=disabled，重启 |
-
-### 需要人工介入的情况
-
-- `arch`：模型维度不匹配（mat1 and mat2 shapes / size mismatch）
-- `data_format`：DataLoader 输出格式与模型不符
-- `nan`：loss 变 NaN（学习率/数据问题）
-- `import`：缺少依赖（ModuleNotFoundError）
-- `unknown`：进程死亡但无法归类
-
-### 训练脚本日志格式约定
-
-为了让自动检查能正确解析进度，**每个 epoch 结束必须 print**：
-
-```python
-print(f"Epoch [{epoch}/{total_epochs}] loss: {avg_loss:.4f} val_plcc: {plcc:.4f}")
-```
-
-这是 Haiku agent 解析进度的唯一依据，不要改这个格式。其他指标可以额外打印，但这行必须有。
-
-### 断点续训
-
-skill 会追踪每次保存的 checkpoint 路径（存在 `state.checkpoint.last_path`）。再次运行同一实验时自动检测并带 `--resume` 启动；OOM 自动修复时同样优先从最近 checkpoint 继续，而不是从头重跑。
-
-### 状态文件
-
-实验状态持久化在 `D:/YJ-Agent/log/experiment_state.json`。
-如果 loop 被意外中断（如关闭终端），重新运行 `/loop /run-experiment ...` 时 skill 会读取现有状态，若进程还存活则直接进入检查循环恢复监控。
-
-### 阶段三待完善（TODO）
-
-训练脚本写好后，需要对照以下两处更新 `.claude/commands/run-experiment.md`：
-1. **`--resume` 参数名**：确认脚本实际使用的参数（`--resume` / `--ckpt` / `--checkpoint` 等）
-2. **checkpoint 保存日志格式**：确认脚本 print 的保存提示语，更新 STEP 3 的正则匹配模式（当前为占位符）
+详细流程、错误分类和修复规则见 `.claude/commands/run-experiment.md`。
