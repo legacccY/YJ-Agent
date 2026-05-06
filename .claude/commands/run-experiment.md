@@ -24,6 +24,10 @@ description: 多 agent 实验运行流水线：pytest 测试 → Haiku 启动训
 - `$1` = 训练脚本路径（必填），如 `src/train_visiscore.py`
 - `$2`（可选）= 配置文件路径，如 `configs/visiscore.yaml`；不填则脚本自行使用默认配置
 
+**断点续训检测**：读取 state.json 后，额外检查 `checkpoint.last_path` 字段：
+- 字段存在且对应文件实际存在（用 Bash `ls <path>` 验证）→ 标记为续训模式，STEP 2 启动时自动带 `--resume <last_path>`
+- 字段为 null 或文件不存在 → 全新训练，不加 `--resume`
+
 ---
 
 ## STEP 1：测试阶段（主会话 Bash 执行）
@@ -57,8 +61,10 @@ python -m pytest tests/ -v -x --timeout=60 2>&1
    例：train_visiscore_20260506_143000
 
 2. 构造启动命令：
-   python <script_path> [--config <config_path>] 2>&1 | tee D:/YJ-Agent/log/train_<run_name>.log
+   - 全新训练：python <script_path> [--config <config_path>] 2>&1 | tee D:/YJ-Agent/log/train_<run_name>.log
+   - 续训模式：python <script_path> [--config <config_path>] --resume <checkpoint.last_path> 2>&1 | tee D:/YJ-Agent/log/train_<run_name>.log
    log_file = D:/YJ-Agent/log/train_<run_name>.log
+   打印：「[续训] 从 checkpoint <last_path> 继续」或「[全新] 从第 1 epoch 开始」
 
 3. 用 Bash(run_in_background=true) 启动该命令，记录 PID
 
@@ -85,6 +91,12 @@ python -m pytest tests/ -v -x --timeout=60 2>&1
     "last_val_metric": null,
     "last_update_at": null
   },
+  "checkpoint": {
+    "save_dir": null,
+    "last_path": null,
+    "best_path": null,
+    "last_epoch_saved": null
+  },
   "error": {
     "type": null,
     "message": null,
@@ -92,6 +104,9 @@ python -m pytest tests/ -v -x --timeout=60 2>&1
     "occurred_at": null
   }
 }
+注意：续训时保留原有 checkpoint 字段值，不要清空；全新训练时全部置 null。
+
+# TODO [阶段三完善]：确认训练脚本 --resume 参数名称和 checkpoint 保存路径格式后，更新此处。
 
 5. 返回：PID 和 log_file 路径
 ```
@@ -123,6 +138,12 @@ python -m pytest tests/ -v -x --timeout=60 2>&1
    - epoch：匹配 "Epoch \[(\d+)/(\d+)\]" → current_epoch, total_epochs
    - loss：匹配 "loss[: =]([\d.]+)" → last_loss
    - val_metric：匹配 "val_plcc[: =]([\d.]+)" 或 "val_metric[: =]([\d.]+)" → last_val_metric
+
+   检测 checkpoint 保存事件（更新 state.checkpoint 字段）：
+   # TODO [阶段三完善]：训练脚本确定后，替换为实际的 checkpoint 保存日志格式
+   - 匹配 "Saved checkpoint.*last\.pth" 或 "checkpoint saved.*last\.pth" → 提取路径更新 checkpoint.last_path
+   - 匹配 "Saved checkpoint.*best\.pth" 或 "New best.*saved" → 提取路径更新 checkpoint.best_path
+   - 同步更新 checkpoint.last_epoch_saved = current_epoch
 
 5. 检查最后 50 行是否包含错误关键词：
    小问题关键词：
@@ -177,9 +198,11 @@ python -m pytest tests/ -v -x --timeout=60 2>&1
 **oom（CUDA 内存不足）**：
 1. 读取 config 文件，找 `batch_size` 字段，将其减半（如 128 → 64，最小值 8）
 2. 写回 config 文件
-3. 打印：「[自动修复] OOM：batch_size 调整为 <new_value>，从最近 checkpoint 重启」
-4. 更新 state.json：retry_count++，status="idle"
-5. 重新执行 STEP 2（在启动命令中追加 `--resume` 参数）
+3. 检查 state.checkpoint.last_path 是否存在：
+   - 存在 → 打印「[自动修复] OOM：batch_size → <new_value>，从 Epoch <last_epoch_saved> 续训」
+   - 不存在 → 打印「[自动修复] OOM：batch_size → <new_value>，无 checkpoint，从头重启」
+4. 更新 state.json：retry_count++，status="idle"（保留 checkpoint 字段不清空）
+5. 重新执行 STEP 2（有 checkpoint → 续训模式；无 checkpoint → 全新模式）
 
 **path（路径不存在）**：
 1. 从 error.message 中提取缺失路径
