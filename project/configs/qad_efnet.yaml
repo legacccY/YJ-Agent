@@ -1,0 +1,52 @@
+# Phase 4: Q-VIB + EfficientNet Features Config
+# Uses precomputed EfficientNet-B0 (ImageNet) features as 5th visual token
+# alongside 4 interpretable ABCD tokens for best diagnostic signal.
+
+data:
+  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
+  abcd_cache_csv: D:/YJ-Agent/data/abcd_cache.csv
+  efnet_features_npy: D:/YJ-Agent/data/efficientnet_features.npy
+  efnet_index_csv: D:/YJ-Agent/data/efficientnet_index.csv
+  split_csv: D:/YJ-Agent/data/isic_split.csv
+  num_workers: 4
+
+model:
+  sam_checkpoint: D:/YJ-Agent/checkpoints/mobile_sam.pt
+
+  prior:
+    sigma0_sq: 0.1
+    tau: 0.5
+    alpha: 5.0
+
+  encoder:
+    d_model: 128          # up from 64 — richer features need larger embedding
+    n_heads: 4
+    latent_dim: 64        # up from 32
+    efnet_dim: 1280       # EfficientNet-B0 output dim
+
+  classifier:
+    hidden_dim: 128       # up from 64
+    num_classes: 2
+
+train:
+  epochs: 30
+  batch_size: 256         # slightly smaller — 1280D features are larger
+  lr: 1.0e-4             # lower LR: richer features, more stable training
+  weight_decay: 1.0e-4
+  seed: 42
+  amp: true
+  beta_max: 5.0e-3       # slightly higher beta: stronger features can afford more KL
+  beta_warmup_steps: 3000
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints/efnet
+
+wandb:
+  project: visiskin-agent
+  entity: null
+  mode: offline
+
+device:
+  cuda: true
+  gpu_id: 0

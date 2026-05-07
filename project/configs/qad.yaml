@@ -1,0 +1,48 @@
+# Phase 4: Q-VIB / QAD Training Config
+
+data:
+  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
+  abcd_cache_csv: D:/YJ-Agent/data/abcd_cache.csv   # pre-computed by precompute_abcd.py
+  num_workers: 4
+  # levels: null  # null = all levels (light/medium/heavy)
+  # source_filter: [isic2020]  # uncomment to restrict to ISIC2020 only
+
+model:
+  sam_checkpoint: D:/YJ-Agent/checkpoints/mobile_sam.pt
+
+  prior:
+    sigma0_sq: 0.1   # prior variance at perfect quality (q_bar=1)
+    tau: 0.5         # sigmoid transition threshold
+    alpha: 5.0       # transition sharpness
+
+  encoder:
+    d_model: 64
+    n_heads: 4
+    latent_dim: 32
+
+  classifier:
+    hidden_dim: 64
+    num_classes: 2   # binary: benign=0, melanoma=1
+
+train:
+  epochs: 30
+  batch_size: 512   # large batch: no segmentation, pure GPU forward/backward
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  seed: 42
+  amp: true
+  beta_max: 1.0e-3           # KL weight after warmup
+  beta_warmup_steps: 2000    # linear ramp from 0 to beta_max
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints
+
+wandb:
+  project: visiskin-agent
+  entity: null
+  mode: offline
+
+device:
+  cuda: true
+  gpu_id: 0

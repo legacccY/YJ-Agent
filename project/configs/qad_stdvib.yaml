@@ -1,0 +1,53 @@
+# Ablation Baseline 1: Standard VIB
+# Fixed prior N(0, I), no quality tokenizer.
+# sigma0_sq=1.0 makes prior variance always 1 regardless of q_bar.
+
+data:
+  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
+  abcd_cache_csv: D:/YJ-Agent/data/abcd_cache.csv
+  efnet_features_npy: D:/YJ-Agent/data/efficientnet_features.npy
+  efnet_index_csv: D:/YJ-Agent/data/efficientnet_index.csv
+  split_csv: D:/YJ-Agent/data/isic_split.csv
+  num_workers: 4
+
+model:
+  sam_checkpoint: D:/YJ-Agent/checkpoints/mobile_sam.pt
+
+  prior:
+    sigma0_sq: 1.0    # fixed prior = N(0, I) — no quality adaptation
+    tau: 0.5
+    alpha: 5.0
+
+  encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: false   # no quality attention modulation
+
+  classifier:
+    hidden_dim: 128
+    num_classes: 2
+
+train:
+  epochs: 30
+  batch_size: 256
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  seed: 42
+  amp: true
+  beta_max: 5.0e-3
+  beta_warmup_steps: 3000
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints/stdvib
+
+wandb:
+  project: visiskin-agent
+  entity: null
+  mode: offline
+
+device:
+  cuda: true
+  gpu_id: 0
