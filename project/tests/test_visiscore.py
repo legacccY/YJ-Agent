@@ -38,6 +38,16 @@ def test_ranking_loss_positive_when_inverted():
     assert loss.item() > 0.0
 
 
+def test_visiscore_forward_features_shape():
+    model = VisiScoreNet(backbone=_SMALL_BACKBONE, pretrained=False, num_dims=5)
+    model.eval()
+    with torch.no_grad():
+        feats, q = model.forward_features(torch.randn(2, 3, 224, 224))
+    assert q.shape == (2, 5), f"q shape wrong: {q.shape}"
+    assert feats.ndim == 2 and feats.shape[0] == 2, f"features shape wrong: {feats.shape}"
+    assert q.min() >= 0.0 and q.max() <= 1.0
+
+
 def test_visiscore_loss_no_nan():
     loss_fn = VisiScoreLoss()
     pred_deg = torch.rand(4, 5)

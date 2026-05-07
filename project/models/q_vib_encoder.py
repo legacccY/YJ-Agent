@@ -141,7 +141,7 @@ class QVIBEncoder(nn.Module):
 
         # Append EfficientNet visual token if provided
         if efnet_feat is not None and self.efnet_proj is not None:
-            efnet_token = self.efnet_proj(efnet_feat).unsqueeze(1)  # (B, 1, d_model)
+            efnet_token = self.efnet_proj(F.normalize(efnet_feat, dim=-1)).unsqueeze(1)
             tokens = torch.cat([tokens, efnet_token], dim=1)         # (B, 5, d_model)
 
         # Quality attention bias — zero for Std VIB / Adaptive Prior ablations

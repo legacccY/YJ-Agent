@@ -16,19 +16,20 @@
 | 1 | 环境初始化 | 搭建可运行项目骨架 | 目录结构 + 依赖 + 配置模板 | 1-2 天 |
 | 2 | 数据流水线 | 下载数据，生成配对数据集 | paired_dataset/ + quality_labels.csv | 3-5 天 |
 | 3 | VisiScore-Net | 训练图像质量评估网络 | best_visiscore.pth + 评估报告 | 1-2 周 |
-| 4 | QAD 模块 | 病灶分割 + 质量感知分类器 | 分割+分类模型 + 对比实验 | 1-2 周 |
+| 4 | Q-VIB模块 | 质量条件化变分推断 + 分割 + 分类 | Q-VIB 编码器 + 质量自适应先验 + 质量分词器 + 消融实验 | 1-2 周 |
 | 5 | Agent 系统 | ReAct 多轮交互 + Gradio Demo | app.py + 端到端评测 | 1-2 周 |
 | 6 | ITB 评测基准 | 构建 4 子集基准 + 实验对比 | 数据表 + 可视化图 | 1 周 |
 | 7 | 论文写作 | MICCAI 2027 初稿 | main.tex（8 页）+ 图表 | 2-3 周 |
 
 ---
 
-## 三大核心创新点
+## 四大核心创新点
 
 | 模块 | 说明 |
 |------|------|
 | **VisiScore-Net** | 5 维质量评估（清晰度/光照/完整度/色温/对比度），输出可操作的引导建议 |
-| **Quality-Aware Diagnosis (QAD)** | 质量评分调控诊断置信度，不达标时主动追问用户 |
+| **Q-VIB（Quality-Conditioned VIB）** | 将标准 Variational Information Bottleneck 推广到质量条件化：编码器 $p_\phi(z\|x, \mathbf{q})$ 的 KL 约束强度由 $\mathbf{q}$ 动态调控——低质量图先验方差大，强制潜在编码趋向无信息先验，自然产生高熵（低置信度）预测；质量分词器 $u(\mathbf{q}), v(\mathbf{q})$ 注入自注意力层，理论保证注意力漂移有界（Theorem 1）；整个校准过程可微，替代传统硬门控 |
+| **Quality-Aware Diagnosis (QAD)** | 在上述 Q-VIB 概率框架下，集成病灶分割与 ABCD 可解释特征，输出校准后的诊断置信度 |
 | **Iterative Triage Benchmark (ITB)** | 4 子集评测基准，系统评估 Agent 分诊性能 |
 
 ---
@@ -88,6 +89,7 @@
 |---------|---------|------|
 | 单元测试 | 数据处理函数 | 退化模拟输出形状、标签归一化范围 |
 | 单元测试 | 指标计算 | PLCC/SRCC 计算结果与 scipy 手算对齐 |
+| 单元测试 | Q-VIB 组件 | KL 解析式与数值积分对齐、$\sigma^2(\bar{q})$ 单调性验证、质量分词器零边界条件 |
 | 冒烟测试 | 模型推理 | 模型前向传播不报错，输出值域 [0,1] |
 | 集成测试 | DataLoader | 批次形状、标签与图片对应关系 |
 
@@ -101,12 +103,12 @@
 
 | 前缀 | 用途 | 示例 |
 |------|------|------|
-| `feat:` | 新功能/新模块 | `feat: add VisiScore-Net backbone` |
+| `feat:` | 新功能/新模块 | `feat: add Q-VIB encoder with quality-adaptive prior` |
 | `data:` | 数据相关变更 | `data: add degradation pipeline` |
-| `train:` | 训练脚本变更 | `train: add wandb logging` |
-| `eval:` | 评估相关 | `eval: add PLCC/SRCC metrics` |
+| `train:` | 训练脚本变更 | `train: add Q-VIB ELBO loss and KL annealing` |
+| `eval:` | 评估相关 | `eval: add Q-VIB ablation study (fixed vs adaptive prior)` |
 | `fix:` | bug 修复 | `fix: fix memory leak in DataLoader` |
-| `docs:` | 文档更新 | `docs: update phase 3 plan` |
+| `docs:` | 文档更新 | `docs: integrate Q-VIB theory into phase 4 plan` |
 
 **分支策略**：`main`（稳定可运行）+ 按阶段或功能开 feature branch，合并前确认可运行。
 
@@ -126,7 +128,7 @@
 | 1 环境 | torch、torchvision、timm、wandb、ruff、pytest、omegaconf、tqdm、loguru |
 | 2 数据 | kaggle、Pillow、opencv-python、albumentations、scikit-image、piq、pandas |
 | 3 训练 | torch.cuda.amp（内置）、scipy |
-| 4 QAD | mobile-sam 或 sam2、scikit-learn |
+| 4 QAD | mobile-sam 或 sam2、scikit-learn（注：Q-VIB 编码器/先验/分词器/ELBO 全用 PyTorch 原生实现，无额外概率编程库依赖） |
 | 5 Agent | bitsandbytes、accelerate、gradio |
 | 6 评测 | matplotlib、seaborn、scipy（已有） |
 | 7 论文 | LaTeX（本地安装）、BibTeX |
@@ -138,7 +140,7 @@
 - **目标硬件**：RTX 4070 8GB 笔记本
 - **显存预算**：Batch 128 FP16 ≈ 3.5GB，留有余量
 - **磁盘需求**：原始数据 ~100GB
-- **训练时间**：VisiScore-Net ~40h（支持断点续训）
+- **训练时间**：VisiScore-Net ~40h + Q-VIB ~30h（均支持断点续训）
 
 ---
 
@@ -159,7 +161,7 @@
 - 阶段一：`phase_01_setup.md`
 - 阶段二：`phase_02_data.md`
 - 阶段三：`phase_03_visiscore.md`
-- 阶段四：`phase_04_qad.md`
+- 阶段四：`phase_04_Q-VIB.md`
 - 阶段五：`phase_05_agent.md`
 - 阶段六：`phase_06_benchmark.md`
 - 阶段七：`phase_07_paper.md`

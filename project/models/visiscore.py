@@ -25,3 +25,13 @@ class VisiScoreNet(nn.Module):
         feat = self.backbone(x)
         scores = torch.cat([head(feat) for head in self.heads], dim=1)
         return scores  # (B, num_dims)
+
+    def forward_features(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return (features, q_vector) for Q-VIB encoder reuse.
+
+        features: backbone pooled vector (B, feat_dim)
+        q_vector: quality scores (B, num_dims), values in [0, 1]
+        """
+        feat = self.backbone(x)
+        scores = torch.cat([head(feat) for head in self.heads], dim=1)
+        return feat, scores
