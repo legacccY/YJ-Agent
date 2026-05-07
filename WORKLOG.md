@@ -2,7 +2,51 @@
 
 ## 当前状态
 
-- **阶段**：阶段四完成验收 ✅，可进入阶段五（Agent 集成）
+- **阶段**：阶段五（Agent 系统）完成验收 ✅，可进入阶段六（Benchmark）
+- **上次完成**：
+  - `agent/tools.py`：VisiScore / ABCD / EfficientNet-B0 / Q-VIB 封装为可调用工具（quality_assess / extract_features / triage）
+  - `agent/orchestrator.py`：Qwen3-8B ReAct 状态机（含规则引擎 fallback，最大 3 轮追问）；修复 LLM 仅检测一次
+  - `agent/question_bank.py`：5 维质量问题 + 4 条临床追问模板库
+  - `app.py`：Gradio Demo（图片上传 + 多轮对话 + 分诊结果展示）
+  - `agent/eval_agent.py`：端到端评测脚本（引导选择性 + 分类性能）
+  - 质量阈值校准：OVERALL_THRESHOLD=0.50，is_acceptable 改为只用均值判断（不再逐维度判断）
+  - `tests/test_agent.py`：20 个新测试，总计 62 tests 全绿
+
+- **阶段五验收结果（2026-05-07）**：
+  - 低质量图追问率：59.0%（目标 ≥ 50%）✅
+  - 高质量图追问率：15.5%（目标 ≤ 30%）✅
+  - 端到端推理：40ms（目标 < 3s）✅
+  - eval_agent.py 输出报告已生成：results/eval_agent_report.md ✅
+  - 引导选择性测试：[PASS] ✅
+
+- **Gradio Demo 验收（2026-05-07）**：
+  - 低质量图（重度降质）→ Agent 追问重拍：「拍摄有点晃动，可以试试贴近对象放慢拍摄，清晰度会更好。」✅
+  - 重拍高质量图 → Agent 直接输出分诊：🟢 低风险，恶性概率 4.2%，ABCD 特征完整，免责声明显示 ✅
+  - UI 截图存档：`demo_heavy.png`（追问流）、`demo_retake.png`（完整流）
+  - 运行端口：7862（7860 被旧进程占用）
+
+- **Qwen3-8B 下载状态**：后台下载中（约 1 GB / 16 GB，继续进行中）
+  - 下载完后运行 `cd D:/YJ-Agent/project && python test_llm_react.py` 验证 LLM ReAct
+
+- **下一步**：
+  - 选 A：等 Qwen3-8B 下载完成，切换为 LLM 驱动的完整 Demo
+  - 选 B：直接进入阶段六（Benchmark）
+
+- **阶段四验收（2026-05-07 补充）**：
+  - verify_phase4.md 四条标准全过：KL ρ=0.278 ✅，熵 Q1>Q5 p=2.14e-44 ✅，ECE 0.131<0.166 ✅，E2E 927ms ✅
+
+## 阶段五交付文件
+
+| 文件 | 用途 |
+|------|------|
+| `project/agent/tools.py` | 工具定义：quality_assess / extract_features / triage |
+| `project/agent/orchestrator.py` | ReAct 状态机（Qwen3-8B + 规则 fallback） |
+| `project/agent/question_bank.py` | 追问模板库 |
+| `project/app.py` | Gradio Demo |
+| `project/agent/eval_agent.py` | Agent 端到端评测 |
+
+## 阶段四旧记录（已完成）
+
 - **上次完成**：
   - VisiScore-Net 训练完成（20 epochs，最佳权重来自 epoch 6）
   - 评估脚本 `eval_visiscore.py` 完成，对比 BRISQUE baseline
@@ -80,4 +124,4 @@ BRISQUE 对比 sharpness：VisiScore 0.947 vs BRISQUE -0.184
 
 ## 最后更新
 
-2026-05-07 21:30（北京时间）
+2026-05-07 21:16（北京时间）
