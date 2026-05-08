@@ -48,6 +48,8 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--config", default="configs/qad.yaml")
     p.add_argument("--resume", default=None)
+    p.add_argument("--seed", type=int, default=None, help="Override cfg.train.seed")
+    p.add_argument("--ckpt-dir", default=None, help="Override cfg.output.checkpoint_dir")
     return p.parse_args()
 
 
@@ -143,6 +145,10 @@ def run_epoch(
 def main():
     args = parse_args()
     cfg = OmegaConf.load(args.config)
+    if args.seed is not None:
+        cfg.train.seed = args.seed
+    if args.ckpt_dir is not None:
+        cfg.output.checkpoint_dir = args.ckpt_dir
     torch.manual_seed(cfg.train.seed)
 
     device = torch.device("cuda" if cfg.device.cuda and torch.cuda.is_available() else "cpu")
@@ -181,15 +187,19 @@ def main():
     print(f"Class weights: {train_ds.class_weights.tolist()}")
 
     sampler = build_sampler(train_ds)
+    _nw = cfg.data.num_workers
+    _pw = _nw > 0
     train_loader = DataLoader(
         train_ds, batch_size=cfg.train.batch_size, sampler=sampler,
-        num_workers=cfg.data.num_workers, collate_fn=qad_collate_fn,
-        multiprocessing_context="spawn", persistent_workers=True, pin_memory=False,
+        num_workers=_nw, collate_fn=qad_collate_fn,
+        multiprocessing_context="spawn" if _nw > 0 else None,
+        persistent_workers=_pw, pin_memory=False,
     )
     val_loader = DataLoader(
         val_ds, batch_size=cfg.train.batch_size, shuffle=False,
-        num_workers=cfg.data.num_workers, collate_fn=qad_collate_fn,
-        multiprocessing_context="spawn", persistent_workers=True, pin_memory=False,
+        num_workers=_nw, collate_fn=qad_collate_fn,
+        multiprocessing_context="spawn" if _nw > 0 else None,
+        persistent_workers=_pw, pin_memory=False,
     )
 
     # Models
@@ -212,6 +222,7 @@ def main():
         latent_dim=cfg.model.encoder.latent_dim,
         hidden_dim=cfg.model.classifier.hidden_dim,
         num_classes=cfg.model.classifier.num_classes,
+        dropout=cfg.model.classifier.get("dropout", 0.2),
     ).to(device)
 
     loss_fn = QVIBLoss(
@@ -254,7 +265,7 @@ def main():
         "process": {"pid": os.getpid(), "is_alive": True},
         "progress": {
             "current_epoch": start_epoch, "total_epochs": cfg.train.epochs,
-            "last_loss": None, "last_val_metric": None, "val_metric_history": [],
+            "last_loss": None, "last_val_metric": None, "val_metric_history": [], "kl_history": [],
         },
         "checkpoint": {
             "save_dir": str(ckpt_dir),
@@ -313,6 +324,7 @@ def main():
             "last_val_metric": round(val_metric, 4),
         })
         state["progress"]["val_metric_history"].append(round(val_metric, 4))
+        state["progress"]["kl_history"].append(round(tr["kl"], 4))
         state["checkpoint"]["last_path"] = str(last_path)
         if val_metric >= best_acc:
             state["checkpoint"]["best_path"] = str(best_path)

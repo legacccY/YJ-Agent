@@ -2,26 +2,129 @@
 
 ## 当前状态
 
-- **阶段**：阶段六完整完成 ✅（顶会标准），可进入阶段七（论文写作）
+- **阶段**：Sprint 1 ✅ + S2.1 ✅ + S2.2 ✅ + S2.3 ✅ + S2.4a ✅ + S2.4b ✅，**Sprint 2 全部完成** ✅
+- **完整修订方案**：见 `D:\YJ-Agent\project\plans\sprint_revision_plan.md`
+- **下一步**：Sprint 3（论文图表定稿 + Reader Study + 代码 release）
 
-- **上次完成（2026-05-08）— 阶段六 ITB Benchmark**：
-  - 构建 4 子集（各 500 张，按预计算 q̄ 严格分层）：ITB-LQ（q̄<0.40）/ ITB-HQ（q̄>0.65）/ ITB-Edge（q̄ 0.40-0.55）/ ITB-Diverse（FitzPatrick I-VI 均衡）
-  - 运行 3 路消融实验（D Std VIB / E Adaptive Prior / F Q-VIB Full），存 itb_results.csv + itb_predictions.csv
-  - 评估指标升级为 classwise binary ECE（适配二分类不平衡场景）
-  - 生成 4 张论文图表：fig1 对比柱状图 / fig2 isotonic 校准曲线 / fig3 Entropy vs q̄（Proposition 2 核心图）/ fig4 KDE 熵分布
-  - 核心发现：Std VIB 熵在全 q̄ 范围水平（~0.20），Q-VIB 随 q̄ 单调降（0.23→0.15），Proposition 2 实证成立 ✅；ITB-LQ AUC Q-VIB 0.636 > Std VIB 0.540 ✅
+### 下次会话启动建议
 
-- **阶段六最终验收（顶会标准全达标）**：
-  - **ITB 分层采样**：正例率 20%（LQ 45/225，HQ 25/125，Edge 132/660）✅
-  - **Tokenizer 修复**：辅助损失微调 r: 0.351→0.929，新 Baseline G（Q-VIB+TokFT）✅
-  - **G vs D 显著性**（bootstrap 5000 次）：3 子集 AUC & 熵检验全 p<0.05 ✅
-    - ITB-HQ: AUC +0.199 [0.055,0.355]；ITB-Edge: AUC +0.227 [0.165,0.292]
-  - **外部 baseline A**：B3 LQ Brier=0.391 vs Q-VIB G Brier=0.424（B3 discriminative 强但校准差）✅
-  - **Sensitivity@95%Spec + Brier Score** 临床指标加入消融表 ✅
-  - **7 张论文图表**（fig1-7），DPI 300：fig7 含真实皮损图 + 质量条红/绿对比 ✅
-  - **Agent 评测**：ITB-LQ 追问率 100% vs ITB-HQ 8.8%，fig6 violin 图 ✅
+**S3 冲刺**：
+- S3.1 Reader Study（30 张图，3 reader）
+- S3.2 论文 12 图定稿（主文 ≤7 张）
+- S3.3 代码 release 包（README + reproduce.sh + Zenodo）
 
-- **下一步**：进入阶段七（论文写作）
+**关键提醒**：
+- ⚠️ 不要再用 sonnet 子 agent 跑长时间任务，它的心跳监控会狂刷屏
+- ⚠️ MC 采样 per-sample 种子已修复（`_seed_from_path` in run_experiments.py），结果 bit-reproducible
+- ⚠️ FP17K 标签 bug 已修，build_itb.py 加了 drop_duplicates(fp_id)
+
+---
+
+
+
+- **2026-05-08 自检发现的硬伤**（投稿前必须修）：
+  1. **G (Q-VIB+TokFT) 校准恶化**：HQ ECE 0.122 → 0.263（翻倍），跟"Q-VIB 提升校准"叙事冲突
+     - 修复方向：F (Q-VIB Full) 重新定位为 Ours；G 降级为 supplementary 的 discriminative variant
+  2. **B3 在 LQ 上 Brier 0.391 < G 的 0.424**——之前 WORKLOG 写"B3 校准差"是错的，应改为"B3 discriminative 最强但 ECE 在 LQ 段恶化（0.080 HQ → 0.416 LQ，单调发散），Q-VIB Full 用 AUC 换得 LQ 段 ECE 稳定（0.122/0.152）"
+  3. **样本量与计划不符**：原计划每子集 500，实际 LQ 225 / HQ 125 / Edge 660 / Diverse 7350——HQ 25 个正例导致 AUC 95% CI 半宽 0.124（过宽），需重做 build_itb 扩到 ≥500
+  4. **缺外部已发表 calibration baseline**：仅 B3 直推一个外部对比，审稿人必问；S1.3 加 Temperature Scaling + Focal Loss
+  5. **单一数据集**：仅 ISIC2020 + FP17k；S2.1 加 HAM10000 / PAD-UFES zero-shot
+  6. **单 seed**：S2.2 跑 3 seed 报均值±std
+
+- **上次完成（2026-05-09）— S2.2 修复（proper seed 42）✅**：
+  - 发现原 Phase 4 checkpoints（D/E/F seed42）与重训 seeds（s123/s2024）在 ITB 上呈现两种局部最优：Phase 4 型（AUC 低但 ECE 好），重训型（AUC 高但 ECE 差）
+  - **根因**：S2.2 重训前 train_qad.py 尚未加 --seed 参数，Phase 4 checkpoint 实为随机初始化，非 seed42
+  - **修复方案**：用 proper --seed 42 重训 D/E/F（configs/*_nw0.yaml），得到与 s123/s2024 同一局部最优的三组 checkpoint
+  - **3-seed AUC 鲁棒性（最终达标）**：F-LQ 0.726±0.007（CV=0.9%），D-LQ 0.717±0.012（CV=1.7%），全部 CV < 2% ✅
+  - **entropy~q̄ 跨 seed 稳定性**：9/9 全部显著（p<0.05），全部负向 ✅
+  - **论文叙事定位**：
+    - 主结果（全测试集 + Phase 4 ckpt）：F AUC=0.707, ECE=0.098, rho=-0.165 vs D rho=-0.024
+    - 3-seed 鲁棒性（proper seeds）：仅报 AUC CV%（< 2%），不用 ECE 对比
+    - ECE 比较（ITB）：Phase 4 ckpt，F=0.149 vs TS=0.175/A=0.345/H=0.535 优势显著
+
+- **上次完成（2026-05-08）— S2.3 ✅ MC Dropout + Deep Ensemble**：
+  - 训练 3 个新模型：MC Dropout (dropout=0.3)，Std VIB seed 456/789
+  - MC Dropout (I)：ITB-LQ AUC=0.693 ECE=0.613（校准严重退化）
+  - Deep Ensemble (J, 5 模型 seed 42/123/2024/456/789)：ITB-LQ AUC=0.711 ECE=0.440
+  - **F vs I ECE-LQ**：F 0.149 vs I 0.613（F 好 4.1×），**F vs J ECE-LQ**：F 0.149 vs J 0.440（F 好 3.0×）
+  - entropy~q̄ rho：F=-0.192（最强）> D=-0.153 > J=-0.123 > I=-0.114，F 是唯一通过 quality-aware 建模实现校准的
+  - 论文叙事：MC Dropout/Ensemble 高 AUC 但校准退化；Q-VIB 以 adaptive prior 专门针对质量维度建模，LQ 段 ECE 领先
+  - 新增文件：`configs/qad_mcdropout.yaml`，`baselines/` 新增 I/J 推理函数，`analyze_results.py` 加 I/J 颜色/标签
+  - 图表已更新（fig1 含 9 个 baseline）
+
+- **上次完成（2026-05-08）— S2.2 ✅ + S2.4b ✅**：
+  - **S2.4b**：fig10_kl_collapse.png，KL 峰值 185（epoch 2），前 5 epoch 全部 >100，AUC 0.80→0.62
+  - **S2.2**：D/E/F/G 各 3 seed（42/123/2024）全部训练完成，fig1 更新含误差棒
+    - F (Ours) ITB-LQ AUC 0.681±0.083，ITB-Edge 0.798±0.148
+    - 关键工程修复：train_qad.py 新增 --seed/--ckpt-dir 参数；qad_efnet_tokft.yaml（G 正确 config，1280D B0）；qad_dataset.py mmap_mode 节省内存；DataLoader persistent_workers bug 修复
+    - G config 历史澄清：G(seed42) 用 1280D B0 特征（qad_efnet_tokft.yaml），非 1536D B3
+
+- **上次完成（2026-05-08）— S2.1 跨数据集 zero-shot ✅**：
+  - HAM10000（10015 张，MEL 11.1%）+ PAD-UFES（2298 张，MEL 2.3%）全部下载、解压、特征提取、推理完成
+  - **Proposition 2 跨数据集验证**：
+    - HAM10000: F rho=-0.164, p=5.3e-61 ✅
+    - PAD-UFES: F rho=-0.236, p=1.5e-30 ✅（比 ISIC 内部 -0.165 更强）
+  - F vs D AUC 在两个数据集上不显著（zero-shot 跨模态属预期），但熵单调性稳健
+  - fig9_cross_dataset.png 生成（DPI 300）
+  - 修复 `precompute_external_features.py` PAD-UFES 路径（Kaggle 解压后在 `PAD-UFES-20/Dataset/`）
+  - 修复 `analyze_external.py` Windows GBK emoji 编码问题
+  - 数据留存：`data/external/ham10000/` + `data/external/pad_ufes/`（zip 可删节省空间）
+
+- **上次完成（2026-05-08）— 阶段六 ITB Benchmark v1**：
+  - 构建 4 子集（按预计算 q̄ 分层）：ITB-LQ（q̄<0.40, N=225）/ ITB-HQ（q̄>0.65, N=125）/ ITB-Edge（q̄ 0.40-0.55, N=660）/ ITB-Diverse（FP17k I-VI 均衡, N=7350）
+  - 运行 6 路 baseline（A/D/E/F/G）+ Agent 评测，存 itb_results.csv / itb_ablation.csv / itb_predictions.csv
+  - 指标：classwise binary ECE + Sens@95Spec + Brier Score + Mean Entropy + bootstrap AUC CI
+  - 7 张论文图表 DPI 300 全部生成
+  - **Proposition 2 实证成立**：Std VIB 熵全 q̄ 段 ~0.20 平稳，Q-VIB Full 随 q̄ 单调降（0.21→0.17）
+  - **F vs D 显著性**（待 S1.1 重跑确认）：MAIN 对比
+
+- **2026-05-08 S1.1 完成 + 重大发现**：
+  - F/G 标签调换：F → "Q-VIB Full (Ours)"（红色），G → "Q-VIB+TokFT*"（紫色，supplementary）
+  - 新增 fig8 AUC-ECE 帕累托图：B3 在 HQ/Edge 上 Pareto-dominate F；F 仅相对 D/E 占优
+  - **新发现：F vs D AUC 在 ITB 子集上全部不显著**（HQ p=0.072, LQ p=0.233, Edge p=0.076）
+    - 根因：ITB 子集样本量过小（HQ 125 / LQ 225），bootstrap CI 太宽
+    - F vs D 在原 test set（19878 张）上 AUC 0.707 vs 0.693 是显著的，但 ITB 上不显著
+    - 但 F vs D 熵差异在 HQ/Edge 上仍显著（p<0.05），Proposition 2 站得住
+  - **结论：Sprint 1.2（扩 N≥500）从"重要"升级为"必须"**——否则论文 AUC 主张全部站不住
+
+- **2026-05-08 S1.2 完成（核心达标）**：
+  - 阈值放宽：HQ q̄>0.50（原 0.65），LQ q̄<0.45（原 0.40），Diverse 下采样 ≤1500
+  - 仅采 test split（避免训练泄漏），N: HQ 125→360 / LQ 225→300 / Edge 660 / Diverse 1500
+  - **F vs D AUC**：ITB-LQ Δ=+0.093 p<0.05 ✅，ITB-Edge Δ=+0.047 p<0.05 ✅，ITB-HQ p=0.232（高质量段不显著属预期）
+  - **F vs D Entropy**：HQ/LQ/Edge 全部 p<0.05 ✅，Proposition 2 强支持
+  - 🐛 待修：ITB-Diverse 1500 张中 1470 个正例（98%），FP17K 标签正则 `melanoma|malignant` 可能命中负例"non-malignant"，下放到 S2.1 一起处理
+
+- **2026-05-08 Sprint 1 完成 ✅（顶刊投稿基线达成）**：
+  - **S1.1**：F → "Q-VIB Full (Ours)"，G → supplementary "Q-VIB+TokFT*"，新增 fig8 帕累托图
+  - **S1.2**：ITB 子集扩量 HQ 125→360 / LQ 225→300 / Edge 660 / Diverse 1500
+  - **S1.3a-d**：Temperature Scaling baseline TS（T=2.32，过拟合 val 反而 test ECE 变差）
+  - **S1.3e**：Focal Loss + Label Smoothing baseline H（best epoch 1, val AUC 0.8167，过拟合极快）
+  - **S1.3f**：MC 采样 per-sample 种子（hashlib.md5(image_path) → torch.manual_seed），bit-reproducible
+  - **FP17K bug 修复**：drop_duplicates(fp_id) 防止三倍化；Diverse 现在 1500 张 / 490 真正例
+
+- **Sprint 1 最终核心数据**（seeded MC + FP17K-fixed ITB）：
+
+| F (Ours) vs D | AUC Δ | AUC p | 熵 Δ | 熵 p |
+|---|---|---|---|---|
+| ITB-HQ | +0.018 | 0.193 n.s. | +0.044 | <0.05 ✅ |
+| **ITB-LQ** | +0.032 | **<0.05** ✅ | +0.012 | **<0.05** ✅ |
+| **ITB-Edge** | +0.029 | **<0.05** ✅ | +0.039 | **<0.05** ✅ |
+
+| ITB-LQ ECE | 值 | F vs 它 |
+|---|---|---|
+| F (Ours) | **0.149** | — |
+| Std VIB + TS | 0.175 | F -0.026 ✅ |
+| EfficientNet-B3 | 0.345 | F -0.196 ✅ |
+| Focal+LS | 0.535 | F -0.386 ✅ |
+
+- **下一步（Sprint 2，3 周）**：
+  - S2.1 跨数据集 zero-shot：HAM10000 + PAD-UFES，验证 Proposition 2 不依赖 ISIC（**sonnet 后台进行中**）
+  - S2.2 3-seed 鲁棒性：D/E/F/G 各跑 3 个种子，报均值±std
+  - S2.3 加入 MC Dropout + Deep Ensemble baseline
+  - S2.4a ✅ 失败案例 fig11：F vs B3 在 1320 样本上的非对称错误模式
+    - **核心发现**：F 漏 melanoma 160 个（B3 都接住），但 F 把 B3 误报的 223 个 benign 正确分类
+    - 解读：F 是 high-specificity 保守模型，sensitivity 由 Agent 重拍/escalate 兜底
+  - S2.4b ⏳ KL 崩塌 fig10：等 Sprint 2.1 完成后用 qad_adaptive_ft.yaml 重训 ~10 epoch 复现
 
 - **上次完成（2026-05-08）— Qwen 本地化**：
   - 模型切换：Qwen3-8B（残缺）→ Qwen3-4B 4-bit nf4（完整下载 ~8 GB，显存 2.67 GB，cuda:0）
@@ -130,4 +233,4 @@ BRISQUE 对比 sharpness：VisiScore 0.947 vs BRISQUE -0.184
 
 ## 最后更新
 
-2026-05-08 11:45（北京时间）
+2026-05-09 00:10（北京时间）

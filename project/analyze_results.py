@@ -11,6 +11,7 @@ Outputs (results/figures/):
   fig4_entropy_kde.png       — LQ vs HQ 熵分布 KDE
   fig5_kl_sigma.png          — σ²(q̄) 理论曲线 + 实证 KL 项双轴图（Lemma 1）
   fig6_agent_turns.png       — Agent 交互轮次小提琴图
+  fig8_pareto.png            — AUC–ECE 帕累托图（F=Ours 主推；G=discriminative 备选）
   itb_ablation.csv           — 消融实验汇总表（含 Brier Score）
 """
 import sys
@@ -33,15 +34,26 @@ AGENT_CSV      = "results/itb_agent_eval.csv"
 FIG_DIR        = Path("results/figures")
 ABLATION_CSV   = "results/itb_ablation.csv"
 
-BASELINE_ORDER  = ["A", "D", "E", "F", "G"]
+BASELINE_ORDER  = ["A", "D", "TS", "H", "I", "J", "E", "F", "G"]
 BASELINE_LABELS = {
-    "A": "EfficientNet-B3\n(Direct)",
-    "D": "Std VIB",
-    "E": "Adaptive Prior",
-    "F": "Q-VIB Full",
-    "G": "Q-VIB+TokFT (Ours)",
+    "A":  "EfficientNet-B3\n(Direct)",
+    "D":  "Std VIB",
+    "TS": "Std VIB + TS",
+    "H":  "Focal+LS",
+    "I":  "MC Dropout",
+    "J":  "Deep Ensemble",
+    "E":  "Adaptive Prior",
+    "F":  "Q-VIB Full (Ours)",
+    "G":  "Q-VIB+TokFT*",
 }
-BASELINE_COLORS = {"A": "#888888", "D": "#4878CF", "E": "#6ACC65", "F": "#E8A838", "G": "#D65F5F"}
+# F = main proposal. G = supplementary discriminative variant.
+# TS = Temperature Scaling (Guo et al. 2017). H = Focal Loss + Label Smoothing.
+# I = MC Dropout (Gal & Ghahramani 2016). J = Deep Ensemble (Lakshminarayanan 2017).
+BASELINE_COLORS = {
+    "A": "#888888", "D": "#4878CF", "TS": "#FF7F0E",
+    "H": "#17BECF", "I": "#BCBD22", "J": "#8C564B",
+    "E": "#6ACC65", "F": "#D65F5F", "G": "#9966CC",
+}
 SUBSET_ORDER   = ["ITB-HQ", "ITB-Edge", "ITB-LQ", "ITB-Diverse"]
 SUBSET_SHORT   = {"ITB-HQ": "HQ", "ITB-Edge": "Edge", "ITB-LQ": "LQ", "ITB-Diverse": "Diverse"}
 
@@ -346,6 +358,66 @@ def fig_kl_sigma(preds: pd.DataFrame):
     plt.close(fig); print(f"  {out}")
 
 
+# ── Figure 8: AUC vs ECE Pareto frontier ─────────────────────────────────────
+
+def fig_pareto_auc_ece(df: pd.DataFrame):
+    """Per-subset AUC vs ECE scatter; lower-left is dominated, upper-right ideal.
+
+    AUC ↑ on y-axis, ECE ↓ on x-axis (so we INVERT x: better calibration to right).
+    Pareto frontier connects non-dominated points.
+    """
+    subsets_with_ece = ["ITB-HQ", "ITB-Edge", "ITB-LQ"]   # Diverse has no ECE
+    fig, axes = plt.subplots(1, 3, figsize=(7.5, 2.6))
+
+    for ax, subset in zip(axes, subsets_with_ece):
+        sub = df[df["subset"] == subset]
+        if len(sub) == 0:
+            continue
+        # Plot each baseline
+        for bk in BASELINE_ORDER:
+            row = sub[sub["baseline"] == bk]
+            if len(row) == 0 or np.isnan(row.iloc[0]["ece"]):
+                continue
+            r = row.iloc[0]
+            ax.scatter(r["ece"], r["auc"], s=60, color=BASELINE_COLORS[bk],
+                       label=BASELINE_LABELS[bk].replace("\n", " "),
+                       edgecolor="black", linewidth=0.5, zorder=4)
+            # Annotate F (Ours) prominently
+            if bk == "F":
+                ax.annotate("Ours", (r["ece"], r["auc"]),
+                            xytext=(7, 5), textcoords="offset points",
+                            fontsize=7, fontweight="bold", color=BASELINE_COLORS["F"])
+
+        # Pareto frontier: keep points with no point both higher AUC AND lower ECE
+        pts = sub.dropna(subset=["ece"]).copy()
+        pts = pts[pts["baseline"].isin(BASELINE_ORDER)]
+        if len(pts) >= 2:
+            pareto = []
+            for _, p in pts.iterrows():
+                dominated = ((pts["auc"] > p["auc"]) & (pts["ece"] < p["ece"])).any()
+                if not dominated:
+                    pareto.append(p)
+            if len(pareto) >= 2:
+                par_df = pd.DataFrame(pareto).sort_values("ece")
+                ax.plot(par_df["ece"], par_df["auc"], "k--", lw=0.9, alpha=0.6, zorder=2,
+                        label="Pareto front" if subset == subsets_with_ece[0] else None)
+
+        # Ideal corner annotation
+        ax.set(xlabel="ECE ↓ (lower better)", ylabel="AUC ↑ (higher better)" if subset == subsets_with_ece[0] else "",
+               title=subset)
+        ax.invert_xaxis()  # better calibration to the right
+        ax.set_xlim(left=ax.get_xlim()[0], right=0)
+        ax.grid(True, alpha=0.2, linestyle=":")
+
+    axes[0].legend(loc="lower left", fontsize=6, framealpha=0.85, ncol=1)
+    fig.suptitle("AUC–ECE Trade-off: Q-VIB Full (F) preserves calibration; G trades it for AUC",
+                 fontsize=8.5, y=1.02)
+    fig.tight_layout(pad=0.5)
+    out = FIG_DIR / "fig8_pareto.png"
+    fig.savefig(out, dpi=PLT_DPI, bbox_inches="tight")
+    plt.close(fig); print(f"  {out}")
+
+
 # ── Figure 6: Agent interaction turns violin ──────────────────────────────────
 
 def fig_agent_turns(agent_df: pd.DataFrame):
@@ -413,10 +485,37 @@ def save_ablation_and_stats(df: pd.DataFrame, preds: pd.DataFrame):
     print()
     print(abl.to_string(index=False))
 
-    # ── G (Q-VIB+TokFT) vs D (Std VIB): AUC + Entropy across all subsets ──────
-    print("\n── Bootstrap significance: G (Q-VIB+TokFT) vs D (Std VIB) ──")
+    # ── MAIN comparison: F (Q-VIB Full, Ours) vs D (Std VIB) across subsets ──
+    print("\n── Bootstrap significance [MAIN]: F (Q-VIB Full, Ours) vs D (Std VIB) ──")
     from sklearn.metrics import roc_auc_score as _auc
     rng = np.random.default_rng(42)
+    for subset in ["ITB-HQ", "ITB-LQ", "ITB-Edge"]:
+        f_sub = preds[(preds["baseline"] == "F") & (preds["subset"] == subset)]
+        d_sub = preds[(preds["baseline"] == "D") & (preds["subset"] == subset)]
+        if len(f_sub) == 0 or len(d_sub) == 0:
+            continue
+        fpp, dpp = f_sub["prob_pos"].values, d_sub["prob_pos"].values
+        ftg, dtg = f_sub["target"].values,   d_sub["target"].values
+        dauc, dent = [], []
+        for _ in range(5000):
+            s = rng.integers(0, len(fpp), size=len(fpp))
+            try:
+                dauc.append(_auc(ftg[s], fpp[s]) - _auc(dtg[s], dpp[s]))
+            except Exception:
+                pass
+            def _ent(pp):
+                p2 = np.stack([1-pp, pp], axis=1).clip(1e-9)
+                return float(-(p2*np.log(p2)).sum(-1).mean())
+            dent.append(_ent(dpp[s]) - _ent(fpp[s]))  # D higher entropy → F more confident on HQ
+        dauc, dent = np.array(dauc), np.array(dent)
+        sig_auc = "p<0.05 [sig]" if float((dauc<=0).mean())<0.05 else f"p={float((dauc<=0).mean()):.3f} [n.s.]"
+        sig_ent = "p<0.05 [sig]" if float((dent<=0).mean())<0.05 else f"p={float((dent<=0).mean()):.3f} [n.s.]"
+        ca, ce = np.percentile(dauc,[2.5,97.5]), np.percentile(dent,[2.5,97.5])
+        print(f"  {subset}:  AUC(F)-AUC(D)={dauc.mean():+.3f} [{ca[0]:.3f},{ca[1]:.3f}] {sig_auc}"
+              f"  |  H(D)-H(F)={dent.mean():+.3f} [{ce[0]:.3f},{ce[1]:.3f}] {sig_ent}")
+
+    # ── SUPPLEMENTARY: G (Q-VIB+TokFT, discriminative variant) vs D ──
+    print("\n── Bootstrap significance [SUPPL.]: G (Q-VIB+TokFT, trades calib for AUC) vs D ──")
     for subset in ["ITB-HQ", "ITB-LQ", "ITB-Edge"]:
         g_sub = preds[(preds["baseline"] == "G") & (preds["subset"] == subset)]
         d_sub = preds[(preds["baseline"] == "D") & (preds["subset"] == subset)]
@@ -424,23 +523,17 @@ def save_ablation_and_stats(df: pd.DataFrame, preds: pd.DataFrame):
             continue
         gpp, dpp = g_sub["prob_pos"].values, d_sub["prob_pos"].values
         gtg, dtg = g_sub["target"].values,   d_sub["target"].values
-        dauc, dent = [], []
+        dauc = []
         for _ in range(5000):
             s = rng.integers(0, len(gpp), size=len(gpp))
             try:
                 dauc.append(_auc(gtg[s], gpp[s]) - _auc(dtg[s], dpp[s]))
             except Exception:
                 pass
-            def _ent(pp):
-                p2 = np.stack([1-pp, pp], axis=1).clip(1e-9)
-                return float(-(p2*np.log(p2)).sum(-1).mean())
-            dent.append(_ent(dpp[s]) - _ent(gpp[s]))  # D higher entropy → G more confident
-        dauc, dent = np.array(dauc), np.array(dent)
+        dauc = np.array(dauc)
         sig_auc = "p<0.05 [sig]" if float((dauc<=0).mean())<0.05 else f"p={float((dauc<=0).mean()):.3f} [n.s.]"
-        sig_ent = "p<0.05 [sig]" if float((dent<=0).mean())<0.05 else f"p={float((dent<=0).mean()):.3f} [n.s.]"
-        ca, ce = np.percentile(dauc,[2.5,97.5]), np.percentile(dent,[2.5,97.5])
-        print(f"  {subset}:  AUC(G)-AUC(D)={dauc.mean():+.3f} [{ca[0]:.3f},{ca[1]:.3f}] {sig_auc}"
-              f"  |  H(D)-H(G)={dent.mean():+.3f} [{ce[0]:.3f},{ce[1]:.3f}] {sig_ent}")
+        ca = np.percentile(dauc,[2.5,97.5])
+        print(f"  {subset}:  AUC(G)-AUC(D)={dauc.mean():+.3f} [{ca[0]:.3f},{ca[1]:.3f}] {sig_auc}")
 
     # Significance: bootstrap entropy on ITB-LQ (F vs D for ablation reference)
     print("\n── Bootstrap significance (Ablation: Mean Entropy, ITB-LQ) ──")
@@ -524,6 +617,7 @@ def main():
     fig_entropy_qbar(preds)
     fig_entropy_kde(preds)
     fig_kl_sigma(preds)
+    fig_pareto_auc_ece(df)
 
     # Agent turns (optional — only if CSV exists)
     agent_csv = Path(AGENT_CSV)

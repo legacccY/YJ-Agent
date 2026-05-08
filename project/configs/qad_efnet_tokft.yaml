@@ -1,11 +1,13 @@
+# G baseline: Q-VIB Full + tokenizer, EfficientNet-B0 features (1280D)
 data:
   labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
   metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
   abcd_cache_csv: D:/YJ-Agent/data/abcd_cache.csv
-  efnet_features_npy: D:/YJ-Agent/data/finetuned_features.npy
-  efnet_index_csv: D:/YJ-Agent/data/finetuned_index.csv
+  efnet_features_npy: D:/YJ-Agent/data/efficientnet_features.npy
+  efnet_index_csv: D:/YJ-Agent/data/efficientnet_index.csv
   split_csv: D:/YJ-Agent/data/isic_split.csv
-  num_workers: 0
+  num_workers: 4
+
 model:
   sam_checkpoint: D:/YJ-Agent/checkpoints/mobile_sam.pt
   prior:
@@ -16,26 +18,30 @@ model:
     d_model: 128
     n_heads: 4
     latent_dim: 64
-    efnet_dim: 1536
+    efnet_dim: 1280
     use_tokenizer: true
   classifier:
     hidden_dim: 128
     num_classes: 2
+
 train:
   epochs: 30
   batch_size: 256
-  lr: 5.0e-05
-  weight_decay: 0.0001
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
   seed: 42
   amp: true
-  beta_max: 0.0001
-  beta_warmup_steps: 5000
+  beta_max: 5.0e-3
+  beta_warmup_steps: 3000
+
 output:
-  checkpoint_dir: D:\YJ-Agent\checkpoints\qvib_ft_clean
+  checkpoint_dir: D:/YJ-Agent/checkpoints/efnet_tokft
+
 wandb:
   project: visiskin-agent
   entity: null
   mode: offline
+
 device:
   cuda: true
   gpu_id: 0

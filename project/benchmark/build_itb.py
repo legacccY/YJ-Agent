@@ -1,17 +1,18 @@
 """构建 ITB (Iterative Triage Benchmark) 4 个子集。
 
-子集（按预计算 q̄ 严格分层，确保 fig3 覆盖完整 q̄ 范围）：
-  ITB-LQ      低质量：heavy 退化且预计算 q̄ < 0.40
-  ITB-HQ      高质量：原图且预计算 q̄ > 0.65
+子集（按预计算 q̄ 严格分层；阈值 v2 放宽以扩 N 至顶刊统计功效）：
+  ITB-LQ      低质量：heavy 退化且预计算 q̄ < 0.45（v1: 0.40）
+  ITB-HQ      高质量：原图且预计算 q̄ > 0.50（v1: 0.65）
   ITB-Edge    边界质量：light/medium 退化且预计算 q̄ in [0.40, 0.55]
-  ITB-Diverse 多肤色：FitzPatrick17k（Fitzpatrick I-VI 均衡采样 + 恶性过采样）
+  ITB-Diverse 多肤色：FitzPatrick17k（Fitzpatrick I-VI 均衡采样 + 恶性过采样，下采样至 ≤1500）
 
-STRATIFIED SAMPLING (MICCAI revision):
-  每个子集：保留质量过滤池中全部阳性样本，补充阴性使阳性率达到 ~20%。
-  目标样本数（上限，视池中阳性数量而定）：
-    ITB-LQ:   45 pos + 180 neg = 225 total
-    ITB-HQ:   25 pos + 100 neg = 125 total
-    ITB-Edge: 132 pos + 528 neg = 660 total
+STRATIFIED SAMPLING (Sprint 1.2):
+  仅采 test split（避免训练泄漏）；保留池中全部阳性，补充阴性达 20% 阳性率。
+  目标样本数（test split 117 正例为天花板）：
+    ITB-LQ:   ~60 pos + 240 neg ≈ 300
+    ITB-HQ:   ~72 pos + 288 neg ≈ 360
+    ITB-Edge: 132 pos + 528 neg = 660
+    ITB-Diverse: ≤1500（下采样均衡）
 
 输出：results/itb_subsets.csv
   columns: subset, isic_id, image_path, target, level, source, qbar
@@ -35,10 +36,11 @@ TARGET_POS_RATE = 0.20   # 20% positive rate
 
 Q_COLS = ["sharpness", "brightness", "completeness", "color_temp", "contrast"]
 
-LQ_QBAR_MAX  = 0.40   # ITB-LQ:  q̄ < 0.40
-HQ_QBAR_MIN  = 0.65   # ITB-HQ:  q̄ > 0.65
+LQ_QBAR_MAX  = 0.45   # ITB-LQ:  q̄ < 0.45 (v2: was 0.40)
+HQ_QBAR_MIN  = 0.50   # ITB-HQ:  q̄ > 0.50 (v2: was 0.65)
 EDGE_LO      = 0.40   # ITB-Edge: q̄ in [0.40, 0.55]
 EDGE_HI      = 0.55
+DIVERSE_CAP  = 1500   # ITB-Diverse: cap to keep CI tight + match other subsets
 
 
 def get_isic_id(path):
@@ -140,6 +142,9 @@ def main():
             columns={"md5hash": "fp_id", "fitzpatrick_scale": "fitzpatrick"})
         fp_df["fp_id"] = fp_df["degraded_path"].apply(lambda p: Path(p).stem.split("_")[0])
         fp_df = fp_df.merge(fp_meta, on="fp_id", how="left").dropna(subset=["label"])
+        # FIX: paired_dataset_fp17k 把每张图复制成 3 个 level；按 fp_id 去重保留每张图一行
+        # （选 level=='light' 因为退化最弱，最接近原图）。否则正例数会被三倍化导致 cap 后丢光负例。
+        fp_df = fp_df[fp_df["level"] == "light"].drop_duplicates("fp_id")
         fp_df["target"] = (fp_df["label"].str.lower().str.contains("melanoma|malignant")).astype(int)
 
         # Stratify within each Fitzpatrick type: keep all malignant, fill benign to 20%
@@ -149,6 +154,13 @@ def main():
             sampled = sampled.assign(fitzpatrick=fitz_val)
             fp_sample_list.append(sampled)
         fp_sample = pd.concat(fp_sample_list)
+        # Cap Diverse to DIVERSE_CAP, preserving positives + balanced FP types
+        if len(fp_sample) > DIVERSE_CAP:
+            pos_part = fp_sample[fp_sample["target"] == 1]
+            neg_part = fp_sample[fp_sample["target"] == 0]
+            n_neg_keep = max(0, DIVERSE_CAP - len(pos_part))
+            neg_part = neg_part.sample(min(n_neg_keep, len(neg_part)), random_state=SEED)
+            fp_sample = pd.concat([pos_part, neg_part]).sample(frac=1, random_state=SEED)
         for _, r in fp_sample.iterrows():
             rows.append({"subset": "ITB-Diverse", "isic_id": str(r["fp_id"]),
                          "image_path": r["original_path"], "target": int(r["target"]),

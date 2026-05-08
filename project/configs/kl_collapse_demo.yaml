@@ -1,3 +1,5 @@
+# S2.4b: KL collapse demo — tight prior (sigma0_sq=0.1) + finetuned B3 features
+# Purpose: show why Q-VIB cannot directly use 1536D B3 features with tight prior
 data:
   labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
   metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
@@ -6,10 +8,11 @@ data:
   efnet_index_csv: D:/YJ-Agent/data/finetuned_index.csv
   split_csv: D:/YJ-Agent/data/isic_split.csv
   num_workers: 0
+
 model:
   sam_checkpoint: D:/YJ-Agent/checkpoints/mobile_sam.pt
   prior:
-    sigma0_sq: 0.1
+    sigma0_sq: 0.1   # tight prior — triggers KL collapse with 1536D features
     tau: 0.5
     alpha: 5.0
   encoder:
@@ -17,25 +20,29 @@ model:
     n_heads: 4
     latent_dim: 64
     efnet_dim: 1536
-    use_tokenizer: true
+    use_tokenizer: false
   classifier:
     hidden_dim: 128
     num_classes: 2
+
 train:
-  epochs: 30
+  epochs: 12
   batch_size: 256
-  lr: 5.0e-05
-  weight_decay: 0.0001
+  lr: 5.0e-5
+  weight_decay: 1.0e-4
   seed: 42
   amp: true
-  beta_max: 0.0001
-  beta_warmup_steps: 5000
+  beta_max: 1.0e-4
+  beta_warmup_steps: 8000  # slow warmup — beta near 0 for ~5 epochs, CE free to push mu high
+
 output:
-  checkpoint_dir: D:\YJ-Agent\checkpoints\qvib_ft_clean
+  checkpoint_dir: D:/YJ-Agent/checkpoints/kl_collapse_demo
+
 wandb:
   project: visiskin-agent
   entity: null
   mode: offline
+
 device:
   cuda: true
   gpu_id: 0

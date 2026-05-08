@@ -98,7 +98,7 @@ class QADDataset(Dataset):
         self._efnet_features: np.ndarray | None = None
         self._efnet_path_to_idx: dict | None = None
         if efnet_features_npy is not None and efnet_index_csv is not None:
-            self._efnet_features = np.load(efnet_features_npy)
+            self._efnet_features = np.load(efnet_features_npy, mmap_mode="r")
             idx_df = pd.read_csv(efnet_index_csv)
             self._efnet_path_to_idx = dict(
                 zip(idx_df["degraded_path"].astype(str), idx_df["efnet_row_idx"])
