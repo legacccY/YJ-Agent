@@ -119,6 +119,9 @@ def main():
             result = run_agent_on_image(img, row)
             rows.append({
                 "subset": subset,
+                "isic_id": str(row.get("isic_id", "")),
+                "image_path": str(row["image_path"]),
+                "original_path": str(row.get("original_path", "")),
                 "target": int(row["target"]),
                 "initial_qbar": result["initial_qbar"],
                 "final_qbar": result["final_qbar"],

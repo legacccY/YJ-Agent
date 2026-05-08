@@ -1,4 +1,4 @@
-"""ReAct Agent 编排逻辑：Qwen3-8B 4-bit 量化驱动工具调用循环。
+"""ReAct Agent 编排逻辑：Qwen3-4B 4-bit 量化驱动工具调用循环。
 
 状态机（最多追问 3 轮）：
   INIT → quality_assess → (质量差) → ask_user → 等待新图
@@ -89,18 +89,17 @@ TOOLS_SCHEMA = [
     },
 ]
 
-SYSTEM_PROMPT = """你是 VisiSkin Agent，一个专门分析皮肤病变图片的 AI 助手。
+SYSTEM_PROMPT = """你是 VisiSkin Agent，专门分析皮肤病变图片的 AI 助手。
 
-工作流程（必须严格遵守）：
-1. 用户上传图片后，首先调用 quality_assess() 检查图片质量
-2. 如果图片质量不达标（issues 不为空），用 ask_user() 引导用户重新拍摄，最多 3 次
-3. 图片质量达标后，调用 analyze_lesion() 获取分析结果
-4. 调用 final_answer() 给出分诊建议
+【核心规则】每次回复必须且只能是一个工具调用，禁止输出任何纯文本解释。
 
-重要原则：
-- 必须先 quality_assess，再 analyze_lesion，最后 final_answer
-- 给出的是「分诊建议」而非「确诊结论」，不可用「确诊」「诊断为」等词
-- 中文回复，语气温和专业"""
+工具调用顺序（严格执行）：
+步骤1：收到图片 → 调用 quality_assess()
+步骤2a：若 quality_assess 返回 is_acceptable=false → 调用 ask_user()
+步骤2b：若 quality_assess 返回 is_acceptable=true → 调用 analyze_lesion()
+步骤3：analyze_lesion() 返回后 → 调用 final_answer()
+
+禁止跳过步骤，禁止输出纯文字，禁止用「确诊」「诊断为」等词。"""
 
 
 # ── Agent state ───────────────────────────────────────────────────────────────
@@ -120,9 +119,9 @@ class AgentState:
 
 # ── ReAct Agent (Qwen3-8B) ────────────────────────────────────────────────────
 class ReActAgent:
-    """Qwen3-8B 4-bit 量化驱动的 ReAct Agent。LLM 不可用时回退到规则引擎。"""
+    """Qwen3-4B 4-bit 量化驱动的 ReAct Agent。LLM 不可用时回退到规则引擎。"""
 
-    def __init__(self, model_name: str = "Qwen/Qwen3-8B", use_llm: bool = True):
+    def __init__(self, model_name: str = "Qwen/Qwen3-4B", use_llm: bool = True):
         self.model_name = model_name
         self.use_llm = use_llm
         self._model = None
@@ -142,7 +141,7 @@ class ReActAgent:
             from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
             import bitsandbytes  # noqa: F401
 
-            print(f"Loading {self.model_name} (4-bit)…")
+            print(f"Loading {self.model_name} (4-bit, nf4)…")
             bnb_cfg = BitsAndBytesConfig(
                 load_in_4bit=True,
                 bnb_4bit_compute_dtype=torch.float16,
@@ -167,17 +166,16 @@ class ReActAgent:
 
     # ── LLM inference ─────────────────────────────────────────────────────────
     def _generate(self, messages: list[dict]) -> str:
-        # enable_thinking=False 关闭 Qwen3 的 CoT 思考链，减少推理时间
+        # enable_thinking=True 让模型先推理再调工具，4B 小模型更可靠
         try:
             text = self._tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
                 add_generation_prompt=True,
                 tools=TOOLS_SCHEMA,
-                enable_thinking=False,
+                enable_thinking=True,
             )
         except TypeError:
-            # 旧版 transformers 不支持 enable_thinking 参数
             text = self._tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
@@ -189,7 +187,7 @@ class ReActAgent:
         with torch.no_grad():
             outputs = self._model.generate(
                 **inputs,
-                max_new_tokens=256,
+                max_new_tokens=512,
                 do_sample=False,
                 temperature=None,
                 top_p=None,
@@ -209,7 +207,7 @@ class ReActAgent:
         # Strip thinking block if present
         clean = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL)
 
-        match = re.search(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", clean, re.DOTALL)
+        match = re.search(r"<tool_call>\s*(\{.*\})\s*</tool_call>", clean, re.DOTALL)
         if match:
             try:
                 data = json.loads(match.group(1))

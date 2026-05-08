@@ -11,11 +11,13 @@
   - 生成 4 张论文图表：fig1 对比柱状图 / fig2 isotonic 校准曲线 / fig3 Entropy vs q̄（Proposition 2 核心图）/ fig4 KDE 熵分布
   - 核心发现：Std VIB 熵在全 q̄ 范围水平（~0.20），Q-VIB 随 q̄ 单调降（0.23→0.15），Proposition 2 实证成立 ✅；ITB-LQ AUC Q-VIB 0.636 > Std VIB 0.540 ✅
 
-- **阶段六验收指标**：
-  - ITB-LQ AUC：Q-VIB Full 0.636 > Std VIB 0.540 ✅
-  - ITB-HQ Binary ECE：Q-VIB 0.031 < Std VIB 0.045 ✅
-  - Entropy vs q̄ 单调递减（Q-VIB & Adaptive Prior），Std VIB 平坦 ✅
-  - 4 张论文图表全部生成，DPI 300，符合 MICCAI 版面要求 ✅
+- **阶段六验收指标（顶会标准最终版）**：
+  - **外部 baseline A**：EfficientNet-B3 LQ Brier=0.418 vs Q-VIB 0.069（6× 更好校准）✅
+  - **ITB-HQ 显著性**：H(StdVIB)-H(Q-VIB) = +0.061，95%CI [0.048, 0.073]，**p<0.05** ✅
+  - **Lemma 1**：σ²(q̄) 理论曲线单调递减，empirical KL 与理论趋势一致 ✅
+  - **Proposition 2**：Entropy vs q̄ 单调递减（Q-VIB），Std VIB 平坦，fig3 清晰验证 ✅
+  - **Agent 评测**：ITB-LQ 追问率 100% vs ITB-HQ 10%，fig6 violin 图 ✅
+  - **6 张论文图表**（fig1-6），DPI 300，Bootstrap 5000 次显著性检验，含 Brier Score ✅
 
 - **下一步**：进入阶段七（论文写作）
 

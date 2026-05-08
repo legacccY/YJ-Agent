@@ -1,6 +1,6 @@
-"""Qwen3-8B ReAct 端到端冒烟测试。
+"""Qwen3-4B ReAct 端到端冒烟测试。
 
-运行前确认 Qwen/Qwen3-8B 已下载到 HuggingFace 缓存。
+运行前确认 Qwen/Qwen3-4B 已下载到 HuggingFace 缓存。
 
 Usage:
   cd D:/YJ-Agent/project && python test_llm_react.py
@@ -52,13 +52,13 @@ def run_test(name: str, img: np.ndarray, agent: ReActAgent):
 
 
 if __name__ == "__main__":
-    print("Loading ReActAgent (Qwen3-8B 4-bit)...")
+    print("Loading ReActAgent (Qwen3-4B 4-bit)...")
     agent = ReActAgent()
 
     # Trigger model loading explicitly
     ok = agent._load_model()
     if not ok:
-        print("\n[ERROR] Qwen3-8B not available. Please run the download first.")
+        print("\n[ERROR] Qwen3-4B not available. Please run the download first.")
         sys.exit(1)
 
     print("\nModel loaded. Running tests...\n")

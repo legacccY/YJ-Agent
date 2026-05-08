@@ -43,9 +43,10 @@ DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BASELINES = {
     "A": {"name": "EfficientNet-B3 (Direct)", "type": "b3"},
-    "D": {"name": "Std VIB",        "ckpt": "D:/YJ-Agent/checkpoints/stdvib/best_qad.pth",   "use_tok": False, "use_prior": False},
-    "E": {"name": "Adaptive Prior", "ckpt": "D:/YJ-Agent/checkpoints/adaptive/best_qad.pth", "use_tok": False, "use_prior": True},
-    "F": {"name": "Q-VIB Full",     "ckpt": "D:/YJ-Agent/checkpoints/efnet/best_qad.pth",    "use_tok": True,  "use_prior": True},
+    "D": {"name": "Std VIB",        "ckpt": "D:/YJ-Agent/checkpoints/stdvib/best_qad.pth",      "use_tok": False, "use_prior": False},
+    "E": {"name": "Adaptive Prior", "ckpt": "D:/YJ-Agent/checkpoints/adaptive/best_qad.pth",    "use_tok": False, "use_prior": True},
+    "F": {"name": "Q-VIB Full",     "ckpt": "D:/YJ-Agent/checkpoints/efnet/best_qad.pth",       "use_tok": True,  "use_prior": True},
+    "G": {"name": "Q-VIB+TokFT",   "ckpt": "D:/YJ-Agent/checkpoints/efnet_tokft/best_qad.pth", "use_tok": True,  "use_prior": True},
 }
 
 # ImageNet preprocessing for EfficientNet-B3
