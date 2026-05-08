@@ -1,0 +1,13 @@
+baseline,name,subset,AUC,ECE,F1,MeanEntropy
+D,Std VIB,ITB-HQ,0.763,0.045,0.261,0.202
+D,Std VIB,ITB-Edge,0.496,0.068,0.0,0.2
+D,Std VIB,ITB-LQ,0.54,0.052,0.15,0.225
+D,Std VIB,ITB-Diverse,0.574,N/A,0.079,0.16
+E,Adaptive Prior,ITB-HQ,0.823,0.036,0.4,0.157
+E,Adaptive Prior,ITB-Edge,0.79,0.055,0.0,0.171
+E,Adaptive Prior,ITB-LQ,0.607,0.061,0.105,0.226
+E,Adaptive Prior,ITB-Diverse,0.568,N/A,0.075,0.141
+F,Q-VIB Full (Ours),ITB-HQ,0.697,0.031,0.24,0.151
+F,Q-VIB Full (Ours),ITB-Edge,0.571,0.055,0.167,0.172
+F,Q-VIB Full (Ours),ITB-LQ,0.636,0.06,0.1,0.234
+F,Q-VIB Full (Ours),ITB-Diverse,0.506,N/A,0.08,0.132
