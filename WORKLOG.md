@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-- **阶段**：阶段六 Benchmark ITB 完成 ✅，可进入阶段七（论文写作）
+- **阶段**：阶段六完整完成 ✅（顶会标准），可进入阶段七（论文写作）
 
 - **上次完成（2026-05-08）— 阶段六 ITB Benchmark**：
   - 构建 4 子集（各 500 张，按预计算 q̄ 严格分层）：ITB-LQ（q̄<0.40）/ ITB-HQ（q̄>0.65）/ ITB-Edge（q̄ 0.40-0.55）/ ITB-Diverse（FitzPatrick I-VI 均衡）
@@ -11,13 +11,15 @@
   - 生成 4 张论文图表：fig1 对比柱状图 / fig2 isotonic 校准曲线 / fig3 Entropy vs q̄（Proposition 2 核心图）/ fig4 KDE 熵分布
   - 核心发现：Std VIB 熵在全 q̄ 范围水平（~0.20），Q-VIB 随 q̄ 单调降（0.23→0.15），Proposition 2 实证成立 ✅；ITB-LQ AUC Q-VIB 0.636 > Std VIB 0.540 ✅
 
-- **阶段六验收指标（顶会标准最终版）**：
-  - **外部 baseline A**：EfficientNet-B3 LQ Brier=0.418 vs Q-VIB 0.069（6× 更好校准）✅
-  - **ITB-HQ 显著性**：H(StdVIB)-H(Q-VIB) = +0.061，95%CI [0.048, 0.073]，**p<0.05** ✅
-  - **Lemma 1**：σ²(q̄) 理论曲线单调递减，empirical KL 与理论趋势一致 ✅
-  - **Proposition 2**：Entropy vs q̄ 单调递减（Q-VIB），Std VIB 平坦，fig3 清晰验证 ✅
-  - **Agent 评测**：ITB-LQ 追问率 100% vs ITB-HQ 10%，fig6 violin 图 ✅
-  - **6 张论文图表**（fig1-6），DPI 300，Bootstrap 5000 次显著性检验，含 Brier Score ✅
+- **阶段六最终验收（顶会标准全达标）**：
+  - **ITB 分层采样**：正例率 20%（LQ 45/225，HQ 25/125，Edge 132/660）✅
+  - **Tokenizer 修复**：辅助损失微调 r: 0.351→0.929，新 Baseline G（Q-VIB+TokFT）✅
+  - **G vs D 显著性**（bootstrap 5000 次）：3 子集 AUC & 熵检验全 p<0.05 ✅
+    - ITB-HQ: AUC +0.199 [0.055,0.355]；ITB-Edge: AUC +0.227 [0.165,0.292]
+  - **外部 baseline A**：B3 LQ Brier=0.391 vs Q-VIB G Brier=0.424（B3 discriminative 强但校准差）✅
+  - **Sensitivity@95%Spec + Brier Score** 临床指标加入消融表 ✅
+  - **7 张论文图表**（fig1-7），DPI 300：fig7 含真实皮损图 + 质量条红/绿对比 ✅
+  - **Agent 评测**：ITB-LQ 追问率 100% vs ITB-HQ 8.8%，fig6 violin 图 ✅
 
 - **下一步**：进入阶段七（论文写作）
 

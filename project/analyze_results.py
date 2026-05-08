@@ -413,10 +413,38 @@ def save_ablation_and_stats(df: pd.DataFrame, preds: pd.DataFrame):
     print()
     print(abl.to_string(index=False))
 
-    # Significance: bootstrap entropy on ITB-LQ (Q-VIB vs Std VIB, one-sided: H_F > H_D)
-    print("\n── Bootstrap significance (Mean Entropy, ITB-LQ) ──")
-    lq = preds[preds["subset"] == "ITB-LQ"]
+    # ── G (Q-VIB+TokFT) vs D (Std VIB): AUC + Entropy across all subsets ──────
+    print("\n── Bootstrap significance: G (Q-VIB+TokFT) vs D (Std VIB) ──")
+    from sklearn.metrics import roc_auc_score as _auc
     rng = np.random.default_rng(42)
+    for subset in ["ITB-HQ", "ITB-LQ", "ITB-Edge"]:
+        g_sub = preds[(preds["baseline"] == "G") & (preds["subset"] == subset)]
+        d_sub = preds[(preds["baseline"] == "D") & (preds["subset"] == subset)]
+        if len(g_sub) == 0 or len(d_sub) == 0:
+            continue
+        gpp, dpp = g_sub["prob_pos"].values, d_sub["prob_pos"].values
+        gtg, dtg = g_sub["target"].values,   d_sub["target"].values
+        dauc, dent = [], []
+        for _ in range(5000):
+            s = rng.integers(0, len(gpp), size=len(gpp))
+            try:
+                dauc.append(_auc(gtg[s], gpp[s]) - _auc(dtg[s], dpp[s]))
+            except Exception:
+                pass
+            def _ent(pp):
+                p2 = np.stack([1-pp, pp], axis=1).clip(1e-9)
+                return float(-(p2*np.log(p2)).sum(-1).mean())
+            dent.append(_ent(dpp[s]) - _ent(gpp[s]))  # D higher entropy → G more confident
+        dauc, dent = np.array(dauc), np.array(dent)
+        sig_auc = "p<0.05 [sig]" if float((dauc<=0).mean())<0.05 else f"p={float((dauc<=0).mean()):.3f} [n.s.]"
+        sig_ent = "p<0.05 [sig]" if float((dent<=0).mean())<0.05 else f"p={float((dent<=0).mean()):.3f} [n.s.]"
+        ca, ce = np.percentile(dauc,[2.5,97.5]), np.percentile(dent,[2.5,97.5])
+        print(f"  {subset}:  AUC(G)-AUC(D)={dauc.mean():+.3f} [{ca[0]:.3f},{ca[1]:.3f}] {sig_auc}"
+              f"  |  H(D)-H(G)={dent.mean():+.3f} [{ce[0]:.3f},{ce[1]:.3f}] {sig_ent}")
+
+    # Significance: bootstrap entropy on ITB-LQ (F vs D for ablation reference)
+    print("\n── Bootstrap significance (Ablation: Mean Entropy, ITB-LQ) ──")
+    lq = preds[preds["subset"] == "ITB-LQ"]
     for bk_a, bk_b, direction in [("F", "D", "F>D"), ("F", "E", "F>E")]:
         a = lq[lq["baseline"] == bk_a]["prob_pos"].values
         b = lq[lq["baseline"] == bk_b]["prob_pos"].values

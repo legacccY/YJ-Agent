@@ -1,0 +1,187 @@
+- generic [ref=e5]:
+  - main [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e11]:
+        - heading "🔬 VisiSkin Agent" [level=1] [ref=e12]
+        - paragraph [ref=e13]: 皮肤病变智能分诊助手 — 上传图片开始分析
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - heading "图片上传" [level=3] [ref=e20]
+          - generic [ref=e21]:
+            - generic:
+              - generic:
+                - img
+              - text: 上传皮肤图片
+            - generic [ref=e22]:
+              - generic [ref=e23]:
+                - button "Fullscreen" [ref=e112] [cursor=pointer]:
+                  - img [ref=e114]
+                - button "Remove Image" [ref=e116] [cursor=pointer]:
+                  - img [ref=e118]
+              - img [ref=e123]
+              - generic [ref=e32]:
+                - button "Upload file" [active] [ref=e33] [cursor=pointer]:
+                  - img [ref=e34]
+                - button "Capture from camera" [ref=e37] [cursor=pointer]:
+                  - img [ref=e38]
+                - button "Paste from clipboard" [ref=e41] [cursor=pointer]:
+                  - img [ref=e42]
+          - generic [ref=e44]:
+            - generic:
+              - generic:
+                - img
+              - text: 重拍图片（Agent 引导后上传）
+            - generic [ref=e45]:
+              - generic [ref=e46]:
+                - button "Fullscreen" [ref=e216] [cursor=pointer]:
+                  - img [ref=e218]
+                - button "Remove Image" [ref=e220] [cursor=pointer]:
+                  - img [ref=e222]
+              - img [ref=e227]
+              - generic [ref=e55]:
+                - button "Upload file" [ref=e56] [cursor=pointer]:
+                  - img [ref=e57]
+                - button "Capture from camera" [ref=e60] [cursor=pointer]:
+                  - img [ref=e61]
+                - button "Paste from clipboard" [ref=e64] [cursor=pointer]:
+                  - img [ref=e65]
+          - button "🔄 重新开始" [ref=e67] [cursor=pointer]
+          - heading "图片质量评分（0–1）" [level=3] [ref=e72]
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - generic:
+                - generic:
+                  - img
+                - text: 各维度质量
+            - button "Copy" [ref=e125] [cursor=pointer]:
+              - img [ref=e127]
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - generic "Line number 1" [ref=e133]: "1"
+                - generic [ref=e134]:
+                  - button "Collapse" [ref=e135] [cursor=pointer]: ▼
+                  - generic [ref=e136]: "{"
+              - generic [ref=e137]:
+                - generic [ref=e139]:
+                  - generic "Line number 2" [ref=e140]: "2"
+                  - generic [ref=e141]:
+                    - generic [ref=e142]: "\"sharpness\""
+                    - generic [ref=e143]: ":"
+                    - generic [ref=e144]: "0.06"
+                    - generic [ref=e145]: ","
+                - generic [ref=e147]:
+                  - generic "Line number 3" [ref=e148]: "3"
+                  - generic [ref=e149]:
+                    - generic [ref=e150]: "\"brightness\""
+                    - generic [ref=e151]: ":"
+                    - generic [ref=e152]: "0.63"
+                    - generic [ref=e153]: ","
+                - generic [ref=e155]:
+                  - generic "Line number 4" [ref=e156]: "4"
+                  - generic [ref=e157]:
+                    - generic [ref=e158]: "\"completeness\""
+                    - generic [ref=e159]: ":"
+                    - generic [ref=e160]: "0.98"
+                    - generic [ref=e161]: ","
+                - generic [ref=e163]:
+                  - generic "Line number 5" [ref=e164]: "5"
+                  - generic [ref=e165]:
+                    - generic [ref=e166]: "\"color_temp\""
+                    - generic [ref=e167]: ":"
+                    - generic [ref=e168]: "0.73"
+                    - generic [ref=e169]: ","
+                - generic [ref=e171]:
+                  - generic "Line number 6" [ref=e172]: "6"
+                  - generic [ref=e173]:
+                    - generic [ref=e174]: "\"contrast\""
+                    - generic [ref=e175]: ":"
+                    - generic [ref=e176]: "0.25"
+                - generic [ref=e177]:
+                  - generic "Line number 7" [ref=e178]: "7"
+                  - generic [ref=e180]: "}"
+        - generic [ref=e80]:
+          - heading "Agent 对话" [level=3] [ref=e85]
+          - generic [ref=e87]:
+            - generic:
+              - generic:
+                - img
+              - text: Chatbot
+            - generic [ref=e181]:
+              - button [ref=e182] [cursor=pointer]:
+                - img [ref=e184]
+              - button "清空对话" [ref=e186] [cursor=pointer]:
+                - img [ref=e188]
+              - button "Copy conversation" [ref=e194] [cursor=pointer]:
+                - img [ref=e196]
+            - log "chatbot conversation" [ref=e88]:
+              - generic [ref=e199]:
+                - generic [ref=e202]:
+                  - 'generic "bot''s message: 拍摄有点晃动，可以试试贴近对象放慢拍摄，清晰度会更好。" [ref=e204]':
+                    - paragraph [ref=e207]: 拍摄有点晃动，可以试试贴近对象放慢拍摄，清晰度会更好。
+                  - 'generic "bot''s message: ### 🟢 低风险 **恶性概率**: 4.2% &nbsp;|&nbsp; **不确定性**: 0.175 **ABCD 特征** — A（不对称）`0.46` · B（边界）`0.89` · C（色彩）`0.02` · D（大小）`0.26` **建议**: 综合图片分析，皮损特征属于低风险范围。建议每月自查，若 3 个月内出现颜色加深、边界扩大或出血，请尽快就诊。 *⚠️ 本系统仅供辅助参考，不构成医疗诊断。请务必咨询执业皮肤科医生获取专业意见。*" [ref=e229]':
+                    - generic [ref=e231]:
+                      - heading "🟢 低风险" [level=3] [ref=e232]
+                      - paragraph [ref=e233]:
+                        - strong [ref=e234]: 恶性概率
+                        - text: ": 4.2% |"
+                        - strong [ref=e235]: 不确定性
+                        - text: ": 0.175"
+                      - paragraph [ref=e236]:
+                        - strong [ref=e237]: ABCD 特征
+                        - text: — A（不对称）
+                        - code [ref=e238]: "0.46"
+                        - text: · B（边界）
+                        - code [ref=e239]: "0.89"
+                        - text: · C（色彩）
+                        - code [ref=e240]: "0.02"
+                        - text: · D（大小）
+                        - code [ref=e241]: "0.26"
+                      - paragraph [ref=e242]:
+                        - strong [ref=e243]: 建议
+                        - text: ": 综合图片分析，皮损特征属于低风险范围。建议每月自查，若 3 个月内出现颜色加深、边界扩大或出血，请尽快就诊。"
+                      - paragraph [ref=e244]:
+                        - emphasis [ref=e245]: ⚠️ 本系统仅供辅助参考，不构成医疗诊断。请务必咨询执业皮肤科医生获取专业意见。
+                - button "Copy message" [ref=e210] [cursor=pointer]:
+                  - img [ref=e212]
+          - generic [ref=e90]:
+            - generic [ref=e93]:
+              - generic [ref=e94]: Textbox
+              - textbox "Textbox" [ref=e96]:
+                - /placeholder: 回答 Agent 的追问…
+            - button "发送" [ref=e97] [cursor=pointer]
+          - heading "分诊结果" [level=3] [ref=e102]
+          - generic [ref=e250]:
+            - heading "🟢 低风险" [level=3] [ref=e251]
+            - paragraph [ref=e252]:
+              - strong [ref=e253]: 恶性概率
+              - text: ": 4.2% |"
+              - strong [ref=e254]: 不确定性
+              - text: ": 0.175"
+            - paragraph [ref=e255]:
+              - strong [ref=e256]: ABCD 特征
+              - text: — A（不对称）
+              - code [ref=e257]: "0.46"
+              - text: · B（边界）
+              - code [ref=e258]: "0.89"
+              - text: · C（色彩）
+              - code [ref=e259]: "0.02"
+              - text: · D（大小）
+              - code [ref=e260]: "0.26"
+            - paragraph [ref=e261]:
+              - strong [ref=e262]: 建议
+              - text: ": 综合图片分析，皮损特征属于低风险范围。建议每月自查，若 3 个月内出现颜色加深、边界扩大或出血，请尽快就诊。"
+            - paragraph [ref=e263]:
+              - emphasis [ref=e264]: ⚠️ 本系统仅供辅助参考，不构成医疗诊断。请务必咨询执业皮肤科医生获取专业意见。
+  - contentinfo "Gradio footer navigation" [ref=e103]:
+    - button "通过 API 使用 标志" [ref=e104] [cursor=pointer]:
+      - text: 通过 API 使用
+      - img "标志" [ref=e105]
+    - generic [ref=e106]: ·
+    - link "使用 Gradio 构建 标志" [ref=e107] [cursor=pointer]:
+      - /url: https://gradio.app
+      - text: 使用 Gradio 构建
+      - img "标志" [ref=e108]
+    - generic [ref=e109]: ·
+    - button "设置 设置" [ref=e110] [cursor=pointer]:
+      - text: 设置
+      - img "设置" [ref=e111]
