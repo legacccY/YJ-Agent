@@ -2,16 +2,15 @@
 
 ## 当前状态
 
-- **阶段**：Sprint 1 ✅ + S2.1 ✅ + S2.2 ✅ + S2.3 ✅ + S2.4a ✅ + S2.4b ✅，**Sprint 2 全部完成** ✅
+- **阶段**：Sprint 2 全部完成 ✅ + Sprint 3 进行中（S3.2 ✅ S3.3 ✅ S3.1 ⏳）
 - **完整修订方案**：见 `D:\YJ-Agent\project\plans\sprint_revision_plan.md`
-- **下一步**：Sprint 3（论文图表定稿 + Reader Study + 代码 release）
 
 ### 下次会话启动建议
 
-**S3 冲刺**：
-- S3.1 Reader Study（30 张图，3 reader）
-- S3.2 论文 12 图定稿（主文 ≤7 张）
-- S3.3 代码 release 包（README + reproduce.sh + Zenodo）
+**S3 剩余**：
+- S3.1 Reader Study（30 张图 + 3 reader）——**限速项，需要你推进找人**
+- fig12 Reader Study 图——等 S3.1 数据完成后生成
+- Zenodo DOI 上传（权重 + split csv）——代码 release 最后一步
 
 **关键提醒**：
 - ⚠️ 不要再用 sonnet 子 agent 跑长时间任务，它的心跳监控会狂刷屏
@@ -30,6 +29,12 @@
   4. **缺外部已发表 calibration baseline**：仅 B3 直推一个外部对比，审稿人必问；S1.3 加 Temperature Scaling + Focal Loss
   5. **单一数据集**：仅 ISIC2020 + FP17k；S2.1 加 HAM10000 / PAD-UFES zero-shot
   6. **单 seed**：S2.2 跑 3 seed 报均值±std
+
+- **上次完成（2026-05-09）— Sprint 3 技术部分 ✅**：
+  - **S3.2 fig1 更新**：9 条 baseline（含 I/J），ECE y 轴扩展到 0.70 真实呈现差异，D/E/F AUC 加 3-seed 跨 seed std 误差棒
+  - **S3.2 fig3 更新**：±SEM → ±1.96×SEM（95% CI 带），只保留 VIB 消融变体（A/D/E/F/G），Proposition 2 D vs F 一目了然
+  - **S3.3 代码 release**：README.md（含 Quick Start / 复现步骤 / 9 baseline 说明）/ reproduce.sh（5 步流水线，前 2 步验证通过）/ requirements.txt / LICENSE (MIT)
+  - 62 tests 全绿，reproduce.sh 环境检查 + pytest 验证通过
 
 - **上次完成（2026-05-09）— S2.2 修复（proper seed 42）✅**：
   - 发现原 Phase 4 checkpoints（D/E/F seed42）与重训 seeds（s123/s2024）在 ITB 上呈现两种局部最优：Phase 4 型（AUC 低但 ECE 好），重训型（AUC 高但 ECE 差）
@@ -233,4 +238,4 @@ BRISQUE 对比 sharpness：VisiScore 0.947 vs BRISQUE -0.184
 
 ## 最后更新
 
-2026-05-09 00:10（北京时间）
+2026-05-09 01:10（北京时间）

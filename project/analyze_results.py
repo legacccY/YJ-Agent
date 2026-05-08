@@ -134,18 +134,29 @@ def recompute_summary(preds: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# ── Figure 1: Comparison bars (A / D / E / F) ────────────────────────────────
+# ── Figure 1: Comparison bars ────────────────────────────────────────────────
+# D/E/F AUC error bars = max(bootstrap 95% CI half-width, cross-3seed std)
+
+SEED_AGG_BASELINES = {"D", "E", "F"}  # baselines with 3-seed robustness data
+
+def _load_seed_agg() -> pd.DataFrame:
+    try:
+        return pd.read_csv(Path(ABLATION_CSV).parent / "itb_results_3seed_agg.csv")
+    except FileNotFoundError:
+        return pd.DataFrame()
+
 
 def fig_comparison_bars(df: pd.DataFrame):
     metrics = [
         ("auc",          "AUC-ROC ↑",      (0.4, 1.0)),
-        ("ece",          "Binary ECE ↓",   (0.0, 0.15)),
+        ("ece",          "Binary ECE ↓",   (0.0, 0.70)),
         ("mean_entropy", "Mean Entropy",    None),
     ]
-    fig, axes = plt.subplots(1, 3, figsize=(6.8, 2.5))
+    seed_agg = _load_seed_agg()
+    fig, axes = plt.subplots(1, 3, figsize=(9.0, 2.8))
     x = np.arange(len(SUBSET_ORDER))
     n_b = len(BASELINE_ORDER)
-    width = 0.18
+    width = 0.09
 
     for ax, (col, title, ylim) in zip(axes, metrics):
         for i, bk in enumerate(BASELINE_ORDER):
@@ -157,7 +168,15 @@ def fig_comparison_bars(df: pd.DataFrame):
                 if col == "auc" and s in sub.index:
                     lo = sub.loc[s, "auc_lo"] if not np.isnan(sub.loc[s, "auc_lo"]) else v
                     hi = sub.loc[s, "auc_hi"] if not np.isnan(sub.loc[s, "auc_hi"]) else v
-                    yerr_lo.append(v - lo); yerr_hi.append(hi - v)
+                    boot_lo, boot_hi = v - lo, hi - v
+                    # For D/E/F: use max(bootstrap CI, cross-seed std)
+                    if bk in SEED_AGG_BASELINES and len(seed_agg) > 0:
+                        row = seed_agg[(seed_agg["baseline"] == bk) & (seed_agg["subset"] == s)]
+                        if len(row) > 0:
+                            sd = float(row.iloc[0]["auc_std"])
+                            boot_lo = max(boot_lo, sd)
+                            boot_hi = max(boot_hi, sd)
+                    yerr_lo.append(boot_lo); yerr_hi.append(boot_hi)
                 else:
                     yerr_lo.append(0); yerr_hi.append(0)
 
@@ -216,12 +235,14 @@ def fig_calibration(preds: pd.DataFrame):
     plt.close(fig); print(f"  {out}")
 
 
-# ── Figure 3: Entropy vs q̄ ±SEM ─────────────────────────────────────────────
+# ── Figure 3: Entropy vs q̄ ±95% CI ──────────────────────────────────────────
+# Only shows VIB ablation variants to clearly illustrate Proposition 2.
+FIG3_BASELINES = ["A", "D", "E", "F", "G"]
 
 def fig_entropy_qbar(preds: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(4.5, 2.8))
     n_bins = 6
-    for bk in BASELINE_ORDER:
+    for bk in FIG3_BASELINES:
         b = preds[preds["baseline"] == bk]
         segs = compute_qbar_ece(b["prob_pos"].values, b["target"].values,
                                 b["qbar"].values, n_bins=n_bins)
@@ -230,9 +251,10 @@ def fig_entropy_qbar(preds: pd.DataFrame):
         qmid = np.array([s["q_mean"] for s in segs])
         ent  = np.array([s["entropy_mean"] for s in segs])
         sem  = np.array([s["entropy_sem"] for s in segs])
+        ci95 = 1.96 * sem   # 95% CI half-width
         ax.plot(qmid, ent, "o-", ms=4.5, color=BASELINE_COLORS[bk],
                 label=BASELINE_LABELS[bk].replace("\n", " "), zorder=3)
-        ax.fill_between(qmid, ent - sem, ent + sem, color=BASELINE_COLORS[bk], alpha=0.13, zorder=2)
+        ax.fill_between(qmid, ent - ci95, ent + ci95, color=BASELINE_COLORS[bk], alpha=0.13, zorder=2)
 
     ax.set(xlabel="Mean quality score $\\bar{q}$",
            ylabel="Predictive entropy $H$",
