@@ -1,0 +1,54 @@
+# Stage 1: Basic Restoration Pre-training
+# Loss: L1 + LPIPS (no DP-Loss, no quality constraint)
+# Target: val PSNR ≥ 30 dB (early-stop patience=5)
+
+stage: 1
+
+model:
+  base_channels: 48
+  enc_blocks: [2, 2]
+  mid_blocks: 4
+  dec_blocks: [2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  split_csv:  D:/YJ-Agent/data/isic_split.csv
+  img_size: 128
+  severity: mixed
+  batch_size: 8
+  num_workers: 4
+
+train:
+  epochs: 200
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 5  # stop if val PSNR doesn't improve for 5 epochs
+  resume_from: null
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.0    # Stage 1 用纯 L1，Stage 2 加回 LPIPS
+  lambda_dp: 0.0
+  lambda_quality: 0.0
+  quality_target: 0.55     # unused in stage 1
+
+frozen_models:
+  visiscore_ckpt: D:/YJ-Agent/checkpoints/best_visiscore.pth
+  qvib_ckpt: null          # not used in stage 1
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints/visienhance/stage1
+
+wandb:
+  project: visienhance
+  mode: offline

@@ -5,32 +5,34 @@
 面向自拍皮肤照片的视觉质量引导与智能分诊 Agent。
 核心创新：AI 不直接给诊断，而是先评估照片质量，质量不达标时引导用户重拍，再进行分析。
 
-**投稿目标**：MICCAI 2027
+**投稿目标**：ICLR 2027（CCF-A 级别）
 
 ---
 
-## 7 阶段路线图
+## 8 阶段路线图
 
-| 阶段 | 名称 | 核心目标 | 主要交付物 | 预估耗时 |
-|------|------|---------|-----------|---------|
-| 1 | 环境初始化 | 搭建可运行项目骨架 | 目录结构 + 依赖 + 配置模板 | 1-2 天 |
-| 2 | 数据流水线 | 下载数据，生成配对数据集 | paired_dataset/ + quality_labels.csv | 3-5 天 |
-| 3 | VisiScore-Net | 训练图像质量评估网络 | best_visiscore.pth + 评估报告 | 1-2 周 |
-| 4 | Q-VIB模块 | 质量条件化变分推断 + 分割 + 分类 | Q-VIB 编码器 + 质量自适应先验 + 质量分词器 + 消融实验 | 1-2 周 |
-| 5 | Agent 系统 | ReAct 多轮交互 + Gradio Demo | app.py + 端到端评测 | 1-2 周 |
-| 6 | ITB 评测基准 | 构建 4 子集基准 + 实验对比 | 数据表 + 可视化图 | 1 周 |
-| 7 | 论文写作 | MICCAI 2027 初稿 | main.tex（8 页）+ 图表 | 2-3 周 |
+| 阶段 | 名称 | 核心目标 | 主要交付物 | 状态 |
+|------|------|---------|-----------|------|
+| 1 | 环境初始化 | 搭建可运行项目骨架 | 目录结构 + 依赖 + 配置模板 | ✅ 完成 |
+| 2 | 数据流水线 | 下载数据，生成配对数据集 | paired_dataset/ + quality_labels.csv | ✅ 完成 |
+| 3 | VisiScore-Net | 训练图像质量评估网络 | best_visiscore.pth + 评估报告 | ✅ 完成 |
+| 4 | Q-VIB 模块 | 质量条件化变分推断 + 分类 | Q-VIB 编码器 + 质量自适应先验 + 质量分词器 + 消融实验 | ✅ 完成 |
+| 5 | Agent 系统 | ReAct 多轮交互 + Gradio Demo | app.py + 端到端评测 | ✅ 完成 |
+| 6 | ITB 评测基准 | 构建 4 子集基准 + 9 条 baseline | 数据表 + 可视化图 | ✅ 完成 |
+| **7** | **VisiEnhance-Net** | **诊断保持型质量增强 + 双通道集成** | **增强模块 + 双通道决策 + 12 项实验** | ⏳ 待开始 |
+| **8** | **论文写作** | **ICLR 2027 初稿（CCF-A 标准）** | **main.tex（9 页）+ 附录 + 图表** | ⏳ 待开始 |
 
 ---
 
-## 四大核心创新点
+## 五大核心创新点
 
-| 模块 | 说明 |
-|------|------|
-| **VisiScore-Net** | 5 维质量评估（清晰度/光照/完整度/色温/对比度），输出可操作的引导建议 |
-| **Q-VIB（Quality-Conditioned VIB）** | 将标准 Variational Information Bottleneck 推广到质量条件化：编码器 $p_\phi(z\|x, \mathbf{q})$ 的 KL 约束强度由 $\mathbf{q}$ 动态调控——低质量图先验方差大，强制潜在编码趋向无信息先验，自然产生高熵（低置信度）预测；质量分词器 $u(\mathbf{q}), v(\mathbf{q})$ 注入自注意力层，理论保证注意力漂移有界（Theorem 1）；整个校准过程可微，替代传统硬门控 |
-| **Quality-Aware Diagnosis (QAD)** | 在上述 Q-VIB 概率框架下，集成病灶分割与 ABCD 可解释特征，输出校准后的诊断置信度 |
-| **Iterative Triage Benchmark (ITB)** | 4 子集评测基准，系统评估 Agent 分诊性能 |
+| 模块 | 说明 | 理论保证 |
+|------|------|---------|
+| **VisiScore-Net** | 5 维细粒度质量评估（清晰度/光照/完整度/色温/对比度），输出可操作的引导建议；PLCC=0.924，3.1 ms/张 | — |
+| **Q-VIB（Quality-Conditioned VIB）** | 将标准 VIB 推广到质量条件化：KL 约束强度由 $\mathbf{q}$ 动态调控——低质量图先验宽，自然产生高熵预测；质量分词器注入注意力层 | Lemma 1（先验单调性）+ Proposition 2（熵-质量单调性）+ Theorem 1（注意力漂移界） |
+| **VisiEnhance-Net** | 诊断保持型质量增强：NAFNet backbone + FiLM 质量条件调制，L1 + LPIPS + DP-Loss + 质量约束损失；在 Q-VIB 隐空间中约束增强前后诊断分布一致性 | Proposition 3（增强降低预测熵）+ Lemma 3（DP-Loss 保持诊断互信息） |
+| **双通道 Agent** | 增强路径（VisiEnhance 修复可修复退化）+ 追问路径（不可修复时引导重拍），双通道协同决策；4 通道精细分级（高质/准高质/可增强/极低） | 退化可修复性分析：$q_3$（完整度）不可逆，其余 4 维条件可逆 |
+| **ITB Benchmark** | 4 质量子集评测基准（LQ/HQ/Edge/Diverse），9 条 baseline 覆盖判别、校准后处理、贝叶斯近似、集成方法；填补领域内低质量 AI 分诊专项 benchmark 空白 | — |
 
 ---
 
@@ -158,10 +160,15 @@
 
 进入某阶段时，读取对应文档获取详细工作计划：
 
-- 阶段一：`phase_01_setup.md`
-- 阶段二：`phase_02_data.md`
-- 阶段三：`phase_03_visiscore.md`
-- 阶段四：`phase_04_Q-VIB.md`
-- 阶段五：`phase_05_agent.md`
-- 阶段六：`phase_06_benchmark.md`
-- 阶段七：`phase_07_paper.md`
+| 阶段 | 计划文件 | 状态 |
+|------|---------|------|
+| 阶段一 | `phase_01_setup.md` | ✅ 完成 |
+| 阶段二 | `phase_02_data.md` | ✅ 完成 |
+| 阶段三 | `phase_03_visiscore.md` | ✅ 完成 |
+| 阶段四 | `phase_04_Q-VIB.md` | ✅ 完成 |
+| 阶段五 | `phase_05_agent.md` | ✅ 完成 |
+| 阶段六 | `phase_06_benchmark.md` | ✅ 完成 |
+| **阶段七** | **`phase_07_visienhance.md`** | ⏳ 待开始 |
+| **阶段八** | **`phase_08_paper.md`** | ⏳ 待开始 |
+
+> 技术设计参考：`V2.0plan.md`（VisiEnhance-Net 详细技术报告，含架构图、伪代码、参考文献）

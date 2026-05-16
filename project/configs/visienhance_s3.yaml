@@ -1,0 +1,55 @@
+# Stage 3: Quality-Achievement Constraint
+# Adds hinge loss to push enhanced q̄ ≥ quality_target.
+# Only samples with input q̄ < 0.55 are used (真正的低质量输入).
+# Resume from Stage 2 best checkpoint.
+
+stage: 3
+
+model:
+  base_channels: 48
+  enc_blocks: [2, 2]
+  mid_blocks: 4
+  dec_blocks: [2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  split_csv:  D:/YJ-Agent/data/isic_split.csv
+  img_size: 256
+  severity: mixed
+  batch_size: 4
+  num_workers: 4
+
+train:
+  epochs: 40
+  lr: 5.0e-6
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 999
+  resume_from: D:/YJ-Agent/checkpoints/visienhance/stage2/best_visienhance.pth
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.1
+  lambda_dp: 0.05
+  lambda_quality: 0.1      # hinge: max(0, quality_target - q̄_enh)
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: D:/YJ-Agent/checkpoints/best_visiscore.pth
+  qvib_ckpt:     D:/YJ-Agent/checkpoints/efnet/best_qad.pth
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints/visienhance/stage3
+
+wandb:
+  project: visienhance
+  mode: offline

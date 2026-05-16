@@ -2,10 +2,32 @@
 
 ## 当前状态
 
-- **阶段**：Sprint 2 全部完成 ✅ + Sprint 3 进行中（S3.2 ✅ S3.3 ✅ S3.1 ⏳）
-- **完整修订方案**：见 `D:\YJ-Agent\project\plans\sprint_revision_plan.md`
+- **阶段**：阶段七 VisiEnhance-Net 开发中（代码完成，训练待运行）
+- **Sprint 搁置**：改为对标 ICLR CCF-A 标准，新增 VisiEnhance-Net 阶段
 
 ### 下次会话启动建议
+
+**立刻启动 Stage 1 训练**（弹窗 + Monitor）：
+```
+/loop /run-experiment project/train_visienhance.py project/configs/visienhance_s1.yaml
+```
+或手动弹窗：
+```powershell
+Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd D:/YJ-Agent/project; python train_visienhance.py --config configs/visienhance_s1.yaml'
+```
+然后 Monitor 看 `D:/YJ-Agent/log/experiment_state.json`（stage==1 字段）
+
+**训练参数（已验证）**：
+- img_size=128, batch=8, mid_blocks=4, lambda_lpips=0（Stage 1 纯 L1）
+- 速度：9 it/s，每 epoch 约 16 分钟，Stage 1 预计 ~7 小时
+- GPU：RTX 4070，峰值 1.73 GB，nvidia-smi 确认 82% 占用（Task Manager Compute 栏查看）
+- 输出：日志 → `D:/YJ-Agent/log/train_s1.log`，权重 → `checkpoints/visienhance/stage1/`
+
+**Stage 2/3 配置已就绪**：训练完直接换 config 继续跑
+
+---
+
+### 下次会话启动建议（旧 Sprint，已搁置）
 
 **S3 剩余**：
 - S3.1 Reader Study（30 张图 + 3 reader）——**限速项，需要你推进找人**
