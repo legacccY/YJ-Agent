@@ -1,0 +1,93 @@
+% ============================================================
+% Section: Experiments
+% ============================================================
+
+\section{Experiments}
+\label{sec:experiments}
+
+% ============================================================
+\subsection{Experimental Setup}
+\label{sec:exp:setup}
+
+% TODO: Describe experimental setup.
+%   - Dataset splits (ITB Benchmark + ISIC \cite{codella2018skin,codella2019skin})
+%   - Implementation details: GPU, batch size, optimizer, LR schedule, epochs
+%   - Evaluation metrics: PLCC, SRCC, ECE, NLL, PSNR, SSIM, LPIPS, AUC
+
+\todo{Write experimental setup here.}
+
+% ============================================================
+\subsection{Quality Assessment Results}
+\label{sec:exp:iqa}
+
+% TODO: Compare VisiScore-Net against NR-IQA baselines.
+%   Table: PLCC / SRCC on ITB test set vs. BRISQUE, NIQE, MUSIQ, HyperIQA
+%   Analysis: domain-specific gain, low-quality tail performance.
+
+\todo{Write quality assessment results here.}
+
+% \input{tables/tab_iqa.tex}
+
+% ============================================================
+\subsection{Uncertainty Estimation Results}
+\label{sec:exp:uncertainty}
+
+% TODO: Compare Q-VIB uncertainty quality.
+%   Table: ECE / NLL vs. MC Dropout \cite{gal2016dropout},
+%          Deep Ensembles \cite{lakshminarayanan2017simple},
+%          Temperature Scaling \cite{guo2017calibration}
+%   Figure: reliability diagram, uncertainty-quality correlation scatter plot.
+
+\todo{Write uncertainty estimation results here.}
+
+% \input{tables/tab_uncertainty.tex}
+
+% ============================================================
+\subsection{Enhancement Results}
+\label{sec:exp:enhance}
+
+% TODO: Compare VisiEnhance-Net against restoration baselines.
+%   Table: PSNR / SSIM / LPIPS vs. NAFNet \cite{chen2022simple},
+%          Restormer \cite{zamir2022restormer}, blind enhancement baselines.
+%   Qualitative: figure grid (input / NAFNet / Restormer / ours / GT).
+
+\todo{Write enhancement results here.}
+
+% \input{tables/tab_enhancement.tex}
+
+% ============================================================
+\subsection{End-to-End Diagnostic Evaluation}
+\label{sec:exp:downstream}
+
+% TODO: Show that the dual-channel pipeline improves downstream diagnosis.
+%   Table: AUC / sensitivity / specificity on ISIC test set,
+%          with/without enhancement, with/without uncertainty routing.
+%   Analysis: benefit is concentrated in low-quality subset.
+
+\todo{Write end-to-end diagnostic evaluation here.}
+
+% ============================================================
+\subsection{Ablation Study}
+\label{sec:exp:ablation}
+
+% TODO: Ablation table with following variants:
+%   (a) VisiScore-Net only (no uncertainty)
+%   (b) Q-VIB fixed beta (no quality conditioning)
+%   (c) VisiEnhance-Net without FiLM conditioning
+%   (d) Agent without uncertainty routing
+%   (e) Full model (ours)
+
+\todo{Write ablation study here.}
+
+% \input{tables/tab_ablation.tex}
+
+% ============================================================
+\subsection{Analysis and Discussion}
+\label{sec:exp:discussion}
+
+% TODO:
+%   - Failure case analysis (very dark lesions, hair occlusion)
+%   - Computational cost comparison (FLOPs, inference time)
+%   - Sensitivity analysis on quality threshold tau
+
+\todo{Write analysis and discussion here.}

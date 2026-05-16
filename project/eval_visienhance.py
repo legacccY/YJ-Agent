@@ -276,7 +276,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--config", required=True)
     p.add_argument("--ckpt", required=True, help="VisiEnhance-Net checkpoint")
-    p.add_argument("--b3-ckpt", default="D:/YJ-Agent/checkpoints/finetune/best_efnet.pth")
+    p.add_argument("--b3-ckpt", default="D:/YJ-Agent/checkpoints/efficientnet_b3_isic.pth")
     p.add_argument("--exp", nargs="+", default=["E1", "E3", "E4", "E5", "E6", "E12"])
     args = p.parse_args()
 

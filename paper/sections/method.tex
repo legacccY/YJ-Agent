@@ -1,0 +1,232 @@
+% ============================================================
+% Section: Method
+% ============================================================
+
+\section{Method}
+\label{sec:method}
+
+We propose a unified quality-enhancement-diagnosis framework comprising four components (Figure~\ref{fig:overview}):
+(i)~\textbf{\VisiScore} estimates a 5-dimensional perceptual quality vector $\mathbf{q}$ from the input image;
+(ii)~\textbf{\QVIB} uses $\mathbf{q}$ to condition the Information Bottleneck prior, producing calibrated uncertainty under low-quality inputs;
+(iii)~\textbf{\VisiEnhance} restores degraded images while preserving the diagnostic representation, guided by a novel DP-Loss;
+(iv)~a \textbf{dual-channel agent} routes each case to either enhancement-then-diagnosis or re-capture request, based on degradation recoverability.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig1_overview.pdf}
+  \caption{Overview of the proposed framework.
+    VisiScore-Net estimates image quality $\mathbf{q}$, which conditions the Q-VIB prior.
+    The dual-channel agent routes recoverable degradations through VisiEnhance-Net and
+    severe cases to the re-capture agent.
+    Theoretical guarantees (Lemma~1, Proposition~2/3) are annotated on the corresponding paths.}
+  \label{fig:overview}
+\end{figure}
+
+% ============================================================
+\subsection{VisiScore-Net: Fine-Grained Quality Estimation}
+\label{sec:method:visiscore}
+
+Existing image quality metrics (\eg, BRISQUE~\cite{mittal2012making}, NIMA~\cite{talebi2018nima}) produce a single scalar that conflates independent degradation dimensions.
+In dermoscopy, sharpness, brightness, color temperature, contrast, and lesion completeness affect diagnostic confidence differently.
+We therefore design \VisiScore{} to output a 5-dimensional quality vector $\mathbf{q} = (q_1, \ldots, q_5) \in [0,1]^5$, one score per dimension.
+
+\paragraph{Architecture.}
+The backbone is an EfficientNet-B0~\cite{tan2019efficientnet} pretrained on ImageNet, producing a 1280-dimensional feature vector.
+Five independent regression heads (two-layer MLP, 128 hidden units, Sigmoid output) predict each $q_i$ separately, allowing the model to specialize in each degradation type.
+The scalar mean quality $\bar{q} = \frac{1}{5}\sum_{i=1}^{5} q_i$ summarizes overall image quality.
+
+\paragraph{Training objective.}
+We train on 149,100 paired images spanning three degradation levels (light / medium / heavy) generated from 33,126 ISIC 2020 and 16,574 FitzPatrick17k images.
+The loss combines a pairwise ranking term and an MSE regression term:
+\begin{equation}
+  \mathcal{L}_{\text{VS}} = \sum_{i=1}^{5} \Bigl[
+    \underbrace{\text{MSE}(\hat{q}_i, q_i^*)}_{\text{regression}}
+    + \lambda_r \underbrace{\max(0,\, \hat{q}_i^{\text{low}} - \hat{q}_i^{\text{high}} + \delta)}_{\text{ranking}}
+  \Bigr],
+  \label{eq:visiscore_loss}
+\end{equation}
+where $q_i^*$ is the synthetic ground-truth quality label, $\hat{q}_i^{\text{low}}$ and $\hat{q}_i^{\text{high}}$ are predictions for the degraded and clean versions of the same image, $\delta = 0.1$ is the ranking margin, and $\lambda_r = 0.5$.
+
+\paragraph{Results.}
+VisiScore-Net achieves mean PLCC\,=\,0.924 and SRCC\,=\,0.895 across all five dimensions on the held-out test split, with inference at 3.1\,ms per image.
+The learned $\bar{q}$ separates ISIC 2020 test-set images into significantly different quality strata ($p = 2.85 \times 10^{-28}$, Mann-Whitney U), confirming that $\bar{q}$ is a reliable quality signal for downstream conditioning.
+
+% ============================================================
+\subsection{Q-VIB: Quality-Conditioned Variational Information Bottleneck}
+\label{sec:method:qvib}
+
+\paragraph{Background: VIB.}
+The Variational Information Bottleneck~\cite{alemi2017deep} learns a stochastic encoder $q_\phi(z|x)$ by maximizing the objective
+\begin{equation}
+  \mathcal{L}_{\text{VIB}} = \mathbb{E}_{q_\phi(z|x)}\bigl[\log p_\theta(y|z)\bigr]
+    - \beta\, \mathrm{KL}\bigl[q_\phi(z|x) \,\|\, \mathcal{N}(\mathbf{0}, \mathbf{I})\bigr],
+  \label{eq:vib}
+\end{equation}
+where $\beta > 0$ controls the compression-accuracy trade-off.
+The standard prior $\mathcal{N}(\mathbf{0}, \mathbf{I})$ treats all inputs equally, ignoring image quality.
+
+\paragraph{Quality-Conditioned Adaptive Prior.}
+We replace the fixed isotropic prior with a quality-dependent prior whose variance shrinks for high-quality images and expands for low-quality ones:
+\begin{equation}
+  p_{\bar{q}}(z) = \mathcal{N}\!\left(\mathbf{0},\, \sigma_0^2(\bar{q})\,\mathbf{I}\right), \quad
+  \sigma_0(\bar{q}) = \sigma_{\min} + (\sigma_{\max} - \sigma_{\min})(1 - \bar{q}),
+  \label{eq:adaptive_prior}
+\end{equation}
+with $\sigma_{\min} = 0.05$ and $\sigma_{\max} = 0.5$.
+The Q-VIB objective becomes:
+\begin{equation}
+  \mathcal{L}_{\text{Q-VIB}} = \mathbb{E}_{q_\phi(z|x)}\bigl[\log p_\theta(y|z)\bigr]
+    - \mathrm{KL}\bigl[q_\phi(z|x) \,\|\, p_{\bar{q}}(z)\bigr].
+  \label{eq:qvib}
+\end{equation}
+
+\paragraph{Theoretical Properties.}
+
+\begin{lemma}[Monotone Prior Variance]
+\label{lem:1}
+Under Eq.~\eqref{eq:adaptive_prior}, $\sigma_0^2(\bar{q})$ is strictly decreasing in $\bar{q}$.
+Consequently, the KL penalty is tighter for high-quality inputs, forcing the posterior $q_\phi(z|x)$ to concentrate near the origin, which reduces predictive entropy.
+\end{lemma}
+
+\begin{proposition}[Entropy–Quality Monotonicity]
+\label{prop:2}
+Let $H(\hat{p})$ denote the predictive entropy of the Q-VIB classifier.
+Under the adaptive prior \eqref{eq:adaptive_prior}, $\mathbb{E}[H(\hat{p})]$ is a non-increasing function of $\bar{q}$.
+\end{proposition}
+
+We verify Proposition~\ref{prop:2} empirically: Spearman $\rho = -0.165$ ($p < 10^{-120}$) on ISIC 2020, $\rho = -0.164$ ($p = 5.3 \times 10^{-61}$) on HAM10000, and $\rho = -0.236$ ($p = 1.5 \times 10^{-30}$) on PAD-UFES-20 (Section~\ref{sec:exp:qvib}).
+Standard VIB yields $\rho = -0.024$ ($p = 6 \times 10^{-4}$), confirming that the adaptive prior is responsible for the monotonic relationship.
+
+\paragraph{Architecture.}
+The encoder $q_\phi$ projects EfficientNet-B0 features (1280-D) through a two-layer MLP to produce Gaussian parameters $(\boldsymbol{\mu}, \boldsymbol{\sigma}^2) \in \mathbb{R}^{d} \times \mathbb{R}^{d}_{>0}$, $d = 64$.
+The classifier $p_\theta$ is a linear probe on top of a reparameterized sample $z = \boldsymbol{\mu} + \boldsymbol{\sigma} \odot \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$.
+The quality vector $\mathbf{q}$ is concatenated with the image features before encoding; the mean $\bar{q}$ determines $\sigma_0$ for the KL term.
+At test time, predictive uncertainty is estimated via $M = 10$ Monte Carlo samples with per-sample seeds derived deterministically from the image path (ensuring reproducibility).
+
+% ============================================================
+\subsection{VisiEnhance-Net: Quality-Conditioned Enhancement}
+\label{sec:method:visienhance}
+
+% ---- 3.3 VisiEnhance-Net ----
+
+Image restoration methods such as NAFNet~\cite{chen2022simple} and Restormer~\cite{zamir2022restormer} optimize pixel-level fidelity (PSNR/SSIM) without any constraint on preserving the diagnostic representation.
+An enhancement that improves visual quality may simultaneously distort the features that a downstream classifier relies upon~\cite{}.
+\VisiEnhance{} addresses this by jointly minimizing pixel fidelity and a \emph{diagnosis-preserving loss} (DP-Loss) that keeps the Q-VIB latent distribution of the enhanced image close to that of the clean reference.
+
+\paragraph{Architecture.}
+\VisiEnhance{} adopts a U-Net backbone composed of NAFBlocks~\cite{chen2022simple}:
+a 2-level encoder (2 blocks per level), a 4-block bottleneck, and a symmetric decoder.
+The network processes $128 \times 128$ crops in Stage 1 (basic restoration pre-training) and is up-scaled to $256 \times 256$ in later stages.
+Total parameter count: 1.7\,M.
+
+Quality conditioning is implemented via Feature-wise Linear Modulation (FiLM)~\cite{perez2018film}.
+The defect vector $\tilde{\mathbf{q}} = \mathbf{1} - \mathbf{q} \in [0,1]^5$ is projected by a shared MLP (5\,→\,128\,→\,C channels) to scale/shift parameters $(\gamma, \beta)$ applied after every NAFBlock.
+Crucially, FiLM weights are initialized so that $\gamma \approx 0$, making the network behave as an approximate identity map at the start of training and preventing destructive updates to good-quality inputs.
+
+\paragraph{DP-Loss.}
+Let $p_\phi(\cdot \mid x)$ and $p_\phi(\cdot \mid x^{\text{ref}})$ denote the Q-VIB posterior distributions for the enhanced and clean reference images respectively.
+We define:
+\begin{equation}
+  \mathcal{L}_{\text{DP}} = D_{\mathrm{KL}}\!\bigl(p_\phi(\cdot \mid x^{\text{enh}}) \,\|\, p_\phi(\cdot \mid x^{\text{ref}})\bigr).
+  \label{eq:dp_loss}
+\end{equation}
+
+\begin{lemma}[Diagnosis-Preserving Bound]
+\label{lem:3}
+If $\mathcal{L}_{\text{DP}} \leq \epsilon$, then
+$I(Z_{\text{enh}}; Y) \geq I(Z_{\text{ref}}; Y) - \beta\epsilon$,
+where $\beta$ is the VIB compression coefficient.
+\end{lemma}
+
+In other words, minimizing $\mathcal{L}_{\text{DP}}$ is a \emph{sufficient condition} for the enhanced image to retain at least as much diagnostic mutual information as the reference, up to $\beta\epsilon$.
+The complete proof is in Appendix~\ref{app:proofs}.
+
+\paragraph{Training stages.}
+Training proceeds in three stages with frozen VisiScore-Net and Q-VIB encoders throughout:
+\begin{description}[leftmargin=1em,itemsep=0pt]
+  \item[Stage 1 (basic restoration).]
+    $\mathcal{L} = \mathcal{L}_1$; 200 epochs with early stopping (patience 5, target PSNR $\geq$ 30\,dB); lr $= 10^{-4}$.
+  \item[Stage 2 (DP-Loss fine-tuning).]
+    $\mathcal{L} = \mathcal{L}_1 + 0.05\,\mathcal{L}_{\text{DP}}$; 80 epochs; lr $= 10^{-5}$.
+  \item[Stage 3 (quality-target constraint).]
+    Adds a hinge loss $0.1\cdot\max(0,\, 0.55 - \bar{q}_{\text{enh}})$ on low-quality inputs only ($\bar{q} < 0.55$); 40 epochs; lr $= 5\times 10^{-6}$.
+\end{description}
+
+\paragraph{Theoretical guarantee.}
+
+\begin{proposition}[Enhancement Reduces Diagnostic Uncertainty]
+\label{prop:3}
+If \VisiEnhance{} improves image quality ($\bar{q}(x^{\text{enh}}) > \bar{q}(x)$) and $\mathcal{L}_{\text{DP}} \leq \epsilon$, then
+\begin{equation}
+  \mathbb{E}\bigl[H(\hat{p}_{x^{\text{enh}}})\bigr]
+  \leq \mathbb{E}\bigl[H(\hat{p}_{x})\bigr].
+  \label{eq:prop3}
+\end{equation}
+\end{proposition}
+
+Proposition~\ref{prop:3} follows from Lemma~\ref{lem:1} (higher $\bar{q}$ tightens the KL penalty, concentrating the posterior) combined with Lemma~\ref{lem:3} (DP-Loss prevents the latent from drifting).
+Together, Propositions~\ref{prop:2} and~\ref{prop:3} form a closed theoretical loop: quality is negatively correlated with uncertainty (Prop.~2), and quality-improving enhancement further reduces uncertainty (Prop.~3).
+Experimental verification is in Section~\ref{sec:exp:enhance}.
+
+% ============================================================
+\subsection{Dual-Channel Agent}
+\label{sec:method:agent}
+
+Given estimated quality $\mathbf{q}$ and mean $\bar{q}$, the agent routes each input through one of four channels (Algorithm~\ref{alg:agent}):
+
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{A1} ($\bar{q} \geq 0.60$): high-quality; direct Q-VIB diagnosis.
+  \item \textbf{A2} ($0.50 \leq \bar{q} < 0.60$): borderline quality; direct diagnosis with a low-confidence flag.
+  \item \textbf{B} ($0.35 \leq \bar{q} < 0.50$): recoverable degradation; apply \VisiEnhance{}, then re-assess quality.
+    If $\bar{q}_{\text{enh}} \geq 0.50$, proceed to Q-VIB; otherwise fall through to re-capture.
+  \item \textbf{C} ($\bar{q} < 0.35$, or $q_3 < 0.40$): severe or irrecoverable degradation (lesion truncation); request re-capture.
+\end{itemize}
+
+The completeness score $q_3$ acts as a hard gate: truncated lesions cannot be recovered by any pixel-level enhancement because the missing information is irreversible.
+This is the decision-theoretic analog of Lemma~\ref{lem:3}—when $I(Z; Y)$ is structurally bounded by missing data, DP-Loss cannot compensate.
+
+\begin{algorithm}[t]
+\caption{Dual-Channel Agent Inference}
+\label{alg:agent}
+\begin{algorithmic}[1]
+  \REQUIRE image $x$; thresholds $\tau_{\text{hi}}=0.60$, $\tau_{\text{lo}}=0.35$, $\tau_{\text{enh}}=0.50$, $\tau_{q_3}=0.40$
+  \STATE $\mathbf{q} \leftarrow \textsc{VisiScore}(x)$; $\bar{q} \leftarrow \frac{1}{5}\sum q_i$
+  \IF{$\bar{q} < \tau_{\text{lo}}$ \OR $q_3 < \tau_{q_3}$}
+    \RETURN \textit{re-capture request}  \hfill\COMMENT{Channel C}
+  \ELSIF{$\bar{q} < \tau_{\text{hi}}$}
+    \STATE $x^{\text{enh}} \leftarrow \textsc{VisiEnhance}(x, \mathbf{q})$
+    \STATE $\bar{q}_{\text{enh}} \leftarrow \text{mean}(\textsc{VisiScore}(x^{\text{enh}}))$
+    \IF{$\bar{q}_{\text{enh}} \geq \tau_{\text{enh}}$}
+      \RETURN $\textsc{QVIB}(x^{\text{enh}}, \mathbf{q}_{\text{enh}})$  \hfill\COMMENT{Channel B success}
+    \ELSE
+      \RETURN \textit{re-capture request}  \hfill\COMMENT{Channel B fail}
+    \ENDIF
+  \ELSE
+    \RETURN $\textsc{QVIB}(x, \mathbf{q})$  \hfill\COMMENT{Channel A}
+  \ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+% ============================================================
+\subsection{ITB: Image-quality Triage Benchmark}
+\label{sec:method:itb}
+
+Existing dermoscopy benchmarks (ISIC Challenge~\cite{codella2018skin,codella2019skin}) provide no quality stratification, making it impossible to evaluate model robustness to real-world degradation.
+We construct the \textbf{Image-quality Triage Benchmark (ITB)} from the ISIC 2020 and FitzPatrick17k test splits to fill this gap.
+
+\paragraph{Construction.}
+Using VisiScore-Net $\bar{q}$ scores on the held-out test split (strictly no overlap with training data), we define four subsets:
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{ITB-HQ} ($\bar{q} > 0.50$, $N = 360$): high-quality reference.
+  \item \textbf{ITB-LQ} ($\bar{q} < 0.45$, $N = 300$): genuinely degraded inputs.
+  \item \textbf{ITB-Edge} ($0.40 \leq \bar{q} \leq 0.55$, $N = 660$): borderline quality.
+  \item \textbf{ITB-Diverse} (FitzPatrick17k, $N = 1{,}500$, Fitzpatrick scale I–VI balanced): cross-skin-tone generalization.
+\end{itemize}
+
+\paragraph{Evaluation metrics.}
+Each baseline is evaluated on: AUC-ROC (with bootstrap 95\% CI), classwise binary ECE (lower is better), Brier Score, and mean predictive entropy.
+For uncertainty baselines, we additionally report Spearman $\rho$ between entropy and $\bar{q}$ as a direct test of Proposition~\ref{prop:2}.
+
+\paragraph{Baselines.}
+ITB evaluates nine baselines: EfficientNet-B3 (B3), Std VIB (D), Adaptive Prior (E), Q-VIB Full (F, ours), Q-VIB+TokFT (G), Temperature Scaling (H), Focal+LabelSmooth (I), MC Dropout (J), and Deep Ensemble (K).
+All baselines are trained on identical data splits and evaluated with fixed random seeds for reproducibility.

@@ -1,0 +1,49 @@
+% ============================================================
+% Section: Related Work
+% ============================================================
+
+\section{Related Work}
+\label{sec:related}
+
+% TODO: Write related work (~1 page, 3–4 subsections)
+
+% ---- 2.1 -----------------------------------------------
+\subsection{Blind Image Quality Assessment}
+\label{sec:related:iqa}
+
+No-reference image quality assessment (NR-IQA) methods predict perceptual quality without access to a clean reference image.
+BRISQUE~\cite{mittal2012making} extracts hand-crafted natural scene statistics and outputs a single scalar quality score, making it unsuitable for conditioning downstream models on fine-grained quality signals.
+NIMA~\cite{talebi2018nima} learns to predict the distribution of human aesthetic ratings but still collapses quality into one dimension and is trained on general photographic datasets with no exposure to clinical imaging artifacts.
+More recent CLIP-based approaches such as CLIP-IQA leverage vision-language alignment for zero-shot quality estimation, yet their general-domain training yields poor calibration on dermoscopic imaging where domain-specific distortions (contact artifacts, uneven illumination, specular highlights) dominate.
+In contrast, VisiScore-Net decomposes quality into five clinically motivated dimensions—focus, illumination, contrast, completeness, and artifact—providing a differentiable, multi-dimensional quality vector that downstream modules can directly condition on.
+
+% ---- 2.2 -----------------------------------------------
+\subsection{Uncertainty Estimation in Deep Learning}
+\label{sec:related:uncertainty}
+
+Principled uncertainty quantification is essential for safety-critical deployment of medical AI.
+MC Dropout~\cite{gal2016dropout} approximates Bayesian inference by sampling stochastic forward passes at test time, but its uncertainty estimates are not informed by input quality, causing overconfident predictions on severely degraded images.
+Deep Ensembles~\cite{lakshminarayanan2017simple} train multiple independent networks and aggregate their predictive distributions; while empirically strong, this approach is computationally expensive and likewise provides no mechanism to modulate uncertainty based on observed image quality.
+The Variational Information Bottleneck (VIB)~\cite{alemi2017deep} offers a principled information-theoretic compression framework: the encoder is trained to retain only task-relevant features by penalizing the KL divergence between the latent posterior and a fixed Gaussian prior.
+However, a fixed prior cannot reflect the varying reliability of the input signal—a low-quality image should induce a broader, higher-entropy posterior than a high-quality one.
+Our Quality-conditioned VIB (Q-VIB) replaces the fixed prior with a quality-adaptive prior whose variance is a learned function of the VisiScore vector, directly embedding quality information into the KL regularization; we prove (Proposition~2) and empirically verify on three datasets that predictive entropy decreases monotonically with quality ($\rho = -0.165$, $p < 10^{-120}$ on ISIC).
+
+% ---- 2.3 -----------------------------------------------
+\subsection{Image Restoration and Enhancement}
+\label{sec:related:enhancement}
+
+Learning-based image restoration has advanced rapidly.
+NAFNet~\cite{chen2022simple} simplifies non-linear activation functions for efficient denoising and deblurring, achieving state-of-the-art PSNR on standard benchmarks.
+Restormer~\cite{zamir2022restormer} introduces a transformer-based architecture with multi-scale attention, excelling at deraining and deblurring tasks.
+Diffusion-based methods such as DiffBIR further improve perceptual quality by leveraging generative priors.
+Despite strong distortion metrics, none of these methods constrain the restoration process to preserve task-relevant features: improving PSNR/SSIM does not guarantee that the enhanced image retains the diagnostic information critical for downstream classification, and the change in AUC ($|\Delta\mathrm{AUC}|$) is left unconstrained.
+VisiEnhance-Net addresses this gap with a Diagnosis-Preserving Loss (DP-Loss) that aligns the latent representations of enhanced and reference images in the Q-VIB feature space, providing a principled bound on diagnostic drift.
+
+% ---- 2.4 -----------------------------------------------
+\subsection{Dermoscopic Image Analysis and Triage}
+\label{sec:related:dermoscopy}
+
+Automated dermoscopy analysis has matured considerably, with deep neural networks achieving or exceeding dermatologist-level performance on curated benchmarks such as ISIC~2018 and HAM10000.
+Yet top-performing systems implicitly assume that input images meet a minimum quality threshold; in practice, images captured by non-specialist users with smartphone dermoscopes exhibit substantial quality variation, and AUC degrades markedly on low-quality subsets.
+Existing triage workflows treat quality control as a hard binary gate—either the image is accepted or the user is asked to retake it—with no intermediate repair pathway.
+Our dual-channel agent closes this gap by routing images through a quality-conditioned pipeline: recoverable degradations are corrected by VisiEnhance-Net before diagnosis, while unrecoverable images (flagged by low completeness score $q_3$) trigger a retake request, explicitly modeling the quality-diagnosis relationship rather than assuming it away.

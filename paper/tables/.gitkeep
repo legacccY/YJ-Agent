@@ -1,0 +1,8 @@
+# tables/
+# 放置独立的 LaTeX 表格文件，用 \input{tables/xxx} 引入。
+# 命名规范：
+#   tab_iqa.tex         — 质量评估对比表
+#   tab_uncertainty.tex — 不确定度估计对比表（ECE/NLL）
+#   tab_enhancement.tex — 图像增强对比表（PSNR/SSIM/LPIPS）
+#   tab_downstream.tex  — 下游诊断结果表（AUC）
+#   tab_ablation.tex    — 消融实验表

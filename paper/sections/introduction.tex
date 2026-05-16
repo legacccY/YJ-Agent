@@ -1,0 +1,65 @@
+% ============================================================
+% Section: Introduction
+% ============================================================
+
+\section{Introduction}
+\label{sec:intro}
+
+% TODO: Write introduction (~1 page)
+%
+% Suggested structure:
+%   Para 1 — Clinical context: dermoscopy importance, prevalence of skin cancer,
+%             need for automated analysis.
+%   Para 2 — Problem: image quality heterogeneity (blur, artifact, illumination)
+%             degrades CNN/ViT-based diagnostic models.
+%   Para 3 — IQA literature gap: NR-IQA methods are domain-agnostic; no
+%             principled uncertainty quantification for medical IQA.
+%   Para 4 — Enhancement literature gap: blind enhancement ignores quality
+%             score feedback; no closed-loop quality-enhancement pipeline.
+%   Para 5 — Our solution: brief overview of the 5 contributions.
+%   Para 6 — Contributions bullet list (5 items).
+%   Para 7 — Paper organization.
+
+% Para 1 — General ML reliability under distribution shift
+The reliability of machine learning systems degrades when inputs deviate from the training distribution.
+This challenge is well-documented across domains: autonomous driving models suffer significant performance drops on night-time or rain-degraded images, and speech recognition accuracy collapses under heavy background noise.
+The underlying cause is the same in each case—the model's learned representations assume a certain level of input fidelity, and that assumption is silently violated at deployment.
+Addressing this requires not just better models, but principled mechanisms for \emph{detecting} poor input quality and \emph{modulating} predictions accordingly.
+
+% Para 2 — Clinical urgency in smartphone dermoscopy
+In clinical dermatology, affordable smartphone-based dermoscopes have expanded access to early skin lesion screening, particularly in resource-limited settings where specialist availability is scarce.
+However, the resulting images are highly heterogeneous in quality: inconsistent contact pressure causes motion blur, uncontrolled illumination introduces specular highlights and shadowing, and incomplete lesion framing leads to diagnostic information loss.
+Studies have shown that state-of-the-art dermoscopy AI models experience substantial AUC degradation on low-quality image subsets, yet are rarely equipped to quantify or communicate this uncertainty to the clinician.
+For triage applications—where the downstream consequence of a false negative may be a missed melanoma—silent failure is clinically unacceptable.
+
+% Para 3 — The fragmentation of quality estimation and diagnostic AI
+Current practice treats image quality assessment and diagnostic inference as two independent modules with no principled bridge.
+No-reference quality estimators such as BRISQUE~\cite{mittal2012making} produce a scalar signal that is neither calibrated to clinical relevance nor integrated into the uncertainty output of the downstream classifier.
+As a result, classifiers based on MC Dropout~\cite{gal2016dropout} or Deep Ensembles~\cite{lakshminarayanan2017simple} remain blind to image quality: their uncertainty estimates are equally confident regardless of whether the input is sharp and well-lit or blurred and artifact-contaminated, producing miscalibrated Expected Calibration Errors (ECE) on low-quality data.
+
+% Para 4 — The missing repair pathway
+When quality is poor, existing triage pipelines offer only a binary choice: accept the image or ask for a retake.
+Image restoration methods such as NAFNet~\cite{chen2022simple} and Restormer~\cite{zamir2022restormer} can improve perceptual metrics, but optimizing PSNR or SSIM provides no guarantee that the enhanced image preserves the diagnostic features the classifier relies on—a spurious texture improvement may alter the model's prediction while the underlying pathology signal is unchanged or even degraded.
+No existing work closes the loop between quality estimation, uncertainty-aware diagnosis, and diagnosis-preserving enhancement within a single framework.
+
+% Para 5 — Our solution
+We present \textbf{VisiSkin-Agent}, a unified framework that integrates fine-grained quality estimation, quality-conditioned uncertainty modeling, and diagnosis-preserving enhancement for smartphone dermoscopy triage.
+Three components form the core: \textbf{VisiScore-Net} characterizes image quality along five clinically motivated dimensions; \textbf{Q-VIB} embeds the quality vector into an adaptive VIB prior, provably linking predictive entropy to quality (Proposition~2); and \textbf{VisiEnhance-Net} restores low-quality images under a Diagnosis-Preserving Loss that bounds diagnostic drift (Proposition~3).
+A dual-channel agent routes images through this pipeline, repairing recoverable degradations and requesting retakes only when restoration is theoretically insufficient.
+
+% Para 6 — Contributions
+Our contributions are as follows:
+\begin{itemize}
+  \item \textbf{VisiScore-Net}: A five-dimensional dermoscopy quality estimator (focus, illumination, contrast, completeness, artifact) achieving PLCC$=0.924$ and SRCC$=0.895$, providing a differentiable quality signal for downstream conditioning.
+
+  \item \textbf{Q-VIB}: A Quality-conditioned Variational Information Bottleneck that replaces the fixed VIB prior with a quality-adaptive prior. We prove (Proposition~2) that predictive entropy is monotonically decreasing in mean quality $\bar{q}$, verified empirically across three datasets (ISIC: $\rho=-0.165$, HAM10000: $\rho=-0.164$, PAD-UFES: $\rho=-0.236$; all $p < 10^{-30}$), with calibration gains of ECE $0.149$ vs.\ $0.613$ (MC Dropout) and $0.440$ (Deep Ensemble) on low-quality inputs.
+
+  \item \textbf{VisiEnhance-Net}: A diagnosis-preserving enhancement network trained with DP-Loss, which constrains Q-VIB latent representations of enhanced and reference images. Proposition~3 establishes that enhancement reduces predictive entropy for recoverable images. \todo{fill after training: report PSNR and $|\Delta\text{AUC}|$ numbers.}
+
+  \item \textbf{Dual-Channel Agent}: An inference-time routing agent that directs recoverable images through VisiEnhance-Net and flags unrecoverable images (identified by low completeness score $q_3$) for retake, closing the quality-diagnosis loop without requiring model retraining.
+
+  \item \textbf{ITB Benchmark}: An Image-quality-stratified Triage Benchmark partitioning three public dermoscopy datasets into four quality subsets, with evaluation across nine baselines. Q-VIB consistently improves calibration on low-quality inputs, demonstrating cross-dataset generalization.
+\end{itemize}
+
+% Para 7 — Paper organization
+The remainder of this paper is organized as follows: Section~\ref{sec:related} reviews related work; Section~3 details the VisiScore-Net quality estimator; Section~4 presents the Q-VIB uncertainty model and its theoretical properties; Section~5 describes VisiEnhance-Net and the DP-Loss; Section~6 introduces the dual-channel agent; Section~7 presents experiments on the ITB Benchmark; and Section~8 concludes.

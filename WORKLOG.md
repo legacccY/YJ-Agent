@@ -2,28 +2,39 @@
 
 ## 当前状态
 
-- **阶段**：阶段七 VisiEnhance-Net 开发中（代码完成，训练待运行）
-- **Sprint 搁置**：改为对标 ICLR CCF-A 标准，新增 VisiEnhance-Net 阶段
+- **阶段**：阶段七 VisiEnhance-Net + 阶段八论文写作并行进行
+- **Sprint 搁置**：改为对标 ICLR CCF-A 标准
 
-### 下次会话启动建议
+### ⚠️ 待决策：Stage 1 模型容量问题
 
-**立刻启动 Stage 1 训练**（弹窗 + Monitor）：
-```
-/loop /run-experiment project/train_visienhance.py project/configs/visienhance_s1.yaml
-```
-或手动弹窗：
-```powershell
-Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd D:/YJ-Agent/project; python train_visienhance.py --config configs/visienhance_s1.yaml'
-```
-然后 Monitor 看 `D:/YJ-Agent/log/experiment_state.json`（stage==1 字段）
+Stage 1 训练于 2026-05-16 启动，运行 29 epoch（~9 小时）后手动停止：
+- 最佳 val PSNR：**25.55 dB**（目标 ≥ 30 dB，未达标）
+- 最佳 val SSIM：**0.9535**（目标 > 0.92，已达标 ✅）
+- 根本原因：实现的 VisiEnhanceNet 仅 **1.7M 参数**，容量不足（原计划 NAFNet-64 约 67M）
 
-**训练参数（已验证）**：
-- img_size=128, batch=8, mid_blocks=4, lambda_lpips=0（Stage 1 纯 L1）
-- 速度：9 it/s，每 epoch 约 16 分钟，Stage 1 预计 ~7 小时
-- GPU：RTX 4070，峰值 1.73 GB，nvidia-smi 确认 82% 占用（Task Manager Compute 栏查看）
-- 输出：日志 → `D:/YJ-Agent/log/train_s1.log`，权重 → `checkpoints/visienhance/stage1/`
+**下次会话第一件事**：决定方向
+- **方案 A**：换大 config（base_channels=64, mid_blocks=8，预估 ~15M 参数），重新跑 Stage 1（预计 ~30-40 小时）
+- **方案 B**：接受 25-26 dB，调整论文 E1 目标为 ≥ 26 dB，核心仍靠 E3（|ΔAUC| < 1.5%）
+- 权重保存位置：`checkpoints/visienhance/stage1/`（29 epoch 的 checkpoint 仍存在）
 
-**Stage 2/3 配置已就绪**：训练完直接换 config 继续跑
+### 论文进度（D:/YJ-Agent/paper/）
+
+| 章节 | 状态 |
+|------|------|
+| LaTeX 骨架（11 个文件）| ✅ 就位 |
+| Method 3.1 VisiScore-Net | ✅ 完成 |
+| Method 3.2 Q-VIB | ✅ 完成（含 Lemma 1、Proposition 2、三数据集 ρ 值）|
+| Method 3.3 VisiEnhance-Net | ✅ 完成（含 DP-Loss、Proposition 3、三阶段训练）|
+| Method 3.4 双通道 Agent | ✅ 完成（含 Algorithm 伪代码）|
+| Method 3.5 ITB Benchmark | ✅ 完成 |
+| Related Work | ✅ 完成（4 方向）|
+| Introduction | ✅ 完成（7 段）|
+| Abstract | ⏳ 待写 |
+| Experiments | ⏳ 框架可写，E3/E5 数字等训练完 |
+| Conclusion | ⏳ 待写 |
+| Appendix（定理证明）| ⏳ 待写 |
+
+**编译**：需从 ICLR 官方下载 `iclr2027_conference.sty` 放入 `D:/YJ-Agent/paper/`
 
 ---
 

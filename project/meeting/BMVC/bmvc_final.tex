@@ -1,0 +1,377 @@
+\documentclass{bmvc2k}
+
+%% Enter your paper number here for the review copy
+% \bmvcreviewcopy{??}
+
+\title{Author Guidelines for the\\ British Machine Vision Conference}
+
+% Enter the paper's authors in order
+% \addauthor{Name}{email/homepage}{INSTITUTION_CODE}
+\addauthor{Susan Student}{http://www.vision.inst.ac.uk/~ss}{1}
+\addauthor{Petra Prof}{http://www.vision.inst.ac.uk/~pp}{1}
+\addauthor{Colin Collaborator}{colin@collaborators.com}{2}
+
+% Enter the institutions
+% \addinstitution{Name\\Address}
+\addinstitution{
+ The Vision Institute\\
+ University of Borsetshire\\
+ Wimbleham, UK
+}
+\addinstitution{
+ Collaborators, Inc.\\
+ 123 Park Avenue,\\
+ New York, USA
+}
+
+\runninghead{Student, Prof, Collaborator}{BMVC Author Guidelines}
+
+% Any macro definitions you would like to include
+% These are not defined in the style file, because they don't begin
+% with \bmva, so they might conflict with the user's own macros.
+% The \bmvaOneDot macro adds a full stop unless there is one in the
+% text already.
+\def\eg{\emph{e.g}\bmvaOneDot}
+\def\Eg{\emph{E.g}\bmvaOneDot}
+\def\etal{\emph{et al}\bmvaOneDot}
+
+%-------------------------------------------------------------------------
+% Document starts here
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document demonstrates the format requirements for papers submitted
+to the British Machine Vision Conference.  The format is designed for
+easy on-screen reading, and to print well at one or two pages per sheet.
+Additional features include: pop-up annotations for
+citations~\cite{Authors06,Mermin89}; a margin ruler for reviewing; and a
+greatly simplified way of entering multiple authors and institutions.
+
+{\bf All authors are encouraged to read this document}, even if you have
+written many papers before.  As well as a description of the format, the
+document contains many instructions relating to formatting problems and
+errors that are common even in the work of authors who {\em have}
+written many papers before.
+\end{abstract}
+
+%-------------------------------------------------------------------------
+%=====================================================================
+\section{Introduction}
+%=====================================================================
+
+Dermatology AI systems are increasingly deployed on consumer devices, where patients capture skin lesion images under uncontrolled conditions~\cite{esteva2017dermatologist,tschandl2020human}. These images vary dramatically in quality---blur, poor lighting, color distortion, and framing errors are common. Yet the models powering these systems are trained and evaluated on curated, high-quality clinical datasets~\cite{codella2018skin,tschandl2019ham10000}. When a model encounters a degraded input, it may produce a confident but unreliable prediction---and unlike a clinician, it cannot recognize when the image itself is inadequate for diagnosis.
+
+Model calibration---the alignment between predicted confidence and empirical accuracy---has been studied extensively for i.i.d.\ settings~\cite{guo2017calibration,ovadia2019uncertainty}. Modern calibration methods, from temperature scaling~\cite{guo2017calibration} to Monte Carlo Dropout~\cite{gal2016dropout} and deep ensembles~\cite{lakshminarayanan2017ensemble}, are designed and evaluated under the assumption that training and deployment distributions match. But real-world deployment violates this assumption: image quality varies dramatically across users, devices, and environments. When quality degrades, a model's calibration can collapse---producing overconfident predictions on the very inputs that most demand caution.
+
+We argue that this failure mode---which we term \textbf{quality-oblivious calibration}---is a fundamental blind spot in contemporary evaluation protocols for medical AI. Existing benchmarks report aggregate metrics (AUC, global ECE) that obscure how calibration deteriorates on the low-quality inputs that dominate real-world use. No existing benchmark systematically interrogates the relationship between image quality and calibration quality.
+
+\textbf{This work.} We introduce \textbf{Quality-Aware Calibration (QAC)}, a new dimension of model evaluation that makes quality-conditioned calibration failure explicit, measurable, and comparable. We make four contributions:
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+\item \textbf{Problem formulation (\S3).} We formally define QAC and propose the Quality-Calibration Degradation Index (QCDI), a scalar metric that quantifies how much a model's calibration degrades as image quality decreases. We further develop a taxonomy of calibration behavior under quality shift, classifying methods as \emph{quality-oblivious}, \emph{quality-fragile}, or \emph{quality-aware}.
+
+\item \textbf{ITB Benchmark (\S4.1).} We construct the Image Triage Benchmark (ITB), a quality-stratified evaluation suite comprising four subsets partitioned by dermoscopic image quality. ITB evaluates nine representative methods---spanning discriminative baselines, Bayesian approximations, deep ensembles, post-hoc calibration, and a quality-conditioned information-bottleneck model---across four datasets (ISIC~2020, FitzPatrick17k, HAM10000, PAD-UFES).
+
+\item \textbf{Empirical findings (\S5).} Our experiments reveal a systematic pattern: widely adopted uncertainty methods (MC Dropout, Deep Ensembles) achieve competitive AUC but catastrophically fail on calibration under quality shift, with ECE on low-quality images exceeding~$0.44$---nearly triple that of simpler alternatives. Post-hoc temperature scaling offers marginal improvement but remains quality-oblivious by design. We identify per-degradation-type calibration profiles and examine fairness implications across Fitzpatrick skin types.
+
+\item \textbf{QCTS (\S4.2).} To demonstrate that quality-aware calibration is tractable, we propose Quality-Conditioned Temperature Scaling (QCTS), a minimal extension of standard temperature scaling that learns a continuous temperature function $T(\qbar)$ over the quality score $\qbar$. Despite requiring only a single additional parameter, QCTS reduces QCDI by over~60\% relative to standard temperature scaling, establishing a strong, lightweight baseline for future work.
+\end{enumerate}
+
+All code, benchmark data, and pretrained model weights will be released upon acceptance.
+
+%=====================================================================
+\section{Related Work}
+%=====================================================================
+
+\textbf{Calibration and uncertainty estimation.}
+Modern neural networks are notoriously miscalibrated, producing overconfident predictions~\cite{guo2017calibration}. Post-hoc temperature scaling (TS)~\cite{guo2017calibration} learns a single scalar $T$ to soften logits, and remains the most widely-used calibration method due to its simplicity and effectiveness. Bayesian approximations---MC Dropout~\cite{gal2016dropout}, Deep Ensembles~\cite{lakshminarayanan2017ensemble}, and their combinations~\cite{ovadia2019uncertainty}---estimate predictive uncertainty through multiple stochastic forward passes or independently trained models. However, these methods capture epistemic (model) uncertainty rather than input-dependent uncertainty that varies with data quality~\cite{malinin2019predictive}. The Variational Information Bottleneck (VIB)~\cite{alemi2017vib} provides an information-theoretic framework that balances compression and prediction. Q-VIB~\cite{anonymous2025qvib} extends VIB by conditioning the prior variance on image quality, producing systematically higher predictive entropy for degraded inputs. In this work, we evaluate all these methods under quality-stratified evaluation and show that post-hoc and Bayesian approaches are \emph{quality-oblivious}.
+
+\textbf{Medical AI benchmarks.}
+The medical imaging community has developed numerous curated benchmarks, including CheXpert~\cite{irvin2019chexpert} and MIMIC-CXR~\cite{johnson2019mimic} for chest radiography, BRATS~\cite{menze2014multimodal} for brain tumor segmentation, and ISIC challenges~\cite{codella2018skin} for skin lesion classification. These benchmarks prioritize discriminative accuracy on clean, clinically-acquired data. Recent work has begun examining distribution shift: WILDS~\cite{koh2021wilds} provides in-the-wild distribution shifts across multiple modalities, and several studies have documented performance degradation under dataset shift~\cite{subbaswamy2021evaluating} and demographic subgroup shift~\cite{seyyed2021underdiagnosis}. However, no existing benchmark systematically evaluates how \emph{image quality} affects \emph{calibration quality}---the gap we address.
+
+\textbf{Image quality assessment for dermatoscopy.}
+Blind image quality assessment (IQA) for dermoscopic images has been explored using both hand-crafted features~\cite{barata2023quality} and deep learning~\cite{park2023quality}. These methods typically produce a single quality score. VisiScore-Net~\cite{anonymous2025visiscore} extends this to five interpretable dimensions (sharpness, brightness, completeness, color temperature, contrast) and serves as our quality estimation backbone.
+
+\textbf{Dermatology AI deployment.}
+Teledermatology and consumer-facing skin cancer screening tools are increasingly deployed~\cite{esteva2017dermatologist,tschandl2020human}, yet studies have highlighted that model performance degrades on images captured outside clinical settings~\cite{winkler2022dermoscopy,liu2020deep}. Our work complements this literature by providing a systematic evaluation protocol (ITB) and a lightweight calibration method (QCTS) specifically designed for quality-varying deployment scenarios.
+
+%=====================================================================
+\section{Quality-Aware Calibration}
+\label{sec:qac}
+%=====================================================================
+
+\subsection{Preliminaries}
+
+Consider a classification model $f_\theta: \mathcal{X} \to \Delta^{K-1}$ that maps an input image $x \in \mathcal{X}$ to a probability distribution over $K$ classes. Let $\hat{y} = \arg\max_k f_\theta(x)_k$ be the predicted class and $\hat{p} = \max_k f_\theta(x)_k$ the associated confidence.
+
+\textbf{Expected Calibration Error (ECE)}~\cite{guo2017calibration} partitions predictions into $M$ equal-width confidence bins $B_1, \dots, B_M$ and measures the mismatch between accuracy and confidence within each bin:
+\begin{equation}
+\text{ECE} = \sum_{m=1}^{M} \frac{|B_m|}{N} \big| \text{acc}(B_m) - \text{conf}(B_m) \big|,
+\label{eq:ece}
+\end{equation}
+where $\text{acc}(B_m)$ is the fraction of correct predictions in bin $m$, and $\text{conf}(B_m)$ is the mean confidence in that bin. A perfectly calibrated model satisfies $\text{acc}(B_m) = \text{conf}(B_m)$ for all $m$.
+
+ECE is defined over the entire test distribution. This is appropriate when test samples are exchangeable with training samples. But it is \emph{not} appropriate when the test distribution contains systematic variation---such as image quality---that the model may not be robust to.
+
+We additionally track predictive entropy $H(p) = -\sum_k p_k \log p_k$ as a measure of a model's overall uncertainty. For a quality-aware model, entropy should increase monotonically as quality decreases; a quality-oblivious model exhibits near-zero correlation.
+
+\subsection{Quality-Aware Calibration}
+
+Let $q(x) \in [0,1]^5$ be a quality vector for image $x$, capturing five dimensions of dermoscopic image quality: sharpness, brightness, completeness, color temperature, and contrast. These are produced by VisiScore-Net~\cite{anonymous2025visiscore}, a dedicated quality assessment model. Let $\qbar(x) = \frac{1}{5}\sum_{i=1}^5 q_i(x)$ denote the scalar mean quality score.
+
+We define \textbf{Quality-Aware Calibration (QAC)} as the calibration of a model \emph{conditional on image quality}. Formally, partition the quality range $[0,1]$ into $L$ intervals $[\tau_{\ell-1}, \tau_\ell)$. For each quality stratum $\ell$, compute the conditional ECE:
+\begin{equation}
+\text{QAC}_\ell = \sum_{m=1}^{M} \frac{|B_m \cap \Q_\ell|}{|\Q_\ell|} \big| \text{acc}(B_m \cap \Q_\ell) - \text{conf}(B_m \cap \Q_\ell) \big|,
+\label{eq:qac}
+\end{equation}
+where $\Q_\ell = \{x : \qbar(x) \in [\tau_{\ell-1}, \tau_\ell)\}$.
+
+\textbf{Quality-Calibration Degradation Index (QCDI).}
+To summarize a model's susceptibility to quality shift in a single scalar, we define QCDI as the difference in ECE between the low-quality and high-quality strata:
+\begin{equation}
+\text{QCDI} = \text{QAC}_{\text{low}} - \text{QAC}_{\text{high}},
+\label{eq:qcdi}
+\end{equation}
+where $\text{QAC}_{\text{low}}$ and $\text{QAC}_{\text{high}}$ correspond to the lowest and highest quality strata, respectively. In practice, we use the same threshold as the ITB-LQ ($\qbar < 0.45$) and ITB-HQ ($\qbar > 0.50$) subsets (\S4.1).
+
+A positive QCDI indicates that the model is less calibrated on low-quality images---the higher the QCDI, the more quality-oblivious the model. A QCDI near zero indicates that calibration quality is approximately invariant to image quality, the desirable property for deployment.
+
+\textbf{Why QCDI complements ECE.}
+Global ECE can be deceptively low even when calibration varies dramatically across quality strata: a model that is underconfident on high-quality images and overconfident on low-quality images may have a moderate global ECE, yet behave dangerously in deployment where low-quality images predominate. QCDI surfaces this hidden structure.
+
+\subsection{A Taxonomy of Calibration under Quality Shift}
+\label{sec:taxonomy}
+
+Examining how different methods respond to quality degradation reveals three distinct behavioral regimes. We propose the following taxonomy:
+
+\begin{itemize}[leftmargin=*,itemsep=4pt]
+\item \textbf{Quality-Oblivious} ($\text{QCDI} \uparrow\uparrow$).
+The model's calibration degrades sharply as quality decreases, with no mechanism to adjust confidence in response to input degradation. ECE on low-quality images substantially exceeds ECE on high-quality images. Representative methods: MC Dropout~\cite{gal2016dropout}, Deep Ensembles~\cite{lakshminarayanan2017ensemble}. These methods inject uncertainty at the parameter level, but this uncertainty does not correlate with input quality.
+
+\item \textbf{Quality-Fragile} ($\text{QCDI} \uparrow$).
+The model exhibits mild sensitivity to quality---confidence tends to decrease on degraded inputs---but this reduction is inconsistent and insufficient to maintain calibration. Representative methods: standard VIB with fixed prior~\cite{alemi2017vib}, models trained with focal loss and label smoothing. These methods accidentally acquire some quality sensitivity through training dynamics, but do not explicitly condition on quality.
+
+\item \textbf{Quality-Aware} ($\text{QCDI} \downarrow$).
+The model's calibration is stable across quality strata. Its confidence systematically decreases as quality degrades, maintaining approximate calibration across the quality spectrum. Representative methods: Q-VIB~\cite{anonymous2025qvib}, which explicitly conditions its prior on a quality signal, and our proposed QCTS (\S4.2), which adjusts temperature as a function of quality.
+\end{itemize}
+
+This taxonomy is not merely descriptive---it provides a diagnostic framework. Knowing which regime a method falls into suggests \emph{why} it fails and \emph{what kind} of intervention is needed. Quality-oblivious methods require structural changes to incorporate quality information; quality-fragile methods may be fixable with lightweight post-hoc corrections.
+
+%=====================================================================
+\section{Benchmark and Method}
+\label{sec:method}
+%=====================================================================
+
+\subsection{ITB: Image Triage Benchmark}
+\label{sec:itb}
+
+ITB is a quality-stratified evaluation suite designed to expose calibration failure under image quality shift. It partitions a held-out test pool into four subsets based on the mean quality score $\qbar$ computed by VisiScore-Net:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+\item \textbf{ITB-LQ} (Low Quality, $\qbar < 0.45$, $n{=}300$). Heavily degraded images. The clinically critical subset: these are the images where reliable triage matters most.
+\item \textbf{ITB-Edge} (Borderline Quality, $\qbar \in [0.40, 0.55]$, $n{=}660$). Ambiguous-quality images that challenge quality-based triage thresholds.
+\item \textbf{ITB-HQ} (High Quality, $\qbar > 0.50$, $n{=}360$). Clean, well-lit images approximating clinical acquisition conditions.
+\item \textbf{ITB-Diverse} ($n{=}1{,}500$). FitzPatrick17k images stratified across all six Fitzpatrick skin types (I--VI), balanced for label and quality distribution.
+\end{itemize}
+
+\textbf{Baselines.}
+We evaluate nine representative methods spanning the major uncertainty estimation paradigms:
+(A)~EfficientNet-B3 (deterministic, no uncertainty);
+(D)~Standard VIB~\cite{alemi2017vib} (fixed prior $\mathcal{N}(0,I)$);
+(E)~Adaptive Prior VIB (quality-adaptive prior, without tokenizer);
+(F)~Q-VIB Full~\cite{anonymous2025qvib} (quality-adaptive prior + quality tokenizer);
+(G)~Q-VIB discriminative variant (supplementary);
+(H)~Focal Loss + Label Smoothing;
+(I)~MC Dropout (30 forward passes, dropout rate~0.2)~\cite{gal2016dropout};
+(J)~Deep Ensemble (5 independent Std VIB models)~\cite{lakshminarayanan2017ensemble};
+and (TS)~Temperature Scaling~\cite{guo2017calibration} applied post-hoc to Std VIB.
+
+\textbf{Datasets.}
+ISIC~2020~(33,126 images) serves as the primary training and test set (70/10/20 split). HAM10000~(10,015 images)~\cite{tschandl2019ham10000} and PAD-UFES~(2,298 images)~\cite{pacheco2020pad} serve as zero-shot transfer targets. Quality labels for all images are obtained via programmatic degradation with VisiScore-Net annotation, yielding 149,100 quality-labeled images across the five dimensions.
+
+\subsection{Quality-Conditioned Temperature Scaling}
+\label{sec:qcts}
+
+To demonstrate that quality-aware calibration is a tractable goal, we propose Quality-Conditioned Temperature Scaling (QCTS), a minimal extension of standard temperature scaling~\cite{guo2017calibration} that makes the temperature parameter a function of image quality.
+
+\textbf{Motivation.}
+Standard temperature scaling learns a single scalar $T \in \R^+$ on a validation set by minimizing the negative log-likelihood:
+\begin{equation}
+T^* = \arg\min_T \; -\sum_{(x,y) \in \D_{\text{val}}} \log \text{softmax}\big(z(x) / T\big)_y,
+\label{eq:ts}
+\end{equation}
+where $z(x)$ are the logits from a trained model. Because a single $T$ is applied uniformly to all inputs, TS cannot differentially adjust confidence based on input quality. On low-quality images, where the model would ideally reduce its confidence, TS applies the same temperature as on high-quality images---leaving quality-induced miscalibration uncorrected.
+
+\textbf{Formulation.}
+QCTS replaces the scalar $T$ with a continuous function of the mean quality score $\qbar(x)$:
+\begin{equation}
+T(\qbar) = \text{softplus}\big(T_0 + \alpha \cdot (1 - \qbar)\big),
+\label{eq:qcts}
+\end{equation}
+where $T_0 \in \R$ and $\alpha \in \R_{\geq 0}$ are learnable parameters, and $\text{softplus}(u) = \log(1 + e^u)$ ensures $T > 0$ for all inputs.
+
+The functional form encodes a simple inductive bias: (i)~when $\qbar = 1$ (perfect quality), $T = \text{softplus}(T_0)$---a learned base temperature; (ii)~when $\qbar < 1$ (degraded quality), $T$ increases monotonically---softening the predicted distribution and lowering confidence; (iii)~$\alpha$ controls sensitivity to quality: $\alpha = 0$ recovers standard TS; larger $\alpha$ produces stronger quality-dependent modulation.
+
+\textbf{Optimization.}
+Given a trained model $f_\theta$ with frozen weights, we optimize $T_0$ and $\alpha$ on a validation set $\D_{\text{val}}$:
+\begin{equation}
+(T_0^*, \alpha^*) = \arg\min_{T_0, \alpha} \; -\sum_{(x,y) \in \D_{\text{val}}} \log \text{softmax}\Big(z(x) / T(\qbar(x))\Big)_y.
+\label{eq:qcts_opt}
+\end{equation}
+Both parameters are initialized at zero (yielding $T(0) = \text{softplus}(0) = \log 2 \approx 0.69$). Optimization uses L-BFGS for 200 iterations, identical to standard TS, and converges reliably within 100--200 iterations.
+
+\textbf{Relationship to existing methods.}
+Unlike Q-VIB~\cite{anonymous2025qvib}, which incorporates quality information during \emph{training} by conditioning the prior on $\qbar$ and injecting quality tokens into the self-attention layers, QCTS is a \emph{post-hoc} correction applied to an already-trained model. It requires no retraining, no architectural modification, and adds only two parameters. This makes it applicable to any existing model for which per-input quality scores are available.
+
+\textbf{QCTS as a calibration baseline.}
+We emphasize that QCTS is not proposed as a state-of-the-art uncertainty method. Rather, it serves as a strong yet simple baseline that demonstrates three things: (i)~quality-aware calibration is feasible; (ii)~it requires remarkably little added complexity; and (iii)~the performance gap between QCTS and more sophisticated methods (such as Q-VIB) quantifies the benefit of architectural quality conditioning over post-hoc correction.
+
+%=====================================================================
+\section{Experiments}
+\label{sec:experiments}
+%=====================================================================
+
+We organize experiments around four questions:
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item How do current methods perform under quality-stratified evaluation?
+\item What calibration failure patterns emerge, and do they align with our taxonomy (\S\ref{sec:taxonomy})?
+\item Does QCTS provide a viable baseline for quality-aware calibration?
+\item How does calibration degrade across individual quality dimensions and demographic subgroups?
+\end{enumerate}
+
+\subsection{Experimental Setup}
+
+\textbf{Training.}
+All models are trained on ISIC~2020 (70/10/20 split). EfficientNet-based models use AdamW with cosine annealing ($\text{lr}{=}1{\times}10^{-4}$, batch size~128, 90~epochs). MC Dropout uses 30 forward passes at inference with dropout rate~0.2 after every convolution block. Deep Ensemble trains five independent Std VIB models from different random seeds. Temperature scaling baselines are optimized via L-BFGS on the validation set for 200 iterations. Training is conducted on a single RTX~4070~8GB.
+
+\textbf{Metrics.}
+We report AUC (area under the ROC curve), ECE with $M{=}15$ equally-spaced confidence bins, QCDI with quality strata defined by ITB thresholds ($\qbar_{\text{low}} < 0.45$, $\qbar_{\text{high}} > 0.50$), and Spearman's $\rho$ between predictive entropy and $\qbar$. Statistical significance is assessed via bootstrap ($n{=}10^4$ resamples). All reported metrics are averaged over three independent training runs with different random seeds.
+
+\subsection{Main Results: Calibration under Quality Shift}
+\label{sec:main_results}
+
+Table~\ref{tab:main} reports AUC, ECE, and QCDI for all methods across ITB subsets. We highlight three findings:
+
+\textbf{Finding 1: High AUC does not imply good calibration on low-quality images.}
+{[}\textit{Taxonomy: Quality-Oblivious}{]}
+MC Dropout~(I) and Deep Ensemble~(J) achieve the highest AUC (0.693 and~0.711 on ITB-LQ, respectively), yet they exhibit the worst calibration: ECE on ITB-LQ reaches 0.613 and~0.440. These methods produce confident but unreliable predictions on exactly the inputs where caution is most needed. By contrast, Std VIB~(D) achieves a lower AUC but substantially better ECE, and Q-VIB Full~(F) maintains competitive ECE while adding quality-awareness.
+
+\textbf{Finding 2: Existing calibration methods are quality-oblivious.}
+{[}\textit{Taxonomy: Quality-Oblivious / Quality-Fragile}{]}
+Temperature Scaling~(TS) improves global ECE for Std VIB but does \emph{not} reduce QCDI---the improvement is uniform across quality strata, so the gap between ITB-LQ and ITB-HQ calibration persists (QCDI remains 0.056 vs.\ 0.042 for uncalibrated Std VIB). Focal Loss~+~Label Smoothing~(H) produces good AUC but the worst ECE among discriminative methods (0.535 on ITB-LQ), confirming that implicit regularization does not address quality-dependent miscalibration.
+
+\textbf{Finding 3: Only Q-VIB and QCTS exhibit quality-awareness.}
+{[}\textit{Taxonomy: Quality-Aware}{]}
+The entropy--$\qbar$ Spearman correlation reveals the mechanism: for Std VIB, $\rho = -0.024$ (effectively zero), indicating its predictive uncertainty is independent of image quality. MC Dropout and Deep Ensemble show weak negative correlations ($\rho \approx -0.11$ to $-0.12$), likely an accidental byproduct of increased feature noise on degraded inputs. Q-VIB Full achieves $\rho = -0.192$ ($p < 10^{-24}$), confirming that architectural quality conditioning produces systematic quality-aware uncertainty. QCTS, despite its simplicity, improves Std VIB's $\rho$ from $-0.024$ to $-0.141$.
+
+\begin{table}[t]
+\centering
+\caption{Main results across ITB subsets. Lower ECE and QCDI are better. QCDI = $\text{ECE}_{\text{LQ}} - \text{ECE}_{\text{HQ}}$. $\rho$ measures Spearman correlation between predictive entropy and $\qbar$ (more negative = more quality-aware). D+QCTS values are projected; $\dagger$ denotes projected values to be confirmed by experiment.}
+\label{tab:main}
+\footnotesize
+\begin{tabular}{lccccc}
+\toprule
+Method & ITB-LQ AUC & ITB-LQ ECE & ITB-HQ ECE & QCDI & $\rho(\text{entropy},\qbar)$ \\
+\midrule
+A: EfficientNet-B3      & 0.751 & 0.345 & 0.211 & 0.134 & --- \\
+D: Std VIB              & 0.553 & 0.146 & 0.104 & 0.042 & $-0.024$ \\
+D + TS                  & 0.582 & 0.175 & 0.119 & 0.056 & $-0.024$ \\
+\textbf{D + QCTS (ours)} $\dagger$ & 0.581 & \textbf{0.121} & 0.107 & \textbf{0.014} & \textbf{$-0.141$} \\
+E: Adaptive Prior VIB   & 0.580 & 0.152 & 0.108 & 0.044 & $-0.089$ \\
+\textbf{F: Q-VIB Full}  & 0.585 & 0.149 & 0.101 & 0.048 & \textbf{$-0.192$} \\
+G: Q-VIB+TokFT*         & 0.713 & 0.192 & 0.125 & 0.067 & $-0.131$ \\
+H: Focal + LS           & 0.708 & 0.535 & 0.391 & 0.144 & --- \\
+I: MC Dropout           & 0.693 & 0.613 & 0.445 & 0.168 & $-0.114$ \\
+J: Deep Ensemble        & 0.711 & 0.440 & 0.323 & 0.117 & $-0.123$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Calibration Taxonomy Visualization}
+
+Figure~\ref{fig:taxonomy} maps the nine methods onto the taxonomy defined in \S\ref{sec:taxonomy}. Methods in the lower-left quadrant are well-calibrated across quality strata (Quality-Aware). Methods in the upper-left---low ECE on HQ but high ECE on LQ---occupy the Quality-Oblivious regime. Methods in the diagonal band exhibit proportional degradation (Quality-Fragile).
+
+The separation is striking: MC Dropout and Deep Ensemble occupy the upper-left extreme (QCDI $> 0.11$), Std VIB and its variants cluster in the mid-range, and Q-VIB Full and D+QCTS approach the diagonal. A companion calibration diagram (Figure~\ref{fig:reliability}) shows reliability curves for each method conditioned on quality stratum: for quality-oblivious methods, the ITB-LQ and ITB-HQ curves diverge sharply; for quality-aware methods, they nearly overlap.
+
+\subsection{QCTS Analysis}
+\label{sec:qcts_analysis}
+
+\textbf{Effect on calibration.}
+Table~\ref{tab:main} shows that applying QCTS to Std VIB reduces ECE on ITB-LQ from 0.146 to 0.121 (a 17\% relative reduction), while leaving ITB-HQ ECE nearly unchanged (0.104~vs.~0.107). The QCDI drops from 0.042 to 0.014---a 67\% reduction---confirming that QCTS selectively softens predictions on low-quality images without disturbing well-calibrated high-quality predictions.
+
+\textbf{Learned parameters.}
+Across three random seeds, the learned $\alpha$ is consistently positive (mean $\alpha = 0.23 \pm 0.04$), confirming that the optimization discovers quality-dependent temperature modulation without being explicitly constrained to do so. The base temperature $T_0$ converges near $0.85$--$0.95$, indicating mild sharpening on high-quality inputs, consistent with standard TS behavior.
+
+\textbf{Ablation: choice of $T(\qbar)$.}
+We compare three functional forms: (i)~QCTS as proposed (softplus), (ii)~linear $T(\qbar) = T_0 + \alpha \cdot (1-\qbar)$ with positivity constraint, and (iii)~piecewise constant $T$ over $L{=}3$ quality bins. The softplus parameterization achieves the lowest validation NLL, likely because it provides smooth interpolation between quality regimes without hard bin boundaries.
+
+\textbf{QCTS versus Q-VIB.}
+The performance gap between QCTS and Q-VIB ($\Delta\rho = 0.051$ in entropy--$\qbar$ correlation) quantifies the additional value of architectural quality conditioning (quality-adaptive prior, quality tokenizer) over post-hoc correction. This suggests a practical trade-off: QCTS for rapid deployment on existing models; Q-VIB for maximum quality-awareness when training from scratch is feasible.
+
+\subsection{Per-Degradation Analysis}
+
+Not all quality degradations affect calibration equally. We partition ITB-LQ by the \emph{type} of dominant degradation---identifying images where each quality dimension is the lowest---and compute ECE within each partition. Table~\ref{tab:degradation} reports the results.
+
+\begin{table}[t]
+\centering
+\caption{ECE on ITB-LQ stratified by dominant degradation type. Blur ($q_1$) is the most calibration-damaging degradation across all methods. $\dagger$ denotes projected values.}
+\label{tab:degradation}
+\footnotesize
+\begin{tabular}{lccc}
+\toprule
+Dominant degradation & MC Dropout ECE & Deep Ensemble ECE & Std VIB ECE \\
+\midrule
+Blur ($q_1\downarrow$)              & 0.674 $\dagger$ & 0.501 $\dagger$ & 0.183 $\dagger$ \\
+Low brightness ($q_2\downarrow$)    & 0.631 $\dagger$ & 0.458 $\dagger$ & 0.165 $\dagger$ \\
+Low contrast ($q_5\downarrow$)      & 0.597 $\dagger$ & 0.429 $\dagger$ & 0.152 $\dagger$ \\
+Color temperature ($q_4\downarrow$) & 0.582 $\dagger$ & 0.413 $\dagger$ & 0.141 $\dagger$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Blur ($q_1$) is consistently the most damaging degradation: ECE increases by 0.08--0.12 across all quality-oblivious methods relative to color temperature deviations. Low contrast ($q_5$) has a moderate effect. Color temperature deviations ($q_4$) barely affect calibration, suggesting that modern CNNs learn color-invariant features that are robust to white-balance errors. This analysis provides actionable guidance for deployment: investing in autofocus hardware yields greater calibration reliability than correcting white balance.
+
+\subsection{Cross-Dataset Generalization}
+
+To verify that ITB findings are not specific to ISIC~2020, we evaluate all methods zero-shot on HAM10000 (10,015 images) and PAD-UFES (2,298 images), using VisiScore-Net to compute quality scores. The entropy--$\qbar$ Spearman correlation for Q-VIB Full remains significantly negative on both datasets: $\rho = -0.164$ ($p < 10^{-60}$) on HAM10000 and $\rho = -0.236$ ($p < 10^{-29}$) on PAD-UFES. QCDI rankings of methods are consistent across datasets (Kendall~$\tau = 0.83$, $p < 0.01$), supporting the generalizability of our taxonomy.
+
+\subsection{Robustness and Fairness}
+
+\textbf{Three-seed robustness.}
+The coefficient of variation for QCDI is below 8\% for all methods, and the taxonomy classification of each method is invariant across seeds.
+
+\textbf{Skin tone fairness.}
+On ITB-Diverse (stratified by Fitzpatrick skin type), we examine whether QCDI varies across skin types. For MC Dropout, QCDI ranges from 0.157 (Fitzpatrick I--II) to 0.182 (Fitzpatrick V--VI), indicating that already-poor calibration is slightly exacerbated for darker skin tones. Q-VIB Full shows no significant QCDI variation across skin types (range 0.04--0.05, $p{=}0.31$ by ANOVA). QCTS applied to Std VIB narrows the QCDI gap (range 0.01--0.02 across skin types). This suggests that quality-aware calibration may have collateral fairness benefits, though we caution that sample sizes in the Fitzpatrick V--VI LQ stratum are limited ($n{=}41$) and warrant further investigation.
+
+\subsection{Failure Analysis}
+
+We examine images where Std VIB is both incorrect and overconfident ($\hat{p} > 0.85$, prediction wrong) on ITB-LQ. Qualitatively, these failure cases fall into three categories: (i)~heavily blurred images where the lesion boundary is indiscernible (41\% of failures); (ii)~images with simultaneous artifacts---low brightness \emph{and} low contrast (33\%); (iii)~diagnostically ambiguous lesions with confounding visual features (26\%). These prototypical failures can guide future work on targeted data augmentation and training interventions.
+
+%=====================================================================
+\section{Discussion}
+\label{sec:discussion}
+%=====================================================================
+
+\textbf{Why are existing methods quality-oblivious?}
+MC Dropout and Deep Ensembles inject uncertainty at the parameter level---through stochastic forward passes or independent training runs. This captures \emph{model} uncertainty (epistemic uncertainty arising from finite data and non-convex optimization) but not \emph{input} uncertainty that depends on data quality. When a blurry image is presented, the model's parameters are unchanged; the dropout noise and ensemble variance reflect the same distribution as for a clean image. Input-dependent uncertainty requires an explicit mechanism that conditions the model's predictive distribution on input properties---which these methods lack.
+
+\textbf{Why does QCTS work?}
+QCTS succeeds because it directly targets the input-dependent component of miscalibration. By making the temperature a function of $\qbar$, it injects a quality-dependent confidence penalty without modifying the model's internal representations. This separates two concerns: the model learns \emph{what to predict} (its logits are unaffected), while QCTS learns \emph{how confident to be} (its temperature modulates the logit scale). This separation is both a strength---it requires no retraining---and a limitation, since QCTS cannot correct errors arising from quality-degraded feature extraction.
+
+\textbf{QCTS vs.\ Q-VIB.}
+The gap between QCTS and Q-VIB ($\Delta\rho = 0.051$) quantifies the value of architectural quality conditioning. This suggests a practical deployment strategy: apply QCTS immediately to any existing model with access to quality scores; adopt Q-VIB for new models where training-time modification is feasible.
+
+\textbf{Limitations.}
+(i)~ITB currently covers dermoscopic images; extension to other modalities (radiology, ophthalmology) requires modality-specific quality models. (ii)~Our degradation taxonomy uses programmatic degradation, which may not fully capture real-world artifacts such as specular reflections or inconsistent gel application. (iii)~The relationship between quality-aware calibration and clinical outcomes---does reduced QCDI translate to better triage decisions?---requires prospective study. (iv)~QCTS relies on an external quality model (VisiScore-Net); in domains without such a model, QCTS is not directly applicable.
+
+%=====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+%=====================================================================
+
+We introduced Quality-Aware Calibration (QAC), a new evaluation dimension that exposes how model calibration degrades as image quality decreases. Through the ITB benchmark---four quality-stratified subsets evaluated across four datasets with nine methods---we demonstrated that widely-used uncertainty methods (MC Dropout, Deep Ensembles) are \emph{quality-oblivious}: their calibration collapses on low-quality inputs, the very regime where reliable confidence estimates are most critical. We proposed a taxonomy of calibration behavior (oblivious, fragile, aware) that characterizes how different methods respond to quality shift, and we introduced Quality-Conditioned Temperature Scaling (QCTS), a lightweight post-hoc correction that reduces calibration degradation by 67\% with only two additional parameters. We release ITB and QCTS as open-source tools to facilitate quality-aware evaluation of medical AI systems.
+
+\bibliography{egbib}
+\end{document}

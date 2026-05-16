@@ -1,0 +1,97 @@
+% ============================================================
+% ICLR 2027 Submission — Anonymous Version
+% Paper: Perceptual Quality-Aware Uncertainty Estimation for
+%        Dermoscopic Images via Information Bottleneck
+% ============================================================
+%
+% SETUP NOTE:
+%   The ICLR 2027 style file (iclr2027_conference.sty) must be
+%   downloaded from the official ICLR 2027 OpenReview submission
+%   kit. Place iclr2027_conference.sty and iclr2027_conference.bst
+%   in this same directory before compiling.
+%   Download from: https://github.com/ICLR/Master-Template
+%
+% COMPILE:
+%   pdflatex main.tex
+%   bibtex main
+%   pdflatex main.tex
+%   pdflatex main.tex
+% ============================================================
+
+\documentclass{article}
+
+% ---- ICLR 2027 style ----------------------------------------
+% Anonymous submission: do NOT add \iclrfinalcopy
+% Camera-ready: uncomment the line below
+% \iclrfinalcopy
+\usepackage{iclr2027_conference,times}   % <-- requires style file
+
+% ---- Core math & symbols ------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+% ---- Figures & tables ---------------------------------------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{subcaption}
+
+% ---- Algorithms ---------------------------------------------
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% ---- References & links -------------------------------------
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+% ---- Misc ---------------------------------------------------
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{url}
+
+% ---- Custom macros ------------------------------------------
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\newcommand{\etal}{\textit{et al.}}
+\newcommand{\ie}{\textit{i.e.}}
+\newcommand{\eg}{\textit{e.g.}}
+\newcommand{\cf}{\textit{cf.}}
+
+% Model name shorthands
+\newcommand{\VisiScore}{VisiScore-Net}
+\newcommand{\QVIB}{Q-VIB}
+\newcommand{\VisiEnhance}{VisiEnhance-Net}
+\newcommand{\ITB}{ITB Benchmark}
+
+% ---- Title & authors (anonymized for submission) ------------
+\title{Perceptual Quality-Aware Uncertainty Estimation for Dermoscopic Images
+       via Variational Information Bottleneck}
+
+% Anonymous submission — author block handled by iclr2027 style
+\author{}
+
+% ============================================================
+\begin{document}
+
+\maketitle
+
+% ---- Abstract -----------------------------------------------
+\input{sections/abstract}
+
+% ---- Main sections ------------------------------------------
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/conclusion}
+
+% ---- Bibliography -------------------------------------------
+\bibliography{references}
+\bibliographystyle{iclr2027_conference}
+
+% ---- Appendix -----------------------------------------------
+\appendix
+\input{sections/appendix}
+
+\end{document}

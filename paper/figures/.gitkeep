@@ -1,0 +1,9 @@
+# figures/
+# 放置所有论文图片（PDF 格式推荐）。
+# 命名规范：
+#   fig1_overview.pdf      — 系统总览图
+#   fig2_visiscore.pdf     — VisiScore-Net 结构
+#   fig3_qvib.pdf          — Q-VIB 框架
+#   fig4_visienhance.pdf   — VisiEnhance-Net 结构
+#   fig5_qualitative.pdf   — 定性比较图
+#   fig6_reliability.pdf   — Reliability diagram（不确定度校准）
