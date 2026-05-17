@@ -1,0 +1,21 @@
+baseline,dim,dim_label,n,ece
+I,sharpness,Blur ($q_1\downarrow$),71,0.5898066951670278
+I,brightness,Low brightness ($q_2\downarrow$),60,0.4084592349827289
+I,color_temp,Color temp ($q_4\downarrow$),60,0.6267223795255026
+I,contrast,Low contrast ($q_5\downarrow$),60,0.5379386335611342
+J,sharpness,Blur ($q_1\downarrow$),71,0.4358635640270273
+J,brightness,Low brightness ($q_2\downarrow$),60,0.299638472435375
+J,color_temp,Color temp ($q_4\downarrow$),60,0.4434376806020736
+J,contrast,Low contrast ($q_5\downarrow$),60,0.43008931186050176
+D,sharpness,Blur ($q_1\downarrow$),71,0.17262326341948775
+D,brightness,Low brightness ($q_2\downarrow$),60,0.130896554600137
+D,color_temp,Color temp ($q_4\downarrow$),60,0.26408533828798686
+D,contrast,Low contrast ($q_5\downarrow$),60,0.05551333543844525
+F,sharpness,Blur ($q_1\downarrow$),71,0.1515248625598271
+F,brightness,Low brightness ($q_2\downarrow$),60,0.1781130383955315
+F,color_temp,Color temp ($q_4\downarrow$),60,0.2655452196020633
+F,contrast,Low contrast ($q_5\downarrow$),60,0.05736426020351554
+D+QCTS,sharpness,Blur ($q_1\downarrow$),71,0.08415750607273871
+D+QCTS,brightness,Low brightness ($q_2\downarrow$),60,0.11507571272607879
+D+QCTS,color_temp,Color temp ($q_4\downarrow$),60,0.1552565069777159
+D+QCTS,contrast,Low contrast ($q_5\downarrow$),60,0.08783158903757914

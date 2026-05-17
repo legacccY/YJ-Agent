@@ -2,8 +2,46 @@
 
 ## 当前状态
 
-- **阶段**：阶段七 VisiEnhance-Net + 阶段八论文写作并行进行
-- **Sprint 搁置**：改为对标 ICLR CCF-A 标准
+- **阶段**：BMVC 投稿（P2，Deadline 2026-05-29）+ 阶段七/八并行
+- **BMVC 进度**：实验全部完成，论文更新完毕，PDF 编译零错误（16 页）
+
+### BMVC 已完成（2026-05-17）
+
+#### 实验（run_bmvc_experiments.py）
+- **QCTS on Std VIB (D)**：LQ ECE 0.146 → 0.047（68% 改善），QCDI 从 +0.018 → -0.015，ρ: -0.033 → -0.108（HAM10000）
+- **QCTS on EfficientNet-B3 (A)**：alpha=0（退化为标准 TS），证明 QCTS 需要质量敏感表示才有效
+- **功能形式消融**：softplus（提出方案，QCDI=-0.015）> linear（-0.004）> piecewise（+0.029）
+  - 关键发现：最小化 NLL 不能保证 QCDI 最优
+- **跨数据集 QCDI**：ITB vs HAM10000 Kendall τ=0.714（p=0.030）
+- **逐退化维度 ECE**：Color temp (q4) 是最严重退化，不是 blur（修正了论文旧叙事）
+- **TS 反转 ρ**：ρ 从 -0.033 → +0.324，TS 使质量感知变差，强发现
+
+#### 图表（gen_bmvc_figures.py，6 张图）
+- fig1: QCDI 柱状图（新）
+- fig2: 校准分类散点图
+- fig3: 逐退化 ECE（含 D+QCTS）
+- fig4: Entropy-q̄（HAM10000）
+- fig5: T(q̄) 学习曲线（新）
+- fig6: 可靠性曲线
+
+#### 论文（bmvc_final.tex → 16 页 PDF）
+- 标题：Quality-Aware Calibration: Benchmarking and Correcting Confidence Under Image Quality Shift
+- Abstract：完整真实摘要
+- Table 1：全部真实数据（无 † 投影值），含 TS 正 ρ 的惊人发现
+- Table 2：逐退化 ECE 修正（color temp 最严重，+D+QCTS 列）
+- Finding 1-3：更新为实际数据
+- QCTS Analysis：68% 改善，功能形式消融，A 退化为 TS 的发现
+- 6 张图全部 \includegraphics 嵌入
+
+### BMVC 待完成（还剩 12 天）
+
+| 优先级 | 任务 |
+|--------|------|
+| 🔴 | 英文润色（Introduction / Discussion 最需要） |
+| 🔴 | 导师审阅（5/28 前） |
+| 🟡 | 论文页面调整（16 页可能过长，BMVC 限 14 页除 ref） |
+| 🟡 | 匿名化检查（无自引暴露身份） |
+| 🟢 | ITB/QCTS 代码 README + Release |
 
 ### ⚠️ 待决策：Stage 1 模型容量问题
 
@@ -271,4 +309,4 @@ BRISQUE 对比 sharpness：VisiScore 0.947 vs BRISQUE -0.184
 
 ## 最后更新
 
-2026-05-09 01:10（北京时间）
+2026-05-17 10:50（北京时间）

@@ -529,6 +529,228 @@ def fig4_entropy_qbar(ham_preds: pd.DataFrame):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Fig 3b: Per-degradation ECE from pre-computed CSV (includes D+QCTS)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+SHOW_BLS_DEG_CSV = ["I", "J", "D", "F", "D+QCTS"]
+DIM_DISPLAY_CSV = {
+    "sharpness":  "Blur\n" + r"($q_1\downarrow$)",
+    "brightness": "Low brightness\n" + r"($q_2\downarrow$)",
+    "color_temp": "Color temperature\n" + r"($q_4\downarrow$)",
+    "contrast":   "Low contrast\n" + r"($q_5\downarrow$)",
+}
+BL_COLORS_DEG = {
+    "I": METHOD_META["I"]["color"],
+    "J": METHOD_META["J"]["color"],
+    "D": METHOD_META["D"]["color"],
+    "F": METHOD_META["F"]["color"],
+    "D+QCTS": "#2ca02c",
+}
+BL_LABELS_DEG = {
+    "I": "MC Dropout",
+    "J": "Deep Ensemble",
+    "D": "Std VIB",
+    "F": "Q-VIB Full",
+    "D+QCTS": r"D + QCTS (ours)",
+}
+
+
+def fig3_from_csv():
+    deg_df = pd.read_csv(PROJ / "results/per_degradation_ece.csv")
+
+    valid_dims = [d for d in ["sharpness", "brightness", "color_temp", "contrast"]
+                  if d in deg_df["dim"].unique()]
+    n_dims = len(valid_dims)
+    n_bls  = len(SHOW_BLS_DEG_CSV)
+    bar_w  = 0.15
+    x      = np.arange(n_dims)
+
+    fig, ax = plt.subplots(figsize=(max(6.0, n_dims * 2.0), 4.0))
+
+    for i, bl in enumerate(SHOW_BLS_DEG_CSV):
+        bl_data = deg_df[deg_df["baseline"] == bl]
+        eces = []
+        for dim in valid_dims:
+            row = bl_data[bl_data["dim"] == dim]
+            eces.append(float(row["ece"].values[0]) if len(row) else np.nan)
+        offset = (i - (n_bls - 1) / 2) * bar_w
+        bars = ax.bar(x + offset, eces, bar_w,
+                      label=BL_LABELS_DEG.get(bl, bl),
+                      color=BL_COLORS_DEG.get(bl, "#888888"),
+                      alpha=0.88, edgecolor="white", linewidth=0.5)
+
+    # n labels
+    first_bl = "I"
+    for j, dim in enumerate(valid_dims):
+        row = deg_df[(deg_df["baseline"] == first_bl) & (deg_df["dim"] == dim)]
+        if len(row):
+            ax.text(j, ax.get_ylim()[1] * 0.01, f"n={row['n'].values[0]}",
+                    ha="center", va="bottom", fontsize=6.5, color="#666666")
+
+    # Reference: Std VIB full ITB-LQ ECE
+    itb_res = pd.read_csv(PROJ / "results/itb_results.csv")
+    d_lq = itb_res[(itb_res["baseline"] == "D") & (itb_res["subset"] == "ITB-LQ")]
+    if len(d_lq):
+        ax.axhline(d_lq["ece"].values[0], ls="--", color=METHOD_META["D"]["color"],
+                   lw=0.9, alpha=0.6, label=f"Std VIB full ITB-LQ")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([DIM_DISPLAY_CSV.get(d, d) for d in valid_dims], fontsize=9.0)
+    ax.set_ylabel("ECE on ITB-LQ (bottom 20th percentile)", labelpad=5)
+    ax.set_title("Calibration Error by Degradation Type", pad=8, fontweight="semibold")
+    ax.set_ylim(0, ax.get_ylim()[1] * 1.14)
+    ax.legend(loc="upper right", framealpha=0.92, edgecolor="lightgray",
+              ncol=2, fontsize=8.5)
+
+    fig.tight_layout(pad=1.2)
+    for ext in ("pdf", "png"):
+        fig.savefig(OUT / f"fig3_degradation.{ext}", bbox_inches="tight")
+        print(f"  [saved] fig3_degradation.{ext}")
+    plt.close(fig)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Fig 5: T(q̄) learned curve — 3 seeds overlaid
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def fig5_T_curve():
+    data = np.load(PROJ / "results/qcts_T_curve.npy")
+    qbar_grid, T_best = data[0], data[1]
+    seeds_data = np.load(PROJ / "results/qcts_T_curves_seeds.npy")
+    qbar_s, T_seeds = seeds_data[0], seeds_data[1:]
+
+    import json
+    params = json.load(open(PROJ / "results/qcts_params.json"))
+    alpha_vals = [s["alpha"] for s in params["all_seeds"]]
+
+    fig, ax = plt.subplots(figsize=(5.5, 3.4))
+
+    seed_colors = ["#aec7e8", "#c5b0d5", "#98df8a"]
+    for i, (T_s, a) in enumerate(zip(T_seeds, alpha_vals)):
+        ax.plot(qbar_s, T_s, lw=1.2, ls="--", color=seed_colors[i],
+                label=fr"Seed {i}: $\alpha={a:.2f}$", zorder=3)
+
+    ax.plot(qbar_grid, T_best, lw=2.2, color="#d62728",
+            label=fr"Best ($\alpha={params['alpha']:.2f}$)", zorder=5)
+
+    # Reference: standard TS (horizontal line)
+    import torch
+    T_ts = json.loads(open(ROOT / "checkpoints/stdvib/temperature.json").read())["T"]
+    ax.axhline(T_ts, ls=":", color="gray", lw=1.0, label=f"Standard TS ($T={T_ts:.2f}$)")
+
+    ax.set_xlabel(r"Quality Score $\bar{q}$", labelpad=4)
+    ax.set_ylabel(r"Temperature $T(\bar{q})$", labelpad=4)
+    ax.set_xlim(0, 1)
+    ax.set_title(r"Learned QCTS Temperature Function $T(\bar{q})$",
+                 fontweight="semibold", pad=6)
+    ax.legend(fontsize=8, framealpha=0.92, edgecolor="lightgray")
+
+    # Annotation: low vs high quality
+    ax.annotate("Low quality\n(high T → low confidence)",
+                xy=(0.1, float(T_best[int(0.1 / 1.0 * len(T_best))])),
+                xytext=(0.22, float(T_best[int(0.1 / 1.0 * len(T_best))]) + 0.12),
+                arrowprops=dict(arrowstyle="->", color="#666666", lw=0.8),
+                fontsize=7.5, color="#666666", ha="center")
+    ax.annotate("High quality\n(low T → confident)",
+                xy=(0.9, float(T_best[-1])),
+                xytext=(0.75, float(T_best[-1]) - 0.18),
+                arrowprops=dict(arrowstyle="->", color="#666666", lw=0.8),
+                fontsize=7.5, color="#666666", ha="center")
+
+    fig.tight_layout(pad=1.2)
+    for ext in ("pdf", "png"):
+        fig.savefig(OUT / f"fig5_T_curve.{ext}", bbox_inches="tight")
+        print(f"  [saved] fig5_T_curve.{ext}")
+    plt.close(fig)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Fig 6: QCDI bar chart — all methods, sorted, colored by taxonomy
+# ═══════════════════════════════════════════════════════════════════════════════
+
+TAXONOMY_COLOR = {
+    "Quality-Oblivious": "#d62728",
+    "Quality-Fragile":   "#ff7f0e",
+    "Quality-Aware":     "#2ca02c",
+}
+
+def fig6_qcdi_barchart():
+    qcdi_df = pd.read_csv(PROJ / "results/all_qcdi_summary.csv")
+
+    # Sort by QCDI descending (worst to best)
+    qcdi_df = qcdi_df.sort_values("qcdi", ascending=False).reset_index(drop=True)
+
+    # Label map
+    LABELS = {
+        "A": "EfficientNet-B3",
+        "I": "MC Dropout",
+        "J": "Deep Ensemble",
+        "G": "Q-VIB+TokFT*",
+        "H": "Focal + LS",
+        "D": "Std VIB",
+        "TS": "Std VIB + TS",
+        "E": "Adaptive Prior",
+        "F": "Q-VIB Full",
+        "D+QCTS": r"Std VIB + QCTS (ours)",
+    }
+
+    bls  = qcdi_df["baseline"].tolist()
+    qcdi = qcdi_df["qcdi"].values
+    tax  = qcdi_df["taxonomy"].tolist()
+    cols = [TAXONOMY_COLOR[t] for t in tax]
+    labels = [LABELS.get(b, b) for b in bls]
+
+    fig, ax = plt.subplots(figsize=(7.0, 3.8))
+    x = np.arange(len(bls))
+    bars = ax.bar(x, qcdi, color=cols, alpha=0.85, edgecolor="white", linewidth=0.5, zorder=3)
+
+    # Value labels on bars
+    for xi, (bar, val) in enumerate(zip(bars, qcdi)):
+        va = "bottom" if val >= 0 else "top"
+        offset = 0.004 if val >= 0 else -0.004
+        ax.text(xi, val + offset, f"{val:+.3f}", ha="center", va=va, fontsize=7.5)
+
+    ax.axhline(0, color="black", lw=0.8)
+
+    # Taxonomy background bands
+    boundaries = {
+        "Quality-Oblivious": (0.10, qcdi.max() + 0.05),
+        "Quality-Fragile":   (0.04, 0.10),
+        "Quality-Aware":     (qcdi.min() - 0.02, 0.04),
+    }
+    for tname, (ylo, yhi) in boundaries.items():
+        ax.axhspan(ylo, yhi, color=TAXONOMY_COLOR[tname], alpha=0.06, zorder=0)
+
+    # Taxonomy labels on right
+    for tname, (ylo, yhi) in boundaries.items():
+        ymid = (ylo + yhi) / 2
+        if ymid < qcdi.min() - 0.01 or ymid > qcdi.max() + 0.04:
+            continue
+        ax.text(len(bls) - 0.2, ymid, tname.replace("-", "-\n"),
+                ha="right", va="center", fontsize=7.5,
+                color=TAXONOMY_COLOR[tname], style="italic")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=28, ha="right", fontsize=8.5)
+    ax.set_ylabel(r"QCDI = $\mathrm{ECE}_\mathrm{LQ} - \mathrm{ECE}_\mathrm{HQ}$", labelpad=5)
+    ax.set_title("Quality-Calibration Degradation Index (QCDI) Across All Methods",
+                 fontweight="semibold", pad=6)
+    ax.set_ylim(qcdi.min() - 0.04, qcdi.max() + 0.06)
+
+    # Legend
+    legend_patches = [mpatches.Patch(color=TAXONOMY_COLOR[t], alpha=0.85, label=t)
+                      for t in ["Quality-Oblivious", "Quality-Fragile", "Quality-Aware"]]
+    ax.legend(handles=legend_patches, loc="upper right", fontsize=8,
+              framealpha=0.92, edgecolor="lightgray")
+
+    fig.tight_layout(pad=1.2)
+    for ext in ("pdf", "png"):
+        fig.savefig(OUT / f"fig6_qcdi_barchart.{ext}", bbox_inches="tight")
+        print(f"  [saved] fig6_qcdi_barchart.{ext}")
+    plt.close(fig)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Main
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -539,7 +761,7 @@ def main():
     itb_subsets = pd.read_csv(PROJ / "results/itb_subsets.csv")
     q_labels    = pd.read_csv(ROOT / "data/quality_labels_all.csv")
 
-    # 如果 QCTS 已跑，用真实值覆盖投影值
+    # 加载 QCTS 真实值覆盖投影值
     qcts_path = PROJ / "results/qcts_itb_results.csv"
     if qcts_path.exists():
         qcts_df = pd.read_csv(qcts_path)
@@ -550,9 +772,19 @@ def main():
             QCTS_VAL["ITB-LQ"]["ece"] = float(lq_row["ece"].values[0])
             QCTS_VAL["ITB-HQ"]["ece"] = float(hq_row["ece"].values[0])
             QCTS_RHO = float(qcts_df["rho"].values[0])
-        qcts_df["baseline"] = "QCTS"
-        itb_results = pd.concat([itb_results, qcts_df], ignore_index=True)
-        print(f"  [QCTS] real values loaded: LQ ECE={QCTS_VAL['ITB-LQ']['ece']:.3f}")
+        qcts_df_fig = qcts_df.copy()
+        qcts_df_fig["baseline"] = "QCTS"
+        itb_results = pd.concat([itb_results, qcts_df_fig], ignore_index=True)
+        print(f"  [QCTS] LQ ECE={QCTS_VAL['ITB-LQ']['ece']:.3f}  "
+              f"HQ ECE={QCTS_VAL['ITB-HQ']['ece']:.3f}  QCDI={QCTS_VAL['ITB-LQ']['ece'] - QCTS_VAL['ITB-HQ']['ece']:+.4f}")
+
+    # Merge QCTS predictions for fig2/fig3
+    qcts_preds_path = PROJ / "results/qcts_itb_predictions.csv"
+    if qcts_preds_path.exists():
+        qcts_preds = pd.read_csv(qcts_preds_path)
+        itb_preds_full = pd.concat([itb_preds, qcts_preds], ignore_index=True)
+    else:
+        itb_preds_full = itb_preds
 
     print("\n[Fig 1] Taxonomy scatter (2-panel)...")
     fig1_taxonomy(itb_results)
@@ -561,14 +793,29 @@ def main():
     fig2_reliability(itb_preds)
 
     print("[Fig 3] Per-degradation ECE...")
-    fig3_degradation(itb_preds, q_labels, itb_subsets)
+    if (PROJ / "results/per_degradation_ece.csv").exists():
+        print("  Using pre-computed per_degradation_ece.csv")
+        fig3_from_csv()
+    else:
+        fig3_degradation(itb_preds, q_labels, itb_subsets)
 
     print("[Fig 4] Entropy-qbar scatter (HAM10000)...")
     ham_preds = pd.read_csv(PROJ / "results/external_ham10000_predictions.csv")
     fig4_entropy_qbar(ham_preds)
 
+    print("[Fig 5] T(q_bar) learned curve...")
+    if (PROJ / "results/qcts_T_curve.npy").exists():
+        fig5_T_curve()
+    else:
+        print("  Skipped: qcts_T_curve.npy not found")
+
+    print("[Fig 6] QCDI bar chart...")
+    if (PROJ / "results/all_qcdi_summary.csv").exists():
+        fig6_qcdi_barchart()
+    else:
+        print("  Skipped: all_qcdi_summary.csv not found")
+
     print(f"\n[Done] All figures -> {OUT}/")
-    print("  Next: run run_qcts.py to get real QCTS numbers, then re-run this script.")
 
 
 if __name__ == "__main__":
