@@ -14,8 +14,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D
+import matplotlib.patches as FancyBboxPatch
 import numpy as np
 import pandas as pd
+from PIL import Image as PILImage
 from scipy.stats import spearmanr
 
 matplotlib.rcParams.update({
@@ -72,12 +74,175 @@ SCORE_COLS = ["sharpness", "brightness", "completeness", "color_temp", "contrast
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Fig 0: Teaser — Motivation figure with real skin lesion images
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _crop_square(img_path, size=224):
+    """Load and centre-crop image to square."""
+    img = PILImage.open(img_path).convert("RGB")
+    w, h = img.size
+    s = min(w, h)
+    img = img.crop(((w-s)//2, (h-s)//2, (w+s)//2, (h+s)//2))
+    return img.resize((size, size), PILImage.LANCZOS)
+
+
+def _badge(ax, x, y, text, fc="#000000cc", fc_text="white", fontsize=8, ha="left", va="top"):
+    ax.text(x, y, text, transform=ax.transAxes, fontsize=fontsize,
+            fontweight="bold", color=fc_text, va=va, ha=ha,
+            bbox=dict(boxstyle="round,pad=0.22", fc=fc, ec="none", alpha=0.88))
+
+
+def _img_border(ax, color, lw=2.8):
+    for sp in ax.spines.values():
+        sp.set_visible(True); sp.set_edgecolor(color); sp.set_linewidth(lw)
+
+
+def fig0_teaser():
+    """4-column × 3-row matrix teaser:
+    Columns: HQ reference | Blur | Low Contrast | Colour Shift
+    Rows:    Original clean image | Degraded image | Confidence comparison
+    """
+    ROOT_DAT = Path("D:/YJ-Agent/data")
+    RAW  = ROOT_DAT / "raw/isic2020/train-image/image"
+    DEG  = ROOT_DAT / "paired_dataset/heavy"
+
+    # ── case definitions ──────────────────────────────────────────────────────
+    # (isic_id, q̄, primary degradation dim, prob_StdVIB, prob_QCTS, label)
+    COLS = [
+        dict(isic="ISIC_4477650", qbar=0.640, deg_label="No degradation",
+             dim_label=None,
+             prob_vib=0.098, prob_qcts=None,
+             col_title="High Quality",
+             border_good="#2ca02c", border_bad="#2ca02c"),
+        dict(isic="ISIC_8219342", qbar=0.448, deg_label="Blur ($q_1$)",
+             dim_label=r"Sharpness $q_1 = 0.03$",
+             prob_vib=0.999, prob_qcts=0.970,
+             col_title="Blur Degradation",
+             border_good="#1f77b4", border_bad="#d62728"),
+        dict(isic="ISIC_1637536", qbar=0.415, deg_label="Low contrast ($q_5$)",
+             dim_label=r"Contrast $q_5 = 0.13$",
+             prob_vib=0.960, prob_qcts=0.838,
+             col_title="Contrast Loss",
+             border_good="#1f77b4", border_bad="#d62728"),
+        dict(isic="ISIC_9766593", qbar=0.379, deg_label="Colour shift ($q_4$)",
+             dim_label=r"Colour temp. $q_4 = 0.01$",
+             prob_vib=0.967, prob_qcts=0.852,
+             col_title="Colour Shift",
+             border_good="#1f77b4", border_bad="#d62728"),
+    ]
+    N = len(COLS)
+
+    # ── layout ────────────────────────────────────────────────────────────────
+    fig = plt.figure(figsize=(12.0, 8.5))
+    gs = gridspec.GridSpec(
+        3, N, figure=fig,
+        height_ratios=[2.6, 2.6, 1.8],
+        hspace=0.10, wspace=0.06,
+        left=0.03, right=0.97, top=0.93, bottom=0.03,
+    )
+
+    ROW_LABELS = ["Original\n(clean input)", "After\ndegradation", "Confidence"]
+    for ri, rl in enumerate(ROW_LABELS):
+        fig.text(0.012, [0.82, 0.50, 0.18][ri], rl,
+                 fontsize=7.5, color="#666666", style="italic",
+                 va="center", ha="left", rotation=90)
+
+    for ci, C in enumerate(COLS):
+        orig_path = RAW / f"{C['isic']}.jpg"
+        deg_path  = DEG / f"{C['isic']}.jpg"
+
+        # ── Row 0: original image ─────────────────────────────────────────────
+        ax0 = fig.add_subplot(gs[0, ci])
+        ax0.imshow(_crop_square(orig_path))
+        ax0.axis("off")
+        _img_border(ax0, "#888888", lw=1.5)
+        _badge(ax0, 0.04, 0.97, f"$\\bar{{q}}={C['qbar']:.2f}$", fc="#1a1a1aCC")
+        ax0.set_title(C["col_title"], fontsize=9.5, fontweight="bold",
+                      color=C["border_bad"], pad=5)
+
+        # ── Row 1: degraded image ─────────────────────────────────────────────
+        ax1 = fig.add_subplot(gs[1, ci])
+        if C["dim_label"] is None:
+            # HQ column: show same clean image with "Reference" overlay
+            ax1.imshow(_crop_square(orig_path))
+            _badge(ax1, 0.5, 0.5, "Reference\n(no degradation)",
+                   fc="#2ca02cCC", ha="center", va="center", fontsize=9)
+        else:
+            ax1.imshow(_crop_square(deg_path))
+            _badge(ax1, 0.04, 0.97, C["dim_label"], fc="#990000CC", fontsize=7.5)
+        ax1.axis("off")
+        _img_border(ax1, C["border_bad"], lw=2.5)
+
+        # ── Row 2: confidence bars ────────────────────────────────────────────
+        ax2 = fig.add_subplot(gs[2, ci])
+        ax2.set_xlim(0, 1); ax2.set_ylim(-0.2, 1.0); ax2.axis("off")
+
+        # Ground truth label
+        ax2.text(0.5, 0.97, "GT: Benign (P(mel)=0)",
+                 ha="center", va="top", fontsize=7, color="#555555",
+                 transform=ax2.transAxes)
+
+        if C["prob_qcts"] is None:
+            # HQ: single green bar
+            p = C["prob_vib"]
+            ax2.barh(0.55, p, height=0.28, color="#2ca02c", alpha=0.85, left=0)
+            ax2.barh(0.55, 1-p, height=0.28, color="#dddddd", alpha=0.45, left=p)
+            ax2.text(p/2, 0.55, f"Std VIB: {p*100:.0f}%",
+                     ha="center", va="center", fontsize=8, fontweight="bold", color="white")
+            ax2.text(0.5, 0.10, "Well-calibrated",
+                     ha="center", va="center", fontsize=7.5, fontweight="bold",
+                     color="#2ca02c", transform=ax2.transAxes)
+        else:
+            # LQ: Std VIB bar (red) + QCTS bar (orange), side by side
+            p_vib  = C["prob_vib"]
+            p_qcts = C["prob_qcts"]
+            delta  = p_vib - p_qcts
+
+            # Std VIB bar
+            ax2.barh(0.70, p_vib, height=0.22, color="#d62728", alpha=0.85)
+            ax2.barh(0.70, 1-p_vib, height=0.22, left=p_vib, color="#f0c0c0", alpha=0.35)
+            ax2.text(p_vib/2, 0.70, f"Std VIB: {p_vib*100:.0f}%",
+                     ha="center", va="center", fontsize=8, fontweight="bold", color="white")
+
+            # QCTS bar
+            ax2.barh(0.35, p_qcts, height=0.22, color="#ff7f0e", alpha=0.85)
+            ax2.barh(0.35, 1-p_qcts, height=0.22, left=p_qcts, color="#ffe0b0", alpha=0.35)
+            ax2.text(p_qcts/2, 0.35, f"QCTS: {p_qcts*100:.0f}%",
+                     ha="center", va="center", fontsize=8, fontweight="bold", color="white")
+
+            # Delta annotation
+            ax2.annotate(f"",
+                xy=(p_qcts + 0.02, 0.35),
+                xytext=(p_vib + 0.02, 0.70),
+                arrowprops=dict(arrowstyle="-|>", color="#555555", lw=1.1),
+                annotation_clip=False)
+            ax2.text(p_vib + 0.04, 0.525, f"$-{delta*100:.0f}$pp",
+                     ha="left", va="center", fontsize=7.5, color="#555555")
+
+            ax2.text(0.5, 0.02, "Overconfident (benign!)",
+                     ha="center", va="bottom", fontsize=7.0, fontweight="bold",
+                     color="#d62728", transform=ax2.transAxes)
+
+    # ── global title ──────────────────────────────────────────────────────────
+    fig.suptitle(
+        r"Calibration failure under image quality shift: "
+        r"Std VIB assigns high $P(\mathrm{mel})$ to benign lesions on degraded images;"
+        r"  QCTS (ours) reduces overconfidence across all degradation types.",
+        fontsize=9, style="italic", color="#333333", y=0.975, ha="center")
+
+    for ext in ("pdf", "png"):
+        fig.savefig(OUT / f"fig0_teaser.{ext}", bbox_inches="tight", dpi=300)
+        print(f"  [saved] fig0_teaser.{ext}")
+    plt.close(fig)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Fig 1: Taxonomy Scatter — ECE-HQ (x) vs ECE-LQ (y)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # 手动偏移：精调后不重叠
 LABEL_OFFSETS = {
-    "A":    (-0.062,  0.010),
+    "A":    ( 0.007,  0.010),
     "D":    ( 0.004, -0.021),
     "TS":   ( 0.006,  0.015),
     "E":    (-0.068, -0.005),
@@ -119,8 +284,8 @@ def fig1_taxonomy(itb_results: pd.DataFrame):
     ax = axes[0]
 
     # 对角线 & QCDI 参考线
-    xlim_full = (0.07, 0.50)
-    ylim_full = (0.10, 0.68)
+    xlim_full = (0.04, 0.50)
+    ylim_full = (0.04, 0.68)
     diag = np.array(xlim_full)
     ax.plot(diag, diag,       "--", color="gray", lw=1.2, alpha=0.6, zorder=1)
     ax.plot(diag, diag + 0.05, ":", color="gray", lw=0.8, alpha=0.45, zorder=1)
@@ -163,8 +328,8 @@ def fig1_taxonomy(itb_results: pd.DataFrame):
     ax.set_title("(a) All Methods", pad=6)
 
     # 虚框标注缩放区域
-    zoom_x = (0.07, 0.22)
-    zoom_y = (0.10, 0.22)
+    zoom_x = (0.04, 0.22)
+    zoom_y = (0.04, 0.22)
     rect = mpatches.FancyBboxPatch(
         (zoom_x[0], zoom_y[0]), zoom_x[1]-zoom_x[0], zoom_y[1]-zoom_y[0],
         boxstyle="square,pad=0.002", lw=1.2, edgecolor="#444444",
@@ -176,8 +341,8 @@ def fig1_taxonomy(itb_results: pd.DataFrame):
 
     # ── 右图：放大 Quality-Aware / Fragile 区域 ──────────────────────────────
     ax2 = axes[1]
-    xlim_zoom = (0.07, 0.22)
-    ylim_zoom = (0.10, 0.22)
+    xlim_zoom = (0.04, 0.22)
+    ylim_zoom = (0.04, 0.22)
 
     diag2 = np.linspace(xlim_zoom[0], xlim_zoom[1], 100)
     ax2.plot(diag2, diag2,        "--", color="gray", lw=1.2, alpha=0.6, zorder=1)
@@ -518,7 +683,7 @@ def fig4_entropy_qbar(ham_preds: pd.DataFrame):
     axes[1].set_ylabel("")   # 共用 y 轴，右图不重复标
 
     fig.suptitle(
-        "Entropy–Quality Correlation (Proposition 2): HAM10000 Zero-Shot",
+        "Entropy–Quality Correlation on HAM10000 Zero-Shot",
         fontsize=11, fontweight="semibold", y=1.01)
     fig.tight_layout(pad=1.0, w_pad=0.5)
 
@@ -613,29 +778,35 @@ def fig3_from_csv():
 # Fig 5: T(q̄) learned curve — 3 seeds overlaid
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def fig5_T_curve():
-    data = np.load(PROJ / "results/qcts_T_curve.npy")
-    qbar_grid, T_best = data[0], data[1]
-    seeds_data = np.load(PROJ / "results/qcts_T_curves_seeds.npy")
-    qbar_s, T_seeds = seeds_data[0], seeds_data[1:]
+def _softplus(x):
+    return np.log1p(np.exp(np.clip(x, -30, 30)))
 
-    import json
-    params = json.load(open(PROJ / "results/qcts_params.json"))
+
+def fig5_T_curve():
+    import json as _json
+    params    = _json.load(open(PROJ / "results/qcts_params.json"))
+    T_ts_data = _json.loads(open(ROOT / "checkpoints/stdvib/temperature.json").read())
+    T_ts      = float(T_ts_data["T"])
+
+    # Recompute T curves directly from JSON params — avoids stale .npy files
+    qbar_grid  = np.linspace(0.0, 1.0, 200)
     alpha_vals = [s["alpha"] for s in params["all_seeds"]]
+    T0_vals    = [s["T0"]    for s in params["all_seeds"]]
+    T_seeds    = [_softplus(T0 + a * (1.0 - qbar_grid))
+                  for T0, a in zip(T0_vals, alpha_vals)]
+    T_best     = _softplus(params["T0"] + params["alpha"] * (1.0 - qbar_grid))
 
     fig, ax = plt.subplots(figsize=(5.5, 3.4))
 
     seed_colors = ["#aec7e8", "#c5b0d5", "#98df8a"]
-    for i, (T_s, a) in enumerate(zip(T_seeds, alpha_vals)):
-        ax.plot(qbar_s, T_s, lw=1.2, ls="--", color=seed_colors[i],
-                label=fr"Seed {i}: $\alpha={a:.2f}$", zorder=3)
+    for i, (T_s, T0, a) in enumerate(zip(T_seeds, T0_vals, alpha_vals)):
+        ax.plot(qbar_grid, T_s, lw=1.2, ls="--", color=seed_colors[i], alpha=0.75,
+                label=fr"Seed {i}: $T_0\!=\!{T0:.2f},\ \alpha\!=\!{a:.2f}$", zorder=3)
 
     ax.plot(qbar_grid, T_best, lw=2.2, color="#d62728",
-            label=fr"Best ($\alpha={params['alpha']:.2f}$)", zorder=5)
+            label=fr"Best ($T_0\!=\!{params['T0']:.2f},\ \alpha\!=\!{params['alpha']:.2f}$)",
+            zorder=5)
 
-    # Reference: standard TS (horizontal line)
-    import torch
-    T_ts = json.loads(open(ROOT / "checkpoints/stdvib/temperature.json").read())["T"]
     ax.axhline(T_ts, ls=":", color="gray", lw=1.0, label=f"Standard TS ($T={T_ts:.2f}$)")
 
     ax.set_xlabel(r"Quality Score $\bar{q}$", labelpad=4)
@@ -645,15 +816,15 @@ def fig5_T_curve():
                  fontweight="semibold", pad=6)
     ax.legend(fontsize=8, framealpha=0.92, edgecolor="lightgray")
 
-    # Annotation: low vs high quality
-    ax.annotate("Low quality\n(high T → low confidence)",
-                xy=(0.1, float(T_best[int(0.1 / 1.0 * len(T_best))])),
-                xytext=(0.22, float(T_best[int(0.1 / 1.0 * len(T_best))]) + 0.12),
+    # Annotations
+    ax.annotate(r"Low $\bar{q}$: high $T$ → uncertain",
+                xy=(0.05, float(T_best[10])),
+                xytext=(0.28, float(T_best[10]) + 0.15),
                 arrowprops=dict(arrowstyle="->", color="#666666", lw=0.8),
                 fontsize=7.5, color="#666666", ha="center")
-    ax.annotate("High quality\n(low T → confident)",
-                xy=(0.9, float(T_best[-1])),
-                xytext=(0.75, float(T_best[-1]) - 0.18),
+    ax.annotate(r"High $\bar{q}$: low $T$ → confident",
+                xy=(0.95, float(T_best[-1])),
+                xytext=(0.72, float(T_best[-1]) - 0.18),
                 arrowprops=dict(arrowstyle="->", color="#666666", lw=0.8),
                 fontsize=7.5, color="#666666", ha="center")
 
@@ -751,6 +922,82 @@ def fig6_qcdi_barchart():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Fig 7: QCDI Threshold Sensitivity
+# ═══════════════════════════════════════════════════════════════════════════════
+
+SHOW_SENS = ["A", "I", "D", "F", "D+QCTS"]
+SENS_LABELS = {
+    "A":     "EfficientNet-B3",
+    "I":     "MC Dropout",
+    "D":     "Std VIB",
+    "F":     "Q-VIB Full",
+    "D+QCTS": r"D + QCTS (ours)",
+}
+SENS_COLORS = {
+    "A":     METHOD_META["A"]["color"],
+    "I":     METHOD_META["I"]["color"],
+    "D":     METHOD_META["D"]["color"],
+    "F":     METHOD_META["F"]["color"],
+    "D+QCTS": "#2ca02c",
+}
+SENS_LS = {"A": "-", "I": "-.", "D": "--", "F": ":", "D+QCTS": "-"}
+SENS_LW = {"A": 1.8, "I": 1.4, "D": 1.4, "F": 1.4, "D+QCTS": 2.0}
+
+
+def fig7_threshold_sensitivity():
+    sens_path = PROJ / "results/threshold_sensitivity.csv"
+    if not sens_path.exists():
+        print("  Skipped: threshold_sensitivity.csv not found")
+        return
+
+    df = pd.read_csv(sens_path)
+    taus = sorted(df["tau_lq"].unique())
+
+    fig, ax = plt.subplots(figsize=(5.0, 3.2))
+
+    # Taxonomy background bands
+    ax.axhspan(0.10, 0.35, color=TAXONOMY_COLOR["Quality-Oblivious"], alpha=0.07, zorder=0)
+    ax.axhspan(0.04, 0.10, color=TAXONOMY_COLOR["Quality-Fragile"],   alpha=0.07, zorder=0)
+    ax.axhspan(-0.06, 0.04, color=TAXONOMY_COLOR["Quality-Aware"],    alpha=0.07, zorder=0)
+
+    # Taxonomy boundary lines
+    ax.axhline(0.10, ls=":", color=TAXONOMY_COLOR["Quality-Oblivious"], lw=0.8, alpha=0.6)
+    ax.axhline(0.04, ls=":", color=TAXONOMY_COLOR["Quality-Fragile"],   lw=0.8, alpha=0.6)
+    ax.axhline(0.00, ls="-", color="black", lw=0.6, alpha=0.4)
+
+    for bl in SHOW_SENS:
+        bl_df = df[df["baseline"] == bl].sort_values("tau_lq")
+        if len(bl_df) == 0:
+            continue
+        ax.plot(bl_df["tau_lq"], bl_df["qcdi"],
+                color=SENS_COLORS[bl], lw=SENS_LW[bl], ls=SENS_LS[bl],
+                marker="o", markersize=4,
+                label=SENS_LABELS[bl], zorder=4)
+
+    # Band labels
+    ax.text(taus[-1] + 0.003, 0.18, "Oblivious", fontsize=7,
+            color=TAXONOMY_COLOR["Quality-Oblivious"], va="center", style="italic")
+    ax.text(taus[-1] + 0.003, 0.07, "Fragile",   fontsize=7,
+            color=TAXONOMY_COLOR["Quality-Fragile"],   va="center", style="italic")
+    ax.text(taus[-1] + 0.003, 0.00, "Aware",     fontsize=7,
+            color=TAXONOMY_COLOR["Quality-Aware"],     va="center", style="italic")
+
+    ax.set_xlabel(r"LQ threshold $\tau_\mathrm{LQ}$", labelpad=4)
+    ax.set_ylabel("QCDI", labelpad=4)
+    ax.set_title("QCDI vs. LQ Threshold (Robustness Check)",
+                 fontweight="semibold", pad=6, fontsize=10)
+    ax.legend(fontsize=7.5, framealpha=0.92, edgecolor="lightgray",
+              loc="upper right", ncol=1)
+    ax.set_xlim(taus[0] - 0.005, taus[-1] + 0.025)
+
+    fig.tight_layout(pad=1.2)
+    for ext in ("pdf", "png"):
+        fig.savefig(OUT / f"fig7_threshold_sensitivity.{ext}", bbox_inches="tight")
+        print(f"  [saved] fig7_threshold_sensitivity.{ext}")
+    plt.close(fig)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Main
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -786,6 +1033,9 @@ def main():
     else:
         itb_preds_full = itb_preds
 
+    print("[Fig 0] Teaser figure...")
+    fig0_teaser()
+
     print("\n[Fig 1] Taxonomy scatter (2-panel)...")
     fig1_taxonomy(itb_results)
 
@@ -814,6 +1064,9 @@ def main():
         fig6_qcdi_barchart()
     else:
         print("  Skipped: all_qcdi_summary.csv not found")
+
+    print("[Fig 7] Threshold sensitivity...")
+    fig7_threshold_sensitivity()
 
     print(f"\n[Done] All figures -> {OUT}/")
 

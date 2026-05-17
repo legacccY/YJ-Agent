@@ -2,42 +2,46 @@
 
 ## 当前状态
 
-- **阶段**：BMVC 投稿（P2，Deadline 2026-05-29）+ 阶段七/八并行
-- **BMVC 进度**：实验全部完成，论文更新完毕，PDF 编译零错误（16 页）
+- **阶段**：BMVC 投稿（P2，Deadline 2026-05-29）
+- **BMVC 进度**：实验完成，图表全面升级，论文 12 页 PDF 编译零错误
 
 ### BMVC 已完成（2026-05-17）
 
-#### 实验（run_bmvc_experiments.py）
-- **QCTS on Std VIB (D)**：LQ ECE 0.146 → 0.047（68% 改善），QCDI 从 +0.018 → -0.015，ρ: -0.033 → -0.108（HAM10000）
-- **QCTS on EfficientNet-B3 (A)**：alpha=0（退化为标准 TS），证明 QCTS 需要质量敏感表示才有效
-- **功能形式消融**：softplus（提出方案，QCDI=-0.015）> linear（-0.004）> piecewise（+0.029）
-  - 关键发现：最小化 NLL 不能保证 QCDI 最优
-- **跨数据集 QCDI**：ITB vs HAM10000 Kendall τ=0.714（p=0.030）
-- **逐退化维度 ECE**：Color temp (q4) 是最严重退化，不是 blur（修正了论文旧叙事）
-- **TS 反转 ρ**：ρ 从 -0.033 → +0.324，TS 使质量感知变差，强发现
+#### 实验结果
+- QCTS on Std VIB: LQ ECE 0.146→0.047（68%↓），QCDI +0.018→-0.015，ρ -0.033→-0.108
+- QCTS on EfficientNet-B3: alpha=0（退化为 TS），证明 QCTS 需要质量敏感表示
+- TS 反转 ρ：+0.324（最强发现）；阈值敏感性 Kendall τ=0.85（分类稳健）
+- Color temp (q4) 最严重退化，D+QCTS 三项中最优
 
-#### 图表（gen_bmvc_figures.py，6 张图）
-- fig1: QCDI 柱状图（新）
-- fig2: 校准分类散点图
-- fig3: 逐退化 ECE（含 D+QCTS）
-- fig4: Entropy-q̄（HAM10000）
-- fig5: T(q̄) 学习曲线（新）
-- fig6: 可靠性曲线
+#### 图表（gen_bmvc_figures.py，7+1 张图）
+- **fig0_teaser**（新，重大升级）：4 列 × 3 行真实皮肤镜图像矩阵
+  - 4 列：HQ 参考 / 模糊 / 低对比度 / 颜色偏移
+  - 3 行：原图 / 降质图 / Std VIB vs QCTS 置信度对比
+  - 直观展示 96-100% 的过置信危险 + QCTS 12-15pp 修正效果
+- fig1：分类散点图（QCTS 星星现在可见，xlim 修正）
+- fig2：可靠性曲线
+- fig3：逐退化 ECE（含 Q-VIB Full）
+- fig4：Entropy-q̄ 散点（HAM10000）
+- fig5：T(q̄) 学习曲线（从 JSON 重算，修正 stale .npy 问题）
+- fig6：QCDI 柱状图
+- fig7：阈值敏感性曲线（数据存于 results/，论文里压缩为一句话）
 
-#### 论文（bmvc_final.tex → 16 页 PDF）
-- 标题：Quality-Aware Calibration: Benchmarking and Correcting Confidence Under Image Quality Shift
-- Abstract：完整真实摘要
-- Table 1：全部真实数据（无 † 投影值），含 TS 正 ρ 的惊人发现
-- Table 2：逐退化 ECE 修正（color temp 最严重，+D+QCTS 列）
-- Finding 1-3：更新为实际数据
-- QCTS Analysis：68% 改善，功能形式消融，A 退化为 TS 的发现
-- 6 张图全部 \includegraphics 嵌入
+#### 论文（bmvc_final.tex → 12 页）
+- 结构重组：删 §5.5 + fig7（改为正文一句话），删 fig6 barchart
+- 新增 fig0_teaser 进 Introduction + 更新正文引用
+- Table 2：加 Q-VIB Full 列，修正 low contrast 最优标注
+- Discussion：4 段→2 段（压缩约 0.5 页）
+- Related Work：3 段→2 段（压缩约 0.3 页）
+- 所有 figure float：[t]→[htbp]（修复排版错位）
+- 编译：pdflatex × 2 + bibtex，零 error，12 页，1.3MB
 
 ### BMVC 待完成（还剩 12 天）
 
 | 优先级 | 任务 |
 |--------|------|
-| 🔴 | 英文润色（Introduction / Discussion 最需要） |
+| 🔴 | fig4 升级为 2×2 grid（加 TS+QCTS 对比，展示 TS 反转发现） |
+| 🔴 | 自引匿名化（anonymous2025qvib/visiscore 暴露身份，双盲风险） |
+| 🟡 | 英文润色（Introduction / Discussion） |
 | 🔴 | 导师审阅（5/28 前） |
 | 🟡 | 论文页面调整（16 页可能过长，BMVC 限 14 页除 ref） |
 | 🟡 | 匿名化检查（无自引暴露身份） |

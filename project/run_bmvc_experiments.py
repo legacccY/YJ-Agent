@@ -721,6 +721,90 @@ def compute_all_qcdi(itb_preds):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Part 8: QCDI Threshold Sensitivity (reads from existing CSVs, no GPU needed)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def run_threshold_sensitivity():
+    """Sweep LQ threshold to show taxonomy classification is robust to threshold choice."""
+    from scipy.stats import kendalltau
+    print("\n" + "="*60)
+    print("PART 8: Threshold Sensitivity")
+    print("="*60)
+
+    itb = pd.read_csv(OUT / "itb_predictions.csv")
+    qcts_p = pd.read_csv(OUT / "qcts_itb_predictions.csv")
+    qcts_p["baseline"] = "D+QCTS"
+    # Use only ISIC 2020 subsets (exclude ITB-Diverse which is FitzPatrick17k)
+    itb_isic = itb[itb["subset"] != "ITB-Diverse"].copy()
+    all_preds = pd.concat([itb_isic, qcts_p[qcts_p["subset"] != "ITB-Diverse"]],
+                          ignore_index=True)
+
+    # Deduplicate: keep one row per (baseline, subset, prob_pos, target) —
+    # some images appear in both ITB-LQ and ITB-Edge; we drop duplicates by
+    # (baseline, prob_pos rounded to 6dp) to keep unique predictions.
+    all_preds["_key"] = all_preds["baseline"] + "_" + all_preds["prob_pos"].round(6).astype(str)
+    all_preds = all_preds.drop_duplicates(subset="_key").drop(columns="_key")
+    print(f"  Unique predictions: {len(all_preds)} across {len(all_preds['baseline'].unique())} methods")
+
+    lq_thresholds = np.round(np.arange(0.38, 0.47, 0.01), 2)
+    hq_thresh = 0.50  # fixed HQ threshold
+
+    rows = []
+    for tau_lq in lq_thresholds:
+        for bl in sorted(all_preds["baseline"].unique()):
+            sub  = all_preds[all_preds["baseline"] == bl]
+            qbar = sub["qbar"].values
+            prob = sub["prob_pos"].values.clip(1e-7, 1 - 1e-7)
+            tgts = sub["target"].values
+
+            lq_mask = qbar < tau_lq
+            hq_mask = qbar > hq_thresh
+            if lq_mask.sum() < 15 or hq_mask.sum() < 15:
+                continue
+            ece_lq = compute_binary_ece(prob[lq_mask], tgts[lq_mask])
+            ece_hq = compute_binary_ece(prob[hq_mask], tgts[hq_mask])
+            qcdi   = ece_lq - ece_hq
+            rows.append({"tau_lq": float(tau_lq), "baseline": bl,
+                         "n_lq": int(lq_mask.sum()), "n_hq": int(hq_mask.sum()),
+                         "ece_lq": ece_lq, "ece_hq": ece_hq, "qcdi": qcdi})
+
+    df = pd.DataFrame(rows)
+    df.to_csv(OUT / "threshold_sensitivity.csv", index=False)
+    print(f"  Saved: threshold_sensitivity.csv")
+
+    # Report QCDI range per method and taxonomy consistency
+    ref_tau = 0.45
+    ref_df = df[df["tau_lq"] == ref_tau][["baseline", "qcdi"]].set_index("baseline")
+    print("\n  QCDI range across thresholds (taxonomy stability):")
+    for bl in sorted(df["baseline"].unique()):
+        bl_df = df[df["baseline"] == bl]
+        qmin, qmax = bl_df["qcdi"].min(), bl_df["qcdi"].max()
+        ref_q = float(ref_df.loc[bl, "qcdi"]) if bl in ref_df.index else float("nan")
+        tax = "Oblivious" if ref_q > 0.10 else ("Fragile" if ref_q > 0.04 else "Aware")
+        print(f"    {bl:10s}: [{qmin:.4f}, {qmax:.4f}]  ref={ref_q:.4f}  ({tax})")
+
+    # Kendall tau between adjacent threshold rankings
+    bls_common = sorted(df["baseline"].unique())
+    taus_list = sorted(df["tau_lq"].unique())
+    tau_vals = []
+    for i in range(len(taus_list) - 1):
+        t1, t2 = taus_list[i], taus_list[i+1]
+        q1 = [df[(df["tau_lq"] == t1) & (df["baseline"] == b)]["qcdi"].values[0]
+              for b in bls_common if len(df[(df["tau_lq"] == t1) & (df["baseline"] == b)]) > 0]
+        q2 = [df[(df["tau_lq"] == t2) & (df["baseline"] == b)]["qcdi"].values[0]
+              for b in bls_common if len(df[(df["tau_lq"] == t2) & (df["baseline"] == b)]) > 0]
+        min_len = min(len(q1), len(q2))
+        if min_len >= 4:
+            kt, kp = kendalltau(q1[:min_len], q2[:min_len])
+            tau_vals.append(kt)
+    if tau_vals:
+        print(f"\n  Kendall tau (adjacent thresholds): mean={np.mean(tau_vals):.3f}, "
+              f"min={np.min(tau_vals):.3f}")
+
+    return df
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Main
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -754,6 +838,9 @@ def main():
 
     # Part 7: QCDI summary
     compute_all_qcdi(itb_preds)
+
+    # Part 8: Threshold sensitivity (CSV-only, no GPU)
+    run_threshold_sensitivity()
 
     print("\n" + "=" * 60)
     print("All experiments done.")

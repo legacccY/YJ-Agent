@@ -1,4 +1,4 @@
-\begin{thebibliography}{23}
+\begin{thebibliography}{21}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -110,15 +110,6 @@ Andrey Malinin and Mark Gales.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}, 2018.
 
-\bibitem[Menze et~al.(2015)Menze, Jakab, Bauer, Kalpathy-Cramer, Farahani,
-  Kirby, Burren, Porz, Slotboom, Wiest, et~al.]{menze2014multimodal}
-Bjoern~H. Menze, Andras Jakab, Stefan Bauer, Jayashree Kalpathy-Cramer, Keyvan
-  Farahani, Justin Kirby, Yuliya Burren, Nicole Porz, Johannes Slotboom, Roland
-  Wiest, et~al.
-\newblock The multimodal brain tumor image segmentation benchmark ({BRATS}).
-\newblock \emph{IEEE Transactions on Medical Imaging}, 34\penalty0
-  (10):\penalty0 1993--2024, 2015.
-
 \bibitem[Ovadia et~al.(2019)Ovadia, Fertig, Ren, Nado, Sculley, Nowozin,
   Dillon, Lakshminarayanan, and Snoek]{ovadia2019uncertainty}
 Yaniv Ovadia, Emily Fertig, Jie Ren, Zachary Nado, D.~Sculley, Sebastian
@@ -150,12 +141,6 @@ Laleh Seyyed-Kalantari, Haoran Zhang, Matthew B.~A. McDermott, Irene~Y. Chen,
 \newblock Underdiagnosis bias of artificial intelligence algorithms applied to
   chest radiographs in under-served patient populations.
 \newblock \emph{Nature Medicine}, 27:\penalty0 2176--2182, 2021.
-
-\bibitem[Subbaswamy and Saria(2021)]{subbaswamy2021evaluating}
-Adarsh Subbaswamy and Suchi Saria.
-\newblock Evaluating robustness of clinical {AI} models to distribution shift.
-\newblock In \emph{Proceedings of the Conference on Health, Inference, and
-  Learning (CHIL)}, 2021.
 
 \bibitem[Tschandl et~al.(2018)Tschandl, Rosendahl, and
   Kittler]{tschandl2019ham10000}
