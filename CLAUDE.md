@@ -65,20 +65,18 @@
 
 ---
 
-## VisiSkin-Agent 阶段计划文档
+## VisiSkin-Agent 项目文档
 
-项目计划文档位于 `D:\YJ-Agent\project\plans\`。
+**主要文档**（按重要性排序）：
+1. **`D:\YJ-Agent\project\PROJECT_OVERVIEW.md`** ⭐ — 项目全景（启动必读，5 分钟了解全貌）
+2. **`D:\YJ-Agent\WORKLOG.md`** — 快速进度指针（一句话状态 + 下一步清单）
+3. **`D:\YJ-Agent\project\meeting\BMVC/BMVC_LOG.md`** — BMVC 投稿独立日志
+4. **`D:\YJ-Agent\project\plans/`** — 详细阶段计划文件夹
 
-**规则**：当用户说「开始阶段 X」「进入阶段 X」「我们到阶段 X 了」「阶段 X 开始」等语句时，在回复前先用 Read 工具加载对应文件，再开始工作：
-
-- 总览：`D:\YJ-Agent\project\plans\00_overview.md`
-- 阶段一：`D:\YJ-Agent\project\plans\phase_01_setup.md`
-- 阶段二：`D:\YJ-Agent\project\plans\phase_02_data.md`
-- 阶段三：`D:\YJ-Agent\project\plans\phase_03_visiscore.md`
-- 阶段四：`D:\YJ-Agent\project\plans\phase_04_qad.md`
-- 阶段五：`D:\YJ-Agent\project\plans\phase_05_agent.md`
-- 阶段六：`D:\YJ-Agent\project\plans\phase_06_benchmark.md`
-- 阶段七：`D:\YJ-Agent\project\plans\phase_07_paper.md`
+**规则**：
+- 启动 CC 时：先 read `PROJECT_OVERVIEW.md` 了解当前焦点和核心数据
+- 用户说「开始阶段 X」：加载 `project/plans/phase_0X_*.md` 获取实现细节
+- BMVC 工作流：所有 BMVC 进度记在 `meeting/BMVC/BMVC_LOG.md`
 
 ---
 
