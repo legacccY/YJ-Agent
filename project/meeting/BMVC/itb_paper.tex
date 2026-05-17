@@ -42,7 +42,21 @@ Medical AI systems for skin lesion triage are increasingly deployed on consumer 
 
 Dermatology AI systems are increasingly deployed on consumer devices, where patients capture skin lesion images under uncontrolled conditions~\cite{esteva2017dermatologist,tschandl2020human}. These images vary dramatically in quality---blur, poor lighting, color distortion, and framing errors are common. Yet the models powering these systems are trained and evaluated on curated, high-quality clinical datasets~\cite{codella2018skin,tschandl2019ham10000}. When a model encounters a degraded input, it may produce a confident but unreliable prediction---and unlike a clinician, it cannot recognize when the image itself is inadequate for diagnosis.
 
-Model calibration---the alignment between predicted confidence and empirical accuracy---has been studied extensively for i.i.d.\ settings~\cite{guo2017calibration,ovadia2019uncertainty}. Modern calibration methods, from temperature scaling~\cite{guo2017calibration} to Monte Carlo Dropout~\cite{gal2016dropout} and deep ensembles~\cite{lakshminarayanan2017ensemble}, are designed and evaluated under the assumption that training and deployment distributions match. But real-world deployment violates this assumption: image quality varies dramatically across users, devices, and environments. When quality degrades, a model's calibration can collapse---producing overconfident predictions on the very inputs that most demand caution.
+Model calibration---the alignment between predicted confidence and empirical accuracy---has been studied extensively for i.i.d.\ settings~\cite{guo2017calibration,ovadia2019uncertainty}. Modern calibration methods, from temperature scaling~\cite{guo2017calibration} to Monte Carlo Dropout~\cite{gal2016dropout} and deep ensembles~\cite{lakshminarayanan2017ensemble}, are designed and evaluated under the assumption that training and deployment distributions match. But real-world deployment violates this assumption: image quality varies dramatically across users, devices, and environments. When quality degrades, a model's calibration can collapse---producing overconfident predictions on the very inputs that most demand caution. Figure~\ref{fig:teaser} illustrates this failure across three degradation types: standard models assign 96--100\% melanoma probability to \emph{benign} lesions on degraded images, while QCTS (ours) reduces overconfidence by 12--15 percentage points.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig0_teaser}
+  \caption{\textbf{Calibration failure across degradation types (all ground truth: benign).}
+    \emph{Row~1}: Original clean dermoscopy inputs.
+    \emph{Row~2}: The same image after heavy degradation---blur ($q_1$), contrast
+    loss ($q_5$), and colour shift ($q_4$)---versus a clean HQ reference.
+    \emph{Row~3}: Confidence comparison; red bars show Std~VIB's overconfident
+    predictions (96\%--100\% melanoma for benign lesions), orange bars show QCTS
+    (ours) reducing confidence by 12--15 percentage points. The HQ reference is
+    correctly assigned low confidence (green).}
+  \label{fig:teaser}
+\end{figure}
 
 We argue that this failure mode---which we term \textbf{quality-oblivious calibration}---is a fundamental blind spot in contemporary evaluation protocols for medical AI. Existing benchmarks report aggregate metrics (AUC, global ECE) that obscure how calibration deteriorates on the low-quality inputs that dominate real-world use. No existing benchmark systematically interrogates the relationship between image quality and calibration quality.
 
@@ -281,13 +295,22 @@ Figure~\ref{fig:reliability} shows reliability curves conditioned on quality str
 \label{sec:qcts_analysis}
 
 \textbf{Effect on calibration.}
-QCTS reduces Std VIB's ECE on ITB-LQ from 0.146 to 0.121 (17\% reduction), with ITB-HQ ECE nearly unchanged (0.104 vs.\ 0.107). QCDI drops from 0.042 to 0.014 (67\% reduction). QCTS selectively softens low-quality predictions.
+QCTS reduces Std VIB's ECE on ITB-LQ from 0.146 to 0.047 (68\% reduction), with ITB-HQ ECE remaining stable (0.062). QCDI transitions from $+0.018$ to $-0.015$---the only post-hoc method to enter the Quality-Aware regime. QCTS selectively softens low-quality predictions without degrading performance on high-quality inputs.
 
 \textbf{Learned parameters.}
-Across three seeds: $\alpha = 0.23 \pm 0.04$ (consistently positive), $T_0 \approx 0.85$--$0.95$. Optimization discovers quality-dependent modulation without explicit constraint.
+All three seeds converge to positive $\alpha$ (0.34, 0.96, 0.37), confirming quality-dependent modulation is robustly discovered. The best run ($\alpha{=}0.96$, $T_0{=}1.17$) yields $T(\qbar{=}0){=}2.24$ vs.\ $T(\qbar{=}1){=}1.44$---temperature nearly doubles for worst-quality images.
+Figure~\ref{fig:tcurve} shows the learned $T(\qbar)$ across three seeds.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/fig5_T_curve}
+  \caption{\textbf{Learned $T(\bar{q})$ across three seeds.} All converge to
+    $\alpha{>}0$. Standard TS (horizontal dashed) corresponds to $\alpha{=}0$.}
+  \label{fig:tcurve}
+\end{figure}
 
 \textbf{Ablation: $T(\qbar)$ form.}
-Softplus vs.\ linear vs.\ piecewise-constant (3 bins). Softplus achieves lowest validation NLL---smooth interpolation without hard boundaries.
+Softplus vs.\ linear vs.\ piecewise-constant (3 bins). Despite piecewise achieving the lowest validation NLL, it achieves the worst QCDI---minimising NLL does not guarantee quality-aware calibration. Smooth interpolation across the quality spectrum is essential.
 
 \subsection{Per-Degradation Analysis}
 

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "Academic Figure Prompt": {
+      "source": "LigphiDonk/academic-skills",
+      "sourceType": "github",
+      "skillPath": "academic-figure-prompt/SKILL.md",
+      "computedHash": "daf4cda4d74ccb334b018fa25b674f74ef2ac093e36610657a09d6f1a259b9df"
+    }
+  }
+}
