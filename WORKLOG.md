@@ -88,4 +88,24 @@ Std VIB + QCTS:    ECE 0.047  (68% ↓) ✅
 
 ---
 
-最后更新时间：2026-05-17 10:50（北京时间）
+## 📅 今日完成（2026-05-17）
+
+### ✅ 1. 项目文档重构
+- 创建 `project/PROJECT_OVERVIEW.md`：495 行完整项目全景（四大技术、分阶段进度、BMVC 线、数据资产、核心数据速查表）
+- 简化 WORKLOG.md：改为快速指针格式，指向 PROJECT_OVERVIEW
+- 更新 CLAUDE.md：明确文档导航优先级
+
+### ✅ 2. BMVC 文件整理
+- 创建 `BMVC_PLAN.md`：13 天投稿日程 + 论文大纲 + 实验清单 + 终检表
+- 创建 `BMVC/README.md`：文件导航和工作流指南
+- 创建 `BMVC/plan/README.md`：三个计划文件的索引
+- 建立清晰目录结构：paper/ + figures/ + reference/ + plan/ + experiments/
+
+### ✅ 3. token 效率优化
+- 减少重复信息：所有进度汇总到 PROJECT_OVERVIEW.md
+- 清晰的导航结构：下次启动 CC 能 3 分钟内了解全貌
+- 分门别类的计划：BMVC 投稿资源有序组织，秒速定位
+
+---
+
+最后更新时间：2026-05-17 15:30（北京时间）
