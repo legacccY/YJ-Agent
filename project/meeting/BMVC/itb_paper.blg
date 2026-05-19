@@ -3,44 +3,44 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: itb_paper.aux
 The style file: plainnat.bst
 Database file #1: egbib.bib
-You've used 23 entries,
+You've used 22 entries,
             2773 wiz_defined-function locations,
-            704 strings with 10630 characters,
-and the built_in function-call counts, 14135 in all, are:
-= -- 1094
-> -- 1354
-< -- 5
-+ -- 456
-- -- 432
-* -- 1300
-:= -- 2310
-add.period$ -- 69
-call.type$ -- 23
-change.case$ -- 206
+            700 strings with 10531 characters,
+and the built_in function-call counts, 14066 in all, are:
+= -- 1078
+> -- 1364
+< -- 3
++ -- 457
+- -- 435
+* -- 1305
+:= -- 2283
+add.period$ -- 66
+call.type$ -- 22
+change.case$ -- 204
 chr.to.int$ -- 22
-cite$ -- 46
-duplicate$ -- 488
-empty$ -- 860
-format.name$ -- 461
-if$ -- 2821
-int.to.chr$ -- 2
+cite$ -- 44
+duplicate$ -- 486
+empty$ -- 863
+format.name$ -- 463
+if$ -- 2817
+int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 21
-newline$ -- 123
-num.names$ -- 92
-pop$ -- 422
+missing$ -- 22
+newline$ -- 118
+num.names$ -- 88
+pop$ -- 430
 preamble$ -- 1
-purify$ -- 183
+purify$ -- 182
 quote$ -- 0
-skip$ -- 420
+skip$ -- 416
 stack$ -- 0
-substring$ -- 262
+substring$ -- 260
 swap$ -- 32
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 253
+type$ -- 242
 warning$ -- 0
-while$ -- 84
+while$ -- 81
 width$ -- 0
-write$ -- 292
+write$ -- 280

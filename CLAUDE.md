@@ -91,3 +91,18 @@
 **提醒规则**：当用户说「开始训练」「跑实验」「train 一下」「跑一下」「开始跑」等语句时，主动提示使用上述命令，不要直接用裸 `python` 命令启动训练。
 
 详细流程、错误分类和修复规则见 `.claude/commands/run-experiment.md`。
+
+---
+
+## 大项目工作流 Skills
+
+新 skills（2026-05 新增）：
+
+| Skill | 触发场景 |
+|-------|---------|
+| `/validate-figures` | 生成图表后，逐项核查轴域、数字一致性、Simpson's Paradox |
+| `/phase-transition` | 当前阶段全部完成，切换到下一阶段 |
+| `/spin-off-paper` | 从主项目拆出独立子论文投稿 |
+| `/pre-submit-check` | 投稿前数字溯源 + 匿名化 + 图表验证状态检查 |
+
+项目骨架模板：`project/templates/`（新项目复制这里）

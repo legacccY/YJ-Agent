@@ -1,0 +1,19 @@
+{
+  "project": "{PROJECT_NAME}",
+  "last_updated": "YYYY-MM-DD",
+  "experiments": [
+    {
+      "run_id": "YYYYMMDD_HHMMSS_{name}",
+      "phase": 1,
+      "config_path": "./experiments/runs/YYYYMMDD_HHMMSS_{name}/config.json",
+      "results_path": "./experiments/runs/YYYYMMDD_HHMMSS_{name}/final_metrics.json",
+      "status": "done",
+      "tags": ["phase1", "baseline", "ablation"],
+      "key_metrics": {
+        "metric_name": 0.0
+      },
+      "paper_reference": null,
+      "note": "{实验目的/备注}"
+    }
+  ]
+}

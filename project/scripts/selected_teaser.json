@@ -1,0 +1,68 @@
+{
+  "_comment": "Fig 1 teaser 最终选定的 4 张图。生成于 select_teaser_candidates.py 候选池 + 视觉验证。",
+  "columns": [
+    {
+      "col_id": "hq",
+      "col_title": "High Quality",
+      "subtitle": "Clinical-grade input",
+      "isic": "ISIC_8713598",
+      "qbar": 0.76,
+      "primary_dim": null,
+      "primary_value": null,
+      "prob_vib": 0.010,
+      "prob_qcts": 0.010,
+      "delta_pp": 0,
+      "verdict": "Well-calibrated",
+      "verdict_colour": "good",
+      "use_raw_for_row2": true
+    },
+    {
+      "col_id": "blur",
+      "col_title": "Blur",
+      "subtitle": "Severe sharpness loss",
+      "isic": "ISIC_8370773",
+      "qbar": 0.38,
+      "primary_dim": "Sharpness",
+      "primary_symbol": "q_1",
+      "primary_value": 0.002,
+      "prob_vib": 0.890,
+      "prob_qcts": 0.748,
+      "delta_pp": -14,
+      "verdict": "Overconfident (benign!)",
+      "verdict_colour": "bad",
+      "use_raw_for_row2": false
+    },
+    {
+      "col_id": "colour",
+      "col_title": "Colour Shift",
+      "subtitle": "Extreme white-balance",
+      "isic": "ISIC_9383110",
+      "qbar": 0.36,
+      "primary_dim": "Colour temp.",
+      "primary_symbol": "q_4",
+      "primary_value": 0.000,
+      "prob_vib": 0.955,
+      "prob_qcts": 0.830,
+      "delta_pp": -13,
+      "verdict": "Overconfident (benign!)",
+      "verdict_colour": "bad",
+      "use_raw_for_row2": false
+    },
+    {
+      "col_id": "combined",
+      "col_title": "Combined",
+      "subtitle": "Blur + low contrast",
+      "isic": "ISIC_9989680",
+      "qbar": 0.41,
+      "primary_dim": "Sharpness + Contrast",
+      "primary_symbol": "q_1, q_5",
+      "primary_value": 0.002,
+      "prob_vib": 0.812,
+      "prob_qcts": 0.684,
+      "delta_pp": -13,
+      "verdict": "Overconfident (benign!)",
+      "verdict_colour": "bad",
+      "use_raw_for_row2": false
+    }
+  ]
+}

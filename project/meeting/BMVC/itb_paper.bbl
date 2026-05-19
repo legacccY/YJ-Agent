@@ -1,4 +1,4 @@
-\begin{thebibliography}{23}
+\begin{thebibliography}{22}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -10,18 +10,6 @@ Alexander~A. Alemi, Ian Fischer, Joshua~V. Dillon, and Kevin Murphy.
 \newblock Deep variational information bottleneck.
 \newblock In \emph{Proceedings of the International Conference on Learning
   Representations (ICLR)}, 2017.
-
-\bibitem[Anonymous(2026{\natexlab{a}})]{anonymous2025qvib}
-Anonymous.
-\newblock {Q-VIB}: Quality-adaptive variational information bottleneck for
-  dermatoscopic image diagnosis.
-\newblock Under review, 2026{\natexlab{a}}.
-
-\bibitem[Anonymous(2026{\natexlab{b}})]{anonymous2025visiscore}
-Anonymous.
-\newblock {VisiScore-Net}: Five-dimensional quality assessment for dermoscopic
-  images.
-\newblock Under review, 2026{\natexlab{b}}.
 
 \bibitem[Barata et~al.(2023)Barata, Celebi, and Marques]{barata2023quality}
 Catarina Barata, M.~Emre Celebi, and Jorge~S. Marques.
@@ -142,6 +130,12 @@ Seong~Jin Park, Hyunwoo Kim, and Sangho Lee.
 \newblock Deep learning-based image quality assessment for dermoscopic images.
 \newblock In \emph{IEEE International Symposium on Biomedical Imaging (ISBI)},
   2023.
+
+\bibitem[Sensoy et~al.(2018)Sensoy, Kaplan, and Kandemir]{sensoy2018evidential}
+Murat Sensoy, Lance Kaplan, and Melih Kandemir.
+\newblock Evidential deep learning to quantify classification uncertainty.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2018.
 
 \bibitem[Seyyed-Kalantari et~al.(2021)Seyyed-Kalantari, Zhang, McDermott, Chen,
   and Ghassemi]{seyyed2021underdiagnosis}

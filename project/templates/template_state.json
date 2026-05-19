@@ -1,0 +1,28 @@
+{
+  "run_id": "YYYYMMDD_HHMMSS_{experiment_name}",
+  "config_hash": "xxxxxxxx",
+  "status": "starting",
+  "phase": 1,
+  "experiment_name": "{name}",
+  "started_at": "YYYY-MM-DDTHH:MM:SS",
+  "updated_at": "YYYY-MM-DDTHH:MM:SS",
+  "gpu_id": 0,
+  "metrics": {
+    "current_epoch": 0,
+    "total_epochs": 100,
+    "train_loss": null,
+    "val_metric": null,
+    "best_val_metric": null,
+    "best_epoch": null
+  },
+  "target_metrics": {
+    "val_metric": 0.0
+  },
+  "convergence": {
+    "plateau_epochs": 0,
+    "improving": true
+  },
+  "errors": [],
+  "checkpoint_path": "./experiments/runs/{run_id}/checkpoint/",
+  "log_path": "./log/train_{run_id}.log"
+}
