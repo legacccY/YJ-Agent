@@ -1,0 +1,45 @@
+# BMVC Table 1 — EDL baseline (Sensoy et al. 2018)
+# EfficientNet-B3 backbone with Dirichlet evidence output.
+# Probability output: alpha_1 / (alpha_0 + alpha_1)
+
+backbone:
+  name: efficientnet_b3
+  pretrained: true
+  num_classes: 2
+  drop_rate: 0.3           # EfficientNet-B3 default classifier dropout
+
+data:
+  img_size: 300            # EfficientNet-B3 native resolution
+  metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
+  split_csv: D:/YJ-Agent/data/isic_split.csv
+  image_root: D:/YJ-Agent/data/raw/isic2020/train-image/image
+  num_workers: 0
+
+train:
+  epochs: 90
+  batch_size: 32
+  lr: 1.0e-4               # head LR
+  lr_backbone: 5.0e-6      # backbone LR (pretrained weights)
+  weight_decay: 1.0e-4
+  seed: 42
+  amp: true
+  warmup_epochs: 5
+  grad_clip: 1.0
+  # EDL-specific
+  evidence_activation: relu   # relu or softplus
+  annealing_epochs: 10        # KL coefficient ramps 0→1 over first 10 epochs
+
+output:
+  checkpoint_dir: D:/YJ-Agent/project/checkpoints/edl
+  logits_dir: D:/YJ-Agent/project/results/edl
+  best_metric: auc
+
+wandb:
+  project: visiskin-bmvc-baselines
+  entity: null
+  mode: offline
+  run_name: edl-isic2020
+
+device:
+  cuda: true
+  gpu_id: 0
