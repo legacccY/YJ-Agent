@@ -1,13 +1,37 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-19 深夜 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-20 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
 ## 🎯 当前焦点
 
-- **BMVC 投稿** | Deadline 2026-05-29（**10 天**）| 状态：**重大策略调整中** — 剥离 Q-VIB / VisiScore-Net 保护 MICCAI novelty + 创新性 3 杠杆升级
+- **BMVC 投稿** | Deadline 假设 2026-06-18（**60 天**）| 状态：**60 天稳中路线启动** — 期望命中率 72-77%（合规版，无真 Reader Study）
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
+
+## 🚫 永久红线
+Reader Study 不可伪造（详见 BMVC_LOG.md 顶部"永久红线" section）。临床相关性用 DCA + Triage simulation + Published dermatologist baseline 替代。
+
+## ✅ D1 非写作任务完成（2026-05-20）
+
+### fig5：Per-bin optimal T* vs QCTS curve
+- 脚本：`project/scripts/gen_fig5_perbin_T.py`
+- 输出：`figures/fig5_perbin_optimal_T.{pdf,svg,png}`
+- 用 `degraded_val` 数据（9936 样本）按 q̄ 分 20 bin，拟合每 bin 最优 T*，叠加 QCTS softplus 曲线
+- ViT-Tiny：散点清晰跟随下降曲线（alpha=1.40 → T 随 q̄ 升高而降低）
+- ResNet-50：曲线接近平坦（alpha=0.24）
+
+### fig6：TS reversal — ECE gap flip bar chart
+- 脚本：`project/scripts/gen_fig6_ts_reversal.py`
+- 输出：`figures/fig6_ts_reversal.{pdf,svg,png}`
+- ViT-Tiny：Raw ΔECE=+0.023 → Std-TS ΔECE=**-0.029**（符号翻转 = reversal！）
+- ResNet-50：Raw +0.014 → TS +0.004（始终为正 = neutral）
+- 直接可视化 "TS reversal most pronounced on ViT-Tiny" 这一 §5.4 核心 claim
+
+### ⚠️ 待决策（D2）
+- ImageNet-C pilot 数据来源未确定（下载 Zenodo ~1.8GB vs imagecorruptions 库）
+
+---
 
 ## ✅ §5.4 Backbone Universality 实验完成（2026-05-19）
 
@@ -36,18 +60,35 @@
 
 ---
 
-## 🚀 下一步（清单）
+## 🚀 下一步（60 天稳中路线，完整日程见 BMVC_LOG.md 2026-05-19 深夜）
 
-### 本周（2026-05-19~05-26）BMVC 冲刺
+### 8 周高层日程（D1=05-20，投稿日 07-15~18）
+
+| Week | 日期 | 核心工作 |
+|------|------|---------|
+| **W1** | 05-20~26 | 叙事重构 + §5.4 正文 + ImageNet-C 全量 + ConvNeXt/Swin 训练 |
+| **W2** | 05-27~06-02 | 过度参数化消融完整 + 5 quality scalar 对比 + EDL + CheXpert 跨域 |
+| **W3** | 06-03~09 | Fundus 跨域 + 真实低质照片采集（实习生拍）+ Sub-population fairness |
+| **W4** | 06-10~16 | DCA + Triage simulation + Theory section（1 页） |
+| **W5** | 06-17~23 | Failure clustering + Table/Figure 全部重做（10-12 主图） |
+| **W6** | 06-24~30 | 写作打磨 × 5 轮（含 4-6 人 adversarial review + copy-editing） |
+| **W7** | 07-01~07 | 30-50 页 supplementary + Code/Docker/ITB v1.0 release 打包 |
+| **W8** | 07-08~14 | 编译 × 3 + 数字核查 + buffer × 3 天 |
+| **投稿** | 07-15~18 | OpenReview 上传 + ethics declaration 签署 |
+
+### D1 必须启动的 3 件事（critical path）
+
+1. 联系皮肤科诊所，安排实习生/护士采集 200 张真实低质照片（4 周窗口）
+2. 起 ITB v1.0 数据集 license 草稿（CC-BY-NC-SA 或类似）
+3. 写 anonymous GitHub repo skeleton（累积 8 周 commit history）
+
+### 已完成（保留作为历史）
 - [x] **P0**：ResNet-50 + ViT-Tiny 训练完成（best AUC 0.884 / 0.903）
 - [x] **P0**：infer_backbone.py + run_qcts_backbone.py 跑完，section54_summary.csv 就位
-- [ ] **P0**：写 §5.4 universality 实际内容（替换占位）— **下次首要**
-- [ ] **P1**：TS 反转 visualization 图
-- [ ] **P1**：Per-bin optimal T 散点图
-- [ ] **P1**：EDL baseline 训练
-- [ ] **P2**：重做 Table 1（删 E/F/G）+ 4 张图（gen_bmvc_figures METHOD_META 删 F/G）
-- [ ] **P2**：Abstract hook 化 + 每图 caption 加结论句 + Limitations 防御写作
-- [ ] **VisiEnhance 决策**：选方案 A（重训，30-40h）或 B（接受 25-26 dB）— **延后到 BMVC 投稿后**
+
+### 7 月后
+- [ ] MICCAI 版本 Abstract / Experiments / Conclusion / Appendix（含真 Reader Study + train-time EDL/DUE 对照）
+- [ ] **VisiEnhance 决策**：选方案 A（重训 30-40h）或 B（接受 25-26 dB）
 
 ### 5 月底前（投稿前）
 - [ ] **BMVC**：最终检查 + OpenReview 上传
