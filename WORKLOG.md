@@ -29,8 +29,18 @@
 - ResNet-50：Raw +0.014 → TS +0.004（始终为正 = neutral）
 - 直接可视化 "TS reversal most pronounced on ViT-Tiny" 这一 §5.4 核心 claim
 
-### ⚠️ 待决策（D2）
-- ImageNet-C pilot 数据来源未确定（下载 Zenodo ~1.8GB vs imagecorruptions 库）
+### ✅ ImageNet-C 风格腐蚀鲁棒性实验完成（2026-05-19）
+- 方案：imagecorruptions 库（无需下载，实时生成）
+- 脚本：`project/scripts/test_corruption_robustness.py`（14 腐蚀 × 5 级别 × ITB-LQ 300 张）
+- 结果：`results/backbones/{resnet50,vit_tiny}/corruption_robustness_itb-lq.csv`
+
+| 汇总 | ResNet-50 | ViT-Tiny |
+|------|-----------|----------|
+| Clean AUC | 0.691 | 0.718 |
+| Mean Corruption AUC | 0.623 | 0.645 |
+| AUC drop | 0.068 | 0.073 |
+
+关键：ViT 绝对性能更高但稍脆弱；blur 类 AUC 反高于 clean（皮肤镜特有现象）
 
 ---
 
