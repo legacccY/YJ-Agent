@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-19 晚 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-19 深夜 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
@@ -9,15 +9,18 @@
 - **BMVC 投稿** | Deadline 2026-05-29（**10 天**）| 状态：**重大策略调整中** — 剥离 Q-VIB / VisiScore-Net 保护 MICCAI novelty + 创新性 3 杠杆升级
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
 
-## ⚠️ BMVC 紧急策略变更（2026-05-19）
+## ✅ §5.4 Backbone Universality 实验完成（2026-05-19）
 
-**问题**：原 BMVC 论文自引 `anonymous2025qvib` + `anonymous2025visiscore` 2 条未发表工作 + 公开 Q-VIB 方法骨架 + 3 个变体性能 — 提前曝光大论文 novelty。
+| Backbone | best AUC | ρ(H,q̄) Raw | TS 反转 | QCTS ρ |
+|----------|----------|------------|---------|--------|
+| ResNet-50 | 0.884 | −0.368 ✅ | 无 | −0.380 |
+| ViT-Tiny | 0.903 | −0.160 ✅ | **有** ✅ | −0.266 (p=9e-23) |
 
-**对策**：
-- ✅ 已完成：tex 15 处脱敏（Q-VIB 11 处 + VisiScore 4 处）+ 删 bib 自引 + 写 QCTS derivation 段 + §5.4 占位 + 编译干净 14 页
-- ⏳ 下次首要任务：写 ResNet-50 + ViT-Tiny 训练脚本 → `/loop /run-experiment ...` 启动
+- logits 输出：`results/backbones/{resnet50,vit_tiny}/`
+- QCTS 拟合结果：`results/backbones/section54_summary.csv`
+- ITB-Diverse（Fitzpatrick17k）排除出 §5.4（跨域，放 Limitations）
 
-**详见**：`project/meeting/BMVC/BMVC_LOG.md` 2026-05-19 entry（含完整下次执行 checklist）
+**详见**：`project/meeting/BMVC/BMVC_LOG.md` 2026-05-19 entry
 
 ---
 
@@ -36,11 +39,9 @@
 ## 🚀 下一步（清单）
 
 ### 本周（2026-05-19~05-26）BMVC 冲刺
-- [ ] **P0**：写 ResNet-50 + ViT-Tiny 训练脚本（不需 GPU，可立即开始）
-- [ ] **P0**：`/loop /run-experiment train_resnet50.py configs/resnet50.yaml`（GPU 6-8h）
-- [ ] **P0**：`/loop /run-experiment train_vit_tiny.py configs/vit_tiny.yaml`（GPU 6-8h）
-- [ ] **P0**：改造 run_qcts.py 支持任意 backbone + 跑 4 backbone × {TS, QCTS} + bootstrap CI
-- [ ] **P0**：写 §5.4 universality 实际内容（替换占位）
+- [x] **P0**：ResNet-50 + ViT-Tiny 训练完成（best AUC 0.884 / 0.903）
+- [x] **P0**：infer_backbone.py + run_qcts_backbone.py 跑完，section54_summary.csv 就位
+- [ ] **P0**：写 §5.4 universality 实际内容（替换占位）— **下次首要**
 - [ ] **P1**：TS 反转 visualization 图
 - [ ] **P1**：Per-bin optimal T 散点图
 - [ ] **P1**：EDL baseline 训练

@@ -1,0 +1,43 @@
+# BMVC §5.4 — Backbone Universality: ResNet-50 baseline
+# Pure backbone classification (no ABCD / quality tokens), used to verify QCTS
+# generality across CNN families. Outputs val/test logits for run_qcts.py.
+
+backbone:
+  name: resnet50
+  weights: IMAGENET1K_V2   # torchvision.models.resnet50 weights enum
+  num_classes: 2
+  dropout: 0.2
+
+data:
+  img_size: 224
+  metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
+  split_csv: D:/YJ-Agent/data/isic_split.csv
+  image_root: D:/YJ-Agent/data/raw/isic2020/train-image/image
+  num_workers: 4
+
+train:
+  epochs: 30
+  batch_size: 64
+  lr: 1.0e-4          # FC head LR
+  lr_backbone: 5.0e-6 # pretrained backbone LR (20x smaller, prevents feature destruction)
+  weight_decay: 1.0e-4
+  seed: 42
+  amp: true
+  label_smoothing: 0.05
+  warmup_epochs: 5
+  grad_clip: 1.0
+
+output:
+  checkpoint_dir: D:/YJ-Agent/project/checkpoints/resnet50
+  logits_dir: D:/YJ-Agent/project/results/backbones/resnet50
+  best_metric: auc          # save best by val AUC
+
+wandb:
+  project: visiskin-bmvc-backbones
+  entity: null
+  mode: offline
+  run_name: resnet50-isic2020
+
+device:
+  cuda: true
+  gpu_id: 0
