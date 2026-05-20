@@ -9,6 +9,27 @@
 - **BMVC 投稿** | Deadline 假设 2026-06-18（**60 天**）| 状态：**60 天稳中路线启动** — 期望命中率 65-72%（合规版 + 网上获取约束）
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
 
+## ✅ 今日完成（2026-05-20 第二次会话）
+
+### D10 + EDL + §5.5 + 5-backbone 全部完成
+
+| 任务 | 状态 | 核心数字 |
+|------|------|---------|
+| D10 质量标量消融 bug 修复 | ✅ | 5-head IQA α=0.95 best，BRISQUE α=0（collapse） |
+| EDL ITB inference | ✅ | AUC-LQ=0.586 ECE-LQ=0.316 QCDI=+0.046 ρ=+0.039 |
+| §5.5 ImageNet-C 章节 + fig7 | ✅ | TS neutral，QCTS 18/18 改善 |
+| Table 3 扩展 5 backbone | ✅ | ConvNeXt + Swin（Swin QCDI flip +0.020→-0.021） |
+| §5.2 EDL 行为描述 | ✅ | "Quality-Fragile"定性 |
+| gen_bmvc_figures.py METHOD_META 清理 | 🟡 | F/G 部分清理（还剩1340+行未清） |
+| CheXpert 跨域脚本 | ✅ 写完 | 等 kaggle 数据下载完 |
+
+### 待续（下次会话）
+- [ ] **Kaggle chest-xray 下载** 正在后台跑（任务 ID b117dhnbz），完成后运行 `python project/scripts/eval_chexray_crossdomain.py`
+- [ ] **gen_bmvc_figures.py** 剩余 F/G 清理（1340-1950 行）+ 重跑 fig{1,2,3,4}
+- [ ] **fig_method.svg** 重跑（含 VisiScore-Net → 5-head IQA 替换）
+
+---
+
 ## ✅ 今日完成（2026-05-20）
 
 ### W2 D8-D9：QCTS Form Ablation 扩展

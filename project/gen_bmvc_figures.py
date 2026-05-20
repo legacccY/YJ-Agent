@@ -53,8 +53,6 @@ METHOD_META = {
     "TS":   {"label": "Std VIB + TS",             "color": "#6baed6", "marker": "^", "ms": 8},
     "QCTS": {"label": r"Std VIB + QCTS (ours)$^\dagger$", "color": "#2ca02c", "marker": "*", "ms": 14},
     "E":    {"label": "Adaptive Prior",            "color": "#9467bd", "marker": "D", "ms": 7},
-    "F":    {"label": "Q-VIB Full",               "color": "#d62728", "marker": "P", "ms": 9},
-    "G":    {"label": "Q-VIB+TokFT",              "color": "#ff7f0e", "marker": "X", "ms": 8},
     "H":    {"label": "Focal + LS",               "color": "#8c564b", "marker": "v", "ms": 8},
     "I":    {"label": "MC Dropout",               "color": "#e377c2", "marker": "<", "ms": 8},
     "J":    {"label": "Deep Ensemble",            "color": "#bcbd22", "marker": ">", "ms": 8},
@@ -336,7 +334,7 @@ TAX_INK = {
 }
 
 # 4 representative methods to overlay on reliability panels
-SHOW_REL_F2 = ["I", "J", "D", "F"]
+SHOW_REL_F2 = ["I", "J", "D"]
 
 
 def _reliability(prob, tgt, n_bins=12):
@@ -439,8 +437,6 @@ def fig2_problem(itb_results: pd.DataFrame, itb_preds_full: pd.DataFrame):
         "D":    ( 0.085,  0.040),    # Std VIB             (right-up)
         "TS":   ( 0.135, -0.015),    # +TS                 (right-down)
         "E":    (-0.085,  0.055),    # Adaptive Prior      (left-up)
-        "F":    ( 0.045, -0.060),    # Q-VIB Full          (down-right)
-        "G":    ( 0.130,  0.055),    # Q-VIB+TokFT         (far right-up)
         "H":    (-0.005,  0.025),    # Focal+LS            (up)
         "I":    (-0.082,  0.025),    # MC Dropout          (left)
         "J":    ( 0.022, -0.050),    # Deep Ensemble       (down-right)
@@ -449,7 +445,7 @@ def fig2_problem(itb_results: pd.DataFrame, itb_preds_full: pd.DataFrame):
     for bl in bls:
         meta = METHOD_META[bl]
         x, y = pivot[bl]["hq"], pivot[bl]["lq"]
-        zord = 9 if bl in ("F", "QCTS") else 6
+        zord = 9 if bl == "QCTS" else 6
         if bl == "QCTS":
             # Two-layered star: white halo + filled coloured star + small dot to anchor
             ax_a.scatter(x, y, s=600, color="#FFFFFF", marker="*",
@@ -466,16 +462,16 @@ def fig2_problem(itb_results: pd.DataFrame, itb_preds_full: pd.DataFrame):
         # Leader line (thin grey) from point to label anchor
         ax_a.plot([x, lx], [y, ly], "-", color=meta["color"], lw=0.45,
                   alpha=0.55, zorder=zord - 1)
-        fw = "bold" if bl in ("F", "QCTS") else "normal"
-        fs = 7.8 if bl in ("F", "QCTS") else 7.0
+        fw = "bold" if bl == "QCTS" else "normal"
+        fs = 7.8 if bl == "QCTS" else 7.0
         # Halign / valign computed from offset direction for cleaner anchoring
         ha = "left" if dx >= 0 else "right"
         va = "bottom" if dy >= 0 else "top"
         ax_a.text(lx, ly, meta["label"], fontsize=fs, color=meta["color"],
                   fontweight=fw, ha=ha, va=va, zorder=11,
                   bbox=dict(boxstyle="round,pad=0.16", fc="white",
-                            ec=meta["color"] if bl in ("F", "QCTS") else "none",
-                            lw=0.7 if bl in ("F", "QCTS") else 0,
+                            ec=meta["color"] if bl == "QCTS" else "none",
+                            lw=0.7 if bl == "QCTS" else 0,
                             alpha=0.95))
 
     # Connection D → QCTS to highlight the post-hoc improvement path
@@ -554,7 +550,7 @@ def fig2_problem(itb_results: pd.DataFrame, itb_preds_full: pd.DataFrame):
             else:
                 bl_df = sub_df[sub_df["baseline"] == bl]
                 meta = METHOD_META[bl]
-                ls = "-" if bl == "F" else ("--" if bl == "D" else "-.")
+                ls = "--" if bl == "D" else "-"
                 lw = 1.6
                 mk = meta["marker"]
             if len(bl_df) == 0:
@@ -608,10 +604,9 @@ DIM_DISPLAY_F3 = {
     "contrast":   ("Low contrast",  r"$q_5\!\downarrow$"),
 }
 
-SHOW_BLS_F3 = ["D", "F", "D+QCTS"]   # only 3 for clarity in (b)
+SHOW_BLS_F3 = ["D", "D+QCTS"]   # only 2 for clarity in (b)
 BL_F3_META = {
     "D":      dict(label="Std VIB",            colour=METHOD_META["D"]["color"], hatch=""),
-    "F":      dict(label="Q-VIB Full",         colour=METHOD_META["F"]["color"], hatch=""),
     "D+QCTS": dict(label="Std VIB + QCTS (ours)", colour=C_FIX,                  hatch="//"),
 }
 
@@ -878,7 +873,7 @@ def fig3_qcts(itb_preds: pd.DataFrame, qcts_preds: pd.DataFrame):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Methods present in cross_dataset_qcdi.csv (excluding I/J which weren't run)
-CROSS_BLS = ["A", "D", "TS", "E", "F", "G", "H"]
+CROSS_BLS = ["A", "D", "TS", "E", "H", "I", "J"]
 
 
 def _entropy(prob_pos):
@@ -891,7 +886,7 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
                         itb_preds: pd.DataFrame):
     """3-panel generalization figure.
 
-    (a) Entropy~q̄ triptych on HAM10000: Std VIB | +QCTS | Q-VIB Full
+    (a) Entropy~q̄ triptych on HAM10000: Std VIB | +QCTS
     (b) Cross-dataset QCDI bar chart (ISIC / HAM / PAD-UFES × 8 methods)
     (c) Fitzpatrick I-VI fairness QCDI per skin type × 3 methods
     """
@@ -905,10 +900,9 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
         wspace=0.35, hspace=0.65,
         left=0.055, right=0.985, top=0.91, bottom=0.13,
     )
-    # (a) three hexbin panels (top row, columns 0-2)
+    # (a) two hexbin panels (top row, columns 0-1; column 2 intentionally empty)
     ax_a1 = fig.add_subplot(gs[0, 0])
     ax_a2 = fig.add_subplot(gs[0, 1])
-    ax_a3 = fig.add_subplot(gs[0, 2])
     # (b) cross-dataset (bottom row, columns 0-2)
     ax_b  = fig.add_subplot(gs[1, 0:3])
     # (c) fairness (right column, full height)
@@ -917,9 +911,8 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
     # ── (a) Entropy~q̄ triptych ────────────────────────────────────────────────
     from scipy.stats import spearmanr
 
-    # Build {Std VIB, +QCTS, Q-VIB Full} per-sample on HAM10000
+    # Build {Std VIB, +QCTS} per-sample on HAM10000
     pred_d = ham_preds[ham_preds["baseline"] == "D"].copy()
-    pred_f = ham_preds[ham_preds["baseline"] == "F"].copy()
 
     # +QCTS: apply softplus(T0 + α(1-q̄)) to D's logits.  We don't store logits, so
     # use the qcts_preds CSV's HAM rows if present; otherwise approximate by recomputing.
@@ -942,7 +935,6 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
     panels = [
         (ax_a1, pred_d, "Std VIB",           METHOD_META["D"]["color"]),
         (ax_a2, pred_q, "+QCTS (ours)",      C_FIX),
-        (ax_a3, pred_f, "Q-VIB Full",        METHOD_META["F"]["color"]),
     ]
     # Compute common axis range
     x_min, x_max = 0.35, 1.0
@@ -993,7 +985,6 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
         ax.set_axisbelow(True)
 
     ax_a2.set_ylabel("")  # share ylabel with ax_a1
-    ax_a3.set_ylabel("")
     fig.text(0.345, 0.965, "(a)  Entropy–quality on HAM10000 (zero-shot, n=10,015)",
              ha="center", fontsize=8.5, fontweight="bold")
 
@@ -1090,7 +1081,7 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
     method_specs = [
         ("D",      "Std VIB",                  METHOD_META["D"]["color"]),
         ("D+QCTS", "+QCTS (ours)",             C_FIX),
-        ("F",      "Q-VIB Full",               METHOD_META["F"]["color"]),
+        ("H",      "Focal + LS",               METHOD_META["H"]["color"]),
     ]
     group_specs = [
         ((1, 2), "I–II",  "#FFCFB3"),
@@ -1099,7 +1090,7 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
     ]
 
     pred_diverse_D = itb_preds[(itb_preds["baseline"] == "D") & (itb_preds["subset"] == "ITB-Diverse")].reset_index(drop=True)
-    pred_diverse_F = itb_preds[(itb_preds["baseline"] == "F") & (itb_preds["subset"] == "ITB-Diverse")].reset_index(drop=True)
+    pred_diverse_H = itb_preds[(itb_preds["baseline"] == "H") & (itb_preds["subset"] == "ITB-Diverse")].reset_index(drop=True)
     pred_diverse_Q = qcts_preds[(qcts_preds["baseline"] == "D+QCTS") & (qcts_preds["subset"] == "ITB-Diverse")].reset_index(drop=True)
     # Align fp_scale with prediction rows (assumed same order as itb_subsets)
     fp_scale = sub_diverse["fitzpatrick_scale"].values
@@ -1129,8 +1120,8 @@ def fig4_generalization(ham_preds: pd.DataFrame, qcts_preds: pd.DataFrame,
     for i, (mid, mlbl, mcol) in enumerate(method_specs):
         if mid == "D":
             pred_df = pred_diverse_D.copy(); pred_df["qbar"] = sub_diverse["qbar"].values
-        elif mid == "F":
-            pred_df = pred_diverse_F.copy(); pred_df["qbar"] = sub_diverse["qbar"].values
+        elif mid == "H":
+            pred_df = pred_diverse_H.copy(); pred_df["qbar"] = sub_diverse["qbar"].values
         else:
             pred_df = pred_diverse_Q.copy(); pred_df["qbar"] = sub_diverse["qbar"].values
 
