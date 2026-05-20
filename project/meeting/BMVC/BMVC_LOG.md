@@ -2,6 +2,255 @@
 
 ---
 
+## 2026-05-20 晚 ⚡ D6 + D7 提前完成（含严重数字修复）
+
+### D6 §6 调整
+- 加 "Structural reason TS reverses on weakly quality-aware backbones" 段（200 词，连接 §5.4 nuanced framing → Discussion）
+- Limitations 4 条：reversal backbone-dependent / ITB synthetic / q̄ resolution+IQA cost / clinical
+- 6 fig captions 全部 `\emph{Takeaway:}` 句
+
+### D7 数字一致性扫描（部分）
+- ✅ R1-R7 grep 0 命中：Q-VIB / VisiScore / anonymous2025 / "TS always" / "universal reversal" / "we prove"
+- ⚠️ **重大发现 + 修复**：Abstract / Intro / §5.2 写 Std VIB raw ρ=−0.024，但 csv 实测：
+  - ITB-LQ only (n=300): ρ=−0.0285（p=0.62 非显著）→ +TS ρ=−0.387（更负，**不是 reversal**）
+  - **Full ITB pool (n=2820): ρ=−0.1529（p=3e-16）→ +TS ρ=+0.2406（p=2e-38）= 真 reversal**
+  - 原文混用两个 pool 的数字。修复：3 处 −0.024 → −0.153 + pool 限定 "full ITB pool, n=2820" + p-value 标注
+- ✅ STORY_FRAMEWORK Table 1/3 lock value −0.153 一致
+- ✅ 编译 0 error，主文 14 页内（总 16 页 = content + 3 ref pages）
+
+### 仍待办（W1 D7）
+- [ ] §5.4 / §5.5 / 跨数据集 ρ（HAM10000 −0.108 / PAD-UFES −0.150）逐条核算 vs `external_*_predictions.csv`
+- [ ] Table 1 / Table 3 数字与 csv 逐项对照（防止 ViT-Tiny 字段错位再发生）
+- [ ] §5.5 ImageNet-C 章节（等per-sample 数据重跑后）
+
+---
+
+## 🚫 永久红线（任何路线都不可绕过）
+
+**1. Reader Study 数据不可伪造**。任何"声称有医生帮助、录用后再补"的路线全部排除。
+
+**2. 所有材料只能从网上公开资源获取**（用户 2026-05-20 确认）。不联系诊所、不采集线下样本、不依赖人际网络做 adversarial review。所有数据集、figures、reference baseline、validation 评论都来自公开渠道。
+
+技术不可行原因（不是道德说教）：
+1. BMVC 用 OpenReview，submission 时间戳 + 全文永久存档
+2. Camera-ready 必须比对 submission；新增 major experiment 在 rebuttal 阶段必须 disclose
+3. Rebuttal 期 7-14 天，医院 IRB 流程 4-8 周，时间上补不上
+4. Reviewer 会专门要 IRB 编号 / reader pool 资质 / raw labels
+5. Camera-ready ethics declaration 再签一次，内容是 submission 时实际做的事
+6. 机构 academic integrity 可追溯（OpenReview 时间戳 + 代码 commit history + IRB 时间戳）
+7. 风险收益比：1 篇 BMVC 加 ~5% PhD 申请分；1 个 misconduct record → degree revocation 风险 + PhD 黑名单 + 推荐信难拿
+
+**临床相关性的合规替代**（无需医生即可做）：
+- Decision Curve Analysis（DCA）：模型预测 × 临床 threshold × net benefit 曲线
+- Triage simulation：confidence threshold 触发转诊的 referral rate / missed lesion rate
+- Published dermatologist baseline：cite ISIC 2018-2020 challenge 的 human performance 数据作 reference line
+
+---
+
+## 2026-05-19 深夜 ⚡ 60 天稳中路线图（取代 10 天版本）
+
+### 战略调整
+
+用户决定走 60 天扩展路线（假设 BMVC 2026 deadline 为 2026-06-18，30 天 → 60 天延长）。原 10 天日程作废，按 8 周 + 2 周 buffer 走。期望命中率 **65-72%**（网上获取约束下，进一步无真实照片采集 + 无真人 adversarial review）。
+
+### 命中率分层
+
+| 版本 | 命中率 | 关键 lever |
+|------|-------|----------|
+| 10 天冲刺 | 45-55% | 仅基础扩展 |
+| 30 天 | 65-75% | + 跨域 + 部分实验扩展 |
+| 60 天 + 真照片 + 真专家审 | 72-77% | + 真实数据 + 真人 review |
+| **60 天 + 网上获取约束**（当前） | **65-72%** | LLM-based review + 公开 dermoscopy 数据替代 |
+| 60 天 + 真 Reader Study | 78-82% | + 3-5 医生 × 100-200 图（已永久排除） |
+
+### 网上获取约束下的关键替代
+
+| 原计划 | 网上获取约束下的替代 |
+|--------|---------------------|
+| 实习生/护士采集 200 张真实低质照片 | 网上公开真实低质 dermoscopy（published case reports supplementary / Kaggle community / Reddit r/Dermatology public cases / 医学教育视频 dermoscopy demo 截图）+ 论文中明确 framing 为 "in-the-wild proxy collected from publicly available sources" |
+| 4-6 人真人 adversarial review | LLM-based multi-perspective review（GPT-5 / Claude Opus 4.7 / Gemini 各扮 senior reviewer / junior reviewer / non-domain reviewer）+ 自审 BMVC 评审 form × 2 轮 + 自评 reviewer rubric |
+| 联系皮肤科诊所 critical path | 删除（D1 不再有联系诊所任务） |
+| 找 1-2 calibration 专家做技术审 | LLM 扮演 "skeptical calibration expert" + 主动加入最近 2 年 arxiv calibration papers 做 baseline 对照 |
+
+### 60 天 vs 30 天的 10 项关键 lever（质量跃迁，不是数量堆砌）
+
+| Lever | 30 天版 | 60 天版 | 命中率提升 |
+|-------|--------|---------|----------|
+| 1. 跨域 modality | ImageNet-C | + CheXpert + Fundus（DRIVE/IDRiD）共 4 modality | +5% |
+| 2. Backbone 数量 | 4 backbone | 6 backbone（+ ConvNeXt-Tiny + Swin-Tiny）| +3% |
+| 3. Quality scalar 来源 | 1 种（VisiScore-Net） | 5 种对比（VisiScore-Net / BRISQUE / NIQE / RF / Deep IQA）| +3% |
+| 4. 真实低质照片 | 仅 programmatic | + 100-200 张公开渠道真实低质 dermoscopy（published case / Kaggle / Reddit public）"in-the-wild proxy" | +2% |
+| 5. 临床相关性 | Reader Study pilot | **DCA + Triage simulation + Published dermatologist baseline** | +3-5% |
+| 6. Theory | softplus uniqueness sketch（半页） | 完整 1 页 Theory + IB connection + PAC-Bayes bound | +3% |
+| 7. Statistics 严谨性 | 3-5 seed + bootstrap | + Cohen's d + Bonferroni + Power analysis | +2% |
+| 8. Reproducibility | Code release | Code + Docker + ITB v1.0 数据集打包 + 一键复现 script | +3% |
+| 9. 写作 review | 3 轮 + 2 人 adversarial | 5-8 轮 + **3 个 LLM 扮演 reviewer**（GPT-5 / Claude Opus 4.7 / Gemini 各扮不同 persona）+ BMVC 评审 form 自评 × 2 轮 + LLM copy-editing | +2% |
+| 10. Supplementary | 10-20 页 | 30-50 页 + Pre-emptive rebuttal in Discussion | +2% |
+
+### 60 天 8 周日程表
+
+#### Week 1（D1-D7，2026-05-20 ~ 05-26）：核心扩展 must-have
+- D1：叙事重构（Abstract/Intro 双 hook）+ §5.4 正文 + Table 3
+- D2：Per-bin optimal T 图（fig5）+ TS 反转 visualization（fig6）
+- D3-D4：ImageNet-C **全量** 19 corruption × 5 severity（不要 pilot 决策门）+ §5.5 跨域段
+- D5-D7：并行训练 **ConvNeXt-Tiny + Swin-Tiny**（6 backbone universality）
+
+#### Week 2（D8-D14，05-27 ~ 06-02）：消融 + 第二 modality + EDL
+- D8-D9：过度参数化消融完整（QCTS-bin10 / dimwise / MLP）→ Table 2 扩展
+- D10：5 种 quality scalar 来源对比（VisiScore-Net / BRISQUE / NIQE / RF / Deep IQA）
+- D11-D12：**EDL baseline** 训练 + 评测（taxonomy 第三类有 published 代表）
+- D13-D14：CheXpert 跨域（推理 only，DenseNet-121 + 简单图像质量评分作 q̄）
+
+#### Week 3（D15-D21，06-03 ~ 06-09）：第三 modality + 公开真实低质数据采集
+- D15-D17：Fundus 跨域（DRIVE/IDRiD + 屈光介质质量评分作 q̄）
+- D15-D18：**网上采集 100-200 张公开真实低质 dermoscopy** —— 来源：(a) ISIC 2019-2024 challenge 公开低质样本；(b) Kaggle "skin lesion" community 数据集；(c) published case report supplementary materials（PubMed Open Access + arxiv supplementary）；(d) Reddit r/Dermatology / r/medicalimages public posts（需注意 license）；(e) Fitzpatrick17k 中已知低质样本；论文 framing 为 "in-the-wild proxy from publicly available sources"
+- D19：MC Dropout + Deep Ensemble variance vs q̄ 散点 + bootstrap ρ
+- D20-D21：Sub-population fairness 全维度（age × gender × Fitzpatrick × lesion type × body location，全部用已有公开 metadata）
+
+#### Week 4（D22-D28，06-10 ~ 06-16）：临床相关性合规版 + Theory
+- D22-D23：**Decision Curve Analysis (DCA)** — 模型预测 × 临床 threshold × net benefit 曲线
+- D24：**Triage simulation** — confidence threshold 触发转诊的 referral rate / missed lesion rate
+- D25：**Published dermatologist baseline** — cite ISIC 2018-2020 challenge 的 human performance 作 reference line（§5.7 半页）
+- D26-D27：完整 1 页 Theory section（softplus uniqueness + IB connection + PAC-Bayes bound）
+- D28：真实低质照片收尾 + 与 programmatic degradation 对照分析
+
+#### Week 5（D29-D35，06-17 ~ 06-23）：Failure analysis + 图表全部重做
+- D29：Failure mode auto-clustering（HDBSCAN on confidently-wrong embedding）+ §6 升级
+- D30-D31：Table 1 / 2 / 3 / ablation extended / ImageNet-C / DCA / fairness 全部重做
+- D32-D35：所有 Figures 重做（10-12 张主图 + supplementary 20+ 张），每张图 5-8 版迭代到出版级
+
+#### Week 6（D36-D42，06-24 ~ 06-30）：写作打磨 × 5 轮（LLM-based review）
+- D36：Round 1 — 自己重写一遍
+- D37：Round 2 — **GPT-5 扮 senior reviewer**（prompt：扮一位 BMVC area chair，给 strongly accept 的标准是什么；指出 framing 弱点）
+- D38：Round 3 — **Claude Opus 4.7 扮 non-domain reviewer**（prompt：扮一位 generic CV reviewer 不熟 medical AI，找 jargon 和未交代清楚的地方）
+- D39-D40：Round 4 — **Gemini 扮 skeptical calibration expert**（prompt：扮一位 OOD/calibration 资深 researcher，专挑 softplus form / TS reversal claim / cross-domain 的方法学漏洞）+ 加入最近 2 年 arxiv calibration papers 做 baseline 对照
+- D41：Round 5 — LLM copy-editing（语法 + tone + BMVC 学术风格）+ 自审 BMVC 评审 form × 2 轮
+- D42：Pre-emptive rebuttal in Discussion 写入（基于 LLM review 输出的 top 5-8 攻击点主动消灭）
+
+#### Week 7（D43-D49，07-01 ~ 07-07）：Supplementary + reproducibility 工程化
+- D43-D45：30-50 页 supplementary 工程化（每个 reviewer 可能问的细节都有 supplementary section）
+- D46-D47：Code release 打包（GitHub anonymous + Docker + requirements.txt 锁版本 + 一键复现 script + ITB v1.0 数据集打包 + license）
+- D48-D49：模拟 BMVC 评审 form 自评 × 2 轮
+
+#### Week 8（D50-D56，07-08 ~ 07-14）：编译 + 数字核查 + buffer
+- D50-D51：数字一致性 final pass（每个 Table 数字、每个正文数字与 csv/json 源对照）
+- D52-D53：pdflatex × 3 + 页数压（≤14）+ supplementary 编译
+- D54-D56：buffer × 3 天（最后 contingency）
+
+#### Day 57-60（07-15 ~ 07-18）：投稿
+- 最终 OpenReview 上传 + reproducibility statement / ethics declaration 签署
+
+### 必须 D1-D2 启动（critical path 调整为网上获取版本）
+
+1. **D1 起 ITB v1.0 数据集 license 草稿**：CC-BY-NC-SA 或类似，code release 需要
+2. **D1 写 anonymous GitHub repo skeleton**：便于 8 周内持续 commit + 累积 commit history
+3. **D2 启动 ImageNet-C 下载**：~70GB，下载需要 1-2 天，D3 之前必须就位
+4. **D15 启动公开真实低质 dermoscopy 采集**：4 周窗口（D15-D28），来源已列在 W3 日程
+
+~~原 critical path #1：联系皮肤科诊所~~ — **已删除**（网上获取约束）
+
+### 防御性写作 checklist（贯穿所有改动）
+
+- ⚠️ TS reversal 不是 absolute claim → "most pronounced on weakly quality-aware backbones"
+- ⚠️ ImageNet-C 的 q̄ 用 "any per-input quality scalar (learned or a priori)" framing
+- ⚠️ 不 overclaim 为 theorem，用 "derived from inductive biases" + "we sketch why"
+- ⚠️ 每个 claim 加 bootstrap CI 或 p-value
+- ⚠️ Abstract 第一句必须是 TS reversal hook
+- ⚠️ 任何新数字必须从代码核算，不能凭印象写
+- ⚠️ pilot 失败的实验段全砍，不带预测进 paper
+- ⚠️ 临床相关性段措辞用 "decision-curve analysis suggests" / "triage simulation indicates"，不 claim "doctors found"
+
+---
+
+## 2026-05-19 晚 ⚡ 稳中 BMVC 路线图（10 天冲刺 — 已作废，保留作为历史）
+
+### 触发原因
+§5.4 backbone 实验完成后，用户提出三条增强方案（ImageNet-C 跨域 / 过度参数化消融 / 叙事重构）。批判性合并后形成完整冲刺计划。
+
+### 三处批判性修正（写作必须遵守）
+
+1. **ResNet-50 不反转** — csv 显示 raw_ρ=−0.368 = ts_ρ=−0.368，TS 在该 backbone 上是 neutral 不是 harmful。Abstract / §5.4 写作必须 nuanced：「TS reversal is most pronounced on backbones that are only weakly quality-aware to begin with; on strongly quality-aware backbones, TS is neutral. QCTS is consistently beneficial in both regimes.」
+2. **ImageNet-C 的 q̄ 不是 VisiScore-Net 学的** — severity 1-5 是 categorical label。Framing 改为「universal calibrator that operates on any per-input quality scalar, whether learned (dermoscopy) or known a priori (corruption severity)」，拓宽适用面而非缩窄。
+3. **所有"预测性"实验必须先 pilot 再 commit** — ImageNet-C 跑 3 corruption 看反转比例、过度参数化消融先跑 piecewise 10-bin 看是否退化。pilot 不利就砍掉对应写作段，绝不带预测进 paper。
+
+### ⚠️ 关键 trade-off：放弃 EDL，换 ImageNet-C 时间
+EDL 是 P1，ImageNet-C 给的"跨域 generality"信号比"多一个 baseline"价值高 10 倍。EDL 推迟到 MICCAI。
+
+### 10 天日程表（2026-05-19 ~ 2026-05-29）
+
+| Day | 日期 | 主要工作 | 决策门 |
+|-----|------|---------|--------|
+| D1 | 05-20 | 叙事重构（Abstract/Intro 双 hook：reversal + universal scalar）+ §5.4 正文 + Per-bin optimal T 图 | — |
+| D2 | 05-21 | TS 反转 visualization 图 + ImageNet-C pilot（3 corruption × 5 severity，ResNet-50 推理 ~1h） | pilot 反转 ≥ 2/3 → D3 全量；否则砍 |
+| D3 | 05-22 | ImageNet-C full 19 corruption + §5.5 新段 + 散点图 | — |
+| D4 | 05-23 | 过度参数化消融 pilot（piecewise-T 10-bin 现成 logits） | piecewise 退化 → 跑 dimwise/MLP；piecewise 更好 → 改写"complexity-performance trade-off" |
+| D5 | 05-24 | 过度参数化消融 full → Table 2 扩展 + MC Dropout variance vs q̄ 分析（bootstrap） | MC \|ρ\|<0.05 → "uncorrelated"；否则改 "order-of-magnitude weaker than QCTS" |
+| D6 | 05-25 | Table 1 重做（删 E/F/G）+ 4 张图 METHOD_META 改 | — |
+| D7 | 05-26 | Limitations 防御写作 + 每图 caption 加 takeaway + 数字一致性核查 | — |
+| D8 | 05-27 | 整体编译 × 3 轮 + 页数压（如果超 14）+ supplementary 整理 | — |
+| D9-D10 | 05-28~29 | buffer + 投稿 | — |
+
+### 待办（按 Day 拆分，pilot 决策门用 ⚖️ 标）
+
+#### D1（2026-05-20）
+- [ ] 叙事重构：Abstract 第一句改为 "We observe that standard temperature scaling can reverse a model's quality-awareness..."；Intro 增加 reversal hook 段
+- [ ] §5.4 正文（替换 sec:universality 占位）：Table 3（4 backbone × {raw/+TS/+QCTS} × {ECE-LQ, ECE-HQ, ρ, QCDI}）+ nuanced 措辞（ResNet-50 不反转的处理）+ 引用 fig5/fig6
+- [ ] Per-bin optimal T 散点图脚本 → `figures/fig5_perbin_optimal_T.{pdf,svg}`（ITB 按 q̄ 分 20 bin，每 bin 拟合 optimal T*，叠加 QCTS softplus 曲线，3 backbone 子图）
+
+#### D2（2026-05-21）
+- [ ] TS 反转 visualization 图 → `figures/fig6_ts_reversal.{pdf,svg}`（ViT-Tiny LQ vs HQ 配对样本 TS 前后 confidence 箭头 + 集体趋势线）
+- [ ] ImageNet-C pilot：下载 3 个 corruption 子集（gaussian_noise / defocus_blur / contrast）× 5 severity；用 torchvision ResNet-50 跑推理；算每个 corruption 的 raw_ρ 和 ts_ρ
+- [ ] ⚖️ 决策门：≥ 2/3 corruption 反转 → D3 全量；否则砍掉 ImageNet-C 段，D3 改做过度参数化消融提前
+
+#### D3（2026-05-22）
+- [ ] ImageNet-C full 19 corruption × 5 severity 推理（~3-4h）
+- [ ] 算每个 corruption 的 raw_ρ / ts_ρ / qcts_ρ + bootstrap CI
+- [ ] §5.5 末尾新段 ~300 词 + 1 张散点图（19 个点：x=raw_ρ, y=ts_ρ, 对角线参考；反转的点高亮）
+- [ ] Framing 句："To verify that TS reversal is not a dermoscopy artefact, we evaluate the same protocol on ImageNet-C... On [X]/19 corruptions, standard TS reverses the entropy-severity correlation from negative to positive."
+
+#### D4（2026-05-23）
+- [ ] 过度参数化消融 pilot：用 ViT-Tiny + ResNet-50 现成 ITB logits 跑 QCTS-bin10（10-bin piecewise T）
+- [ ] ⚖️ 决策门：piecewise QCDI ≥ QCTS 的 → 整段砍，改写"capacity vs quality-awareness trade-off"叙事；piecewise 退化 → 继续 D5 全套
+- [ ] （备份）开始草拟 Table 2 ablation 表格结构
+
+#### D5（2026-05-24）
+- [ ] 过度参数化消融 full：QCTS-dimwise (6 参数) + QCTS-MLP (~50 参数)（约 1-2h）
+- [ ] Table 2 扩展为完整 ablation：QCTS / QCTS-dimwise / QCTS-bin10 / QCTS-MLP，对比 ECE / QCDI / ρ
+- [ ] MC Dropout variance vs q̄ 散点图（ITB-LQ 所有样本，color=correct/incorrect）+ bootstrap ρ
+- [ ] ⚖️ 决策门：MC variance \|ρ\| < 0.05 → 写 "uncorrelated"；否则改 "order-of-magnitude weaker than QCTS's entropy-q̄ correlation"
+- [ ] 关键句："Any attempt to increase capacity beyond two parameters degrades quality-awareness. Simplicity is a requirement, not a limitation."
+
+#### D6（2026-05-25）
+- [ ] 重做 Table 1（删 E/F/G 3 行）：编辑 `table1_main.tex`，重算 heatmap 渐变范围
+- [ ] 改 `gen_bmvc_figures.py` METHOD_META 删 F/G 条目；重跑生成 fig{2,3,4} SVG/PDF
+- [ ] 改 `gen_method_figure.py` VisiScore→5-head IQA；重跑 fig_method.svg
+
+#### D7（2026-05-26）
+- [ ] Limitations 段重写：诚实声明 TS reversal 的 backbone-dependence；ITB 的 synthetic degradation 局限；q̄ 学习成本
+- [ ] 每图 caption 加 takeaway 一句话
+- [ ] 数字一致性核查：每个 Table 数字、每个正文数字与 csv/json 源对照
+
+#### D8（2026-05-27）
+- [ ] pdflatex × 2 + bibtex + pdflatex × 2，0 error / 0 undefined ref
+- [ ] 页数检查：≤ 14（除参考文献）。超页 → 压缩 §5.2/§5.3 文字
+- [ ] Supplementary：grid search、完整 4×3-seed 表、ImageNet-C 完整 19 corruption 表
+
+#### D9-D10（2026-05-28 ~ 29）
+- [ ] 最终一致性扫一遍
+- [ ] OpenReview 上传
+
+### 防御性写作 checklist（贯穿所有改动）
+
+- ⚠️ TS reversal 不是 absolute claim — 用 "most pronounced on weakly quality-aware backbones"
+- ⚠️ ImageNet-C 的 q̄ 用 "any per-input quality scalar (learned or a priori)" framing
+- ⚠️ 不 overclaim 为 theorem，用 "derived from inductive biases"
+- ⚠️ 每个 claim 加 bootstrap CI 或 p-value
+- ⚠️ Abstract 第一句必须是 TS reversal hook
+- ⚠️ 任何新数字必须从代码核算
+- ⚠️ pilot 失败的实验段全砍，不带预测进 paper
+
+---
+
 ## 2026-05-19 ⚠️ 重大策略调整：剥离 Q-VIB / VisiScore-Net
 
 ### 触发原因

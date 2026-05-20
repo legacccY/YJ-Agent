@@ -117,8 +117,9 @@ def build_backbone(name: str, num_classes: int, **kwargs) -> nn.Module:
         dropout = kwargs.get("dropout", 0.0)
         net.fc = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(in_feat, num_classes))
         return net
-    if name.startswith("deit") or name.startswith("vit"):
-        import timm
+    # Any timm model (deit, vit, convnext, swin, etc.)
+    import timm
+    if timm.is_model(name):
         return timm.create_model(
             name, pretrained=False, num_classes=num_classes,
             drop_rate=kwargs.get("drop_rate", 0.0),

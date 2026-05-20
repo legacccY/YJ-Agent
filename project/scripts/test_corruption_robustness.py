@@ -1,20 +1,23 @@
 """ImageNet-C style corruption robustness test — BMVC §5.4 / §5.5 appendix.
 
-用 imagecorruptions 对 ITB-LQ 或 ISIC val 测试集做 15 种腐蚀 × 5 级别推理，
-输出每个 (corruption, severity) 的 AUC / ECE，保存到 CSV。
+18 corruption types × 5 severity levels × ITB-LQ.
+Outputs Raw / Std-TS / QCTS calibration comparison per (corruption, severity).
 
 Usage:
     python project/scripts/test_corruption_robustness.py \\
         --ckpt project/checkpoints/resnet50/best_resnet50.pth \\
         --output-dir project/results/backbones/resnet50 \\
-        --split itb-lq
+        --split itb-lq \\
+        --qcts-params project/results/backbones/resnet50/qcts_params.json
 
     python project/scripts/test_corruption_robustness.py \\
         --ckpt project/checkpoints/vit_tiny/best_vit_tiny_patch16_224.pth \\
         --output-dir project/results/backbones/vit_tiny \\
-        --split itb-lq
+        --split itb-lq \\
+        --qcts-params project/results/backbones/vit_tiny/qcts_params.json
 """
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -24,6 +27,8 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from scipy.special import expit
+from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader, Dataset
 from torchvision import models, transforms
 from tqdm import tqdm
@@ -34,21 +39,33 @@ SPLIT_CSV = ROOT / "data/isic_split.csv"
 METADATA_CSV = ROOT / "data/raw/isic2020/train-metadata.csv"
 IMAGE_ROOT = ROOT / "data/raw/isic2020/train-image/image"
 ITB_SUBSETS_CSV = THIS_DIR / "results/itb_subsets.csv"
-QUALITY_CSV = ROOT / "data/quality_labels_all.csv"
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
-# imagecorruptions 全部 15 种腐蚀类型
+# 18 corruption types (glass_blur excluded: O(H*W) pure-Python loop, prohibitively slow)
 CORRUPTIONS = [
+    # Standard 15 - 1 (glass_blur)
     "gaussian_noise", "shot_noise", "impulse_noise",
     "defocus_blur", "motion_blur", "zoom_blur",
     "snow", "frost", "fog", "brightness",
     "contrast", "elastic_transform", "pixelate", "jpeg_compression",
-]  # glass_blur excluded: pure-Python pixel loop is O(H*W) per image, prohibitively slow
+    # Extra 4
+    "speckle_noise", "gaussian_blur", "spatter", "saturate",
+]
 SEVERITIES = [1, 2, 3, 4, 5]
+
+
+# ── QCTS math ─────────────────────────────────────────────────────────────────
+
+def softplus(x: np.ndarray) -> np.ndarray:
+    return np.log1p(np.exp(x))
+
+
+def qcts_temperature(T0: float, alpha: float, qbar: np.ndarray) -> np.ndarray:
+    return softplus(T0 + alpha * (1.0 - qbar))
 
 
 # ── Model ──────────────────────────────────────────────────────────────────────
@@ -62,8 +79,8 @@ def build_backbone(name: str, num_classes: int, **kwargs) -> nn.Module:
         dropout = kwargs.get("dropout", 0.0)
         net.fc = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(in_feat, num_classes))
         return net
-    if name.startswith("deit") or name.startswith("vit"):
-        import timm
+    import timm
+    if timm.is_model(name):
         return timm.create_model(
             name, pretrained=False, num_classes=num_classes,
             drop_rate=kwargs.get("drop_rate", 0.0),
@@ -126,6 +143,7 @@ class CorruptionDataset(Dataset):
         return {
             "image": self.transform(img),
             "target": int(row["target"]),
+            "qbar": float(row.get("qbar", 0.5)),
             "isic_id": row["isic_id"],
         }
 
@@ -134,15 +152,12 @@ def collate(batch):
     return {
         "image":   torch.stack([b["image"] for b in batch]),
         "target":  torch.tensor([b["target"] for b in batch], dtype=torch.long),
+        "qbar":    torch.tensor([b["qbar"] for b in batch], dtype=torch.float32),
         "isic_id": [b["isic_id"] for b in batch],
     }
 
 
 # ── Metrics ────────────────────────────────────────────────────────────────────
-
-from sklearn.metrics import roc_auc_score
-from scipy.special import expit
-
 
 def compute_ece(probs: np.ndarray, targets: np.ndarray, n_bins: int = 15) -> float:
     bins = np.linspace(0, 1, n_bins + 1)
@@ -157,24 +172,39 @@ def compute_ece(probs: np.ndarray, targets: np.ndarray, n_bins: int = 15) -> flo
     return float(ece)
 
 
-def eval_logits(logits: np.ndarray, targets: np.ndarray) -> dict:
-    binary_logit = logits[:, 1] - logits[:, 0]
-    probs = expit(binary_logit)
-    try:
-        auc = float(roc_auc_score(targets, probs))
-    except Exception:
-        auc = float("nan")
-    ece = compute_ece(probs, targets)
-    return {"auc": auc, "ece": ece, "n": len(targets)}
+def eval_three_methods(logits: np.ndarray, targets: np.ndarray, qbar: np.ndarray,
+                       T_ts: float, T0: float, alpha: float) -> dict:
+    """Compute AUC + ECE + rho(H, qbar) for raw / ts / qcts on the same logits."""
+    out = {}
+    for method in ("raw", "ts", "qcts"):
+        if method == "raw":
+            probs = expit(logits)
+        elif method == "ts":
+            probs = expit(logits / T_ts)
+        else:
+            T = np.maximum(qcts_temperature(T0, alpha, qbar), 1e-3)
+            probs = expit(logits / T)
+        try:
+            auc = float(roc_auc_score(targets, probs))
+        except Exception:
+            auc = float("nan")
+        ece = compute_ece(probs, targets)
+        H = -(probs * np.log(probs + 1e-9) + (1 - probs) * np.log(1 - probs + 1e-9))
+        from scipy.stats import spearmanr
+        rho, pval = spearmanr(H, qbar)
+        out[f"{method}_auc"] = auc
+        out[f"{method}_ece"] = ece
+        out[f"{method}_rho"] = float(rho)
+        out[f"{method}_rho_pval"] = float(pval)
+    return out
 
 
 # ── Data loading ───────────────────────────────────────────────────────────────
 
 def load_split_df(split: str) -> pd.DataFrame:
-    """Return DataFrame with [isic_id, image_path, target] for the requested split."""
     if split == "itb-lq":
         df = pd.read_csv(ITB_SUBSETS_CSV)
-        df = df[df["subset"] == "ITB-LQ"][["isic_id", "image_path", "target"]].copy()
+        df = df[df["subset"] == "ITB-LQ"][["isic_id", "image_path", "target", "qbar"]].copy()
         print(f"[data] ITB-LQ: {len(df)} images")
         return df
 
@@ -186,6 +216,7 @@ def load_split_df(split: str) -> pd.DataFrame:
         meta["image_path"] = meta["isic_id"].apply(
             lambda x: str(IMAGE_ROOT / f"{x}.jpg")
         )
+        meta["qbar"] = 0.5  # no qbar for full val; TS/QCTS will degrade to near-constant T
         print(f"[data] ISIC2020 {split}: {len(meta)} images")
         return meta.reset_index(drop=True)
 
@@ -196,20 +227,28 @@ def load_split_df(split: str) -> pd.DataFrame:
 
 @torch.no_grad()
 def run_corruption(model, df, img_size, batch_size, device,
-                   corruption, severity) -> dict:
+                   corruption, severity,
+                   T_ts: float, T0: float, alpha: float) -> dict:
     ds = CorruptionDataset(df, img_size=img_size,
                            corruption=corruption, severity=severity)
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
                         num_workers=0, collate_fn=collate, pin_memory=True)
-    all_logits, all_targets = [], []
+    all_logits, all_targets, all_qbar = [], [], []
     for batch in loader:
         x = batch["image"].to(device, non_blocking=True)
         logits = model(x).float().cpu().numpy()
         all_logits.append(logits)
         all_targets.append(batch["target"].numpy())
-    logits = np.concatenate(all_logits, 0)
+        all_qbar.append(batch["qbar"].numpy())
+
+    logits_2col = np.concatenate(all_logits, 0)
     targets = np.concatenate(all_targets, 0)
-    return eval_logits(logits, targets)
+    qbar = np.concatenate(all_qbar, 0)
+    scalar_logits = logits_2col[:, 1] - logits_2col[:, 0]
+
+    metrics = eval_three_methods(scalar_logits, targets, qbar, T_ts, T0, alpha)
+    metrics["n"] = len(targets)
+    return metrics
 
 
 def main():
@@ -220,23 +259,34 @@ def main():
                         choices=["itb-lq", "val", "test"])
     parser.add_argument("--img-size", type=int, default=224)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--corruptions", nargs="+", default=CORRUPTIONS,
-                        help="Subset of corruptions to run (default: all 15)")
+    parser.add_argument("--corruptions", nargs="+", default=CORRUPTIONS)
     parser.add_argument("--severities", nargs="+", type=int, default=SEVERITIES)
+    parser.add_argument("--qcts-params", default=None,
+                        help="Path to qcts_params.json (auto-detected from --output-dir if omitted)")
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Load QCTS params
+    params_path = args.qcts_params or str(out_dir / "qcts_params.json")
+    with open(params_path) as f:
+        qp = json.load(f)
+    T0, alpha, T_ts = qp["T0"], qp["alpha"], qp["T_ts"]
+    print(f"[qcts] T0={T0:.4f}  alpha={alpha:.4f}  T_ts={T_ts:.4f}")
+
     model, cfg = load_model(args.ckpt, device)
     img_size = cfg.get("data", {}).get("img_size", args.img_size)
     df = load_split_df(args.split)
 
-    # ── Clean baseline (no corruption) ─────────────────────────────────────
+    # ── Clean baseline ──────────────────────────────────────────────────────
     print("\n[clean] running baseline...")
-    clean = run_corruption(model, df, img_size, args.batch_size, device, None, None)
-    print(f"  AUC={clean['auc']:.4f}  ECE={clean['ece']:.4f}  n={clean['n']}")
+    clean = run_corruption(model, df, img_size, args.batch_size, device,
+                           None, None, T_ts, T0, alpha)
+    print(f"  Raw AUC={clean['raw_auc']:.4f} ECE={clean['raw_ece']:.4f}  "
+          f"TS AUC={clean['ts_auc']:.4f} ECE={clean['ts_ece']:.4f}  "
+          f"QCTS AUC={clean['qcts_auc']:.4f} ECE={clean['qcts_ece']:.4f}")
 
     rows = [{"corruption": "clean", "severity": 0, **clean}]
 
@@ -245,9 +295,12 @@ def main():
     pbar = tqdm(total=total, desc="corruptions")
     for corr in args.corruptions:
         for sev in args.severities:
-            res = run_corruption(model, df, img_size, args.batch_size, device, corr, sev)
+            res = run_corruption(model, df, img_size, args.batch_size, device,
+                                 corr, sev, T_ts, T0, alpha)
             rows.append({"corruption": corr, "severity": sev, **res})
-            pbar.set_postfix(corr=corr, sev=sev, auc=f"{res['auc']:.3f}")
+            pbar.set_postfix(corr=corr[:10], sev=sev,
+                             raw=f"{res['raw_auc']:.3f}",
+                             qcts=f"{res['qcts_auc']:.3f}")
             pbar.update(1)
     pbar.close()
 
@@ -257,16 +310,19 @@ def main():
     result_df.to_csv(out_path, index=False)
     print(f"\n[saved] {out_path}")
 
-    # ── Quick summary ────────────────────────────────────────────────────────
-    avg = result_df[result_df["corruption"] != "clean"].groupby("corruption")[["auc", "ece"]].mean()
-    avg = avg.sort_values("auc", ascending=False)
-    print("\n=== Mean AUC / ECE per corruption type (across severities) ===")
+    # ── Summary ──────────────────────────────────────────────────────────────
+    corrupted = result_df[result_df["corruption"] != "clean"]
+    print("\n=== Mean AUC per corruption (across severities) ===")
+    avg = corrupted.groupby("corruption")[["raw_auc", "ts_auc", "qcts_auc"]].mean()
+    avg = avg.sort_values("raw_auc", ascending=False)
     print(avg.to_string(float_format="{:.4f}".format))
 
-    mce_auc = result_df[result_df["corruption"] != "clean"]["auc"].mean()
-    mce_ece = result_df[result_df["corruption"] != "clean"]["ece"].mean()
-    print(f"\nMean Corruption Error  AUC={mce_auc:.4f}  ECE={mce_ece:.4f}")
-    print(f"Clean baseline         AUC={clean['auc']:.4f}  ECE={clean['ece']:.4f}")
+    for method in ("raw", "ts", "qcts"):
+        mce_auc = corrupted[f"{method}_auc"].mean()
+        mce_ece = corrupted[f"{method}_ece"].mean()
+        print(f"\n[{method}] Mean Corruption  AUC={mce_auc:.4f}  ECE={mce_ece:.4f}")
+    print(f"\n[clean] baseline  Raw AUC={clean['raw_auc']:.4f}  "
+          f"QCTS AUC={clean['qcts_auc']:.4f}")
 
 
 if __name__ == "__main__":

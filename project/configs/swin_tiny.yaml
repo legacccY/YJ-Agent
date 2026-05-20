@@ -1,0 +1,43 @@
+# BMVC §5.4 — Backbone Universality: Swin-Tiny (hierarchical ViT family)
+# Pure backbone classification, outputs val/test logits for run_qcts.py.
+
+backbone:
+  name: swin_tiny_patch4_window7_224   # timm model name
+  pretrained: true                     # ImageNet-1k weights via timm
+  num_classes: 2
+  drop_rate: 0.0
+  drop_path_rate: 0.2                  # stochastic depth (Swin-Tiny standard)
+
+data:
+  img_size: 224
+  metadata_csv: D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
+  split_csv: D:/YJ-Agent/data/isic_split.csv
+  image_root: D:/YJ-Agent/data/raw/isic2020/train-image/image
+  num_workers: 4
+
+train:
+  epochs: 30
+  batch_size: 64
+  lr: 1.0e-4
+  lr_backbone: 5.0e-6
+  weight_decay: 5.0e-2
+  seed: 42
+  amp: true
+  label_smoothing: 0.1
+  warmup_epochs: 5
+  grad_clip: 1.0
+
+output:
+  checkpoint_dir: D:/YJ-Agent/project/checkpoints/swin_tiny
+  logits_dir: D:/YJ-Agent/project/results/backbones/swin_tiny
+  best_metric: auc
+
+wandb:
+  project: visiskin-bmvc-backbones
+  entity: null
+  mode: offline
+  run_name: swin-tiny-isic2020
+
+device:
+  cuda: true
+  gpu_id: 0

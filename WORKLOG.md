@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-20 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-21 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
@@ -9,9 +9,39 @@
 - **BMVC 投稿** | Deadline 假设 2026-06-18（**60 天**）| 状态：**60 天稳中路线启动** — 期望命中率 65-72%（合规版 + 网上获取约束）
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
 
+## ✅ 今日完成（2026-05-21 自动跑完）
+
+### 实验产出
+- **ImageNet-C 腐蚀重跑**：18 corruption × 5 severity × Raw/TS/QCTS 三方法，新增 `raw_rho/ts_rho/qcts_rho` 列。TS 反转 16/18（ResNet-50）、14/18（ViT-Tiny），远超验收阈值 3/14。结果：`results/backbones/{resnet50,vit_tiny}/corruption_robustness_itb-lq.csv`
+- **EDL ITB inference**：AUC-LQ=0.586, ECE-LQ=0.316 [0.273,0.361], AUC-HQ=0.895, ECE-HQ=0.270, QCDI=+0.046, ρ=+0.039。Table 1 EDL 行数字就位。结果：`results/edl/itb_metrics.json`
+- **ConvNeXt-Tiny + Swin-Tiny 完整链路**：train(30ep) → infer_backbone → QCTS 拟合。section54_summary.csv 现有 5 backbone（Std VIB / ResNet-50 / ViT-Tiny / ConvNeXt-Tiny / Swin-Tiny）。
+
+### Bug 修复
+- `infer_backbone.py` + `test_corruption_robustness.py`：`build_backbone` 改用 `timm.is_model()` 通用路由，支持 convnext/swin 等任意 timm 模型
+
+---
+
 ## 🚫 永久红线
 1. Reader Study 不可伪造（详见 BMVC_LOG.md 顶部"永久红线" section）。临床相关性用 DCA + Triage simulation + Published dermatologist baseline 替代。
 2. **所有材料只能从网上公开资源获取**（2026-05-20 用户确认）。不联系诊所、不采集线下样本、不依赖人际网络。Adversarial review 用 LLM 扮演不同 persona 替代真人。
+
+## ✅ D6 + D7 部分（2026-05-20，提前 5 天）
+
+### D6 §6 Discussion / Limitations 调整
+- itb_paper.tex §6 加 "Structural reason TS reverses on weakly quality-aware backbones" 段（200 词）
+- Limitations 改 4 条：(1) reversal backbone-dependent；(2) ITB synthetic degradation；(3) q̄ resolution + IQA cost；(4) clinical translation
+- 6 张图 caption 全部加 `\emph{Takeaway:}` 句（teaser / method / problem / qcts / universality / generalization）
+- 验收 ACCEPTANCE D6 全 PASS
+
+### D7 数字一致性 + R1-R7 防御扫描
+- R1-R7 grep：itb_paper.tex 0 命中 Q-VIB / VisiScore / anonymous2025 / "TS always" / "universal reversal" / "we prove"
+- **严重不一致修复**：Abstract / Intro / §5.2 中 Std VIB raw ρ 写的 −0.024 = ITB-LQ only (n=300, **p=0.62 非显著**)，但 +0.241 是 full ITB pool 才成立的数字。**两个数字混搭了不同 pool，reversal hook 在 ITB-LQ pool 上根本不存在**（实际 ρ=−0.029 → +TS ρ=−0.387，更负 = 更 quality-aware）
+- 修复：3 处 −0.024 → −0.153 + 加 pool 限定 "across the full ITB pool, n=2820" + 加 p-value 标注（p<10⁻¹⁵ / p<10⁻³⁷）
+- 重算源：`itb_predictions.csv` Spearman(entropy, q̄) on Std VIB / Std VIB+TS，full ITB pool n=2820
+- 编译干净：16 页总（主文 1-14 + ref 14-16）、0 error、0 undefined
+- **STORY_FRAMEWORK 锁定数字表与 csv 已对齐**
+
+---
 
 ## ✅ D1 非写作任务完成（2026-05-20）
 

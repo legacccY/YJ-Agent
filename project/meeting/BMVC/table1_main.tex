@@ -28,11 +28,12 @@ Focal + LS & 0.708{\tiny\,$\pm$0.071} & \cellcolor{red!19}0.533{\tiny\,$\pm$0.04
 MC Dropout (30$\times$) & 0.693{\tiny\,$\pm$0.067} & \cellcolor{red!22}0.615{\tiny\,$\pm$0.052} & 0.808{\tiny\,$\pm$0.047} & \cellcolor{red!21}0.473{\tiny\,$\pm$0.047} & \cellcolor{red!11}+0.142{\tiny\,$\pm$0.073} & \cellcolor{red!15}-0.114 \\
 Deep Ensemble ($5\times$) & \underline{0.711{\tiny\,$\pm$0.067}} & \cellcolor{red!15}0.440{\tiny\,$\pm$0.048} & 0.868{\tiny\,$\pm$0.042} & \cellcolor{red!14}0.339{\tiny\,$\pm$0.039} & \cellcolor{red!8}+0.101{\tiny\,$\pm$0.060} & \cellcolor{red!15}-0.123 \\
 \addlinespace[2pt]\cmidrule(l){1-7}\addlinespace[2pt]
+\multicolumn{7}{l}{\textit{Training-time uncertainty}} \\
+% EDL row: ECE/QCDI/rho pending ITB inference; scripts/infer_edl_itb.py (W2 D11). AUC ref val-best 0.8622.
+EDL\,\cite{sensoy2018evidential} & \cellcolor{gray!10}\textsc{tbd} & \cellcolor{gray!10}\textsc{tbd} & \cellcolor{gray!10}\textsc{tbd} & \cellcolor{gray!10}\textsc{tbd} & \cellcolor{gray!10}\textsc{tbd} & \cellcolor{gray!10}\textsc{tbd} \\
+\addlinespace[2pt]\cmidrule(l){1-7}\addlinespace[2pt]
 \multicolumn{7}{l}{\textit{VIB family}} \\
 Std VIB & 0.553{\tiny\,$\pm$0.085} & \cellcolor{red!3}\underline{0.146{\tiny\,$\pm$0.045}} & 0.587{\tiny\,$\pm$0.083} & \cellcolor{red!3}0.129{\tiny\,$\pm$0.038} & +0.016{\tiny\,$\pm$0.063} & \cellcolor{red!17}-0.153 \\
-Adaptive Prior & 0.588{\tiny\,$\pm$0.086} & \cellcolor{red!3}0.149{\tiny\,$\pm$0.046} & 0.615{\tiny\,$\pm$0.081} & \cellcolor{red!4}0.138{\tiny\,$\pm$0.039} & +0.011{\tiny\,$\pm$0.061} & \cellcolor{red!18}-0.191 \\
-Q-VIB Full & 0.585{\tiny\,$\pm$0.084} & \cellcolor{red!3}0.149{\tiny\,$\pm$0.047} & 0.606{\tiny\,$\pm$0.080} & \cellcolor{red!4}0.143{\tiny\,$\pm$0.039} & \underline{+0.006{\tiny\,$\pm$0.059}} & \cellcolor{red!18}-0.192 \\
-Q-VIB + TokFT & 0.693{\tiny\,$\pm$0.078} & \cellcolor{red!10}0.329{\tiny\,$\pm$0.053} & 0.812{\tiny\,$\pm$0.054} & \cellcolor{red!11}0.273{\tiny\,$\pm$0.047} & \cellcolor{red!4}+0.056{\tiny\,$\pm$0.068} & \cellcolor{red!22}\textbf{-0.278} \\
 \addlinespace[2pt]\cmidrule(l){1-7}\addlinespace[2pt]
 \multicolumn{7}{l}{\textit{Post-hoc calibration}} \\
 Std VIB + TS & 0.582{\tiny\,$\pm$0.083} & \cellcolor{red!4}0.175{\tiny\,$\pm$0.049} & 0.732{\tiny\,$\pm$0.068} & \cellcolor{red!5}0.160{\tiny\,$\pm$0.042} & +0.015{\tiny\,$\pm$0.063} & +0.241 \\

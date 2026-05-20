@@ -1,0 +1,36 @@
+\begin{table}[t]
+\centering
+\caption{
+\textbf{Universality of TS reversal and QCTS across backbone families.}
+Three backbones spanning VIB, CNN and Transformer families, each evaluated raw / + standard TS / + QCTS on the ITB pool.
+$\rho$: Spearman correlation between predictive entropy and $\bar q$ on ITB-LQ$\cup$Edge$\cup$HQ; more negative = more quality-aware.
+QCDI $=$ ECE-LQ $-$ ECE-HQ; closer to 0 = more quality-invariant.
+TS reversal manifests in two empirical signatures: \textbf{$\rho$ sign-flip} on Std VIB ($-0.153 \to +0.241$) and \textbf{QCDI sign-flip} on ViT-Tiny ($+0.023 \to -0.029$); on the more strongly quality-aware ResNet-50 (raw $\rho=-0.368$) standard TS is approximately neutral.
+QCTS preserves or strengthens $\rho$ and keeps QCDI close to zero on all three.
+}
+\label{tab:universality}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{llcccc}
+\toprule
+Backbone (family) & Method & ECE-LQ\,$\downarrow$ & ECE-HQ\,$\downarrow$ & QCDI\,$\downarrow$ & $\rho(H,\bar q)\,\downarrow$ \\
+\midrule
+\multirow{3}{*}{Std VIB (EffNet-B0, VIB)}
+  & Raw           & 0.146 & 0.129 & $+0.016$ & $-0.153$ \\
+  & $+$ TS        & 0.175 & 0.160 & $+0.015$ & \cellcolor{red!12}$+0.241$ \\
+  & $+$ QCTS (ours) & \textbf{0.079} & \textbf{0.075} & \textbf{$+0.004$} & \cellcolor{green!12}$\mathbf{-0.249}$ \\
+\addlinespace[2pt]\cmidrule(l){1-6}\addlinespace[2pt]
+\multirow{3}{*}{ResNet-50 (CNN)}
+  & Raw             & 0.050 & 0.036 & $+0.014$ & $-0.368$ \\
+  & $+$ TS          & 0.029 & 0.025 & $+0.004$ & $-0.368$ \\
+  & $+$ QCTS (ours) & 0.046 & 0.031 & $+0.014$ & \cellcolor{green!8}$\mathbf{-0.380}$ \\
+\addlinespace[2pt]\cmidrule(l){1-6}\addlinespace[2pt]
+\multirow{3}{*}{ViT-Tiny (Transformer)}
+  & Raw             & 0.058 & 0.036 & $+0.023$ & $-0.160$ \\
+  & $+$ TS          & 0.043 & 0.072 & \cellcolor{red!12}$-0.029$ & $-0.160$ \\
+  & $+$ QCTS (ours) & 0.058 & 0.075 & $-0.017$ & \cellcolor{green!12}$\mathbf{-0.266}$ \\
+\bottomrule
+\end{tabular}
+\vspace{-4pt}
+\end{table}
