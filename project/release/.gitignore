@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.egg-info/
+dist/
+build/
+.env
+wandb/
+outputs/
+data/isic2020/
+data/ham10000/
+data/pad_ufes/
+data/fitzpatrick17k/
+# Keep downloaded ITB metadata
+!data/itb_subsets.csv
+!data/itb_predictions.csv
+!data/qcts_itb_predictions.csv
+!data/iqa_checkpoint.pth
+*.pth
+!data/iqa_checkpoint.pth

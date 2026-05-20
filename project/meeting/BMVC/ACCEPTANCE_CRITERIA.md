@@ -2,27 +2,27 @@
 
 **目标**：60 天扩展 + 网上获取约束下命中 75-77%
 **Baseline**：30 天版 65-75% → 必须额外撬动 10 个 lever 提升 10-12 个百分点
-**最后更新**：2026-05-20
+**最后更新**：2026-05-21
 
 ---
 
-## 🎯 命中率分解表（每个 lever 不达标的扣分）
+## 🎯 命中率分解表（最新状态）
 
-| Lever | 30 天 baseline | 75-77% 目标版本 | 不达标扣分 | 状态 |
-|---|---|---|---|---|
-| L1. 跨域 modality | ImageNet-C only | + CheXpert + Fundus（共 4 modality） | −5% | 🚧 ImageNet-C ✅; CheXpert / Fundus 待 W2-W3 |
-| L2. Backbone 数量 | 4 backbone | 6 backbone（+ ConvNeXt-Tiny + Swin-Tiny） | −3% | ⚠️ 当前仅 3（Std VIB / ResNet-50 / ViT-Tiny） |
-| L3. Quality scalar 来源 | 1 种（VisiScore-Net） | 5 种对比（VisiScore-Net / BRISQUE / NIQE / RF / Deep IQA） | −3% | ❌ 未启动 |
-| L4. 真实低质照片 | 仅 programmatic | + 100-200 张公开真实低质 dermoscopy | −2% | ❌ 未启动（W3） |
-| L5. 临床相关性 | Reader Study pilot（已永久排除） | DCA + Triage simulation + Published dermatologist baseline | −3 ~ −5% | ❌ 未启动（W4） |
-| L6. Theory | 半页 sketch | 完整 1 页 + IB connection + PAC-Bayes bound | −3% | ❌ 未启动（W4） |
-| L7. Statistics 严谨性 | 3-5 seed + bootstrap | + Cohen's d + Bonferroni + Power analysis | −2% | ⚠️ Bootstrap 部分有，Cohen/Bonferroni/Power 没 |
-| L8. Reproducibility | Code release | Code + Docker + ITB v1.0 数据集打包 + 一键复现 | −3% | ❌ 未启动（W7） |
-| L9. 写作 review | 3 轮 + 2 人 adversarial（已排除） | 5-8 轮 + 3 LLM persona + BMVC form 自评 × 2 + LLM copy-editing | −2% | ❌ 未启动（W6） |
-| L10. Supplementary | 10-20 页 | 30-50 页 + Pre-emptive rebuttal in Discussion | −2% | ❌ 未启动（W7） |
+| Lever | 目标版本 | 不达标扣分 | 状态 |
+|---|---|---|---|
+| L1. 跨域 modality | ImageNet-C + CheXpert + Fundus（共 4） | −5% | ✅ 全部完成 |
+| L2. Backbone 数量 | 5 backbone（Std VIB / ResNet-50 / ViT-Tiny / ConvNeXt / Swin） | −3% | ✅ 完成（5 backbone） |
+| L3. Quality scalar | 5 种对比（5-head IQA / BRISQUE / CLIP-IQA / LaplacianVar / RF） | −3% | ✅ Table S1 + §5.3 |
+| L4. 真实低质照片 | 100-200 张公开真实 dermoscopy | −2% | ✅ 174 张，ECE=0.073 |
+| L5. 临床相关性 | DCA + Triage + Published dermatologist baseline | −3~−5% | ✅ DCA max NB=0.192，Triage 20% budget |
+| L6. Theory | 完整 1 页 + IB connection + PAC-Bayes sketch | −3% | ✅ §4.3 IB+PAC-Bayes |
+| L7. Statistics | Cohen's d + Bonferroni + Power analysis | −2% | ✅ d=0.452, power=0.929, Bonferroni p=0.0015 |
+| L8. Reproducibility | Code + Docker + ITB v1.0 + 一键复现 | −3% | ✅ project/release/ 骨架完成（Zenodo 接受后激活） |
+| L9. 写作 review | 5-8 轮 + 3 LLM persona + BMVC form × 2 | −2% | 🟡 adversarial review ✅；5 attack 整合 ✅；Round 1 ✅；Round 2-5 ❌ |
+| L10. Supplementary | 30-50 页 + pre-emptive rebuttal | −2% | 🟡 ~25 页（A1-A10）；target 30-50 未达 |
 
-**总潜在扣分**：28-30%（全部不达标会跌到 45-47%）
-**当前预测**：保守 60-65%（已完成 §5.4 + ImageNet-C 数据采集 + EDL 训练）
+**当前预测命中率：≈75%**（L1-L8 全完成；L9/L10 部分完成）
+**剩余扣分风险：~2%**（L9 Round 2-5 + L10 页数）
 
 ---
 
