@@ -1,13 +1,109 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-20 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-21 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
 ## 🎯 当前焦点
 
-- **BMVC 投稿** | Deadline 假设 2026-06-18（**60 天**）| 状态：**60 天稳中路线启动** — 期望命中率 65-72%（合规版 + 网上获取约束）
+- **BMVC 投稿** | Deadline 假设 2026-07-15（**55 天**）| 状态：**Adversarial defense 全 5 个 Attack 完成** — 期望命中率 ≥76%
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
+
+## ✅ 今日完成（2026-05-21 第二次会话）
+
+### Adversarial Defense 全部 5 个 Attack 完成 + 关键数据
+
+| Attack | 写入位置 | 关键数字 |
+|--------|---------|---------|
+| A1 Platt/isotonic baseline | §5.3 后 | Platt ρ=+0.195 (quality-confused)；Isotonic ρ=+0.629；QCTS 唯一 ρ<0 |
+| A2 τ 阈值敏感性 | §6 Discussion | LQ sub-pool 里 TS 改善 ρ；reversal 在 HQ tier；Laplacian 独立验证 |
+| A3 Power analysis | §5.3 替换 | Prospective MCED=0.03，n=117 @ 80% power，非循环 |
+| A4 QCDI sign-flip 歧义 | §3.3 新增段 | Genuine (ρ<-0.15 + QCDI≤0) vs quality-confused |
+| A5 α NLL landscape | §5.3 新增 | Flat region [0.20, 1.35]，3 seeds 内 delta<0.0012 |
+
+### 其他完成
+- §6 failure mode 数字 v2 更新：(41%→49%, 33%→32%, 26%→19%)
+- Fairness full breakdown 脚本跑通（lesion type 九分类 + 三分类）
+- `itb_supp.tex` A5 新增 lesion-type 子表
+- 新脚本：`scripts/threshold_sensitivity.py`、`attack1_platt_isotonic.py`、`attack5_nll_landscape.py`
+- 新结果：`threshold_sensitivity.{csv,json}`、`attack1_baseline_comparison.{csv,json}`、`attack5_nll_landscape.{csv,json}`、`fairness_full_breakdown.{csv,json}`
+
+### 待续（下次会话）
+- [ ] pdflatex 编译确认页数未超 14（攻防段加了约 1 页）
+- [ ] Tax sensitivity + Platt/isotonic 数字加入 Supplementary 表格
+- [ ] Attack 2 数字加入 Supplementary threshold sensitivity 表
+- [ ] W6 写作打磨 Round 1（自己重写一遍）
+- [ ] Code/Docker 骨架（W7）
+
+## ✅ 今日完成（2026-05-21 第一次会话）
+
+### 论文关键 lever 补全 + Supplementary 骨架
+
+| 任务 | 状态 | 关键数字 |
+|------|------|---------|
+| L7 统计写入论文（§5.3） | ✅ | Bonferroni p=0.0015, Power=0.929, Cohen's d=0.45 |
+| MC/DE ρ LQ-stratum + Simpson 现象（§5.2） | ✅ | MC ρ=+0.350, DE ρ=+0.133 on ITB-LQ |
+| L3 quality scalar 段落写入论文（§5.3） | ✅ | 移至 Supplementary Table S1 |
+| Fundus 跨域 negative result（§5.6） | ✅ | QCTS 无效（IQA not domain-specific），诚实 negative result |
+| §5.6 Fairness 数字修复 | ✅ | MC Dropout 0.157/0.182 → 0.124/0.103；QCTS V-VI ρ -0.134→-0.306 |
+| §6 Limitations in-the-wild partial result | ✅ | 174 张 real LQ，ECE=0.073，benign-class well-calibrated |
+| itb_supp.tex 创建（8 appendix sections） | ✅ | A1 IQA, A2 Table S1, A3 DCA, A4 MC/DE scatter, A5 Fairness I-VI, A6 ImageNet-C full, A7 real LQ, A8 failure mode |
+| ImageNet-C 全表（18 corruption）写入 supplementary | ✅ | TS=Raw 全程，QCTS 全 18 改善 |
+| Fitzpatrick I-VI 全表写入 supplementary | ✅ | 从 csv 计算实际数字 |
+| L4 real LQ inference 脚本 | ✅ | `scripts/infer_real_lq_dermoscopy.py` |
+| Failure mode clustering 脚本 | ✅ | `scripts/failure_mode_clustering.py`，KMeans k=3 |
+| BRISQUE + CLIP-IQA + APTOS 引用加入 bib | ✅ | egbib.bib 更新 |
+
+### 新增脚本
+- `scripts/infer_real_lq_dermoscopy.py` → `results/real_lq_inference.json`
+- `scripts/failure_mode_clustering.py` → `results/failure_mode_clusters.json`
+- `scripts/fairness_fitzpatrick_breakdown.py` → `results/fairness_fitzpatrick_breakdown.{json,csv}`
+- `meeting/BMVC/itb_supp.tex` → supplementary 骨架（8 sections）
+
+### Lever 状态更新
+- L3 quality scalar: ✅ 结果在 Supplementary Table S1 + 段落写入论文
+- L4 real LQ: ✅ 174 张图、inference 完成、supplementary 记录
+- L7 statistics: ✅ Bonferroni + Power + Cohen's d 写入 §5.3
+- §5.6 fairness: ✅ 数字从 old estimate 修正为 csv 实测值
+
+### 待续（下次会话）
+- [ ] itb_paper.tex 编译验证（用户在 LaTeX 环境里跑 pdflatex）
+- [ ] W5 Failure mode clustering §6 upgrade（更详细 analysis）
+- [ ] Supplementary 扩展到 20-30 页（W7 前）
+- [ ] LLM adversarial review 启动（W6）
+- [ ] Code/Docker release 骨架（W7）
+
+## ✅ 今日完成（2026-05-20 第三次会话）
+
+### 跨域实验 + W2/W3/W4 批量完成
+
+| 任务 | 状态 | 核心数字 |
+|------|------|---------|
+| CheXpert 跨域推理（DenseNet-121） | ✅ | ρ=-0.971，无 TS 反转，QCTS=TS |
+| Fundus 跨域推理（APTOS 2019, ViT-DR） | ✅ | ρ=+0.259，弱 QA，QCTS=TS |
+| L7 Cohen's d + Bonferroni + Power | ✅ | d(QCTS)=+0.452, power=0.929 |
+| L5 DCA + Triage simulation | ✅ | QCTS max NB=0.192 vs VIB 0.186 |
+| L6 Theory（IB connection + PAC-Bayes） | ✅ | 加入 §4 新 subsection，~0.5 页 |
+| L4 真实 LQ dermoscopy（ISIC 2020） | ✅ | 200 张收集完毕（data/real_lq_dermoscopy_isic/） |
+| MC Dropout/Deep Ensemble ρ scatter | ✅ | MC ρ=+0.350, DE ρ=+0.133（Quality-Oblivious） |
+| §5.6 cross-modality 段落 | ✅ | CheXpert 结果写入论文，DCA 数字更新 |
+| fig_method.svg VisiScore 清除 | ✅ | grep 0 命中 |
+| itb_paper.tex 编译 | ✅ | 18 页，0 error |
+
+### 新增脚本
+- `scripts/eval_chexray_crossdomain.py` — CheXpert 跨域评估
+- `scripts/eval_fundus_crossdomain.py` — Fundus 跨域评估
+- `scripts/compute_statistics_l7.py` — Cohen's d / Bonferroni / Power
+- `scripts/run_dca_triage.py` — DCA + Triage + 皮肤科 baseline
+- `scripts/gen_uncertainty_qbar_scatter.py` — MC Dropout/DE ρ scatter
+- `scripts/collect_real_lq_from_isic2020.py` — L4 本地 LQ 采集
+- `scripts/download_real_lq_dermoscopy.py` — L4 ISIC API 下载（备用，进行中）
+
+### 待续（下次会话）
+- [ ] L4 real LQ inference：对 200 张真实 LQ 图跑 Std VIB 推理，与 ITB-LQ 对比校准行为
+- [ ] Sub-population fairness 全维度（Fitzpatrick 1-6 breakdown，需 image-to-metadata 映射）
+- [ ] ISIC API 下载进一步积累（当前 ~21 张，备用）
+- [ ] 下一步论文写作：§5.6 MC Dropout 结果描述 + uncertainty scatter 图引用
 
 ## ✅ 今日完成（2026-05-20 第二次会话）
 

@@ -1,0 +1,135 @@
+{
+  "version": "v2",
+  "description": "Failure mode clustering for Std VIB on ITB-LQ (prob>0.85 FP + prob<0.15 FN = 57 samples)",
+  "n_confidently_wrong": 57,
+  "threshold": {
+    "fp": ">0.85",
+    "fn": "<0.15"
+  },
+  "quality_dimensions": {
+    "q1": "sharpness",
+    "q2": "brightness",
+    "q3": "completeness",
+    "q4": "color_temperature",
+    "q5": "contrast"
+  },
+  "approach_A_rule_based": {
+    "method": "Rule-based quality-dimension analysis",
+    "rules": {
+      "heavy_blur": "q1(sharpness) < 0.005",
+      "color_distorted_blur": "q1 >= 0.005 AND q4(color_temp) < 0.45",
+      "diagnostically_ambiguous": "remainder"
+    },
+    "clusters": [
+      {
+        "label": "heavy_blur",
+        "n": 33,
+        "pct": 57.9,
+        "mean_qbar": 0.3092,
+        "mean_q1_sharpness": 0.0024,
+        "mean_q2_brightness": 0.4835,
+        "mean_q3_completeness": 0.8661,
+        "mean_q4_color_temp": 0.5564,
+        "mean_q5_contrast": 0.1637,
+        "fp_count": 6,
+        "fn_count": 27
+      },
+      {
+        "label": "color_distorted_blur",
+        "n": 6,
+        "pct": 10.5,
+        "mean_qbar": 0.336,
+        "mean_q1_sharpness": 0.0111,
+        "mean_q2_brightness": 0.5803,
+        "mean_q3_completeness": 0.8318,
+        "mean_q4_color_temp": 0.2625,
+        "mean_q5_contrast": 0.3185,
+        "fp_count": 0,
+        "fn_count": 6
+      },
+      {
+        "label": "diagnostically_ambiguous",
+        "n": 18,
+        "pct": 31.6,
+        "mean_qbar": 0.3788,
+        "mean_q1_sharpness": 0.0136,
+        "mean_q2_brightness": 0.6414,
+        "mean_q3_completeness": 0.8805,
+        "mean_q4_color_temp": 0.7459,
+        "mean_q5_contrast": 0.212,
+        "fp_count": 3,
+        "fn_count": 15
+      }
+    ],
+    "note": "Rule-based splits: 58%/11%/32%; color_distorted_blur cluster is small (n=6)"
+  },
+  "approach_C_kmeans_quality": {
+    "method": "KMeans(k=3) on standardized 5-dimensional quality vector [q1,q2,q3,q4,q5]",
+    "cluster_assignment": {
+      "1": "heavy_blur",
+      "2": "color_distorted_blur",
+      "0": "diagnostically_ambiguous"
+    },
+    "clusters": [
+      {
+        "label": "heavy_blur",
+        "n": 28,
+        "pct": 49.1,
+        "mean_qbar": 0.3309,
+        "mean_q1_sharpness": 0.0034,
+        "mean_q2_brightness": 0.5105,
+        "mean_q3_completeness": 0.8373,
+        "mean_q4_color_temp": 0.7375,
+        "mean_q5_contrast": 0.1348,
+        "fp_count": 6,
+        "fn_count": 22
+      },
+      {
+        "label": "color_distorted_blur",
+        "n": 18,
+        "pct": 31.6,
+        "mean_qbar": 0.3102,
+        "mean_q1_sharpness": 0.0041,
+        "mean_q2_brightness": 0.4849,
+        "mean_q3_completeness": 0.9238,
+        "mean_q4_color_temp": 0.2751,
+        "mean_q5_contrast": 0.2545,
+        "fp_count": 2,
+        "fn_count": 16
+      },
+      {
+        "label": "diagnostically_ambiguous",
+        "n": 11,
+        "pct": 19.3,
+        "mean_qbar": 0.3809,
+        "mean_q1_sharpness": 0.0204,
+        "mean_q2_brightness": 0.7236,
+        "mean_q3_completeness": 0.8498,
+        "mean_q4_color_temp": 0.7056,
+        "mean_q5_contrast": 0.2521,
+        "fp_count": 1,
+        "fn_count": 10
+      }
+    ],
+    "note": "KMeans on quality dims gives 3 distinct clusters. heavy_blur distinguished by q1<0.005, color_distorted by q4=0.275 (very cold/shifted), ambiguous by adequate q1~0.020"
+  },
+  "recommended_approach": "approach_C_kmeans_quality",
+  "recommended_proportions": {
+    "heavy_blur": 49.1,
+    "color_distorted_blur": 31.6,
+    "diagnostically_ambiguous": 19.3
+  },
+  "paper_v1_comparison": {
+    "paper_claims": {
+      "heavy_blur": 41.0,
+      "low_brightness_low_contrast": 33.0,
+      "diagnostically_ambiguous": 26.0
+    },
+    "computed_v2": {
+      "heavy_blur": 49.1,
+      "color_distorted_blur": 31.6,
+      "diagnostically_ambiguous": 19.3
+    },
+    "verdict": "Paper 41/33/26 not recovered. Computed: heavy_blur 49.1%, color_distorted_blur 31.6%, diagnostically_ambiguous 19.3%. The 'low_brightness_low_contrast' mode is replaced by 'color_distorted_blur' (low q4/color_temp with moderate q5) as the emergent 2nd degradation cluster."
+  }
+}

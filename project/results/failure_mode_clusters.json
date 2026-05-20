@@ -1,0 +1,93 @@
+{
+  "method": "KMeans(k=3)",
+  "n_confidently_wrong": 57,
+  "n_feature_matched": 57,
+  "n_noise": 0,
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "size": 31,
+      "pct_of_clustered": 54.4,
+      "mean_qbar": 0.3177,
+      "mean_confidence": 0.2645,
+      "mean_sharpness": 0.0034,
+      "mean_brightness": 0.4759,
+      "mean_contrast": 0.1472,
+      "dominant_qtype": "heavy_blur",
+      "fp_count": 7,
+      "fn_count": 24
+    },
+    {
+      "cluster_id": 1,
+      "size": 25,
+      "pct_of_clustered": 43.9,
+      "mean_qbar": 0.3502,
+      "mean_confidence": 0.1232,
+      "mean_sharpness": 0.0108,
+      "mean_brightness": 0.6214,
+      "mean_contrast": 0.2421,
+      "dominant_qtype": "diagnostically_ambiguous",
+      "fp_count": 2,
+      "fn_count": 23
+    },
+    {
+      "cluster_id": 2,
+      "size": 1,
+      "pct_of_clustered": 1.8,
+      "mean_qbar": 0.4353,
+      "mean_confidence": 0.0216,
+      "mean_sharpness": 0.0161,
+      "mean_brightness": 0.6948,
+      "mean_contrast": 0.5113,
+      "dominant_qtype": "diagnostically_ambiguous",
+      "fp_count": 0,
+      "fn_count": 1
+    }
+  ],
+  "rule_based_approximation": {
+    "heavy_blur": {
+      "n": 37,
+      "threshold": "sharpness < 0.006"
+    },
+    "low_brightness_low_contrast": {
+      "n": 3,
+      "threshold": "sharpness >= 0.006 AND brightness < 0.55 AND contrast < 0.20"
+    },
+    "diagnostically_ambiguous": {
+      "n": 17,
+      "threshold": "remainder"
+    }
+  },
+  "paper_comparison": {
+    "paper_splits_pct": {
+      "heavy_blur": 41.0,
+      "low_brightness_low_contrast": 33.0,
+      "diagnostically_ambiguous": 26.0
+    },
+    "recovered_pct": {
+      "heavy_blur": 54.4,
+      "diagnostically_ambiguous": 45.699999999999996
+    },
+    "match_summary": {
+      "heavy_blur": {
+        "paper_pct": 41.0,
+        "recovered_pct": 54.4,
+        "delta": 13.4,
+        "status": "MISMATCH"
+      },
+      "low_brightness_low_contrast": {
+        "paper_pct": 33.0,
+        "recovered_pct": 0.0,
+        "delta": 33.0,
+        "status": "MISMATCH"
+      },
+      "diagnostically_ambiguous": {
+        "paper_pct": 26.0,
+        "recovered_pct": 45.7,
+        "delta": 19.7,
+        "status": "MISMATCH"
+      }
+    },
+    "note": "HDBSCAN found 0 clusters (all 57 CW samples are noise in feature space). KMeans(k=3) forced split yields 2 large clusters (blur ~54%, ambiguous ~44%). Rule-based labelling on quality scalars gives heavy_blur=64.9%, low_bright_low_contr=8.8%, ambiguous=26.3%. Paper's 41/33/26 split not recovered; likely uses larger/different sample pool."
+  }
+}

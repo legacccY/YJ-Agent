@@ -1,0 +1,92 @@
+{
+  "model": {
+    "checkpoint": "D:\\YJ-Agent\\checkpoints\\efficientnet_b3_isic.pth",
+    "backbone": "efficientnet_b3",
+    "val_auc_isic": 0.9102,
+    "note": "EfficientNet-B3 direct (baseline A in Table 1). Used as image-level proxy for Std VIB since the full Std VIB encoder requires precomputed ABCD+VisiScore features."
+  },
+  "real_lq": {
+    "n": 174,
+    "n_positive": 0,
+    "n_negative": 174,
+    "sources": {
+      "isic": 106,
+      "fitzpatrick": 68
+    },
+    "categories": [
+      "blur",
+      "combined",
+      "dark",
+      "other"
+    ],
+    "ece": 0.0726,
+    "ece_ci_95": [
+      0.0379,
+      0.1246
+    ],
+    "auc": null,
+    "mean_entropy": 0.1478,
+    "std_entropy": 0.1988,
+    "mean_prob_pos": 0.1011,
+    "rho_H_quality_proxy": 0.4458,
+    "rho_pval": 7.058734259943839e-10,
+    "per_category": {
+      "blur": {
+        "n": 37,
+        "ece": 0.0168,
+        "mean_entropy": 0.166,
+        "mean_prob_pos": 0.1811,
+        "mean_quality_proxy": 0.3542,
+        "rho_H_qbar": -0.2421
+      },
+      "combined": {
+        "n": 50,
+        "ece": 0.0088,
+        "mean_entropy": 0.0841,
+        "mean_prob_pos": 0.0323,
+        "mean_quality_proxy": 0.1758,
+        "rho_H_qbar": 0.1739
+      },
+      "dark": {
+        "n": 50,
+        "ece": 0.0408,
+        "mean_entropy": 0.2136,
+        "mean_prob_pos": 0.1272,
+        "mean_quality_proxy": 0.7871,
+        "rho_H_qbar": -0.2443
+      },
+      "other": {
+        "n": 37,
+        "ece": 0.0114,
+        "mean_entropy": 0.1267,
+        "mean_prob_pos": 0.079,
+        "mean_quality_proxy": 0.5259,
+        "rho_H_qbar": 0.6503
+      }
+    }
+  },
+  "itb_lq_std_vib": {
+    "n": 300,
+    "ece": 0.1457,
+    "ece_ci_95": [
+      0.1319,
+      0.2321
+    ],
+    "auc": 0.5528,
+    "mean_entropy": 0.221,
+    "mean_prob_pos": 0.1276,
+    "rho_H_qbar": -0.0285,
+    "rho_pval": 0.6227589065671593
+  },
+  "comparison": {
+    "ece_real_vs_itblq": -0.0731,
+    "ece_ratio": 0.499,
+    "rho_direction_same": false,
+    "note": "Real LQ targets: 106 ISIC-matched (all target=0, benign) + 68 Fitzpatrick (target=0). ECE measures how well the model's low prob_pos aligns with the all-benign ground truth. Low ECE here means the model correctly predicts low malignancy on challenging-quality benign images. Mean entropy and rho(H,quality) are directly comparable with ITB-LQ values."
+  },
+  "itb_lq_reference": {
+    "ECE_LQ": 0.146,
+    "mean_rho": -0.029,
+    "source": "Paper \u00a75 Table 1 (programmatic degradation baseline)"
+  }
+}

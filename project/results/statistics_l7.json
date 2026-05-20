@@ -1,0 +1,108 @@
+{
+  "cohens_d": [
+    {
+      "method": "EfficientNet-B3",
+      "baseline": "A",
+      "d": 0.9003,
+      "n_lq": 300,
+      "n_hq": 360,
+      "mwu_p": 3.122725552353069e-41
+    },
+    {
+      "method": "Focal+LS",
+      "baseline": "H",
+      "d": -0.3454,
+      "n_lq": 300,
+      "n_hq": 360,
+      "mwu_p": 0.9999999833598358
+    },
+    {
+      "method": "MC Dropout",
+      "baseline": "I",
+      "d": -0.1058,
+      "n_lq": 300,
+      "n_hq": 360,
+      "mwu_p": 0.9640274881892418
+    },
+    {
+      "method": "Deep Ensemble",
+      "baseline": "J",
+      "d": 0.0765,
+      "n_lq": 300,
+      "n_hq": 360,
+      "mwu_p": 0.059449209346129864
+    },
+    {
+      "method": "Std VIB",
+      "baseline": "D",
+      "d": 0.1138,
+      "n_lq": 300,
+      "n_hq": 360,
+      "mwu_p": 0.061413659649291893
+    },
+    {
+      "method": "Std VIB + QCTS",
+      "baseline": "D+QCTS",
+      "d": 0.4519,
+      "n_lq": 300,
+      "n_hq": 360,
+      "mwu_p": 3.015626228364201e-08
+    }
+  ],
+  "bonferroni": {
+    "n_comparisons": 5,
+    "alpha_corrected": 0.01,
+    "results": [
+      {
+        "comparison": "QCTS vs EfficientNet-B3",
+        "baseline": "A",
+        "ece_diff_mean": 0.2793,
+        "p_raw": 0.0,
+        "alpha_bonf": 0.01,
+        "significant_bonf": true
+      },
+      {
+        "comparison": "QCTS vs Focal+LS",
+        "baseline": "H",
+        "ece_diff_mean": 0.4673,
+        "p_raw": 0.0,
+        "alpha_bonf": 0.01,
+        "significant_bonf": true
+      },
+      {
+        "comparison": "QCTS vs MC Dropout",
+        "baseline": "I",
+        "ece_diff_mean": 0.5493,
+        "p_raw": 0.0,
+        "alpha_bonf": 0.01,
+        "significant_bonf": true
+      },
+      {
+        "comparison": "QCTS vs Deep Ensemble",
+        "baseline": "J",
+        "ece_diff_mean": 0.3749,
+        "p_raw": 0.0,
+        "alpha_bonf": 0.01,
+        "significant_bonf": true
+      },
+      {
+        "comparison": "QCTS vs Std VIB",
+        "baseline": "D",
+        "ece_diff_mean": 0.0887,
+        "p_raw": 0.0015,
+        "alpha_bonf": 0.01,
+        "significant_bonf": true
+      }
+    ]
+  },
+  "power_analysis": {
+    "n": 300,
+    "delta_ECE": 0.05,
+    "alpha": 0.05,
+    "power_QCTS_vs_StdVIB": 0.929
+  },
+  "rho_bonferroni": {
+    "n_tests": 15,
+    "alpha_corrected": 0.0033333333333333335
+  }
+}

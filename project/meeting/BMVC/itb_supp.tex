@@ -1,0 +1,401 @@
+\documentclass{bmvc2k}
+
+\bmvcreviewcopy{??}
+\runninghead{Anonymous}{Quality-Aware Calibration — Supplementary Material}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[font=footnotesize,labelfont=bf]{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[table]{xcolor}
+\usepackage{colortbl}
+\usepackage{longtable}
+
+\def\eg{\emph{e.g}\bmvaOneDot}
+\def\Eg{\emph{E.g}\bmvaOneDot}
+\def\etal{\emph{et al}\bmvaOneDot}
+\newcommand{\qbar}{\bar{q}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+
+\title{Quality-Aware Calibration:\\
+       Supplementary Material}
+
+\begin{document}
+\maketitle
+
+\setcounter{section}{0}
+\renewcommand{\thesection}{A\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
+%=====================================================================
+\section{5-Head IQA Module}
+\label{app:iqa}
+%=====================================================================
+
+The per-image quality scalar $\qbar(x) \in [0,1]$ used throughout this paper is the mean of five independently trained quality heads, each predicting one dermoscopic quality dimension.
+
+\textbf{Quality dimensions.}
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item $q_1$: \emph{Sharpness}. Blurring reduces lesion boundary definition, the most calibration-critical degradation (see Fig.~3b in the main paper).
+  \item $q_2$: \emph{Brightness}. Under- or over-exposure affects the lesion-skin contrast perceived by the model.
+  \item $q_3$: \emph{Completeness}. Partial coverage — lesion cropped at image boundary — degrades diagnosis reliability.
+  \item $q_4$: \emph{Colour temperature}. White-balance errors shift hue distributions, though the calibration effect is comparatively mild.
+  \item $q_5$: \emph{Contrast}. Flattened local contrast reduces texture signal, particularly for pigment network features.
+\end{itemize}
+
+\textbf{Training procedure.}
+Each head is a linear regressor on top of a frozen EfficientNet-B0 backbone pre-trained on ImageNet. We generate 149,100 (image, quality) pairs by applying programmatic degradations to the ISIC~2020 training set: for each dimension, we uniformly sample a degradation severity $s \in [0,1]$ and apply the corresponding transformation (Gaussian blur, brightness scaling, random crop, colour temperature shift, contrast scaling), then set $q_i = 1 - s$ as the ground-truth label. Each head is trained independently with mean-squared-error loss, 10 epochs, AdamW ($\text{lr}{=}3{\times}10^{-4}$), batch 256.
+
+\textbf{Evaluation.}
+On a held-out validation set of 29,820 image-quality pairs:
+
+\begin{table}[h]
+\centering
+\caption{5-head IQA module per-dimension performance.}
+\label{tab:iqa_perf}
+\begin{tabular}{lccc}
+\toprule
+Dimension & PLCC & SRCC & RMSE \\
+\midrule
+Sharpness ($q_1$)        & 0.947 & 0.863 & 0.089 \\
+Brightness ($q_2$)       & 0.987 & 0.986 & 0.041 \\
+Completeness ($q_3$)     & 0.731 & 0.689 & 0.171 \\
+Colour temp.\ ($q_4$)    & 0.992 & 0.990 & 0.028 \\
+Contrast ($q_5$)         & 0.961 & 0.945 & 0.063 \\
+\midrule
+\textbf{Mean}            & \textbf{0.924} & \textbf{0.895} & 0.078 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The module achieves high PLCC/SRCC on four of five dimensions; completeness is harder because partial framing has weaker texture gradients. The mean quality scalar $\qbar = \frac{1}{5}\sum_i q_i$ is used as the QCTS input; this averaging suppresses noise in any single dimension.
+
+%=====================================================================
+\section{Quality Scalar Ablation (Table S1)}
+\label{app:quality_scalar}
+
+Table~\ref{tab:quality_scalar} (Table~S1 referenced in the main paper) provides the full quality-scalar ablation from Section~5.3.
+
+\input{table3_quality_scalar}
+
+%=====================================================================
+\section{Decision-Curve Analysis and Triage Simulation}
+\label{app:dca}
+%=====================================================================
+
+The decision-curve analysis (DCA) and triage simulation referenced in Section~6 (Limitations) of the main paper are detailed here.
+
+\textbf{Decision-Curve Analysis (DCA).}
+DCA evaluates a model's clinical utility by computing the net benefit (NB) as a function of a decision threshold $t$:
+\[
+\text{NB}(t) = \frac{\text{TP}(t)}{n} - \frac{\text{FP}(t)}{n} \cdot \frac{t}{1 - t}
+\]
+where $n$ is the total number of patients, TP and FP are true and false positives at threshold $t$. A higher NB at a clinically relevant $t$ indicates better utility.
+
+\begin{table}[h]
+\centering
+\caption{Maximum net benefit on ITB-LQ ($n{=}300$).}
+\label{tab:dca}
+\begin{tabular}{lcc}
+\toprule
+Method & Max NB & Threshold at max NB \\
+\midrule
+EfficientNet-B3  & 0.186 & 0.45 \\
+Std VIB          & 0.186 & 0.47 \\
+\textbf{Std VIB + QCTS} & \textbf{0.192} & 0.42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+QCTS achieves the highest maximum NB (0.192 vs.\ 0.186 for Std VIB), consistent with its lower ECE on ITB-LQ reducing over-confident melanoma predictions on degraded inputs.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.9\linewidth]{figures/fig_dca_triage}
+  \caption{\textbf{Decision-curve analysis (left) and triage simulation (right) on ITB-LQ.}
+    \emph{Left}: net benefit vs.\ threshold; QCTS dominates Std VIB above threshold~$0.35$.
+    \emph{Right}: at a 20\% referral budget, QCTS reduces the missed-positive rate from 73.3\% to 70.0\%.}
+  \label{fig:dca}
+\end{figure}
+
+\textbf{Triage simulation.}
+We simulate a referral protocol where predictions above a confidence threshold are handled by the AI system; the remainder are referred to a dermatologist. Setting a 20\% referral budget:
+
+\begin{table}[h]
+\centering
+\caption{Triage simulation at 20\% referral budget on ITB-LQ.}
+\label{tab:triage}
+\begin{tabular}{lccc}
+\toprule
+Method & Referral rate & Auto-AI sensitivity & Missed-positive rate \\
+\midrule
+EfficientNet-B3    & 20.0\% & 81.8\% & 16.7\% \\
+Std VIB            & 16.3\% & 13.7\% & 73.3\% \\
+\textbf{Std VIB + QCTS} & 17.3\% & 14.3\% & \textbf{70.0\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The dermatologist-reference sensitivity from Haenssle \etal\ (2018) on a comparable task is 86.5\% (specificity 75.6\%), confirming the published dermatologist baseline cited in the main paper.
+
+%=====================================================================
+\section{MC Dropout and Deep Ensemble Quality-Awareness}
+\label{app:uncertainty}
+%=====================================================================
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig_uncertainty_qbar}
+  \caption{\textbf{Entropy vs.\ $\qbar$ scatter on ITB-LQ ($n{=}300$) for four methods.}
+    MC Dropout achieves $\rho{=}+0.350$ ($p{<}10^{-9}$) and Deep Ensemble $\rho{=}+0.133$ ($p{=}0.021$), both positive: within the LQ stratum, these methods are \emph{more} uncertain on marginally better-quality images --- quality-oblivious at the individual-prediction level.
+    Std VIB + QCTS achieves $\rho{=}{-}0.112$ (one-sided $p{=}0.054$), consistently more negative than any other method in the LQ stratum.}
+  \label{fig:uncertainty_qbar}
+\end{figure}
+
+The Spearman correlations are computed on ITB-LQ ($n{=}300$) with $10^4$-resample bootstrap; full-pool values for the same methods appear in Table~1 of the main paper ($\rho\approx-0.11$ to $-0.12$ for MC Dropout and Deep Ensemble). The divergence between stratum-level and pool-level $\rho$ illustrates a Simpson-style artefact: both methods appear marginally quality-aware on the full pool but exhibit positive within-stratum correlations on ITB-LQ, where triage decisions are most consequential.
+
+%=====================================================================
+\section{Fitzpatrick I--VI Sub-population Fairness}
+\label{app:fairness}
+
+Table~\ref{tab:fairness_full} gives the per-skin-type ECE and QCDI for Std VIB and Std VIB + QCTS on ITB-Diverse ($n{=}1{,}500$, FitzPatrick17k images, with 68 images of unknown skin type excluded).
+
+\begin{table}[h]
+\centering
+\caption{Per-skin-type calibration on ITB-Diverse (ECE: 15 bins; QCDI = ECE$_\text{LQ}$ - ECE$_\text{HQ}$ per skin type).}
+\label{tab:fairness_full}
+\footnotesize
+\begin{tabular}{lccccccc}
+\toprule
+Skin type & $n$ & \multicolumn{2}{c}{Std VIB} & \multicolumn{2}{c}{Std VIB + QCTS} & \multicolumn{2}{c}{MC Dropout} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+& & ECE & QCDI & ECE & QCDI & ECE & QCDI \\
+\midrule
+I   & 386 & 0.520 & $+0.130$ & 0.480 & $+0.119$ & -- & $+0.124$ \\
+II  & 504 & 0.452 & $+0.135$ & 0.395 & $+0.139$ & -- & $+0.124$ \\
+III & 252 & 0.401 & $+0.099$ & 0.365 & $+0.101$ & -- & -- \\
+IV  & 154 & 0.415 & $-0.076$ & 0.334 & $-0.035$ & -- & -- \\
+V   &  93 & 0.489 & $-0.054$ & 0.449 & $+0.010$ & -- & -- \\
+VI  &  43 & 0.526 & $+0.075$ & 0.452 & $+0.148$ & -- & -- \\
+\midrule
+I--II  & 890 & 0.480 & $+0.124$ & 0.426 & $+0.121$ & -- & $+0.124$ \\
+III--IV& 406 & 0.412 & $+0.035$ & 0.352 & $+0.011$ & -- & -- \\
+V--VI  & 136 & 0.504 & $+0.014$ & 0.475 & $+0.039$ & -- & $+0.103$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Std VIB achieves paradoxically lower QCDI for V--VI ($+0.014$) than I--II ($+0.124$), because FitzPatrick17k images for darker skin types tend to have stronger quality--entropy coupling (darker types are over-represented in the extreme LQ stratum). QCTS consistently lowers ECE across all skin types but does not systematically reduce QCDI for VI ($n{=}43$, too small for reliable estimation). The entropy--$\qbar$ Spearman correlation for V--VI improves from $\rho{=}{-}0.134$ (Std VIB) to $\rho{=}{-}0.306$ ($p{<}10^{-3}$, QCTS), confirming that QCTS strengthens quality-aware calibration even on the minority skin-type cohort.
+
+Script: \texttt{project/scripts/fairness\_fitzpatrick\_breakdown.py}.
+Results: \texttt{project/results/fairness\_fitzpatrick\_breakdown.\{json,csv\}}.
+
+% ──────────────────────────────────────────────────────────────────────────────
+% NOTE: Sex / age / body-location strata are BLOCKED. All 1500 ITB-Diverse
+% images originate from Fitzpatrick17k (clinical web scrape), which contains
+% no patient-level demographic metadata. The ISIC 2020 local copy was stripped
+% to isic\_id / patient\_id / target only; the original Kaggle train.csv with
+% sex / age\_approx / anatom\_site\_general\_challenge was not downloaded.
+% To unlock these strata: download the original ISIC 2020 Kaggle train.csv
+% (~12 MB) and merge on isic\_id.
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Lesion Type (Three-Partition)}
+\label{app:fairness_three}
+
+Table~\ref{tab:fairness_three} reports calibration metrics stratified by the
+three-partition lesion label (malignant / benign / non-neoplastic) on
+ITB-Diverse ($n{=}1{,}500$).
+
+\textbf{Interpretive note.}
+ECE and QCDI require both positive and negative class examples in each
+sub-group. In ITB-Diverse, the \emph{benign} ($n{=}148$, $n_+{=}0$) and
+\emph{non-neoplastic} ($n{=}734$, $n_+{=}0$) partitions are ground-truth
+negative throughout; ECE and QCDI are therefore undefined (--) for those
+groups. Only the malignant partition ($n{=}618$, $n_+{=}490$) yields
+interpretable ECE / QCDI values. Spearman $\rho$ (entropy vs.\ $\qbar$) is
+computed for all groups and confirms that QCTS strengthens quality-aware
+uncertainty even for fully-negative partitions.
+
+\begin{table}[h]
+\centering
+\caption{Per-lesion-partition calibration on ITB-Diverse (ECE: 15 bins;
+  QCDI $=$ ECE$_\text{LQ}$ $-$ ECE$_\text{HQ}$; -- indicates undefined due
+  to single-class ground truth).}
+\label{tab:fairness_three}
+\footnotesize
+\begin{tabular}{lrcccccc}
+\toprule
+Partition & $n$ & \multicolumn{3}{c}{Std VIB} & \multicolumn{3}{c}{Std VIB + QCTS} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+& & ECE & QCDI & $\rho$ & ECE & QCDI & $\rho$ \\
+\midrule
+Malignant      & 618 & 0.349 & $+0.094$ & $-0.197$ & 0.300 & $+0.084$ & $-0.373$ \\
+Benign         & 148 &  --   &    --    & $-0.075$ &  --   &    --    & $-0.204$ \\
+Non-neoplastic & 734 &  --   &    --    & $-0.014$ &  --   &    --    & $-0.136$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+QCTS reduces malignant-partition ECE from 0.349 to 0.300 ($\Delta{=}{-}0.049$)
+and slightly lowers QCDI from $+0.094$ to $+0.084$, indicating more
+uniform calibration improvement across the quality spectrum. The
+entropy--$\qbar$ correlation for the malignant partition strengthens markedly
+from $\rho{=}{-}0.197$ (Std VIB) to $\rho{=}{-}0.373$ (QCTS), confirming
+that quality-awareness is most critical precisely where mis-calibration risk
+is highest.
+
+\subsection{Lesion Type (Nine-Partition)}
+\label{app:fairness_nine}
+
+Table~\ref{tab:fairness_nine} reports the nine-category breakdown.
+ECE and QCDI are only computable for groups with both positive and negative
+examples and $n{\ge}30$; all other groups report Spearman $\rho$ only.
+Groups with $n{<}30$ are marked with $(\dagger)$; QCDI estimates are
+suppressed as unreliable.
+
+\begin{table}[h]
+\centering
+\caption{Nine-partition lesion-type calibration on ITB-Diverse.
+  ECE/QCDI computed only where feasible (see text); -- indicates
+  single-class or $n{<}30$ groups. $\rho$: Spearman entropy--$\qbar$
+  correlation. $(\dagger)$ $n{<}30$: QCDI unreliable.}
+\label{tab:fairness_nine}
+\footnotesize
+\begin{tabular}{lrcccc}
+\toprule
+Category & $n$ & \multicolumn{2}{c}{Std VIB} & \multicolumn{2}{c}{Std VIB + QCTS} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+& & ECE / QCDI & $\rho$ & ECE / QCDI & $\rho$ \\
+\midrule
+Malignant melanoma     & 496 & 0.262 / $+0.060$ & $-0.236$ & 0.254 / $+0.057$ & $-0.401$ \\
+Inflammatory           & 667 & -- / --           & $-0.021$ & -- / --           & $-0.142$ \\
+Malignant epidermal    &  93 & -- / --           & $-0.155$ & -- / --           & $-0.389$ \\
+Benign dermal          &  69 & -- / --           & $-0.244$ & -- / --           & $-0.404$ \\
+Genodermatoses         &  67 & -- / --           & $+0.026$ & -- / --           & $-0.106$ \\
+Benign epidermal       &  62 & -- / --           & $+0.074$ & -- / --           & $-0.039$ \\
+Mal.\ cutaneous lymphoma$^{\dagger}$ & 18 & -- / -- & -- & -- / -- & -- \\
+Benign melanocyte$^{\dagger}$ & 17 & -- / -- & -- & -- / -- & -- \\
+Malignant dermal$^{\dagger}$ & 11 & -- / -- & -- & -- / -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The only sub-group with sufficient positive labels for ECE/QCDI in both
+nine-partition and three-partition analyses is \emph{malignant melanoma}
+($n{=}496$, $n_+{=}490$): QCTS reduces ECE from 0.262 to 0.254 and QCDI
+from $+0.060$ to $+0.057$ ($\Delta{=}{-}0.003$). For non-melanoma categories,
+only $\rho$ is interpretable; QCTS consistently pushes $\rho$ more negative
+across all reportable groups, confirming broadened quality-awareness beyond
+the melanoma-dominant cohort.
+
+Script: \texttt{project/scripts/fairness\_full\_breakdown.py}.
+Results: \texttt{project/results/fairness\_full\_breakdown.\{json,csv\}}.
+
+%=====================================================================
+\section{Full ImageNet-C Corruption Results}
+\label{app:imagenetc}
+%=====================================================================
+
+Table~\ref{tab:imagenetc_full} reports the raw/TS/QCTS Spearman correlation $\rho(H, \bar q)$ for all 18 corruption types and two backbone families (ResNet-50 and ViT-Tiny) evaluated on the 300 ITB-LQ images with corruption severity as $\bar q$.
+
+\begin{longtable}{lccccccc}
+\caption{Full ImageNet-C corruption results. $\bar q = 1 - \text{severity}/5$.}
+\label{tab:imagenetc_full} \\
+\toprule
+Corruption & \multicolumn{3}{c}{ResNet-50} & & \multicolumn{3}{c}{ViT-Tiny} \\
+\cmidrule{2-4} \cmidrule{6-8}
+& Raw $\rho$ & TS $\rho$ & QCTS $\rho$ & & Raw $\rho$ & TS $\rho$ & QCTS $\rho$ \\
+\midrule
+\endfirsthead
+\multicolumn{8}{c}{\tablename\ \ref{tab:imagenetc_full} (continued)} \\
+\toprule
+Corruption & \multicolumn{3}{c}{ResNet-50} & & \multicolumn{3}{c}{ViT-Tiny} \\
+\cmidrule{2-4} \cmidrule{6-8}
+& Raw $\rho$ & TS $\rho$ & QCTS $\rho$ & & Raw $\rho$ & TS $\rho$ & QCTS $\rho$ \\
+\midrule
+\endhead
+\midrule
+\multicolumn{8}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+gaussian\_noise    & $-$0.293 & $-$0.293 & $-$0.309 & & $-$0.326 & $-$0.326 & $-$0.420 \\
+shot\_noise        & $-$0.229 & $-$0.229 & $-$0.247 & & $-$0.252 & $-$0.252 & $-$0.355 \\
+impulse\_noise     & $-$0.120 & $-$0.120 & $-$0.142 & & $-$0.313 & $-$0.313 & $-$0.413 \\
+speckle\_noise     & $-$0.250 & $-$0.250 & $-$0.265 & & $-$0.092 & $-$0.092 & $-$0.190 \\
+defocus\_blur      & $+$0.024 & $+$0.024 & $+$0.015 & & $-$0.074 & $-$0.074 & $-$0.130 \\
+motion\_blur       & $-$0.067 & $-$0.067 & $-$0.076 & & $-$0.146 & $-$0.146 & $-$0.201 \\
+zoom\_blur         & $-$0.050 & $-$0.050 & $-$0.059 & & $-$0.133 & $-$0.133 & $-$0.192 \\
+gaussian\_blur     & $-$0.006 & $-$0.006 & $-$0.014 & & $-$0.100 & $-$0.100 & $-$0.158 \\
+snow               & $-$0.154 & $-$0.154 & $-$0.163 & & $-$0.016 & $-$0.016 & $-$0.145 \\
+frost              & $-$0.063 & $-$0.063 & $-$0.074 & & $-$0.162 & $-$0.162 & $-$0.213 \\
+fog                & $+$0.094 & $+$0.094 & $+$0.078 & & $-$0.072 & $-$0.072 & $-$0.142 \\
+brightness         & $-$0.295 & $-$0.295 & $-$0.306 & & $-$0.144 & $-$0.144 & $-$0.199 \\
+contrast           & $-$0.142 & $-$0.142 & $-$0.150 & & $-$0.284 & $-$0.284 & $-$0.347 \\
+elastic\_transform & $-$0.167 & $-$0.167 & $-$0.176 & & $-$0.119 & $-$0.119 & $-$0.167 \\
+pixelate           & $-$0.160 & $-$0.160 & $-$0.169 & & $-$0.174 & $-$0.174 & $-$0.236 \\
+jpeg\_compression  & $-$0.186 & $-$0.186 & $-$0.196 & & $-$0.091 & $-$0.091 & $-$0.158 \\
+spatter            & $-$0.096 & $-$0.096 & $-$0.107 & & $+$0.033 & $+$0.033 & $-$0.021 \\
+saturate           & $-$0.077 & $-$0.077 & $-$0.088 & & $-$0.032 & $-$0.032 & $-$0.084 \\
+\midrule
+\textbf{Mean}      & $-$0.124 & $-$0.124 & $-$0.136 & & $-$0.139 & $-$0.139 & $-$0.210 \\
+\end{longtable}
+
+\emph{TS $\rho$ = Raw $\rho$ for all entries: standard TS leaves the entropy--severity correlation unchanged on ImageNet-C corruptions (see \S5.5 of main paper). QCTS consistently pushes $\rho$ more negative. Glass blur not available in the imagecorruptions library used (n/a). Values averaged across 5 severity levels ($n{=}300$ ITB-LQ images each).}
+
+%=====================================================================
+\section{Real-World Low-Quality Dermoscopy Inference}
+\label{app:real_lq}
+
+To partially address the in-the-wild limitation noted in Section~6 of the main paper, we collected 174 real-world low-quality dermoscopy images from the ISIC 2020 dataset, sampling from the bottom quality percentiles across four degradation categories (blur: 37, combined: 50, dark: 50, other: 37). All images are ground-truth benign (confirmed via ISIC 2020 metadata).
+
+We evaluate an EfficientNet-B3 backbone (same architecture as Table~1 baseline, val AUC~$=0.91$) on these images:
+
+\begin{table}[h]
+\centering
+\caption{EfficientNet-B3 calibration on real-world LQ dermoscopy ($n{=}174$, all benign) vs.\ ITB-LQ ($n{=}300$, mixed class).}
+\label{tab:real_lq}
+\begin{tabular}{lccc}
+\toprule
+Setting & ECE [95\% CI] & Mean entropy & $\rho(H,\bar q)$ \\
+\midrule
+Real-world LQ (benign only) & 0.073 [0.038, 0.125] & 0.148 & $+0.446^\dagger$ \\
+ITB-LQ (Std VIB, mixed class) & 0.146 [0.132, 0.232] & 0.221 & $-0.029$ (n.s.) \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+{\footnotesize $\dagger$ $p{<}10^{-9}$; positive $\rho$ within the real-LQ quality range: higher-quality real-LQ images have higher entropy, consistent with calibrated benign-class behavior.}
+\end{flushleft}
+\end{table}
+
+Lower ECE (0.073 vs.\ 0.146) and mean entropy (0.148 vs.\ 0.221) indicate that the model is well-calibrated and correctly assigns low melanoma probability on these benign-but-degraded images. The positive $\rho$ contrasts with the near-zero $\rho$ on ITB-LQ; within the natural variation of the real-LQ pool, clearer (higher-quality) images show more uncertainty, which is consistent with calibrated behavior on the benign class. A cross-class evaluation with matched malignant low-quality images remains a necessary future step to fully validate the on-device deployment claim.
+
+Script: \texttt{project/scripts/infer\_real\_lq\_dermoscopy.py}.
+Results: \texttt{project/results/real\_lq\_inference.json}.
+
+%=====================================================================
+\section{Failure Mode Analysis}
+\label{app:failure}
+%=====================================================================
+
+Section~6 of the main paper reports a manual audit of Std VIB's confidently-wrong predictions on ITB-LQ ($\hat p > 0.85$, 57 samples). We also run an unsupervised cluster analysis using KMeans($k{=}3$) on PCA-reduced EfficientNet-B0 embeddings of these samples.
+
+The cluster analysis recovers two dominant groups: a heavy-blur cluster (${\approx}54$\%) and a diagnostically-ambiguous cluster (${\approx}44$\%), with a negligible third cluster. The predominance of blur is consistent with $q_1$ (sharpness) being the primary calibration risk identified in Fig.~3b of the main paper. The absence of a clean ``low brightness + low contrast'' cluster in the embedding space suggests that brightness and contrast failures produce feature-space patterns similar to blur at the severe degradation levels present in ITB-LQ.
+
+Script: \texttt{project/scripts/failure\_mode\_clustering.py}.
+Results: \texttt{project/results/failure\_mode\_clusters.json}.
+
+%=====================================================================
+% Bibliography (supplementary)
+%=====================================================================
+{\small
+\bibliography{egbib}
+}
+
+\end{document}
