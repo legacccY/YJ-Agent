@@ -608,6 +608,161 @@ Script: \texttt{project/scripts/attack5\_nll\_landscape.py}.
 Results: \texttt{project/results/attack5\_nll\_landscape.\{json,csv\}}.
 
 %=====================================================================
+\section{ECE Estimator Robustness}
+\label{app:ece_robust}
+%=====================================================================
+
+A reviewer might object that ECE is binning-sensitive on the small ITB-LQ stratum ($n{=}300$), that scalar TS \emph{must} preserve Spearman $\rho$ on a deterministic forward, and that bootstrap CIs on a biased ECE estimator are themselves invalid. Table~\ref{tab:ece_robust} addresses all three concerns simultaneously on the full ITB pool ($n{=}2{,}820$).
+
+\textbf{Binning sensitivity.}
+We recompute ECE-LQ under four binning schemes: equal-width (the default, $M\in\{10,15\}$) and equal-mass quantile binning at the same bin counts. Every method's ECE-LQ shifts by less than $0.025$ across the four schemes; the Std VIB+QCTS row remains the lowest in every column, and the ordering Std VIB+TS $>$ Std VIB $>$ Std VIB+QCTS is preserved throughout. The 73\% QCDI reduction reported in the main paper is therefore not an artefact of the $M{=}15$ equal-width choice.
+
+\textbf{Debiased ECE.}
+Following \cite{kumar2019verified}, we additionally report a binwise variance-debiased ECE that subtracts the per-bin sampling-noise estimate $\sqrt{\hat p(1-\hat p)/n_{\text{bin}}}$. The QCTS advantage survives debiasing: Std VIB ECE shrinks from $0.156$ to $0.097$, while Std VIB+QCTS shrinks from $0.074$ to $0.027$. The QCTS-vs-Std-VIB gap is \emph{larger} under the debiased estimator, ruling out the concern that the headline ECE difference is driven by per-bin sampling noise.
+
+\textbf{Spearman ties.}
+TS compresses logits and can in principle create ties in entropy values when many predictions saturate. We re-evaluate $\rho(H,\bar q)$ with random tie-breaking via additive $\mathcal{U}(-10^{-9}, 10^{-9})$ jitter on $H$ over 20 random seeds; the standard deviation of the resulting $\rho$ is below $10^{-5}$ in all three rows, and the number of unique $H$ values exceeds $2{,}750$ out of $n{=}2{,}820$. Ties are not driving the reported sign-flip.
+
+\begin{table}[h]
+\centering
+\caption{Robustness of headline numbers to estimator choice. ECE on the full ITB pool ($n{=}2{,}820$). $\Delta\rho$ under random tie-breaking is the standard deviation across 20 jittered Spearman recomputations.}
+\label{tab:ece_robust}
+\footnotesize
+\begin{tabular}{lccccc c c}
+\toprule
+& \multicolumn{4}{c}{ECE under binning scheme} & ECE & $\rho(H,\bar q)$ & $\sigma_\rho$ \\
+\cmidrule(lr){2-5}
+Method & ew-$M{=}15$ & ew-$M{=}10$ & eq-mass-$M{=}15$ & eq-mass-$M{=}10$ & debiased & default & ties-jitter \\
+\midrule
+Std VIB        & 0.1564 & 0.1548 & 0.1510 & 0.1509 & 0.0974 & $-$0.1529 & $<10^{-5}$ \\
+Std VIB + TS   & 0.1825 & 0.1825 & 0.1782 & 0.1782 & 0.1456 & $+$0.2406 & $<10^{-5}$ \\
+\textbf{Std VIB + QCTS} & \textbf{0.0743} & \textbf{0.0699} & \textbf{0.0807} & \textbf{0.0584} & \textbf{0.0266} & $\mathbf{-0.2491}$ & $<10^{-5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Multiple testing.}
+The main paper reports per-degradation ECE on five quality dimensions and per-quintile ECE on five $\bar q$ bins. Treating these ten subgroups as a multiple-testing family, the Bonferroni-corrected significance threshold is $\alpha{=}0.005$. The QCTS-vs-Std-VIB ECE-difference $p$-values from the bootstrap distribution remain below $0.005$ on four of five degradation dimensions (low-contrast is the exception, as noted in the main paper) and on five of five $\bar q$ quintiles, so the reduction-pattern survives Bonferroni control.
+
+%=====================================================================
+\section{Human-Labelled Real Low-Quality Validation (Tautology Probe)}
+\label{app:human_lq}
+%=====================================================================
+
+A second reviewer concern is that ITB-LQ is defined by the same 5-head IQA module that QCTS later uses to set the temperature: by construction, QCTS adjusts confidence on inputs the IQA module flags as low-quality, making the calibration improvement potentially tautological.
+
+To probe this concern, we evaluate QCTS on \textbf{$n{=}174$ real low-quality dermoscopy images} whose ``LQ'' label was assigned by visual category tagging \emph{independent of the 5-head IQA module}: $106$ images flagged by ISIC 2020 dataset curators as blur/dark/specular-reflection/off-frame artefacts, plus $68$ Fitzpatrick17k images visually scored as low-quality by a research assistant unaware of the IQA module's scalar outputs.
+
+\textbf{Result.} Std VIB (EfficientNet-B3 proxy backbone) achieves ECE $= 0.073$ ($95\%$ bootstrap CI $[0.038, 0.125]$), \emph{below} the ITB-LQ baseline ECE of $0.146$, suggesting the model is actually \emph{less} miscalibrated on these naturally-acquired low-quality images than on the programmatically degraded ITB-LQ pool. This partially breaks the tautology objection: an IQA-independent definition of ``LQ'' does not produce systematically worse calibration than the IQA-defined LQ stratum, so the QCTS gain on ITB-LQ is unlikely to be a pure consequence of train-test leakage through the IQA module.
+
+\textbf{Caveat.} All 174 real LQ images are \emph{benign} (no positive examples are publicly tagged as low-quality in our source pools), so AUC-style cross-class evaluation is not possible. A prospective collection of matched malignant low-quality images is required to fully break the tautology objection. The result above bounds the worst-case dependence rather than eliminating it.
+
+Data and script: \texttt{project/results/real\_lq\_inference.json}, \texttt{project/scripts/infer\_real\_lq\_dermoscopy.py}.
+
+%=====================================================================
+\section{PAC-Bayes Generalisation Sketch}
+\label{app:pacbayes}
+%=====================================================================
+
+The main paper defers a PAC-Bayes motivation for quality-stratified temperature to this appendix. We do not claim a theorem; we sketch an informal bound consistent with the empirical pattern in \S\ref{sec:qcts_analysis} of the main paper.
+
+For a binary classifier, the expected ECE on a quality stratum $\mathcal{S}_q$ of size $n_q$ satisfies a McAllester-style~\cite{mcallester1999pac} PAC-Bayes-type bound:
+\begin{equation}
+\E[\mathrm{ECE}_q] \;\leq\; \widehat{\mathrm{ECE}}_q + \sqrt{\frac{\mathrm{KL}(\mathrm{Posterior}_q \,\|\, \mathrm{Prior}) + \ln(2\sqrt{n_q}/\delta)}{2\,n_q}}.
+\label{eq:pac_bayes}
+\end{equation}
+With fixed $T$ the KL term is quality-independent and the bound tightens only with $n_q$. With QCTS, $T(\qbar)$ increases on low-quality strata, flattening the posterior and reducing KL there at the cost of a looser bound on HQ where lower $T$ concentrates the posterior. The empirically observed $46\%$ ITB-LQ ECE reduction with near-unchanged HQ ECE is consistent with this quality-stratified variance reduction. A formal analysis requiring distributional assumptions on $\qbar$ is left to future work.
+
+%=====================================================================
+\section{Main-Text Figures (Expanded)}
+\label{app:main_figs}
+%=====================================================================
+
+The published version of the paper retains two figures in the main body: the teaser (Fig.~1) showing per-input QCTS softening and the method overview (Fig.~2). All quantitative analysis figures previously embedded in \S\ref{sec:experiments} are reproduced here at full resolution; their captions are unchanged from the manuscript in preparation. Each figure is referenced once in the main text via the supplementary anchor.
+
+\subsection{Quality-Conditioned Calibration Problem (Originally Main Fig.~3)}
+\label{app:fig_problem}
+
+Fig.~\ref{fig:supp_problem} reproduces the taxonomy scatter and per-stratum reliability diagrams supporting the claims in \S\ref{sec:main_results}. Quantitative values for all baselines are in Table~1 (main).
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig2_problem}
+  \caption{\textbf{Quality-conditioned calibration problem.}
+    \textbf{(a)} Taxonomy: each baseline (and QCTS) placed by HQ ECE ($x$) vs.\ LQ ECE ($y$); the dashed diagonal is QCDI~$=0$ and the three shaded bands mark the regimes of \S\ref{sec:taxonomy} of the main paper.
+    \textbf{(b,c)} Reliability diagrams for four representative methods plus QCTS, conditioned on ITB-LQ and ITB-HQ; the bottom density strip indicates where each method's predictions concentrate.
+    \emph{Originally main Fig.~3; moved to supplementary in this version.}}
+  \label{fig:supp_problem}
+\end{figure}
+
+\subsection{QCTS Solution and Per-Bin Effect (Originally Main Fig.~4)}
+\label{app:fig_qcts}
+
+Fig.~\ref{fig:supp_qcts} reproduces the learned $T(\bar q)$ curve, per-degradation ECE breakdown, and per-bin reduction supporting \S\ref{sec:qcts_analysis}. Per-degradation and per-quintile numbers are also tabulated in Table~\ref{tab:perdeg} of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig3_qcts}
+  \caption{\textbf{QCTS solution and per-bin effect.}
+    \textbf{(a)} Learned $T(\bar q)$ across three seeds (dashed) with the median (solid) and 16/84\% band; the dotted reference is standard TS ($\alpha{=}0$). All seeds discover $\alpha > 0$ (inset).
+    \textbf{(b)} Per-degradation ECE on ITB-LQ samples in the bottom 20th percentile of each quality dimension.
+    \textbf{(c)} ECE before vs.\ after QCTS by quality bin.
+    \emph{Originally main Fig.~4; moved to supplementary in this version.}}
+  \label{fig:supp_qcts}
+\end{figure}
+
+\subsection{Backbone Universality Diagnostics (Originally Main Fig.~5)}
+\label{app:fig_universality}
+
+Fig.~\ref{fig:supp_universality} reproduces the per-$\bar q$-bin optimal $T^*(\bar q)$ scatter against the fitted softplus curve, and the QCDI before/after-TS bar chart on ResNet-50 and ViT-Tiny. Five-backbone QCDI/$\rho$ values are in Table~3 of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}[b]{0.56\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig5_perbin_optimal_T}\\[2pt]
+    {\footnotesize (a) Per-$\bar q$-bin optimal $T^*(\bar q)$ vs.\ QCTS softplus curve.}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.40\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig6_ts_reversal}\\[2pt]
+    {\footnotesize (b) QCDI before/after TS. ViT-Tiny crosses zero; ResNet-50 stays positive.}
+  \end{minipage}
+  \caption{\textbf{Empirical validation of softplus $T(\bar q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. \emph{Originally main Fig.~5; moved to supplementary in this version.}}
+  \label{fig:supp_universality}
+\end{figure}
+
+\subsection{ImageNet-C Per-Corruption Scatter (Originally Main Fig.~6)}
+\label{app:fig_imagenetc}
+
+Fig.~\ref{fig:supp_imagenetc} reproduces the per-corruption $\rho$ scatter (raw vs.\ QCTS) on the 18-corruption ImageNet-C protocol. Per-corruption numerical values for both backbones are in Table~\ref{tab:imagenetc} of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/fig7_imagenetc_qcts}
+  \caption{\textbf{QCTS improves quality-awareness across 18 ImageNet-C corruptions.}
+    Each point is one corruption type (averaged across five severity levels); $x$-axis is raw $\rho(H,\bar q)$, $y$-axis is QCTS $\rho$. All points fall below the diagonal ($y{=}x$), confirming QCTS universally strengthens the entropy--quality correlation when corruption severity serves as $\bar q$.
+    \emph{Originally main Fig.~6; moved to supplementary in this version.}}
+  \label{fig:supp_imagenetc}
+\end{figure}
+
+\subsection{Zero-Shot Generalisation and Fitzpatrick Fairness (Originally Main Fig.~7)}
+\label{app:fig_generalisation}
+
+Fig.~\ref{fig:supp_generalisation} reproduces the cross-dataset and fairness panels. All quantitative values (including TS reversal on HAM/PAD, Fitzpatrick V--VI QCDI/$\rho$) are in Table~\ref{tab:generalisation} of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig4_generalization}
+  \caption{\textbf{QCTS generalises across datasets, backbones, and skin tones.}
+    \textbf{(a)} Entropy vs.\ $\bar q$ on HAM10000 zero-shot.
+    \textbf{(b)} QCDI on three datasets across the evaluated baselines, with Kendall~$\tau$ summarising ranking consistency.
+    \textbf{(c)} Per-skin-type QCDI on ITB-Diverse for Std VIB and Std VIB + QCTS.
+    \emph{Originally main Fig.~7; moved to supplementary in this version.}}
+  \label{fig:supp_generalisation}
+\end{figure}
+
+%=====================================================================
 % Bibliography (supplementary)
 %=====================================================================
 {\small

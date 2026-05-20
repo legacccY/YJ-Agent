@@ -1,4 +1,4 @@
-\begin{thebibliography}{30}
+\begin{thebibliography}{34}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -41,6 +41,12 @@ Joseph~Paul Cohen, Joseph~D. Viviano, Paul Bertin, Paul Morrison, Parisa
   Brooks, Mohammad Hashir, and Hadrien Bertrand.
 \newblock {TorchXRayVision}: A library of chest x-ray datasets and models.
 \newblock \emph{Medical Imaging with Deep Learning}, 2022.
+
+\bibitem[Deng et~al.(2023)Deng, Dwork, and Zhang]{deng2023happymap}
+Zhun Deng, Cynthia Dwork, and Linjun Zhang.
+\newblock {HappyMap}: A generalised multi-calibration method.
+\newblock In \emph{Proceedings of the 14th Innovations in Theoretical Computer
+  Science Conference (ITCS)}, 2023.
 
 \bibitem[Esteva et~al.(2017)Esteva, Kuprel, Novoa, Ko, Swetter, Blau, and
   Thrun]{esteva2017dermatologist}
@@ -99,6 +105,12 @@ Pang~Wei Koh, Shiori Sagawa, Henrik Marklund, Sang~Michael Xie, Marvin Zhang,
 \newblock In \emph{Proceedings of the International Conference on Machine
   Learning (ICML)}, 2021.
 
+\bibitem[Kumar et~al.(2019)Kumar, Liang, and Ma]{kumar2019verified}
+Ananya Kumar, Percy Liang, and Tengyu Ma.
+\newblock Verified uncertainty calibration.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2019.
+
 \bibitem[Lakshminarayanan et~al.(2017)Lakshminarayanan, Pritzel, and
   Blundell]{lakshminarayanan2017ensemble}
 Balaji Lakshminarayanan, Alexander Pritzel, and Charles Blundell.
@@ -114,6 +126,14 @@ Yuan Liu, Ayush Jain, Clara Eng, David~H. Way, Kang Lee, Peggy Bui, Kimberly
   et~al.
 \newblock A deep learning system for differential diagnosis of skin diseases.
 \newblock \emph{Nature Medicine}, 26:\penalty0 900--908, 2020.
+
+\bibitem[Luo et~al.(2023)Luo, Bhatnagar, Wang, Bai, Zhou, Wang, Choromanski,
+  Yu, and Pavone]{luo2023local}
+Rachel Luo, Aadyot Bhatnagar, Yu~Wang, Yu~Bai, Liangliang Zhou, Mengyao Wang,
+  Krzysztof Choromanski, Stefano~Ermon Yu, and Marco Pavone.
+\newblock Local calibration: Metrics and recalibration.
+\newblock In \emph{Proceedings of the Conference on Uncertainty in Artificial
+  Intelligence (UAI)}, 2023.
 
 \bibitem[Malinin and Gales(2018)]{malinin2019predictive}
 Andrey Malinin and Mark Gales.
@@ -220,6 +240,12 @@ Julia~K. Winkler, Katharina Sies, Christine Fink, Ferdinand Toberer, Alexander
 \newblock Non-invasive diagnosis of melanoma with artificial intelligence: A
   prospective study comparing smartphone-based and standard dermoscopy.
 \newblock \emph{European Journal of Cancer}, 163:\penalty0 67--75, 2022.
+
+\bibitem[Yu et~al.(2022)Yu, Bates, Ma, and Jordan]{yu2022robust}
+Yaodong Yu, Stephen Bates, Yi~Ma, and Michael~I. Jordan.
+\newblock Robust calibration with multi-domain temperature scaling.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2022.
 
 \bibitem[Zadrozny and Elkan(2002)]{zadrozny2002transforming}
 Bianca Zadrozny and Charles Elkan.

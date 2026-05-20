@@ -1,0 +1,43 @@
+\begin{table}[!t]
+\centering
+\caption{\textbf{Where QCTS reduces ECE: per-degradation (ITB-LQ) and per-quality-bin (full ITB) breakdown.}
+The temperature lift concentrates on blur and colour-shift extremes (Panel a, top two rows) and on the lowest-quality 20\% of the pool (Panel b, top row), with diminishing returns on cleaner inputs. Negative reduction on low-contrast probes (Panel a, last row) is informative: contrast inflation \emph{spreads} logits, so a quality-conditioned soften\-ing reduces the wrong dimension --- the failure mode QCTS does \emph{not} repair. All values from $n_{\text{ITB-LQ}}{=}300$ stratified probes ($n{=}60{-}71$ per dimension) and equi-population $\qbar$ quintiles on full ITB ($n{=}564$ each).}
+\label{tab:perdeg}
+\vspace{4pt}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.06}
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\textbf{(a) ECE by degradation dimension, ITB-LQ}\par\vspace{2pt}
+\begin{tabular}{lccc}
+\toprule
+Degradation & Std VIB & +QCTS & $\Delta$ \\
+\midrule
+Blur ($q_1\!\downarrow$)         & 0.173 & \textbf{0.084} & $-51\%$ \\
+Colour temp ($q_4\!\downarrow$)  & 0.264 & \textbf{0.155} & $-41\%$ \\
+Low brightness ($q_2\!\downarrow$) & 0.131 & 0.115 & $-12\%$ \\
+Low contrast ($q_5\!\downarrow$) & 0.056 & 0.088 & $+58\%$ \\
+\midrule
+\textbf{Mean (4 dims)} & 0.156 & \textbf{0.110} & $-29\%$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\textbf{(b) ECE by $\qbar$ quintile, full ITB}\par\vspace{2pt}
+\begin{tabular}{lccc}
+\toprule
+$\qbar$ range & Std VIB & +QCTS & $\Delta$ \\
+\midrule
+$[0.05, 0.44)$ & 0.307 & \textbf{0.205} & $-33\%$ \\
+$[0.44, 0.50)$ & 0.269 & \textbf{0.218} & $-19\%$ \\
+$[0.50, 0.54)$ & 0.284 & \textbf{0.211} & $-26\%$ \\
+$[0.54, 0.61)$ & 0.344 & \textbf{0.274} & $-20\%$ \\
+$[0.61, 0.87]$ & 0.358 & \textbf{0.300} & $-16\%$ \\
+\midrule
+\textbf{Mean (5 bins)} & 0.312 & \textbf{0.242} & $-22\%$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{table}

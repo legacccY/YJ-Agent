@@ -1,13 +1,60 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-21（第四次会话）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-21（第五次会话）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
 ## 🎯 当前焦点
 
-- **BMVC 投稿** | Deadline 假设 2026-07-15（**55 天**）| 状态：**主文 14 页正中 / W6 Round 2-5 写作打磨已合并完成 / 表格 caption 干涉修复** — 剩 Anonymous GitHub push + Zenodo DOI
+- **BMVC 投稿** | Deadline 2026-07-15（**55 天**）| 状态：**主文 14 页正中（结构重构 + 三轮 LLM review 应用）/ 18 总页（主 14 + ref 4）/ Supp 15 页**
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
+
+## ✅ 今日完成（2026-05-21 第五次会话）
+
+### 主文结构大重构：图 7→2 + 表 3→6
+
+| 完成项 | 内容 |
+|--------|------|
+| 删 5 张主文 figure | fig:problem / fig:qcts / fig:universality_figs / fig:imagenetc / fig:generalization 全删，整体搬到 supp §A16 |
+| 留 2 张主文 figure | fig:teaser（4×3 dermoscopy 多图组）+ fig:method（架构图）|
+| 新增 Table 3 | per-degradation ECE + per-quintile ECE（双 panel，高密度）|
+| 新增 Table 5 | ImageNet-C 18 corruption × {ResNet-50, ViT-Tiny} × {raw, +QCTS} ρ |
+| 新增 Table 6 | Generalisation（zero-shot ρ）+ Fitzpatrick I-VI fairness |
+| 正文重写 5 处 | §5.2/§5.3/§5.4/§5.5/§5.6 + §6，加锁定数字 + supp Fig.~S3-S7 硬编码指针 |
+
+### 三轮 LLM review 应用
+
+| Review | 主要应用 |
+|--------|---------|
+| GPT 5.5 | Abstract 5 处 scope 限定（"on ITB" / "on some backbones"）+ §1.4 加 QCTS vs Guo/Sensoy/Alemi 区分句 + §6 加 3 点 Scope conditions 预反驳段 |
+| Claude 4.7 | §2 加 EDL Dirichlet + Std VIB 解释；PAC-Bayes 整段→supp §A19；Table 1 caption 'subscripts'→'± half-widths'；§1 加 TS 反转直觉句；§5.3 piecewise NLL 软化；§3.3 ρ<-0.15 阈值论证 |
+| Gemini 3.1 Pro（最重大）| 数学验证 scalar T 保 Spearman rank → 拆解 ρ 反转真实机制（MC marginalisation vs deterministic-μ forward）；§2 加 3 cite (luo2023local/yu2022robust/deng2023happymap)；Supp 新增 §A17 ECE robustness + §A18 human-LQ tautology break |
+
+### 关键技术发现（Gemini review 直接推动）
+
+- 代码逆推 + 数值验证：itb_predictions.csv 中 `D` 用 MC marginalisation，`D+TS` 用 deterministic-μ + scalar T
+- 「TS reverses ρ from −0.153 → +0.241」机制声明改正：scalar T 在 deterministic forward 前后 ρ 完全相同（均 +0.241），反转来自 MC↔deterministic 切换的联合 signature
+- ViT-Tiny QCDI flip 才是纯 TS 效果（确定式 backbone，within-forward）
+
+### 新交付素材
+
+- `figures/teaser_source/`：16 张 4×4 拼图原料（4 病灶 × 4 处理）+ LABELS.md（含 q̄、推荐拼法、caption）
+- `figures/PROMPT_fig_method_nanobanana.md`：CVPR 风 NanoBanana prompt（Okabe-Ito 配色，4 阶段水平流水线）
+
+### 最终验证
+
+- 主文 14 页主体 + 4 页 ref ✅ BMVC 正中
+- Supp 15 页（新增 §A17/§A18/§A19/§A20 共 4 节）
+- 0 error / 0 undefined ref/cite ✅
+- 17/17 数字一致性 PASS ✅
+- R1-R7 防御 grep 全 0 ✅
+
+### 待续（下次会话）
+
+- [ ] 用户用 NanoBanana 跑 PROMPT_fig_method_nanobanana.md → 导出 SVG/PDF 覆盖 figures/fig_method
+- [ ] 用户用 teaser_source/ 自拼 → 导出 figures/fig1_teaser
+- [ ] Anonymous GitHub 实际创建 + push（用 release/GITHUB_SETUP.md）
+- [ ] Zenodo DOI 申请
 
 ## ✅ 今日完成（2026-05-21 第四次会话）
 

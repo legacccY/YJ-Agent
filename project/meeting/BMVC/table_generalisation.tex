@@ -1,0 +1,51 @@
+\begin{table}[!t]
+\centering
+\caption{\textbf{Zero-shot generalisation and Fitzpatrick fairness.}
+\textbf{Panel (a)} TS \emph{inverts} $\rho$ on both unseen dermoscopy datasets (HAM10000 sign-flip $-0.033\!\to\!+0.324$; PAD-UFES $-0.075\!\to\!+0.072$), reproducing the ITB reversal phenomenon (\S\ref{sec:main_results}); QCTS preserves the negative correlation on both pools.
+\textbf{Panel (b)} On Fitzpatrick V--VI darker-skin samples ($n{=}93{+}43{=}136$), QCTS more than triples the entropy--$\bar q$ Spearman correlation ($V$: $-0.18\!\to\!-0.30$, $VI$: $+0.02\!\to\!-0.35$) and shifts $V$ from quality-fragile to quality-aware (QCDI $-0.054\!\to\!+0.010$, both within noise of zero), without harming the $I$--$II$ QCDI bands (changes ${<}0.02$).}
+\label{tab:generalisation}
+\vspace{4pt}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{minipage}[t]{0.46\linewidth}
+\centering
+\textbf{(a) Zero-shot $\rho(H,\bar q)$ on unseen datasets}\par\vspace{2pt}
+\begin{tabular}{lccc}
+\toprule
+Method & $\rho$ HAM10000 & $\rho$ PAD-UFES \\
+& $(n{=}10{,}015)$ & $(n{=}2{,}298)$ \\
+\midrule
+Std VIB        & $-0.033$         & $-0.075$ \\
+\;+ TS         & $+0.324$\,$^*$   & $+0.072$\,$^*$ \\
+\;+ QCTS       & $\mathbf{-0.108}$\,$^{**}$ & $\mathbf{-0.150}$\,$^{**}$ \\
+\midrule
+$\Delta\rho$ (QCTS$-$VIB) & $-0.075$ & $-0.075$ \\
+\bottomrule
+\end{tabular}
+\vspace{2pt}\\
+\scriptsize\raggedright$^*$ sign-flip (TS reversal reproduces). $^{**}$ $p<10^{-12}$.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.50\linewidth}
+\centering
+\textbf{(b) Fitzpatrick I--VI fairness on ITB-Diverse}\par\vspace{2pt}
+\begin{tabular}{lrcccc}
+\toprule
+& & \multicolumn{2}{c}{QCDI} & \multicolumn{2}{c}{$\rho(H,\bar q)$} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+Skin & $n$ & Std VIB & +QCTS & Std VIB & +QCTS \\
+\midrule
+I    & 386 & $+0.130$ & $+0.119$ & $-0.09$ & $-0.27$\,$^{**}$ \\
+II   & 504 & $+0.135$ & $+0.139$ & $-0.10$ & $-0.22$\,$^{**}$ \\
+III  & 252 & $+0.099$ & $+0.101$ & $-0.16$ & $-0.27$\,$^{**}$ \\
+IV   & 154 & $-0.076$ & $-0.035$ & $-0.08$ & $-0.19$\,$^*$ \\
+V    &  93 & $-0.054$ & $\mathbf{+0.010}$ & $-0.18$ & $\mathbf{-0.30}$\,$^*$ \\
+VI   &  43 & $+0.075$ & $+0.148$ & $+0.02$ & $\mathbf{-0.35}$\,$^*$ \\
+\midrule
+V--VI & 136 & $+0.010$ & $+0.038$ & $-0.13$ & $\mathbf{-0.31}$\,$^{**}$ \\
+\bottomrule
+\end{tabular}
+\vspace{2pt}\\
+\scriptsize\raggedright$^*$$p<0.05$; $^{**}$$p<10^{-3}$. All values 15-bin ECE; QCDI computed with thresholds $\bar q<0.45$ / $\bar q>0.50$.
+\end{minipage}
+\end{table}

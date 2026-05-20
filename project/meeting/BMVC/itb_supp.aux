@@ -1,0 +1,121 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\bibstyle{plainnat}
+\citation{brisque}
+\citation{clipiqa}
+\@writefile{toc}{\contentsline {section}{\numberline {A1}5-Head IQA Module}{1}{section.1}\protected@file@percent }
+\newlabel{app:iqa}{{A1}{1}{5-Head IQA Module}{section.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A2}Quality Scalar Ablation (Table S1)}{1}{section.2}\protected@file@percent }
+\newlabel{app:quality_scalar}{{A2}{1}{Quality Scalar Ablation (Table S1)}{section.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S1}{\ignorespaces 5-head IQA module per-dimension performance.}}{2}{table.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:iqa_perf}{{S1}{2}{5-head IQA module per-dimension performance}{table.caption.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S2}{\ignorespaces  \textbf  {QCTS under different quality scalars $\bar  q$.} QCTS is fitted with each quality estimator on the same frozen Std VIB backbone and val split. Fitted slope $\hat  \alpha $ indicates whether the quality scalar drives quality-aware temperature scaling. BRISQUE and CLIP-IQA collapse to quality-agnostic solutions ($\hat  \alpha \!\approx \!0$, equivalent to TS); Laplacian variance learns $\hat  \alpha \!>\!0$ but selects the wrong quality dimension (QCDI$\,{=}{+}0.028$, worse than TS); only the dermoscopy-trained 5-head IQA achieves quality-fair calibration (QCDI$\,{<}\,0$, most negative $\rho $). }}{2}{table.caption.2}\protected@file@percent }
+\newlabel{tab:quality_scalar}{{S2}{2}{\textbf {QCTS under different quality scalars $\bar q$.} QCTS is fitted with each quality estimator on the same frozen Std VIB backbone and val split. Fitted slope $\hat \alpha $ indicates whether the quality scalar drives quality-aware temperature scaling. BRISQUE and CLIP-IQA collapse to quality-agnostic solutions ($\hat \alpha \!\approx \!0$, equivalent to TS); Laplacian variance learns $\hat \alpha \!>\!0$ but selects the wrong quality dimension (QCDI$\,{=}{+}0.028$, worse than TS); only the dermoscopy-trained 5-head IQA achieves quality-fair calibration (QCDI$\,{<}\,0$, most negative $\rho $)}{table.caption.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A3}Decision-Curve Analysis and Triage Simulation}{2}{section.3}\protected@file@percent }
+\newlabel{app:dca}{{A3}{2}{Decision-Curve Analysis and Triage Simulation}{section.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S3}{\ignorespaces Maximum net benefit on ITB-LQ ($n{=}300$).}}{2}{table.caption.3}\protected@file@percent }
+\newlabel{tab:dca}{{S3}{2}{Maximum net benefit on ITB-LQ ($n{=}300$)}{table.caption.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S1}{\ignorespaces \textbf  {Decision-curve analysis (left) and triage simulation (right) on ITB-LQ.} \emph  {Left}: net benefit vs.\ threshold; QCTS dominates Std VIB above threshold~$0.35$. \emph  {Right}: at a 20\% referral budget, QCTS reduces the missed-positive rate from 73.3\% to 70.0\%.}}{3}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:dca}{{S1}{3}{\textbf {Decision-curve analysis (left) and triage simulation (right) on ITB-LQ.} \emph {Left}: net benefit vs.\ threshold; QCTS dominates Std VIB above threshold~$0.35$. \emph {Right}: at a 20\% referral budget, QCTS reduces the missed-positive rate from 73.3\% to 70.0\%}{figure.caption.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S4}{\ignorespaces Triage simulation at 20\% referral budget on ITB-LQ.}}{3}{table.caption.5}\protected@file@percent }
+\newlabel{tab:triage}{{S4}{3}{Triage simulation at 20\% referral budget on ITB-LQ}{table.caption.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A4}MC Dropout and Deep Ensemble Quality-Awareness}{3}{section.4}\protected@file@percent }
+\newlabel{app:uncertainty}{{A4}{3}{MC Dropout and Deep Ensemble Quality-Awareness}{section.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S2}{\ignorespaces \textbf  {Entropy vs.\ $\bar  {q}$ scatter on ITB-LQ ($n{=}300$) for four methods.} MC Dropout achieves $\rho {=}+0.350$ ($p{<}10^{-9}$) and Deep Ensemble $\rho {=}+0.133$ ($p{=}0.021$), both positive: within the LQ stratum, these methods are \emph  {more} uncertain on marginally better-quality images --- quality-oblivious at the individual-prediction level. Std VIB + QCTS achieves $\rho {=}{-}0.112$ (one-sided $p{=}0.054$), consistently more negative than any other method in the LQ stratum.}}{3}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:uncertainty_qbar}{{S2}{3}{\textbf {Entropy vs.\ $\qbar $ scatter on ITB-LQ ($n{=}300$) for four methods.} MC Dropout achieves $\rho {=}+0.350$ ($p{<}10^{-9}$) and Deep Ensemble $\rho {=}+0.133$ ($p{=}0.021$), both positive: within the LQ stratum, these methods are \emph {more} uncertain on marginally better-quality images --- quality-oblivious at the individual-prediction level. Std VIB + QCTS achieves $\rho {=}{-}0.112$ (one-sided $p{=}0.054$), consistently more negative than any other method in the LQ stratum}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A5}Fitzpatrick I--VI Sub-population Fairness}{4}{section.5}\protected@file@percent }
+\newlabel{app:fairness}{{A5}{4}{Fitzpatrick I--VI Sub-population Fairness}{section.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S5}{\ignorespaces Per-skin-type calibration on ITB-Diverse (ECE: 15 bins; QCDI = ECE$_\text  {LQ}$ - ECE$_\text  {HQ}$ per skin type).}}{4}{table.caption.7}\protected@file@percent }
+\newlabel{tab:fairness_full}{{S5}{4}{Per-skin-type calibration on ITB-Diverse (ECE: 15 bins; QCDI = ECE$_\text {LQ}$ - ECE$_\text {HQ}$ per skin type)}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A5.1}Lesion Type (Three-Partition)}{4}{subsection.5.1}\protected@file@percent }
+\newlabel{app:fairness_three}{{A5.1}{4}{Lesion Type (Three-Partition)}{subsection.5.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S6}{\ignorespaces Per-lesion-partition calibration on ITB-Diverse (ECE: 15 bins; QCDI $=$ ECE$_\text  {LQ}$ $-$ ECE$_\text  {HQ}$; -- indicates undefined due to single-class ground truth).}}{4}{table.caption.8}\protected@file@percent }
+\newlabel{tab:fairness_three}{{S6}{4}{Per-lesion-partition calibration on ITB-Diverse (ECE: 15 bins; QCDI $=$ ECE$_\text {LQ}$ $-$ ECE$_\text {HQ}$; -- indicates undefined due to single-class ground truth)}{table.caption.8}{}}
+\gdef \LT@i {\LT@entry 
+    {5}{84.61934pt}\LT@entry 
+    {5}{42.2699pt}\LT@entry 
+    {5}{42.2699pt}\LT@entry 
+    {1}{46.37975pt}\LT@entry 
+    {1}{12.0pt}\LT@entry 
+    {5}{42.2699pt}\LT@entry 
+    {5}{42.2699pt}\LT@entry 
+    {1}{46.37975pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A5.2}Lesion Type (Nine-Partition)}{5}{subsection.5.2}\protected@file@percent }
+\newlabel{app:fairness_nine}{{A5.2}{5}{Lesion Type (Nine-Partition)}{subsection.5.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S7}{\ignorespaces Nine-partition lesion-type calibration on ITB-Diverse. ECE/QCDI computed only where feasible (see text); -- indicates single-class or $n{<}30$ groups. $\rho $: Spearman entropy--$\bar  {q}$ correlation. $(\dagger )$ $n{<}30$: QCDI unreliable.}}{5}{table.caption.9}\protected@file@percent }
+\newlabel{tab:fairness_nine}{{S7}{5}{Nine-partition lesion-type calibration on ITB-Diverse. ECE/QCDI computed only where feasible (see text); -- indicates single-class or $n{<}30$ groups. $\rho $: Spearman entropy--$\qbar $ correlation. $(\dagger )$ $n{<}30$: QCDI unreliable}{table.caption.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A6}Full ImageNet-C Corruption Results}{5}{section.6}\protected@file@percent }
+\newlabel{app:imagenetc}{{A6}{5}{Full ImageNet-C Corruption Results}{section.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S8}{\ignorespaces Full ImageNet-C corruption results. $\bar  q = 1 - \text  {severity}/5$.}}{5}{table.8}\protected@file@percent }
+\newlabel{tab:imagenetc_full}{{S8}{5}{Full ImageNet-C Corruption Results}{table.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A7}Real-World Low-Quality Dermoscopy Inference}{6}{section.7}\protected@file@percent }
+\newlabel{app:real_lq}{{A7}{6}{Real-World Low-Quality Dermoscopy Inference}{section.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S9}{\ignorespaces EfficientNet-B3 calibration on real-world LQ dermoscopy ($n{=}174$, all benign) vs.\ ITB-LQ ($n{=}300$, mixed class).}}{6}{table.caption.10}\protected@file@percent }
+\newlabel{tab:real_lq}{{S9}{6}{EfficientNet-B3 calibration on real-world LQ dermoscopy ($n{=}174$, all benign) vs.\ ITB-LQ ($n{=}300$, mixed class)}{table.caption.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A8}Failure Mode Analysis}{7}{section.8}\protected@file@percent }
+\newlabel{app:failure}{{A8}{7}{Failure Mode Analysis}{section.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S10}{\ignorespaces Failure-mode clusters (KMeans $k{=}3$ on quality dimensions, $n{=}57$ confidently-wrong predictions, $\hat  p{>}0.85$).}}{7}{table.caption.11}\protected@file@percent }
+\newlabel{tab:failure_clusters}{{S10}{7}{Failure-mode clusters (KMeans $k{=}3$ on quality dimensions, $n{=}57$ confidently-wrong predictions, $\hat p{>}0.85$)}{table.caption.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A9}Threshold Sensitivity of TS Reversal}{7}{section.9}\protected@file@percent }
+\newlabel{app:threshold_sensitivity}{{A9}{7}{Threshold Sensitivity of TS Reversal}{section.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S11}{\ignorespaces $\tau $ threshold sensitivity. For each $\tau $, the sub-pool contains all ITB images with $\bar  {q}{<}\tau $. Spearman $\rho $(entropy, $\bar  {q}$) for Std VIB raw and $+$TS. Sign flip = raw $\rho {<}0$ and TS $\rho {>}0$.}}{8}{table.caption.12}\protected@file@percent }
+\newlabel{tab:tau_sweep}{{S11}{8}{$\tau $ threshold sensitivity. For each $\tau $, the sub-pool contains all ITB images with $\qbar {<}\tau $. Spearman $\rho $(entropy, $\qbar $) for Std VIB raw and $+$TS. Sign flip = raw $\rho {<}0$ and TS $\rho {>}0$}{table.caption.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A10}Quality-Stratified Calibration Baselines}{8}{section.10}\protected@file@percent }
+\newlabel{app:baselines_quality}{{A10}{8}{Quality-Stratified Calibration Baselines}{section.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S12}{\ignorespaces Comparison of QCTS against quality-conditioned calibration baselines. All non-QCTS methods calibrated on ITB-Edge ($n{=}660$) as held-out quality band; QCTS shown with original val-fit parameters for consistency with Table~1. ECE computed on ITB-LQ$+$HQ ($n{=}660$). \emph  {Genuine quality-aware} = QCDI${\le }0$ \textbf  {and} $\rho {<}{-}0.15$ (see \S  3.3).}}{8}{table.caption.13}\protected@file@percent }
+\newlabel{tab:baseline_quality}{{S12}{8}{Comparison of QCTS against quality-conditioned calibration baselines. All non-QCTS methods calibrated on ITB-Edge ($n{=}660$) as held-out quality band; QCTS shown with original val-fit parameters for consistency with Table~1. ECE computed on ITB-LQ$+$HQ ($n{=}660$). \emph {Genuine quality-aware} = QCDI${\le }0$ \textbf {and} $\rho {<}{-}0.15$ (see \S 3.3)}{table.caption.13}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A11}Extended QCTS Form Ablation}{8}{section.11}\protected@file@percent }
+\newlabel{app:form_ablation}{{A11}{8}{Extended QCTS Form Ablation}{section.11}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S13}{\ignorespaces Full QCTS form ablation on Std VIB (ITB-LQ/HQ; 3-seed mean). Val NLL is the L-BFGS optimisation objective. Lower val NLL does not imply better quality-awareness.}}{9}{table.caption.14}\protected@file@percent }
+\newlabel{tab:form_ablation_full}{{S13}{9}{Full QCTS form ablation on Std VIB (ITB-LQ/HQ; 3-seed mean). Val NLL is the L-BFGS optimisation objective. Lower val NLL does not imply better quality-awareness}{table.caption.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A12}Cross-Modality Full Results}{9}{section.12}\protected@file@percent }
+\newlabel{app:crossdomain}{{A12}{9}{Cross-Modality Full Results}{section.12}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S14}{\ignorespaces Cross-modality generalisation. QCDI and $\rho $ for Raw / +TS / +QCTS on two out-of-domain modalities. CheXpert: DenseNet-121 (TorchXRayVision) on chest X-ray. Fundus: ViT-DR (HuggingFace) on APTOS 2019 retinal fundus. Quality scalar: corruption severity (5 levels, $\bar  {q}= 1 - s/5$) applied to $n_\text  {test}$ test images.}}{9}{table.caption.15}\protected@file@percent }
+\newlabel{tab:crossdomain}{{S14}{9}{Cross-modality generalisation. QCDI and $\rho $ for Raw / +TS / +QCTS on two out-of-domain modalities. CheXpert: DenseNet-121 (TorchXRayVision) on chest X-ray. Fundus: ViT-DR (HuggingFace) on APTOS 2019 retinal fundus. Quality scalar: corruption severity (5 levels, $\qbar = 1 - s/5$) applied to $n_\text {test}$ test images}{table.caption.15}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A13}Pre-emptive Rebuttal}{9}{section.13}\protected@file@percent }
+\newlabel{app:rebuttal}{{A13}{9}{Pre-emptive Rebuttal}{section.13}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A14}$\alpha $ NLL Landscape}{10}{section.14}\protected@file@percent }
+\newlabel{app:nll_landscape}{{A14}{10}{$\alpha $ NLL Landscape}{section.14}{}}
+\citation{kumar2019verified}
+\@writefile{lot}{\contentsline {table}{\numberline {S15}{\ignorespaces NLL as a function of $\alpha $ (T$_0{=}1.17$ fixed) on ITB-Edge ($n{=}660$). Flat region defined as $\Delta \text  {NLL}{<}0.002$; all values marked $(\star )$ lie within the flat region. The three seed solutions are shown in bold.}}{11}{table.caption.16}\protected@file@percent }
+\newlabel{tab:nll_landscape}{{S15}{11}{NLL as a function of $\alpha $ (T$_0{=}1.17$ fixed) on ITB-Edge ($n{=}660$). Flat region defined as $\Delta \text {NLL}{<}0.002$; all values marked $(\star )$ lie within the flat region. The three seed solutions are shown in bold}{table.caption.16}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A15}ECE Estimator Robustness}{11}{section.15}\protected@file@percent }
+\newlabel{app:ece_robust}{{A15}{11}{ECE Estimator Robustness}{section.15}{}}
+\citation{mcallester1999pac}
+\@writefile{lot}{\contentsline {table}{\numberline {S16}{\ignorespaces Robustness of headline numbers to estimator choice. ECE on the full ITB pool ($n{=}2{,}820$). $\Delta \rho $ under random tie-breaking is the standard deviation across 20 jittered Spearman recomputations.}}{12}{table.caption.17}\protected@file@percent }
+\newlabel{tab:ece_robust}{{S16}{12}{Robustness of headline numbers to estimator choice. ECE on the full ITB pool ($n{=}2{,}820$). $\Delta \rho $ under random tie-breaking is the standard deviation across 20 jittered Spearman recomputations}{table.caption.17}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A16}Human-Labelled Real Low-Quality Validation (Tautology Probe)}{12}{section.16}\protected@file@percent }
+\newlabel{app:human_lq}{{A16}{12}{Human-Labelled Real Low-Quality Validation (Tautology Probe)}{section.16}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A17}PAC-Bayes Generalisation Sketch}{12}{section.17}\protected@file@percent }
+\newlabel{app:pacbayes}{{A17}{12}{PAC-Bayes Generalisation Sketch}{section.17}{}}
+\newlabel{eq:pac_bayes}{{1}{12}{PAC-Bayes Generalisation Sketch}{equation.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A18}Main-Text Figures (Expanded)}{13}{section.18}\protected@file@percent }
+\newlabel{app:main_figs}{{A18}{13}{Main-Text Figures (Expanded)}{section.18}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A18.1}Quality-Conditioned Calibration Problem (Originally Main Fig.~3)}{13}{subsection.18.1}\protected@file@percent }
+\newlabel{app:fig_problem}{{A18.1}{13}{Quality-Conditioned Calibration Problem (Originally Main Fig.~3)}{subsection.18.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S3}{\ignorespaces \textbf  {Quality-conditioned calibration problem.} \textbf  {(a)} Taxonomy: each baseline (and QCTS) placed by HQ ECE ($x$) vs.\ LQ ECE ($y$); the dashed diagonal is QCDI~$=0$ and the three shaded bands mark the regimes of \S  \ref {sec:taxonomy} of the main paper. \textbf  {(b,c)} Reliability diagrams for four representative methods plus QCTS, conditioned on ITB-LQ and ITB-HQ; the bottom density strip indicates where each method's predictions concentrate. \emph  {Originally main Fig.~3; moved to supplementary in this version.}}}{13}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:supp_problem}{{S3}{13}{\textbf {Quality-conditioned calibration problem.} \textbf {(a)} Taxonomy: each baseline (and QCTS) placed by HQ ECE ($x$) vs.\ LQ ECE ($y$); the dashed diagonal is QCDI~$=0$ and the three shaded bands mark the regimes of \S \ref {sec:taxonomy} of the main paper. \textbf {(b,c)} Reliability diagrams for four representative methods plus QCTS, conditioned on ITB-LQ and ITB-HQ; the bottom density strip indicates where each method's predictions concentrate. \emph {Originally main Fig.~3; moved to supplementary in this version.}}{figure.caption.18}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A18.2}QCTS Solution and Per-Bin Effect (Originally Main Fig.~4)}{13}{subsection.18.2}\protected@file@percent }
+\newlabel{app:fig_qcts}{{A18.2}{13}{QCTS Solution and Per-Bin Effect (Originally Main Fig.~4)}{subsection.18.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A18.3}Backbone Universality Diagnostics (Originally Main Fig.~5)}{13}{subsection.18.3}\protected@file@percent }
+\newlabel{app:fig_universality}{{A18.3}{13}{Backbone Universality Diagnostics (Originally Main Fig.~5)}{subsection.18.3}{}}
+\bibdata{egbib}
+\bibcite{brisque}{{1}{2012}{{Mittal et~al.}}{{Mittal, Moorthy, and Bovik}}}
+\bibcite{clipiqa}{{2}{2023}{{Wang et~al.}}{{Wang, Chan, and Loy}}}
+\gdef \BMVA@LastPage{14}
+\@writefile{lof}{\contentsline {figure}{\numberline {S4}{\ignorespaces \textbf  {QCTS solution and per-bin effect.} \textbf  {(a)} Learned $T(\bar  q)$ across three seeds (dashed) with the median (solid) and 16/84\% band; the dotted reference is standard TS ($\alpha {=}0$). All seeds discover $\alpha > 0$ (inset). \textbf  {(b)} Per-degradation ECE on ITB-LQ samples in the bottom 20th percentile of each quality dimension. \textbf  {(c)} ECE before vs.\ after QCTS by quality bin. \emph  {Originally main Fig.~4; moved to supplementary in this version.}}}{14}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:supp_qcts}{{S4}{14}{\textbf {QCTS solution and per-bin effect.} \textbf {(a)} Learned $T(\bar q)$ across three seeds (dashed) with the median (solid) and 16/84\% band; the dotted reference is standard TS ($\alpha {=}0$). All seeds discover $\alpha > 0$ (inset). \textbf {(b)} Per-degradation ECE on ITB-LQ samples in the bottom 20th percentile of each quality dimension. \textbf {(c)} ECE before vs.\ after QCTS by quality bin. \emph {Originally main Fig.~4; moved to supplementary in this version.}}{figure.caption.19}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S5}{\ignorespaces \textbf  {Empirical validation of softplus $T(\bar  q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. \emph  {Originally main Fig.~5; moved to supplementary in this version.}}}{14}{figure.caption.20}\protected@file@percent }
+\newlabel{fig:supp_universality}{{S5}{14}{\textbf {Empirical validation of softplus $T(\bar q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. \emph {Originally main Fig.~5; moved to supplementary in this version.}}{figure.caption.20}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A18.4}ImageNet-C Per-Corruption Scatter (Originally Main Fig.~6)}{14}{subsection.18.4}\protected@file@percent }
+\newlabel{app:fig_imagenetc}{{A18.4}{14}{ImageNet-C Per-Corruption Scatter (Originally Main Fig.~6)}{subsection.18.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A18.5}Zero-Shot Generalisation and Fitzpatrick Fairness (Originally Main Fig.~7)}{14}{subsection.18.5}\protected@file@percent }
+\newlabel{app:fig_generalisation}{{A18.5}{14}{Zero-Shot Generalisation and Fitzpatrick Fairness (Originally Main Fig.~7)}{subsection.18.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S6}{\ignorespaces \textbf  {QCTS improves quality-awareness across 18 ImageNet-C corruptions.} Each point is one corruption type (averaged across five severity levels); $x$-axis is raw $\rho (H,\bar  q)$, $y$-axis is QCTS $\rho $. All points fall below the diagonal ($y{=}x$), confirming QCTS universally strengthens the entropy--quality correlation when corruption severity serves as $\bar  q$. \emph  {Originally main Fig.~6; moved to supplementary in this version.}}}{15}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:supp_imagenetc}{{S6}{15}{\textbf {QCTS improves quality-awareness across 18 ImageNet-C corruptions.} Each point is one corruption type (averaged across five severity levels); $x$-axis is raw $\rho (H,\bar q)$, $y$-axis is QCTS $\rho $. All points fall below the diagonal ($y{=}x$), confirming QCTS universally strengthens the entropy--quality correlation when corruption severity serves as $\bar q$. \emph {Originally main Fig.~6; moved to supplementary in this version.}}{figure.caption.21}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S7}{\ignorespaces \textbf  {QCTS generalises across datasets, backbones, and skin tones.} \textbf  {(a)} Entropy vs.\ $\bar  q$ on HAM10000 zero-shot. \textbf  {(b)} QCDI on three datasets across the evaluated baselines, with Kendall~$\tau $ summarising ranking consistency. \textbf  {(c)} Per-skin-type QCDI on ITB-Diverse for Std VIB and Std VIB + QCTS. \emph  {Originally main Fig.~7; moved to supplementary in this version.}}}{15}{figure.caption.22}\protected@file@percent }
+\newlabel{fig:supp_generalisation}{{S7}{15}{\textbf {QCTS generalises across datasets, backbones, and skin tones.} \textbf {(a)} Entropy vs.\ $\bar q$ on HAM10000 zero-shot. \textbf {(b)} QCDI on three datasets across the evaluated baselines, with Kendall~$\tau $ summarising ranking consistency. \textbf {(c)} Per-skin-type QCDI on ITB-Diverse for Std VIB and Std VIB + QCTS. \emph {Originally main Fig.~7; moved to supplementary in this version.}}{figure.caption.22}{}}
+\gdef \@abspage@last{15}
