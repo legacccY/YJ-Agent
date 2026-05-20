@@ -2,6 +2,63 @@
 
 ---
 
+## 2026-05-21 ⚡ 论文关键 lever 补全 + Supplementary 骨架
+
+### 论文写作更新（itb_paper.tex）
+
+**§5.2 Main Results** — 新增 Simpson's paradox 段落：
+> MC Dropout ITB-LQ ρ=+0.350 (p<10⁻⁹), DE ρ=+0.133 (p=0.021)，与 full-pool ρ≈-0.11 到 -0.12 的 Simpson-style 分离。方法在 aggregate 上看起来 quality-aware，但在 critical LQ 分层内 quality-oblivious。
+
+**§5.3 QCTS Analysis** — 新增 Bonferroni + Power：
+> All 5 比较 Bonferroni 显著 (smallest corrected p=0.0015)，power=0.929 (n=300, d=0.45, α=0.05)。
+> 
+> L3 quality scalar 段落：BRISQUE/CLIP-IQA collapse α≈0；LaplacianVar QCDI 劣化；只有 domain-specific 5-head IQA 达 QCDI<0。引用 Table S1 (supplementary)。
+
+**§5.6 Generalisation** — 两处修复 + Fundus 新增：
+> - MC Dropout QCDI 数字修正：0.157/0.182 (旧) → 0.124/0.103 (csv 实测)
+> - QCTS V-VI 数字修正：新增 ρ -0.134→-0.306 (p<10⁻³) 关键改善指标
+> - Fundus negative result 加入：APTOS 2019 ViT-DR，QCTS 无效（domain-specific IQA 必要）
+
+**§6 Limitations** — L4 in-the-wild partial result：
+> 174 张 real LQ benign 图，ECE=0.073 [0.038,0.125] < ITB-LQ 0.146，benign-class well-calibrated。cross-class evaluation remains needed。
+
+### 新文件
+- **`itb_supp.tex`**：Supplementary 骨架（8 sections，A1-A8）
+  - A1: 5-Head IQA Module（主文 Appendix A 引用目标）
+  - A2: Table S1 Quality Scalar Ablation（5 种 quality scalar 对比完整数字）
+  - A3: DCA + Triage Simulation（with fig_dca_triage + numbers tables）
+  - A4: MC Dropout/DE uncertainty scatter（fig_uncertainty_qbar + ρ 解读）
+  - A5: Fitzpatrick I-VI full breakdown（I-VI 每类 ECE/QCDI 实测数字）
+  - A6: ImageNet-C 18 corruption 全表（18×{raw/ts/qcts} ρ，从 csv 填充）
+  - A7: Real-world LQ inference（174 张 real LQ，ECE=0.073）
+  - A8: Failure mode clustering（HDBSCAN→KMeans k=3 结果）
+
+### 新增引用（egbib.bib）
+- `brisque`：Mittal 2012 IEEE TIP
+- `clipiqa`：Wang 2023 AAAI
+- `aptos2019`：APTOS 2019 Kaggle
+
+### 实验脚本
+- `scripts/infer_real_lq_dermoscopy.py` → `results/real_lq_inference.json`
+- `scripts/failure_mode_clustering.py` → `results/failure_mode_clusters.json`
+- `scripts/fairness_fitzpatrick_breakdown.py` → `results/fairness_fitzpatrick_breakdown.{json,csv}`
+
+### Lever 进度（ACCEPTANCE_CRITERIA 对应）
+| Lever | 状态 |
+|-------|------|
+| L3 quality scalar | ✅ Supplementary Table S1 + §5.3 段落 |
+| L4 real LQ | ✅ 174 张，ECE=0.073，在 supplementary A7 |
+| L7 statistics | ✅ Bonferroni+Power+Cohen's d 写入 §5.3 |
+| Fairness 数字 | ✅ 从旧 estimate 修正为 csv 实测 |
+
+### 待续
+- [ ] 编译验证（用户跑 pdflatex）
+- [ ] W5 failure mode §6 upgrade
+- [ ] Supplementary 扩展 20-30 页
+- [ ] W6 LLM adversarial review
+
+---
+
 ## 2026-05-20 ⚡ D10 质量标量消融 + EDL ITB inference 完成
 
 ### D10 质量标量消融（`run_quality_scalar_ablation.py`）

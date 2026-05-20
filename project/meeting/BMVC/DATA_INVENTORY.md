@@ -59,29 +59,28 @@
 ## 📐 已完成实验 vs 待跑（与 ACCEPTANCE_CRITERIA 对应）
 
 ### W1 (D1-D7)
-- ✅ §5.4 backbone universality（3 backbone × {raw/TS/QCTS}）
-- ✅ ImageNet-C 14 corruption × 5 severity 推理（数据就位，§5.5 文字待写）
-- ✅ fig5 / fig6 生成
-- 🚧 EDL ITB 推理（ckpt 在但未过 ITB-LQ/HQ）
-- ❌ §5.5 ImageNet-C 章节（D2-D4 写）
-- ❌ fig7 散点（D2-D4 生成）
-- ❌ 4 主图 METHOD_META 重清理（D5）
+- ✅ §5.4 backbone universality（5 backbone × {raw/TS/QCTS}）
+- ✅ ImageNet-C 18 corruption × 5 severity 推理 + §5.5 章节写完
+- ✅ fig5 / fig6 / fig7 生成
+- ✅ EDL ITB 推理（AUC-LQ=0.586, ECE-LQ=0.316, QCDI=+0.046）
+- ✅ 4 主图 METHOD_META 清理（生成 SVG 无 Q-VIB/VisiScore 残留）
+- ✅ fig_method.svg VisiScore-Net 注释替换
 
-### W2 (D8-D14)
-- ❌ 过度参数化消融：QCTS-dimwise / QCTS-bin10 / QCTS-MLP（fig 数据：现成 ITB logits 就能跑，不需新训练）
-- ❌ 5 种 quality scalar 对比：VisiScore-Net / BRISQUE / NIQE / RF / Deep IQA
-- ❌ CheXpert 跨域推理（DenseNet-121 + 简单图像质量评分 q̄）
+### W2 (D8-D14) — 全部完成
+- ✅ 过度参数化消融（softplus/linear/piecewise/bin10/dimwise/MLP）→ table2_ablation.tex
+- ✅ 5 种 quality scalar 对比（5-head IQA best, BRISQUE collapse α=0）→ table3_quality_scalar.tex
+- ✅ CheXpert 跨域推理（DenseNet-121, ρ=-0.971, 无 TS 反转）→ chexray_crossdomain.json
+- ✅ L7 Cohen's d + Bonferroni + Power（d=+0.452 QCTS, power=0.929）→ statistics_l7.json
 
-### W3 (D15-D21)
-- ❌ Fundus 跨域：DRIVE / IDRiD + 屈光介质质量评分 q̄
-- ❌ 公开真实低质 dermoscopy 采集 100-200 张（来源：ISIC 2019-2024 challenge 低质 / Kaggle / PubMed Open Access supplementary / Reddit r/Dermatology / Fitzpatrick17k 低质子集）
+### W3 (D15-D21) — 部分提前完成
+- ✅ Fundus 跨域（APTOS 2019, ViT-DR, ρ=+0.259, 弱 QA）→ fundus_crossdomain.json
+- 🟡 公开真实低质 dermoscopy 采集（21/200 张，下载进行中）→ data/real_lq_dermoscopy/
 - ❌ MC Dropout + Deep Ensemble variance vs q̄ 散点 + bootstrap ρ
-- ❌ Sub-population fairness 全维度（age × gender × Fitzpatrick × lesion type × body location）
+- ❌ Sub-population fairness 全维度
 
-### W4 (D22-D28)
-- ❌ DCA (Decision Curve Analysis) 曲线
-- ❌ Triage simulation
-- ❌ Published dermatologist baseline reference line
+### W4 (D22-D28) — 部分提前完成
+- ✅ DCA + Triage simulation + Published dermatologist baseline（Haenssle 2018）→ results/dca/
+- ✅ §5.6 cross-modality 段落 + Limitations DCA 数字更新
 - ❌ Theory section 1 页（softplus uniqueness + IB connection + PAC-Bayes）
 
 ### W5 (D29-D35)

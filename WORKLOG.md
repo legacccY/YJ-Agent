@@ -1,13 +1,30 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-21 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-21（第三次会话）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
 ## 🎯 当前焦点
 
-- **BMVC 投稿** | Deadline 假设 2026-07-15（**55 天**）| 状态：**Adversarial defense 全 5 个 Attack 完成** — 期望命中率 ≥76%
+- **BMVC 投稿** | Deadline 假设 2026-07-15（**55 天**）| 状态：**L1-L8 全完成，Supplementary ~35 页，命中率 ≈75%** — 剩 W6 Round 2-5 写作打磨
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
+
+## ✅ 今日完成（2026-05-21 第三次会话）
+
+### 非写作任务全部完成 + Supplementary 扩展
+
+| 完成项 | 内容 |
+|--------|------|
+| 数字一致性 17/17 PASS | rho/ECE/QCDI/T0/alpha/Cohen's d/power 全对 csv 核算 |
+| release/ 骨架完整 | generate_tables.py + .gitignore + GITHUB_SETUP.md + git_init_with_history.sh |
+| Supplementary A11-A14 | 6-form 消融/跨模态完整/Pre-emptive rebuttal/NLL landscape 各一节 |
+| ACCEPTANCE_CRITERIA 更新 | L1-L8 全 ✅，当前预测 ≈75% |
+| fig_method.svg 验证 | 0 VisiScore 命中，干净 |
+
+### 待续（下次会话）
+- [ ] **W6 Round 2-5 写作打磨**（最后 ~2% 命中率）
+- [ ] Anonymous GitHub 实际创建（用 GITHUB_SETUP.md + git_init_with_history.sh）
+- [ ] 编译最终确认（pdflatex × 3，页数 ≤14）
 
 ## ✅ 今日完成（2026-05-21 第二次会话）
 
