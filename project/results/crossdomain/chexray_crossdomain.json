@@ -1,0 +1,22 @@
+{
+  "model": "DenseNet-121 (torchxrayvision, all datasets)",
+  "dataset": "chest-xray-pneumonia test split",
+  "n_test": 125,
+  "n_val": 499,
+  "corruptions": [
+    "gaussian_noise",
+    "defocus_blur",
+    "brightness",
+    "contrast",
+    "jpeg_compression"
+  ],
+  "QCDI_raw": -0.0263,
+  "QCDI_ts": -0.0212,
+  "QCDI_qcts": -0.0212,
+  "rho_raw": -0.9711,
+  "p_raw": 2.094964353118042e-156,
+  "rho_ts": -0.9711,
+  "p_ts": 2.094964353118042e-156,
+  "rho_qcts": -0.9711,
+  "p_qcts": 2.094964353118042e-156
+}

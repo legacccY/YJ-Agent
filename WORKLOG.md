@@ -23,10 +23,22 @@
 | gen_bmvc_figures.py METHOD_META 清理 | 🟡 | F/G 部分清理（还剩1340+行未清） |
 | CheXpert 跨域脚本 | ✅ 写完 | 等 kaggle 数据下载完 |
 
+### CheXpert 跨域结果（D13-D14 ✅）
+
+| 方法 | QCDI | ρ(H,q̄) |
+|------|------|--------|
+| DenseNet raw | −0.026 | −0.971 |
+| +TS | −0.021 | −0.971 |
+| +QCTS | −0.021 | −0.971 |
+
+Raw model 已 quality-aware（QCDI < 0），QCTS 小改善。ρ 极高因 qbar=corruption_severity 只有 5 个离散值（非自然质量分布）。Paper 用 "cross-modality applicability" 而非 "reversal" framing。
+
+数据：`results/crossdomain/chexray_crossdomain.{json,csv}`
+
 ### 待续（下次会话）
-- [ ] **Kaggle chest-xray 下载** 正在后台跑（任务 ID b117dhnbz），完成后运行 `python project/scripts/eval_chexray_crossdomain.py`
 - [ ] **gen_bmvc_figures.py** 剩余 F/G 清理（1340-1950 行）+ 重跑 fig{1,2,3,4}
 - [ ] **fig_method.svg** 重跑（含 VisiScore-Net → 5-head IQA 替换）
+- [ ] **CheXpert 结果写入 §5.6 或新 §5.7 段落**（cross-modality generalization）
 
 ---
 

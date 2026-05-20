@@ -235,10 +235,10 @@ def main():
             p_qcts = np.clip(p_qcts, 1e-7, 1 - 1e-7)
             ece_qcts = compute_ece(p_qcts, t_tgt)
 
-            print(f"  {corr_name} sev={sev} (q̄={qbar:.1f}) | "
+            print(f"  {corr_name} sev={sev} (qbar={qbar:.1f}) | "
                   f"AUC={auc_raw:.3f} ECE_raw={ece_raw:.3f} "
                   f"ECE_ts={ece_ts:.3f} ECE_qcts={ece_qcts:.3f} "
-                  f"T0={T0:.3f} α={alpha:.3f}")
+                  f"T0={T0:.3f} alpha={alpha:.3f}")
 
             results.append({
                 "corruption": corr_name, "severity": sev, "qbar": qbar,
@@ -300,7 +300,7 @@ def main():
 
     print("\n=== CheXray Cross-domain Summary ===")
     print(f"  QCDI: raw={QCDI_raw:+.3f}  TS={QCDI_ts:+.3f}  QCTS={QCDI_qcts:+.3f}")
-    print(f"  rho(H,q̄): raw={rho_raw:.3f}  TS={rho_ts:.3f}  QCTS={rho_qcts:.3f}")
+    print(f"  rho(H,qbar): raw={rho_raw:.3f}  TS={rho_ts:.3f}  QCTS={rho_qcts:.3f}")
     print(f"Saved to {OUT_DIR}")
 
 
