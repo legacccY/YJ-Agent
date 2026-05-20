@@ -25,6 +25,8 @@
 \citation{malinin2019predictive}
 \citation{sensoy2018evidential}
 \citation{alemi2017vib}
+\citation{hebert2018multicalibration}
+\citation{zadrozny2002transforming}
 \citation{irvin2019chexpert}
 \citation{johnson2019mimic}
 \citation{menze2014multimodal}
@@ -32,44 +34,47 @@
 \citation{koh2021wilds}
 \citation{subbaswamy2021evaluating}
 \citation{seyyed2021underdiagnosis}
-\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{3}{section.2}\protected@file@percent }
 \citation{barata2023quality}
 \citation{park2023quality}
 \citation{esteva2017dermatologist}
 \citation{tschandl2020human}
 \citation{liu2020deep}
 \citation{winkler2022dermoscopy}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{3}{section.2}\protected@file@percent }
 \citation{guo2017calibration}
+\citation{gal2016dropout}
+\citation{lakshminarayanan2017ensemble}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Quality-Aware Calibration}{4}{section.3}\protected@file@percent }
 \newlabel{sec:qac}{{3}{4}{Quality-Aware Calibration}{section.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Preliminaries}{4}{subsection.3.1}\protected@file@percent }
 \newlabel{eq:ece}{{1}{4}{Preliminaries}{equation.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Definition: QAC and QCDI}{4}{subsection.3.2}\protected@file@percent }
 \newlabel{eq:qac}{{2}{4}{Definition: QAC and QCDI}{equation.2}{}}
-\citation{gal2016dropout}
-\citation{lakshminarayanan2017ensemble}
+\newlabel{eq:qcdi}{{3}{4}{Definition: QAC and QCDI}{equation.3}{}}
 \citation{alemi2017vib}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \textbf  {Method overview.} \textbf  {(a)} \emph  {ITB construction}: four dermoscopy datasets are programmatically degraded across five quality dimensions, scored by a 5-head IQA module to produce a per-image $\bar  q \in [0,1]$, and partitioned into the LQ/Edge/HQ/Diverse subsets used for evaluation. \textbf  {(b)} \emph  {QCTS}: on a frozen backbone, the logits $z$ are rescaled by a quality-conditioned temperature $T(\bar  q) = \mathrm  {softplus}(T_0 + \alpha (1{-}\bar  q))$; the two parameters $T_0, \alpha $ are fit by L-BFGS on the validation set, and $\alpha \!=\!0$ recovers standard temperature scaling. \emph  {Takeaway:} ITB and QCTS share a single per-image $\bar  q$, so adapting the framework to a new modality reduces to swapping the IQA module.}}{5}{figure.caption.2}\protected@file@percent }
+\newlabel{fig:method}{{2}{5}{\textbf {Method overview.} \textbf {(a)} \emph {ITB construction}: four dermoscopy datasets are programmatically degraded across five quality dimensions, scored by a 5-head IQA module to produce a per-image $\bar q \in [0,1]$, and partitioned into the LQ/Edge/HQ/Diverse subsets used for evaluation. \textbf {(b)} \emph {QCTS}: on a frozen backbone, the logits $z$ are rescaled by a quality-conditioned temperature $T(\bar q) = \mathrm {softplus}(T_0 + \alpha (1{-}\bar q))$; the two parameters $T_0, \alpha $ are fit by L-BFGS on the validation set, and $\alpha \!=\!0$ recovers standard temperature scaling. \emph {Takeaway:} ITB and QCTS share a single per-image $\bar q$, so adapting the framework to a new modality reduces to swapping the IQA module}{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}A Taxonomy of Calibration under Quality Shift}{5}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:taxonomy}{{3.3}{5}{A Taxonomy of Calibration under Quality Shift}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}ITB Benchmark and QCTS Method}{5}{section.4}\protected@file@percent }
+\newlabel{sec:method}{{4}{5}{ITB Benchmark and QCTS Method}{section.4}{}}
 \citation{alemi2017vib}
 \citation{gal2016dropout}
 \citation{lakshminarayanan2017ensemble}
 \citation{guo2017calibration}
 \citation{sensoy2018evidential}
-\newlabel{eq:qcdi}{{3}{5}{Definition: QAC and QCDI}{equation.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}A Taxonomy of Calibration under Quality Shift}{5}{subsection.3.3}\protected@file@percent }
-\newlabel{sec:taxonomy}{{3.3}{5}{A Taxonomy of Calibration under Quality Shift}{subsection.3.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4}ITB Benchmark and QCTS Method}{5}{section.4}\protected@file@percent }
-\newlabel{sec:method}{{4}{5}{ITB Benchmark and QCTS Method}{section.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}ITB: Image Triage Benchmark}{5}{subsection.4.1}\protected@file@percent }
-\newlabel{sec:itb}{{4.1}{5}{ITB: Image Triage Benchmark}{subsection.4.1}{}}
 \citation{tschandl2019ham10000}
 \citation{pacheco2020pad}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \textbf  {Method overview.} \textbf  {(a)} \emph  {ITB construction}: four dermoscopy datasets are programmatically degraded across five quality dimensions, scored by a 5-head IQA module to produce a per-image $\bar  q \in [0,1]$, and partitioned into the LQ/Edge/HQ/Diverse subsets used for evaluation. \textbf  {(b)} \emph  {QCTS}: on a frozen backbone, the logits $z$ are rescaled by a quality-conditioned temperature $T(\bar  q) = \mathrm  {softplus}(T_0 + \alpha (1{-}\bar  q))$; the two parameters $T_0, \alpha $ are fit by L-BFGS on the validation set, and $\alpha \!=\!0$ recovers standard temperature scaling. \emph  {Takeaway:} ITB and QCTS share a single per-image $\bar  q$, so adapting the framework to a new modality reduces to swapping the IQA module.}}{6}{figure.caption.2}\protected@file@percent }
-\newlabel{fig:method}{{2}{6}{\textbf {Method overview.} \textbf {(a)} \emph {ITB construction}: four dermoscopy datasets are programmatically degraded across five quality dimensions, scored by a 5-head IQA module to produce a per-image $\bar q \in [0,1]$, and partitioned into the LQ/Edge/HQ/Diverse subsets used for evaluation. \textbf {(b)} \emph {QCTS}: on a frozen backbone, the logits $z$ are rescaled by a quality-conditioned temperature $T(\bar q) = \mathrm {softplus}(T_0 + \alpha (1{-}\bar q))$; the two parameters $T_0, \alpha $ are fit by L-BFGS on the validation set, and $\alpha \!=\!0$ recovers standard temperature scaling. \emph {Takeaway:} ITB and QCTS share a single per-image $\bar q$, so adapting the framework to a new modality reduces to swapping the IQA module}{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}ITB: Image Triage Benchmark}{6}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:itb}{{4.1}{6}{ITB: Image Triage Benchmark}{subsection.4.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Quality-Conditioned Temperature Scaling}{6}{subsection.4.2}\protected@file@percent }
 \newlabel{sec:qcts}{{4.2}{6}{Quality-Conditioned Temperature Scaling}{subsection.4.2}{}}
 \newlabel{eq:qcts}{{4}{6}{Quality-Conditioned Temperature Scaling}{equation.4}{}}
 \citation{sensoy2018evidential}
+\citation{alemi2017vib}
+\citation{mcallester1999pac}
 \newlabel{eq:qcts_opt}{{5}{7}{Quality-Conditioned Temperature Scaling}{equation.5}{}}
+\newlabel{eq:pac_bayes}{{6}{7}{Quality-Conditioned Temperature Scaling}{equation.6}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Experiments}{7}{section.5}\protected@file@percent }
 \newlabel{sec:experiments}{{5}{7}{Experiments}{section.5}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Experimental Setup}{7}{subsection.5.1}\protected@file@percent }
@@ -79,55 +84,68 @@
 \newlabel{sec:main_results}{{5.2}{8}{Main Results and Calibration Taxonomy}{subsection.5.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.3}QCTS Analysis}{8}{subsection.5.3}\protected@file@percent }
 \newlabel{sec:qcts_analysis}{{5.3}{8}{QCTS Analysis}{subsection.5.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces  \textbf  {Main results on the ITB benchmark.} AUC and Expected Calibration Error (ECE, $M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$). \textbf  {QCDI} $= \mathrm  {ECE}_\mathrm  {LQ} - \mathrm  {ECE}_\mathrm  {HQ}$ (closer to 0 = more quality-aware). $\rho (\!H,\bar  q\!)$: Spearman correlation between predictive entropy and quality on the full ITB pool ($n{=}2{,}820$); more negative = more quality-aware. Subscripts: half-width of 1{,}000-iter bootstrap 95\% CI. \textbf  {Bold}/\underline  {underline} = best/second best per column. Cell shade is a per-column heat-map (red = worse, green = better, scaled to that column's range); the \textbf  {Std VIB + QCTS} row is highlighted as our contribution. Note that VIB-family models intentionally trade discriminative AUC for tighter calibration; the headline metrics are ECE and QCDI. }}{9}{table.caption.3}\protected@file@percent }
-\newlabel{tab:main}{{1}{9}{\textbf {Main results on the ITB benchmark.} AUC and Expected Calibration Error (ECE, $M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$). \textbf {QCDI} $= \mathrm {ECE}_\mathrm {LQ} - \mathrm {ECE}_\mathrm {HQ}$ (closer to 0 = more quality-aware). $\rho (\!H,\bar q\!)$: Spearman correlation between predictive entropy and quality on the full ITB pool ($n{=}2{,}820$); more negative = more quality-aware. Subscripts: half-width of 1{,}000-iter bootstrap 95\% CI. \textbf {Bold}/\underline {underline} = best/second best per column. Cell shade is a per-column heat-map (red = worse, green = better, scaled to that column's range); the \textbf {Std VIB + QCTS} row is highlighted as our contribution. Note that VIB-family models intentionally trade discriminative AUC for tighter calibration; the headline metrics are ECE and QCDI}{table.caption.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces \textbf  {Main results on the ITB benchmark.} AUC and ECE ($M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$); $\text  {QCDI}=\mathrm  {ECE}_\mathrm  {LQ}-\mathrm  {ECE}_\mathrm  {HQ}$ (closer to $0$ is better); $\rho (H,\bar  q)$ is Spearman correlation on the full ITB pool ($n{=}2{,}820$, more negative is better). Subscripts are half-widths of $1{,}000$-iter bootstrap $95\%$ CIs. \textbf  {Bold}/\underline  {underline}: best/second per column. The \textbf  {Std VIB + QCTS} row (highlighted) is our contribution; VIB-family models trade AUC for tighter calibration, so the headline metrics are ECE and QCDI.}}{9}{table.caption.3}\protected@file@percent }
+\newlabel{tab:main}{{1}{9}{\textbf {Main results on the ITB benchmark.} AUC and ECE ($M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$); $\text {QCDI}=\mathrm {ECE}_\mathrm {LQ}-\mathrm {ECE}_\mathrm {HQ}$ (closer to $0$ is better); $\rho (H,\bar q)$ is Spearman correlation on the full ITB pool ($n{=}2{,}820$, more negative is better). Subscripts are half-widths of $1{,}000$-iter bootstrap $95\%$ CIs. \textbf {Bold}/\underline {underline}: best/second per column. The \textbf {Std VIB + QCTS} row (highlighted) is our contribution; VIB-family models trade AUC for tighter calibration, so the headline metrics are ECE and QCDI}{table.caption.3}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces \textbf  {Quality-conditioned calibration problem.} \textbf  {(a)} Taxonomy: each baseline (and QCTS) placed by HQ ECE ($x$) vs.\ LQ ECE ($y$); the dashed diagonal is QCDI~$=0$ and the three shaded bands mark the regimes of \S  \ref {sec:taxonomy}. \textbf  {(b,c)} Reliability diagrams for four representative methods plus QCTS, conditioned on ITB-LQ and ITB-HQ; a bottom density strip indicates where each method's predictions concentrate. \emph  {Takeaway:} no method outside QCTS leaves the Quality-Oblivious or Quality-Fragile band on ITB-LQ, and high-AUC baselines are the most off-diagonal.}}{9}{figure.caption.4}\protected@file@percent }
 \newlabel{fig:problem}{{3}{9}{\textbf {Quality-conditioned calibration problem.} \textbf {(a)} Taxonomy: each baseline (and QCTS) placed by HQ ECE ($x$) vs.\ LQ ECE ($y$); the dashed diagonal is QCDI~$=0$ and the three shaded bands mark the regimes of \S \ref {sec:taxonomy}. \textbf {(b,c)} Reliability diagrams for four representative methods plus QCTS, conditioned on ITB-LQ and ITB-HQ; a bottom density strip indicates where each method's predictions concentrate. \emph {Takeaway:} no method outside QCTS leaves the Quality-Oblivious or Quality-Fragile band on ITB-LQ, and high-AUC baselines are the most off-diagonal}{figure.caption.4}{}}
+\citation{brisque}
+\citation{clipiqa}
+\citation{platt1999probabilistic}
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces \textbf  {QCTS solution and per-bin effect.} \textbf  {(a)} Learned $T(\bar  q)$ across three seeds (dashed) with the median (solid) and 16/84\% band; the dotted reference is standard TS ($\alpha {=}0$). All seeds discover $\alpha > 0$ (inset). \textbf  {(b)} Per-degradation ECE on ITB-LQ samples in the bottom 20th percentile of each quality dimension; dashed reference is the Std-VIB full-ITB-LQ baseline. \textbf  {(c)} ECE before vs.\ after QCTS by quality bin; QCTS reduces ECE by 12--51\% across the quality spectrum. \emph  {Takeaway:} the temperature lift is concentrated on the bottom quality bins, where calibration collapse is sharpest, and is approximately flat on the HQ tail.}}{10}{figure.caption.5}\protected@file@percent }
 \newlabel{fig:qcts}{{4}{10}{\textbf {QCTS solution and per-bin effect.} \textbf {(a)} Learned $T(\bar q)$ across three seeds (dashed) with the median (solid) and 16/84\% band; the dotted reference is standard TS ($\alpha {=}0$). All seeds discover $\alpha > 0$ (inset). \textbf {(b)} Per-degradation ECE on ITB-LQ samples in the bottom 20th percentile of each quality dimension; dashed reference is the Std-VIB full-ITB-LQ baseline. \textbf {(c)} ECE before vs.\ after QCTS by quality bin; QCTS reduces ECE by 12--51\% across the quality spectrum. \emph {Takeaway:} the temperature lift is concentrated on the bottom quality bins, where calibration collapse is sharpest, and is approximately flat on the HQ tail}{figure.caption.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces  \textbf  {Ablation on the form of $T(\bar  q)$.} Three candidate functions for the quality-conditioned temperature, fitted on a frozen Std VIB backbone with identical L-BFGS optimisation and validation split. Numbers are single-seed point estimates on the validation set. Piecewise-constant (3 and 10 bins) minimises validation NLL but collapses QCDI and $\rho $, showing that smooth interpolation is essential for quality-aware calibration. Dimension-wise and MLP variants add parameters without measurable gain, confirming the 2-parameter softplus form is sufficient. }}{10}{table.caption.6}\protected@file@percent }
-\newlabel{tab:ablation}{{2}{10}{\textbf {Ablation on the form of $T(\bar q)$.} Three candidate functions for the quality-conditioned temperature, fitted on a frozen Std VIB backbone with identical L-BFGS optimisation and validation split. Numbers are single-seed point estimates on the validation set. Piecewise-constant (3 and 10 bins) minimises validation NLL but collapses QCDI and $\rho $, showing that smooth interpolation is essential for quality-aware calibration. Dimension-wise and MLP variants add parameters without measurable gain, confirming the 2-parameter softplus form is sufficient}{table.caption.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Universality across Backbone Families}{10}{subsection.5.4}\protected@file@percent }
-\newlabel{sec:universality}{{5.4}{10}{Universality across Backbone Families}{subsection.5.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces \textbf  {Empirical validation of softplus $T(\bar  q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. See \S  \ref {sec:universality}. \emph  {Takeaway:} a single backbone-dependent $\alpha $ recovers the empirical per-bin optimum $T^*(\bar  q)$, and removes the QCDI sign-flip on the backbone where standard TS introduces one.}}{11}{figure.caption.8}\protected@file@percent }
-\newlabel{fig:universality_figs}{{5}{11}{\textbf {Empirical validation of softplus $T(\bar q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. See \S \ref {sec:universality}. \emph {Takeaway:} a single backbone-dependent $\alpha $ recovers the empirical per-bin optimum $T^*(\bar q)$, and removes the QCDI sign-flip on the backbone where standard TS introduces one}{figure.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces \textbf  {Ablation on the form of $T(\bar  q)$.} Candidate functions fitted on a frozen Std VIB with identical L-BFGS optimisation and validation split (single-seed point estimates). Piecewise-constant minimises validation NLL but collapses QCDI and $\rho $, showing smooth interpolation is essential for quality-aware calibration; dimension-wise and MLP variants add parameters without measurable gain.}}{10}{table.caption.6}\protected@file@percent }
+\newlabel{tab:ablation}{{2}{10}{\textbf {Ablation on the form of $T(\bar q)$.} Candidate functions fitted on a frozen Std VIB with identical L-BFGS optimisation and validation split (single-seed point estimates). Piecewise-constant minimises validation NLL but collapses QCDI and $\rho $, showing smooth interpolation is essential for quality-aware calibration; dimension-wise and MLP variants add parameters without measurable gain}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Universality across Backbone Families}{11}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:universality}{{5.4}{11}{Universality across Backbone Families}{subsection.5.4}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.5}ImageNet-C: Quality-Scalar Universality}{11}{subsection.5.5}\protected@file@percent }
 \newlabel{sec:imagenetc}{{5.5}{11}{ImageNet-C: Quality-Scalar Universality}{subsection.5.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces  \textbf  {Universality of TS reversal and QCTS across five backbone families.} Each backbone evaluated raw / $+$TS / $+$QCTS on the ITB pool. $\rho $: Spearman entropy--$\bar  q$ correlation (more negative $=$ more quality-aware). QCDI $=$ ECE-LQ $-$ ECE-HQ (closer to 0 $=$ more quality-invariant). TS reversal manifests as: \textbf  {$\rho $ sign-flip} on Std VIB ($-0.153\to +0.241$); \textbf  {QCDI sign-flip} on ViT-Tiny ($+0.023\to -0.029$) and Swin-Tiny ($+0.020\to -0.021$); near-neutral on ResNet-50 (raw $\rho =-0.368$) and ConvNeXt-Tiny (raw $\rho =-0.241$). QCTS preserves or strengthens $\rho $ and restores QCDI toward zero on all five backbones. }}{12}{table.caption.7}\protected@file@percent }
-\newlabel{tab:universality}{{3}{12}{\textbf {Universality of TS reversal and QCTS across five backbone families.} Each backbone evaluated raw / $+$TS / $+$QCTS on the ITB pool. $\rho $: Spearman entropy--$\bar q$ correlation (more negative $=$ more quality-aware). QCDI $=$ ECE-LQ $-$ ECE-HQ (closer to 0 $=$ more quality-invariant). TS reversal manifests as: \textbf {$\rho $ sign-flip} on Std VIB ($-0.153\to +0.241$); \textbf {QCDI sign-flip} on ViT-Tiny ($+0.023\to -0.029$) and Swin-Tiny ($+0.020\to -0.021$); near-neutral on ResNet-50 (raw $\rho =-0.368$) and ConvNeXt-Tiny (raw $\rho =-0.241$). QCTS preserves or strengthens $\rho $ and restores QCDI toward zero on all five backbones}{table.caption.7}{}}
-\citation{sensoy2018evidential}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces \textbf  {Universality of TS reversal and QCTS across five backbone families.} Each backbone evaluated raw / $+$TS / $+$QCTS on the ITB pool ($\rho $: Spearman entropy--$\bar  q$ correlation, more negative is better; QCDI $=$ ECE-LQ $-$ ECE-HQ, closer to $0$ is better). TS reversal manifests as a $\rho $ sign-flip on Std VIB and a QCDI sign-flip on ViT-Tiny and Swin-Tiny; it is near-neutral on the strongly quality-aware ResNet-50 and ConvNeXt-Tiny. QCTS preserves or strengthens $\rho $ and restores QCDI toward zero on all five.}}{12}{table.caption.7}\protected@file@percent }
+\newlabel{tab:universality}{{3}{12}{\textbf {Universality of TS reversal and QCTS across five backbone families.} Each backbone evaluated raw / $+$TS / $+$QCTS on the ITB pool ($\rho $: Spearman entropy--$\bar q$ correlation, more negative is better; QCDI $=$ ECE-LQ $-$ ECE-HQ, closer to $0$ is better). TS reversal manifests as a $\rho $ sign-flip on Std VIB and a QCDI sign-flip on ViT-Tiny and Swin-Tiny; it is near-neutral on the strongly quality-aware ResNet-50 and ConvNeXt-Tiny. QCTS preserves or strengthens $\rho $ and restores QCDI toward zero on all five}{table.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces \textbf  {Empirical validation of softplus $T(\bar  q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. See \S  \ref {sec:universality}. \emph  {Takeaway:} a single backbone-dependent $\alpha $ recovers the empirical per-bin optimum $T^*(\bar  q)$, and removes the QCDI sign-flip on the backbone where standard TS introduces one.}}{12}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:universality_figs}{{5}{12}{\textbf {Empirical validation of softplus $T(\bar q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. See \S \ref {sec:universality}. \emph {Takeaway:} a single backbone-dependent $\alpha $ recovers the empirical per-bin optimum $T^*(\bar q)$, and removes the QCDI sign-flip on the backbone where standard TS introduces one}{figure.caption.8}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces \textbf  {QCTS improves quality-awareness across 18 ImageNet-C corruptions.} Each point is one corruption type (averaged across five severity levels); $x$-axis is raw $\rho (H,\bar  q)$, $y$-axis is QCTS $\rho $. All points fall below the diagonal ($y{=}x$), confirming QCTS universally strengthens the entropy--quality correlation when corruption severity serves as $\bar  q$. \emph  {Takeaway:} QCTS generalises to a non-learned, domain-agnostic quality scalar; TS is neutral on ImageNet-C, indicating TS reversal is backbone-specific rather than universal.}}{13}{figure.caption.9}\protected@file@percent }
 \newlabel{fig:imagenetc}{{6}{13}{\textbf {QCTS improves quality-awareness across 18 ImageNet-C corruptions.} Each point is one corruption type (averaged across five severity levels); $x$-axis is raw $\rho (H,\bar q)$, $y$-axis is QCTS $\rho $. All points fall below the diagonal ($y{=}x$), confirming QCTS universally strengthens the entropy--quality correlation when corruption severity serves as $\bar q$. \emph {Takeaway:} QCTS generalises to a non-learned, domain-agnostic quality scalar; TS is neutral on ImageNet-C, indicating TS reversal is backbone-specific rather than universal}{figure.caption.9}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Generalisation and Fairness}{13}{subsection.5.6}\protected@file@percent }
 \newlabel{sec:generalisation}{{5.6}{13}{Generalisation and Fairness}{subsection.5.6}{}}
+\citation{cohen2022torchxrayvision}
+\citation{aptos2019}
+\citation{sensoy2018evidential}
 \@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces \textbf  {QCTS generalises across datasets, backbones, and skin tones.} \textbf  {(a)} Entropy vs.\ $\bar  q$ on HAM10000 zero-shot; the per-bin median trend (coloured line) becomes more negative from Std VIB to Std VIB + QCTS, confirming that the quality-aware behaviour learned on ISIC transfers to a natural-distribution dataset. \textbf  {(b)} QCDI on three datasets across the evaluated baselines, with Kendall~$\tau $ summarising ranking consistency. \textbf  {(c)} Per-skin-type QCDI on ITB-Diverse for Std VIB and Std VIB + QCTS; QCTS keeps the V--VI QCDI in the 0.01--0.02 range without introducing new bias on lighter skin types. \emph  {Takeaway:} the QCDI ranking from ITB transfers to two unseen dermoscopy datasets and narrows the Fitzpatrick V--VI calibration gap without harming lighter skin tones.}}{14}{figure.caption.10}\protected@file@percent }
 \newlabel{fig:generalization}{{7}{14}{\textbf {QCTS generalises across datasets, backbones, and skin tones.} \textbf {(a)} Entropy vs.\ $\bar q$ on HAM10000 zero-shot; the per-bin median trend (coloured line) becomes more negative from Std VIB to Std VIB + QCTS, confirming that the quality-aware behaviour learned on ISIC transfers to a natural-distribution dataset. \textbf {(b)} QCDI on three datasets across the evaluated baselines, with Kendall~$\tau $ summarising ranking consistency. \textbf {(c)} Per-skin-type QCDI on ITB-Diverse for Std VIB and Std VIB + QCTS; QCTS keeps the V--VI QCDI in the 0.01--0.02 range without introducing new bias on lighter skin types. \emph {Takeaway:} the QCDI ranking from ITB transfers to two unseen dermoscopy datasets and narrows the Fitzpatrick V--VI calibration gap without harming lighter skin tones}{figure.caption.10}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {6}Discussion}{14}{section.6}\protected@file@percent }
 \newlabel{sec:discussion}{{6}{14}{Discussion}{section.6}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{15}{section.7}\protected@file@percent }
-\newlabel{sec:conclusion}{{7}{15}{Conclusion}{section.7}{}}
 \bibdata{egbib}
 \bibcite{alemi2017vib}{{1}{2017}{{Alemi et~al.}}{{Alemi, Fischer, Dillon, and Murphy}}}
-\bibcite{barata2023quality}{{2}{2023}{{Barata et~al.}}{{Barata, Celebi, and Marques}}}
-\bibcite{codella2018skin}{{3}{2019}{{Codella et~al.}}{{Codella, Rotemberg, Tschandl, Celebi, Dusza, Gutman, Helba, Kalloo, Liopyris, Marchetti, et~al.}}}
-\bibcite{esteva2017dermatologist}{{4}{2017}{{Esteva et~al.}}{{Esteva, Kuprel, Novoa, Ko, Swetter, Blau, and Thrun}}}
-\bibcite{gal2016dropout}{{5}{2016}{{Gal and Ghahramani}}{{}}}
-\bibcite{guo2017calibration}{{6}{2017}{{Guo et~al.}}{{Guo, Pleiss, Sun, and Weinberger}}}
-\bibcite{irvin2019chexpert}{{7}{2019}{{Irvin et~al.}}{{Irvin, Rajpurkar, Ko, Yu, Ciurea-Ilcus, Chute, Marklund, Haghgoo, Ball, Shpanskaya, et~al.}}}
-\bibcite{johnson2019mimic}{{8}{2019}{{Johnson et~al.}}{{Johnson, Pollard, Greenbaum, Lungren, Deng, Peng, Lu, Mark, Berkowitz, and Horng}}}
-\bibcite{koh2021wilds}{{9}{2021}{{Koh et~al.}}{{Koh, Sagawa, Marklund, Xie, Zhang, Balsubramani, Hu, Yasunaga, Phillips, Gao, et~al.}}}
-\bibcite{lakshminarayanan2017ensemble}{{10}{2017}{{Lakshminarayanan et~al.}}{{Lakshminarayanan, Pritzel, and Blundell}}}
-\bibcite{liu2020deep}{{11}{2020}{{Liu et~al.}}{{Liu, Jain, Eng, Way, Lee, Bui, Kanada, Marinho, Gallegos, Gabriele, et~al.}}}
-\bibcite{malinin2019predictive}{{12}{2018}{{Malinin and Gales}}{{}}}
-\bibcite{menze2014multimodal}{{13}{2015}{{Menze et~al.}}{{Menze, Jakab, Bauer, Kalpathy-Cramer, Farahani, Kirby, Burren, Porz, Slotboom, Wiest, et~al.}}}
-\bibcite{ovadia2019uncertainty}{{14}{2019}{{Ovadia et~al.}}{{Ovadia, Fertig, Ren, Nado, Sculley, Nowozin, Dillon, Lakshminarayanan, and Snoek}}}
-\bibcite{pacheco2020pad}{{15}{2020}{{Pacheco et~al.}}{{Pacheco, Lima, Salom{\~a}o, Krohling, Biral, de~Angelo, Alves~Jr, Esgario, Simora, Castro, et~al.}}}
-\bibcite{park2023quality}{{16}{2023}{{Park et~al.}}{{Park, Kim, and Lee}}}
-\bibcite{sensoy2018evidential}{{17}{2018}{{Sensoy et~al.}}{{Sensoy, Kaplan, and Kandemir}}}
-\bibcite{seyyed2021underdiagnosis}{{18}{2021}{{Seyyed-Kalantari et~al.}}{{Seyyed-Kalantari, Zhang, McDermott, Chen, and Ghassemi}}}
-\bibcite{subbaswamy2021evaluating}{{19}{2021}{{Subbaswamy and Saria}}{{}}}
-\bibcite{tschandl2019ham10000}{{20}{2018}{{Tschandl et~al.}}{{Tschandl, Rosendahl, and Kittler}}}
-\bibcite{tschandl2020human}{{21}{2020}{{Tschandl et~al.}}{{Tschandl, Rinner, Apalla, Argenziano, Codella, Halpern, Janda, Lallas, Longo, Malvehy, et~al.}}}
-\bibcite{winkler2022dermoscopy}{{22}{2022}{{Winkler et~al.}}{{Winkler, Sies, Fink, Toberer, Enk, Deinlein, Hofmann-Wellenhof, and Haenssle}}}
-\gdef \BMVA@LastPage{17}
-\gdef \@abspage@last{17}
+\bibcite{aptos2019}{{2}{2019}{{Aravind Eye Hospital}}{{}}}
+\bibcite{barata2023quality}{{3}{2023}{{Barata et~al.}}{{Barata, Celebi, and Marques}}}
+\bibcite{codella2018skin}{{4}{2019}{{Codella et~al.}}{{Codella, Rotemberg, Tschandl, Celebi, Dusza, Gutman, Helba, Kalloo, Liopyris, Marchetti, et~al.}}}
+\bibcite{cohen2022torchxrayvision}{{5}{2022}{{Cohen et~al.}}{{Cohen, Viviano, Bertin, Morrison, Torabian, Guarrera, Lungren, Chaudhari, Brooks, Hashir, and Bertrand}}}
+\bibcite{esteva2017dermatologist}{{6}{2017}{{Esteva et~al.}}{{Esteva, Kuprel, Novoa, Ko, Swetter, Blau, and Thrun}}}
+\bibcite{gal2016dropout}{{7}{2016}{{Gal and Ghahramani}}{{}}}
+\bibcite{guo2017calibration}{{8}{2017}{{Guo et~al.}}{{Guo, Pleiss, Sun, and Weinberger}}}
+\bibcite{hebert2018multicalibration}{{9}{2018}{{H{\'e}bert-Johnson et~al.}}{{H{\'e}bert-Johnson, Kim, Reingold, and Rothblum}}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{16}{section.7}\protected@file@percent }
+\newlabel{sec:conclusion}{{7}{16}{Conclusion}{section.7}{}}
+\bibcite{irvin2019chexpert}{{10}{2019}{{Irvin et~al.}}{{Irvin, Rajpurkar, Ko, Yu, Ciurea-Ilcus, Chute, Marklund, Haghgoo, Ball, Shpanskaya, et~al.}}}
+\bibcite{johnson2019mimic}{{11}{2019}{{Johnson et~al.}}{{Johnson, Pollard, Greenbaum, Lungren, Deng, Peng, Lu, Mark, Berkowitz, and Horng}}}
+\bibcite{koh2021wilds}{{12}{2021}{{Koh et~al.}}{{Koh, Sagawa, Marklund, Xie, Zhang, Balsubramani, Hu, Yasunaga, Phillips, Gao, et~al.}}}
+\bibcite{lakshminarayanan2017ensemble}{{13}{2017}{{Lakshminarayanan et~al.}}{{Lakshminarayanan, Pritzel, and Blundell}}}
+\bibcite{liu2020deep}{{14}{2020}{{Liu et~al.}}{{Liu, Jain, Eng, Way, Lee, Bui, Kanada, Marinho, Gallegos, Gabriele, et~al.}}}
+\bibcite{malinin2019predictive}{{15}{2018}{{Malinin and Gales}}{{}}}
+\bibcite{mcallester1999pac}{{16}{1999}{{McAllester}}{{}}}
+\bibcite{menze2014multimodal}{{17}{2015}{{Menze et~al.}}{{Menze, Jakab, Bauer, Kalpathy-Cramer, Farahani, Kirby, Burren, Porz, Slotboom, Wiest, et~al.}}}
+\bibcite{brisque}{{18}{2012}{{Mittal et~al.}}{{Mittal, Moorthy, and Bovik}}}
+\bibcite{ovadia2019uncertainty}{{19}{2019}{{Ovadia et~al.}}{{Ovadia, Fertig, Ren, Nado, Sculley, Nowozin, Dillon, Lakshminarayanan, and Snoek}}}
+\bibcite{pacheco2020pad}{{20}{2020}{{Pacheco et~al.}}{{Pacheco, Lima, Salom{\~a}o, Krohling, Biral, de~Angelo, Alves~Jr, Esgario, Simora, Castro, et~al.}}}
+\bibcite{park2023quality}{{21}{2023}{{Park et~al.}}{{Park, Kim, and Lee}}}
+\bibcite{platt1999probabilistic}{{22}{1999}{{Platt}}{{}}}
+\bibcite{sensoy2018evidential}{{23}{2018}{{Sensoy et~al.}}{{Sensoy, Kaplan, and Kandemir}}}
+\bibcite{seyyed2021underdiagnosis}{{24}{2021}{{Seyyed-Kalantari et~al.}}{{Seyyed-Kalantari, Zhang, McDermott, Chen, and Ghassemi}}}
+\bibcite{subbaswamy2021evaluating}{{25}{2021}{{Subbaswamy and Saria}}{{}}}
+\bibcite{tschandl2019ham10000}{{26}{2018}{{Tschandl et~al.}}{{Tschandl, Rosendahl, and Kittler}}}
+\bibcite{tschandl2020human}{{27}{2020}{{Tschandl et~al.}}{{Tschandl, Rinner, Apalla, Argenziano, Codella, Halpern, Janda, Lallas, Longo, Malvehy, et~al.}}}
+\bibcite{clipiqa}{{28}{2023}{{Wang et~al.}}{{Wang, Chan, and Loy}}}
+\bibcite{winkler2022dermoscopy}{{29}{2022}{{Winkler et~al.}}{{Winkler, Sies, Fink, Toberer, Enk, Deinlein, Hofmann-Wellenhof, and Haenssle}}}
+\bibcite{zadrozny2002transforming}{{30}{2002}{{Zadrozny and Elkan}}{{}}}
+\gdef \BMVA@LastPage{18}
+\gdef \@abspage@last{18}

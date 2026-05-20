@@ -1,14 +1,9 @@
-\begin{table}[t]
+\begin{table}[!tbp]
 \centering
-\caption{
-\textbf{Universality of TS reversal and QCTS across five backbone families.}
-Each backbone evaluated raw / $+$TS / $+$QCTS on the ITB pool.
-$\rho$: Spearman entropy--$\bar q$ correlation (more negative $=$ more quality-aware).
-QCDI $=$ ECE-LQ $-$ ECE-HQ (closer to 0 $=$ more quality-invariant).
-TS reversal manifests as: \textbf{$\rho$ sign-flip} on Std VIB ($-0.153\to+0.241$); \textbf{QCDI sign-flip} on ViT-Tiny ($+0.023\to-0.029$) and Swin-Tiny ($+0.020\to-0.021$); near-neutral on ResNet-50 (raw $\rho=-0.368$) and ConvNeXt-Tiny (raw $\rho=-0.241$).
-QCTS preserves or strengthens $\rho$ and restores QCDI toward zero on all five backbones.
-}
+\caption{\textbf{Universality of TS reversal and QCTS across five backbone families.}
+Each backbone evaluated raw / $+$TS / $+$QCTS on the ITB pool ($\rho$: Spearman entropy--$\bar q$ correlation, more negative is better; QCDI $=$ ECE-LQ $-$ ECE-HQ, closer to $0$ is better). TS reversal manifests as a $\rho$ sign-flip on Std VIB and a QCDI sign-flip on ViT-Tiny and Swin-Tiny; it is near-neutral on the strongly quality-aware ResNet-50 and ConvNeXt-Tiny. QCTS preserves or strengthens $\rho$ and restores QCDI toward zero on all five.}
 \label{tab:universality}
+\vspace{4pt}
 \footnotesize
 \setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.05}

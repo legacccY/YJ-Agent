@@ -1869,7 +1869,7 @@ z
     </g>
    </g>
    <g id="text_7">
-    <!-- VisiScore-Net -->
+    <!-- 5-head IQA (frozen) -->
     <g transform="translate(242.78779 107.644337) scale(0.09 -0.09)">
      <defs>
       <path id="DejaVuSans-Bold-56" d="M 31 4666 
@@ -3391,7 +3391,7 @@ z
     </g>
    </g>
    <g id="text_23">
-    <!-- VisiScore-Net (frozen) -->
+    <!-- 5-head IQA (frozen) -->
     <g transform="translate(584.262851 211.420337) scale(0.09 -0.09)">
      <defs>
       <path id="DejaVuSans-Bold-66" d="M 2841 4863 

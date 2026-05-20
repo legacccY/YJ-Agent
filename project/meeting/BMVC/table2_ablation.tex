@@ -1,13 +1,9 @@
-\begin{table}[t]
+\begin{table}[!tbp]
 \centering
-\caption{
-\textbf{Ablation on the form of $T(\bar q)$.}
-Three candidate functions for the quality-conditioned temperature, fitted on a frozen Std VIB backbone with identical L-BFGS optimisation and validation split.
-Numbers are single-seed point estimates on the validation set.
-Piecewise-constant (3 and 10 bins) minimises validation NLL but collapses QCDI and $\rho$, showing that smooth interpolation is essential for quality-aware calibration.
-Dimension-wise and MLP variants add parameters without measurable gain, confirming the 2-parameter softplus form is sufficient.
-}
+\caption{\textbf{Ablation on the form of $T(\bar q)$.}
+Candidate functions fitted on a frozen Std VIB with identical L-BFGS optimisation and validation split (single-seed point estimates). Piecewise-constant minimises validation NLL but collapses QCDI and $\rho$, showing smooth interpolation is essential for quality-aware calibration; dimension-wise and MLP variants add parameters without measurable gain.}
 \label{tab:ablation}
+\vspace{4pt}
 \footnotesize
 \setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.05}

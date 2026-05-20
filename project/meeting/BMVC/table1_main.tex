@@ -1,16 +1,9 @@
-\begin{table*}[t]
+\begin{table*}[!tbp]
 \centering
-\caption{
-\textbf{Main results on the ITB benchmark.} 
-AUC and Expected Calibration Error (ECE, $M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$). 
-\textbf{QCDI} $= \mathrm{ECE}_\mathrm{LQ} - \mathrm{ECE}_\mathrm{HQ}$ (closer to 0 = more quality-aware). 
-$\rho(\!H,\bar q\!)$: Spearman correlation between predictive entropy and quality on the full ITB pool ($n{=}2{,}820$); more negative = more quality-aware. 
-Subscripts: half-width of 1{,}000-iter bootstrap 95\% CI. 
-\textbf{Bold}/\underline{underline} = best/second best per column. 
-Cell shade is a per-column heat-map (red = worse, green = better, scaled to that column's range); the \textbf{Std VIB + QCTS} row is highlighted as our contribution. 
-Note that VIB-family models intentionally trade discriminative AUC for tighter calibration; the headline metrics are ECE and QCDI.
-}
+\caption{\textbf{Main results on the ITB benchmark.}
+AUC and ECE ($M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$); $\text{QCDI}=\mathrm{ECE}_\mathrm{LQ}-\mathrm{ECE}_\mathrm{HQ}$ (closer to $0$ is better); $\rho(H,\bar q)$ is Spearman correlation on the full ITB pool ($n{=}2{,}820$, more negative is better). Subscripts are half-widths of $1{,}000$-iter bootstrap $95\%$ CIs. \textbf{Bold}/\underline{underline}: best/second per column. The \textbf{Std VIB + QCTS} row (highlighted) is our contribution; VIB-family models trade AUC for tighter calibration, so the headline metrics are ECE and QCDI.}
 \label{tab:main}
+\vspace{4pt}
 \footnotesize
 \setlength{\tabcolsep}{4.5pt}
 \renewcommand{\arraystretch}{1.05}

@@ -1,4 +1,4 @@
-\begin{thebibliography}{22}
+\begin{thebibliography}{30}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -10,6 +10,12 @@ Alexander~A. Alemi, Ian Fischer, Joshua~V. Dillon, and Kevin Murphy.
 \newblock Deep variational information bottleneck.
 \newblock In \emph{Proceedings of the International Conference on Learning
   Representations (ICLR)}, 2017.
+
+\bibitem[{Aravind Eye Hospital}(2019)]{aptos2019}
+{Aravind Eye Hospital}.
+\newblock {APTOS 2019 Blindness Detection}.
+\newblock Kaggle Competition.
+  \url{https://www.kaggle.com/c/aptos2019-blindness-detection}, 2019.
 
 \bibitem[Barata et~al.(2023)Barata, Celebi, and Marques]{barata2023quality}
 Catarina Barata, M.~Emre Celebi, and Jorge~S. Marques.
@@ -26,6 +32,15 @@ Noel Codella, Veronica Rotemberg, Philipp Tschandl, M.~Emre Celebi, Stephen
 \newblock Skin lesion analysis toward melanoma detection 2018: A challenge
   hosted by the international skin imaging collaboration (isic).
 \newblock \emph{arXiv preprint arXiv:1902.03368}, 2019.
+
+\bibitem[Cohen et~al.(2022)Cohen, Viviano, Bertin, Morrison, Torabian,
+  Guarrera, Lungren, Chaudhari, Brooks, Hashir, and
+  Bertrand]{cohen2022torchxrayvision}
+Joseph~Paul Cohen, Joseph~D. Viviano, Paul Bertin, Paul Morrison, Parisa
+  Torabian, Matteo Guarrera, Matthew~P. Lungren, Akshay Chaudhari, Rupert
+  Brooks, Mohammad Hashir, and Hadrien Bertrand.
+\newblock {TorchXRayVision}: A library of chest x-ray datasets and models.
+\newblock \emph{Medical Imaging with Deep Learning}, 2022.
 
 \bibitem[Esteva et~al.(2017)Esteva, Kuprel, Novoa, Ko, Swetter, Blau, and
   Thrun]{esteva2017dermatologist}
@@ -47,6 +62,14 @@ Chuan Guo, Geoff Pleiss, Yu~Sun, and Kilian~Q. Weinberger.
 \newblock On calibration of modern neural networks.
 \newblock In \emph{Proceedings of the International Conference on Machine
   Learning (ICML)}, 2017.
+
+\bibitem[H{\'e}bert-Johnson et~al.(2018)H{\'e}bert-Johnson, Kim, Reingold, and
+  Rothblum]{hebert2018multicalibration}
+Ursula H{\'e}bert-Johnson, Michael~P. Kim, Omer Reingold, and Guy~N. Rothblum.
+\newblock Multicalibration: Calibration for the computationally-identifiable
+  subgroups.
+\newblock In \emph{Proceedings of the 35th International Conference on Machine
+  Learning (ICML)}, pages 1939--1948, 2018.
 
 \bibitem[Irvin et~al.(2019)Irvin, Rajpurkar, Ko, Yu, Ciurea-Ilcus, Chute,
   Marklund, Haghgoo, Ball, Shpanskaya, et~al.]{irvin2019chexpert}
@@ -98,6 +121,12 @@ Andrey Malinin and Mark Gales.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}, 2018.
 
+\bibitem[McAllester(1999)]{mcallester1999pac}
+David~A. McAllester.
+\newblock {PAC-Bayesian} model averaging.
+\newblock In \emph{Proceedings of the Twelfth Annual Conference on
+  Computational Learning Theory (COLT)}, pages 164--170, 1999.
+
 \bibitem[Menze et~al.(2015)Menze, Jakab, Bauer, Kalpathy-Cramer, Farahani,
   Kirby, Burren, Porz, Slotboom, Wiest, et~al.]{menze2014multimodal}
 Bjoern~H. Menze, Andras Jakab, Stefan Bauer, Jayashree Kalpathy-Cramer, Keyvan
@@ -106,6 +135,12 @@ Bjoern~H. Menze, Andras Jakab, Stefan Bauer, Jayashree Kalpathy-Cramer, Keyvan
 \newblock The multimodal brain tumor image segmentation benchmark ({BRATS}).
 \newblock \emph{IEEE Transactions on Medical Imaging}, 34\penalty0
   (10):\penalty0 1993--2024, 2015.
+
+\bibitem[Mittal et~al.(2012)Mittal, Moorthy, and Bovik]{brisque}
+Anish Mittal, Anush~Krishna Moorthy, and Alan~Conrad Bovik.
+\newblock No-reference image quality assessment in the spatial domain.
+\newblock \emph{IEEE Transactions on Image Processing}, 21\penalty0
+  (12):\penalty0 4695--4708, 2012.
 
 \bibitem[Ovadia et~al.(2019)Ovadia, Fertig, Ren, Nado, Sculley, Nowozin,
   Dillon, Lakshminarayanan, and Snoek]{ovadia2019uncertainty}
@@ -130,6 +165,12 @@ Seong~Jin Park, Hyunwoo Kim, and Sangho Lee.
 \newblock Deep learning-based image quality assessment for dermoscopic images.
 \newblock In \emph{IEEE International Symposium on Biomedical Imaging (ISBI)},
   2023.
+
+\bibitem[Platt(1999)]{platt1999probabilistic}
+John~C. Platt.
+\newblock Probabilistic outputs for support vector machines and comparisons to
+  regularized likelihood methods.
+\newblock In \emph{Advances in Large Margin Classifiers}, 1999.
 
 \bibitem[Sensoy et~al.(2018)Sensoy, Kaplan, and Kandemir]{sensoy2018evidential}
 Murat Sensoy, Lance Kaplan, and Melih Kandemir.
@@ -166,6 +207,12 @@ Philipp Tschandl, Christoph Rinner, Zoe Apalla, Giuseppe Argenziano, Noel
 \newblock Human--computer collaboration for skin cancer recognition.
 \newblock \emph{Nature Medicine}, 26:\penalty0 1229--1234, 2020.
 
+\bibitem[Wang et~al.(2023)Wang, Chan, and Loy]{clipiqa}
+Jianyi Wang, Kelvin~C.K. Chan, and Chen~Change Loy.
+\newblock Exploring {CLIP} for assessing the look and feel of images.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~37, pages 2555--2563, 2023.
+
 \bibitem[Winkler et~al.(2022)Winkler, Sies, Fink, Toberer, Enk, Deinlein,
   Hofmann-Wellenhof, and Haenssle]{winkler2022dermoscopy}
 Julia~K. Winkler, Katharina Sies, Christine Fink, Ferdinand Toberer, Alexander
@@ -173,5 +220,12 @@ Julia~K. Winkler, Katharina Sies, Christine Fink, Ferdinand Toberer, Alexander
 \newblock Non-invasive diagnosis of melanoma with artificial intelligence: A
   prospective study comparing smartphone-based and standard dermoscopy.
 \newblock \emph{European Journal of Cancer}, 163:\penalty0 67--75, 2022.
+
+\bibitem[Zadrozny and Elkan(2002)]{zadrozny2002transforming}
+Bianca Zadrozny and Charles Elkan.
+\newblock Transforming classifier scores into accurate multiclass probability
+  estimates.
+\newblock In \emph{Proceedings of the 8th ACM SIGKDD International Conference
+  on Knowledge Discovery and Data Mining}, pages 694--699, 2002.
 
 \end{thebibliography}

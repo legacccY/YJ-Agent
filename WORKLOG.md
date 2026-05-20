@@ -1,13 +1,45 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-21（第三次会话）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-21（第四次会话）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
 ## 🎯 当前焦点
 
-- **BMVC 投稿** | Deadline 假设 2026-07-15（**55 天**）| 状态：**L1-L8 全完成，Supplementary ~35 页，命中率 ≈75%** — 剩 W6 Round 2-5 写作打磨
+- **BMVC 投稿** | Deadline 假设 2026-07-15（**55 天**）| 状态：**主文 14 页正中 / W6 Round 2-5 写作打磨已合并完成 / 表格 caption 干涉修复** — 剩 Anonymous GitHub push + Zenodo DOI
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
+
+## ✅ 今日完成（2026-05-21 第四次会话）
+
+### 论文文字全面打磨 + 排版修复
+
+| 完成项 | 内容 |
+|--------|------|
+| 主文压页 16→14 页 | Abstract 70→30 词首句 / §1 删 Fig 1 caption 重复 / 全篇压字 |
+| Limitations bug 修 | 原来"First/Second/Third/Fifth/Finally"缺 Fourth，改为 5 条完整 |
+| ρ Unicode 编译错修 | line 75 `ρ(H,\qbar)` 文本模式 → `$\rho(H,\qbar)$` math mode |
+| Round 2 senior reviewer | Abstract hook 利落 / Discussion 结构性原因强化 |
+| Round 3 non-domain reviewer | jargon 首次定义齐 / 句法平滑 / UK 拼写统一（colour/recognise） |
+| Round 4 calibration expert | PAC-Bayes "motivating sketch" caveat / IB "not a theorem" / TS reversal "weakly quality-aware" 限定 |
+| Round 5 copy-edit | "notoriously" → "well known" / "for practitioners" → "recommended default" / tense fix |
+| Table 1/2/3 caption 干涉 toprule 修 | caption 紧凑 + 加 `\vspace{4pt}`，Table 1 caption 9→3 行 |
+| Figure 浮动留白修 | `[t]` → `[!tbp]`（全 figure*/figure） |
+| 长公式 overfull 修 | line 174 NLL 公式 / line 353 `$\tau\in\{...\}$` 集合，最大 50pt → 5.5pt |
+| Platt orphan cite 加回 | `\cite{platt1999probabilistic}` |
+
+### 最终验证
+
+- 18 页（主 14 + ref 4）✅ BMVC 正中
+- 0 error / 0 undefined ref/cite ✅
+- 17/17 数字一致性 PASS ✅
+- R1-R7 防御 grep 全 0 ✅
+- Overfull 15 → 4（最大 5.5pt 可忽略）
+
+### 待续（下次会话）
+
+- [ ] Anonymous GitHub 实际创建 + push（跑 `release/git_init_with_history.sh`，用户亲自避免账号关联）
+- [ ] Zenodo DOI 申请（接受后激活，placeholder 占位中）
+- [ ] L10 Supplementary 25→30+ 页扩展（可选，~2% 命中率）
 
 ## ✅ 今日完成（2026-05-21 第三次会话）
 
