@@ -2,6 +2,45 @@
 
 ---
 
+## 2026-05-20 ⚡ D10 质量标量消融 + EDL ITB inference 完成
+
+### D10 质量标量消融（`run_quality_scalar_ablation.py`）
+
+**Bug 修复**：`itb_sub["qbar"]` 与 `d_preds["qbar"]` 顺序不一致（itb_predictions.csv 无 isic_id）。
+修复：通过 `(subset, target, round(qbar,5))` 三元组 join 对齐顺序，VisiScore q̄ 直接用 `d_preds["qbar"]`。
+
+**结果**（5 种 quality scalar）：
+
+| 方法 | α̂ | ECE-LQ | ECE-HQ | QCDI | ρ |
+|------|-----|--------|--------|------|---|
+| 5-head IQA (ours) | 0.95 | 0.097 | 0.098 | −0.002 | **−0.266** |
+| BRISQUE | 0.00 | 0.095 | 0.091 | +0.004 | −0.153 |
+| CLIP-IQA | 0.09 | 0.096 | 0.091 | +0.005 | −0.157 |
+| RF-Stat | 0.34 | 0.099 | 0.101 | −0.002 | −0.183 |
+| LaplacianVar | 0.95 | 0.074 | 0.046 | +0.028 | −0.216 |
+| Std TS | — | 0.095 | 0.091 | +0.004 | −0.153 |
+
+Story：BRISQUE/CLIP-IQA collapse to quality-agnostic (α≈0)；LaplacianVar 找到 quality-aware T 但 QCDI 反而变差；只有 domain-specific 5-head IQA 同时满足 QCDI<0 和最强 ρ。
+
+输出：`results/quality_scalar_ablation.csv`、`meeting/BMVC/table3_quality_scalar.tex`（含 α̂ 列）
+
+### EDL ITB inference（`scripts/infer_edl_itb.py`）
+
+**结果**：
+- ITB-LQ: AUC=0.586 [0.508,0.667], ECE=0.316 [0.273,0.361], ρ=−0.156 (p=0.007)
+- ITB-HQ: AUC=0.895 [0.859,0.927], ECE=0.270 [0.224,0.307], ρ=−0.045 (p=0.393)
+- Global: QCDI=+0.046, ρ=+0.039 (p=0.04) → **Quality-Fragile**
+
+EDL 虽然 HQ AUC 高（0.895），但 ECE>0.27 且全局 ρ 为正——Dirichlet uncertainty 对 dermoscopy 质量变化无响应。
+
+**已更新**：
+- `table1_main.tex`：EDL 行 TBD → 实数
+- `itb_paper.tex` §5.2：加 EDL 行为描述句
+- `STORY_FRAMEWORK.md`：Table 1 EDL 行锁定
+- 编译：0 error，16 页
+
+---
+
 ## 2026-05-20 晚 ⚡ D6 + D7 提前完成（含严重数字修复）
 
 ### D6 §6 调整

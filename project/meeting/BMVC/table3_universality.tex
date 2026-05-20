@@ -1,12 +1,12 @@
 \begin{table}[t]
 \centering
 \caption{
-\textbf{Universality of TS reversal and QCTS across backbone families.}
-Three backbones spanning VIB, CNN and Transformer families, each evaluated raw / + standard TS / + QCTS on the ITB pool.
-$\rho$: Spearman correlation between predictive entropy and $\bar q$ on ITB-LQ$\cup$Edge$\cup$HQ; more negative = more quality-aware.
-QCDI $=$ ECE-LQ $-$ ECE-HQ; closer to 0 = more quality-invariant.
-TS reversal manifests in two empirical signatures: \textbf{$\rho$ sign-flip} on Std VIB ($-0.153 \to +0.241$) and \textbf{QCDI sign-flip} on ViT-Tiny ($+0.023 \to -0.029$); on the more strongly quality-aware ResNet-50 (raw $\rho=-0.368$) standard TS is approximately neutral.
-QCTS preserves or strengthens $\rho$ and keeps QCDI close to zero on all three.
+\textbf{Universality of TS reversal and QCTS across five backbone families.}
+Each backbone evaluated raw / $+$TS / $+$QCTS on the ITB pool.
+$\rho$: Spearman entropy--$\bar q$ correlation (more negative $=$ more quality-aware).
+QCDI $=$ ECE-LQ $-$ ECE-HQ (closer to 0 $=$ more quality-invariant).
+TS reversal manifests as: \textbf{$\rho$ sign-flip} on Std VIB ($-0.153\to+0.241$); \textbf{QCDI sign-flip} on ViT-Tiny ($+0.023\to-0.029$) and Swin-Tiny ($+0.020\to-0.021$); near-neutral on ResNet-50 (raw $\rho=-0.368$) and ConvNeXt-Tiny (raw $\rho=-0.241$).
+QCTS preserves or strengthens $\rho$ and restores QCDI toward zero on all five backbones.
 }
 \label{tab:universality}
 \footnotesize
@@ -30,6 +30,16 @@ Backbone (family) & Method & ECE-LQ\,$\downarrow$ & ECE-HQ\,$\downarrow$ & QCDI\
   & Raw             & 0.058 & 0.036 & $+0.023$ & $-0.160$ \\
   & $+$ TS          & 0.043 & 0.072 & \cellcolor{red!12}$-0.029$ & $-0.160$ \\
   & $+$ QCTS (ours) & 0.058 & 0.075 & $-0.017$ & \cellcolor{green!12}$\mathbf{-0.266}$ \\
+\addlinespace[2pt]\cmidrule(l){1-6}\addlinespace[2pt]
+\multirow{3}{*}{ConvNeXt-Tiny (modern CNN)}
+  & Raw             & 0.171 & 0.035 & $+0.136$ & $-0.241$ \\
+  & $+$ TS          & 0.097 & 0.119 & \cellcolor{red!8}$-0.022$ & $-0.241$ \\
+  & $+$ QCTS (ours) & 0.096 & 0.116 & $-0.020$ & \cellcolor{green!6}$\mathbf{-0.270}$ \\
+\addlinespace[2pt]\cmidrule(l){1-6}\addlinespace[2pt]
+\multirow{3}{*}{Swin-Tiny (hier.\ Transformer)}
+  & Raw             & 0.056 & 0.037 & $+0.020$ & $-0.237$ \\
+  & $+$ TS          & 0.044 & 0.066 & \cellcolor{red!10}$-0.021$ & $-0.237$ \\
+  & $+$ QCTS (ours) & 0.051 & 0.035 & $+0.016$ & \cellcolor{green!8}$\mathbf{-0.259}$ \\
 \bottomrule
 \end{tabular}
 \vspace{-4pt}

@@ -328,12 +328,14 @@ def main():
     print(f"\n[val] inferring logits for {len(val_paths)} samples...")
     val_logits, val_targets, val_visiscore = get_val_logits(q_val, ef_all)
 
-    # 3. ITB images (D baseline rows, same order as in itb_predictions.csv)
+    # 3. ITB images — itb_sub row order drives cache computation only
     itb_sub = pd.read_csv(PROJ / "results/itb_subsets.csv")
-    # itb_sub matches D rows in itb_predictions.csv order
     itb_paths = itb_sub["image_path"].tolist()
-    # VisiScore q̄ for ITB: from qbar column in itb_subsets (computed by VisiScore-Net)
-    itb_visiscore = itb_sub["qbar"].values
+    # (subset, target, qbar_5dp) → cache row index; used to re-align to d_preds order
+    _key_to_cache_idx = {
+        (r["subset"], int(r["target"]), round(float(r["qbar"]), 5)): i
+        for i, r in itb_sub.iterrows()
+    }
 
     # 4. Load / compute quality scores
     cache = {}
@@ -391,6 +393,21 @@ def main():
 
     # 5. QCTS fitting and ITB evaluation for all 5 methods
     itb_preds = pd.read_csv(PROJ / "results/itb_predictions.csv")
+    d_preds_base = itb_preds[itb_preds["baseline"] == "D"].reset_index(drop=True)
+
+    # Align cached ITB quality arrays (itb_sub row order) → d_preds row order.
+    # Key: (subset, target, qbar_5dp) uniquely identifies each ITB sample across both files.
+    def align_to_dpreds(cache_arr):
+        out = np.full(len(d_preds_base), np.nan)
+        for idx, row in d_preds_base.iterrows():
+            key = (row["subset"], int(row["target"]), round(float(row["qbar"]), 5))
+            j = _key_to_cache_idx.get(key, -1)
+            if j >= 0:
+                out[idx] = cache_arr[j]
+        return out
+
+    # VisiScore q̄: d_preds already carries the correct per-sample qbar in d_preds order
+    itb_visiscore_aligned = d_preds_base["qbar"].values
 
     # handle NaN in quality scores: fill with median
     def safe_qbar(arr):
@@ -400,11 +417,11 @@ def main():
         return np.clip(arr, 0, 1)
 
     methods = {
-        "5-head IQA (ours)": (val_visiscore, itb_visiscore),
-        "BRISQUE":       (cache["brisque_val"], cache["brisque_itb"]),
-        "CLIP-IQA":      (cache["clipiqa_val"], cache["clipiqa_itb"]),
-        "RF-Stat":       (cache["rf_val"],      cache["rf_itb"]),
-        "LaplacianVar":  (cache["lap_val"],      cache["lap_itb"]),
+        "5-head IQA (ours)": (val_visiscore, itb_visiscore_aligned),
+        "BRISQUE":       (cache["brisque_val"], align_to_dpreds(cache["brisque_itb"])),
+        "CLIP-IQA":      (cache["clipiqa_val"], align_to_dpreds(cache["clipiqa_itb"])),
+        "RF-Stat":       (cache["rf_val"],      align_to_dpreds(cache["rf_itb"])),
+        "LaplacianVar":  (cache["lap_val"],      align_to_dpreds(cache["lap_itb"])),
     }
 
     rows = []
@@ -430,7 +447,7 @@ def main():
     # 6. Baseline: standard TS (quality-agnostic)
     with open(ROOT / "checkpoints/stdvib/temperature.json") as f:
         T_ts = json.load(f)["T"]
-    d_preds = itb_preds[itb_preds["baseline"] == "D"].copy()
+    d_preds = d_preds_base.copy()
     p = d_preds["prob_pos"].clip(1e-7, 1 - 1e-7).values
     logits_itb = np.log(p / (1 - p))
     prob_ts = 1.0 / (1.0 + np.exp(-logits_itb / T_ts))
@@ -497,18 +514,19 @@ def _generate_tex(df, T_ts, ece_ts_lq, ece_ts_hq, rho_ts):
         r"\centering",
         r"\caption{",
         r"\textbf{QCTS under different quality scalars $\bar q$.}",
-        r"QCTS is fitted separately for each quality estimator on the same frozen Std VIB backbone and val split.",
-        r"All quality-conditioned variants outperform standard TS (bottom row) on both ECE-LQ and QCDI.",
-        r"The proposed 5-head IQA achieves the best quality-aware calibration owing to domain-specific training,",
-        r"but even the training-free Laplacian sharpness proxy improves quality-conditional ECE.",
+        r"QCTS is fitted with each quality estimator on the same frozen Std VIB backbone and val split.",
+        r"Fitted slope $\hat\alpha$ indicates whether the quality scalar drives quality-aware temperature scaling.",
+        r"BRISQUE and CLIP-IQA collapse to quality-agnostic solutions ($\hat\alpha\!\approx\!0$, equivalent to TS);",
+        r"Laplacian variance learns $\hat\alpha\!>\!0$ but selects the wrong quality dimension (QCDI$\,{=}{+}0.028$, worse than TS);",
+        r"only the dermoscopy-trained 5-head IQA achieves quality-fair calibration (QCDI$\,{<}\,0$, most negative $\rho$).",
         r"}",
         r"\label{tab:quality_scalar}",
         r"\footnotesize",
         r"\setlength{\tabcolsep}{6pt}",
         r"\renewcommand{\arraystretch}{1.05}",
-        r"\begin{tabular}{lccccc}",
+        r"\begin{tabular}{lcccccc}",
         r"\toprule",
-        r"Quality scalar $\bar q$ & Learnable & ECE-LQ\,$\downarrow$ & ECE-HQ\,$\downarrow$ & QCDI\,$\downarrow$ & $\rho(H,\bar q)\,\downarrow$ \\",
+        r"Quality scalar $\bar q$ & Learnable & $\hat\alpha$ & ECE-LQ\,$\downarrow$ & ECE-HQ\,$\downarrow$ & QCDI\,$\downarrow$ & $\rho(H,\bar q)\,\downarrow$ \\",
         r"\midrule",
     ]
 
@@ -525,8 +543,10 @@ def _generate_tex(df, T_ts, ece_ts_lq, ece_ts_hq, rho_ts):
         if len(row) == 0:
             continue
         r = row.iloc[0]
+        alpha_str = f"{r['alpha']:.2f}"
         cells = [
             LEARNABLE[name],
+            alpha_str,
             fmt_v(r["ece_lq"], best_ece_lq),
             fmt_v(r["ece_hq"], best_ece_hq),
             fmt_qcdi(r["qcdi"], best_qcdi),
@@ -537,6 +557,7 @@ def _generate_tex(df, T_ts, ece_ts_lq, ece_ts_hq, rho_ts):
     # TS baseline
     lines.append(r"\midrule")
     ts_cells = [
+        r"---",
         r"---",
         fmt_v(ece_ts_lq, best_ece_lq),
         fmt_v(ece_ts_hq, best_ece_hq),

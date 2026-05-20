@@ -79,6 +79,19 @@ def bootstrap_ece(probs, targets, n_iter=1000, seed=0):
     return float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
 
 
+def bootstrap_auc(probs, targets, n_iter=1000, seed=0):
+    rng = np.random.default_rng(seed)
+    n = len(probs)
+    vals = []
+    for _ in range(n_iter):
+        idx = rng.integers(0, n, n)
+        try:
+            vals.append(float(roc_auc_score(targets[idx], probs[idx])))
+        except Exception:
+            pass
+    return float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
+
+
 # ── Dataset ───────────────────────────────────────────────────────────────────
 
 class ITBDataset(Dataset):
@@ -195,18 +208,20 @@ def main():
         p, t, q, H = prob_pos[m], targets[m], qbar[m], entropy[m]
         try:
             auc = float(roc_auc_score(t, p))
+            auc_lo, auc_hi = bootstrap_auc(p, t)
         except Exception:
-            auc = float("nan")
+            auc = float("nan"); auc_lo = auc_hi = float("nan")
         ece = compute_ece(p, t)
         ece_lo, ece_hi = bootstrap_ece(p, t)
         rho, pval = spearmanr(H, q)
         metrics[subset] = {
             "n": int(m.sum()), "auc": round(auc, 4),
+            "auc_ci": [round(auc_lo, 4), round(auc_hi, 4)],
             "ece": round(ece, 4), "ece_ci": [round(ece_lo, 4), round(ece_hi, 4)],
             "rho": round(float(rho), 4), "pval": float(pval),
         }
-        print(f"  [{subset}] n={m.sum()}  AUC={auc:.4f}  ECE={ece:.4f} "
-              f"[{ece_lo:.4f},{ece_hi:.4f}]  rho={rho:.4f}  p={pval:.2e}")
+        print(f"  [{subset}] n={m.sum()}  AUC={auc:.4f} [{auc_lo:.4f},{auc_hi:.4f}]  "
+              f"ECE={ece:.4f} [{ece_lo:.4f},{ece_hi:.4f}]  rho={rho:.4f}  p={pval:.2e}")
 
     # QCDI = ECE-LQ - ECE-HQ  (only LQ and HQ used for QCDI)
     qcdi = metrics["ITB-LQ"]["ece"] - metrics["ITB-HQ"]["ece"]

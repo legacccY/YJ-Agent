@@ -104,12 +104,12 @@
 | Focal+LS | 0.708 | 0.533 | 0.884 | 0.492 | +0.041 | −0.059 |
 | MC Dropout (30×) | 0.693 | 0.615 | 0.808 | 0.473 | +0.142 | −0.114 |
 | Deep Ensemble (5×) | 0.711 | 0.440 | 0.868 | 0.339 | +0.101 | −0.123 |
-| EDL | TBD | TBD | TBD | TBD | TBD | TBD |
+| EDL | 0.586 | 0.316 [0.273,0.361] | 0.895 | 0.270 [0.224,0.307] | +0.046 | +0.039 |
 | Std VIB | 0.553 | 0.146 | 0.587 | 0.129 | +0.016 | −0.153 |
 | Std VIB + TS | 0.582 | 0.175 | 0.732 | 0.160 | +0.015 | **+0.241** |
 | **Std VIB + QCTS** | 0.563 | **0.079** | 0.580 | 0.075 | **+0.004** | **−0.249** |
 
-### Table 3 (Universality, 3 backbones × {raw / +TS / +QCTS})
+### Table 3 (Universality, 5 backbones × {raw / +TS / +QCTS})
 
 | Backbone | Method | ECE-LQ | ECE-HQ | QCDI | ρ |
 |---|---|---|---|---|---|
@@ -122,6 +122,12 @@
 | ViT-Tiny | Raw | 0.058 | 0.036 | +0.023 | −0.160 |
 | ViT-Tiny | +TS | 0.043 | 0.072 | **−0.029** ⚠️ QCDI flip | −0.160 |
 | ViT-Tiny | +QCTS | 0.058 | 0.075 | −0.017 | −0.266 |
+| ConvNeXt-Tiny | Raw | 0.171 | 0.035 | +0.136 | −0.241 |
+| ConvNeXt-Tiny | +TS | 0.097 | 0.119 | **−0.022** ⚠️ QCDI flip | −0.241 |
+| ConvNeXt-Tiny | +QCTS | 0.096 | 0.116 | −0.020 | −0.270 |
+| Swin-Tiny | Raw | 0.056 | 0.037 | +0.020 | −0.237 |
+| Swin-Tiny | +TS | 0.044 | 0.066 | **−0.021** ⚠️ QCDI flip | −0.237 |
+| Swin-Tiny | +QCTS | 0.051 | 0.035 | +0.016 | −0.259 |
 
 数据源：`project/results/backbones/section54_summary.csv`
 
