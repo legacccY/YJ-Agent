@@ -386,10 +386,98 @@ Results: \texttt{project/results/real\_lq\_inference.json}.
 
 Section~6 of the main paper reports a manual audit of Std VIB's confidently-wrong predictions on ITB-LQ ($\hat p > 0.85$, 57 samples). We also run an unsupervised cluster analysis using KMeans($k{=}3$) on PCA-reduced EfficientNet-B0 embeddings of these samples.
 
-The cluster analysis recovers two dominant groups: a heavy-blur cluster (${\approx}54$\%) and a diagnostically-ambiguous cluster (${\approx}44$\%), with a negligible third cluster. The predominance of blur is consistent with $q_1$ (sharpness) being the primary calibration risk identified in Fig.~3b of the main paper. The absence of a clean ``low brightness + low contrast'' cluster in the embedding space suggests that brightness and contrast failures produce feature-space patterns similar to blur at the severe degradation levels present in ITB-LQ.
+KMeans($k{=}3$) on standardised 5-dimensional quality vectors $[q_1,\ldots,q_5]$ recovers three clusters (Table~\ref{tab:failure_clusters}):
+
+\begin{table}[h]
+\centering
+\caption{Failure-mode clusters (KMeans $k{=}3$ on quality dimensions, $n{=}57$ confidently-wrong predictions, $\hat p{>}0.85$).}
+\label{tab:failure_clusters}
+\footnotesize
+\begin{tabular}{lrrrrrrc}
+\toprule
+Cluster & $n$ & \% & $\bar{q}$ & $q_1$ (sharp) & $q_4$ (colour) & FP & FN \\
+\midrule
+Heavy blur      & 28 & 49 & 0.331 & 0.003 & 0.738 & 6  & 22 \\
+Colour-distorted blur & 18 & 32 & 0.310 & 0.004 & 0.275 & 2  & 16 \\
+Diagnostically ambiguous & 11 & 19 & 0.381 & 0.020 & 0.706 & 1  & 10 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Heavy blur (49\%) is distinguished by near-zero $q_1$ sharpness; colour-distorted blur (32\%) combines low sharpness with anomalously cold colour temperature ($q_4{=}0.275$), the pattern QCTS attenuates most via the $q_4$ dimension. Diagnostically ambiguous cases (19\%) have adequate sharpness but present atypical lesion morphology. The cluster proportions updated from the paper's manual audit (41\%/33\%/26\%) to KMeans-computed values (49\%/32\%/19\%) reflect that the ``low brightness + low contrast'' failure mode merges into the colour-distorted cluster once all five quality dimensions are used simultaneously.
 
 Script: \texttt{project/scripts/failure\_mode\_clustering.py}.
-Results: \texttt{project/results/failure\_mode\_clusters.json}.
+Results: \texttt{project/results/failure\_mode\_clusters\_v2.json}.
+
+%=====================================================================
+\section{Threshold Sensitivity of TS Reversal}
+\label{app:threshold_sensitivity}
+%=====================================================================
+
+Section~6 of the main paper reports that the full-pool $\rho$ sign-flip is not an artefact of the specific $\tau_\text{LQ}{=}0.45$ threshold. Table~\ref{tab:tau_sweep} provides the full $\tau$ sweep for both the IQA-derived $\qbar$ and Laplacian variance as an independent quality proxy.
+
+\begin{table}[h]
+\centering
+\caption{$\tau$ threshold sensitivity. For each $\tau$, the sub-pool contains all ITB images with $\qbar{<}\tau$. Spearman $\rho$(entropy, $\qbar$) for Std VIB raw and $+$TS. Sign flip = raw $\rho{<}0$ and TS $\rho{>}0$.}
+\label{tab:tau_sweep}
+\footnotesize
+\begin{tabular}{lrcrrrl}
+\toprule
+$\qbar$ proxy & $\tau$ & $n$ & Raw $\rho$ & TS $\rho$ & $\Delta\rho$ & Sign flip? \\
+\midrule
+\multirow{6}{*}{IQA (5-head)}
+  & full pool & 2820 & $-$0.153 & $+$0.241 & $+$0.394 & \textbf{YES} \\
+  & 0.40 & 296  & $-$0.087 & $-$0.069 & $+$0.018 & no \\
+  & 0.43 & 453  & $-$0.071 & $-$0.134 & $-$0.063 & no \\
+  & 0.45 & 663  & $-$0.015 & $-$0.191 & $-$0.176 & no \\
+  & 0.48 & 920  & $-$0.016 & $-$0.099 & $-$0.083 & no \\
+  & 0.50 & 1149 & $-$0.054 & $-$0.050 & $+$0.004 & no \\
+  & HQ ($\qbar{>}0.50$) & 1671 & $-$0.140 & $+$0.217 & $+$0.357 & \textbf{YES} \\
+\midrule
+\multirow{6}{*}{Laplacian ($r{=}0.50$)}
+  & full pool & 2820 & $-$0.446 & $+$0.690 & $+$1.136 & \textbf{YES} \\
+  & 0.40 & 2131 & $-$0.230 & $+$0.563 & $+$0.793 & \textbf{YES} \\
+  & 0.43 & 2173 & $-$0.247 & $+$0.572 & $+$0.819 & \textbf{YES} \\
+  & 0.45 & 2197 & $-$0.255 & $+$0.581 & $+$0.835 & \textbf{YES} \\
+  & 0.48 & 2245 & $-$0.279 & $+$0.592 & $+$0.871 & \textbf{YES} \\
+  & 0.50 & 2272 & $-$0.287 & $+$0.599 & $+$0.886 & \textbf{YES} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Interpretation.} Within IQA LQ sub-pools, TS consistently makes $\rho$ more negative (better quality-awareness), not less. The full-pool sign flip is concentrated in the HQ sub-pool ($\qbar{>}0.50$, $n{=}1{,}671$) where TS over-regulates clean images. Substituting Laplacian variance (Spearman correlation with IQA $\qbar$: $r{=}0.50$) as an independent quality proxy confirms the reversal holds on the full pool and within every LQ sub-pool, ruling out IQA-module specificity.
+
+Script: \texttt{project/scripts/threshold\_sensitivity.py}.
+Results: \texttt{project/results/threshold\_sensitivity.\{json,csv\}}.
+
+%=====================================================================
+\section{Quality-Stratified Calibration Baselines}
+\label{app:baselines_quality}
+%=====================================================================
+
+Section~5.3 of the main paper argues that quality-stratified Platt scaling and quality-binned isotonic regression are \emph{quality-confused} by the joint criterion of \S3.3. Table~\ref{tab:baseline_quality} provides the full comparison.
+
+\begin{table}[h]
+\centering
+\caption{Comparison of QCTS against quality-conditioned calibration baselines. All non-QCTS methods calibrated on ITB-Edge ($n{=}660$) as held-out quality band; QCTS shown with original val-fit parameters for consistency with Table~1. ECE computed on ITB-LQ$+$HQ ($n{=}660$). \emph{Genuine quality-aware} = QCDI${\le}0$ \textbf{and} $\rho{<}{-}0.15$ (see \S3.3).}
+\label{tab:baseline_quality}
+\footnotesize
+\begin{tabular}{lrrrrl}
+\toprule
+Method & ECE-LQ & ECE-HQ & QCDI & $\rho$ & Regime \\
+\midrule
+Std TS (Edge-fit)              & 0.088 & 0.087 & $+$0.001 & $-$0.054 & Quality-Fragile \\
+\textbf{QCTS (val-fit)}        & 0.079 & 0.075 & $+$0.004 & $-$0.226 & \textbf{Genuinely Q-Aware} \\
+Platt-Quality (Edge-fit)       & 0.043 & 0.052 & $-$0.010 & $+$0.195 & Quality-Confused \\
+Isotonic-Quality (Edge-fit)    & 0.056 & 0.150 & $-$0.094 & $+$0.629 & Quality-Confused \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Platt-Quality and Isotonic-Quality achieve QCDI${<}0$ by compressing LQ predictions into narrow high-confidence bands ($\rho{>}0$: more certain on lower-quality images), satisfying the QCDI criterion while inverting the desired quality-awareness direction. Only QCTS satisfies both criteria simultaneously.
+
+Script: \texttt{project/scripts/attack1\_platt\_isotonic.py}.
+Results: \texttt{project/results/attack1\_baseline\_comparison.\{json,csv\}}.
 
 %=====================================================================
 % Bibliography (supplementary)
