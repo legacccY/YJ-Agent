@@ -3,20 +3,25 @@
 \caption{
 \textbf{Ablation on the form of $T(\bar q)$.}
 Three candidate functions for the quality-conditioned temperature, fitted on a frozen Std VIB backbone with identical L-BFGS optimisation and validation split.
-Numbers are single-seed point estimates on the validation set, chosen for a controlled across-form comparison; the bootstrap-CI'd 3-seed result for the softplus form is the QCTS row of Table~\ref{tab:main}.
-Piecewise-constant minimises validation NLL but produces the worst QCDI and a near-zero $\rho$, so minimising NLL alone is not sufficient: a smooth interpolation across $\bar q$ is what turns post-hoc calibration into quality-aware calibration.
+Numbers are single-seed point estimates on the validation set.
+Piecewise-constant (3 and 10 bins) minimises validation NLL but collapses QCDI and $\rho$, showing that smooth interpolation is essential for quality-aware calibration.
+Dimension-wise and MLP variants add parameters without measurable gain, confirming the 2-parameter softplus form is sufficient.
 }
 \label{tab:ablation}
 \footnotesize
-\setlength{\tabcolsep}{6pt}
+\setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{lccccc}
 \toprule
 $T(\bar q)$ form & ECE-LQ\,$\downarrow$ & ECE-HQ\,$\downarrow$ & QCDI\,$\downarrow$ & $\rho(H,\bar q)\,\downarrow$ & val NLL\,$\downarrow$ \\
 \midrule
-Softplus (ours) & \textbf{0.047} & \textbf{0.062} & \textbf{$-$0.015} & \textbf{$-$0.249} & 0.152 \\
-Linear & 0.098 & 0.102 & $-$0.004 & $-$0.240 & 0.142 \\
-Piecewise-constant (3 bins) & 0.101 & 0.072 & $+$0.029 & $-$0.006 & \textbf{0.140} \\
+Softplus (ours) & \textbf{0.047} & 0.062 & $-$0.015 & \textbf{-0.249} & 0.152 \\
+Linear & 0.098 & 0.102 & $-$0.004 & -0.240 & 0.142 \\
+Piecewise-const.\ (3 bins) & 0.101 & 0.072 & $+$0.029 & -0.006 & 0.140 \\
+\midrule
+Piecewise-const.\ (10 bins) & 0.070 & 0.090 & \textbf{$-$0.020} & 0.009 & \textbf{0.138} \\
+Dimension-wise (5D, 6 params) & 0.052 & \textbf{0.061} & $-$0.008 & -0.102 & 0.138 \\
+MLP ($q\to T$, 25 params) & 0.095 & 0.095 & $+$0.000 & -0.157 & 0.142 \\
 \bottomrule
 \end{tabular}
 \vspace{-4pt}

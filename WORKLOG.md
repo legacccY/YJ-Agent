@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-21 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-20 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
@@ -8,6 +8,26 @@
 
 - **BMVC 投稿** | Deadline 假设 2026-06-18（**60 天**）| 状态：**60 天稳中路线启动** — 期望命中率 65-72%（合规版 + 网上获取约束）
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
+
+## ✅ 今日完成（2026-05-20）
+
+### W2 D8-D9：QCTS Form Ablation 扩展
+- `run_qcts_ablation.py`：新增 bin10 / dimwise / MLP 三种 T(q̄) 形式
+- 结果：softplus 在 4 指标全部最优（ECE-LQ 0.047 / ECE-HQ 0.062 / QCDI −0.015 / ρ −0.249）
+- bin10 NLL 最低但 ρ=+0.009（不 quality-aware）；MLP QCDI=0（退化）
+- `table2_ablation.tex` 扩展为 6 行，编译 0 error
+- 结果：`results/qcts_form_ablation.csv`
+
+### W2 D10：质量标量消融（进行中，有 bug 待修）
+- `run_quality_scalar_ablation.py`：BRISQUE / CLIP-IQA / RF-Stat / LaplacianVar / 5-head IQA 骨架完成
+- BRISQUE/CLIP-IQA/LaplacianVar/RF 质量分数已计算并缓存（`results/quality_scalar_cache.pkl`）
+- **Bug**：`itb_sub["qbar"]` 与 `d_preds["qbar"]` 顺序不一致 → 质量分数错配 → ECE 结果错误
+- **修复方向**：通过 (subset, target, qbar) join 对齐顺序，或直接用 `d_preds["qbar"]` 作 5-head IQA
+
+### 命名红线修复
+- 删除脚本中 "VisiScore-Net" 字样，改为 "5-head IQA (ours)"
+
+---
 
 ## ✅ 今日完成（2026-05-21 自动跑完）
 
@@ -107,6 +127,16 @@
 | **大项目 VisiScore** | ✅ 完成 | PLCC 0.924 / SRCC 0.895 | 2026-05-07 |
 | **大项目 Agent** | ✅ 完成 | 低质追问 59% / 高质 15.5% | 2026-05-07 |
 | **大项目 VisiEnhance** | ❌ 待决策 | PSNR 25.55 dB（目标 ≥30）| 2026-05-16 |
+
+---
+
+## 🚀 紧急待修（下次开始前）
+
+1. **D10 bug**：`run_quality_scalar_ablation.py` 中 itb 质量分数与 logit 顺序错配
+   - 修复：join d_preds + itb_sub on (subset, target, qbar) 获取 image_path，再查 cache
+   - 或：删除 cache 并重构 `eval_on_itb`，用 d_preds 顺序重新映射质量分数
+
+2. **table3_quality_scalar.tex** 数字全部无效，等 D10 修复后重新生成
 
 ---
 

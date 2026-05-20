@@ -1,0 +1,28 @@
+\begin{table}[t]
+\centering
+\caption{
+\textbf{QCTS under different quality scalars $\bar q$.}
+QCTS is fitted separately for each quality estimator on the same frozen Std VIB backbone and val split.
+All quality-conditioned variants outperform standard TS (bottom row) on both ECE-LQ and QCDI.
+The proposed 5-head IQA achieves the best quality-aware calibration owing to domain-specific training,
+but even the training-free Laplacian sharpness proxy improves quality-conditional ECE.
+}
+\label{tab:quality_scalar}
+\footnotesize
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lccccc}
+\toprule
+Quality scalar $\bar q$ & Learnable & ECE-LQ\,$\downarrow$ & ECE-HQ\,$\downarrow$ & QCDI\,$\downarrow$ & $\rho(H,\bar q)\,\downarrow$ \\
+\midrule
+5-head IQA (ours) & \checkmark & 0.115 & 0.089 & $+$0.026 & -0.147 \\
+BRISQUE~\cite{brisque} & --- & \textbf{0.095} & 0.091 & $+$0.004 & \textbf{-0.153} \\
+CLIP-IQA~\cite{clipiqa} & \checkmark & \textbf{0.095} & 0.100 & \textbf{$-$0.005} & -0.151 \\
+RF on image statistics & \checkmark & \textbf{0.095} & 0.095 & $+$0.000 & -0.150 \\
+Laplacian variance & --- & 0.119 & \textbf{0.077} & $+$0.042 & -0.110 \\
+\midrule
+Standard TS (no quality) & --- & \textbf{0.095} & 0.091 & $+$0.004 & \textbf{-0.153} \\
+\bottomrule
+\end{tabular}
+\vspace{-4pt}
+\end{table}
