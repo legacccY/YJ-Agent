@@ -1,13 +1,74 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-21（第五次会话）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
+**最后更新**：2026-05-21（第六次会话）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_OVERVIEW.md`
 
 ---
 
 ## 🎯 当前焦点
 
-- **BMVC 投稿** | Deadline 2026-07-15（**55 天**）| 状态：**主文 14 页正中（结构重构 + 三轮 LLM review 应用）/ 18 总页（主 14 + ref 4）/ Supp 15 页**
+- **BMVC 投稿** | Deadline 2026-07-15（**55 天**）| 状态：**主文 10 页（达 BMVC 限制）/ Supp 18 页 / Abstract 定稿 / 3 reviewer 攻击全部应答 / A1 3-way forward ablation 新硬实证**
 - **大项目** | VisiEnhance Stage 1 容量问题待决策（选 A 重训 vs 选 B 接受小 PSNR）
+
+## ✅ 第六次会话完成（2026-05-21 晚）
+
+### 主文从 18 → 10 页（BMVC hard limit 达标）
+
+| 阶段 | 改动 |
+|---|---|
+| Tier A 整段搬 supp | §5.5 ImageNet-C / §5.6 cross-modality / §6 Discussion 5 长段 全部移到 supp，留 1 句指针 |
+| Tier B 表/图瘦身 | Table 3 universality 5 backbone → 3（ConvNeXt/Swin 搬 supp）+ 删 Table_perdeg/imagenetc/generalisation 主文输入 |
+| Tier C 行间压缩 | Related Work 4 段→2，§3 Preliminaries / §4 Method / §5.4 / Intro / Conclusion 全部压 50%+ |
+
+### 3 reviewer 并发 review 全部应答
+
+- BMVC reviewer #2 / Calibration ML expert / Medical-AI reviewer 3 个 agent 并发
+- 共发现 18 issues（5 致命 / 8 高 / 5 中），全部应答
+- **A1 杀手锏**：3-way forward ablation 实测证明 Std VIB ρ 翻转 100% 来自 MC→deterministic-μ forward swap，scalar TS 完全 innocent（Δρ<10⁻⁵，与 monotonicity 理论一致）
+
+### Abstract 三段定稿（Problem/Method/Result）
+
+- Title 改：`Quality-Conditioned Temperature Scaling: Post-hoc Calibration under Image Quality Shift`
+- Abstract 引 A1 数字硬实证：`MC ρ=-0.163 → det ρ=+0.241 (Δρ=+0.404), scalar TS Δρ<10⁻⁵`
+- 「first post-hoc calibrator with DOF to undo reversal」明确 QCTS 定位
+
+### 新增 supp 节（4 节）
+
+- A12 Per-Degradation/Per-Quintile QCTS Breakdown
+- A13 Extra Backbones (ConvNeXt-Tiny + Swin-Tiny)
+- A14 Sampling-Noise Floor for ρ (permutation null, ρ_noise≈0.043)
+- A18 Per-Stratum Reliability Diagrams
+- A19 3-Way Forward Ablation (TS Reversal Decomposition)
+
+### 全套 reviewer 应答 highlights
+
+| Reviewer 攻击 | 应答 |
+|---|---|
+| TS reversal MC vs det 混淆 | **A1 实测 3-way ablation** + Intro/§5.2/§6 全篇 reframe |
+| Std VIB AUC 0.553 头条 | hedge「intentionally bottlenecked」+ EffNet-B3 数字 Table 1 引用 |
+| ResNet-50 QCDI 不改善 | §5.4 自承 + reframe「gains on weakly Q-aware backbones」 |
+| B1-B3 不 pin softplus | §4.2 改「design choice + ablation, not derived」 |
+| ρ<-0.15 阈值数据后拟合 | supp §A14 permutation null 推导 ρ_noise=0.043 |
+| NLL「flat landscape」夸大 | reframe「shallow basin, 2/3 seed 在边界」 |
+| Platt/iso Edge-fit 不对称 | supp Table 双列展示 |
+| Triage simulation 反向打脸 | supp §A3 重写「probe vs deployable caveat」 |
+| Fitz V-VI stat empty | 「directionally consistent」+ 删 VI 单类 QCDI |
+| Deployment framing 未兑现 | Intro 改 calibration-benchmark 立场 |
+| DCA 0.192 vs 0.186 没 CI | bootstrap CI 2000 次，CI 全 overlap，主文 honest reading |
+| zero-shot HAM10000 overclaim | 改 cross-dataset + 注明 PAD smartphone |
+
+### 验证
+
+- 数字一致性：17/17 PASS（与第五次会话同步）
+- 编译：0 errors，0 undefined refs，10 个 minor overfull box
+- Anonymize grep：tex/supp 干净
+- 主文 10 页（refs 起 page 11，PDF 总 12 页）
+- Supp 18 页
+
+### 新交付素材
+
+- `project/scripts/attack6_forward_ablation.py` + `results/forward_ablation_stdvib.{json,csv}`
+- `project/scripts/gen_reliability_diagrams.py` + `figures/fig_reliability.{pdf,svg,png}`
+- DCA bootstrap CI: `results/dca/dca_summary.json` 加 `dca_max_nb_bootstrap_ci`
 
 ## ✅ 今日完成（2026-05-21 第五次会话）
 

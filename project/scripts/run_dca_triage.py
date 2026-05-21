@@ -234,6 +234,32 @@ def main():
     plt.close()
     print(f"\nFigures saved to {OUT_FIG}/fig_dca_triage.*")
 
+    # ── Bootstrap CI on max NB (B6) ───────────────────────────────────────────
+    print("\n=== Bootstrap CI on max Net Benefit (n=2000) ===")
+    rng = np.random.default_rng(2026)
+    n_boot = 2000
+    boot_max_nb = {}
+    for bl, name in methods.items():
+        sub = lq[lq["baseline"] == bl]
+        if len(sub) < 10:
+            continue
+        p = sub["prob_pos"].clip(1e-7, 1 - 1e-7).values
+        t = sub["target"].values
+        n = len(p)
+        nbs = []
+        for _ in range(n_boot):
+            idx = rng.integers(0, n, n)
+            dca_b = decision_curve(p[idx], t[idx], thresholds)
+            nbs.append(float(dca_b.net_benefit.max()))
+        lo, hi = np.percentile(nbs, [2.5, 97.5])
+        boot_max_nb[bl] = {
+            "method": name,
+            "max_nb_point": round(float(np.mean(nbs)), 4),
+            "ci_lo": round(float(lo), 4),
+            "ci_hi": round(float(hi), 4),
+        }
+        print(f"  {name}: max NB = {np.mean(nbs):.4f} [95% CI {lo:.4f}, {hi:.4f}]")
+
     # ── Summary ───────────────────────────────────────────────────────────────
     summary = {
         "dataset": "ITB-LQ (n=300)",
@@ -243,6 +269,7 @@ def main():
             "source": "Haenssle et al. 2018 Ann Oncol"
         },
         "dca_max_nb": {},
+        "dca_max_nb_bootstrap_ci": boot_max_nb,
         "triage_at_20pct_referral": {},
     }
     for bl, name in methods.items():

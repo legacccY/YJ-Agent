@@ -2,6 +2,55 @@
 
 ---
 
+## 2026-05-21 晚 ⚡ 主文 18→10 页 + 3 reviewer 全应答 + A1 forward ablation 硬实证
+
+### 主要工作
+
+**主文压页（18→10，达 BMVC hard limit）**：
+- Tier A 整段搬 supp：§5.5 ImageNet-C / §5.6 cross-modality / §6 Discussion 5 长段
+- Tier B 表瘦身：Table 3 universality 5 backbone → 3（ConvNeXt/Swin 搬 supp）+ 删 perdeg/imagenetc/generalisation 主文输入
+- Tier C 行间压缩：Related Work 4 段→2，§3 Preliminaries / §4 Method / §5.4 / Intro / Conclusion 全部 50%+ 压
+
+**3 reviewer 并发 review**（BMVC reviewer #2 / Calibration ML expert / Medical-AI reviewer）：
+- 共 18 issues（5 致命 / 8 高 / 5 中），全部应答
+
+**A1 杀手锏 — 3-way forward ablation 实测**：
+| 前向 | ρ(H, q̄) | Δ from raw MC |
+|---|---|---|
+| (a) MC-marginalised (N=20) | **−0.163** | — |
+| (b) deterministic-μ (T=1) | **+0.241** | **+0.404** |
+| (c) det-μ + scalar TS (T=2.32) | +0.241 | +0.404 |
+
+MC→det 解释 **100%** 翻转；TS 完全 innocent（Δ<10⁻⁵，与 monotonicity 一致）。Intro/§5.2/§6/Abstract 全篇 reframe。
+
+**Abstract 三段定稿**（Problem/Method/Result，引 A1 数字）：
+- Title 改：`Quality-Conditioned Temperature Scaling: Post-hoc Calibration under Image Quality Shift`
+- Abstract 引「MC ρ=-0.163 → det ρ=+0.241 (Δρ=+0.404), scalar TS Δρ<10⁻⁵」
+
+**新增 supp 节**：
+- A12 Per-Degradation/Per-Quintile QCTS Breakdown
+- A13 Extra Backbones (ConvNeXt-Tiny + Swin-Tiny)
+- A14 Sampling-Noise Floor for ρ (ρ_noise≈0.043 permutation null)
+- A18 Per-Stratum Reliability Diagrams（新 fig_reliability）
+- A19 3-Way Forward Ablation (TS Reversal Decomposition)
+
+**全套 reviewer 应答** 见 WORKLOG.md。
+
+### 验证
+
+- 数字一致性 17/17 PASS（与上次同步）
+- 编译 0 errors / 0 undefined refs / 10 minor overfull box
+- Anonymize grep 干净
+- 主文 10 页（refs 起 p11，总 12 页）/ Supp 18 页
+
+### 新交付
+
+- `project/scripts/attack6_forward_ablation.py` + `results/forward_ablation_stdvib.{json,csv}`
+- `project/scripts/gen_reliability_diagrams.py` + `figures/fig_reliability.{pdf,svg,png}`
+- DCA bootstrap CI 加入 `results/dca/dca_summary.json`
+
+---
+
 ## 2026-05-21 ⚡ 论文关键 lever 补全 + Supplementary 骨架
 
 ### 论文写作更新（itb_paper.tex）
