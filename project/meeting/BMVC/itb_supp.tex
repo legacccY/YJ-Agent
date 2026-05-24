@@ -6,7 +6,9 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{multirow}
-\usepackage[font=footnotesize,labelfont=bf]{caption}
+\usepackage[font=footnotesize,labelfont=bf,skip=10pt]{caption}
+\setlength{\textfloatsep}{14pt plus 2pt minus 2pt}
+\setlength{\intextsep}{12pt plus 2pt minus 2pt}
 \usepackage{subcaption}
 \usepackage{enumitem}
 \usepackage{hyperref}
@@ -31,6 +33,95 @@
 \renewcommand{\thesection}{A\arabic{section}}
 \renewcommand{\thetable}{S\arabic{table}}
 \renewcommand{\thefigure}{S\arabic{figure}}
+
+%=====================================================================
+\section{Main-Text Figures (Expanded)}
+\label{app:main_figs}
+%=====================================================================
+
+The main paper retains two figures in the body: the method overview (Fig.~2 in the main) and the qualitative degradation gallery (Fig.~1 in the main). The five quantitative analysis figures previously embedded in \S\ref{sec:experiments} are reproduced here at full resolution; their captions are unchanged from the manuscript in preparation. Each figure is referenced once in the main text via the supplementary anchor.
+
+\subsection{Quality-Conditioned Calibration Problem (Originally Main Fig.~3)}
+\label{app:fig_problem}
+
+Fig.~\ref{fig:supp_problem} reproduces the taxonomy scatter and per-stratum reliability diagrams supporting the claims in \S\ref{sec:main_results}. Quantitative values for all baselines are in Table~1 (main).
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig2_problem}
+  \caption{\textbf{Quality-conditioned calibration problem.}
+    \textbf{(a)} Taxonomy: each baseline (and QCTS) placed by HQ ECE ($x$) vs.\ LQ ECE ($y$); the dashed diagonal is QCDI~$=0$ and the three shaded bands mark the regimes of \S\ref{sec:taxonomy} of the main paper.
+    \textbf{(b,c)} Reliability diagrams for four representative methods plus QCTS, conditioned on ITB-LQ and ITB-HQ; the bottom density strip indicates where each method's predictions concentrate.
+    \emph{Originally main Fig.~3; moved to supplementary in this version.}}
+  \label{fig:supp_problem}
+\end{figure}
+
+\subsection{QCTS Solution and Per-Bin Effect (Originally Main Fig.~4)}
+\label{app:fig_qcts}
+
+Fig.~\ref{fig:supp_qcts} reproduces the learned $T(\bar q)$ curve, per-degradation ECE breakdown, and per-bin reduction supporting \S\ref{sec:qcts_analysis}. Per-degradation and per-quintile numbers are also tabulated in Table~\ref{tab:perdeg} of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig3_qcts}
+  \caption{\textbf{QCTS solution and per-bin effect.}
+    \textbf{(a)} Learned $T(\bar q)$ across three seeds (dashed) with the median (solid) and 16/84\% band; the dotted reference is standard TS ($\alpha{=}0$). All seeds discover $\alpha > 0$ (inset).
+    \textbf{(b)} Per-degradation ECE on ITB-LQ samples in the bottom 20th percentile of each quality dimension.
+    \textbf{(c)} ECE before vs.\ after QCTS by quality bin.
+    \emph{Originally main Fig.~4; moved to supplementary in this version.}}
+  \label{fig:supp_qcts}
+\end{figure}
+
+\subsection{Zero-Shot Generalisation and Fitzpatrick Fairness (Originally Main Fig.~7)}
+\label{app:fig_generalisation}
+
+Fig.~\ref{fig:supp_generalisation} reproduces the cross-dataset and fairness panels. All quantitative values (including TS reversal on HAM/PAD, Fitzpatrick V--VI QCDI/$\rho$) are in Table~\ref{tab:generalisation} of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig4_generalization}
+  \caption{\textbf{QCTS generalises across datasets, backbones, and skin tones.}
+    \textbf{(a)} Entropy vs.\ $\bar q$ on HAM10000 zero-shot.
+    \textbf{(b)} QCDI on three datasets across the evaluated baselines, with Kendall~$\tau$ summarising ranking consistency.
+    \textbf{(c)} Per-skin-type QCDI on ITB-Diverse for Std VIB and Std VIB + QCTS.
+    \emph{Originally main Fig.~7; moved to supplementary in this version.}}
+  \label{fig:supp_generalisation}
+\end{figure}
+
+\subsection{Backbone Universality Diagnostics (Originally Main Fig.~5)}
+\label{app:fig_universality}
+
+Fig.~\ref{fig:supp_universality} reproduces the per-$\bar q$-bin optimal $T^*(\bar q)$ scatter against the fitted softplus curve, and the QCDI before/after-TS bar chart on ResNet-50 and ViT-Tiny. Five-backbone QCDI/$\rho$ values are in Table~3 of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}[b]{0.56\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig5_perbin_optimal_T}\\[2pt]
+    {\footnotesize (a) Per-$\bar q$-bin optimal $T^*(\bar q)$ vs.\ QCTS softplus curve.}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.40\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig6_ts_reversal}\\[2pt]
+    {\footnotesize (b) QCDI before/after TS. ViT-Tiny crosses zero; ResNet-50 stays positive.}
+  \end{minipage}
+  \caption{\textbf{Empirical validation of softplus $T(\bar q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. \emph{Originally main Fig.~5; moved to supplementary in this version.}}
+  \label{fig:supp_universality}
+\end{figure}
+
+\subsection{ImageNet-C Per-Corruption Scatter (Originally Main Fig.~6)}
+\label{app:fig_imagenetc}
+
+Fig.~\ref{fig:supp_imagenetc} reproduces the per-corruption $\rho$ scatter (raw vs.\ QCTS) on the 18-corruption ImageNet-C protocol. Per-corruption numerical values for both backbones are in Table~\ref{tab:imagenetc} of the main paper.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/fig7_imagenetc_qcts}
+  \caption{\textbf{QCTS improves quality-awareness across 18 ImageNet-C corruptions.}
+    Each point is one corruption type (averaged across five severity levels); $x$-axis is raw $\rho(H,\bar q)$, $y$-axis is QCTS $\rho$. All points fall below the diagonal ($y{=}x$), confirming QCTS universally strengthens the entropy--quality correlation when corruption severity serves as $\bar q$.
+    \emph{Originally main Fig.~6; moved to supplementary in this version.}}
+  \label{fig:supp_imagenetc}
+\end{figure}
 
 %=====================================================================
 \section{5-Head IQA Module}
@@ -680,7 +771,7 @@ Figure files: \texttt{figures/fig\_reliability.\{pdf,svg,png\}}.
 \label{app:forward_ablation}
 %=====================================================================
 
-The main paper (\S\ref{sec:main_results}) attributes the Std~VIB ρ flip from $-0.153$ to $+0.241$ jointly to (i) the MC-marginalised raw forward being replaced by the deterministic-$\mu$ forward and (ii) the absence of quality-conditioning in scalar TS. Here we report the 3-way forward ablation that isolates (i) from (ii).
+The main paper (\S\ref{sec:main_results}) attributes the Std~VIB $\rho$ flip from $-0.153$ to $+0.241$ jointly to (i) the MC-marginalised raw forward being replaced by the deterministic-$\mu$ forward and (ii) the absence of quality-conditioning in scalar TS. Here we report the 3-way forward ablation that isolates (i) from (ii).
 
 \textbf{Protocol.} On the full ITB pool ($n{=}2{,}820$) and the Std~VIB checkpoint used in Table~1, we run three forward passes \emph{on the same backbone}:
 \begin{itemize}[leftmargin=*,itemsep=2pt]
@@ -780,94 +871,6 @@ For a binary classifier, the expected ECE on a quality stratum $\mathcal{S}_q$ o
 \end{equation}
 With fixed $T$ the KL term is quality-independent and the bound tightens only with $n_q$. With QCTS, $T(\qbar)$ increases on low-quality strata, flattening the posterior and reducing KL there at the cost of a looser bound on HQ where lower $T$ concentrates the posterior. The empirically observed $46\%$ ITB-LQ ECE reduction with near-unchanged HQ ECE is consistent with this quality-stratified variance reduction. A formal analysis requiring distributional assumptions on $\qbar$ is left to future work.
 
-%=====================================================================
-\section{Main-Text Figures (Expanded)}
-\label{app:main_figs}
-%=====================================================================
-
-The published version of the paper retains two figures in the main body: the teaser (Fig.~1) showing per-input QCTS softening and the method overview (Fig.~2). All quantitative analysis figures previously embedded in \S\ref{sec:experiments} are reproduced here at full resolution; their captions are unchanged from the manuscript in preparation. Each figure is referenced once in the main text via the supplementary anchor.
-
-\subsection{Quality-Conditioned Calibration Problem (Originally Main Fig.~3)}
-\label{app:fig_problem}
-
-Fig.~\ref{fig:supp_problem} reproduces the taxonomy scatter and per-stratum reliability diagrams supporting the claims in \S\ref{sec:main_results}. Quantitative values for all baselines are in Table~1 (main).
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.95\linewidth]{figures/fig2_problem}
-  \caption{\textbf{Quality-conditioned calibration problem.}
-    \textbf{(a)} Taxonomy: each baseline (and QCTS) placed by HQ ECE ($x$) vs.\ LQ ECE ($y$); the dashed diagonal is QCDI~$=0$ and the three shaded bands mark the regimes of \S\ref{sec:taxonomy} of the main paper.
-    \textbf{(b,c)} Reliability diagrams for four representative methods plus QCTS, conditioned on ITB-LQ and ITB-HQ; the bottom density strip indicates where each method's predictions concentrate.
-    \emph{Originally main Fig.~3; moved to supplementary in this version.}}
-  \label{fig:supp_problem}
-\end{figure}
-
-\subsection{QCTS Solution and Per-Bin Effect (Originally Main Fig.~4)}
-\label{app:fig_qcts}
-
-Fig.~\ref{fig:supp_qcts} reproduces the learned $T(\bar q)$ curve, per-degradation ECE breakdown, and per-bin reduction supporting \S\ref{sec:qcts_analysis}. Per-degradation and per-quintile numbers are also tabulated in Table~\ref{tab:perdeg} of the main paper.
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.95\linewidth]{figures/fig3_qcts}
-  \caption{\textbf{QCTS solution and per-bin effect.}
-    \textbf{(a)} Learned $T(\bar q)$ across three seeds (dashed) with the median (solid) and 16/84\% band; the dotted reference is standard TS ($\alpha{=}0$). All seeds discover $\alpha > 0$ (inset).
-    \textbf{(b)} Per-degradation ECE on ITB-LQ samples in the bottom 20th percentile of each quality dimension.
-    \textbf{(c)} ECE before vs.\ after QCTS by quality bin.
-    \emph{Originally main Fig.~4; moved to supplementary in this version.}}
-  \label{fig:supp_qcts}
-\end{figure}
-
-\subsection{Backbone Universality Diagnostics (Originally Main Fig.~5)}
-\label{app:fig_universality}
-
-Fig.~\ref{fig:supp_universality} reproduces the per-$\bar q$-bin optimal $T^*(\bar q)$ scatter against the fitted softplus curve, and the QCDI before/after-TS bar chart on ResNet-50 and ViT-Tiny. Five-backbone QCDI/$\rho$ values are in Table~3 of the main paper.
-
-\begin{figure}[h]
-  \centering
-  \begin{minipage}[b]{0.56\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/fig5_perbin_optimal_T}\\[2pt]
-    {\footnotesize (a) Per-$\bar q$-bin optimal $T^*(\bar q)$ vs.\ QCTS softplus curve.}
-  \end{minipage}\hfill
-  \begin{minipage}[b]{0.40\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/fig6_ts_reversal}\\[2pt]
-    {\footnotesize (b) QCDI before/after TS. ViT-Tiny crosses zero; ResNet-50 stays positive.}
-  \end{minipage}
-  \caption{\textbf{Empirical validation of softplus $T(\bar q)$ (a) and TS reversal asymmetry (b)} on the two probe backbones. \emph{Originally main Fig.~5; moved to supplementary in this version.}}
-  \label{fig:supp_universality}
-\end{figure}
-
-\subsection{ImageNet-C Per-Corruption Scatter (Originally Main Fig.~6)}
-\label{app:fig_imagenetc}
-
-Fig.~\ref{fig:supp_imagenetc} reproduces the per-corruption $\rho$ scatter (raw vs.\ QCTS) on the 18-corruption ImageNet-C protocol. Per-corruption numerical values for both backbones are in Table~\ref{tab:imagenetc} of the main paper.
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.85\linewidth]{figures/fig7_imagenetc_qcts}
-  \caption{\textbf{QCTS improves quality-awareness across 18 ImageNet-C corruptions.}
-    Each point is one corruption type (averaged across five severity levels); $x$-axis is raw $\rho(H,\bar q)$, $y$-axis is QCTS $\rho$. All points fall below the diagonal ($y{=}x$), confirming QCTS universally strengthens the entropy--quality correlation when corruption severity serves as $\bar q$.
-    \emph{Originally main Fig.~6; moved to supplementary in this version.}}
-  \label{fig:supp_imagenetc}
-\end{figure}
-
-\subsection{Zero-Shot Generalisation and Fitzpatrick Fairness (Originally Main Fig.~7)}
-\label{app:fig_generalisation}
-
-Fig.~\ref{fig:supp_generalisation} reproduces the cross-dataset and fairness panels. All quantitative values (including TS reversal on HAM/PAD, Fitzpatrick V--VI QCDI/$\rho$) are in Table~\ref{tab:generalisation} of the main paper.
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.95\linewidth]{figures/fig4_generalization}
-  \caption{\textbf{QCTS generalises across datasets, backbones, and skin tones.}
-    \textbf{(a)} Entropy vs.\ $\bar q$ on HAM10000 zero-shot.
-    \textbf{(b)} QCDI on three datasets across the evaluated baselines, with Kendall~$\tau$ summarising ranking consistency.
-    \textbf{(c)} Per-skin-type QCDI on ITB-Diverse for Std VIB and Std VIB + QCTS.
-    \emph{Originally main Fig.~7; moved to supplementary in this version.}}
-  \label{fig:supp_generalisation}
-\end{figure}
 
 %=====================================================================
 % Bibliography (supplementary)

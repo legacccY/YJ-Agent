@@ -1,139 +1,139 @@
-# VisiSkin-Agent: Quality-Adaptive Dermoscopy Triage via Q-VIB
+# VisiSkin-Agent — ICLR 2027 大项目入口
 
-Official implementation of **"Quality-Adaptive Dermoscopy Triage with Variational Information Bottleneck"** (MICCAI 2027 submission).
+**Deadline**：2026-09-22（ICLR 2027 abstract）/ 2026-09-29（full paper）
+**目标命中率**：**78-80%**（25 lever stack，详见 [`ACCEPTANCE_CRITERIA.md`](ACCEPTANCE_CRITERIA.md)）
+**当前状态**：M1 启动（2026-05-24），VisiEnhance Plan A 重训 + Theory 三定理 待动手
+**BMVC 2026**：已封印（[`meeting/BMVC/SUBMITTED.md`](meeting/BMVC/SUBMITTED.md)），不再修改
+**代码库 README**：[`CODEBASE_README.md`](CODEBASE_README.md)（reproduce 步骤、目录结构、baseline 列表）
 
-## Overview
+---
 
-VisiSkin-Agent is a clinical AI system that simultaneously assesses dermoscopy image quality and triages melanoma risk. The core model, **Q-VIB (Quality-Adaptive VIB)**, adapts its prior variance to image quality, producing well-calibrated uncertainty estimates that correlate with image quality (Proposition 2).
+## ⚡ 任何新会话第一步：读这 4 个文件（顺序固定）
 
-**Key results on ITB-LQ (low-quality images)**:
-- Q-VIB Full achieves **ECE 0.149** vs MC Dropout 0.613 / Deep Ensemble 0.440
-- AUC consistently better than Std VIB across 3 seeds (CV < 2%)
-- Entropy–q̄ Spearman ρ = −0.192 (p < 1e-24), confirming quality-aware uncertainty
+> ⚠️ **最怕另开 Sonnet 跑偏**。任何 Claude / Sonnet / Opus 会话进入本目录前，必须按顺序读完下列 4 个文件，否则会丢失关键约束。
 
-## Quick Start
+### 1️⃣ [`STORY_FRAMEWORK.md`](STORY_FRAMEWORK.md) — 故事框架主文档（反跑偏）
+- 10 个跑偏定义 + 三条核心论点（Claim 1/2/3）
+- 章节顺序锁定（§1 → §7 + Appendix）
+- 锁定数字表（5 大模块 + 8 dataset cross-domain + E1-E12）— 写作时直接抄
+- 防御性写作 10 条硬规则（R1-R10）
 
-```bash
-git clone <repo>
-cd project
-pip install -r requirements.txt
+### 2️⃣ [`ACCEPTANCE_CRITERIA.md`](ACCEPTANCE_CRITERIA.md) — 78-80% 命中率验收标准
+- 25 lever 命中率分解表（A 理论 / B 实验 / C 临床 / D 复现 / E 防御 / F 附加）
+- E1-E12 实验验收阈值
+- 红线清单（永久红线 + 月度红线）
+- 4 个月 M1-M4 milestone gate
 
-# Run the Gradio demo (uses pretrained weights from Zenodo)
-python app.py
-```
+### 3️⃣ [`DATA_INVENTORY.md`](DATA_INVENTORY.md) — 数据全景表
+- 7 个 checkpoint（VisiScore / Q-VIB Full / Std VIB / EDL / ResNet-50 / ViT-Tiny / ConvNeXt-Tiny / Swin-Tiny）
+- 4 原始数据集 + 4 跨域数据集 + ITB 4 子集
+- 关键脚本路径 + W1-W16 完成/待跑实验清单
 
-Pretrained weights and data splits: **[Zenodo DOI: TBD]**
+### 4️⃣ [`PROJECT_LOG.md`](PROJECT_LOG.md) — 时间倒序日志（单一日志真源）
+- 每次会话进度入此（替代旧 WORKLOG.md 重复部分）
+- 4 个月 M1-M4 日程表
 
-## Installation
+---
 
-```bash
-pip install -r requirements.txt
-```
+## 🔬 ICLR 2027 三条核心论点（详见 STORY_FRAMEWORK.md）
 
-Tested on Python 3.12, CUDA 12.6 (RTX 4070 Laptop GPU).
+1. **Quality-Conditioned Variational Information Bottleneck (Q-VIB)** — 把信息瓶颈的 marginal prior 条件化于感知质量，证明后验熵关于质量单调（Prop 2），attention drift Lipschitz 有界（Thm 1）
 
-## Reproducing Results
+2. **Diagnosis-Preserving Enhancement (VisiEnhance)** — NAFNet + FiLM + DP-Loss，证明增强降低熵（Prop 3），KL 约束保 mutual info 下界（Lemma 3）
 
-See `reproduce.sh` for the full pipeline. Steps at a glance:
+3. **Closed-Loop Quality-Triage Agent** — VisiScore → VisiEnhance → Q-VIB → Agent 双通道决策，给出 expected risk bound（Thm 2）— 不仅检测 + 增强，且**主动决策**何时增强、何时追问
 
-### 1. Data
+**与 BMVC QCTS 的本质区别**：BMVC = 在 frozen model 上做 post-hoc T(q̄) calibration；ICLR = end-to-end trainable probabilistic system with active intervention + 5-theorem closure。
 
-Download [ISIC 2020](https://www.kaggle.com/c/siim-isic-melanoma-classification/data) and [FitzPatrick17k](https://github.com/mattgroh/fitzpatrick17k):
+---
 
-```bash
-kaggle competitions download -c siim-isic-melanoma-classification
-kaggle datasets download -d mattgroh/fitzpatrick17k
-```
-
-Unzip to `data/raw/isic2020/` and `data/raw/fitzpatrick17k/` respectively.
-
-### 2. Precompute features
-
-```bash
-python precompute_efficientnet.py   # EfficientNet-B0 features (~728 MB)
-python create_split.py              # 70/10/20 split by isic_id
-```
-
-### 3. Train Q-VIB Full (F)
-
-```bash
-python train_qad.py --config configs/qad_efnet_nw0.yaml --seed 42 \
-    --ckpt-dir checkpoints/efnet_s42
-```
-
-Training ~30 min on RTX 4070 (30 epochs, batch 256).
-
-### 4. Run ITB benchmark
-
-```bash
-python benchmark/build_itb.py    # Build quality-stratified subsets
-python run_experiments.py        # Inference for all baselines
-python analyze_results.py        # Figures + significance tests
-```
-
-Figures are saved to `results/figures/` (DPI 300, MICCAI-compatible).
-
-### 5. External validation (HAM10000 / PAD-UFES)
-
-```bash
-python precompute_external_features.py
-python run_external.py
-python analyze_external.py
-```
-
-## Project Structure
+## 📂 当前活跃文件
 
 ```
 project/
-├── models/
-│   ├── q_vib_encoder.py           # Q-VIB encoder (Transformer + quality tokenizer)
-│   ├── qad_classifier.py          # MLP head
-│   ├── quality_adaptive_prior.py  # sigma^2(q-bar) prior (Lemma 1)
-│   └── q_vib_loss.py              # VIB + CE loss
-├── agent/
-│   ├── orchestrator.py            # ReAct agent (Qwen3-4B + rule fallback)
-│   └── tools.py                   # quality_assess / extract_features / triage
-├── baselines/
-│   ├── temperature_scaling.py
-│   └── focal_loss_baseline.py
-├── benchmark/
-│   ├── build_itb.py               # ITB: 4 quality-stratified subsets
-│   └── metrics.py                 # ECE / AUC / Brier / Sens@95Spec
-├── train_qad.py                   # Training script
-├── run_experiments.py             # ITB inference for all baselines
-├── analyze_results.py             # Figures and significance tests
-├── configs/
-│   ├── qad_efnet_nw0.yaml         # Q-VIB Full (recommended)
-│   ├── qad_stdvib_nw0.yaml        # Std VIB baseline
-│   └── qad_mcdropout.yaml         # MC Dropout baseline
-└── reproduce.sh                   # One-command reproduction
+├── README.md                  ← 本文件（精简入口）
+├── STORY_FRAMEWORK.md         ← ★ 故事框架（反跑偏主文档）
+├── ACCEPTANCE_CRITERIA.md     ← ★ 25 lever + 验收
+├── DATA_INVENTORY.md          ← ★ 数据 + checkpoint + 脚本全景
+├── PROJECT_LOG.md             ← 时间倒序日志
+├── CODEBASE_README.md         ← 代码库 reproduce 说明
+│
+├── plans/                     ← 阶段计划文件夹
+│   ├── 00_overview.md         ← 8 阶段路线（已刷新为 ICLR 2027）
+│   ├── phase_07_visienhance_planA_active.md ← ⏳ 当前 active
+│   └── phase_0{1-6}_*.md      ← ✅ done
+│
+├── meeting/
+│   ├── BMVC/                  ← 🔒 SEALED（不再修改）
+│   └── ICLR2027/              ← 论文骨架（M3 启动）
+│
+├── archive/                   ← 历史文档
+│   └── 2026-05_pre_iclr_reorg/
+│
+└── (代码 / 数据 / 实验脚本不动)
+    ├── models/ agent/ benchmark/ configs/
+    ├── data/ checkpoints/ results/
+    ├── scripts/ tests/
+    └── train_*.py / run_*.py / eval_*.py
 ```
 
-## Baselines
+---
 
-| ID | Name | Description |
-|----|------|-------------|
-| A | EfficientNet-B3 (Direct) | Fine-tuned classification without quality awareness |
-| D | Std VIB | Fixed prior N(0,I), no quality tokenizer |
-| E | Adaptive Prior | Quality-adaptive sigma^2(q-bar), no tokenizer |
-| **F** | **Q-VIB Full (Ours)** | **Full model: adaptive prior + quality tokenizer** |
-| TS | Std VIB + TS | Temperature scaling (Guo et al. 2017) |
-| H | Focal+LS | Focal loss + label smoothing |
-| I | MC Dropout | 30 MC forward passes, dropout=0.3 (Gal & Ghahramani 2016) |
-| J | Deep Ensemble | 5 independently trained Std VIB models (Lakshminarayanan 2017) |
-| G | Q-VIB+TokFT* | Supplementary: higher AUC at cost of calibration |
+## ⚠️ 严禁事项（违反即跑偏，详见 STORY_FRAMEWORK.md 第 10 条 + ACCEPTANCE_CRITERIA.md 红线）
 
-## Citation
+- ❌ 修改 BMVC 任何 tex / csv / fig（已封印，走 ICLR 分支）
+- ❌ 改 ICLR Abstract 第一句离开 closed-loop agent hook
+- ❌ 写「we prove TS reversal universal」或类似绝对化措辞
+- ❌ 凭印象写数字（必须 csv 核算 + bootstrap CI）
+- ❌ Reader Study 数据伪造（永久红线 1）
+- ❌ 联系诊所 / 线下采集（永久红线 2）
+- ❌ 改 §5 章节顺序（5.1→5.7 已锁）
+- ❌ 用扩散生成模型做皮肤镜增强（伪影风险，方法论红线）
 
-```bibtex
-@inproceedings{yu2027visiskin,
-  title={Quality-Adaptive Dermoscopy Triage with Variational Information Bottleneck},
-  author={Yu, Jia},
-  booktitle={Medical Image Computing and Computer Assisted Intervention (MICCAI)},
-  year={2027}
-}
+---
+
+## 📋 当前 25 Lever 进度速览（详见 ACCEPTANCE_CRITERIA.md）
+
+| 类 | Lever | 状态 | 备注 |
+|---|---|---|---|
+| **A 理论** | L1 Q-VIB Prop 1/Lemma 1/Thm 1/Prop 2 | ✅ | 已 done（archive/2026-05_pre_iclr_reorg/创新点/）|
+| | L2 VisiEnhance Prop 3 | 🚧 | V2.0plan.md 已草，需融入主文 |
+| | L3 DP-Loss Lemma 3 | 🚧 | 同上 |
+| | L4 Agent Thm 2 (risk bound) | ❌ | M1 D1-D7 推导 |
+| | L5 Q-VIB+QCTS Cor 1 ECE bound | ❌ | M1 D8-D14 |
+| **B 实验** | L6 5 backbone universality | ✅ | BMVC 复用 |
+| | L7 8 dataset cross-domain | 🚧 | 4 已 done，4 待跑（M1-M2）|
+| | L8 E1-E12 full | ❌ | M2，需 Plan A 重训完毕 |
+| | L9 6 SOTA enhancement compare | ❌ | M2 D8-D14 |
+| | L10 Fitz I-VI + sex + age fairness | 🚧 | M2 D15-D21 |
+| **C 临床** | L11 DCA + Net Benefit + Triage | ✅ | BMVC 已 done，扩展 |
+| | L12 5+ dermatologist baseline cite | ❌ | M3 D1-D7 文献整理 |
+| | L13 Cost-benefit analysis | ❌ | M3 D8-D14 |
+| | L14 LLM-as-clinical-judge | ❌ | M3 D15-D21 风险高 |
+| **D 复现** | L15 Anonymous GitHub 8 周 commit | 🚧 | release/ skeleton 在 BMVC，迁移过来 |
+| | L16 Docker + reproduce.sh | ❌ | M3 D22-D28 |
+| | L17 ITB v1.0 公开 + Zenodo DOI | ❌ | M4 |
+| | L18 HF checkpoint mirror | ❌ | M4 |
+| **E 防御** | L19 10 轮 LLM adversarial review | ❌ | M4 D1-D14 |
+| | L20 Pre-emptive rebuttal section | ❌ | M4 D15-D21 |
+| | L21 Failure mode taxonomy + mitigation | ❌ | M3 D22-D28 |
+| **F 附加** | L22 Supp 50-80 页 | ❌ | M3-M4 持续扩 |
+| | L23 Per-mechanism ablation | ❌ | M2 |
+| | L24 Real LQ ISIC 2024 SLICE-3D | ❌ | M2 D22-D28 |
+| | L25 ICLR-specific rebuttal pre-draft | ❌ | M4 D22-D28 |
+
+---
+
+## 🚦 任何会话开始前 checklist
+
+```
+1. cd D:/YJ-Agent/project
+2. Read STORY_FRAMEWORK.md
+3. Read ACCEPTANCE_CRITERIA.md（查当前任务的验收阈值）
+4. Read DATA_INVENTORY.md（确认要用的数据是否就位）
+5. Read PROJECT_LOG.md 最新 entry
+6. grep meeting/ICLR2027 确认无 BMVC 数字偷溜过来（必须重跑）
+7. 开始动手前 → 把任务在 TaskCreate 里登记
 ```
 
-## License
-
-MIT — see `LICENSE`.
+**如果用户描述的任务与 STORY_FRAMEWORK.md 冲突 → 停下来澄清，不要按用户描述执行**。

@@ -5,7 +5,10 @@
 面向自拍皮肤照片的视觉质量引导与智能分诊 Agent。
 核心创新：AI 不直接给诊断，而是先评估照片质量，质量不达标时引导用户重拍，再进行分析。
 
-**投稿目标**：ICLR 2027（CCF-A 级别）
+**投稿目标**：ICLR 2027（CCF-A 级别，deadline 2026-09-22 abstract / 09-29 full paper）
+**目标命中率**：78-80%（25 lever stack，详见 `../ACCEPTANCE_CRITERIA.md`）
+**主指导文档**：`../README.md` + `../STORY_FRAMEWORK.md` + `../ACCEPTANCE_CRITERIA.md` + `../DATA_INVENTORY.md` + `../PROJECT_LOG.md`
+**BMVC 状态**：✅ 已封印（详见 `../meeting/BMVC/SUBMITTED.md`），不再修改
 
 ---
 
@@ -19,8 +22,8 @@
 | 4 | Q-VIB 模块 | 质量条件化变分推断 + 分类 | Q-VIB 编码器 + 质量自适应先验 + 质量分词器 + 消融实验 | ✅ 完成 |
 | 5 | Agent 系统 | ReAct 多轮交互 + Gradio Demo | app.py + 端到端评测 | ✅ 完成 |
 | 6 | ITB 评测基准 | 构建 4 子集基准 + 9 条 baseline | 数据表 + 可视化图 | ✅ 完成 |
-| **7** | **VisiEnhance-Net** | **诊断保持型质量增强 + 双通道集成** | **增强模块 + 双通道决策 + 12 项实验** | ⏳ 待开始 |
-| **8** | **论文写作** | **ICLR 2027 初稿（CCF-A 标准）** | **main.tex（9 页）+ 附录 + 图表** | ⏳ 待开始 |
+| **7** | **VisiEnhance-Net Plan A** | **NAFNet-15M 重训 + DP-Loss + 双通道集成** | **增强模块 + Prop 3 + Lemma 3 + E1-E12** | ⏳ M1-M2 (2026-05-24 ~ 07-22) |
+| **8** | **论文写作 ICLR 2027** | **main.tex（9 页）+ Supp 50-80 页 + 25 lever 落地** | **完整 5-theorem closure + 10 轮 review** | ⏳ M3-M4 (2026-07-23 ~ 09-22) |
 
 ---
 
@@ -168,7 +171,10 @@
 | 阶段四 | `phase_04_Q-VIB.md` | ✅ 完成 |
 | 阶段五 | `phase_05_agent.md` | ✅ 完成 |
 | 阶段六 | `phase_06_benchmark.md` | ✅ 完成 |
-| **阶段七** | **`phase_07_visienhance.md`** | ⏳ 待开始 |
-| **阶段八** | **`phase_08_paper.md`** | ⏳ 待开始 |
+| **阶段七** | **`phase_07_visienhance_planA_active.md`** ⭐ | ⏳ M1-M2 active |
+| 阶段七 spec | `phase_07_visienhance.md` | 📚 参考（V1 原始设计）|
+| **阶段八** | **`phase_08_paper.md`** | ⏳ M3-M4 待开始 |
 
 > 技术设计参考：`V2.0plan.md`（VisiEnhance-Net 详细技术报告，含架构图、伪代码、参考文献）
+> 5-theorem closure 数学推导：`../archive/2026-05_pre_iclr_reorg/创新点/创新点数学推导.md` (Prop 1-2 / Lemma 1-2 / Thm 1)
+> ICLR 整体反跑偏 + 25 lever 命中率分解：`../STORY_FRAMEWORK.md` + `../ACCEPTANCE_CRITERIA.md`

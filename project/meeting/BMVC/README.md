@@ -1,8 +1,11 @@
-# BMVC P2 投稿目录
+# 🔒 BMVC P2 投稿目录（SEALED 2026-05-24）
+
+> **此目录已封印。所有文件冻结。新工作走 ICLR 2027 大项目分支（`project/README.md`）。**
+> **详细封印说明见 [`SUBMITTED.md`](SUBMITTED.md)。**
 
 **Deadline**：2026-07-15 ~ 07-18（60 天扩展路线）
 **目标命中率**：**75-77%**（网上获取约束 + LLM-based adversarial review）
-**当前状态**：W1 D1 完成（5-20）— §5.4 universality 落地，故事框架定稿
+**最终状态**：主文 10 页（hard limit 达标）+ Supp 18 页 + 3 reviewer 18 issues 全应答 + A1 forward ablation 硬实证
 
 ---
 

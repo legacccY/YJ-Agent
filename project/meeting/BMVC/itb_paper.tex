@@ -9,10 +9,11 @@
 \runninghead{Anonymous}{Quality-Conditioned Temperature Scaling}
 
 % ── Packages ──
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{proposition}{Proposition}
 \usepackage{booktabs}
 \usepackage{multirow}
-\usepackage[font=footnotesize,labelfont=bf]{caption}
+\usepackage[font=footnotesize,labelfont=bf,skip=6pt]{caption}
 \usepackage{subcaption}
 \usepackage{enumitem}
 \usepackage{hyperref}
@@ -35,42 +36,41 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-\textbf{Problem.} Image quality varies across the inputs a deployed classifier receives, yet the post-hoc pipeline shipped in practice---a deterministic-$\mu$ forward followed by scalar temperature scaling (TS)---can silently reverse the entropy--quality correlation: on a quality-fragile Std~VIB dermoscopy backbone, the MC-marginalised Spearman $\rho{=}{-}0.163$ becomes $\rho{=}{+}0.241$ after the deterministic-$\mu$ deployment forward ($\Delta\rho{=}{+}0.404$, $p{<}10^{-37}$), and scalar TS cannot undo this because it is monotonic in deterministic logits ($\Delta\rho{<}10^{-5}$). On ViT-Tiny (no MC component) TS instead flips the Quality-Calibration Degradation Index (QCDI $+0.023\to-0.029$) by trading high-quality for low-quality ECE; on the already quality-aware ResNet-50 the pipeline is neutral.
-\textbf{Method.} We propose Quality-Conditioned Temperature Scaling (QCTS), a two-parameter post-hoc calibrator $T(\bar q){=}\mathrm{softplus}(T_0{+}\alpha(1{-}\bar q))$ that adds exactly one slope along a per-input quality scalar $\bar q$---the first post-hoc calibrator with the degree of freedom required to undo the reversal. Alongside QCTS we define Quality-Aware Calibration (QAC), the QCDI scalar, and a quality-oblivious/fragile/aware taxonomy, instantiated on the Image Triage Benchmark (ITB) over ISIC~2020, FitzPatrick17k, HAM10000, and PAD-UFES.
-\textbf{Result.} QCTS cuts QCDI from $+0.015$ to $+0.004$ ($73\%$ over TS) and LQ ECE by $46\%$ on Std~VIB, transfers across five backbone families and to ImageNet-C corruption severity as an a-priori quality scalar, and preserves the directional gain cross-dataset on HAM10000 and PAD-UFES; MC Dropout and Deep Ensembles remain quality-oblivious (LQ ECE $0.44$--$0.62$, roughly triple Std~VIB's $0.146$). We will release ITB and QCTS.
+\textbf{Problem.} Image quality varies across the inputs a deployed classifier receives, yet the post-hoc pipeline shipped in practice---a deterministic mean-latent forward followed by scalar temperature scaling (TS)---can silently reverse the entropy--quality correlation on a quality-fragile backbone, turning a model that was weakly more uncertain on low-quality inputs into one that is more confident on them. We trace the reversal to a forward-pass swap between training-time MC-marginalisation and deployment-time deterministic forward; scalar TS cannot undo this because it is monotonic in deterministic logits. On a strictly deterministic backbone the same TS objective instead flips a bin-based calibration discrepancy by trading high-quality for low-quality ECE; on a strongly quality-aware backbone the pipeline is neutral.
+\textbf{Method.} We propose Quality-Conditioned Temperature Scaling (QCTS), a two-parameter post-hoc calibrator that adds exactly one slope along a per-input quality scalar $\bar q$---the first post-hoc calibrator with the degree of freedom required to undo the reversal. Alongside QCTS we define Quality-Aware Calibration (QAC), the Quality-Calibration Degradation Index (QCDI), and a quality-oblivious/fragile/aware taxonomy, instantiated on the Image Triage Benchmark (ITB) over ISIC~2020, FitzPatrick17k, HAM10000, and PAD-UFES.
+\textbf{Result.} QCTS substantially reduces both QCDI and low-quality ECE on a Std~VIB backbone, transfers across five backbone families and to ImageNet-C corruption severity as an a-priori quality scalar, and preserves the directional gain cross-dataset on HAM10000 and PAD-UFES; MC Dropout and Deep Ensembles remain quality-oblivious, with low-quality ECE several times higher than Std~VIB. We will release ITB and QCTS.
 \end{abstract}
 
 %=====================================================================
 \section{Introduction}
 %=====================================================================
 
-Medical-AI calibration is typically evaluated as an aggregate quantity (global ECE, NLL) on curated clinical datasets~\cite{codella2018skin,tschandl2019ham10000,guo2017calibration}, yet real evaluation pools contain images of widely varying quality~\cite{esteva2017dermatologist,tschandl2020human}. Whether a calibrator remains reliable on the low-quality subset---blur, poor lighting, colour distortion, framing errors---is not part of the standard reporting protocol, even though that subset is where confident-but-wrong predictions matter most for downstream triage.
+A deployed medical classifier sees images of widely varying quality, yet calibration is still reported as a single aggregate number~\cite{codella2018skin,guo2017calibration}. The subset that matters most for triage---blurred, poorly lit, or off-frame inputs---is precisely where confident-but-wrong predictions cause downstream harm, and precisely where standard reporting is silent~\cite{esteva2017dermatologist,tschandl2020human}.
 
-Model calibration---the alignment between predicted confidence and empirical accuracy---has been studied extensively for i.i.d.\ settings~\cite{guo2017calibration,ovadia2019uncertainty}. Methods from temperature scaling~\cite{guo2017calibration} to Monte Carlo Dropout~\cite{gal2016dropout} and deep ensembles~\cite{lakshminarayanan2017ensemble} are designed under the assumption that training and deployment distributions match. Real-world deployment violates this: image quality varies dramatically across users, devices, and environments, and calibration can collapse on the very inputs that most demand caution (Fig.~\ref{fig:teaser}).
+Existing calibrators target the i.i.d.\ setting~\cite{guo2017calibration,ovadia2019uncertainty,gal2016dropout,lakshminarayanan2017ensemble}. None conditions on per-input quality. We make this dependence explicit through a per-image quality scalar $\bar q$ (Fig.~\ref{fig:method}) and ask how each calibrator behaves as a function of $\bar q$.
 
 \begin{figure*}[!tbp]
   \centering
-  \includegraphics[width=\linewidth]{figures/fig1_teaser}
-  \caption{\textbf{Calibration collapse under image quality shift (all four lesions are ground-truth benign).}
-    \emph{Row~1}: clean dermoscopy inputs --- column 1 is a high-quality clinical reference, columns 2--4 are the same lesion pre-degradation.
-    \emph{Row~2}: after blur ($q_1$), colour shift ($q_4$), and combined blur+contrast attacks (primary affected dimension annotated in red).
-    \emph{Row~3}: Std~VIB assigns 81--96\% melanoma probability under any heavy degradation (red); QCTS (orange) brings predictions down by 13--14\,pp without retraining.
-    \emph{Takeaway:} a quality-aware post-hoc correction softens exactly the cases where a quality-oblivious model would be confidently wrong.}
-  \label{fig:teaser}
+  \includegraphics[width=\linewidth]{figures/fig_method}
+  \caption{\textbf{Method overview.}
+    \textbf{(a)} \emph{ITB construction}: four dermoscopy datasets are programmatically degraded across five quality dimensions, scored by a 5-head IQA module to produce a per-image $\bar q \in [0,1]$, and partitioned into the LQ/Edge/HQ/Diverse subsets used for evaluation.
+    \textbf{(b)} \emph{QCTS}: on a frozen backbone, the logits $z$ are rescaled by a quality-conditioned temperature $T(\bar q) = \mathrm{softplus}(T_0 + \alpha(1{-}\bar q))$; the two parameters $T_0, \alpha$ are fit by L-BFGS on the validation set, and $\alpha\!=\!0$ recovers standard temperature scaling.
+    \emph{Takeaway:} ITB and QCTS share a single per-image $\bar q$, so adapting the framework to a new modality reduces to swapping the IQA module.}
+  \label{fig:method}
 \end{figure*}
 
-We argue that this failure mode---which we term \textbf{quality-oblivious calibration}---is a blind spot in contemporary medical-AI evaluation. Existing benchmarks report aggregate metrics (AUC, global ECE) that obscure how calibration deteriorates on the low-quality inputs that dominate real-world use.
+A counter-intuitive observation motivates our method. The pipeline shipped in practice---a deterministic mean-latent forward followed by scalar temperature scaling (TS)---does not just fail to make a quality-fragile backbone aware of quality; it \emph{reverses} the sign of the entropy--quality correlation, turning weak quality-awareness into active quality-confusion (Table~\ref{tab:main}). The reversal is a property of the deployable pipeline, not of TS as a calibrator: on a deterministic backbone TS preserves rank but flips the binned discrepancy instead, and on a strongly quality-aware backbone the pipeline is neutral.
 
-A counter-intuitive observation motivates our method. The post-hoc pipeline shipped in practice---a deterministic-$\mu$ forward followed by scalar temperature scaling~\cite{guo2017calibration}---does not merely fail to make a quality-fragile backbone (Std~VIB, $n{=}2{,}820$) quality-aware; it \emph{reverses} the sign of the entropy--quality Spearman correlation, taking the MC-marginalised raw $\rho{=}-0.163$ to deployment-time $\rho{=}+0.241$ (Table~\ref{tab:main}). A 3-way forward ablation (\S\ref{sec:main_results}) attributes the flip to the MC$\to$deterministic forward swap ($\Delta\rho{=}+0.404$, $100\%$ of the effect); scalar TS itself preserves the rank ($\Delta\rho{<}10^{-5}$, consistent with the fact that scalar TS is monotonic in deterministic logits). \S\ref{sec:universality} shows that on ViT-Tiny---a strictly deterministic classifier with no MC component---the within-forward effect of TS shows up instead as a QCDI sign-flip (raw $+0.023\to$ TS $-0.029$), while a strongly quality-aware ResNet-50 absorbs the pipeline without inversion.
-
-In response, we propose Quality-Aware Calibration (QAC) as a dimension of evaluation (\S\ref{sec:qac}): a scalar QCDI and a quality-oblivious/fragile/aware taxonomy. We instantiate it as the Image Triage Benchmark (ITB, \S\ref{sec:itb}) over four dermoscopy datasets and evaluate seven methods spanning discriminative, Bayesian, ensemble, evidential, and post-hoc paradigms, with architecture probes on four additional backbones (\S\ref{sec:universality}). As a deployable remedy we propose Quality-Conditioned Temperature Scaling (QCTS, \S\ref{sec:qcts}): a two-parameter post-hoc correction that conditions the TS temperature on the per-image quality score, cutting QCDI from $+0.015$ to $+0.004$ on Std~VIB ($73\%$ over TS) without retraining.
+We address this with three contributions. \textbf{(i)} A protocol---Quality-Aware Calibration (QAC), the Quality-Calibration Degradation Index (QCDI), and an oblivious/fragile/aware taxonomy---that surfaces the failure aggregate ECE hides. \textbf{(ii)} The Image Triage Benchmark (ITB), four dermoscopy datasets stratified by $\bar q$, on which we evaluate seven calibration paradigms and five backbone families. \textbf{(iii)} Quality-Conditioned Temperature Scaling (QCTS), a two-parameter post-hoc calibrator that adds one slope along $\bar q$---the minimal degree of freedom needed to undo the reversal---and cuts QCDI by $73\%$ over TS on Std~VIB without retraining.
 
 %=====================================================================
 \section{Related Work}
 %=====================================================================
 
 \textbf{Calibration.}
-Modern networks are routinely miscalibrated~\cite{guo2017calibration}. Temperature scaling~\cite{guo2017calibration} remains the standard post-hoc calibrator. Bayesian approximations---MC Dropout~\cite{gal2016dropout}, Deep Ensembles~\cite{lakshminarayanan2017ensemble,ovadia2019uncertainty}---estimate epistemic but not input-dependent uncertainty~\cite{malinin2019predictive}; Evidential Deep Learning~\cite{sensoy2018evidential} models input-dependent uncertainty at training time via a Dirichlet output. The Variational Information Bottleneck~\cite{alemi2017vib} regularises a stochastic latent $Z$; throughout, ``Std~VIB'' is an EfficientNet-B3 trained with the VIB objective at prior $\mathcal{N}(0,I)$. Conditional and group-calibration methods (multicalibration~\cite{hebert2018multicalibration,deng2023happymap}, local calibration~\cite{luo2023local}) require pre-specified groups or kernels, not a continuous quality signal. Multi-domain TS~\cite{yu2022robust} assumes a known partition; quality-binned isotonic regression~\cite{zadrozny2002transforming} drives $\rho(H,\qbar)$ positive (quality-confused, \S\ref{sec:qcts_analysis}). QCTS fills the gap.
+Modern networks are routinely miscalibrated~\cite{guo2017calibration}, and temperature scaling~\cite{guo2017calibration} remains the standard post-hoc fix. Bayesian approximations---MC Dropout~\cite{gal2016dropout}, Deep Ensembles~\cite{lakshminarayanan2017ensemble,ovadia2019uncertainty}---inject parameter-level uncertainty but not input-dependent uncertainty~\cite{malinin2019predictive}; Evidential Deep Learning~\cite{sensoy2018evidential} adds input-dependent uncertainty through a Dirichlet output at training time. Throughout, ``Std~VIB'' is an EfficientNet-B3 trained with the Variational Information Bottleneck~\cite{alemi2017vib} at prior $\mathcal{N}(0,I)$.
+
+\emph{Where QCTS sits.} The closest existing post-hoc family is conditional calibration. Multicalibration~\cite{hebert2018multicalibration,deng2023happymap} and local calibration~\cite{luo2023local} require pre-specified groups or kernels; multi-domain TS~\cite{yu2022robust} assumes a known discrete partition; quality-binned isotonic regression~\cite{zadrozny2002transforming} drives $\rho(H,\qbar)$ positive in our setting (quality-confused, \S\ref{sec:qcts_analysis}). All three discretise the conditioning signal. QCTS is the first post-hoc calibrator that conditions on a \emph{continuous} per-input scalar and adds exactly one degree of freedom along it---the minimum required, by Proposition~\ref{prop:ts_rank}, to escape the rank inversion that scalar TS provably cannot undo.
 
 \textbf{Medical-AI benchmarks and IQA.}
 Curated benchmarks~\cite{irvin2019chexpert,johnson2019mimic,menze2014multimodal,codella2018skin} prioritise discriminative accuracy on clean data; distribution-shift work~\cite{koh2021wilds,subbaswamy2021evaluating,seyyed2021underdiagnosis} examines dataset and subgroup shift, but none systematically evaluates how \emph{image quality} affects \emph{calibration quality}. Dermoscopic blind IQA~\cite{barata2023quality,park2023quality} produces a single quality score; we instead use a 5-head IQA module trained on synthetic degradations (supp \S A1). Teledermatology deployment studies~\cite{esteva2017dermatologist,tschandl2020human,winkler2022dermoscopy,liu2020deep} highlight degradation on non-clinical images; ITB+QCTS supply the missing evaluation protocol and lightweight remedy.
@@ -95,22 +95,26 @@ The intermediate band $[0.45,0.50]$ is reserved for the Edge stratum and omitted
 Three behavioural regimes by QCDI magnitude: \textbf{Quality-Oblivious} ($\mathrm{QCDI}{>}0.10$; LQ ECE $\gg$ HQ ECE; representative: MC Dropout, Deep Ensembles), \textbf{Quality-Fragile} ($0{<}\mathrm{QCDI}{\le}0.10$; mild quality sensitivity; Std~VIB, Focal+LS), and \textbf{Quality-Aware} ($\mathrm{QCDI}{\le}0$ with $\rho{<}-0.15$, see below; our QCTS). Quality-oblivious methods require structural change; quality-fragile methods are fixable with lightweight post-hoc correction.
 
 \textbf{Disambiguating QCDI sign-flips.}
-Negative QCDI does not always mean genuine quality-awareness. A method is \emph{genuinely quality-aware} if QCDI${\le}0$ \textbf{and} $\rho(H,\qbar){<}-\rho_\text{noise}$, where the sampling-noise floor at $n{=}2{,}820$ is $\rho_\text{noise}{\approx}0.04$ at $p{=}0.01$ under a permutation null (supp \S A14). We use $-0.15$ as a conservative threshold (well above the noise floor; robust to sweep $[-0.10,-0.20]$). A method is \emph{quality-confused} if QCDI${\le}0$ is driven by HQ ECE inflation with $|\rho|{<}\rho_\text{noise}$ or $\rho{>}0$. In Table~\ref{tab:universality}, ViT-Tiny$+$TS is quality-confused (QCDI${=}{-}0.029$ via HQ ECE $0.036\to0.072$, $\rho$ unchanged); ViT-Tiny$+$QCTS is genuinely quality-aware (QCDI${=}{-}0.017$, $\rho{=}{-}0.266$, stable HQ ECE).
+Negative QCDI alone is insufficient. A method is \emph{genuinely quality-aware} only when it is paired with negative $\rho$; it is \emph{quality-confused} when QCDI${\le}0$ comes from inflating HQ ECE rather than reducing LQ ECE, with $\rho$ flat or positive. ViT-Tiny$+$TS illustrates the latter and ViT-Tiny$+$QCTS the former (Table~\ref{tab:universality}); thresholds and the permutation noise floor are in supp \S A14.
+
+\begin{proposition}[Scalar TS preserves entropy rank, binary case]
+\label{prop:ts_rank}
+Let $d(x){=}z_1(x){-}z_0(x)$ be the binary logit margin and $H_T(x){=}h\!\left(\sigma(d(x)/T)\right)$ with $h$ the binary entropy and $\sigma$ the logistic. For any $T{>}0$ uniform across inputs,
+\begin{equation}
+\mathrm{rank}\{H_T(x_i)\}_{i=1}^{N} \;=\; \mathrm{rank}\{H_1(x_i)\}_{i=1}^{N},
+\label{eq:rank_invariance}
+\end{equation}
+so the Spearman correlation $\rho(H_T,\bar q)$ is invariant to scalar TS.
+\end{proposition}
+\begin{proof}
+$h$ is symmetric and strictly concave on $[0,1]$ with max at $\tfrac12$, and $\sigma$ is strictly monotone, hence $h(\sigma(u))$ is strictly decreasing in $|u|$. Since $T{>}0$ is shared across $x_i$, $|d(x_i)/T|$ has the same ordering as $|d(x_i)|$, giving \eqref{eq:rank_invariance}; Spearman depends only on ranks. $\square$
+\end{proof}
+Proposition~\ref{prop:ts_rank} is the formal statement of why scalar TS cannot undo a $\rho$ reversal once it is introduced upstream---used in the forward-ablation decomposition of \S\ref{sec:main_results} and the discussion of \S\ref{sec:discussion}.
 
 %=====================================================================
 \section{ITB Benchmark and QCTS Method}
 \label{sec:method}
 %=====================================================================
-
-\begin{figure*}[!tbp]
-  \centering
-  \includegraphics[width=\linewidth]{figures/fig_method}
-  \caption{\textbf{Method overview.}
-    \textbf{(a)} \emph{ITB construction}: four dermoscopy datasets are programmatically degraded across five quality dimensions, scored by a 5-head IQA module to produce a per-image $\bar q \in [0,1]$, and partitioned into the LQ/Edge/HQ/Diverse subsets used for evaluation.
-    \textbf{(b)} \emph{QCTS}: on a frozen backbone, the logits $z$ are rescaled by a quality-conditioned temperature $T(\bar q) = \mathrm{softplus}(T_0 + \alpha(1{-}\bar q))$; the two parameters $T_0, \alpha$ are fit by L-BFGS on the validation set, and $\alpha\!=\!0$ recovers standard temperature scaling.
-    \emph{Takeaway:} ITB and QCTS share a single per-image $\bar q$, so adapting the framework to a new modality reduces to swapping the IQA module.}
-  \label{fig:method}
-\end{figure*}
 
 We describe ITB (\S\ref{sec:itb}, Fig.~\ref{fig:method}a) and QCTS (\S\ref{sec:qcts}, Fig.~\ref{fig:method}b).
 
@@ -127,7 +131,12 @@ Standard TS learns a single $T\in\R^+$ minimising validation NLL; because $T$ is
 T(\qbar) = \mathrm{softplus}\big(T_0 + \alpha (1 - \qbar)\big),\qquad T_0\in\R,\ \alpha\in\R_{\ge 0},
 \label{eq:qcts}
 \end{equation}
-with $\mathrm{softplus}(u){=}\log(1{+}e^u)$ guaranteeing $T{>}0$. Eq.~\ref{eq:qcts} is a \emph{design choice}: we list three inductive biases any quality-conditioned temperature should respect---\emph{(B1) Monotonicity} ($\qbar\mapsto T$ non-increasing, so degraded inputs are softened more), \emph{(B2) Positivity} ($T{>}0$), \emph{(B3) Smoothness and TS reduction} ($T$ smooth in $\qbar$ and recovers TS at $\alpha{=}0$)---which are necessary but not sufficient: infinitely many functions satisfy them. We then ablate among the families that minimally add a quality slope: linear $T_0{+}\alpha(1{-}\qbar)$ violates B2 when $T_0{+}\alpha{<}0$; ReLU breaks B3 at the rectification point; piecewise-constant minimises validation NLL but produces the worst QCDI (Table~\ref{tab:ablation}). Softplus is the smallest-parameter monotone-positive-smooth form we tested; we report results on it and treat it as the simplest defensible default rather than a derived optimum. With $f_\theta$ frozen we fit $(T_0,\alpha)$ by L-BFGS on the same NLL objective as TS, $-\sum_{(x,y)\in\D_\text{val}}\log\mathrm{softmax}(z(x)/T(\qbar(x)))_y$, initialised at zero, up to 200 iterations.
+with $\mathrm{softplus}(u){=}\log(1{+}e^u)$. Eq.~\ref{eq:qcts} is a \emph{design choice}: we list three inductive biases any quality-conditioned temperature should respect---\emph{(B1) Monotonicity} ($\qbar\mapsto T$ non-increasing, so degraded inputs are softened more), \emph{(B2) Positivity} ($T{>}0$), \emph{(B3) Smoothness and TS reduction} ($T$ smooth in $\qbar$ and recovers TS at $\alpha{=}0$). Eq.~\ref{eq:qcts} satisfies all three. Let $u(\qbar){=}T_0{+}\alpha(1{-}\qbar)$. Differentiating and using $\mathrm{softplus}'{=}\sigma$ (logistic):
+\begin{equation}
+\frac{\partial T}{\partial \qbar} \;=\; \sigma\!\big(u(\qbar)\big)\cdot(-\alpha) \;\le\; 0\quad\text{for } \alpha{\ge}0,
+\label{eq:b1}
+\end{equation}
+giving B1. B2 holds because $\mathrm{softplus}(u){>}0$ for all $u\in\R$, so the search over $T_0,\alpha$ is unconstrained. B3 holds because $T$ is $C^\infty$ in $\qbar$ and at $\alpha{=}0$ collapses to $T{\equiv}\mathrm{softplus}(T_0)$, a constant temperature; reparametrising $T_0{=}\mathrm{softplus}^{-1}(T_\mathrm{TS})$ recovers standard TS exactly. These three are necessary but not sufficient---infinitely many functions satisfy them. We then ablate among the families that minimally add a quality slope: linear $T_0{+}\alpha(1{-}\qbar)$ violates B2 when $T_0{+}\alpha{<}0$; ReLU breaks B3 at the rectification point; piecewise-constant minimises validation NLL but produces the worst QCDI (Table~\ref{tab:ablation}). Softplus is the smallest-parameter monotone-positive-smooth form we tested; we report results on it and treat it as the simplest defensible default rather than a derived optimum. With $f_\theta$ frozen we fit $(T_0,\alpha)$ by L-BFGS on the same NLL objective as TS, $-\sum_{(x,y)\in\D_\text{val}}\log\mathrm{softmax}(z(x)/T(\qbar(x)))_y$, initialised at zero, up to 200 iterations.
 
 \textbf{Connection to Information Bottleneck.}
 Larger $T$ flattens the predictive distribution analogously to a higher VIB~\cite{alemi2017vib} compression $\beta$; QCTS makes this compression quality-dependent ($T(\qbar{=}0){\approx}2.24$ vs.\ $T(\qbar{=}1){\approx}1.44$ on Std~VIB, $56\%$ higher on LQ). A PAC-Bayes motivation~\cite{mcallester1999pac} is in supp \S A22.
@@ -147,52 +156,109 @@ All models trained on ISIC~2020 (70/10/20). EfficientNet-based models use AdamW 
 \subsection{Main Results and Calibration Taxonomy}
 \label{sec:main_results}
 
-The methods with the strongest aggregate ITB performance are the most miscalibrated on low-quality inputs. MC Dropout and Deep Ensemble reach the highest ITB-LQ AUC (0.693, 0.711; Table~\ref{tab:main}) but the worst ECE ($0.615$, $0.440$, ${\approx}3\times$ Std~VIB); both sit in the Quality-Oblivious band (QCDI${>}0.10$). Standard TS lifts Std~VIB's global ECE only slightly and leaves QCDI unchanged ($+0.015$ vs.\ $+0.016$); EDL---the one training-time quality-aware method---carries ECE above $0.27$ on both strata and barely positive $\rho$ ($+0.039$), Quality-Fragile. Only Std~VIB$+$QCTS comes out clearly quality-aware: $\rho{=}-0.249$ ($p{<}10^{-30}$), the strongest negative in Table~\ref{tab:main}; MC Dropout and Deep Ensemble manage only $\rho\approx-0.11$ to $-0.12$. Per-stratum reliability diagrams (supp Fig.~S3, \S A18) make the failure visible: on ITB-LQ MC Dropout drifts substantially below the diagonal while QCTS stays closest to it. Restricting to the ITB-LQ stratum alone, MC Dropout's correlation flips to $\rho{=}+0.350$ ($p{<}10^{-9}$) and Deep Ensemble's to $\rho{=}+0.133$ ($p{=}0.021$): a Simpson-style divergence in which methods that appear marginally quality-aware in aggregate are quality-oblivious in the critical LQ tier.
+\textbf{Aggregate performance hides the failure mode.}
+Table~\ref{tab:main} ranks seven calibration paradigms. The two methods with the highest ITB-LQ AUC---MC Dropout and Deep Ensemble---also carry the worst LQ ECE, both roughly three times Std~VIB's, and both land in the Quality-Oblivious band (QCDI${>}0.10$). Restricted to ITB-LQ alone, MC Dropout's $\rho$ flips positive ($+0.350$) and Deep Ensemble's becomes mildly positive: a Simpson-style divergence where aggregate quality-awareness disappears precisely on the stratum that motivates the metric. TS leaves QCDI essentially unchanged, and EDL---the one training-time quality-aware baseline---sits at Quality-Fragile. Only Std~VIB$+$QCTS is genuinely quality-aware on both criteria: the strongest negative $\rho$ in the table and QCDI an order of magnitude smaller than uncalibrated Std~VIB. Reliability diagrams in supp \S A18 make this visible: MC Dropout falls well off the diagonal on ITB-LQ while QCTS tracks it closely.
 
-On Std~VIB---a quality-fragile backbone whose VIB bottleneck intentionally suppresses logit magnitude (ITB-LQ AUC $0.553$, $\rho{=}-0.153$ on the full pool, $n{=}2{,}820$, $p{<}10^{-15}$)---TS produces a deployment-time predictive distribution with $\rho{=}+0.241$ ($p{<}10^{-37}$, Table~\ref{tab:main}). A 3-way forward ablation isolates the source of this flip (supp \S A19): \emph{(a)} MC-marginalised raw forward $\rho_a{=}{-}0.163$; \emph{(b)} raw deterministic-$\mu$ forward (T${=}1$) $\rho_b{=}{+}0.241$; \emph{(c)} deterministic-$\mu$ + scalar TS (T${=}2.32$) $\rho_c{=}{+}0.241$. The MC$\to$deterministic forward swap accounts for $|\Delta\rho_{a\to b}|{=}0.404$ ($100\%$ of the flip); scalar TS contributes $|\Delta\rho_{b\to c}|{<}10^{-5}$, consistent with the fact that scalar TS is monotonic in deterministic logits and cannot change Spearman ranks. The implication is sharper than ``TS is broken'': practitioners ship the deterministic-$\mu$ forward (not MC sampling) and then apply scalar TS that cannot undo the rank inversion introduced by the forward-pass swap. On ViT-Tiny---a strictly deterministic classifier with no MC component---this confound vanishes; TS leaves $\rho$ unchanged but flips QCDI ($+0.023\to-0.029$), isolating the within-forward consequence of the TS objective from the MC-vs-deterministic component that confounds the Std~VIB row. On strongly quality-aware ResNet-50 TS is neutral on both metrics. QCTS keeps QCDI near zero and strengthens negative $\rho$ on every backbone tested (Table~\ref{tab:universality}).
+\textbf{TS reverses the entropy--quality correlation on Std~VIB.}
+Raw Std~VIB has $\rho{=}-0.153$; after the deployable pipeline, $\rho{=}+0.241$ (Table~\ref{tab:main}). Write the predictive distribution along the pipeline as
+\begin{equation}
+\underbrace{\E_{z\sim\mathcal{N}(\mu,\Sigma)}\!\big[\sigma(z)\big]}_{p_a(x):\;\text{MC, raw}}
+\;\;\to\;\;
+\underbrace{\sigma\!\big(\mu(x)\big)}_{p_b(x):\;\text{det.-}\mu,\;T{=}1}
+\;\;\to\;\;
+\underbrace{\sigma\!\big(\mu(x)/T_\mathrm{TS}\big)}_{p_c(x):\;\text{det.-}\mu,\;T{=}T_\mathrm{TS}},
+\label{eq:pipeline}
+\end{equation}
+and let $\rho_\bullet{=}\rho(H(p_\bullet),\bar q)$. Empirically $\rho_a{=}{-}0.163$, $\rho_b{=}{+}0.241$, $\rho_c{=}{+}0.241$, so $\Delta\rho_{a\to b}{=}{+}0.404$ ($100\%$ of the flip) and $\Delta\rho_{b\to c}{<}10^{-5}$. The $b{\to}c$ vanishing follows directly from Proposition~\ref{prop:ts_rank}: $p_b$ and $p_c$ share the deterministic margin $\mu(x)$ up to a global $1/T_\mathrm{TS}$ rescale, so ranks (and hence Spearman) are identical. The $a{\to}b$ flip is the substantive one: collapsing the MC marginal $\E_z[\sigma(z)]$ to the deterministic mean $\sigma(\mu)$ discards the input-dependent variance $\Sigma(x)$ that carried the negative quality correlation. TS as an objective is innocent of the rank flip; the deployable pipeline introduces it upstream, and scalar TS provably cannot undo it.
+
+On ViT-Tiny (strictly deterministic, no MC component) the rank-confound vanishes and TS instead flips the binned discrepancy---ECE-HQ inflates and QCDI crosses zero---the within-forward consequence of the TS objective on a bin-based metric. On the strongly quality-aware ResNet-50 the pipeline is neutral on both metrics. QCTS keeps QCDI near zero and strengthens negative $\rho$ on every backbone tested (Table~\ref{tab:universality}).
 
 \input{table1_main}
 
 \subsection{QCTS Analysis}
 \label{sec:qcts_analysis}
 
-Applied to a frozen Std~VIB backbone, QCTS reduces ECE on ITB-LQ from $0.146$ to $0.079$ ($46\%$ relative) while leaving HQ ECE essentially flat ($0.129\to0.075$): a selective correction that softens low-quality predictions without harming high-quality calibration. QCDI drops from $+0.016$ to $+0.004$ ($75\%$ over Std~VIB, $73\%$ over TS), making QCTS the only post-hoc method in our benchmark to enter the Quality-Aware regime. All three seeds converge to positive $\alpha$ ($0.34, 0.96, 0.37$); profiling $T_0$, the NLL forms a shallow basin around $\alpha\in[0.7,1.1]$ ($\Delta\text{NLL}{<}10^{-4}$ within this band) widening to $\Delta\text{NLL}{<}1.2{\times}10^{-3}$ across $\alpha\in[0.20,1.35]$ (supp \S A17). Two of three seeds ($\alpha{=}0.34,0.37$) sit at the boundary of the wider band rather than at the basin minimum, indicating seed-dependent initialisation rather than true multi-modality; a 10-seed re-run is left to future work. We recommend the median-seed default $\alpha{=}0.37$ for reproducibility despite its sub-optimal NLL, since all three seeds remain in the Quality-Aware regime (QCDI ${\le}0.006$). Table~\ref{tab:ablation} compares softplus against linear and 3-bin piecewise-constant alternatives: piecewise minimises validation NLL but produces the worst QCDI and a near-zero entropy--$\qbar$ correlation, so NLL alone is not a sufficient objective for quality-aware calibration. Five pairwise QCTS-vs-baseline ECE comparisons survive Bonferroni correction (smallest corrected $p{=}0.0015$); at the minimum clinically meaningful ECE reduction of $0.03$, $n{=}117$ achieves $80\%$ power, so $n_\text{LQ}{=}300$ is well-powered (supp \S A16, Attack 3). Per-degradation, QCTS cuts ITB-LQ ECE by $51\%$ on blur and $41\%$ on colour-temperature. \textbf{One failure mode is documented honestly}: on contrast-degraded inputs QCTS \emph{worsens} ECE by $58\%$, because logit-rescaling cannot repair contrast-induced logit spreading---a single scalar $T$ shrinks logits but cannot restore the relative geometry the contrast attack flattened. This is the canonical limit of any post-hoc logit calibrator. Brightness ($-12\%$) is intermediate. Per-$\bar q$ quintile, every quintile sees a $16$--$33\%$ reduction with the largest gain on the lowest 20\% (full breakdown in supp \S A12).
+On a frozen Std~VIB, QCTS roughly halves ECE on ITB-LQ while leaving ITB-HQ ECE essentially unchanged (Table~\ref{tab:main}): it softens low-quality predictions without paying for it on high-quality ones, and QCDI drops by $73\%$ over TS into the Quality-Aware regime. Across three seeds the fitted slope $\alpha\in\{0.34, 0.37, 0.96\}$ all land in this regime (QCDI${\le}0.006$); the NLL landscape is a shallow basin in $\alpha$ rather than multi-modal (supp \S A17), and we adopt the median-seed default $\alpha{=}0.37$.
+
+\textbf{Functional form and where QCTS fails.}
+Table~\ref{tab:ablation} compares softplus against linear and 3-bin piecewise-constant temperatures: piecewise wins validation NLL but loses on QCDI and on entropy--$\bar q$ correlation, showing NLL is not a sufficient training signal. Per-degradation, QCTS cuts ITB-LQ ECE on blur ($51\%$) and colour-temperature ($41\%$), is mildly helpful on brightness, and---honestly---harms contrast-degraded inputs ($+58\%$ ECE) because scalar temperature shrinks logit magnitudes but cannot restore the relative geometry a contrast attack flattens. This is the ceiling of any post-hoc logit calibrator. Per quality quintile, every quintile improves, with the largest gain on the lowest 20\% (supp \S A12).
 
 \input{table2_ablation}
 
-Supp \S A2 tests whether QCTS depends on the 5-head IQA module: BRISQUE~\cite{brisque} and CLIP-IQA~\cite{clipiqa} collapse to $\hat\alpha\approx0$ (equivalent to TS); Laplacian variance learns a non-trivial slope ($\hat\alpha{=}0.95$) but degrades QCDI to $+0.028$. Only the dermoscopy-trained 5-head IQA achieves QCDI${<}0$ and the most negative $\rho$. Compared against quality-stratified Platt scaling~\cite{platt1999probabilistic} and quality-binned isotonic regression (ITB-Edge-fit), both reach QCDI${<}0$ but invert $\rho$ to $+0.195$ and $+0.629$: they compress LQ predictions into narrow confidence bands, falling into the quality-confused regime of \S\ref{sec:taxonomy}. QCTS achieves QCDI${=}{+}0.004$ and $\rho{=}{-}0.226$ simultaneously, the only approach satisfying both criteria (supp \S A10).
+Coarser conditioning fails in a characteristic way. Quality-stratified Platt scaling and quality-binned isotonic regression both reach QCDI${<}0$ but invert $\rho$, compressing LQ predictions into narrow confidence bands---the quality-confused failure of \S\ref{sec:taxonomy}. Substituting BRISQUE, CLIP-IQA, or Laplacian variance for the 5-head IQA collapses QCTS to TS or pushes QCDI positive (supp \S A2/A10). QCTS is the only configuration that reaches QCDI${\approx}0$ and the most negative $\rho$ simultaneously.
 
 \subsection{Universality across Backbone Families}
 \label{sec:universality}
 
-We re-fit the same QCTS protocol (frozen backbone, val-set L-BFGS over $T_0, \alpha$) on four additional architectures --- ResNet-50, ViT-Tiny (DeiT init.), ConvNeXt-Tiny, Swin-Tiny --- all trained on ISIC~2020 with the same 70/10/20 split. Table~\ref{tab:universality} reports three families in the main body; ConvNeXt-Tiny and Swin-Tiny in supp \S A13.
+We re-fit QCTS on four additional backbones---ResNet-50, ViT-Tiny (DeiT init.), ConvNeXt-Tiny, Swin-Tiny---trained on ISIC~2020 with the same protocol; Table~\ref{tab:universality} reports three in the main body, the rest in supp \S A13.
 
-\textbf{TS reversal manifests differently across backbones.}
-On Std~VIB reversal surfaces as a $\rho$ sign-flip ($-0.153\to+0.241$). On ViT-Tiny TS leaves $\rho$ unchanged but flips the sign of QCDI ($+0.023\to-0.029$): ECE-HQ jumps $0.036\to0.072$ while ECE-LQ drops $0.058\to0.043$. Swin-Tiny mirrors ViT-Tiny ($+0.020\to-0.021$); ConvNeXt-Tiny is milder ($+0.136\to-0.022$). On the strongly quality-aware ResNet-50 ($\rho{=}-0.368$), TS is approximately neutral. Reversal is therefore a property of \emph{weakly} quality-aware backbones; \S\ref{sec:discussion} gives the structural reason.
+Reversal manifests differently on each backbone (Table~\ref{tab:universality}): a $\rho$ sign flip on Std~VIB, a QCDI flip via HQ inflation on ViT-Tiny and Swin-Tiny, and approximate neutrality on the strongly quality-aware ResNet-50. Reversal is therefore a property of \emph{weakly} quality-aware backbones, not of TS as a calibrator; the structural reason is in \S\ref{sec:discussion}.
 
-\textbf{QCTS is consistent on $\rho$, with diminishing returns on QCDI.}
-Every QCTS row pushes $\rho$ more negative than its raw counterpart ($\rho_\text{QCTS}$: Std~VIB $-0.249$, ResNet-50 $-0.380$, ViT-Tiny $-0.266$, ConvNeXt-Tiny $-0.270$, Swin-Tiny $-0.259$, all $p{<}10^{-20}$ via $10^4$-resample bootstrap). QCDI gains are confined to weakly quality-aware backbones: on the strongly quality-aware ResNet-50, raw QCDI is already $+0.014$ and QCTS leaves it at $+0.014$ (the room to improve is exhausted), whereas Std~VIB / ViT-Tiny / ConvNeXt move clearly toward zero. Fitted $\alpha$ correlates with raw quality-awareness: ViT-Tiny ($\alpha{=}1.40$) needs the steepest slope, ResNet-50 ($\alpha{=}0.24$) the shallowest. Binning ITB by $\bar q$ into 20 deciles, the fitted softplus tracks per-bin optimal $T^*(\bar q)$ on ViT-Tiny while ResNet-50's curve is much flatter (supp Fig.~S6, \S A23).
+QCTS is consistent across all five: $\rho$ becomes more negative on every backbone, while QCDI gains concentrate where there is room to gain---Std~VIB, ViT-Tiny, and ConvNeXt move clearly toward zero, ResNet-50 (already at $+0.014$) is unchanged. The fitted slope $\alpha$ correlates inversely with raw quality-awareness, from ViT-Tiny's $\alpha{=}1.40$ to ResNet-50's $\alpha{=}0.24$. On a 20-bin sweep of $\bar q$, the fitted softplus tracks the per-bin optimum $T^*(\bar q)$ on ViT-Tiny but is nearly flat on ResNet-50 (supp \S A23): QCTS reduces to TS exactly when reduction is appropriate.
 
 \input{table3_universality}
 
 \subsection{Generalisation, Fairness, and Cross-Scalar Transfer}
 \label{sec:generalisation}
 
-External checks confirm QCTS is not an ISIC artefact. \textbf{Cross-dataset.} On HAM10000 ($n{=}10{,}015$, dermoscopy distribution overlapping but not identical to ISIC) and PAD-UFES ($n{=}2{,}298$, smartphone clinical photographs), Std~VIB$+$QCTS retains a significant entropy--$\qbar$ correlation (HAM $\rho{=}-0.108$, $p{<}10^{-25}$; PAD $\rho{=}-0.150$, $p{<}10^{-12}$) and improves over uncalibrated Std~VIB ($\rho{:}{-}0.033\to{-}0.108$ on HAM, a modest absolute shift on a distribution-shared pool). The TS reversal resurfaces on both unseen pools (HAM $-0.033\to+0.324$; PAD $-0.075\to+0.072$), reproducing the failure mode on independent dermoscopy/photograph data. \textbf{Fitzpatrick.} On ITB-Diverse, MC~Dropout is quality-oblivious across skin types (QCDI $+0.124$ on I--II, $+0.103$ on V--VI). On the V--VI cohort ($n{=}136$), Std~VIB$+$QCTS pushes the entropy--$\qbar$ correlation more negative ($\rho{:}{-}0.134\to{-}0.306$, bootstrap $p{<}10^{-3}$), directionally consistent with the gain on lighter skin types but estimated on a small stratum (type VI alone has $n{=}43$; we omit per-skin QCDI for VI as unreliable, see supp \S A5). \textbf{Quality-scalar transfer.} Substituting ImageNet-C corruption severity for the learned $\qbar$ ($\bar q = 1 - s/5$, $s\in\{1,\ldots,5\}$) on the 300 ITB-LQ images, TS leaves $\rho$ essentially unchanged on all 18 corruptions ($|\Delta\rho|{<}10^{-4}$), while QCTS strengthens $\rho$ across \emph{all 18} for both ResNet-50 (mean $-0.124\to-0.136$) and ViT-Tiny (mean $-0.139\to-0.210$, consistent with ViT-Tiny's $\alpha{=}1.40$). A cross-modality check on chest X-ray (DenseNet-121~\cite{cohen2022torchxrayvision}, intrinsic $\rho{=}-0.971$) shows QCTS gracefully reduces to TS ($\alpha{\approx}0.21$), confirming neutrality on already-quality-aware backbones; on fundus (APTOS 2019~\cite{aptos2019}, raw $\rho{=}+0.259$) the dermoscopy-trained IQA module is mis-aligned and QCTS is inert, a scope condition rather than a contradiction. Full per-corruption, per-skin-type, and cross-modality tables in supp \S A5/A6/A15.
+Four external checks confirm QCTS is not an ISIC artefact (per-row numbers in Table~\ref{tab:transfer}).
+
+\textbf{Cross-dataset.}
+On HAM10000 and PAD-UFES, QCTS preserves the negative entropy--$\bar q$ correlation; the TS reversal resurfaces on both unseen pools, reproducing the failure mode on independent dermoscopy and smartphone-clinical data.
+
+\textbf{Fairness.}
+On the FitzPatrick17k V--VI cohort, QCTS pushes $\rho$ more negative, directionally consistent with the gain on lighter skin types but estimated on small $n$; we omit per-skin QCDI for type VI as unreliable (supp \S A5).
+
+\textbf{Quality-scalar transfer to ImageNet-C.}
+Substituting corruption severity for the learned $\bar q$ on the 300 LQ images, QCTS strengthens $\rho$ on \emph{all 18} corruptions for both ResNet-50 and ViT-Tiny, while TS is inert ($|\Delta\rho|{<}10^{-4}$). Severity needs no learned IQA to act as a quality scalar.
+
+\textbf{Cross-modality scope.}
+On chest X-ray (DenseNet-121, intrinsically quality-aware), QCTS reduces gracefully to TS ($\alpha{\approx}0.21$); on fundus (APTOS 2019), the dermoscopy-trained IQA is mis-aligned and QCTS is inert---a scope condition on the IQA module, not a contradiction of the method.
+
+\input{table4_transfer}
 
 %=====================================================================
 \section{Discussion}
 \label{sec:discussion}
 %=====================================================================
 
-\textbf{Why existing methods are quality-oblivious.}
-MC Dropout and Deep Ensembles inject uncertainty at the parameter level: a blurry input leaves parameters unchanged, so dropout noise and ensemble variance follow the same distribution as for clean inputs. Input-dependent uncertainty therefore requires an explicit mechanism that conditions the predictive distribution on input properties. QCTS supplies this in the simplest possible form: temperature as a function of $\qbar$ adds a quality-dependent confidence penalty without modifying internal representations, separating \emph{what to predict} from \emph{how confident to be}. The same separation is also QCTS's ceiling: logit rescaling cannot repair quality-degraded feature extraction.
+MC Dropout and Deep Ensembles inject uncertainty at the parameter level---a blurry input leaves parameters unchanged, so dropout noise and ensemble variance follow the same distribution as for clean inputs. Input-dependent uncertainty therefore requires an explicit mechanism that conditions the predictive distribution on input properties. QCTS supplies this in the simplest form: temperature as a function of $\bar q$ adds a quality-dependent confidence penalty without touching internal representations, separating \emph{what to predict} from \emph{how confident to be}. The same separation is also QCTS's ceiling: logit rescaling cannot repair quality-degraded feature extraction.
 
-\textbf{Why the deployable pipeline reverses on weakly quality-aware backbones.}
-On Std~VIB the reversal is driven by the forward-pass swap (MC$\to$deterministic-$\mu$, $\Delta\rho{=}+0.404$, supp \S A19), not by the TS objective; scalar TS is monotonic in the deterministic logits and preserves Spearman rank ($\Delta\rho{<}10^{-5}$). On a strictly deterministic backbone (ViT-Tiny, no MC component) the same TS objective acts within the forward and flips the bin-based QCDI ($+0.023\to-0.029$), because ECE is binned and not preserved under scalar $T$; on a strongly quality-aware ResNet-50 the deterministic forward retains enough quality signal that scalar TS is approximately neutral on both metrics. The common cause across these three regimes is the same: the deployable post-hoc pipeline (deterministic-$\mu$ + scalar~$T$) has zero degrees of freedom along $\qbar$ and inherits whatever quality dependence the deterministic forward exposes. Quality-aware calibration therefore needs at least one degree of freedom along $\qbar$; QCTS supplies exactly that via the slope $\alpha$. A $\tau$ sweep (IQA-derived and Laplacian-variance proxies) and a confidently-wrong failure-mode audit (blur 49\% / colour-distorted 32\% / ambiguous 19\%, matching the dimensions QCTS softens most) are in supp \S A9/A8.
+The deployable pipeline (deterministic-$\mu$ forward $+$ scalar $T$) has zero degrees of freedom along $\bar q$ and inherits whatever quality dependence the deterministic forward exposes: a $\rho$ flip on Std~VIB (Eq.~\ref{eq:pipeline}), a binned QCDI flip on ViT-Tiny, neutrality on ResNet-50. The fix is the same in all three cases---add at least one degree of freedom along $\bar q$, which QCTS does through the slope $\alpha$. A $\tau$ sweep and a confidently-wrong failure-mode audit (blur 49\% / colour 32\% / ambiguous 19\%, matching the dimensions QCTS softens most) appear in supp \S A8/A9.
 
-\textbf{Limitations.}
-\emph{(i) Reversal is a property of weakly quality-aware backbones with a deterministic-$\mu$ deployment forward}, not an architectural law: ResNet-50 absorbs the pipeline without reversal. \emph{(ii) ITB-LQ uses programmatic degradations}; as a partial in-the-wild check, $174$ ISIC 2020 real low-quality dermoscopy images give EfficientNet-B3 ECE $0.073$ $[0.038,0.125]$, below ITB-LQ's $0.146$, but a cross-class evaluation with matched malignant LQ images remains needed (supp \S A7). \emph{(iii) QCTS is bounded above by the IQA module's resolution}: the Fundus null result (\S\ref{sec:generalisation}) illustrates how an out-of-domain IQA collapses the gain. \emph{(iv) ITB uses a binary task}; multi-class ECE semantics differ. \emph{(v) Clinical impact is not established}: decision-curve analysis on ITB-LQ gives Std~VIB$+$QCTS max net benefit $0.192$ [bootstrap $95\%$ CI $0.148, 0.242$] vs.\ Std~VIB $0.186$ [$0.145, 0.233$] (supp \S A3); the confidence intervals overlap, so the absolute net-benefit gap is not statistically distinguishable at $n{=}300$. We deliberately do not claim QCTS is a deployable triage system; a prospective study with matched malignant low-quality images is required for any clinical claim. Estimator robustness (equal-width vs.\ equal-mass binning at $M\in\{10,15\}$; debiased ECE~\cite{kumar2019verified} \emph{enlarges} the QCTS gap; Spearman ties $\sigma_\rho{<}10^{-5}$) is reported in supp \S A20.
+\textbf{Anticipated objections and our position.}
+We list the strongest attacks against this work and our honest response, rather than burying them in supplementary.
+
+\emph{(A1) ``ITB is synthetic degradation, not in-the-wild.''}
+True. As partial validation we ran EfficientNet-B3 on 174 ISIC real low-quality dermoscopy images and recovered ECE $0.073$ ($95\%$ CI $[0.038, 0.125]$), below ITB-LQ's $0.146$ in the same direction. A matched-malignant in-the-wild cohort is the next step (supp \S A7); we do not claim deployment evidence.
+
+\emph{(A2) ``Clinical impact is not established.''}
+Correct. Decision-curve analysis on ITB-LQ gives QCTS max net benefit $0.192$ ($95\%$ CI $[0.148, 0.242$]) vs.\ Std~VIB $0.186$ ($[0.145, 0.233]$, supp \S A3): the CIs overlap and the absolute gap is not significant at $n{=}300$. We explicitly do not pitch QCTS as a triage system; a prospective study is required.
+
+\emph{(A3) ``Incremental over multi-domain TS / quality-binned isotonic.''}
+The discrete-conditioning alternatives we benchmark do reach QCDI${<}0$ but \emph{invert} $\rho$ (\S\ref{sec:qcts_analysis}, supp \S A10), entering the quality-confused regime. Proposition~\ref{prop:ts_rank} explains why: scalar TS within any bin cannot change rank, so the only way to add quality-awareness is a continuous slope across $\bar q$. QCTS is the minimal such fix.
+
+\emph{(A4) ``Reversal is an artefact of one weak backbone (Std VIB, AUC $0.553$).''}
+Reversal manifests differently on three of five backbones (Std VIB $\rho$-flip; ViT-Tiny + Swin-Tiny QCDI-flip; ResNet-50 neutral). The backbone-dependence is the point, not a flaw---the paper's framing is explicit that reversal is a property of \emph{weakly} quality-aware backbones, not an architectural law.
+
+\emph{(A5) ``Why softplus and not learned?''}
+We tested linear, ReLU, and piecewise-constant (Table~\ref{tab:ablation}); piecewise minimises val-NLL but loses on QCDI and on $\rho$, showing NLL is not a sufficient training signal. Softplus is the smallest-parameter form satisfying B1--B3 (\S\ref{sec:qcts}, Eq.~\ref{eq:b1}) and beats the alternatives on the metrics that matter.
+
+\emph{(A6) ``ECE estimator is brittle.''}
+Equal-width vs.\ equal-mass binning at $M\in\{10,15\}$ and debiased ECE~\cite{kumar2019verified} all preserve direction; debiased ECE \emph{enlarges} the QCTS gap (supp \S A20).
+
+\textbf{Out-of-scope.}
+QCTS is bounded above by the IQA module's resolution---the Fundus null result (\S\ref{sec:generalisation}) shows what happens when an out-of-domain IQA fails. Multi-class semantics differ from the binary ECE used here and are not evaluated.
+
+\begin{figure*}[!tbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig1_teaser}
+  \caption{\textbf{Qualitative degradation gallery on four ground-truth benign lesions.}
+    \emph{Row~1} \textbf{High Quality}: clean dermoscopy inputs.
+    \emph{Row~2} \textbf{Blur} ($q_3$ axis), \emph{Row~3} \textbf{Colour} ($q_4$ hue axis), \emph{Row~4} \textbf{Combined}: blur + hue + contrast applied jointly.
+    \emph{Takeaway:} the programmatic degradations used to build ITB-LQ preserve lesion identity while sweeping the 5-head IQA scores into the low-quality stratum where Std~VIB calibration collapses and QCTS recovers it (Tables~\ref{tab:main}--\ref{tab:universality}).}
+  \label{fig:teaser}
+\end{figure*}
 
 %=====================================================================
 \section{Conclusion}

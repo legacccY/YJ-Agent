@@ -65,18 +65,23 @@
 
 ---
 
-## VisiSkin-Agent 项目文档
+## VisiSkin-Agent 项目文档（ICLR 2027 大项目）
 
-**主要文档**（按重要性排序）：
-1. **`D:\YJ-Agent\project\PROJECT_OVERVIEW.md`** ⭐ — 项目全景（启动必读，5 分钟了解全貌）
-2. **`D:\YJ-Agent\WORKLOG.md`** — 快速进度指针（一句话状态 + 下一步清单）
-3. **`D:\YJ-Agent\project\meeting\BMVC/BMVC_LOG.md`** — BMVC 投稿独立日志
-4. **`D:\YJ-Agent\project\plans/`** — 详细阶段计划文件夹
+**主要文档**（按重要性排序，全套对标 BMVC/README 风格）：
+1. **`D:\YJ-Agent\project\README.md`** ⭐ — ICLR 2027 入口（精简）+ 4 文件读档顺序
+2. **`D:\YJ-Agent\project\STORY_FRAMEWORK.md`** — 故事框架（10 跑偏 + §1-§9 + 锁定数字 + R1-R10 防御）
+3. **`D:\YJ-Agent\project\ACCEPTANCE_CRITERIA.md`** — 25 lever 验收 + E1-E12 + 红线 + M1-M4 milestone
+4. **`D:\YJ-Agent\project\DATA_INVENTORY.md`** — checkpoint + 数据 + 30+ csv + W1-W16 清单
+5. **`D:\YJ-Agent\project\PROJECT_LOG.md`** — 时间倒序日志（单一真源）
+6. **`D:\YJ-Agent\WORKLOG.md`** — 根级快速指针（一句话状态）
+7. **`D:\YJ-Agent\project\meeting\BMVC\SUBMITTED.md`** — BMVC 封印记录（不再修改）
 
 **规则**：
-- 启动 CC 时：先 read `PROJECT_OVERVIEW.md` 了解当前焦点和核心数据
-- 用户说「开始阶段 X」：加载 `project/plans/phase_0X_*.md` 获取实现细节
-- BMVC 工作流：所有 BMVC 进度记在 `meeting/BMVC/BMVC_LOG.md`
+- 启动 CC 时：先 read `project/README.md` → STORY_FRAMEWORK → PROJECT_LOG 最新 entry
+- 用户说「开始阶段 X」：加载 `project/plans/phase_0X_*.md`
+- 当前 active phase：`project/plans/phase_07_visienhance_planA_active.md`（VisiEnhance Plan A 重训）
+- **BMVC 已封印**：`meeting/BMVC/` 任何文件不再修改（违反走 ICLR 分支）
+- ICLR 论文写作（M3 起）：`meeting/ICLR2027/`
 
 ---
 

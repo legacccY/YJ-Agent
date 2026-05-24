@@ -6,5 +6,57 @@
       "Write(*)",
       "Monitor(*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_session_start.sh",
+            "timeout": 3,
+            "statusMessage": "ICLR project reminder..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_prompt_submit.sh",
+            "timeout": 3,
+            "statusMessage": "ICLR keyword scan..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_pre_edit.sh",
+            "timeout": 3,
+            "statusMessage": "BMVC seal check..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_post_edit.sh",
+            "timeout": 5,
+            "statusMessage": "ICLR redline scan..."
+          }
+        ]
+      }
+    ]
   }
 }
