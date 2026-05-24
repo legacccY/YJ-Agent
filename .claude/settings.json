@@ -13,7 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_session_start.sh",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_session_start.js\"",
             "timeout": 3,
             "statusMessage": "ICLR project reminder..."
           }
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_prompt_submit.sh",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_prompt_submit.js\"",
             "timeout": 3,
             "statusMessage": "ICLR keyword scan..."
           }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_pre_edit.sh",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_pre_edit.js\"",
             "timeout": 3,
             "statusMessage": "BMVC seal check..."
           }
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "D:/Git/usr/bin/bash.exe D:/YJ-Agent/.claude/hooks/iclr_post_edit.sh",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_post_edit.js\"",
             "timeout": 5,
             "statusMessage": "ICLR redline scan..."
           }

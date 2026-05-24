@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+// PostToolUse hook: scan red-line patterns in ICLR tex/md edits.
+// exit 2 + stderr = warn. Silent on pass.
+
+const fs = require('fs');
+
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', chunk => { input += chunk; });
+process.stdin.on('end', () => {
+  let data;
+  try { data = JSON.parse(input); } catch (e) { process.exit(0); }
+
+  const tool = data.tool_name || '';
+  if (!/^(Edit|Write|MultiEdit)$/.test(tool)) process.exit(0);
+
+  const path = (data.tool_input && data.tool_input.file_path) || '';
+  const norm = path.replace(/\\/g, '/');
+
+  // Target paths: ICLR2027 *.tex/*.md, or main project guidance docs
+  const isTarget =
+    /project\/meeting\/ICLR2027\/.*\.(tex|md)$/.test(norm) ||
+    /project\/(STORY_FRAMEWORK|ACCEPTANCE_CRITERIA|README)\.md$/.test(norm);
+
+  if (!isTarget) process.exit(0);
+
+  let content;
+  try { content = fs.readFileSync(path, 'utf8'); } catch (e) { process.exit(0); }
+
+  const patterns = /(anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove)/g;
+  const lines = content.split('\n');
+  const hits = [];
+  lines.forEach((line, idx) => {
+    if (patterns.test(line)) hits.push(`${idx + 1}: ${line.trim()}`);
+    patterns.lastIndex = 0;  // reset for next iteration
+  });
+
+  if (hits.length > 0) {
+    process.stderr.write(`REDLINE HIT in ${path} (R1/R2/R4/R8):\n`);
+    hits.slice(0, 5).forEach(h => process.stderr.write(`${h}\n`));
+    process.stderr.write('Fix before continuing. See project/STORY_FRAMEWORK.md R1-R10.\n');
+    process.exit(2);
+  }
+
+  process.exit(0);
+});
