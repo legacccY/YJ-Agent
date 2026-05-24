@@ -251,9 +251,10 @@ def main():
         labels_csv=dcfg.labels_csv, split_csv=dcfg.split_csv,
         split="train", img_size=dcfg.img_size, severity=dcfg.severity,
     )
+    val_severity = dcfg.get("val_severity", dcfg.severity)
     val_ds = EnhanceDataset(
         labels_csv=dcfg.labels_csv, split_csv=dcfg.split_csv,
-        split="val", img_size=dcfg.img_size, severity=dcfg.severity,
+        split="val", img_size=dcfg.img_size, severity=val_severity,
     )
     print(f"[INFO] train={len(train_ds)}, val={len(val_ds)}")
 

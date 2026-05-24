@@ -1,0 +1,36 @@
+\begin{table*}[!tbp]
+\centering
+\caption{\textbf{Main results on the ITB benchmark.}
+AUC and ECE ($M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$); $\text{QCDI}=\mathrm{ECE}_\mathrm{LQ}-\mathrm{ECE}_\mathrm{HQ}$ (closer to $0$ is better); $\rho(H,\bar q)$ is Spearman correlation on the full ITB pool ($n{=}2{,}820$, more negative is better). Values shown as $\text{point}\,{\scriptscriptstyle\pm}\,\text{half-width of $1{,}000$-iter bootstrap $95\%$ CI}$. \textbf{Bold}/\underline{underline}: directionally best/second per column (lower for ECE/QCDI, higher for AUC, more negative for $\rho$). The \textbf{Std VIB + QCTS} row (highlighted) is our contribution; VIB-family models trade AUC for tighter calibration, so the headline metrics are ECE and QCDI. \emph{Statistical rigor.} Five pairwise QCTS-vs-baseline ECE comparisons survive Bonferroni correction (smallest corrected $p{=}0.0015$); Cohen's $d{=}0.452$ on ITB-LQ ECE; at the $0.03$ ECE minimum clinically meaningful difference, $n{=}300$ gives power $0.929$ (supp \S A16). All $\rho$ values bootstrap-significant at $p{<}10^{-20}$ via $10^4$ resamples.}
+\label{tab:main}
+\vspace{4pt}
+\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{l cc cc cc}
+\toprule
+& \multicolumn{2}{c}{\textbf{ITB-LQ} ($n{=}300$)}  & \multicolumn{2}{c}{\textbf{ITB-HQ} ($n{=}360$)}  & \multicolumn{2}{c}{\textbf{Cross-stratum}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Method & AUC\,$\uparrow$ & ECE\,$\downarrow$ & AUC\,$\uparrow$ & ECE\,$\downarrow$ & QCDI\,$\downarrow$ & $\rho(H,\bar q)\,\downarrow$ \\
+\midrule
+\multicolumn{7}{l}{\textit{Discriminative}} \\
+EfficientNet-B3 & \textbf{0.751{\tiny\,$\pm$0.072}} & \cellcolor{red!11}0.345{\tiny\,$\pm$0.048} & \textbf{0.938{\tiny\,$\pm$0.026}} & \textbf{0.068{\tiny\,$\pm$0.029}} & \cellcolor{red!22}+0.277{\tiny\,$\pm$0.055} & \cellcolor{red!15}-0.123 \\
+Focal + LS & 0.708{\tiny\,$\pm$0.071} & \cellcolor{red!19}0.533{\tiny\,$\pm$0.044} & \underline{0.884{\tiny\,$\pm$0.039}} & \cellcolor{red!22}0.492{\tiny\,$\pm$0.036} & \cellcolor{red!3}+0.041{\tiny\,$\pm$0.059} & \cellcolor{red!13}-0.059 \\
+\addlinespace[2pt]\cmidrule(l){1-7}\addlinespace[2pt]
+\multicolumn{7}{l}{\textit{Bayesian / ensemble}} \\
+MC Dropout (30$\times$) & 0.693{\tiny\,$\pm$0.067} & \cellcolor{red!22}0.615{\tiny\,$\pm$0.052} & 0.808{\tiny\,$\pm$0.047} & \cellcolor{red!21}0.473{\tiny\,$\pm$0.047} & \cellcolor{red!11}+0.142{\tiny\,$\pm$0.073} & \cellcolor{red!15}-0.114 \\
+Deep Ensemble ($5\times$) & \underline{0.711{\tiny\,$\pm$0.067}} & \cellcolor{red!15}0.440{\tiny\,$\pm$0.048} & 0.868{\tiny\,$\pm$0.042} & \cellcolor{red!14}0.339{\tiny\,$\pm$0.039} & \cellcolor{red!8}+0.101{\tiny\,$\pm$0.060} & \cellcolor{red!15}-0.123 \\
+\addlinespace[2pt]\cmidrule(l){1-7}\addlinespace[2pt]
+\multicolumn{7}{l}{\textit{Training-time uncertainty}} \\
+EDL\,\cite{sensoy2018evidential} & 0.586{\tiny\,$\pm$0.079} & \cellcolor{red!10}0.316{\tiny\,$\pm$0.044} & 0.895{\tiny\,$\pm$0.034} & \cellcolor{red!11}0.270{\tiny\,$\pm$0.042} & \cellcolor{red!3}+0.046{\tiny\,$\pm$0.061} & \cellcolor{red!4}+0.039 \\
+\addlinespace[2pt]\cmidrule(l){1-7}\addlinespace[2pt]
+\multicolumn{7}{l}{\textit{VIB family}} \\
+Std VIB & 0.553{\tiny\,$\pm$0.085} & \cellcolor{red!3}\underline{0.146{\tiny\,$\pm$0.045}} & 0.587{\tiny\,$\pm$0.083} & \cellcolor{red!3}0.129{\tiny\,$\pm$0.038} & +0.016{\tiny\,$\pm$0.063} & \cellcolor{red!17}-0.153 \\
+\addlinespace[2pt]\cmidrule(l){1-7}\addlinespace[2pt]
+\multicolumn{7}{l}{\textit{Post-hoc calibration}} \\
+Std VIB + TS & 0.582{\tiny\,$\pm$0.083} & \cellcolor{red!4}0.175{\tiny\,$\pm$0.049} & 0.732{\tiny\,$\pm$0.068} & \cellcolor{red!5}0.160{\tiny\,$\pm$0.042} & +0.015{\tiny\,$\pm$0.063} & +0.241 \\
+\rowcolor{green!12}\textbf{Std VIB + QCTS (ours)} & 0.563{\tiny\,$\pm$0.085} & \textbf{0.079{\tiny\,$\pm$0.040}} & 0.580{\tiny\,$\pm$0.081} & \underline{0.075{\tiny\,$\pm$0.037}} & \textbf{+0.004{\tiny\,$\pm$0.051}} & \cellcolor{green!21}\underline{-0.249} \\
+\bottomrule
+\end{tabular}
+\vspace{-4pt}
+\end{table*}

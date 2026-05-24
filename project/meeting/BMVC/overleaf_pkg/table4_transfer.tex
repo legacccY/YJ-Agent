@@ -1,0 +1,31 @@
+\begin{table}[!tbp]
+\centering
+\caption{\textbf{External transfer of QCTS.}
+Cross-dataset, fairness, cross-scalar (ImageNet-C corruption severity in place of $\bar q$) and cross-modality probes. $\rho(H,\bar q)$ reported on the indicated pool; ImageNet-C rows are the mean over 18 corruptions on the 300 ITB-LQ images. TS resurfaces the reversal on both unseen dermoscopy/photograph pools; QCTS preserves the directional gain or, where the backbone is already quality-aware, reduces gracefully to TS. Per-corruption and per-skin breakdowns in supp \S A5/A6/A15.}
+\label{tab:transfer}
+\vspace{4pt}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{llccc}
+\toprule
+Probe & Pool (n) & Raw & $+$TS & $+$QCTS \\
+\midrule
+\multicolumn{5}{l}{\textit{Cross-dataset (Std VIB, $\rho(H,\bar q)$)}} \\
+HAM10000 & dermoscopy (10{,}015) & $-0.033$ & \cellcolor{red!10}$+0.324$ & \cellcolor{green!10}$\mathbf{-0.108}$ \\
+PAD-UFES & smartphone (2{,}298) & $-0.075$ & \cellcolor{red!8}$+0.072$ & \cellcolor{green!10}$\mathbf{-0.150}$ \\
+\addlinespace[2pt]\cmidrule(l){1-5}\addlinespace[2pt]
+\multicolumn{5}{l}{\textit{Fairness (FitzPatrick17k, Std VIB)}} \\
+Type V--VI & diverse-skin (136) & $-0.134$ & --- & \cellcolor{green!10}$\mathbf{-0.306}$ \\
+\addlinespace[2pt]\cmidrule(l){1-5}\addlinespace[2pt]
+\multicolumn{5}{l}{\textit{Cross-scalar (ImageNet-C severity as $\bar q$, mean over 18 corruptions)}} \\
+ResNet-50 & ITB-LQ (300) & $-0.124$ & $-0.124$ & \cellcolor{green!8}$\mathbf{-0.136}$ \\
+ViT-Tiny & ITB-LQ (300) & $-0.139$ & $-0.139$ & \cellcolor{green!10}$\mathbf{-0.210}$ \\
+\addlinespace[2pt]\cmidrule(l){1-5}\addlinespace[2pt]
+\multicolumn{5}{l}{\textit{Cross-modality scope}} \\
+CheXpert (DenseNet-121) & X-ray, intrinsic & $-0.971$ & --- & $-0.971$ ($\alpha{\approx}0.21$) \\
+APTOS 2019 fundus & out-of-IQA-scope & $+0.259$ & $+0.259$ & $+0.259$ (inert) \\
+\bottomrule
+\end{tabular}
+\vspace{-4pt}
+\end{table}

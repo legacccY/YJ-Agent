@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-24 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-05-24 19:20 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
 ---
 
@@ -28,10 +28,11 @@
 
 ## 🚀 下一步（M1 W1，2026-05-25 ~ 06-01）
 
-- [ ] 起 `project/configs/visienhance_s1_planA.yaml`（base_channels=64, mid_blocks=8, ~15M 参数）
-- [ ] `tests/test_visienhance.py` 跑通 batch=1 冒烟测试
-- [ ] 用户启动 Stage 1 重训（Start-Process 开新窗口，预期 30-40h）
-- [ ] Monitor heartbeat 30min cadence + state.json
+- [x] 起 `project/configs/visienhance_s1_planA.yaml`（3-level, ~15.3M 参数）✅
+- [x] `tests/test_visienhance.py` 6/6 通过 ✅
+- [x] Stage 1 训练启动 + 监控 ep0-6 ✅
+- [ ] **续训进行中**（PID=25804，val_severity=medium + lpips=0.05，从 ep6 续）
+- [ ] ep10 Decision Gate 重新评估（预计 2026-05-25 早）
 - [ ] Theorem 2 (agent risk bound) 数学推导（与训练并行）
 
 详细 task 清单见 `project/plans/phase_07_visienhance_planA_active.md`

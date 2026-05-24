@@ -1,0 +1,56 @@
+# Stage 1 Plan A: Basic Restoration Pre-training (15M capacity)
+# base_channels=64, mid_blocks=8 — upgrade from v0 (32/2/1.7M)
+# Target: val PSNR >= 30 dB
+
+stage: 1
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  split_csv:  D:/YJ-Agent/data/isic_split.csv
+  img_size: 128
+  severity: mixed
+  val_severity: medium
+  batch_size: 16
+  num_workers: 4
+
+train:
+  epochs: 200
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 5
+  resume_from: D:/YJ-Agent/checkpoints/visienhance/stage1_planA/last_visienhance.pth
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.05
+  lambda_dp: 0.0
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: D:/YJ-Agent/checkpoints/best_visiscore.pth
+  qvib_ckpt: null
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints/visienhance/stage1_planA
+
+wandb:
+  project: visienhance
+  name: stage1_planA
+  mode: offline

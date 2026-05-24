@@ -1,0 +1,20 @@
+{
+  "real_lq": {
+    "n": 174,
+    "ece": 0.0726,
+    "rho_H_q": 0.4458,
+    "p_rho": 7.058734259943839e-10,
+    "mean_entropy": 0.1478
+  },
+  "itb_lq_synthetic": {
+    "n": 300,
+    "ece": 0.1457,
+    "rho_H_q": -0.0285
+  },
+  "comparison": {
+    "ece_real_vs_itblq": -0.0731,
+    "ece_ratio": 0.499,
+    "rho_direction_same": false,
+    "note": "Real LQ targets: 106 ISIC-matched (all target=0, benign) + 68 Fitzpatrick (target=0). ECE measures how well the model's low prob_pos aligns with the all-benign ground truth. Low ECE here means the model correctly predicts low malignancy on challenging-quality benign images. Mean entropy and rho(H,quality) are directly comparable with ITB-LQ values."
+  }
+}

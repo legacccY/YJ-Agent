@@ -1,0 +1,33 @@
+# ITB + QCTS default configuration
+itb:
+  tau_lq: 0.45       # quality threshold for ITB-LQ
+  tau_hq: 0.50       # quality threshold for ITB-HQ
+  n_lq: 300
+  n_hq: 360
+  n_edge: 660
+  n_diverse: 1500
+
+evaluation:
+  n_bins_ece: 15
+  n_bootstrap: 10000
+  bootstrap_seed: 42
+
+qcts:
+  n_seeds: 3
+  max_iter: 200
+  T0_bounds: [0.01, 5.0]
+  alpha_bounds: [-1.0, 3.0]
+
+model:
+  backbone: "efficientnet_b3"
+  image_size: 380
+  pretrained: true
+
+data:
+  isic2020_dir: "data/isic2020"
+  ham10000_dir: "data/ham10000"
+  pad_ufes_dir: "data/pad_ufes"
+  fitzpatrick17k_dir: "data/fitzpatrick17k"
+  val_split: 0.10
+  test_split: 0.20
+  seed: 42

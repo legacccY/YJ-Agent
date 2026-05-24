@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  itb-qcts:
+    build: .
+    image: itb-qcts:v1.0
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+    volumes:
+      - ./data:/workspace/data
+      - ./outputs:/workspace/outputs
+    command: bash reproduce.sh

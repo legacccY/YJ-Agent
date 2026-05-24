@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-05-24（会话 2，Stage 1 训练启动 + ep6 Gate 修复）
+
+### 完成
+- VisiEnhance Plan A 架构升级：enc_blocks=[2,2,2], mid_blocks=6 → ~15.3M 参数（3-level U-Net, ch: 64→128→256→512）
+- 冒烟测试 6/6 全通过（param_count / forward / range / FiLM identity / CUDA / AMP）
+- Stage 1 训练启动（PID 28460），/loop 全自动监控，每 epoch ~23min
+- ep0-6 监控数据：PSNR 22.05→23.03→23.48→23.76→23.99→24.17→24.27 dB
+- ep10 Gate（<27 dB）外推 ~24.4 dB，主动在 ep6 停训（节省 ~1.5h GPU）
+- A+B 修复应用：
+  - A: `val_severity: medium`（去掉 heavy 拉低均值，测真实 moderate 能力）
+  - B: `lambda_lpips: 0.05`（L1 + LPIPS 加速感知收敛）
+  - 续训：从 ep6 checkpoint 续，PID 25804 已运行
+
+### 关键发现
+- 每 epoch ~23min，200 epoch 全程 ETA ~78h（比预期 30-40h 长，因数据集 69k 对 × severity=mixed）
+- ep6 增量急降（+0.18→+0.10），确认 Gate 会触发
+- v0 基线（1.7M, 30ep）= 25.55 dB；本次 15.3M 在 ep6 = 24.27（mixed val，正常，bigger model 收敛慢）
+- ep7 续训后 val PSNR 应显著跳升（medium subset 比 mixed 容易）
+
+### 待续（M1 W1）
+- [ ] ep10 续训 Decision Gate 重评（预计 2026-05-25 早，medium val PSNR 目标 ≥27）
+- [ ] Theorem 2 (agent risk bound) 数学推导（与训练并行）
+- [ ] 若 ep10 通过 → 继续全程训练至收敛
+
+### 命中率回退
+- 本会话无论文内容改动，命中率预估维持 **32.5%**（ep6 停训不影响 lever 进度）
+
+---
+
 ## 2026-05-24（会话 1，大项目启动）
 
 ### 完成

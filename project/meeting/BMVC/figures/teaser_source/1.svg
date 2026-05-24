@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_图层_1" data-name="图层 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 502.93 354.14">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #231815;
+        font-family: ArialMT, Arial;
+        font-size: 12px;
+      }
+    </style>
+  </defs>
+  <image width="512" height="512" transform="translate(78.74) scale(.17)" xlink:href="L1_HQ__col1_clean.png"/>
+  <image width="512" height="512" transform="translate(78.74 88.54) scale(.17)" xlink:href="L1_HQ__col2_blur.png"/>
+  <image width="512" height="512" transform="translate(78.74 177.07) scale(.17)" xlink:href="L1_HQ__col3_colour.png"/>
+  <image width="512" height="512" transform="translate(78.74 265.61) scale(.17)" xlink:href="L1_HQ__col4_combined.png"/>
+  <image width="512" height="512" transform="translate(190.62) scale(.17)" xlink:href="L2_Blur__col1_clean.png"/>
+  <image width="512" height="512" transform="translate(190.62 88.54) scale(.17)" xlink:href="L2_Blur__col2_blur.png"/>
+  <image width="512" height="512" transform="translate(190.62 177.07) scale(.17)" xlink:href="L2_Blur__col3_colour.png"/>
+  <image width="512" height="512" transform="translate(190.62 265.61) scale(.17)" xlink:href="L2_Blur__col4_combined.png"/>
+  <image width="512" height="512" transform="translate(302.51) scale(.17)" xlink:href="L3_Colour__col1_clean.png"/>
+  <image width="512" height="512" transform="translate(302.51 88.54) scale(.17)" xlink:href="L3_Colour__col2_blur.png"/>
+  <image width="512" height="512" transform="translate(302.51 177.07) scale(.17)" xlink:href="L3_Colour__col3_colour.png"/>
+  <image width="512" height="512" transform="translate(302.51 265.61) scale(.17)" xlink:href="L3_Colour__col4_combined.png"/>
+  <image width="512" height="512" transform="translate(414.4) scale(.17)" xlink:href="L4_Combined__col1_clean.png"/>
+  <image width="512" height="512" transform="translate(414.4 88.54) scale(.17)" xlink:href="L4_Combined__col2_blur.png"/>
+  <image width="512" height="512" transform="translate(414.4 177.07) scale(.17)" xlink:href="L4_Combined__col3_colour.png"/>
+  <image width="512" height="512" transform="translate(414.4 265.61) scale(.17)" xlink:href="L4_Combined__col4_combined.png"/>
+  <text class="cls-1" transform="translate(0 48.85)"><tspan x="0" y="0">High Quality</tspan></text>
+  <text class="cls-1" transform="translate(25.04 137.38)"><tspan x="0" y="0">Blur</tspan></text>
+  <text class="cls-1" transform="translate(18.04 225.92)"><tspan x="0" y="0">Colour</tspan></text>
+  <text class="cls-1" transform="translate(8.37 314.45)"><tspan x="0" y="0">Combined</tspan></text>
+</svg>
