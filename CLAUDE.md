@@ -55,7 +55,22 @@
 
 ### 开门读档（每次对话开始时）
 
-主动 Read `D:\YJ-Agent\WORKLOG.md`，用一句话说出当前进度和下一步，然后问「今天做什么？」。
+按顺序 Read 下列文件，然后用一句话说出当前进度和下一步，问「今天做什么？」：
+
+**最小读档（所有项目）**：
+1. `D:\YJ-Agent\WORKLOG.md` — 根级一句话指针
+
+**ICLR 大项目读档**（若 WORKLOG.md 含「ICLR」字样或 cwd 含 `project/`，必读）：
+2. `D:\YJ-Agent\project\PROJECT_LOG.md` — 最新 entry（时间倒序，首屏即最新会话）
+3. `D:\YJ-Agent\project\README.md` — 入口 + 4 文件读档顺序提醒
+4. `D:\YJ-Agent\project\STORY_FRAMEWORK.md` — 头 60 行（跑偏定义 + 3 核心论点，反跑偏底线）
+
+**按需读档**（当用户描述任务需要时再读，不预读）：
+- 写论文 / draft tex / 改章节 → 全文 Read `STORY_FRAMEWORK.md` + `ACCEPTANCE_CRITERIA.md`
+- 跑实验 / 改 config / 训练 → Read `DATA_INVENTORY.md` + 对应 `plans/phase_XX_*.md`
+- BMVC 相关 → Read `meeting/BMVC/SUBMITTED.md`（确认封印状态）
+
+**禁止**：跳过 1-4 直接动手。SessionStart hook 已注入 4 文件读档提醒，必须遵守。
 
 ### 收工流程（用户说「收工」「关了」「拜拜」「结束」「下班」时）
 
