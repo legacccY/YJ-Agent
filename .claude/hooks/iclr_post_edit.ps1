@@ -20,14 +20,18 @@ if ($input_json -match '"file_path"\s*:\s*"([^"]+)"') {
 
 $norm = $path -replace '\\', '/'
 
-# Only scan ICLR tex/md or main project guidance docs
-$is_target = ($norm -match 'project/meeting/ICLR2027/.*\.(tex|md)$') -or `
-             ($norm -match 'project/(STORY_FRAMEWORK|ACCEPTANCE_CRITERIA|README)\.md$')
+# tex: full redline check. planning docs: writing-quality only (model names are legitimate in tracking docs)
+$is_tex = $norm -match 'project/meeting/ICLR2027/.*\.(tex|md)$'
+$is_doc = $norm -match 'project/(STORY_FRAMEWORK|ACCEPTANCE_CRITERIA|README)\.md$'
 
-if (-not $is_target) { exit 0 }
+if (-not ($is_tex -or $is_doc)) { exit 0 }
 if (-not (Test-Path $path)) { exit 0 }
 
-$patterns = 'anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove'
+if ($is_tex) {
+    $patterns = 'anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove|\bBayesian\b|doctors? confirmed|clinically validated|clinical decision support'
+} else {
+    $patterns = 'anonymous2025|TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support'
+}
 
 $hits = Select-String -Path $path -Pattern $patterns -CaseSensitive:$false -List:$false 2>$null | Select-Object -First 5
 
