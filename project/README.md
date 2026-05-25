@@ -97,10 +97,10 @@ project/
 | 类 | Lever | 状态 | 备注 |
 |---|---|---|---|
 | **A 理论** | L1 Q-VIB Prop 1/Lemma 1/Thm 1/Prop 2 | ✅ | 已 done（archive/2026-05_pre_iclr_reorg/创新点/）|
-| | L2 VisiEnhance Prop 3 | 🚧 | V2.0plan.md 已草，需融入主文 |
-| | L3 DP-Loss Lemma 3 | 🚧 | 同上 |
-| | L4 Agent Thm 2 (risk bound) | ❌ | M1 D1-D7 推导 |
-| | L5 Q-VIB+QCTS Cor 1 ECE bound | ❌ | M1 D8-D14 |
+| | L2 VisiEnhance Prop 3 | ✅ 推导 | plans/Prop3_Lemma3_visienhance_theory.md §1（实证 M2）|
+| | L3 DP-Loss Lemma 3 | ✅ 推导 | 同上 §2，**√ε scaling**（Pinsker-optimal）|
+| | L4 Agent Thm 2 (risk bound) | ✅ 推导 | plans/Theorem2_agent_risk_bound.md（4-action + Cor 2.1/2.2）|
+| | L5 Q-VIB+QCTS Cor 1 ECE bound | ✅ 推导 | plans/Corollary1_qvib_qcts_ece_bound.md（ε_qts≈0.037）|
 | **B 实验** | L6 5 backbone universality | ✅ | BMVC 复用 |
 | | L7 8 dataset cross-domain | 🚧 | 4 已 done，4 待跑（M1-M2）|
 | | L8 E1-E12 full | ❌ | M2，需 Plan A 重训完毕 |
@@ -114,13 +114,13 @@ project/
 | | L16 Docker + reproduce.sh | ❌ | M3 D22-D28 |
 | | L17 ITB v1.0 公开 + Zenodo DOI | ❌ | M4 |
 | | L18 HF checkpoint mirror | ❌ | M4 |
-| **E 防御** | L19 10 轮 LLM adversarial review | ❌ | M4 D1-D14 |
-| | L20 Pre-emptive rebuttal section | ❌ | M4 D15-D21 |
-| | L21 Failure mode taxonomy + mitigation | ❌ | M3 D22-D28 |
+| **E 防御** | L19 10 轮 LLM adversarial review | ✅ draft | plans/L19_adversarial_review_10rounds.md（5 致命 + 21-项 action）|
+| | L20 Pre-emptive rebuttal §A21 | ✅ draft | plans/L20_preemptive_rebuttal_A21.md（LaTeX 模板 + checklist）|
+| | L21 Failure mode taxonomy + mitigation | ✅ draft | plans/L21_failure_mode_taxonomy.md（KMeans 3-mode + entropy gate 回写 Thm 2）|
 | **F 附加** | L22 Supp 50-80 页 | ❌ | M3-M4 持续扩 |
 | | L23 Per-mechanism ablation | ❌ | M2 |
 | | L24 Real LQ ISIC 2024 SLICE-3D | ❌ | M2 D22-D28 |
-| | L25 ICLR-specific rebuttal pre-draft | ❌ | M4 D22-D28 |
+| | L25 ICLR-specific rebuttal pre-draft | ✅ draft | plans/L25_rebuttal_phase_qa_pre_draft.md（15 Q&A + fallback 数字）|
 
 ---
 

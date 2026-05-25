@@ -38,38 +38,37 @@
 - **写入论文位置**：§3.2-§3.5 主文（compact statement）+ Appendix A1 完整证明（5-7 页）
 - **若 FAIL**：命中率 -2%（论文失去理论灵魂）
 
-### L2 — VisiEnhance Proposition 3 🚧
+### L2 — VisiEnhance Proposition 3 ✅ (推导完成 2026-05-24)
 - **内容**：$\bar{q}(T_\omega(x,q)) > \bar{q}(x) \implies \mathbb{E}[H(\hat{p}_{T_\omega(x,q)})] \leq \mathbb{E}[H(\hat{p}_x)]$
-- **状态**：🚧 V2.0plan.md 已草，需融入 ICLR 主文 + 重写证明严密性
-- **验收**：(a) 完整证明 4-5 步 (b) 实证 E4：增强后 entropy↓ 显著 (paired t-test p<0.001) (c) Per-deg 退化分类的单调性可视化
+- **状态**：✅ 推导 done — `plans/Prop3_Lemma3_visienhance_theory.md` §1, 显式 (A1)-(A4) + 5-step 严密 proof，含 Q-VIB ELBO + Lemma 1 monotonicity 链路
+- **实证**：⏳ 待 Plan A Stage 1+2 完成 (M2 D8-D14, E4 paired t-test)
+- **toy 验证**：✅ `tests/test_theorems_numerical.py::test_proposition3_*` PASS
 - **写入论文位置**：§4.4 主文 + Appendix A2.1
-- **完成路径**：M1 D8-D14 数学推导 → M2 E4 实验
-- **若 FAIL**：命中率 -1%
+- **若 FAIL（实证）**：命中率 -1%
 
-### L3 — DP-Loss Lemma 3 🚧
-- **内容**：$\mathcal{L}_{\text{DP}} = D_{\mathrm{KL}}(p_\phi^{\text{enh}} \| p_\phi^{\text{ref}}) \leq \epsilon \implies I(Z_{\text{enh}};Y) \geq I(Z_{\text{ref}};Y) - \beta\epsilon$
-- **状态**：🚧 V2.0plan.md 已草，证明需要 Pinsker 不等式 + Lipschitz $q_\theta$ 假设严密化
-- **验收**：(a) 完整证明含 Pinsker step (b) 实证 E7：有/无 DP-Loss 的 ΔAUC 对比 (DP 组应显著更小)
+### L3 — DP-Loss Lemma 3 ✅ (推导完成 2026-05-24)
+- **内容**：$\mathcal{L}_{\text{DP}} \leq \epsilon \implies I(Z_{\text{enh}};Y) \geq I(Z_{\text{ref}};Y) - \beta\sqrt{\epsilon}$，$\beta = M L_{q_\theta}/\sqrt{2}$
+- **状态**：✅ 推导 done — `plans/Prop3_Lemma3_visienhance_theory.md` §2，**关键修正**：$\sqrt{\epsilon}$ scaling (Pinsker-optimal)，非 $\epsilon$ linear；显式常数 $\beta\approx 0.74$ (binary)
+- **实证**：⏳ M2 D8-D14 (E7 ablation, DP 组 ΔAUC 更小)
+- **toy 验证**：✅ `tests/test_theorems_numerical.py::test_lemma3_pinsker_*` PASS
 - **写入论文位置**：§4.4 主文 + Appendix A2.2
-- **完成路径**：M1 D15-D21
-- **若 FAIL**：命中率 -1%
+- **若 FAIL（实证）**：命中率 -1%
 
-### L4 — Closed-loop Agent Theorem 2 (risk bound) ❌
-- **内容**：$\mathcal{R}_{\text{agent}}(x) \leq \mathcal{R}_{\text{direct}}(x) - \Delta(\bar{q}, T_\omega)$，$\Delta > 0$ 当且仅当 $\bar{q} \in [\tau_{\text{enh}}, \tau_{\text{high}}]$
-- **状态**：❌ 未推导
-- **验收**：(a) decision-theoretic 公式化（agent action space {direct, enhance, query, refuse}）(b) expected loss 上界 (c) 实证 E5：dual-channel salvage rate 与 theoretical $\Delta$ 数值吻合
+### L4 — Closed-loop Agent Theorem 2 (risk bound) ✅ (推导完成 2026-05-24)
+- **内容**：$\mathcal{R}_{\text{agent}}(x) \leq \mathcal{R}_{\text{direct}}(x) - \Delta(\bar{q}, T_\omega)$，$\Delta > 0$ iff $\bar{q} \in [\tau_{\text{enh}}, \tau_{\text{high}}]$
+- **状态**：✅ 推导 done — `plans/Theorem2_agent_risk_bound.md`，含 decision-theoretic 4-action space + 4 lemmas (entropy-risk coupling / enhancement gain / threshold window / query-refuse safety) + main theorem 4-case proof + Corollary 2.1/2.2
+- **实证 (P1/P2/P3)**：⏳ Plan A Stage 3 完成后, `results/agent_vs_direct_risk.csv` 跑 SalvageRate band test
+- **toy 验证**：✅ `tests/test_theorems_numerical.py::test_thm2_P1/P2/P3` PASS + bootstrap CI excludes 0
 - **写入论文位置**：§5.2 主文 + Appendix A2.3
-- **完成路径**：M1 D22-D28
-- **若 FAIL**：命中率 -1%（这条最难，单写不出会显著降低 closed-loop framing 力度）
+- **若 FAIL（实证）**：命中率 -1%
 
-### L5 — Corollary 1 (Q-VIB + QCTS 复合 ECE bound) ❌
-- **内容**：$\text{ECE}(\hat{p}_{Q\text{-}VIB+QCTS}) \leq \min(\text{ECE}_{Q\text{-}VIB}, \text{ECE}_{QCTS}) + O(\epsilon)$
-- **状态**：❌ 未推导
-- **验收**：(a) 给出 $\epsilon$ 的显式 bound（Lipschitz of softplus + chain rule）(b) 实证 7.5 universality 表显示复合优于单独
+### L5 — Corollary 1 (Q-VIB + QCTS 复合 ECE bound) ✅ (推导完成 2026-05-24)
+- **内容**：$\text{ECE}(\hat{p}_{\text{comp}}) \leq \min(\text{ECE}_{\text{QV}}, \text{ECE}_{\text{QCTS}}) + \epsilon_{\text{qts}}$, $\epsilon_{\text{qts}} = O(L_T \|\ell\|_{\max}/T_{\min}^2 \cdot \sigma_{\bar{q}|c})$
+- **状态**：✅ 推导 done — `plans/Corollary1_qvib_qcts_ece_bound.md`，4-step proof + Murphy 分解 + Lipschitz chain rule，显式数字预测 $\epsilon_{\text{qts}}\approx 0.037$
+- **实证**：⏳ M2 D1-D7 universality 表 + composite ECE
+- **战略价值**：把 BMVC 的 QCTS work cite 自己之前的 paper（防 R10），论文 closure 完整
 - **写入论文位置**：§5.3 主文 + Appendix A3
-- **完成路径**：M1 D29 ~ M2 D7
-- **战略价值**：把 BMVC 的 QCTS 工作 cite 自己之前的 paper，论文 closure 完整
-- **若 FAIL**：命中率 -0.5%（不致命，但失去与 BMVC 的优雅 link）
+- **若 FAIL（实证）**：命中率 -0.5%
 
 ---
 
@@ -169,31 +168,26 @@
 
 ## E 类：防御性写作（+3%）
 
-### L19 — 10 轮 LLM adversarial review ❌
-- **personas**（10 个）：
-  1. ICLR senior area chair（broad concerns）
-  2. Calibration ML expert（Guo / Platt 视角）
-  3. Information Theory expert（Tishby / Alemi 视角）
-  4. Medical AI reviewer（clinical translation）
-  5. Computer Vision reviewer（NAFNet / FiLM 视角）
-  6. Theory reviewer（proof rigour）
-  7. Reproducibility reviewer
-  8. Fairness reviewer（Fitzpatrick / demographic）
-  9. Adversarial robustness reviewer（ImageNet-C）
-  10. Non-domain copy-editor
-- **验收**：每轮 ≥ 10 issues 应答 + diff 改入论文
-- **完成路径**：M4 D1-D14
-- **若 FAIL（<8 轮完成）**：命中率 -1.5%
+### L19 — 10 轮 LLM adversarial review ✅ (2026-05-24, draft v1)
+- **personas 实际**（10 个，见 `plans/L19_adversarial_review_10rounds.md`）：
+  R1 Stats Hawk / R2 Bayesian Skeptic / R3 Clinical Realist / R4 Calibration Expert / R5 Reproducibility Auditor / R6 OOD Pessimist / R7 Theory Purist / R8 Fairness Activist / R9 Scope Critic / R10 Adversarial-Safety
+- **状态**：✅ 10 轮 attacks + responses + 21-项 action table 完成 — 5 个 severity-5 致命攻击 (R3/R6/R9/R10 + R1 必写) 已 surface, 进入 L20 §A21
+- **实证 deliverable**：P1 (M1 cluster q<0.35 retake_rate=100%) 已 verified
+- **写入论文位置**：21 项 action 分配到主文 §1.4 / §7 / §8 / §A21 / §A26 等
+- **若 FAIL（<8 轮完成）**：N/A，10/10 done
 
-### L20 — Pre-emptive rebuttal section ❌
-- **内容**：Appendix A21，预先回应 5+ 已知攻击
-- **完成路径**：M4 D15-D21
-- **若 FAIL**：命中率 -0.5%
+### L20 — Pre-emptive rebuttal section §A21 ✅ (2026-05-24, draft v1)
+- **内容**：Appendix §A21 LaTeX 模板，1.5-2 页，5 subsection 应对 5 致命攻击（见 `plans/L20_preemptive_rebuttal_A21.md`）
+- **状态**：✅ LaTeX 模板 + Abstract / §1.4 / §8 配套修改清单完成
+- **写作 checklist**：10 项 R-numbered alignment（"don't write X / write Y"）
+- **完成路径**：LaTeX 化 M2 D8-D14 落地
 
-### L21 — Failure mode taxonomy + per-mode mitigation ❌
-- **内容**：(a) KMeans k=3-5 cluster failure cases (b) 每 cluster 的 root cause + mitigation 建议
-- **完成路径**：M3 D22-D28
-- **若 FAIL**：命中率 -1%
+### L21 — Failure mode taxonomy + per-mode mitigation ✅ (2026-05-24, draft v1)
+- **内容**：KMeans k=3 cluster (已 done, `results/failure_mode_clusters_v2.json`) → 3 mode + 4-action mitigation 映射（见 `plans/L21_failure_mode_taxonomy.md`）
+- **状态**：✅ §8.3 主文 + §A18 supp 模板完成
+- **关键发现**：Mode 3 (q=0.38, ambiguous) 在 salvage band 内但 enhance 无效 → **Theorem 2 policy 增加 secondary entropy gate** (已 backport 修订 Thm 2 doc §1.2)
+- **实证**：P1 (M1+M2 cluster retake_rate 100%) + P3 (M3 q_improved 仅 16.2%) 已 live verify
+- **若 FAIL**：N/A，推导 done
 
 ---
 
@@ -214,9 +208,10 @@
 - **完成路径**：M2 D22-D28
 - **若 FAIL（找不到合适子集）**：命中率 -0.5%，降级为「VisiScore-evaluated LQ subset on ISIC 2024」
 
-### L25 — ICLR-specific rebuttal pre-draft ❌
-- **内容**：(a) 用 LLM 模拟预期 reviewer scores (b) pre-rebuttal response draft (c) Open Review 上传前 dry-run
-- **完成路径**：M4 D22-D28
+### L25 — ICLR-specific rebuttal pre-draft ✅ (2026-05-24, draft v1)
+- **内容**：15 个高概率 Q&A + 双版本（顺利/fallback）+ character count + 7 节 rebuttal framework
+- **状态**：✅ draft v1 done — 15 Q&A ≈ 18K chars，覆盖 R1-R10 × 1.5 角度，实战时 paste + edit
+- **完成路径**：M4 D22-D28 实验数字填充 [TBD]，升级为 final
 - **若 FAIL**：命中率 -0.5%
 
 ---

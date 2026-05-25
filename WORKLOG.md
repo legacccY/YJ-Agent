@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-24 19:20 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-05-25 收工 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
 ---
 
@@ -31,8 +31,8 @@
 - [x] 起 `project/configs/visienhance_s1_planA.yaml`（3-level, ~15.3M 参数）✅
 - [x] `tests/test_visienhance.py` 6/6 通过 ✅
 - [x] Stage 1 训练启动 + 监控 ep0-6 ✅
-- [ ] **续训进行中**（PID=25804，val_severity=medium + lpips=0.05，从 ep6 续）
-- [ ] ep10 Decision Gate 重新评估（预计 2026-05-25 早）
+- [x] 修复 train_visienhance.py wandb asyncio 崩溃（WinError 64）✅
+- [ ] **续训待启动**（从 ep 15 续，`stage1_planA/last_visienhance.pth`）
 - [ ] Theorem 2 (agent risk bound) 数学推导（与训练并行）
 
 详细 task 清单见 `project/plans/phase_07_visienhance_planA_active.md`
@@ -48,7 +48,7 @@
 | 5 backbone universality | ✅ done | section54_summary.csv |
 | VisiEnhance Stage 1 v0 | ❌ 容量不足 | PSNR 25.55 dB（目标 ≥30）|
 | **VisiEnhance Plan A** | ⏳ M1-M2 | PSNR ≥ 30, \|ΔAUC\|<1.5%, SalvageRate>55% |
-| 5-theorem closure | 🚧 1/5 done | Prop 1/2 + Lemma 1-2 + Thm 1 ✅; Prop 3 + Lemma 3 + Thm 2 + Cor 1 待 |
+| 5-theorem closure | ✅ 5/5 推导 done (实证待 Plan A) | Prop 1-3 + Lemma 1-3 + Thm 1-2 + Cor 1 全 publication-grade，详 `project/plans/{Theorem2,Prop3_Lemma3,Corollary1}*.md` |
 
 ---
 

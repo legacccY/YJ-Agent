@@ -6,6 +6,117 @@
 
 ---
 
+## 2026-05-25（会话 5，会话截断核查 + hook 假阳性修复）
+
+### 完成
+- **核查会话 3 末段截断**：对照操作时间线逐一核实 15 个操作的落盘状态
+  - ✅ L25 文件完整（668 行，末行 "8. 待续" 正常结尾）
+  - ✅ PROJECT_LOG "E 类 3/3" entry 存在
+  - ✅ README / ACCEPTANCE_CRITERIA L19-L21 ✅ draft 已更新
+  - ✅ ps1 hook Bayesian 模式已同步
+  - ❌ README.md L25 索引仍 ❌（会话末被截）→ **已修复 → ✅ draft**
+  - ❌ ACCEPTANCE_CRITERIA.md L25 索引仍 ❌ → **已修复 → ✅ draft**
+- **修复 `iclr_post_edit.js` hook 假阳性**：
+  - 根因：`Q-VIB\b|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net` 模型名在 planning doc 触发误报
+  - 修复：分离双模式 — tex 文件全量检查，planning doc 只查写作质量规则（`TS always reverses|universal reversal|doctors confirmed|clinically validated|clinical decision support`）
+  - sh/ps1 待同步（JS 是实际执行 hook，已足够）
+
+### 下一步
+- 续训 ep 15→200（`/loop /run-experiment` + resume checkpoint）
+- sh/ps1 hook 同步（无阻塞但保持一致性）
+
+---
+
+## 2026-05-25（会话 4，训练崩溃修复）
+
+### 完成
+- **诊断 train_visienhance.py 崩溃**：`ConnectionResetError [WinError 64]` — wandb 内部 asyncio service process 在 Windows 命名管道断链时未捕获异常，训练在 ep 15 崩溃
+- **彻底修复**：
+  - `os.environ["WANDB_DISABLE_SERVICE"] = "1"` — 禁 wandb 内部 service process（根治）
+  - `wandb.init` / `wandb.log` / `wandb.finish` 全套 try/except 防御
+  - 训练逻辑、checkpoint、state.json 写入不受 wandb 崩溃影响
+- **训练状态**：ep 15/200，val_psnr=25.059，checkpoint 完好（`stage1_planA/last_visienhance.pth`）
+
+### 下一步
+- 从 ep 15 续训：`/loop /run-experiment project/train_visienhance.py project/configs/visienhance_s1_planA.yaml --resume D:/YJ-Agent/checkpoints/visienhance/stage1_planA/last_visienhance.pth`
+- ep 10 Decision Gate 补评估（ep 15 已过，可直接看当前 val_psnr 趋势）
+
+---
+
+## 2026-05-24（会话 3，A 类 5/5 + E 类 3/3 + Phase A 脚本全套）
+
+### 续完成（同会话晚段，E 类防御性写作 3/3 全 done）
+- **L19 10 轮 adversarial review**：`plans/L19_adversarial_review_10rounds.md`
+  - R1-R10 reviewer profile 矩阵 + 每轮深度攻击 + severity 标注
+  - 5 个 severity-5 致命攻击 surface：R3 clinical realist / R6 OOD pessimist / R9 scope critic / R10 safety / R1 stats hawk (必写)
+  - 21-项 action table 分配到 M2-M4
+- **L20 Pre-emptive rebuttal §A21**：`plans/L20_preemptive_rebuttal_A21.md`
+  - LaTeX 模板, 5 subsection (stats / clinical / OOD / scope / safety), ~1.5-2 页
+  - Abstract / §1.4 / §8 配套修改清单
+  - 10 项 R-numbered 写作 alignment checklist
+- **L21 Failure mode taxonomy**：`plans/L21_failure_mode_taxonomy.md`
+  - KMeans k=3 cluster 3 mode 详解（heavy_blur 49% / color_distorted 32% / ambiguous 19%）
+  - per-mode 4-action 映射 (M1→retake / M2→enhance / M3→refuse)
+  - **关键发现**：M3 (q=0.38, ambiguous) 在 salvage band 内但 enhance 无效 → **Theorem 2 policy 加 secondary entropy gate**（已 backport 修订 Thm 2 doc §1.2 + Case 2）
+  - P1 实证 (q<0.35 retake_rate 100%) + P3 实证 (q∈[0.35,0.40] quality_improved 仅 16.2%) 已 live verify
+
+### 命中率推进（会话晚段）
+- E 类 3/3 lever 全 done → 协同 +3% unlock
+- A 类 +5% + E 类 +3% = +8% 已 unlock
+- 当前预估命中率：**30% (基线) + 8% = 38%** (M1 W1 阶段超额完成, 原计划只 32.5%)
+- 距 78-80% 目标还需 +40-42% (B/C/D/F 类 lever, M1 W2 - M4)
+
+### 副产物：Theorem 2 policy 修订
+原 Eq.(2) 单 quality threshold partition → 修订为 quality + entropy 双 gate. 主结论 Eq.(7-9) 不变. **这是 L21 实证 driven 的理论 refinement**, 反向证明 doc + 实证迭代的价值. 
+
+---
+
+## 2026-05-24（会话 3，A 类 5/5 推导 + Phase A 脚本全套）
+
+### 完成（训练并行期间）
+- **L4 Theorem 2 (agent risk bound)** 完整推导：`plans/Theorem2_agent_risk_bound.md`
+  - decision-theoretic 4-action space {direct, enhance, query, refuse}
+  - 4 lemmas (entropy-risk coupling / enhancement gain / threshold window / query-refuse safety) + main theorem 4-case proof
+  - Corollary 2.1 (agent never worse) + 2.2 (population-level)
+  - Δ 显式 bound + τ_enh ≈ 0.35 / τ_high ≈ 0.55 估计
+- **L2 Proposition 3 + L3 Lemma 3** publication-grade 升级：`plans/Prop3_Lemma3_visienhance_theory.md`
+  - Prop 3: 显式 (A1)-(A4) + 5-step proof (Q-VIB ELBO → encoder var → σ²(q̄) gap → quality lift → bound)
+  - Lemma 3 关键修正：$\sqrt{\epsilon}$ scaling (Pinsker-optimal), 非 $\epsilon$ linear；显式 β = M·L_q/√2
+  - 三阶段训练理论 motivation 写清
+- **L5 Corollary 1 (Q-VIB + QCTS ECE bound)** 推导：`plans/Corollary1_qvib_qcts_ece_bound.md`
+  - $\text{ECE}_{\text{comp}} \leq \min(\text{ECE}_{\text{QV}}, \text{ECE}_{\text{QCTS}}) + \epsilon_{\text{qts}}$
+  - $\epsilon_{\text{qts}} \approx 0.037$ 数字预测 + 4-step proof
+  - R10 防御写法模板 (cite BMVC 不搬数字)
+- **Theorems toy 数值验证 9/9 PASS**：`tests/test_theorems_numerical.py`
+  - Prop 3 entropy 单调性 + counter-control
+  - Lemma 3 Pinsker upper bound on MI drop
+  - Thm 2 P1/P2/P3 + Cor 2.1 + bootstrap CI excludes 0 + Lemma 2.1 Gibbs coupling
+- **Phase A 自动化脚本全套**：
+  - `scripts/iclr_grep_redlines.sh` CLI 红线扫描（默认 paper material 干净，`--include-guidance` 扫指导 doc）
+  - `scripts/check_numbers_consistency.py` 17 → 30 数字（拆 BMVC block / ICLR audit 两段）
+
+### 关键发现
+- **STORY_FRAMEWORK §锁定数字 vs 实际 csv 9 项 audit hit**：
+  - test set n=19878 的 Q-VIB Full AUC/ECE/Entropy/ρ 在项目里没有对应 csv 导出
+  - Cross-domain ρ (HAM10000 −0.108 / PAD-UFES −0.150) 与实测 (−0.164 / −0.236) 偏差大
+  - 含义：要么 (a) 历史 eval 没存 csv → Plan A 完成后必须补；要么 (b) 锁定数字 stale → 更新 STORY_FRAMEWORK
+- **A 类协同效应解锁**：5/5 lever 推导 done → A 类 +5% 命中率全解锁 (从 +2.5% 跳到 +5%)
+- **Lemma 3 推导发现 $\sqrt{\epsilon}$ scaling**：投稿前必须把 V2.0plan 老草稿的 "βε linear" 改成 "β√ε"，否则 reviewer 用 Pinsker counterexample 撕
+
+### 待续（M1 W2 D12-D14 + 后续）
+- [ ] 续训进行中（PID=25804，val_severity=medium + lpips=0.05，从 ep6 续）→ ep10 Decision Gate 重评
+- [ ] **L2-L5 推导 LaTeX 化** (M2 D1-D7) → §3-§5 主文 + Appendix A1-A3 (~15 页 supp)
+- [ ] **Lemma 3 √ε scaling toy 升级**：用 paired Gaussian latent + Lipschitz toy classifier verify slope = β
+- [ ] Plan A Stage 2 (DP-Loss) 训练 → 验证 P1 (DP-Loss ≤ 0.05) + P2 (ΔAUC) + P3 (ECE-MI 相关)
+- [ ] STORY_FRAMEWORK §锁定数字 决策：补 n=19878 csv 还是更新数字
+
+### 命中率回退
+- 本会话**无回退**，反而推进：A 类协同从 +2.5% 拉满到 +5%
+- 当前预估命中率：**32.5% + 2.5%（A 类协同满血）= 35%**（M1 W1 阶段目标达成）
+- 距 78-80% 目标还需 +43-45%（B/C/D/E/F 类 lever, M1 W2 - M4 持续推进）
+
+---
+
 ## 2026-05-24（会话 2，Stage 1 训练启动 + ep6 Gate 修复）
 
 ### 完成

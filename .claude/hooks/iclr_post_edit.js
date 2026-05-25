@@ -17,17 +17,20 @@ process.stdin.on('end', () => {
   const path = (data.tool_input && data.tool_input.file_path) || '';
   const norm = path.replace(/\\/g, '/');
 
-  // Target paths: ICLR2027 *.tex/*.md, or main project guidance docs
-  const isTarget =
-    /project\/meeting\/ICLR2027\/.*\.(tex|md)$/.test(norm) ||
-    /project\/(STORY_FRAMEWORK|ACCEPTANCE_CRITERIA|README)\.md$/.test(norm);
+  // Target paths: ICLR2027 *.tex/*.md (full check), or main project guidance docs (writing-only check)
+  const isTexTarget = /project\/meeting\/ICLR2027\/.*\.(tex|md)$/.test(norm);
+  const isDocTarget = /project\/(STORY_FRAMEWORK|ACCEPTANCE_CRITERIA|README)\.md$/.test(norm);
 
-  if (!isTarget) process.exit(0);
+  if (!isTexTarget && !isDocTarget) process.exit(0);
 
   let content;
   try { content = fs.readFileSync(path, 'utf8'); } catch (e) { process.exit(0); }
 
-  const patterns = /(anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove)/g;
+  // tex: full redline (anonymization + model names + writing rules)
+  // planning docs: writing-quality only (model names are legitimate in tracking docs)
+  const patterns = isTexTarget
+    ? /(anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove|\bBayesian\b|doctors? confirmed|clinically validated|clinical decision support)/g
+    : /(anonymous2025|TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support)/g;
   const lines = content.split('\n');
   const hits = [];
   lines.forEach((line, idx) => {
