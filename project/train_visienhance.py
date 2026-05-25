@@ -35,6 +35,7 @@ from models.visienhance import VisiEnhanceNet
 from models.visiscore import VisiScoreNet
 
 os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["WANDB_DISABLE_SERVICE"] = "1"  # prevent asyncio WinError 64 crash on Windows
 STATE_PATH = Path("D:/YJ-Agent/log/experiment_state.json")
 
 
@@ -229,7 +230,7 @@ def main():
 
     # ── Frozen VisiScore-Net ───────────────────────────────────────────────────
     visiscore = VisiScoreNet(pretrained=False).to(device)
-    vs_ckpt = torch.load(cfg.frozen_models.visiscore_ckpt, map_location=device, weights_only=True)
+    vs_ckpt = torch.load(cfg.frozen_models.visiscore_ckpt, map_location=device, weights_only=False)
     visiscore.load_state_dict(vs_ckpt["model"] if "model" in vs_ckpt else vs_ckpt)
     visiscore.eval().requires_grad_(False)
 
@@ -282,7 +283,7 @@ def main():
     no_improve = 0
     resume_path = args.resume or cfg.train.get("resume_from", None)
     if resume_path and Path(resume_path).exists():
-        ckpt = torch.load(resume_path, map_location=device, weights_only=True)
+        ckpt = torch.load(resume_path, map_location=device, weights_only=False)
         model.load_state_dict(ckpt["model"])
         optimizer.load_state_dict(ckpt["optimizer"])
         scheduler.load_state_dict(ckpt["scheduler"])
@@ -293,13 +294,18 @@ def main():
 
     # ── WandB ─────────────────────────────────────────────────────────────────
     wcfg = cfg.get("wandb", {})
-    wandb.init(
-        project=wcfg.get("project", "visienhance"),
-        name=f"stage{cfg.stage}",
-        config=OmegaConf.to_container(cfg, resolve=True),
-        mode=wcfg.get("mode", "offline"),
-        resume="allow",
-    )
+    _wandb_ok = False
+    try:
+        wandb.init(
+            project=wcfg.get("project", "visienhance"),
+            name=f"stage{cfg.stage}",
+            config=OmegaConf.to_container(cfg, resolve=True),
+            mode=wcfg.get("mode", "offline"),
+            resume="allow",
+        )
+        _wandb_ok = True
+    except Exception as e:
+        print(f"[WARN] wandb.init failed — metrics will not be tracked: {e}", flush=True)
 
     out_dir = Path(cfg.output.checkpoint_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -317,8 +323,12 @@ def main():
         print(f"Epoch {epoch:03d} | train_loss={tr['loss']:.4f} | val_PSNR={vl['psnr']:.2f} "
               f"| val_SSIM={vl['ssim']:.4f} | best={best_psnr:.2f} | ETA {eta_h:.1f}h")
 
-        wandb.log({"epoch": epoch, **{f"train/{k}": v for k, v in tr.items()},
-                   **{f"val/{k}": v for k, v in vl.items()}, "lr": scheduler.get_last_lr()[0]})
+        if _wandb_ok:
+            try:
+                wandb.log({"epoch": epoch, **{f"train/{k}": v for k, v in tr.items()},
+                           **{f"val/{k}": v for k, v in vl.items()}, "lr": scheduler.get_last_lr()[0]})
+            except Exception as e:
+                print(f"[WARN] wandb.log failed (skipped): {e}", flush=True)
 
         write_state({
             "stage": cfg.stage,
@@ -356,7 +366,11 @@ def main():
             break
 
     write_state({"stage": cfg.stage, "status": "done", "best_val_psnr": round(best_psnr, 3)})
-    wandb.finish()
+    if _wandb_ok:
+        try:
+            wandb.finish()
+        except Exception:
+            pass
     print(f"[DONE] Stage {cfg.stage} finished. Best val PSNR = {best_psnr:.3f} dB")
 
 
