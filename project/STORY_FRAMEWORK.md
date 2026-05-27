@@ -38,7 +38,7 @@
 
 > NAFNet (Chen et al., ECCV 2022) + FiLM (Perez et al., AAAI 2018) 条件调制，损失含 L1 + LPIPS + **DP-Loss**（diagnosis-preserving KL）+ quality hinge。
 > - **Proposition 3**：若 $\bar{q}(T_\omega(x,q)) > \bar{q}(x)$，则 $\mathbb{E}[H(\hat{p}_{T_\omega(x,q)})] \leq \mathbb{E}[H(\hat{p}_x)]$（增强降低诊断熵）
-> - **Lemma 3**：$\mathcal{L}_{\text{DP}} \leq \epsilon \implies I(Z_{\text{enh}};Y) \geq I(Z_{\text{ref}};Y) - \beta\epsilon$（互信息下界保持）
+> - **Lemma 3**：$\mathcal{L}_{\text{DP}} \leq \epsilon \implies I(Z_{\text{enh}};Y) \geq I(Z_{\text{ref}};Y) - \beta\sqrt{\epsilon}$（互信息下界保持，$\beta = M L_{q_\theta}/\sqrt{2}$，$\sqrt{\epsilon}$ Pinsker-optimal）
 
 **绝对禁止**：用 GAN / 扩散模型做骨干（医学伪影红线）/ 把 enhancement 写成 super-resolution
 **必须写**："deterministic restoration with quality-conditional FiLM modulation，never generative diffusion，因为生成式模型在皮肤镜域有发明色素网络/血管结构的伪影风险"

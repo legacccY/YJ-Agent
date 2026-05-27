@@ -6,9 +6,17 @@
 
 ---
 
-## 2026-05-27（会话 6，锁定数字 audit 根因定案 + hook 假阳性根治）
+## 2026-05-27（会话 6，锁定数字 audit + hook 假阳性 + 5-theorem β/√ε 一致性）
 
 ### 完成
+- **5-theorem 理论一致性审计 + β/√ε 统一**（LaTeX 化前去风险）：
+  - 审计 Theorem2 / Prop3_Lemma3 / Corollary1 三文档常数自洽性
+  - ✅ Theorem2（τ_enh≈0.35/τ_high≈0.55/c_e=0.02/δ_TV=0.098 与 toy test 一致）、Corollary1（L_T≈0.239→K_T≈0.461→ε_qts≈0.037→ECE_comp≤0.116 链自洽）均干净
+  - ❌ **Prop3_Lemma3 β 常数三处打架**：header/L3 正式陈述写 `β=M·L_q·√2` + linear `−βε`；修正段写 `β=M·L_q/√2` + `−β√ε`；§1.3 数值用 `β=4`（bug）
+  - **正解唯一**（Pinsker: TV≤√(ε/2) → Fannes: ΔI≤M·L_q·√ε/√2）：**√ε scaling, β=M·L_q/√2≈0.735**，与 toy test(`test_lemma3_sqrt_epsilon_scaling`, β_theory=0.735)+ 会话3 TODO 一致
+  - **统一修复（用户拍板）**：Prop3_Lemma3（header/P3 残差 2β√ε/L3 陈述/Step4 去 correction 叙述/§1.3 数值 0.33 nats ~80× gap）+ STORY_FRAMEWORK §核心论点 Claim2 Lemma3 行（`−βε`→`−β√ε`）+ test docstring（L3'→L3）；Theorem2 无 β 项（确认）、Corollary1 本就干净
+  - 验证：无 linear βε / ·√2 / L3' 残留，β√ε 13 处，test **10/10 PASS**
+  - **解决会话3 遗留 TODO**："V2.0plan 老草稿 βε linear 改 β√ε" ✅
 - **锁定数字 audit 30 项完整核账**（`scripts/check_numbers_consistency.py`）：
   - **问题 A — Q-VIB 核心表（n=19878）数字真实，审计脚本之前指错对象**：
     - AUC 0.707 / ECE 0.098 / Entropy 0.225 / ρ −0.165 + Adaptive Prior 0.688/0.100/−0.169 真实出处 = `results/eval_report_ablation.md`（5 q̅-分位 ×~3976 = 19882 ≈ 19878，p=8e-121 印证大样本）

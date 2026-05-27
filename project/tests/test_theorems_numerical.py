@@ -167,7 +167,7 @@ def test_lemma3_pinsker_style_mi_upper_bound_on_drop():
 
 
 def test_lemma3_sqrt_epsilon_scaling_paired_latent():
-    """Lemma 3 (L3') sharp form:
+    """Lemma 3 (sharp √ε form):
         KL(p^enh || p^ref) ≤ ε  ⇒  I(Z_ref;Y) − I(Z_enh;Y) ≤ β · √ε
     with β = M · L_q / √2  (M = log K, L_q = classifier Lipschitz in TV).
 

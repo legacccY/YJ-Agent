@@ -18,8 +18,8 @@ supersedes: project/plans/V2.0plan.md §5.3 + §5.4 (hand-wavy drafts)
 > 则 Q-VIB predictive entropy 在期望意义下单调下降，且差值由 $\sigma^2(\bar{q})$ 的 logarithmic gap 控制。
 >
 > **核心 claim 2 (Lemma 3)**：若 DP-Loss $\mathcal{L}_{\text{DP}} = D_{\mathrm{KL}}(p_\phi^{\text{enh}} \| p_\phi^{\text{ref}}) \leq \epsilon$，
-> 则 enhanced latent 与 label 的 mutual information 满足 $I(Z_{\text{enh}}; Y) \geq I(Z_{\text{ref}}; Y) - \beta\epsilon$，
-> 其中 $\beta = M \cdot L_{q_\theta} \cdot \sqrt{2}$，$M = \log K$ 是 label entropy 上界, $L_{q_\theta}$ 是分类器 Lipschitz 常数。
+> 则 enhanced latent 与 label 的 mutual information 满足 $I(Z_{\text{enh}}; Y) \geq I(Z_{\text{ref}}; Y) - \beta\sqrt{\epsilon}$，
+> 其中 $\beta = M \cdot L_{q_\theta} / \sqrt{2}$（$\sqrt{\epsilon}$ scaling 为 Pinsker-optimal），$M = \log K$ 是 label entropy 上界, $L_{q_\theta}$ 是分类器 Lipschitz 常数。
 
 ---
 
@@ -59,9 +59,9 @@ supersedes: project/plans/V2.0plan.md §5.3 + §5.4 (hand-wavy drafts)
 > ### **Proposition 3 (Enhancement Entropy Reduction).**
 >
 > Under (A1)-(A4), for $x$ drawn from the salvage band and $q' = f_\eta(T_\omega(x,q))$,
-> $$\mathbb{E}_{x\sim p(x|\bar{q})}\big[H(\hat{p}_{T_\omega(x,q)})\big] \;\leq\; \mathbb{E}_{x\sim p(x|\bar{q})}\big[H(\hat{p}_x)\big] - \frac{d}{2}\log\frac{\sigma^2(\bar{q})}{\sigma^2(\bar{q}')} + 2\beta\epsilon. \tag{P3}$$
+> $$\mathbb{E}_{x\sim p(x|\bar{q})}\big[H(\hat{p}_{T_\omega(x,q)})\big] \;\leq\; \mathbb{E}_{x\sim p(x|\bar{q})}\big[H(\hat{p}_x)\big] - \frac{d}{2}\log\frac{\sigma^2(\bar{q})}{\sigma^2(\bar{q}')} + 2\beta\sqrt{\epsilon}. \tag{P3}$$
 >
-> The first negative term is the **Q-VIB entropy gap** (strictly positive since $\bar{q}'>\bar{q}\Rightarrow\sigma^2$ shrinks by A3); the residual $2\beta\epsilon$ is the **DP-Loss slack** (small when training converges).
+> The first negative term is the **Q-VIB entropy gap** (strictly positive since $\bar{q}'>\bar{q}\Rightarrow\sigma^2$ shrinks by A3); the residual $2\beta\sqrt{\epsilon}$ is the **DP-Loss slack** (Pinsker-optimal $\sqrt{\epsilon}$ scaling via Lemma 3, small when training converges).
 
 ### 1.2 Proof (5 steps)
 
@@ -111,7 +111,7 @@ $$\mathbb{E}_z[H(q_\theta(y|z_{\text{enh}}))] - \mathbb{E}_z[H(q_\theta(y|z_x))]
 
 where $\bar{c} = \mathbb{E}_x[c(x,q)] \geq 0$ and $\sigma^2(\bar{q}') < \sigma^2(\bar{q})$ by A3 ⇒ first term **strictly negative**.
 
-The drift term $\Delta H_\mu = H(q_\theta(y\|\mu_\phi(x_{\text{enh}}))) - H(q_\theta(y\|\mu_\phi(x)))$ is controlled by A4: by Lemma 3 (proved in §2 below), $\|p_\phi(z\|x_{\text{enh}},q') - p_\phi(z\|x_{\text{ref}},q_{\text{ref}})\|_{\mathrm{TV}} \leq \sqrt{\epsilon/2}$, and with Lipschitz $q_\theta$, $\|\Delta H_\mu\| \leq 2\beta\epsilon$.
+The drift term $\Delta H_\mu = H(q_\theta(y\|\mu_\phi(x_{\text{enh}}))) - H(q_\theta(y\|\mu_\phi(x)))$ is controlled by A4: by Lemma 3 (proved in §2 below), $\|p_\phi(z\|x_{\text{enh}},q') - p_\phi(z\|x_{\text{ref}},q_{\text{ref}})\|_{\mathrm{TV}} \leq \sqrt{\epsilon/2}$, and with Lipschitz $q_\theta$ the Fannes-style continuity gives $\|\Delta H_\mu\| \leq 2\beta\sqrt{\epsilon}$ ($\sqrt{\epsilon}$ scaling, same Pinsker constant as Lemma 3).
 
 **Step 5: Refine using Lemma 1 monotonicity**.
 
@@ -121,7 +121,7 @@ $$\log\frac{\sigma^2(\bar{q})}{\sigma^2(\bar{q}')} \geq s\cdot\Delta\bar{q}\cdot
 
 Combine (6), (7), and take expectation over $x$ in the salvage band:
 
-$$\mathbb{E}_x[H(\hat{p}_{T_\omega(x,q)})] - \mathbb{E}_x[H(\hat{p}_x)] \leq -\frac{d}{2}\log\frac{\sigma^2(\bar{q})}{\sigma^2(\bar{q}')} + 2\beta\epsilon,$$
+$$\mathbb{E}_x[H(\hat{p}_{T_\omega(x,q)})] - \mathbb{E}_x[H(\hat{p}_x)] \leq -\frac{d}{2}\log\frac{\sigma^2(\bar{q})}{\sigma^2(\bar{q}')} + 2\beta\sqrt{\epsilon},$$
 
 which is (P3). $\square$
 
@@ -131,7 +131,7 @@ For typical Q-VIB params (V-QIB §3.3: $d=128$, $\sigma_{\max}^2/\sigma_{\min}^2
 
 $$\frac{d}{2}\log\frac{\sigma^2(0.45)}{\sigma^2(0.60)} \approx \frac{128}{2}\cdot\log(1.5) \approx 26\ \text{nats}.$$
 
-In nats this is large; converted to probability scale via Pinsker, even a tiny fraction (say 1%) gives $\Delta H \approx 0.26$, comfortably exceeding the DP-Loss residual $2\beta\epsilon \approx 2\cdot 4\cdot 0.05 = 0.4$ when $\epsilon = 0.05$ (Stage 2 target). So **Prop 3 is non-vacuous in our regime**.
+In nats the entropy gap is large (≈ 26 nats). The DP-Loss residual is $2\beta\sqrt{\epsilon} \approx 2\cdot 0.735\cdot\sqrt{0.05} \approx 0.33$ nats (using $\beta = M L_{q_\theta}/\sqrt{2} \approx 0.735$ for $K=2$, $\epsilon = 0.05$ Stage 2 target), i.e. smaller than the gap by ~80×. So **Prop 3 is non-vacuous in our regime**.
 
 ### 1.4 Failure Mode (§4.5 limitation)
 
@@ -154,7 +154,9 @@ If A1 fails (i.e., $T_\omega$ collapses to identity, $\bar{q}'\approx\bar{q}$), 
 >
 > If $\mathcal{L}_{\mathrm{DP}} := D_{\mathrm{KL}}(p_\phi^{\text{enh}} \,\|\, p_\phi^{\text{ref}}) \leq \epsilon$, then:
 >
-> $$I(Z_{\text{enh}}; Y) \;\geq\; I(Z_{\text{ref}}; Y) - \beta\epsilon, \quad \beta := M\cdot L_{q_\theta}\cdot\sqrt{2}. \tag{L3}$$
+> $$I(Z_{\text{enh}}; Y) \;\geq\; I(Z_{\text{ref}}; Y) - \beta\sqrt{\epsilon}, \quad \beta := \frac{M\cdot L_{q_\theta}}{\sqrt{2}}. \tag{L3}$$
+>
+> The $\sqrt{\epsilon}$ scaling is **Pinsker-optimal**; a linear $\epsilon$ bound would require a stronger $\chi^2$-divergence assumption (see §A2.2.5).
 
 ### 2.2 Proof (4 steps)
 
@@ -212,15 +214,13 @@ $$|H(Y|Z_{\text{enh}}) - H(Y|Z_{\text{ref}})| \leq M\cdot L_{q_\theta}\sqrt{\eps
 
 Taking the worse-case direction (drop in MI = increase in conditional entropy):
 
-$$I(Z_{\text{ref}};Y) - I(Z_{\text{enh}};Y) \leq M\cdot L_{q_\theta}\sqrt{\epsilon/2} = \frac{M\cdot L_{q_\theta}}{\sqrt{2}}\cdot\sqrt{\epsilon}.$$
+$$I(Z_{\text{ref}};Y) - I(Z_{\text{enh}};Y) \leq M\cdot L_{q_\theta}\sqrt{\epsilon/2} = \frac{M\cdot L_{q_\theta}}{\sqrt{2}}\cdot\sqrt{\epsilon} = \beta\sqrt{\epsilon},$$
 
-To match the linear form of (L3), we use $\sqrt{\epsilon} \leq \epsilon^{1/2}$ — actually for small $\epsilon\in(0,1)$, $\sqrt{\epsilon}\geq\epsilon$, so the bound is **sub-linear**: $O(\sqrt{\epsilon})$ not $O(\epsilon)$.
+which is exactly the boxed bound (L3):
 
-**Correction (this matters for the lever's lock)**: the cleaner form of Lemma 3 is:
+$$\boxed{I(Z_{\text{enh}}; Y) \;\geq\; I(Z_{\text{ref}}; Y) - \beta\sqrt{\epsilon}, \quad \beta = \frac{M\cdot L_{q_\theta}}{\sqrt{2}}.}$$
 
-$$\boxed{I(Z_{\text{enh}}; Y) \;\geq\; I(Z_{\text{ref}}; Y) - \beta\sqrt{\epsilon}, \quad \beta = \frac{M\cdot L_{q_\theta}}{\sqrt{2}}.} \tag{L3'}$$
-
-This $\sqrt{\epsilon}$ scaling is **Pinsker-optimal**; a linear $\epsilon$ bound would require a stronger χ²-divergence assumption. For ICLR paper, we state (L3') and remark that "linear $\epsilon$ scaling is achievable under $\chi^2$ $\leq \epsilon$ instead of KL — see Appendix A2.2.5". $\square$
+The $\sqrt{\epsilon}$ scaling (not linear $\epsilon$) is the **Pinsker-optimal** rate: a linear $\epsilon$ bound would require a stronger $\chi^2$-divergence assumption ($\chi^2 \leq \epsilon$ instead of KL — see Appendix A2.2.5). $\square$
 
 ### 2.3 Tight Constant Calibration
 
@@ -266,11 +266,11 @@ monotone prior, diagnostic preservation), the predictive entropy of
 the enhanced input is bounded by
 \begin{equation}
 \mathbb{E}_x\big[H(\hat{p}_{T_\omega(x,q)})\big] \leq
-\mathbb{E}_x\big[H(\hat{p}_x)\big] - \tfrac{d}{2}\log\tfrac{\sigma^2(\bar{q})}{\sigma^2(\bar{q}')} + 2\beta\epsilon,
+\mathbb{E}_x\big[H(\hat{p}_x)\big] - \tfrac{d}{2}\log\tfrac{\sigma^2(\bar{q})}{\sigma^2(\bar{q}')} + 2\beta\sqrt{\epsilon},
 \label{eq:prop3}
 \end{equation}
 where the first negative term is the Q-VIB entropy gap (Lemma~1)
-and the residual $2\beta\epsilon$ is the diagnostic-preservation slack
+and the residual $2\beta\sqrt{\epsilon}$ is the diagnostic-preservation slack
 (Lemma~3). Proof in Appendix~A2.1.
 
 \paragraph{Lemma 3 (Diagnosis-Preserving Mutual-Information Bound).}
