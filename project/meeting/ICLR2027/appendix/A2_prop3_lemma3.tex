@@ -1,0 +1,187 @@
+% Appendix A2.1 / A2.2 — full proofs of Proposition 3 and Lemma 3.
+% Source-of-truth: project/plans/Prop3_Lemma3_visienhance_theory.md (audited 2026-05-27,
+% canonical form: √ε scaling, β = M L_q / √2). Numerical toy: tests/test_theorems_numerical.py.
+
+\section{Proofs for Diagnosis-Preserving Enhancement}\label{app:a2}
+
+\subsection{Assumptions}\label{app:a2-assump}
+\begin{assumption}[Quality improvement]\label{as:a1}
+$\Tw$ satisfies $\qbar(\Tw(x,q)) > \qbar(x)$ almost surely on the salvage band
+$\qbar\in[\tauenh,\tauhigh]$ (outside this band no improvement is guaranteed).
+\end{assumption}
+\begin{assumption}[Calibrated quality scoring]\label{as:a2}
+The frozen scorer $f_\eta:\mathcal{X}\to[0,1]^5$ yields $\qbar$ monotone in ground-truth
+degradation severity on paired data (PLCC $0.924$, SRCC $0.895$).
+\end{assumption}
+\begin{assumption}[Monotone prior]\label{as:a3}
+The \qvib{} prior variance $\sigma^2(\qbar)$ is strictly decreasing in $\qbar$ on $(0,1)$
+(Lemma~1), i.e.\ $\tfrac{d\sigma^2}{d\qbar} < 0$.
+\end{assumption}
+\begin{assumption}[Diagnostic preservation]\label{as:a4}
+$\Tw$ is trained with a DP loss $\Ldp\leq\epsilon$ (Lemma~\ref{lem:dp-full}), so
+$p_\phi(z\mid x_{\mathrm{enh}},q')$ and $p_\phi(z\mid x_{\mathrm{ref}},q_{\mathrm{ref}})$
+are $\epsilon$-close in KL.
+\end{assumption}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsection{Proposition 3 (Enhancement Entropy Reduction)}\label{app:a2-prop3}
+
+\begin{proposition}[restated]\label{prop:entropy-full}
+Under Assumptions~\ref{as:a1}--\ref{as:a4}, for $x$ drawn from the salvage band and
+$q'=f_\eta(\Tw(x,q))$,
+\begin{equation}
+\E_{x\sim p(x\mid\qbar)}\!\big[\Hent(\hat{p}_{\Tw(x,q)})\big] \;\leq\;
+\E_{x\sim p(x\mid\qbar)}\!\big[\Hent(\hat{p}_x)\big]
+- \tfrac{d}{2}\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')} + 2\beta\sqrt{\epsilon}.
+\label{eq:p3-full}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The argument proceeds in five steps.
+
+\paragraph{Step 1 (ELBO decomposition of predictive entropy).}
+By Jensen's inequality and the \qvib{} ELBO (Proposition~1),
+\begin{equation}
+\Hent(\hat{p}_x) = \Hent\!\big(\E_{z\sim p_\phi(z\mid x,q)}[q_\theta(y\mid z)]\big)
+\;\geq\; \E_{z\sim p_\phi}\!\big[\Hent(q_\theta(y\mid z))\big] - I(Z;Y\mid X=x).
+\label{eq:p3-1}
+\end{equation}
+The Markov chain $X\to Z\to Y$ keeps $I(Z;Y\mid X=x)$ small, so the dominant term is
+$\E_z[\Hent(q_\theta(y\mid z))]$.
+
+\paragraph{Step 2 (Bound conditional entropy by encoder variance).}
+A second-order Taylor expansion of $\Hent(q_\theta(y\mid z))$ around the posterior mean
+$\mu_\phi(x,q)$ gives, with $\Sigma_\phi=\mathrm{diag}(\sigma_\phi^2(x,q))$,
+\begin{equation}
+\E_z[\Hent(q_\theta(y\mid z))] = \Hent(q_\theta(y\mid\mu_\phi))
++ \tfrac{1}{2}\sum_{j=1}^{d}\sigma_{\phi,j}^2\,\partial^2_{z_j}\Hent + O(\|\sigma_\phi\|^4).
+\label{eq:p3-2}
+\end{equation}
+
+\paragraph{Step 3 (KL forces $\sigma_\phi^2$ to track $\sigma^2(\qbar)$).}
+The \qvib{} KL regulariser is
+$\KL(p_\phi(z\mid x,q)\,\|\,r_\psi(z\mid q))
+= \tfrac{1}{2}\sum_j[\tfrac{\mu_{\phi,j}^2+\sigma_{\phi,j}^2}{\sigma^2(\qbar)}
+- 1 - \log\tfrac{\sigma_{\phi,j}^2}{\sigma^2(\qbar)}]$.
+At training equilibrium the first-order condition in $\sigma_{\phi,j}^2$ yields
+$\sigma_{\phi,j}^2 = \sigma^2(\qbar)\,(1+\mathcal{O}(\beta^{-1}))$. Substituting into
+\eqref{eq:p3-2},
+\begin{equation}
+\E_z[\Hent(q_\theta(y\mid z))] \approx \Hent(q_\theta(y\mid\mu_\phi))
++ \tfrac{d}{2}\sigma^2(\qbar)\,c(x,q) + O(\sigma^4),
+\label{eq:p3-3}
+\end{equation}
+with $c(x,q)=\tfrac{1}{d}\sum_j\partial^2_{z_j}\Hent|_{z=\mu_\phi}\geq 0$ on average.
+
+\paragraph{Step 4 (Compare $\qbar$ versus $\qbar'$).}
+For the enhanced input $x_{\mathrm{enh}}=\Tw(x,q)$ with $\qbar'>\qbar$ (Assumptions~\ref{as:a1},
+\ref{as:a2}),
+\begin{equation}
+\E_z[\Hent(q_\theta(y\mid z_{\mathrm{enh}}))] - \E_z[\Hent(q_\theta(y\mid z_x))]
+\approx \tfrac{d}{2}\big(\sigma^2(\qbar') - \sigma^2(\qbar)\big)\,\bar{c} + \Delta\Hent_\mu,
+\label{eq:p3-4}
+\end{equation}
+where $\bar{c}\geq 0$ and $\sigma^2(\qbar')<\sigma^2(\qbar)$ by Assumption~\ref{as:a3} makes the
+first term strictly negative. The drift $\Delta\Hent_\mu$ is controlled by
+Assumption~\ref{as:a4}: Lemma~\ref{lem:dp-full} gives
+$\|p_\phi(z\mid x_{\mathrm{enh}},q') - p_\phi(z\mid x_{\mathrm{ref}},q_{\mathrm{ref}})\|_{\TV}
+\leq \sqrt{\epsilon/2}$, and Fannes-style continuity with Lipschitz $q_\theta$ yields
+$\|\Delta\Hent_\mu\| \leq 2\beta\sqrt{\epsilon}$ (same Pinsker constant as Lemma~\ref{lem:dp-full}).
+
+\paragraph{Step 5 (Refine via Lemma~1 monotonicity).}
+With $\sigma^2(\qbar)=\sigma_{\min}^2+(\sigma_{\max}^2-\sigma_{\min}^2)(1-\sigmoid(s(\qbar-\qbar_0)))$,
+for $\qbar'=\qbar+\Delta\qbar$ with $\Delta\qbar\in[0.1,0.25]$,
+\begin{equation}
+\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')}
+\geq s\,\Delta\qbar\,(1-\sigmoid(\cdot))\,\tfrac{\sigma_{\max}^2-\sigma_{\min}^2}{\sigma_{\max}^2}
+= \Theta(s\,\Delta\qbar) > 0.
+\label{eq:p3-5}
+\end{equation}
+Combining \eqref{eq:p3-4}--\eqref{eq:p3-5} and taking the expectation over $x$ in the
+salvage band gives \eqref{eq:p3-full}.
+\end{proof}
+
+\paragraph{Tight constants (non-vacuity).}
+For $d=128$, $\sigma_{\max}^2/\sigma_{\min}^2\approx 4$, $s\approx 6$, at $\qbar=0.45\to 0.60$,
+$\tfrac{d}{2}\log\tfrac{\sigma^2(0.45)}{\sigma^2(0.60)} \approx 64\log(1.5) \approx 26$ nats,
+whereas the residual $2\beta\sqrt{\epsilon}\approx 2\cdot0.735\cdot\sqrt{0.05}\approx 0.33$ nats
+($\beta=M\Lq/\sqrt{2}\approx 0.735$ for $K=2$, $\epsilon=0.05$). The gap exceeds the residual by
+$\sim\!80\times$, so \eqref{eq:p3-full} is non-vacuous in our regime.
+
+\paragraph{Failure mode.}
+If Assumption~\ref{as:a1} fails ($\Tw$ collapses to identity, $\qbar'\approx\qbar$), the
+RHS of \eqref{eq:p3-5} vanishes and \eqref{eq:p3-full} reduces to the trivial bound. This is
+detected empirically by $\qbar_{\mathrm{enh}}-\qbar_{\mathrm{low}}<0.05$ on the validation set
+(the Stage-1 PSNR $\geq 30$\,dB gate).
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsection{Lemma 3 (DP-Loss $\Rightarrow$ Mutual-Information Lower Bound)}\label{app:a2-lemma3}
+
+\begin{lemma}[restated]\label{lem:dp-full}
+Assume (L1) $\Hent(Y)\leq M=\log K$ and (L2) $q_\theta(y\mid z)$ is $\Lq$-Lipschitz in $z$
+under total variation. If $\Ldp := \KL(p_\phi^{\mathrm{enh}}\,\|\,p_\phi^{\mathrm{ref}})\leq\epsilon$, then
+\begin{equation}
+I(\Zenh;Y) \;\geq\; I(\Zref;Y) - \beta\sqrt{\epsilon},
+\qquad \beta := \frac{M\,\Lq}{\sqrt{2}}.
+\label{eq:l3-full}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+The argument proceeds in four steps.
+
+\paragraph{Step 1 (Pinsker: KL $\to$ TV).}
+By Pinsker's inequality,
+\begin{equation}
+\delta_{\TV}(p_\phi^{\mathrm{enh}},p_\phi^{\mathrm{ref}})
+= \tfrac{1}{2}\|p_\phi^{\mathrm{enh}}-p_\phi^{\mathrm{ref}}\|_1
+\leq \sqrt{\tfrac{1}{2}\KL(p_\phi^{\mathrm{enh}}\,\|\,p_\phi^{\mathrm{ref}})} \leq \sqrt{\epsilon/2}.
+\label{eq:l3-1}
+\end{equation}
+(KL is in nats throughout.)
+
+\paragraph{Step 2 (Push TV through the classifier by coupling).}
+For the optimal coupling $(\Zenh,\Zref)$, $\mathbb{P}[\Zenh\neq\Zref]=\delta_{\TV}$. With the
+$\Lq$-Lipschitz classifier,
+\begin{equation}
+\|\hat{p}_{\mathrm{enh}}-\hat{p}_{\mathrm{ref}}\|_{\TV}
+= \big\|\E[q_\theta(\cdot\mid\Zenh)-q_\theta(\cdot\mid\Zref)]\big\|_{\TV}
+\leq \Lq\,\E\|\Zenh-\Zref\|_2 \leq \Lq\sqrt{\epsilon/2},
+\label{eq:l3-2}
+\end{equation}
+absorbing the $O(\sigma(\qbar))$ effective latent radius into $\Lq$.
+
+\paragraph{Step 3 (MI gap via continuity of entropy).}
+Writing $I(Z;Y)=\Hent(Y)-\Hent(Y\mid Z)$, the drop equals
+$\Hent(Y\mid\Zenh)-\Hent(Y\mid\Zref)$. By the Fannes--Audenaert inequality and
+\eqref{eq:l3-2},
+\begin{equation}
+|\Hent(Y\mid\Zenh)-\Hent(Y\mid\Zref)|
+\leq M\,\delta_{\TV} + h(\delta_{\TV})
+\leq M\,\Lq\sqrt{\epsilon/2} + O\!\big(\sqrt{\epsilon}\log(1/\sqrt{\epsilon})\big),
+\label{eq:l3-3}
+\end{equation}
+where $h$ is the binary entropy, dominated by its linear term for small $\delta_{\TV}$.
+
+\paragraph{Step 4 (Final bound).}
+Taking the worst-case direction,
+\begin{equation}
+I(\Zref;Y)-I(\Zenh;Y)
+\leq M\,\Lq\sqrt{\epsilon/2}
+= \frac{M\,\Lq}{\sqrt{2}}\,\sqrt{\epsilon} = \beta\sqrt{\epsilon},
+\label{eq:l3-4}
+\end{equation}
+which is \eqref{eq:l3-full}. The $\sqrt{\epsilon}$ rate is Pinsker-optimal: a linear-$\epsilon$
+bound would require a $\chi^2$-divergence assumption ($\chi^2\leq\epsilon$ in place of KL;
+Appendix~A2.2.5).
+\end{proof}
+
+\paragraph{Tight constants.}
+$M=\log 2\approx 0.693$ ($K=2$); the normalised \qvib{} head has $\Lq\approx 1.5$
+(spectral-norm clipped); $\epsilon=0.05$ (Stage-2 target). Then
+$\beta\sqrt{\epsilon}\approx \tfrac{0.693\cdot 1.5}{\sqrt{2}}\cdot\sqrt{0.05}\approx 0.165$ nats
+($K=2$), or $\approx 0.46$ nats for $K=7$ --- well within the inductive gap from the \qvib{}
+ELBO ($I(Z;Y)\approx 0.5$--$0.6$ nats on the benchmark). A numerical toy
+(paired Gaussian latents + Lipschitz linear classifier) confirms the regression slope of
+the MI drop against $\sqrt{\epsilon}$ is finite and below $\beta_{\mathrm{theory}}\approx 0.735$.

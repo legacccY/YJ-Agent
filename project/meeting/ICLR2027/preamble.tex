@@ -1,0 +1,52 @@
+% ICLR 2027 preamble — packages, theorem environments, anonymized macros.
+% Model-name macros are defined to ANONYMIZED strings so the literal internal
+% names never appear in the .tex (passes the redline hook + one-line de-anon toggle).
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+% ── Theorem environments ───────────────────────────────────────────────────────
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+
+% ── Anonymized model-name macros (de-anon = edit RHS only) ─────────────────────
+\newcommand{\qvib}{QC-VIB}            % quality-conditional VIB
+\newcommand{\visiscore}{5-head IQA}  % 5-dim quality scorer
+\newcommand{\visienhance}{QP-Enhance}% quality-preserving enhancement
+\newcommand{\qcts}{QC-TS}            % quality-conditional temperature scaling (prior submission)
+\newcommand{\itb}{QSB}              % quality-stratified benchmark
+
+% ── Math operators ─────────────────────────────────────────────────────────────
+\DeclareMathOperator{\KL}{KL}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\sigmoid}{sigmoid}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\TV}{\mathrm{TV}}
+\newcommand{\Hent}{H}                 % Shannon entropy (nats)
+\newcommand{\qbar}{\bar{q}}
+\newcommand{\Tw}{T_\omega}            % enhancement map
+\newcommand{\Zenh}{Z_{\mathrm{enh}}}
+\newcommand{\Zref}{Z_{\mathrm{ref}}}
+\newcommand{\Lq}{L_{q_\theta}}        % classifier Lipschitz constant
+\newcommand{\Ldp}{\mathcal{L}_{\mathrm{DP}}}
+\newcommand{\Ragent}{\mathcal{R}_{\mathrm{agent}}}
+\newcommand{\Rdirect}{\mathcal{R}_{\mathrm{direct}}}
+\newcommand{\Renh}{\mathcal{R}_{\mathrm{enh}}}
+\newcommand{\tauenh}{\tau_{\mathrm{enh}}}
+\newcommand{\tauhigh}{\tau_{\mathrm{high}}}
+\newcommand{\taulow}{\tau_{\mathrm{low}}}

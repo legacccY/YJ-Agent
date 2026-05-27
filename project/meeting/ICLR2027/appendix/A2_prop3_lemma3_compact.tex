@@ -1,0 +1,29 @@
+% Compact statements of Prop 3 + Lemma 3 for the main body (§4.4).
+% Full proofs: Appendix A2.1 / A2.2 (appendix/A2_prop3_lemma3.tex).
+
+\begin{proposition}[Enhancement Entropy Reduction]\label{prop:entropy}
+Under Assumptions A1--A4 (quality improvement, calibrated scoring, monotone prior,
+diagnostic preservation), for $x$ in the salvage band and $q'=f_\eta(\Tw(x,q))$,
+\begin{equation}
+\E_{x}\!\big[\Hent(\hat{p}_{\Tw(x,q)})\big] \;\leq\;
+\E_{x}\!\big[\Hent(\hat{p}_x)\big]
+- \tfrac{d}{2}\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')} + 2\beta\sqrt{\epsilon},
+\label{eq:prop3}
+\end{equation}
+where the first negative term is the \qvib{} entropy gap (Lemma~1, strictly positive
+since $\qbar'>\qbar \Rightarrow \sigma^2$ shrinks) and the residual $2\beta\sqrt{\epsilon}$
+is the diagnostic-preservation slack (Lemma~\ref{lem:dp}).
+\end{proposition}
+
+\begin{lemma}[Diagnosis-Preserving Mutual-Information Bound]\label{lem:dp}
+Let $q_\theta$ be $\Lq$-Lipschitz in total variation and let the label entropy be
+bounded by $M=\log K$. If $\Ldp := \KL(p_\phi^{\mathrm{enh}} \,\|\, p_\phi^{\mathrm{ref}}) \leq \epsilon$, then
+\begin{equation}
+I(\Zenh; Y) \;\geq\; I(\Zref; Y) - \beta\sqrt{\epsilon},
+\qquad \beta = \frac{M\,\Lq}{\sqrt{2}}.
+\label{eq:lemma3}
+\end{equation}
+The $\sqrt{\epsilon}$ rate is Pinsker-optimal; a linear-$\epsilon$ bound would require a
+stronger $\chi^2$-divergence assumption (Appendix~A2.2.5). The proof combines Pinsker's
+inequality with a Lipschitz coupling argument (Appendix~A2.2).
+\end{lemma}

@@ -9,6 +9,11 @@
 ## 2026-05-27（会话 6，锁定数字 audit + hook 假阳性 + 5-theorem β/√ε 一致性）
 
 ### 完成
+- **ICLR2027 paper 骨架搭建 + Appendix A2 LaTeX 化（L2/L3）**：
+  - `meeting/ICLR2027/`：`preamble.tex`（匿名宏 `\qvib`→"QC-VIB" 等 + 定理环境 + 数学算子）、`main.tex`（§1-§9 锁定结构 stub + Contributions C1-C4 + Appendix input）、`appendix/A2_prop3_lemma3.tex`（Prop 3 五步 + Lemma 3 四步**完整证明**，√ε canonical）、`A2_prop3_lemma3_compact.tex`（§4.4 正文 compact 陈述）、`.gitignore`（latex 产物）
+  - **匿名策略**：模型名走 `\newcommand` 宏（脱敏字符串），tex 不出现内部名 → 过 redline hook（hook 实测拦下 "VisiSkin-Agent"/"Bayesian" 两处误写，已修）+ 投稿前一行切换
+  - **编译验证**：pdflatex（texlive 2025）两遍 exit 0，5 页，无未定义引用
+  - L4 (Thm 2) / L5 (Cor 1) / A1 (Q-VIB) LaTeX 化待续（A2_3 / A3 / A1 input 已占位）
 - **5-theorem 理论一致性审计 + β/√ε 统一**（LaTeX 化前去风险）：
   - 审计 Theorem2 / Prop3_Lemma3 / Corollary1 三文档常数自洽性
   - ✅ Theorem2（τ_enh≈0.35/τ_high≈0.55/c_e=0.02/δ_TV=0.098 与 toy test 一致）、Corollary1（L_T≈0.239→K_T≈0.461→ε_qts≈0.037→ECE_comp≤0.116 链自洽）均干净

@@ -1,0 +1,91 @@
+% ICLR 2027 — closed-loop quality-triage system (anonymized).  Skeleton; section order LOCKED to
+% STORY_FRAMEWORK.md §故事弧. Do NOT reorder §3-§7 (anti-drift rule 6).
+% Replace \documentclass with the official iclr2027 style when available.
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\input{preamble}
+
+\title{Closed-Loop Quality-Triage for Reliable Skin-Lesion Diagnosis\\
+on Quality-Varying Consumer Imagery}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% LOCKED hook (anti-drift rule 1): first sentence MUST stay on the closed-loop
+% quality-triage agent. Do not reduce to a calibration-only story (rule 7).
+% TODO(M3): fill — detect (\visiscore) -> enhance (\visienhance) OR query -> diagnose (\qvib),
+% with a 5-theorem end-to-end closure and an expected-risk bound (Theorem~\ref{thm:agent}).
+\end{abstract}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Introduction}\label{sec:intro}
+% §1.1 problem: consumer-device medical AI, quality varies, passive calibration insufficient
+% §1.2 gaps: post-hoc calibration (quality-oblivious) / ensemble & dropout UQ (quality-oblivious) /
+%            generic enhancement (no diagnostic-preservation guarantee)
+% §1.3 ★ closed-loop quality-triage hook ★
+% §1.4 Contributions C1-C4
+\paragraph{Contributions.}
+% C1: \qvib — first quality-conditional information bottleneck (Prop 1, Lemma 1, Thm 1, Prop 2).
+% C2: \visienhance + DP-Loss — diagnosis-preserving enhancement with a mutual-information guarantee
+%      (Prop 3, Lemma 3).
+% C3: closed-loop agent with an expected-risk bound (Thm 2) + composite-calibration bound (Cor 1).
+% C4: \itb benchmark + 25-lever evaluation.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Related Work}\label{sec:related}
+% §2.1 Calibration; §2.2 Information Bottleneck; §2.3 Medical Image Enhancement;
+% §2.4 IQA + Medical AI Benchmarks.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Quality Assessment and the Quality-Conditional Bottleneck}\label{sec:qvib}
+% §3.1 \visiscore (5-dim quality vector, PLCC 0.924 / SRCC 0.895)
+% §3.2 \qvib ELBO (Proposition 1)
+% §3.3 Quality-Adaptive Prior (Lemma 1, sigmoid parameterisation)
+% §3.4 Quality Tokenizer + Attention Drift Bound (Theorem 1)
+% §3.5 Quality-Calibrated Entropy Guarantee (Proposition 2)
+% Full proofs: Appendix A1.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Diagnosis-Preserving Enhancement}\label{sec:enhance}
+% §4.1 Degradation taxonomy (q_3 completeness irreversible)
+% §4.2 NAFNet + FiLM architecture
+% §4.3 DP-Loss definition
+\subsection{Entropy Reduction and Mutual-Information Preservation}\label{sec:prop3lemma3}
+% Compact statements; full proofs in Appendix A2.1 / A2.2.
+\input{appendix/A2_prop3_lemma3_compact}
+% §4.5 Three-stage training protocol (Stage 1 pixel / Stage 2 DP-Loss / Stage 3 quality hinge)
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Closed-Loop Agent}\label{sec:agent}
+% §5.1 Dual-channel decision logic (4 channels: direct / cautioned / enhance / query-refuse)
+% §5.2 Theorem 2 (expected risk bound) — compact; full proof Appendix A2.3
+% §5.3 Corollary 1 (\qvib + \qcts composite ECE bound) — link to prior submission
+% §5.4 Agent implementation (ReAct + small LLM + rule fallback)
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{The \itb{} Benchmark}\label{sec:benchmark}
+% §6.1 4 subsets (LQ / HQ / Edge / Diverse); §6.2 quality-stratified protocol; §6.3 9 baselines
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Experiments}\label{sec:exp}
+% §7.1 Setup; §7.2 Main results (Table 1); §7.3 ★ diagnostic preservation ★;
+% §7.4 ★ salvage rate ★; §7.5 universality; §7.6 cross-domain; §7.7 cost-benefit + DCA; §7.8 fairness
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Discussion and Limitations}\label{sec:discussion}
+% §8.1 connection to prior post-hoc calibration; §8.2 why generative enhancement fails here;
+% §8.3 failure-mode taxonomy (3-mode); §8.4 limitations (theory is sketch, synthetic benchmark, etc.)
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section{Conclusion}\label{sec:conclusion}
+
+\appendix
+\input{appendix/A2_prop3_lemma3}
+% \input{appendix/A1_qvib}        % TODO: Prop 1 / Lemma 1 / Thm 1 / Prop 2
+% \input{appendix/A2_3_theorem2}  % TODO: Theorem 2 full proof
+% \input{appendix/A3_corollary1}  % TODO: Corollary 1 full proof
+
+\end{document}

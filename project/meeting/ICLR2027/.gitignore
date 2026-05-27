@@ -1,0 +1,12 @@
+# LaTeX build artifacts (paper-local, keep figure PDFs elsewhere unaffected)
+*.aux
+*.log
+*.out
+*.toc
+*.pdf
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+compile*.log
