@@ -19,6 +19,7 @@
 - **A23 Reader-study disclaimer** + **A26 Reproducibility**(环境/seed/split/Zenodo，CODEBASE_README 去匿名后取 infra) + **A0 Notation 表**。
 - **references.bib**(19 篇外部引用) + preamble natbib + 全文 `\citep/\citet/\citealp` 接线。
 - **DATA_INVENTORY 纠错**：Edge/Diverse/LQ/HQ 计数+阈值对齐 csv。
+- **BMVC 匿名 repo（`release/`，非封印区）**：主页 `README.md` 重写（标题对齐投稿主文 `itb_paper.tex`=QCTS、headline 置顶、硬件纠错 A100→消费级 GPU）；匿名审计修 4 项 —— **P1 致命去匿名**（`GITHUB_SETUP.md`/`git_init_with_history.sh` 含身份词 legacccy/yj200/余嘉/xjtlu/liverpool → `.gitignore` 排除 + 脚本自删 + 去 commit message 泄漏）、P2 DATASET_CARD 标题对齐、P3 质量区间对齐真实 csv、P4 data/README 死链。封印 `meeting/BMVC/` 零改动（仅 read 确认标题）。
 
 ### 当前 paper 状态
 - **33 页**(主文 9 章 stub-filled + Ethics/Repro + Appendix A0/A1/A2/A2.3/A3/A4/A18/A19/A20/A21/A23/A26)，bibtex 19 ref 全 defined，零 undefined cite/ref，全 tex 零 banned 字样(Q-VIB/VisiScore/Bayesian/we prove/doctors confirmed/BMVC/MICCAI/作者名)。

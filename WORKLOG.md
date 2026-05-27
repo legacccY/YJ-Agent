@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-27 会话 7（Appendix 全面 LaTeX 化）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-05-27 会话 7 收工（ICLR Appendix LaTeX 化 + BMVC 匿名 repo 主页）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
 ---
 
@@ -34,6 +34,8 @@
 - [x] **Appendix A0/A4/A18/A19/A20/A21/A23/A26 LaTeX 化** + references.bib(19 ref) + citation 接线 ✅
 - [x] DATA_INVENTORY ITB 计数纠错（Edge660/Diverse1500）✅
 - [x] paper **33 页**，bibtex 全 defined，零 undefined，零 banned 字样 ✅
+- [x] **BMVC 匿名 repo 主页重写** `release/README.md`（标题对齐投稿 itb_paper.tex + headline 置顶 + 硬件纠错）✅
+- [x] **release 匿名审计修复**：P1 致命去匿名（GITHUB_SETUP/造史脚本含身份词 → .gitignore 排除 + 自删）+ P2/P3/P4 一致性（DATASET_CARD 标题/区间、data/README 死链）✅
 
 待续（全部 gated on 实验，写作侧已到边界）：
 - [ ] **续训待启动**（从 ep 15 续，`stage1_planA/last_visienhance.pth`，`/loop /run-experiment`）
