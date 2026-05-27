@@ -1,29 +1,60 @@
-# ITB + QCTS: Quality-Aware Calibration for Dermatology AI
+<div align="center">
 
-Code and data for the BMVC 2026 paper:
-> **Quality-Aware Calibration: Exposing and Mitigating Calibration Collapse under Image Quality Shift in Dermatology AI**
-> Anonymous Authors, BMVC 2026
+# Quality-Conditioned Temperature Scaling
+### Post-hoc Calibration under Image Quality Shift
+
+[![License: MIT](https://img.shields.io/badge/Code-MIT-blue.svg)](LICENSE)
+[![Data: CC BY-NC-SA 4.0](https://img.shields.io/badge/Data-CC--BY--NC--SA--4.0-lightgrey.svg)](DATASET_CARD.md)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-green.svg)](requirements.txt)
+[![PyTorch 2.7](https://img.shields.io/badge/PyTorch-2.7%20(CUDA%2012.6)-ee4c2c.svg)](requirements.txt)
+[![Benchmark: ITB v1.0](https://img.shields.io/badge/Benchmark-ITB%20v1.0-orange.svg)](DATASET_CARD.md)
+
+**Official code and benchmark for the BMVC 2026 paper** *(Anonymous Authors, under review)*
+
+</div>
 
 ---
 
-## Key Findings
+## TL;DR
 
-- Standard temperature scaling (TS) can **reverse** a backbone's quality-awareness: on Std VIB, ρ(entropy, q̄) flips from −0.153 to +0.241 after TS.
-- **QCTS** (Quality-Conditioned Temperature Scaling) fixes this with one extra parameter: T(q̄) = softplus(T₀ + α(1 − q̄)).
-- MC Dropout and Deep Ensembles are **quality-oblivious** despite high AUC (ECE on low-quality images 0.44–0.62, ~3× worse than simpler alternatives).
-- QCTS reduces QCDI by 73% over standard TS and extends to ResNet-50, ViT-Tiny, ConvNeXt-Tiny, Swin-Tiny, and ImageNet-C corruptions.
+> **Standard temperature scaling can make a model *less* reliable on low-quality images** — it
+> *reverses* the calibrator's quality-awareness. We diagnose why, and fix it with **one extra
+> parameter**.
+
+On a strongly bottlenecked backbone, the entropy–quality correlation $\rho(\text{entropy},\bar q)$
+**flips sign from $-0.153$ to $+0.241$** after vanilla temperature scaling (TS): the calibrated model
+becomes *more* confident on *worse* images. **Quality-Conditioned Temperature Scaling (QCTS)** removes
+this with a quality-dependent temperature
+
+$$T(\bar q) = \mathrm{softplus}\big(T_0 + \alpha\,(1-\bar q)\big),$$
+
+restoring $\rho = -0.249$ and cutting the quality-conditional calibration gap (QCDI) by **73%** over
+standard TS — using just **two parameters** and **no retraining**.
 
 ---
 
-## Quick Start
+## Key Results (ITB-LQ, low-quality subset)
+
+| Method | ECE-LQ ↓ | ρ(entropy, q̄) | Note |
+|---|---|---|---|
+| MC Dropout (30×) | 0.615 | −0.114 | high AUC, quality-oblivious |
+| Deep Ensemble (5×) | 0.440 | −0.123 | high AUC, quality-oblivious |
+| Std VIB | 0.146 | −0.153 | quality-aware but mis-calibrated |
+| Std VIB + TS | 0.175 | **+0.241** | ⚠️ quality-awareness **reversed** |
+| **Std VIB + QCTS (ours)** | **0.079** | **−0.249** | ✅ reversal fixed, best ECE |
+
+QCTS generalizes across backbones (ResNet-50, ViT-Tiny, ConvNeXt-Tiny, Swin-Tiny) and to ImageNet-C
+corruption severities, where the quality scalar is the known severity level rather than a learned
+score. Full tables: see the paper and `scripts/generate_tables.py`.
+
+---
+
+## Install
 
 ### Docker (recommended)
 
 ```bash
-# Build
 docker build -t itb-qcts:v1.0 .
-
-# Reproduce Table 1 (~2h on A100)
 docker run --gpus device=0 -v $(pwd)/data:/workspace/data itb-qcts:v1.0
 ```
 
@@ -34,9 +65,49 @@ pip install -r requirements.txt
 bash reproduce.sh
 ```
 
+**Requirements:** Python 3.10+, PyTorch 2.7 (CUDA 12.6). QCTS itself fits in CPU-seconds on cached
+logits; the full pipeline (backbone inference → ITB evaluation → calibration) runs in about an hour
+on a single consumer GPU (e.g. an RTX 4070-class card) — no cluster required.
+
 ---
 
-## Project Structure
+## Apply QCTS to Your Own Model
+
+QCTS is a drop-in post-hoc calibrator: fit on a validation set, then rescale test logits by a
+quality-dependent temperature.
+
+```python
+import numpy as np
+from qcts import QCTSCalibrator
+
+# Fit on your validation set (logits, per-input quality scalar, targets)
+cal = QCTSCalibrator()
+cal.fit(val_logits, val_qbar, val_targets)
+print(cal)                       # QCTSCalibrator(T0=1.1700, alpha=0.9554)
+
+# Calibrate test predictions
+prob_calibrated = cal.predict(test_logits, test_qbar)
+```
+
+The quality scalar `qbar` can be:
+
+- the **5-head IQA module** (`iqa/five_head.py`) — best performance on dermoscopy; or
+- **any per-input quality proxy** — Laplacian variance, BRISQUE, or a known corruption severity.
+
+---
+
+## Reproduce Paper Numbers
+
+| What | Command |
+|---|---|
+| Download ITB v1.0 metadata | `python scripts/download_itb.py` |
+| Table 1 (main results) | `bash reproduce.sh` |
+| Table 3 (backbone universality) | `python scripts/run_qcts.py --backbone all` |
+| Calibration tables | `python scripts/generate_tables.py` |
+
+---
+
+## Repository Structure
 
 ```
 ├── itb/                  # ITB evaluation protocol
@@ -45,77 +116,53 @@ bash reproduce.sh
 ├── qcts/
 │   └── calibrate.py      # QCTSCalibrator (fit + predict)
 ├── iqa/
-│   └── five_head.py      # 5-Head IQA module (EfficientNet-B0)
+│   └── five_head.py      # 5-head IQA module (EfficientNet-B0 backbone)
 ├── baselines/
 │   └── temperature_scaling.py
 ├── scripts/
-│   ├── download_itb.py   # Download ITB v1.0 metadata from Zenodo
+│   ├── download_itb.py   # Fetch ITB v1.0 metadata from Zenodo
 │   ├── run_qcts.py       # Fit + evaluate QCTS
 │   └── generate_tables.py
 ├── configs/default.yaml
-├── data/README.md        # How to download raw images
+├── data/README.md        # How to obtain the raw images
 ├── DATASET_CARD.md       # ITB v1.0 dataset card
-├── Dockerfile
+├── Dockerfile · docker-compose.yml
 ├── reproduce.sh
 └── requirements.txt
 ```
 
 ---
 
-## Applying QCTS to Your Own Model
+## ITB v1.0 — Image Triage Benchmark
 
-```python
-import numpy as np
-from qcts import QCTSCalibrator
+ITB partitions four public dermatology datasets (**ISIC 2020, FitzPatrick17k, HAM10000, PAD-UFES**)
+into quality-stratified subsets using a five-dimensional learned quality scalar (sharpness,
+brightness, completeness, colour temperature, contrast).
 
-# Fit on your validation set
-cal = QCTSCalibrator()
-cal.fit(val_logits, val_qbar, val_targets)
-print(cal)  # QCTSCalibrator(T0=1.1700, alpha=0.9554)
+- **Zenodo:** DOI `10.5281/zenodo.XXXXXXX` (activated upon acceptance)
+- **License:** CC-BY-NC-SA 4.0 for metadata; raw images remain under their original licenses
+- **Details:** see [`DATASET_CARD.md`](DATASET_CARD.md)
 
-# Calibrate test predictions
-prob_calibrated = cal.predict(test_logits, test_qbar)
+The repository redistributes only derived metadata (quality scores, subset labels, targets) and
+pre-computed baseline predictions; raw images are downloaded from their original sources.
+
+---
+
+## Citation
+
+```bibtex
+@inproceedings{anonymous2026qcts,
+  title     = {Quality-Conditioned Temperature Scaling: Post-hoc Calibration under Image Quality Shift},
+  author    = {Anonymous Authors},
+  booktitle = {British Machine Vision Conference (BMVC)},
+  year      = {2026},
+  note      = {Under review}
+}
 ```
-
-The quality scalar `qbar` can be:
-- The 5-head IQA module (see `iqa/five_head.py`) — best performance on dermoscopy
-- Any per-input quality proxy (Laplacian variance, BRISQUE, corruption severity, etc.)
-
----
-
-## Reproducing Paper Numbers
-
-| What | Command |
-|------|---------|
-| Download ITB v1.0 | `python scripts/download_itb.py` |
-| Table 1 (main results) | `bash reproduce.sh` |
-| Table 3 (backbone universality) | `python scripts/run_qcts.py --backbone all` |
-| Supplementary threshold sensitivity | `python scripts/threshold_sensitivity.py` |
-
----
-
-## ITB v1.0 Dataset
-
-The Image Triage Benchmark partitions four public dermoscopy datasets (ISIC 2020,
-FitzPatrick17k, HAM10000, PAD-UFES) into quality-stratified subsets using a
-5-dimensional learned quality scalar.
-
-- **Zenodo**: DOI 10.5281/zenodo.XXXXXXX (active after acceptance)
-- **License**: CC-BY-NC-SA 4.0 (metadata); raw images under original licenses
-
-See `DATASET_CARD.md` for full details.
-
----
-
-## Requirements
-
-- Python 3.10+
-- PyTorch 2.7 (CUDA 12.6)
-- See `requirements.txt` for full pinned versions
 
 ---
 
 ## License
 
-Code: MIT (see `LICENSE`)
-Dataset metadata: CC-BY-NC-SA 4.0 (see `DATASET_CARD.md`)
+- **Code:** MIT — see [`LICENSE`](LICENSE)
+- **Dataset metadata:** CC-BY-NC-SA 4.0 — see [`DATASET_CARD.md`](DATASET_CARD.md)
