@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-05-27（会话 6，锁定数字 audit 根因定案 + hook 假阳性根治）
+
+### 完成
+- **锁定数字 audit 30 项完整核账**（`scripts/check_numbers_consistency.py`）：
+  - **问题 A — Q-VIB 核心表（n=19878）数字真实，审计脚本之前指错对象**：
+    - AUC 0.707 / ECE 0.098 / Entropy 0.225 / ρ −0.165 + Adaptive Prior 0.688/0.100/−0.169 真实出处 = `results/eval_report_ablation.md`（5 q̅-分位 ×~3976 = 19882 ≈ 19878，p=8e-121 印证大样本）
+    - 旧脚本拿 `itb_predictions.csv`（n=2820 ITB pool，更难的对抗子集）重算 → 必然 FAIL（ECE 0.31 vs 0.098 等）
+    - **修复**：7 个核心 check 改从 `eval_report_ablation.md` 解析（同 VisiScore md-parse 写法）→ **ICLR 11/11 PASS**
+    - per-sample n=19878 csv 从未导出（只存 md 聚合）→ **Plan A re-eval（M1-M2）必须重导出**
+  - **问题 B — Cross-domain ρ locked 无源 csv**：
+    - STORY_FRAMEWORK locked ham10000 −0.108 / pad-ufes −0.150 全项目**搜不到任何出处**
+    - 权威 `external_ablation.csv`（有 p 值、n 对、baseline F）实为 **ham −0.164 (p=5e-61) / pad −0.236 (p=1e-30)**，与重算完全一致
+    - **决定（用户拍板）**：先不改 master doc 数字，只在 STORY_FRAMEWORK 表加 `⚠️待核` 标注；审计脚本降级为 PENDING（不 FAIL 不 PASS，不阻塞）；延 Plan A re-eval 后再 frozen
+    - 脚本现状：**BMVC 17/17 + ICLR 11/11 PASS + 2 PENDING，exit 0**
+- **hook 假阳性根治**（会话 5 只分离双模式，未解决根因）：
+  - 根因：doc 写作检查 pattern 命中的是 STORY_FRAMEWORK 的 R1-R10 规则表本身（规则手册必须引用禁用词当反例）+ ACCEPTANCE 匿名红线
+  - 修复（`iclr_post_edit.js` 实际执行 + sh/ps1 parity 同步）：doc 模式 (a) 去掉 `anonymous2025`（脱敏由 tex 全量检查负责），(b) 跳过引号包裹的匹配（negative lookbehind on `" “ ” 「 」`）
+  - 验证：doc 3/3 exit 0、非引号 banned 仍 flag(exit 2)、tex 引号内仍 flag(exit 2)
+- **Lemma 3 √ε toy** 确认 `test_theorems_numerical.py` 10/10 PASS（`test_lemma3_sqrt_epsilon_scaling_paired_latent` paired Gaussian + Lipschitz toy 验 slope vs β_theory=0.735，已存在，本会话验证）
+
+### 待续
+- 续训 ep15→200（`/loop /run-experiment` + resume，实验部分）
+- **Plan A re-eval（M1-M2）后必办**：① 重导 n=19878 per-sample csv（补 per-sample 可复现）② 决定 cross-domain 锁定值（−0.108→−0.164 / −0.150→−0.236 或保留待解释）
+- STORY_FRAMEWORK Table 1（ITB-LQ/HQ）源 `eval_report_all.csv` 仍不存在（标 待重跑，正常）
+
+### 命中率
+- 本会话无回退，纯诚信加固（audit + hook）。命中率维持会话 5 的 ~38%
+
+---
+
 ## 2026-05-25（会话 5，会话截断核查 + hook 假阳性修复）
 
 ### 完成

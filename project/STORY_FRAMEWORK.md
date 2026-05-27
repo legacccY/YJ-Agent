@@ -195,8 +195,8 @@ Appendix（50-80 页 supp）
 
 | Dataset | n | Q-VIB Full ρ | p |
 |---|---|---|---|
-| HAM10000 | 10,015 | −0.108 | < 10⁻²⁶ |
-| PAD-UFES | 2,298 | −0.150 | < 10⁻¹² |
+| HAM10000 | 10,015 | −0.108 ⚠️待核 | < 10⁻²⁶ |
+| PAD-UFES | 2,298 | −0.150 ⚠️待核 | < 10⁻¹² |
 | CheXpert (cross-modality) | TBD | TBD | TBD（M1-M2 待跑）|
 | Fundus APTOS (cross-modality) | TBD | TBD | TBD（M1-M2 待跑）|
 | Kvasir endoscopy (cross-modality) | TBD | TBD | TBD（M2 待跑）|

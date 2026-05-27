@@ -30,7 +30,9 @@ if (-not (Test-Path $path)) { exit 0 }
 if ($is_tex) {
     $patterns = 'anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove|\bBayesian\b|doctors? confirmed|clinically validated|clinical decision support'
 } else {
-    $patterns = 'anonymous2025|TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support'
+    # Doc mode: drop anonymization tokens (meta-only here) + skip phrases quoted as
+    # R1-R10 rule examples (negative lookbehind on quote chars). Mirrors iclr_post_edit.js.
+    $patterns = '(?<!["“”「」])(TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support)'
 }
 
 $hits = Select-String -Path $path -Pattern $patterns -CaseSensitive:$false -List:$false 2>$null | Select-Object -First 5

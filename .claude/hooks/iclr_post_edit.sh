@@ -29,10 +29,13 @@ unix_path=$(echo "$norm" | sed 's|^\([A-Za-z]\):/|/\L\1/|')
 # tex: full redline. planning docs: writing-quality only (model names are legitimate in tracking docs)
 if [ "$is_tex" = "1" ]; then
   patterns='anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove|\bBayesian\b|doctors? confirmed|clinically validated|clinical decision support'
+  hits=$(grep -nE "$patterns" "$unix_path" 2>/dev/null | head -5)
 else
-  patterns='anonymous2025|TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support'
+  # Doc mode: drop anonymization tokens (meta-only here) + skip phrases quoted as
+  # R1-R10 rule examples (negative lookbehind on quote chars). Mirrors iclr_post_edit.js.
+  patterns='(?<!["“”「」])(TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support)'
+  hits=$(grep -nP "$patterns" "$unix_path" 2>/dev/null | head -5)
 fi
-hits=$(grep -nE "$patterns" "$unix_path" 2>/dev/null | head -5)
 
 if [ -n "$hits" ]; then
   echo "REDLINE HIT in $path (R1/R2/R4/R8):" 1>&2

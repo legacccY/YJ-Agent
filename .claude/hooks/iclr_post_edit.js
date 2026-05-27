@@ -27,15 +27,25 @@ process.stdin.on('end', () => {
   try { content = fs.readFileSync(path, 'utf8'); } catch (e) { process.exit(0); }
 
   // tex: full redline (anonymization + model names + writing rules)
-  // planning docs: writing-quality only (model names are legitimate in tracking docs)
+  // planning docs: writing-quality only. anonymization tokens (anonymous2025) are
+  // dropped here — in planning docs they appear only as meta (rules / grep checks),
+  // and the real anonymization gate is the tex full-check above.
   const patterns = isTexTarget
     ? /(anonymous2025|VisiSkin-Agent|VisiScore-Net|VisiEnhance-Net|Q-VIB\b|DiffBIR|SD-Turbo|TS always reverses|universal reversal|we prove|\bBayesian\b|doctors? confirmed|clinically validated|clinical decision support)/g
-    : /(anonymous2025|TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support)/g;
+    : /(TS always reverses|universal reversal|doctors? confirmed|clinically validated|clinical decision support)/g;
+  // Doc mode quotes banned phrases as DON'T examples (R1-R10 rule table). Skip a
+  // match whose preceding char is a quote so the rulebook can cite what it forbids.
+  const QUOTES = new Set(['"', '“', '”', '「', '」']);
   const lines = content.split('\n');
   const hits = [];
   lines.forEach((line, idx) => {
-    if (patterns.test(line)) hits.push(`${idx + 1}: ${line.trim()}`);
-    patterns.lastIndex = 0;  // reset for next iteration
+    patterns.lastIndex = 0;
+    let m;
+    while ((m = patterns.exec(line)) !== null) {
+      if (!isTexTarget && m.index > 0 && QUOTES.has(line[m.index - 1])) continue;
+      hits.push(`${idx + 1}: ${line.trim()}`);
+      break;
+    }
   });
 
   if (hits.length > 0) {
