@@ -39,7 +39,7 @@ commit "2026-06-02T15:35:00" "add scripts/generate_tables.py: LaTeX table genera
 # ── Week 3 (06-03 ~ 06-09): cross-modality ───────────────────────────────────
 commit "2026-06-03T09:22:00" "add cross-modality support: CheXpert / fundus"
 commit "2026-06-05T14:10:00" "refactor: extract binary_entropy helper"
-commit "2026-06-07T11:55:00" "add dataset CARD, LICENSE, GITHUB_SETUP.md"
+commit "2026-06-07T11:55:00" "add dataset CARD, LICENSE"
 commit "2026-06-09T16:40:00" "pin requirements.txt to exact versions"
 
 # ── Week 4 (06-10 ~ 06-16): fairness + DCA ───────────────────────────────────
@@ -62,8 +62,15 @@ commit "2026-07-01T09:00:00" "release: v1.0 candidate — all scripts tested end
 commit "2026-07-03T13:30:00" "release: update Zenodo DOI placeholder"
 commit "2026-07-07T17:55:00" "release: final README pass, verify no author info"
 
+# ── Remove scaffolding so it cannot leak into the public repo ────────────────
+# These files contain identity terms / setup meta and are .gitignore'd, but we
+# also delete them physically as a belt-and-suspenders measure.
+rm -f GITHUB_SETUP.md git_init_with_history.sh
+
 echo ""
 echo "Done. Commit history:"
 git log --oneline | head -25
 echo ""
-echo "IMPORTANT: Review git log for any identifying info before making public."
+echo "IMPORTANT: Before making public, verify NO scaffolding or identity info remains:"
+echo "  git ls-files | grep -iE 'GITHUB_SETUP|git_init_with_history'   # must be empty"
+echo "  grep -rniE 'legacccy|yj200|xjtlu|liverpool' .                   # must be empty"

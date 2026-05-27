@@ -1,3 +1,7 @@
+# ── Scaffolding — MUST NOT enter the public anonymous repo (contains identity terms) ──
+GITHUB_SETUP.md
+git_init_with_history.sh
+
 __pycache__/
 *.pyc
 *.pyo

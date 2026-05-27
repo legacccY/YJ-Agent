@@ -14,12 +14,12 @@ four public dermoscopy datasets into quality-stratified subsets using a learned
 
 ## Dataset Statistics
 
-| Subset      | Source       | n     | Quality range | Purpose |
+| Subset      | Source       | n     | Quality range (q̄) | Purpose |
 |-------------|--------------|-------|---------------|---------|
-| ITB-LQ      | ISIC 2020    | 300   | q̄ < 0.45     | Low-quality calibration test |
-| ITB-Edge    | ISIC 2020    | 660   | q̄ ∈ [0.45, 0.55] | Calibration proxy / borderline |
-| ITB-HQ      | ISIC 2020    | 360   | q̄ > 0.50     | High-quality calibration test |
-| ITB-Diverse | FitzPatrick17k | 1500 | Full range    | Fairness / skin-type diversity |
+| ITB-LQ      | ISIC 2020    | 300   | [0.05, 0.45]  | Low-quality calibration test |
+| ITB-Edge    | ISIC 2020    | 660   | [0.40, 0.55]  | Calibration proxy / borderline |
+| ITB-HQ      | ISIC 2020    | 360   | [0.50, 0.81]  | High-quality calibration test |
+| ITB-Diverse | FitzPatrick17k | 1500 | [0.06, 0.87]  | Fairness / skin-type diversity |
 
 **Total**: 2,820 images (metadata only; raw images from original sources)
 
@@ -51,12 +51,13 @@ q̄ = mean(q1,...,q5) is the aggregate quality scalar used for ITB partitioning.
 If you use ITB in your work, please cite:
 
 ```bibtex
-@inproceedings{anonymous2026itb,
-  title  = {Quality-Aware Calibration: Exposing and Mitigating Calibration
-            Collapse under Image Quality Shift in Dermatology AI},
-  author = {Anonymous},
+@inproceedings{anonymous2026qcts,
+  title  = {Quality-Conditioned Temperature Scaling: Post-hoc Calibration
+            under Image Quality Shift},
+  author = {Anonymous Authors},
   booktitle = {British Machine Vision Conference (BMVC)},
   year   = {2026},
+  note   = {Under review},
 }
 ```
 

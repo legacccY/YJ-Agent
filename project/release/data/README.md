@@ -27,7 +27,10 @@ This downloads `itb_subsets.csv`, `itb_predictions.csv`, and the IQA checkpoint.
 - URL: https://github.com/mattgroh/fitzpatrick17k
 - License: CC-BY 4.0
 - Size: ~2 GB
-- Run `python data/download_fitzpatrick17k.py --output data/fitzpatrick17k/`
+- Clone the upstream repo and follow its image-download instructions (it ships a
+  URL list + downloader); place the images under `data/fitzpatrick17k/images/` and
+  the metadata CSV at `data/fitzpatrick17k/fitzpatrick17k.csv`. Only the `isic_id`/
+  image keys listed in `itb_subsets.csv` are needed for ITB.
 
 ### HAM10000 (zero-shot transfer)
 - URL: https://www.kaggle.com/datasets/kmader/skin-lesion-analysis-toward-melanoma-detection
