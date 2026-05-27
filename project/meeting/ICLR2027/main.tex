@@ -61,8 +61,12 @@ on Quality-Varying Consumer Imagery}
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Closed-Loop Agent}\label{sec:agent}
 % §5.1 Dual-channel decision logic (4 channels: direct / cautioned / enhance / query-refuse)
-% §5.2 Theorem 2 (expected risk bound) — compact; full proof Appendix A2.3
-% §5.3 Corollary 1 (\qvib + \qcts composite ECE bound) — link to prior submission
+\subsection{Expected-Risk Bound}\label{sec:thm2}
+% §5.2 — compact statement; full proof Appendix A2.3.
+\input{appendix/A2_3_theorem2_compact}
+\subsection{Composite Calibration Bound}\label{sec:cor1}
+% §5.3 — link to prior post-hoc temperature scaling; full proof Appendix A3.
+\input{appendix/A3_corollary1_compact}
 % §5.4 Agent implementation (ReAct + small LLM + rule fallback)
 
 % ═══════════════════════════════════════════════════════════════════════════════
@@ -84,8 +88,8 @@ on Quality-Varying Consumer Imagery}
 
 \appendix
 \input{appendix/A2_prop3_lemma3}
+\input{appendix/A2_3_theorem2}
+\input{appendix/A3_corollary1}
 % \input{appendix/A1_qvib}        % TODO: Prop 1 / Lemma 1 / Thm 1 / Prop 2
-% \input{appendix/A2_3_theorem2}  % TODO: Theorem 2 full proof
-% \input{appendix/A3_corollary1}  % TODO: Corollary 1 full proof
 
 \end{document}

@@ -1,0 +1,14 @@
+% Compact statement of Corollary 1 for the main body (§5.3). Full proof: Appendix A3.
+
+\begin{corollary}[Composite Calibration Bound]\label{cor:composite-compact}
+Let $\pQV$ be the \qvib{} predictive and $T(\qbar)$ the \qcts{} schedule (prior anonymous
+submission, cited upon acceptance) with Lipschitz constant $\Lt$ and minimum $\Tmin$. The
+composite $\pComp$ obtained by rescaling \qvib{} logits with $T(\qbar)$ satisfies
+\begin{equation}
+\ECE(\pComp) \;\leq\; \min\!\big(\ECE^{(\mathrm{QV})}, \ECE^{(\mathrm{QCTS})}\big) + \epsqts,
+\label{eq:cor1-body}
+\end{equation}
+with $\epsqts = O\!\big(\tfrac{\Lt\|\ell\|_{\max}}{\Tmin^2}\,\sigma_{\qbar\mid c}\big)$, vanishing
+when $T\equiv 1$ or $\sigma_{\qbar\mid c}=0$. Numerically $\epsqts\approx 0.037$, predicting
+$\ECE(\pComp)\leq 0.116$. Full proof in Appendix~\ref{app:a3}.
+\end{corollary}

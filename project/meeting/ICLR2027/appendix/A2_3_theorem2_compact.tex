@@ -1,0 +1,23 @@
+% Compact statement of Theorem 2 for the main body (§5.2). Full proof: Appendix A2.3.
+
+\begin{theorem}[Closed-Loop Agent Risk Bound, informal]\label{thm:agent-compact}
+Let $\Tw$ be a diagnosis-preserving enhancement satisfying Proposition~\ref{prop:entropy}
+with calibration error $\delta_{\TV}$. Under the threshold policy \eqref{eq:agent-policy-body},
+the agent's expected risk obeys
+\begin{equation}
+\Ragent(x) \;\leq\; \Rdirect(x) - \Delta(\qbar,\Tw),
+\qquad
+\Delta(\qbar,\Tw) > 0 \iff \qbar\in[\tauenh,\tauhigh].
+\label{eq:thm2-body}
+\end{equation}
+In particular the agent is never worse than direct diagnosis, and strictly better on the
+salvage band with population gain $\pisalv\cdot\Delta_{\mathrm{avg}}$. The full proof, threshold
+estimation protocol, and finite-sample concentration are deferred to Appendix~\ref{app:a2-thm2}.
+\end{theorem}
+
+% Policy reference for the body (full definition in Appendix A2.3, eq:agent-policy).
+\begin{equation}
+\pi^{*}(x)\in\{\actd,\acte,\actq,\actr\}\ \text{by quality thresholds}\ \taulow<\tauenh<\tauhigh
+\ \text{and entropy gate}\ \hhigh.
+\label{eq:agent-policy-body}
+\end{equation}

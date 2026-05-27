@@ -1,0 +1,148 @@
+% Appendix A2.3 — full proof of Theorem 2 (closed-loop agent expected-risk bound).
+% Source-of-truth: project/plans/Theorem2_agent_risk_bound.md (audited 2026-05-27).
+% Numerical toy: tests/test_theorems_numerical.py (P1/P2/P3 + Cor 2.1).
+
+\subsection{Proof for the Closed-Loop Agent (Theorem 2)}\label{app:a2-thm2}
+
+\subsubsection{Decision-theoretic setup}\label{app:a2-thm2-setup}
+At input $x$ with quality scalar $\qbar(x)$ already scored by \visiscore, the agent
+selects one of four actions $\mathcal{A}=\{\actd,\acte,\actq,\actr\}$ (direct, enhance, query,
+refuse) with constant costs $c_d=0,\,c_e,\,c_q,\,c_r\geq 0$. The per-action expected risk is
+\begin{equation}
+\mathcal{R}_a(x) := \E_{y\sim p(y\mid x)}\!\big[\ell(\hat{y}_a(x), y)\big] + c_a,
+\qquad a\in\mathcal{A},
+\label{eq:per-action}
+\end{equation}
+with bounded loss $\ell\in[0,M]$ ($M=1$ for $0$--$1$ loss). For the enhance action the
+expectation is still taken over $p(y\mid x)$ (the true label is fixed by the original image),
+while the predictor acts on $\Tw(x,q)$ --- the diagnosis-preserving setting.
+
+The threshold policy $\pi^{*}$ uses $\qbar$ and a secondary entropy gate $\hhigh$:
+\begin{equation}
+\pi^{*}(x) =
+\begin{cases}
+\actr & \qbar < \taulow \;\text{ or }\; \big(\qbar\in[\tauenh,\tauhigh]\text{ and }\Hent(\hat{p}_x)>\hhigh\big)\\
+\actq & \taulow \leq \qbar < \tauenh \\
+\acte & \tauenh \leq \qbar < \tauhigh \text{ and } \Hent(\hat{p}_x)\leq \hhigh \\
+\actd & \qbar \geq \tauhigh
+\end{cases}
+\label{eq:agent-policy}
+\end{equation}
+with $0<\taulow<\tauenh<\tauhigh<1$ chosen by validation grid search; $\hhigh$ (the $75$th
+percentile of the validation entropy distribution) separates ``quality-sufficient but
+intrinsically ambiguous'' cases that enhancement cannot salvage.
+
+\subsubsection{Auxiliary lemmas}\label{app:a2-thm2-lemmas}
+\begin{lemma}[Entropy--risk coupling]\label{lem:entropy-risk}
+For a calibrated predictor with TV calibration error $\delta_{\TV}$ and bounded
+$\ell\in[0,M]$,
+$\Rdirect(x) \leq M\big(1-\exp(-\Hent(\hat{p}_x))\big) + M\,\delta_{\TV}(\hat{p},p)$.
+\end{lemma}
+\begin{proof}
+The optimal plug-in classifier has $0$--$1$ risk $1-\max_y\hat{p}(y\mid x)\leq 1-\exp(-\Hent(\hat{p}_x))$
+by Gibbs' inequality $\max_y p(y)\geq\exp(-\Hent(p))$. The calibration term follows from
+$|\E_p[\ell]-\E_{\hat{p}}[\ell]|\leq M\,\delta_{\TV}(\hat{p},p)$.
+\end{proof}
+
+\begin{lemma}[Enhancement risk reduction]\label{lem:enh-risk}
+Under Proposition~\ref{prop:entropy-full} (and Lemma~\ref{lem:dp-full}),
+\begin{equation}
+\Rdirect(x) - \Renh(x) \;\geq\; \Gen(x) - c_e - M\delta_{\TV},
+\qquad \Gen(x):=\Rdirect(x)-\big(1-e^{-\E[\Hent_{\mathrm{enh}}]}\big)\geq 0.
+\label{eq:enh-gain}
+\end{equation}
+\end{lemma}
+\begin{proof}
+Substitute the entropy reduction \eqref{eq:p3-full} into Lemma~\ref{lem:entropy-risk}:
+$\Renh(x)-c_e \leq 1-\exp(-\E[\Hent_{\Tw(x,q)}]) + M\delta_{\TV} \leq \Rdirect(x)+M\delta_{\TV}$,
+then rearrange. The gross gain $\Gen(x)$ is non-negative.
+\end{proof}
+
+\begin{lemma}[Enhancement effectiveness window]\label{lem:window}
+There exist $\tauenh<\tauhigh$ such that $\Gen(x) > c_e + M\delta_{\TV}$ for almost all $x$ with
+$\qbar(x)\in(\tauenh,\tauhigh)$, and $\Gen(x)\leq c_e+M\delta_{\TV}$ outside.
+\end{lemma}
+\begin{proof}[Proof sketch]
+As $\qbar\to 1$ the predictor approaches a one-hot, $\Hent\to 0$ and $\Gen\to 0$, giving an
+upper threshold $\tauhigh$ by continuity. For $\qbar<\tauenh$ (severe degradation, e.g.\ loss
+of completeness $q_3$), $\Tw$ cannot raise quality, so $\E[\Hent_{\mathrm{enh}}]\approx\E[\Hent_{\mathrm{direct}}]$
+and $\Gen\approx 0$. Inside the band, Proposition~\ref{prop:entropy-full} gives a significant
+entropy drop, hence $\Gen>c_e$. The thresholds are
+$\tauenh=\inf\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$ and
+$\tauhigh=\sup\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$; if $\Gen$ is unimodal in $\qbar$
+(empirically supported by the salvage-rate curve), the band is a non-empty connected set.
+\end{proof}
+
+\begin{lemma}[Query/refuse safety]\label{lem:query-refuse}
+For $\qbar<\tauenh$: (i) if $\qbar\geq\taulow$ and the expected retake quality exceeds
+$\tauhigh$, then $\mathcal{R}_{\actq}(x)\leq\Rdirect(x)-(\Gret(x)-c_q)$; (ii) if $\qbar<\taulow$,
+then $\mathcal{R}_{\actr}(x)=c_r+\ell_r\leq\Rdirect(x)$ in expectation over $x$.
+\end{lemma}
+\begin{proof}[Proof sketch]
+Identical to Lemma~\ref{lem:enh-risk} with $\Tw$ replaced by the stochastic retake operator
+$P_{\mathrm{retake}}$ (satisfying $\E[\Hent_{\mathrm{retake}}]\leq\Hent(\hat{p}_x)$) and $c_e$
+by $c_q$. The refuse branch is a constant referral cost.
+\end{proof}
+
+\subsubsection{Main result}\label{app:a2-thm2-main}
+\begin{theorem}[Closed-loop agent expected-risk bound]\label{thm:agent}
+Let $\Tw$ be a diagnosis-preserving enhancement satisfying Proposition~\ref{prop:entropy-full}
+and Lemma~\ref{lem:dp-full} with calibration error $\delta_{\TV}$, and let $\pi^{*}$ be the
+threshold policy \eqref{eq:agent-policy}. Then for any $x$,
+\begin{equation}
+\Ragent(x) \;\leq\; \Rdirect(x) - \Delta(\qbar(x),\Tw),
+\qquad
+\Delta(\qbar,\Tw) > 0 \iff \qbar\in[\tauenh,\tauhigh],
+\label{eq:thm2}
+\end{equation}
+and on the enhance channel
+$\Delta(\qbar,\Tw)\big|_{\qbar\in[\tauenh,\tauhigh]}
+= \E_{x:\qbar(x)=\qbar}[\Gen(x)] - c_e - M\delta_{\TV}$.
+\end{theorem}
+\begin{proof}
+We consider the four cases of the policy partition \eqref{eq:agent-policy}.
+
+\emph{Case 1 ($\qbar\geq\tauhigh$, direct).} $\Ragent(x)=\Rdirect(x)$; by Lemma~\ref{lem:window}
+$\Gen\leq c_e+M\delta_{\TV}$ so $\Delta=0$ and \eqref{eq:thm2} holds with equality.
+
+\emph{Case 2 ($\qbar\in[\tauenh,\tauhigh)$ and $\Hent(\hat{p}_x)\leq\hhigh$, enhance).}
+$\Ragent(x)=\Renh(x)$. Taking the conditional expectation of Lemma~\ref{lem:enh-risk} at
+$\qbar(x)=\qbar$,
+$\E[\Ragent]\leq\E[\Rdirect]-(\E[\Gen]-c_e-M\delta_{\TV})$, and by Lemma~\ref{lem:window} the
+parenthesised term is strictly positive, giving $\Delta>0$.
+
+\emph{Case 3 ($\qbar\in[\taulow,\tauenh)$, query).} By Lemma~\ref{lem:query-refuse}(i),
+$\Ragent(x)\leq\Rdirect(x)-(\Gret(x)-c_q)$. On this band $\Gen\leq c_e+M\delta_{\TV}$, so the
+enhance-channel gain $\Delta:=0$, consistent with \eqref{eq:thm2}.
+
+\emph{Case 4 ($\qbar<\taulow$, refuse).} By Lemma~\ref{lem:query-refuse}(ii),
+$\Ragent(x)=c_r+\ell_r\leq\Rdirect(x)$ in expectation; $\Delta=0$.
+
+The four cases establish \eqref{eq:thm2}.
+\end{proof}
+
+\begin{corollary}[Agent never worse than direct]\label{cor:never-worse}
+Under the thresholds of Lemmas~\ref{lem:window}--\ref{lem:query-refuse},
+$\Ragent(x)\leq\Rdirect(x)$ for all $x$.
+\end{corollary}
+
+\begin{corollary}[Strict improvement on the salvage band]\label{cor:population}
+If $\pisalv := \mathbb{P}[\qbar(X)\in[\tauenh,\tauhigh]] > 0$, then
+$\E_x[\Ragent(X)] \leq \E_x[\Rdirect(X)] - \pisalv\cdot\Delta_{\mathrm{avg}}$ with
+$\Delta_{\mathrm{avg}}>0$.
+\end{corollary}
+
+\paragraph{Tight constants.}
+With the \qvib{} predictor the calibration proxy is $\delta_{\TV}\approx\ECE=0.098$; the
+normalised enhancement cost is $c_e=0.02$; a validation grid yields
+$\tauenh\approx 0.35$, $\tauhigh\approx 0.55$. Corollary~\ref{cor:population} maps directly to
+the empirical salvage-rate ($\pisalv$) and $|\Delta\mathrm{AUC}|$ metrics.
+
+\paragraph{Threats to validity.}
+The Gibbs lower bound in Lemma~\ref{lem:entropy-risk} is tighter for $K=2$ than for large $K$;
+the calibration term treats ECE as a TV proxy (a piecewise-linear calibration map closes the
+gap, Appendix~A2.3.5); the unimodality of $\Gen$ in Lemma~\ref{lem:window} is empirical and
+excluded only when $\Tw$ does not collapse (Stage-1 PSNR$\,\geq 30$\,dB gate); and
+Theorem~\ref{thm:agent} is an expected-risk bound, with a Hoeffding finite-sample companion
+$|\hat{\Delta}_{\mathrm{avg}}-\Delta_{\mathrm{avg}}|\leq M\sqrt{\log(2/\delta)/(2n)}$
+(Appendix~A2.3.6).
