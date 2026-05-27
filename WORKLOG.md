@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-25 收工 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-05-27 收工 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
 ---
 
@@ -26,14 +26,19 @@
 
 ---
 
-## 🚀 下一步（M1 W1，2026-05-25 ~ 06-01）
+## 🚀 下一步（M1 W1-W2，2026-05-27 ~ 06-08）
 
-- [x] 起 `project/configs/visienhance_s1_planA.yaml`（3-level, ~15.3M 参数）✅
-- [x] `tests/test_visienhance.py` 6/6 通过 ✅
-- [x] Stage 1 训练启动 + 监控 ep0-6 ✅
-- [x] 修复 train_visienhance.py wandb asyncio 崩溃（WinError 64）✅
-- [ ] **续训待启动**（从 ep 15 续，`stage1_planA/last_visienhance.pth`）
-- [ ] Theorem 2 (agent risk bound) 数学推导（与训练并行）
+会话 6（2026-05-27）完成（详见 PROJECT_LOG）：
+- [x] 锁定数字 audit 定案：核心表真实(脚本改 md 解析,ICLR 11/11 PASS)+ cross-domain 标待核 PENDING ✅
+- [x] hook 假阳性根治(doc 模式去 anonymous2025 + 跳引号匹配,js+sh+ps1) ✅
+- [x] 5-theorem β/√ε 一致性统一(β=M·L_q/√2, Pinsker-optimal) ✅
+- [x] ICLR2027 paper 骨架 + Appendix A2/A2.3/A3 LaTeX 化(Prop3/Lemma3/Thm2/Cor1, 9 页 exit 0) ✅
+
+待续：
+- [ ] **续训待启动**（从 ep 15 续，`stage1_planA/last_visienhance.pth`，`/loop /run-experiment`）
+- [ ] **Appendix A1 LaTeX 化**（Q-VIB Prop1/Lemma1/Thm1/Prop2，源 `V-QIB数学推导.md`）
+- [ ] 主文 §3-§8 正文填充（M3）
+- [ ] **Plan A re-eval 后必办**：重导 n=19878 per-sample csv + 决定 cross-domain 锁定值(−0.108→−0.164/−0.150→−0.236)
 
 详细 task 清单见 `project/plans/phase_07_visienhance_planA_active.md`
 
