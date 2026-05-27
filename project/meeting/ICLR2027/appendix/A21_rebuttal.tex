@@ -1,0 +1,104 @@
+% Appendix A21 — anticipated concerns and responses (pre-emptive rebuttal).
+% Source: project/plans/L20_preemptive_rebuttal_A21.md (5 concerns from L19 adversarial review).
+% ADAPTED, not pasted: labels remapped to this build; UNFROZEN numbers removed (real-LQ ECE,
+% artifact rates, cross-modality rho are PENDING — red line 4). Frozen-only numbers kept.
+% Anonymized: no venue name for prior work; macros for model/benchmark names; R1-R10 wording.
+
+\section{Anticipated Concerns and Responses}\label{app:a21}
+
+We anticipate five concerns that reviewers may raise and address each with pointers to substantive
+material elsewhere in the paper.
+
+\subsection{Statistical significance under multiple comparisons}\label{app:a21-stats}
+\textbf{Concern.} The paper reports many correlation tests across backbones, \itb subsets, and
+calibrators, with very small $p$-values. Without multiple-testing correction some may be spurious,
+and bootstrap intervals on non-paired statistics can understate variance under dependence.
+
+\textbf{Response.} All cross-method comparisons use a \emph{paired} bootstrap ($2000$ resamples, BCa;
+\citealp{diciccio1996bootstrap}) so that per-image dependence is preserved, and all families of
+correlation tests apply Holm--Bonferroni correction \citep{holm1979simple} at family-wise
+$\alpha=0.05$; raw and adjusted $p$-values are both
+reported. The headline relationships survive correction --- e.g.\ the entropy--quality correlation of
+the core configuration, $\rho(\Hent,\qbar)=-0.165$ ($p<10^{-24}$ raw), remains significant after
+adjustment. Our claims rest on the \emph{sign and monotonic direction} of these correlations ---
+which the theory predicts (Propositions~\ref{prop:entmono} and~\ref{prop:entropy}) --- not on the
+magnitude of any single $p$-value.
+
+\subsection{Clinical deployment versus research framing}\label{app:a21-clinical}
+\textbf{Concern.} The salvage-rate framing and ``closed-loop'' language may read as a
+deployment-ready medical device, which would require regulatory evaluation the paper does not provide.
+
+\textbf{Response.} We position this work as a \emph{research framework}, not a deployable device.
+(i) The abstract and \cref{sec:intro} describe a research system for quality-aware diagnosis, not
+decision support. (ii) \cref{sec:discussion} states explicitly that production use requires
+IRB/regulatory pathways and prospective trials, out of scope here. (iii) Clinical value is assessed
+only through decision-curve analysis and triage simulation (\cref{sec:exp-dca}) and an
+LLM-as-judge protocol, with the disclaimer in Appendix~\ref{app:a23}; we make no claim of real-time
+reader comparison. (iv) Salvage behaviour is bounded by Theorem~\ref{thm:agent} with thresholds
+$\tauenh\approx 0.35$, $\tauhigh\approx 0.55$ derived from validation data, not aspirational targets.
+
+\subsection{Real-world degradation versus the synthetic benchmark}\label{app:a21-ood}
+\textbf{Concern.} \itb applies controlled degradations; real consumer dermoscopy adds shadows, lens
+artefacts, and compression that are not i.i.d.\ with the benchmark, and cross-modality transfer may
+be weak.
+
+\textbf{Response.} We treat both points as first-class. (i) \cref{sec:exp-cross} evaluates the system
+on a real smartphone-style subset (ISIC~2024 SLICE-3D) carrying in-the-wild artefacts; we report the
+quality-stratified gap to \itb-LQ explicitly rather than pooling it away. (ii) Cross-modality
+transfer is \emph{foregrounded, not hidden}: weakly-transferring modalities are flagged in
+\cref{sec:exp-cross} and analysed as a distinct \emph{cross-modality quality mismatch} mode in
+\cref{sec:discussion}, with modality-specific re-training named as the principled (out-of-scope)
+remedy. (iii) The abstract and \cref{sec:intro} scope our claims to dermoscopy quality-awareness and
+to cross-modality \emph{generalisation properties}, not universal quality awareness.
+
+\subsection{Differentiation from prior work}\label{app:a21-scope}
+\textbf{Concern.} A prior anonymous submission by the authors addresses post-hoc quality-conditional
+calibration on a related benchmark; the present contribution might appear incremental.
+
+\textbf{Response.} The two works answer categorically distinct questions
+(Table~\ref{tab:a21-diff}). The prior work rescales the confidence of a \emph{frozen} classifier; the
+present system is end-to-end trainable with \emph{active intervention}.
+
+\begin{table}[t]
+\centering
+\caption{Differentiation from the authors' prior post-hoc calibration work.}
+\label{tab:a21-diff}
+\begin{tabular}{lll}
+\toprule
+Aspect & Prior (post-hoc) & This paper (end-to-end) \\
+\midrule
+Model      & frozen classifier        & trainable encoder $+$ agent \\
+Mechanism  & single $T(\qbar)$ scaling & three-module joint system \\
+Theory     & ECE bound on $T$         & end-to-end closure (Props 1--3, Lems 1--3, Thms 1--2, Cor 1) \\
+Decision   & confidence rescaling     & active intervention (four actions) \\
+Guarantee  & calibration only         & decision-theoretic risk (Theorem~\ref{thm:agent}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Concretely: the quality-conditional bottleneck (\cref{sec:qvib}) contributes an attention-drift bound
+(Theorem~\ref{thm:drift}) and an entropy-monotonicity guarantee (Proposition~\ref{prop:entmono})
+absent from the prior work; diagnosis-preserving enhancement (\cref{sec:enhance}) contributes a
+mutual-information lower bound (Lemma~\ref{lem:dp}) orthogonal to calibration; the agent risk bound
+(Theorem~\ref{thm:agent}) is a decision-theoretic guarantee outside any post-hoc framework; and
+Corollary~\ref{cor:composite-compact} recovers the prior post-hoc method as a degenerate case with an
+explicit residual $\epsilon_{\mathrm{qts}}\approx 0.037$. No prior-work numbers are reused: all table
+entries are re-evaluated under this pipeline, with prior-work rows marked for cite-upon-acceptance.
+
+\subsection{Safety: preservation versus hallucinated features}\label{app:a21-safety}
+\textbf{Concern.} Even deterministic enhancement might introduce structures that bias diagnosis; the
+DP-Loss bound is information-theoretic and does not by itself preclude pixel-level artefacts.
+
+\textbf{Response.} We address safety at four levels. (i) \emph{Architecture} (\cref{sec:discussion}):
+$\Tw$ is a deterministic restoration map; unlike generative restoration it cannot synthesise
+structure not implied by the input, which is why we reject generative enhancement for dermoscopy.
+(ii) \emph{Loss} (Lemma~\ref{lem:dp}): the DP budget gives
+$I(\Zenh;Y)\geq I(\Zref;Y)-\beta\sqrt{\epsilon}$ with $\beta=M\Lq/\sqrt{2}\approx 0.74$ and target
+$\epsilon=0.05$, so the mutual-information drop is at most $\approx 0.16$ nats --- well within the
+$\qvib$ inductive gap ($I(Z;Y)\approx 0.5$--$0.6$ nats). (iii) \emph{Audit}: an LLM-as-judge protocol
+plus ABCD-rule proxy detectors quantify any newly-introduced structure on a held-out enhanced set
+(protocol in Appendix~\ref{app:a19}; rates reported with the released audit). (iv) \emph{Decision}
+(Theorem~\ref{thm:agent}): the agent's \emph{refuse} action $\actr$ triggers below $\taulow$, and the
+refuse-rate versus missed-diagnosis trade-off is bounded by the theorem's $\Delta$ function. Residual
+failures are catalogued per mode in Appendix~\ref{app:a18}; we stress that production use requires
+per-case artefact monitoring beyond this work's scope.

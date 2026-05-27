@@ -1,0 +1,44 @@
+% Appendix A23 — reader-study disclaimer and clinical-evidence methodology.
+% Source: STORY_FRAMEWORK permanent red line 1 (no fabricated reader study) + R3 wording.
+% Prose-only; NO numbers (all clinical evidence is methodology here, results live in §7.7 / audit).
+% Anonymized; clinical claims framed per R3 (DCA / triage / LLM-judge, never "readers confirmed").
+
+\section{Reader-Study Disclaimer and Clinical-Evidence Methodology}\label{app:a23}
+
+\subsection{Why No Prospective Reader Study}\label{app:a23-why}
+This work does not include a prospective dermatologist reader study. The reasons are deliberate and
+methodological, not incidental. (i) The project operates entirely on publicly available, de-identified
+datasets; it does not recruit clinicians, collect new patient imagery, or run any prospective
+protocol. (ii) A credible reader study requires IRB oversight, a registered protocol, and a clinical
+cohort --- none of which are in scope for a methods contribution. (iii) Fabricating or simulating
+``reader confirmation'' would be scientifically indefensible; we therefore make \emph{no} claim of
+clinician validation anywhere in the paper. Clinical \emph{value} is instead assessed through the
+three transparent surrogates below, each with its limits stated.
+
+\subsection{Surrogate 1 --- Published Clinician Baselines}\label{app:a23-baselines}
+Where we compare against clinician performance, we cite \emph{already-published} dermatologist
+accuracy/sensitivity figures from peer-reviewed studies and place them alongside our metrics as
+reference points, with full citations. We do not re-run or approximate these baselines; they are
+external anchors, and we note that cohort and task differences make any such comparison indicative
+rather than head-to-head.
+
+\subsection{Surrogate 2 --- Decision-Curve and Triage Analysis}\label{app:a23-dca}
+We report decision-curve analysis (net benefit across threshold probabilities) and a triage
+simulation that estimates the operating range in which enhance-then-diagnose or query-for-retake
+improves expected net benefit over direct diagnosis (\cref{sec:exp-dca}). These are model-level,
+data-driven analyses that require no human readers, and they are bounded theoretically by the agent
+risk result (Theorem~\ref{thm:agent}).
+
+\subsection{Surrogate 3 --- LLM-as-Clinical-Judge Protocol}\label{app:a23-llm}
+For qualitative case assessment (e.g.\ whether enhancement introduces implausible structure) we use
+an LLM-as-judge protocol over a held-out set, with multiple judge models and a fixed rubric (full
+protocol in Appendix~\ref{app:a19}). We are
+explicit about its limitations: an LLM judge is \emph{not} a clinician, is susceptible to its own
+biases, and its ratings are reported as an indicative audit signal, never as clinical validation. The
+protocol, rubric, and inter-judge agreement are released with the benchmark.
+
+\subsection{Summary}\label{app:a23-summary}
+Taken together, these surrogates support a \emph{research-grade} reliability argument: decision-curve
+analysis suggests where the system adds net benefit, the triage simulation indicates safe operating
+bands, and the LLM-judge audit flags enhancement artefacts. None of them substitutes for a
+prospective clinical trial, which we list as required future work in \cref{sec:discussion}.

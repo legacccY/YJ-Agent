@@ -1,0 +1,56 @@
+% Appendix A19 — LLM-as-clinical-judge protocol.
+% Source: ACCEPTANCE_CRITERIA.md L14 (3 LLM judges, 200 cases, 1-5 scale, Cohen kappa>0.5,
+% mandatory disclaimer) + STORY_FRAMEWORK A19. Protocol/design parameters only; the 200 ratings,
+% kappa values, and correlations are PENDING (M3) and not reported here (red line 4).
+% Anonymized; clinical framing per R3 — explicitly NOT a substitute for clinicians.
+
+\section{LLM-as-Clinical-Judge Protocol}\label{app:a19}
+
+\subsection{Purpose and Scope}\label{app:a19-scope}
+This protocol provides an \emph{audit signal} for qualitative properties that scalar metrics cannot
+capture --- in particular, whether enhancement introduces implausible structure and whether the
+agent's routing decision is reasonable on a case. It is explicitly \emph{not} a reader study and not
+a substitute for clinician evaluation; its outputs are indicative and are interpreted under the
+disclaimer in Appendix~\ref{app:a23}.
+
+\subsection{Case Selection}\label{app:a19-cases}
+We draw a held-out set of $200$ cases, stratified to cover (i) the four quality strata of \itb, (ii)
+the four agent channels (direct, cautioned, enhance-then-diagnose, query-for-retake), and (iii) both
+outcome types (correct and confidently-wrong), so that the audit is not dominated by easy cases.
+Stratum sizes are fixed in advance and released with the benchmark.
+
+\subsection{Judge Panel}\label{app:a19-panel}
+Three frontier large language models from distinct providers serve as independent judges, each
+prompted to adopt a dermatology-reviewer persona with an identical, fixed rubric. Using
+heterogeneous models reduces single-model bias; we report per-judge and aggregated scores. Judges see
+the (anonymised) image, the model's prediction and uncertainty, and --- for enhancement cases --- the
+reference and enhanced images side by side.
+
+\subsection{Rubric}\label{app:a19-rubric}
+Each case is scored on a $1$--$5$ Likert scale along four axes:
+\begin{enumerate}
+\item \textbf{Diagnostic plausibility} --- is the prediction consistent with visible features?
+\item \textbf{Artefact introduction} --- did enhancement add structure absent from the reference?
+(reverse-scored: $5$ = no new structure)
+\item \textbf{Enhancement faithfulness} --- are restored details consistent with the degraded input?
+\item \textbf{Triage appropriateness} --- was the agent's channel choice reasonable for this case?
+\end{enumerate}
+The rubric text, persona prompt, and scoring anchors are released verbatim for reproducibility.
+
+\subsection{Reliability and Aggregation}\label{app:a19-reliability}
+Inter-judge agreement is quantified with Cohen's $\kappa$ (pairwise) and Fleiss' $\kappa$ (panel);
+we set a pre-registered acceptance floor of $\kappa>0.5$ (moderate agreement) below which the axis is
+reported as inconclusive rather than aggregated. Case-level scores are aggregated by the panel mean,
+with majority vote as a robustness check.
+
+\subsection{Analysis}\label{app:a19-analysis}
+We test whether judge scores align with the model's own uncertainty --- e.g.\ whether low
+diagnostic-plausibility scores concentrate on high-entropy predictions, and whether
+artefact-introduction scores are uncorrelated with $\qbar$ improvement (the desired behaviour for a
+diagnosis-preserving map). Results are reported in \cref{sec:exp-dca} once the panel run completes.
+
+\subsection{Limitations}\label{app:a19-limits}
+An LLM judge is not a clinician: it can share blind spots across models, is sensitive to prompt
+framing, and cannot access clinical context beyond the image and metadata provided. We therefore use
+it only as a complementary audit alongside decision-curve analysis and triage simulation, never as
+evidence of clinical validity (Appendix~\ref{app:a23}).

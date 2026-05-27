@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-27 收工 | **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-05-27 会话 7（Appendix 全面 LaTeX 化）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
 ---
 
@@ -28,16 +28,16 @@
 
 ## 🚀 下一步（M1 W1-W2，2026-05-27 ~ 06-08）
 
-会话 6（2026-05-27）完成（详见 PROJECT_LOG）：
-- [x] 锁定数字 audit 定案：核心表真实(脚本改 md 解析,ICLR 11/11 PASS)+ cross-domain 标待核 PENDING ✅
-- [x] hook 假阳性根治(doc 模式去 anonymous2025 + 跳引号匹配,js+sh+ps1) ✅
-- [x] 5-theorem β/√ε 一致性统一(β=M·L_q/√2, Pinsker-optimal) ✅
-- [x] ICLR2027 paper 骨架 + Appendix A2/A2.3/A3 LaTeX 化(Prop3/Lemma3/Thm2/Cor1, 9 页 exit 0) ✅
+会话 7（2026-05-27）完成（纯写作零实验，详见 PROJECT_LOG）：
+- [x] **Appendix A1 LaTeX 化**（Q-VIB Prop1/Lemma1/Lemma2/Thm1/Prop2 full proofs）→ 5-theorem closure LaTeX 全齐 ✅
+- [x] **主文 Abstract→§9 正文填充** + Ethics/Reproducibility statement（§7 result 留 TODO 占位）✅
+- [x] **Appendix A0/A4/A18/A19/A20/A21/A23/A26 LaTeX 化** + references.bib(19 ref) + citation 接线 ✅
+- [x] DATA_INVENTORY ITB 计数纠错（Edge660/Diverse1500）✅
+- [x] paper **33 页**，bibtex 全 defined，零 undefined，零 banned 字样 ✅
 
-待续：
+待续（全部 gated on 实验，写作侧已到边界）：
 - [ ] **续训待启动**（从 ep 15 续，`stage1_planA/last_visienhance.pth`，`/loop /run-experiment`）
-- [ ] **Appendix A1 LaTeX 化**（Q-VIB Prop1/Lemma1/Thm1/Prop2，源 `V-QIB数学推导.md`）
-- [ ] 主文 §3-§8 正文填充（M3）
+- [ ] §7 result tables + A5/A16/A17/A22/A24 → **必须 Plan A 重训 + re-eval 后才有 frozen 数字**
 - [ ] **Plan A re-eval 后必办**：重导 n=19878 per-sample csv + 决定 cross-domain 锁定值(−0.108→−0.164/−0.150→−0.236)
 
 详细 task 清单见 `project/plans/phase_07_visienhance_planA_active.md`

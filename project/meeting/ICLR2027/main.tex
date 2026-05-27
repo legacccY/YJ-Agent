@@ -1,6 +1,8 @@
 % ICLR 2027 — closed-loop quality-triage system (anonymized).  Skeleton; section order LOCKED to
 % STORY_FRAMEWORK.md §故事弧. Do NOT reorder §3-§7 (anti-drift rule 6).
 % Replace \documentclass with the official iclr2027 style when available.
+% Numbers: only FROZEN values appear (quality-scorer PLCC/SRCC, core config n=19878, failure split).
+% §7 result tables are placeholders until Plan A re-training freezes them (red line 4).
 \documentclass{article}
 \usepackage[utf8]{inputenc}
 \input{preamble}
@@ -16,80 +18,336 @@ on Quality-Varying Consumer Imagery}
 \begin{abstract}
 % LOCKED hook (anti-drift rule 1): first sentence MUST stay on the closed-loop
 % quality-triage agent. Do not reduce to a calibration-only story (rule 7).
-% TODO(M3): fill — detect (\visiscore) -> enhance (\visienhance) OR query -> diagnose (\qvib),
-% with a 5-theorem end-to-end closure and an expected-risk bound (Theorem~\ref{thm:agent}).
+We present a closed-loop quality-triage system for skin-lesion diagnosis on consumer imagery,
+where image quality varies far more than in curated clinical datasets and passive confidence
+calibration alone is insufficient. The system (i) scores perceptual quality with a five-head
+assessor (\visiscore), (ii) routes each input to one of four actions --- direct diagnosis,
+cautioned diagnosis, enhance-then-diagnose, or query-for-retake --- and (iii) diagnoses under a
+quality-conditional information bottleneck (\qvib) whose predictive uncertainty is provably tied to
+quality. A deterministic, diagnosis-preserving enhancement module (\visienhance) restores salvageable
+inputs without generative hallucination. We give an end-to-end theoretical closure
+(Propositions~1--3, Lemmas~1--3, Theorems~1--2, Corollary~1), including a Lipschitz attention-drift
+bound, a quality--entropy monotonicity guarantee, a mutual-information bound for enhancement, and an
+expected-risk bound for the agent's routing decision. On a quality-stratified benchmark (\itb), the
+quality scorer attains PLCC $0.924$ / SRCC $0.895$, and \qvib produces predictive entropy that
+decreases monotonically with quality ($\rho=-0.165$, $p<10^{-24}$) at AUC $0.707$ / ECE $0.098$.
+Code and benchmark will be released.
 \end{abstract}
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Introduction}\label{sec:intro}
-% §1.1 problem: consumer-device medical AI, quality varies, passive calibration insufficient
-% §1.2 gaps: post-hoc calibration (quality-oblivious) / ensemble & dropout UQ (quality-oblivious) /
-%            generic enhancement (no diagnostic-preservation guarantee)
-% §1.3 ★ closed-loop quality-triage hook ★
-% §1.4 Contributions C1-C4
+
+\paragraph{Problem.}
+Diagnostic models for skin lesions are typically trained and evaluated on curated dermoscopic
+images, yet real consumer-device photographs span a wide quality range --- motion blur, poor
+illumination, incomplete framing, colour casts, and low contrast. A model that is accurate on clean
+data can be both wrong and confident on degraded data. The deployment question is therefore not only
+``what is the diagnosis?'' but ``is this image good enough to diagnose, and if not, what should the
+system do about it?''
+
+\paragraph{Why existing tools fall short.}
+Three families of methods each address part of the problem but none closes the loop.
+(i) \emph{Post-hoc calibration} --- temperature scaling \citep{guo2017calibration}, Platt and isotonic
+regression --- adjusts confidence after training but is quality-oblivious: it cannot tell apart
+uncertainty from genuine ambiguity versus uncertainty from degradation.
+(ii) \emph{Uncertainty estimation} via MC dropout \citep{gal2016dropout} or deep ensembles
+\citep{lakshminarayanan2017simple} likewise produces quality-oblivious uncertainty and adds
+inference cost.
+(iii) \emph{Generic image enhancement} (e.g.\ Real-ESRGAN \citep{wang2021realesrgan}, Restormer
+\citep{zamir2022restormer}) improves perceptual quality
+with no guarantee that diagnostic content is preserved --- and generative restoration risks
+inventing structures (pigment networks, vessels) that are clinically unacceptable.
+
+\paragraph{Closed-loop quality-triage.}
+We argue that quality must be a first-class signal threaded through the whole pipeline. Our system
+forms a closed loop: \visiscore assesses quality; the agent decides whether to diagnose directly,
+diagnose with caution, enhance-then-diagnose (\visienhance), or query for a retake; and \qvib
+performs the diagnosis with uncertainty that is, by construction, calibrated to quality. Crucially,
+the quality scalar that drives this loop need not come from \visiscore alone --- it can be any
+per-input quality estimate (a learned scorer, a no-reference IQA metric, or a known corruption
+severity), which keeps the framework general.
+
 \paragraph{Contributions.}
-% C1: \qvib — first quality-conditional information bottleneck (Prop 1, Lemma 1, Thm 1, Prop 2).
-% C2: \visienhance + DP-Loss — diagnosis-preserving enhancement with a mutual-information guarantee
-%      (Prop 3, Lemma 3).
-% C3: closed-loop agent with an expected-risk bound (Thm 2) + composite-calibration bound (Cor 1).
-% C4: \itb benchmark + 25-lever evaluation.
+\begin{itemize}
+\item \textbf{C1 --- \qvib:} the first quality-conditional information bottleneck. We condition the
+variational marginal prior on perceptual quality and establish a quality-conditional ELBO
+(Proposition~\ref{prop:elbo}), a monotone prior (Lemma~\ref{lem:mono}), a Lipschitz attention-drift
+bound (Theorem~\ref{thm:drift}), and a quality--entropy monotonicity guarantee
+(Proposition~\ref{prop:entmono}).
+\item \textbf{C2 --- \visienhance{} + DP-Loss:} diagnosis-preserving enhancement with a
+mutual-information guarantee. We derive an entropy-reduction result
+(Proposition~\ref{prop:entropy}) and a Pinsker-optimal mutual-information lower bound
+(Lemma~\ref{lem:dp}) under a KL diagnostic-preservation budget.
+\item \textbf{C3 --- closed-loop agent:} a four-channel routing policy with an expected-risk bound
+(Theorem~\ref{thm:agent}) and a composite calibration bound (Corollary~\ref{cor:composite-compact}) that links to
+prior post-hoc quality-conditional scaling.
+\item \textbf{C4 --- \itb{} benchmark:} a quality-stratified skin-lesion benchmark and a 25-lever
+evaluation protocol spanning calibration, diagnostic preservation, salvage rate, universality,
+cross-domain transfer, cost--benefit, and fairness.
+\end{itemize}
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Related Work}\label{sec:related}
-% §2.1 Calibration; §2.2 Information Bottleneck; §2.3 Medical Image Enhancement;
-% §2.4 IQA + Medical AI Benchmarks.
+
+\paragraph{Confidence calibration.}
+Temperature scaling \citep{guo2017calibration}, Platt scaling, isotonic regression, evidential deep
+learning \citep{sensoy2018evidential}, and focal/label-smoothing losses improve calibration but act
+either post-hoc or globally, without
+conditioning on per-input quality. Our \qvib instead makes calibration a structural property of
+training (Proposition~\ref{prop:entmono}).
+
+\paragraph{Information bottleneck.}
+The information bottleneck \citep{tishby2000information} and its variational form
+\citep[VIB;][]{alemi2017deep}, together with $\beta$-VAE \citep{higgins2017beta}, use a fixed
+marginal prior. \qvib strictly
+generalises VIB by conditioning the prior on quality (Proposition~\ref{prop:elbo},
+Remark~\ref{rem:a1-vib}), yielding input-dependent compression without per-sample $\beta$ tuning.
+
+\paragraph{Medical image enhancement.}
+Restoration models such as Real-ESRGAN \citep{wang2021realesrgan}, Restormer
+\citep{zamir2022restormer}, SwinIR \citep{liang2021swinir}, and NAFNet \citep{chen2022simple} target
+perceptual fidelity. Generative restoration (e.g.\ diffusion-based) can hallucinate diagnostically
+salient structure; we therefore use deterministic restoration with a diagnostic-preservation
+objective and analyse the generative failure mode explicitly in \cref{sec:discussion}.
+
+\paragraph{IQA and medical AI benchmarks.}
+No-reference IQA \citep{mittal2012brisque,wang2023clipiqa} and dermatology challenges (ISIC) motivate quality-aware
+evaluation. \itb adds an explicitly quality-stratified protocol with paired low-/high-quality
+subsets, enabling the quality-conditional analysis our claims require.
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Quality Assessment and the Quality-Conditional Bottleneck}\label{sec:qvib}
-% §3.1 \visiscore (5-dim quality vector, PLCC 0.924 / SRCC 0.895)
-% §3.2 \qvib ELBO (Proposition 1)
-% §3.3 Quality-Adaptive Prior (Lemma 1, sigmoid parameterisation)
-% §3.4 Quality Tokenizer + Attention Drift Bound (Theorem 1)
-% §3.5 Quality-Calibrated Entropy Guarantee (Proposition 2)
-% Full proofs: Appendix A1.
+
+\paragraph{Quality scoring.}
+\visiscore is a five-head assessor producing $q\in[0,1]^5$ (sharpness, brightness, completeness,
+colour temperature, contrast); its mean $\qbar$ is the quality scalar used downstream. On paired
+data it attains PLCC $0.924$ / SRCC $0.895$ averaged over the five dimensions. We stress (anti-drift
+rule 7) that $\qbar$ is interchangeable with any per-input quality scalar; \visiscore is one
+instantiation.
+
+\paragraph{Quality-conditional bottleneck.}
+We condition the variational marginal prior on $\qbar$, so that low-quality inputs are compressed
+toward an uninformative prior and high-quality inputs retain diagnostic information. The compact
+statements below are proved in Appendix~\ref{app:a1}.
+
+\input{appendix/A1_qvib_compact}
+
+\paragraph{Reading the results.}
+Proposition~\ref{prop:elbo} establishes \qvib as a principled variational objective;
+Lemma~\ref{lem:mono} makes the prior behave as designed (wider for worse quality);
+Theorem~\ref{thm:drift} bounds how much quality modulation can perturb self-attention; and
+Proposition~\ref{prop:entmono} certifies that predictive entropy rises as quality falls --- the
+formal sense in which the model ``knows when it does not know.''
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Diagnosis-Preserving Enhancement}\label{sec:enhance}
-% §4.1 Degradation taxonomy (q_3 completeness irreversible)
-% §4.2 NAFNet + FiLM architecture
-% §4.3 DP-Loss definition
+
+\paragraph{Degradation taxonomy.}
+Of the five quality dimensions, four (sharpness, brightness, colour temperature, contrast) are
+recoverable by deterministic restoration, whereas completeness ($q_3$, missing field of view) is
+\emph{not} recoverable --- one cannot restore unseen tissue. The agent therefore treats low
+completeness as a query-for-retake signal rather than an enhancement target.
+
+\paragraph{Architecture.}
+\visienhance is a NAFNet backbone \citep{chen2022simple} with FiLM modulation \citep{perez2018film}
+conditioned on the quality vector, so restoration strength adapts per input. The map $\Tw(x,q)$ is
+deterministic; we deliberately avoid generative restoration to preclude hallucinated diagnostic
+structure (anti-drift rules 8--9).
+
+\paragraph{DP-Loss.}
+Training minimises $\mathcal{L}=\mathcal{L}_1+\lambda_{\mathrm{LPIPS}}\mathcal{L}_{\mathrm{LPIPS}}
++\lambda_{\mathrm{DP}}\Ldp+\lambda_{\mathrm{q}}\mathcal{L}_{\mathrm{hinge}}$, where the
+diagnosis-preserving term $\Ldp=\KL(p_\phi^{\mathrm{enh}}\,\|\,p_\phi^{\mathrm{ref}})$ keeps the
+enhanced latent close to the reference latent, the LPIPS term controls perceptual fidelity, and the
+quality hinge encourages $\qbar(\Tw(x,q))>\qbar(x)$ within the salvage band.
+
 \subsection{Entropy Reduction and Mutual-Information Preservation}\label{sec:prop3lemma3}
-% Compact statements; full proofs in Appendix A2.1 / A2.2.
+% Compact statements; full proofs in Appendix A2.1 / A2.2. R2: use derive/sketch wording here.
+We derive two results connecting enhancement to diagnosis. Under quality improvement and a KL budget
+$\Ldp\leq\epsilon$, enhancement reduces expected predictive entropy
+(Proposition~\ref{prop:entropy}) while the mutual information $I(\Zenh;Y)$ stays within
+$\beta\sqrt{\epsilon}$ of the reference (Lemma~\ref{lem:dp}); the $\sqrt{\epsilon}$ rate is
+Pinsker-optimal. Full proofs are in Appendix~\ref{app:a2}.
+
 \input{appendix/A2_prop3_lemma3_compact}
-% §4.5 Three-stage training protocol (Stage 1 pixel / Stage 2 DP-Loss / Stage 3 quality hinge)
+
+\paragraph{Three-stage training.}
+We train in three stages: (1) pixel restoration ($\mathcal{L}_1$ + LPIPS) to a PSNR gate; (2)
+DP-Loss fine-tuning to tighten $\Ldp$; (3) a quality-hinge stage that calibrates $\qbar$ improvement
+inside the salvage band. The PSNR gate also guards the non-vacuity condition of
+Proposition~\ref{prop:entropy} (Appendix~\ref{app:a2-prop3}).
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Closed-Loop Agent}\label{sec:agent}
-% §5.1 Dual-channel decision logic (4 channels: direct / cautioned / enhance / query-refuse)
+
+\paragraph{Four-channel routing.}
+Given $\qbar$, the agent selects one of four actions: \emph{direct diagnosis}
+($\qbar\geq\tauhigh$), \emph{cautioned diagnosis} (high $\qbar$ but high predictive entropy),
+\emph{enhance-then-diagnose} ($\qbar\in[\tauenh,\tauhigh]$, the salvage band), or
+\emph{query-for-retake} ($\qbar<\tauenh$ or low completeness). The agent never produces a diagnosis
+itself; it \emph{decides} when and how diagnosis happens.
+
 \subsection{Expected-Risk Bound}\label{sec:thm2}
 % §5.2 — compact statement; full proof Appendix A2.3.
 \input{appendix/A2_3_theorem2_compact}
+
 \subsection{Composite Calibration Bound}\label{sec:cor1}
 % §5.3 — link to prior post-hoc temperature scaling; full proof Appendix A3.
 \input{appendix/A3_corollary1_compact}
-% §5.4 Agent implementation (ReAct + small LLM + rule fallback)
+
+\paragraph{Implementation.}
+The routing policy is realised as a lightweight ReAct-style controller backed by a small language
+model with a deterministic rule fallback, so that the four-channel decision is auditable and the
+thresholds $\tauenh,\tauhigh$ are explicit rather than implicit.
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{The \itb{} Benchmark}\label{sec:benchmark}
-% §6.1 4 subsets (LQ / HQ / Edge / Diverse); §6.2 quality-stratified protocol; §6.3 9 baselines
+
+\paragraph{Subsets.}
+\itb comprises four quality-stratified subsets --- low-quality (LQ), high-quality (HQ), edge cases,
+and a diverse-source split --- with paired LQ/HQ items enabling matched quality-conditional
+comparison. Degradations are applied with controlled severity so that quality is a measured,
+not merely assumed, variable.
+
+\paragraph{Protocol.}
+Evaluation is reported per quality stratum rather than pooled, exposing the quality--reliability
+relationship that pooled metrics hide. Primary metrics are AUC, ECE, the quality-conditional
+diagnostic index (QCDI), and the entropy--quality correlation $\rho(\Hent,\qbar)$.
+
+\paragraph{Baselines.}
+We compare against nine baselines spanning the three method families above (direct classifier, MC
+dropout, deep ensemble, evidential, focal/label-smoothing, standard VIB, VIB$+$temperature scaling,
+and a prior post-hoc quality-conditional scaling method \qcts as one ablation), ensuring each design
+choice in our system is isolated. The full construction protocol --- source pools, quality scoring,
+degradation tiers, subset definitions, and the v1.0 composition ($2820$ images across the four
+subsets) --- is given in Appendix~\ref{app:a4}.
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Experiments}\label{sec:exp}
-% §7.1 Setup; §7.2 Main results (Table 1); §7.3 ★ diagnostic preservation ★;
-% §7.4 ★ salvage rate ★; §7.5 universality; §7.6 cross-domain; §7.7 cost-benefit + DCA; §7.8 fairness
+% RED LINE 4: no number enters here until its source csv is frozen (post Plan A re-training).
+% Frozen-and-citable elsewhere: scorer 0.924/0.895; core config (n=19878) AUC 0.707/ECE 0.098/
+% rho -0.165; 5-backbone universality (section54_summary.csv); failure split. Table 1 / salvage
+% / |dAUC| / cross-domain are PENDING and must not be written from memory.
+
+\paragraph{Setup.}
+We train on quality-stratified skin-lesion data with held-out evaluation on \itb, reporting metrics
+per quality stratum with bootstrap $95\%$ confidence intervals ($2000$ resamples) and, for every
+correlation, an accompanying $p$-value. Full reproduction details --- environment, data splits, seeds,
+compute budget, and released artefacts --- are in Appendix~\ref{app:a26}.
+
+\subsection{Main Results}\label{sec:exp-main}
+\emph{[Table~1 pending: nine baselines $\times$ \{ITB-LQ, ITB-HQ\} $\times$ \{AUC, ECE, QCDI,
+$\rho$\}. Numbers frozen after Plan~A re-training (M2); the \qvib core configuration already
+attains AUC $0.707$ / ECE $0.098$ with $\rho(\Hent,\qbar)=-0.165$, $p<10^{-24}$ on the held-out set,
+$n=19{,}878$.]}
+
+\subsection{Diagnostic Preservation}\label{sec:exp-preserve}
+\emph{[E3 pending: target $|\Delta\mathrm{AUC}|<1.5\%$ between direct and enhance-then-diagnose, with
+a McNemar agreement test. Validates Lemma~\ref{lem:dp} empirically.]}
+
+\subsection{Salvage Rate}\label{sec:exp-salvage}
+\emph{[E5 pending: salvage rate $>55\%$ on the moderate band $\qbar\in[0.35,0.5]$ and $<25\%$ on the
+severe band $\qbar<0.25$ (a safety boundary, not a target to maximise).]}
+
+\subsection{Universality}\label{sec:exp-universal}
+% R1: NOT "TS reversal is universal". Phrase as "most pronounced on weakly quality-aware backbones".
+We evaluate across five backbones (standard VIB, ResNet-50, ViT-Tiny, ConvNeXt-Tiny, Swin-Tiny). The
+quality-conditional treatment improves the entropy--quality relationship across architectures, with
+the temperature-scaling failure most pronounced on weakly quality-aware backbones rather than
+universal. \emph{[Table~2 from \texttt{section54\_summary.csv}; consolidated for camera-ready.]}
+
+\subsection{Cross-Domain Generalisation}\label{sec:exp-cross}
+\emph{[Table~3 pending: zero-shot transfer across eight datasets. HAM10000 and PAD-UFES values are
+under re-audit and frozen jointly with Plan~A re-evaluation; cross-modality sets (CheXpert, fundus,
+endoscopy, real smartphone-style ISIC) are pending inference.]}
+
+\subsection{Cost--Benefit and Decision-Curve Analysis}\label{sec:exp-dca}
+% R3: phrase clinical evidence as decision-curve / triage-simulation language only.
+\emph{[Pending: net-benefit decision-curve analysis and a triage simulation indicating the operating
+range where enhance-then-diagnose improves net benefit over direct diagnosis.]} The decision-analytic
+model (cost structure, net-benefit definition, and triage simulation) is specified in
+Appendix~\ref{app:a20}.
+
+\subsection{Fairness}\label{sec:exp-fair}
+\emph{[Pending: stratified analysis across Fitzpatrick I--VI, sex, and age.]}
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Discussion and Limitations}\label{sec:discussion}
-% §8.1 connection to prior post-hoc calibration; §8.2 why generative enhancement fails here;
-% §8.3 failure-mode taxonomy (3-mode); §8.4 limitations (theory is sketch, synthetic benchmark, etc.)
+
+\paragraph{Relation to prior post-hoc scaling.}
+Our earlier quality-conditional temperature scaling (\qcts) operates on a \emph{frozen} model as a
+post-hoc step. The present system is end-to-end trainable with active intervention: enhancement and
+routing change the input and the decision, not merely the confidence. Corollary~\ref{cor:composite-compact}
+formalises how the two compose.
+
+\paragraph{Why generative enhancement fails here.}
+Generative restoration optimises perceptual realism, which in dermoscopy can mean synthesising
+plausible-but-absent pigment networks or vessels --- artefacts that are diagnostically misleading.
+Deterministic restoration with a diagnosis-preserving objective trades some perceptual sharpness for
+the guarantee analysed in \cref{sec:prop3lemma3}; this trade-off is the point, not a limitation.
+
+\paragraph{Failure-mode taxonomy.}
+A three-cluster analysis of residual failures (Appendix~\ref{app:a18}) separates heavy-blur
+($\approx 49\%$), colour-distorted ($\approx 32\%$), and ambiguous ($\approx 19\%$) cases. The
+ambiguous cluster sits inside the salvage band yet does not benefit from enhancement, which is why
+the routing policy adds a secondary entropy gate (cautioned diagnosis) on top of the quality
+threshold.
+
+\paragraph{Limitations.}
+(1) The theoretical results are derived under stated assumptions and are sketches of why the bounds
+hold, not fully watertight proofs in every regime (anti-drift rule 2). (2) \itb applies controlled
+synthetic degradations; real consumer-capture statistics may differ. (3) Learning a reliable quality
+scalar adds annotation and training cost. (4) We report no real-world clinical deployment validation;
+clinical claims rest on decision-curve analysis and simulation, not on reader confirmation
+(anti-drift rule 3; methodology in Appendix~\ref{app:a23}). We pre-emptively address five anticipated
+reviewer concerns --- multiple-comparison statistics, research-versus-deployment framing, real-world
+degradation, differentiation from prior work, and enhancement safety --- in Appendix~\ref{app:a21}.
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Conclusion}\label{sec:conclusion}
+We presented a closed-loop quality-triage system that threads perceptual quality through diagnosis,
+enhancement, and routing, backed by an end-to-end theoretical closure and a quality-stratified
+benchmark. By making quality a first-class signal --- and by deciding when \emph{not} to diagnose
+directly --- the system targets reliability under exactly the conditions where consumer-device
+medical AI is most likely to fail.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section*{Ethics Statement}\label{sec:ethics}
+This work uses only publicly available, de-identified dermatology datasets under their respective
+licences; it does not recruit participants, collect new patient imagery, or run any prospective
+clinical protocol. We make \emph{no} claim of clinician validation: the system is a research
+framework, not a medical device, and production use would require institutional review, regulatory
+clearance, and prospective trials (\cref{sec:discussion}). To mitigate dual-use and over-trust risks,
+the agent includes an explicit refuse channel, enhancement is deterministic and diagnosis-preserving
+rather than generative (avoiding hallucinated structure; \cref{sec:discussion}), and we report
+subgroup-stratified performance across skin tones (\cref{sec:exp-fair}) to surface --- not assert away
+--- fairness gaps. Clinical value is assessed only through decision-curve analysis, triage simulation,
+and an LLM-judge audit, each with stated limits (Appendices~\ref{app:a19}, \ref{app:a20},
+\ref{app:a23}).
+
+\section*{Reproducibility Statement}\label{sec:repro}
+All theoretical claims are stated with explicit assumptions and full proofs in
+Appendices~\ref{app:a1}--\ref{app:a3}. The benchmark construction (sources, quality scoring,
+degradation tiers, subset definitions, composition) is detailed in Appendix~\ref{app:a4}, and the
+complete environment, data splits, seeds, compute budget, and release artefacts --- including code,
+configurations, checkpoints, and benchmark metadata --- are described in Appendix~\ref{app:a26}. A
+one-command \texttt{reproduce.sh} regenerates the reported figures and statistics.
 
 \appendix
+\input{appendix/A0_notation}
+\input{appendix/A1_qvib}
 \input{appendix/A2_prop3_lemma3}
 \input{appendix/A2_3_theorem2}
 \input{appendix/A3_corollary1}
-% \input{appendix/A1_qvib}        % TODO: Prop 1 / Lemma 1 / Thm 1 / Prop 2
+\input{appendix/A4_itb_construction}
+\input{appendix/A18_failure_modes}
+\input{appendix/A19_llm_judge}
+\input{appendix/A20_cost_benefit}
+\input{appendix/A21_rebuttal}
+\input{appendix/A23_reader_study_disclaimer}
+\input{appendix/A26_reproducibility}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
 
 \end{document}

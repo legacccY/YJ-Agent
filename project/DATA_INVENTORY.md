@@ -68,10 +68,10 @@
 
 | 子集 | 规模 | 定义 | 路径 |
 |---|---|---|---|
-| ITB-LQ | 300 | $\bar{q} < 0.5$ | `results/itb_subsets.csv` |
-| ITB-HQ | 360 | $\bar{q} > 0.7$ | 同上 |
-| ITB-Edge | ~500 | 边界质量 / 困难样本 | 同上 |
-| ITB-Diverse | ~600 | Fitzpatrick I-VI 各皮肤色 | 同上 |
+| ITB-LQ | 300 | $\bar{q} \in [0.05, 0.45]$（ISIC2020 heavy 降质）| `results/itb_subsets.csv` |
+| ITB-HQ | 360 | $\bar{q} \in [0.50, 0.81]$（ISIC2020 original）| 同上 |
+| ITB-Edge | 660 | 边界质量 q̄∈[0.40,0.55]（ISIC2020 light+medium 降质）| 同上 |
+| ITB-Diverse | 1500 | Fitzpatrick I-VI 各皮肤色（Fitz17k original）| 同上 |
 | ITB Full Pool | 2820 | 全集 | `results/itb_predictions.csv` |
 
 ### 真实低质数据（L24，M2 目标）

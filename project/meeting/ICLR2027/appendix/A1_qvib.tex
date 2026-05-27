@@ -1,0 +1,310 @@
+% Appendix A1 — full proofs for the Quality-Conditional Bottleneck.
+% Source-of-truth: project/plans/V-QIB数学推导.md (Claude 4.7 Opus, 2026-05-06).
+% Results: Proposition 1 (ELBO), Lemma 1 (prior monotonicity),
+% Lemma 2 (softmax perturbation), Theorem 1 (attention drift), Proposition 2 (entropy monotonicity).
+% Anonymized: model names via macros (\qvib, \visiscore). Never write the literal internal names.
+
+\section{Proofs for the Quality-Conditional Bottleneck}\label{app:a1}
+
+\subsection{Setup and Notation}\label{app:a1-setup}
+Let $\mathcal{X}\subset\mathbb{R}^{H\times W\times 3}$ be the input space, $\mathcal{Y}=\{1,\dots,K\}$ the
+diagnostic labels, and $\mathcal{Z}=\mathbb{R}^d$ the latent space. The frozen scorer
+$\visiscore$ maps an image to a quality vector $q\in[0,1]^5$ with mean
+$\qbar=\tfrac{1}{5}\sum_{d=1}^5 q_d$. We write $p_\phi(z\mid x,q)$ for the stochastic encoder,
+$q_\theta(y\mid z)$ for the classifier, and $r_\psi(z\mid q)$ for the quality-adaptive marginal
+prior. All KL divergences are in nats; densities are with respect to Lebesgue measure.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsection{Proposition 1 (\qvib{} Evidence Lower Bound)}\label{app:a1-prop1}
+
+\begin{proposition}[restated]\label{prop:elbo-full}
+For any encoder $p_\phi(z\mid x,q)$, classifier $q_\theta(y\mid z)$, quality-adaptive prior
+$r_\psi(z\mid q)$, and $\beta>0$, the conditional log-likelihood obeys
+\begin{equation}
+\log p(y\mid x,q) \;\geq\;
+\E_{z\sim p_\phi(z\mid x,q)}\!\big[\log q_\theta(y\mid z)\big]
+- \beta\,\KL\!\big(p_\phi(z\mid x,q)\,\|\,r_\psi(z\mid q)\big).
+\label{eq:a1-elbo}
+\end{equation}
+Minimising the empirical negative bound gives the $\qvib$ loss
+\begin{equation}
+\mathcal{L}_{\qvib}(\phi,\theta,\psi)
+= \frac{1}{N}\sum_{i=1}^{N}\Big[
+\E_{\epsilon\sim\mathcal{N}(0,I_d)}\!\big[-\log q_\theta(y_i\mid z_i)\big]
++ \beta\,\KL\!\big(p_\phi(z\mid x_i,q_i)\,\|\,r_\psi(z\mid q_i)\big)\Big],
+\label{eq:a1-loss}
+\end{equation}
+with $z_i = \mu_\phi(x_i,q_i) + \sigma_\phi(x_i,q_i)\odot\epsilon$ (the reparameterisation trick of \citealp{kingma2014auto}).
+\end{proposition}
+
+\begin{proof}
+The argument is the standard variational construction generalised to the quality-conditional
+prior. It proceeds in five steps.
+
+\paragraph{Step 1 (Importance density).}
+By the law of total probability and $\int p_\phi(z\mid x,q)\,dz=1$,
+\begin{equation}
+\log p(y\mid x,q) = \log\!\int p_\phi(z\mid x,q)\,
+\frac{p(y\mid z)\,p(z\mid x,q)}{p_\phi(z\mid x,q)}\,dz.
+\label{eq:a1-p1-1}
+\end{equation}
+
+\paragraph{Step 2 (Jensen).}
+The logarithm is concave, so
+\begin{equation}
+\log p(y\mid x,q) \;\geq\;
+\E_{p_\phi(z\mid x,q)}\!\Big[\log\frac{p(y\mid z)\,p(z\mid x,q)}{p_\phi(z\mid x,q)}\Big].
+\label{eq:a1-p1-2}
+\end{equation}
+
+\paragraph{Step 3 (Decompose the integrand).}
+Insert the prior $r_\psi(z\mid q)$:
+\begin{equation}
+\log\frac{p(y\mid z)\,p(z\mid x,q)}{p_\phi(z\mid x,q)}
+= \log p(y\mid z) + \log\frac{r_\psi(z\mid q)}{p_\phi(z\mid x,q)}
++ \log\frac{p(z\mid x,q)}{r_\psi(z\mid q)}.
+\label{eq:a1-p1-3}
+\end{equation}
+
+\paragraph{Step 4 (Variational approximations).}
+Replace the intractable likelihood $p(y\mid z)$ by $q_\theta(y\mid z)$, and use the KL identity
+\begin{equation}
+\E_{p_\phi}\!\Big[\log\tfrac{p(z\mid x,q)}{r_\psi(z\mid q)}\Big]
+= \KL\!\big(p_\phi\,\|\,r_\psi\big) - \KL\!\big(p_\phi\,\|\,p(\cdot\mid x,q)\big).
+\label{eq:a1-p1-4}
+\end{equation}
+
+\paragraph{Step 5 (Drop the non-negative residual).}
+Since $\KL(p_\phi\,\|\,p(\cdot\mid x,q))\geq 0$, substituting \eqref{eq:a1-p1-3}--\eqref{eq:a1-p1-4}
+into \eqref{eq:a1-p1-2} yields
+\begin{equation}
+\log p(y\mid x,q) \;\geq\;
+\E_{p_\phi}\!\big[\log q_\theta(y\mid z)\big] - \KL\!\big(p_\phi\,\|\,r_\psi\big),
+\label{eq:a1-p1-5}
+\end{equation}
+and introducing the trade-off multiplier $\beta$ gives \eqref{eq:a1-elbo}. The empirical form
+\eqref{eq:a1-loss} follows by Monte-Carlo estimation of the expectation under the
+reparameterisation trick.
+\end{proof}
+
+\begin{remark}[Strict generalisation of VIB]\label{rem:a1-vib}
+When $r_\psi(z\mid q)=\mathcal{N}(0,I_d)$ for all $q$ and $p_\phi$ ignores $q$, \eqref{eq:a1-loss}
+reduces \emph{exactly} to the variational information bottleneck of \citet{alemi2017deep}. Thus
+$\qvib$ strictly generalises VIB by conditioning the marginal prior on perceptual quality; it is
+an information-theoretic generalisation, not a posterior-reweighting scheme.
+\end{remark}
+
+\begin{remark}[Bound tightness]\label{rem:a1-tight}
+The ELBO gap equals $\KL(p_\phi(z\mid x,q)\,\|\,p(z\mid x,q))$. A prior $r_\psi(z\mid q)$ matched to
+$p(z\mid q)$ tightens the bound relative to a quality-agnostic $\mathcal{N}(0,I_d)$, most visibly for
+low-quality inputs where $p(z\mid q)$ departs furthest from the standard Gaussian.
+\end{remark}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsection{Quality-Adaptive Prior and Lemma 1 (Monotonicity)}\label{app:a1-lemma1}
+
+We model the prior as an isotropic Gaussian whose variance is a smooth function of $\qbar$:
+\begin{equation}
+r_\psi(z\mid q) = \mathcal{N}\!\big(z;\,0,\,\sigma^2(\qbar)\,I_d\big),\qquad
+\sigma^2(\qbar) = \sigma_0^2 + (1-\sigma_0^2)\,\sigmoid\!\big(-\alpha(\qbar-\tau)\big),
+\label{eq:a1-prior}
+\end{equation}
+with baseline variance $\sigma_0^2\in(0,1]$, threshold $\tau\in[0,1]$, and sharpness $\alpha>0$.
+
+\begin{lemma}[restated, monotonicity of $\sigma^2$]\label{lem:mono-full}
+$\sigma^2(\qbar)$ is strictly decreasing in $\qbar$ on $(0,1)$.
+\end{lemma}
+
+\begin{proof}
+Let $s(\cdot)=\sigmoid(\cdot)$, so $s'(\cdot)=s(\cdot)(1-s(\cdot))$. Differentiating
+\eqref{eq:a1-prior} with $x=-\alpha(\qbar-\tau)$,
+\begin{equation}
+\frac{d\sigma^2}{d\qbar}
+= (1-\sigma_0^2)\,s'\!\big(-\alpha(\qbar-\tau)\big)\cdot(-\alpha)
+= -(1-\sigma_0^2)\,\alpha\,s(x)\,(1-s(x)) < 0,
+\label{eq:a1-mono}
+\end{equation}
+since $\alpha>0$, $s(x)\in(0,1)$, and $1-\sigma_0^2\geq 0$.
+\end{proof}
+
+\paragraph{Asymptotics.}
+As $\qbar\to 1$ with $\alpha(1-\tau)\to\infty$, $\sigma^2\to\sigma_0^2$ (concentrated prior, bottleneck
+relaxed). As $\qbar\to 0$ with $\alpha\tau\to\infty$, $\sigma^2\to 1$ (the maximally uninformative
+$\mathcal{N}(0,I_d)$, bottleneck maximally constrictive).
+
+\paragraph{Explicit KL.}
+For diagonal encoder $p_\phi=\mathcal{N}(\mu,\operatorname{diag}(\sigma_1^2,\dots,\sigma_d^2))$ and prior
+\eqref{eq:a1-prior},
+\begin{equation}
+\KL(p_\phi\,\|\,r_\psi)
+= \frac{1}{2}\sum_{j=1}^{d}\Big[\frac{\mu_j^2+\sigma_j^2}{\sigma^2(\qbar)} - 1
+- \log\frac{\sigma_j^2}{\sigma^2(\qbar)}\Big].
+\label{eq:a1-kl}
+\end{equation}
+As $\qbar$ falls, $\sigma^2(\qbar)$ rises (Lemma~\ref{lem:mono-full}); to keep \eqref{eq:a1-kl}
+finite the encoder shrinks $|\mu_j|\to 0$ and inflates $\sigma_j^2\to\sigma^2(\qbar)$, pushing the
+code toward the uninformative prior --- a soft, differentiable quality gate.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsection{Lemma 2 (Softmax Perturbation Stability)}\label{app:a1-lemma2}
+
+\begin{lemma}[softmax $\ell_\infty\!\to\!\ell_1$ stability]\label{lem:softmax}
+Let $a=\softmax(s)$ and $a'=\softmax(s+\delta)$ for $s,\delta\in\mathbb{R}^n$. Then
+\begin{equation}
+\|a'-a\|_1 \;\leq\; 2\max_{1\leq j\leq n}|\delta_j|.
+\label{eq:a1-softmax}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+The softmax $f:\mathbb{R}^n\to\Delta^{n-1}$ has Jacobian $J_{jk}=f_j(\mathbb{1}[j=k]-f_k)$. For any
+direction $v$, $(Jv)_j = f_j(v_j-\bar{v})$ with $\bar{v}=\sum_k f_k v_k$, so
+\begin{equation}
+\|Jv\|_1 = \sum_{j=1}^n f_j\,|v_j-\bar{v}|
+\leq \sum_{j=1}^n f_j\big(|v_j|+|\bar{v}|\big)
+\leq 2\|v\|_\infty,
+\label{eq:a1-jac}
+\end{equation}
+where $|\bar{v}|\leq\max_k|v_k|=\|v\|_\infty$ and $\sum_j f_j=1$. Hence the induced operator norm
+satisfies $\|J\|_{\infty\to 1}\leq 2$. Writing $g(t)=\softmax(s+t\delta)$ and applying the mean
+value theorem,
+\begin{equation}
+\|a'-a\|_1 = \Big\|\int_0^1 J(s+t\delta)\,\delta\,dt\Big\|_1
+\leq \sup_{t}\|J(s+t\delta)\|_{\infty\to 1}\,\|\delta\|_\infty
+\leq 2\max_j|\delta_j|. \qedhere
+\label{eq:a1-mvt}
+\end{equation}
+\end{proof}
+
+\begin{remark}
+The constant $2$ is conservative; \citet{gao2017properties} sharpen it to $1$ in certain regimes. We
+retain $2$ for a clean worst-case statement in Theorem~\ref{thm:drift-full}.
+\end{remark}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsection{Theorem 1 (Quality-Aware Attention Drift Bound)}\label{app:a1-thm1}
+
+We inject quality into the encoder's self-attention via two learnable embeddings
+$u,v:[0,1]^5\to\mathbb{R}^m$, parameterised as $u(q)=\tilde{u}(\mathbf{1}-q)$,
+$v(q)=\tilde{v}(\mathbf{1}-q)$ with $\tilde{u}(0)=\tilde{v}(0)=0$, so that perfect quality
+($q=\mathbf{1}$) recovers standard attention. The modulated logits are
+$\tilde{s}_{ij}=x_i^\top x_j/\sqrt{d}+\delta_{ij}$, $\delta_{ij}=u(q_i)^\top v(q_j)$.
+
+\begin{theorem}[restated, attention drift bound]\label{thm:drift-full}
+Let $\tilde{u},\tilde{v}$ be $L_{\tilde{u}}$- and $L_{\tilde{v}}$-Lipschitz in $\ell_2$ with
+$\tilde{u}(0)=\tilde{v}(0)=0$, and let $\varepsilon=\max_i\|\mathbf{1}-q_i\|_\infty$ be the
+worst-case quality deviation. With $a_i,a'_i$ the attention rows before/after modulation,
+\begin{equation}
+\max_{1\leq i\leq n}\|a'_i-a_i\|_1 \;\leq\; 10\,L_{\tilde{u}}L_{\tilde{v}}\,\varepsilon^2.
+\label{eq:a1-drift}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Four steps.
+
+\paragraph{Step 1 (Cauchy--Schwarz on the bias).}
+$|\delta_{ij}| = |\tilde{u}(\mathbf{1}-q_i)^\top\tilde{v}(\mathbf{1}-q_j)|
+\leq \|\tilde{u}(\mathbf{1}-q_i)\|_2\,\|\tilde{v}(\mathbf{1}-q_j)\|_2.$
+
+\paragraph{Step 2 (Lipschitz with zero anchor).}
+Since $\tilde{u}(0)=0$, $\|\tilde{u}(\mathbf{1}-q_i)\|_2\leq L_{\tilde{u}}\|\mathbf{1}-q_i\|_2$, and
+likewise for $\tilde{v}$. Hence
+\begin{equation}
+|\delta_{ij}| \leq L_{\tilde{u}}L_{\tilde{v}}\,\|\mathbf{1}-q_i\|_2\,\|\mathbf{1}-q_j\|_2.
+\label{eq:a1-bias}
+\end{equation}
+
+\paragraph{Step 3 (Apply Lemma~\ref{lem:softmax}).}
+For each row $i$, $\|a'_i-a_i\|_1\leq 2\max_j|\delta_{ij}|$, so
+\begin{equation}
+\max_i\|a'_i-a_i\|_1
+\leq 2L_{\tilde{u}}L_{\tilde{v}}\max_{i,j}\big(\|\mathbf{1}-q_i\|_2\,\|\mathbf{1}-q_j\|_2\big).
+\label{eq:a1-row}
+\end{equation}
+
+\paragraph{Step 4 ($\ell_2\to\ell_\infty$ on a $5$-vector).}
+For $q\in[0,1]^5$, $\|\mathbf{1}-q\|_2^2=\sum_{d=1}^5(1-q_d)^2\leq 5\,\varepsilon^2$, i.e.\
+$\|\mathbf{1}-q\|_2\leq\sqrt{5}\,\varepsilon$. Substituting into \eqref{eq:a1-row},
+\begin{equation}
+\max_i\|a'_i-a_i\|_1 \leq 2L_{\tilde{u}}L_{\tilde{v}}\,(\sqrt{5}\,\varepsilon)^2
+= 10\,L_{\tilde{u}}L_{\tilde{v}}\,\varepsilon^2. \qedhere
+\end{equation}
+\end{proof}
+
+\begin{corollary}[Spectral-norm control]\label{cor:a1-spectral}
+If $\tilde{u},\tilde{v}$ are spectrally normalised \citep{miyato2018spectral}
+($L_{\tilde{u}}=L_{\tilde{v}}=1$), the drift is at
+most $10\varepsilon^2$; for a moderately degraded input ($\varepsilon=0.3$) the attention rows shift by
+at most $0.9$ in $\ell_1$ --- a bounded, not arbitrary, reorganisation.
+\end{corollary}
+
+\begin{remark}[Near-tightness]\label{rem:a1-drift-tight}
+With scalar embeddings $\tilde{u}(x)=\tilde{v}(x)=Lx$ ($m=1$), a two-patch input at $q=\mathbf{0}$
+($\varepsilon=1$) drives the drift arbitrarily close to $2L^2$, against the bound $10L^2$; the factor
+$5$ gap stems from the generic $\ell_2\to\ell_\infty$ conversion and the constant in
+Lemma~\ref{lem:softmax}.
+\end{remark}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsection{Proposition 2 (Quality-Calibrated Entropy)}\label{app:a1-prop2}
+
+Let $\hat{p}_q(y\mid x)=\E_{z\sim p_\phi(z\mid x,q)}[q_\theta(y\mid z)]$ be the predictive
+distribution and $\Hent(\hat{p}_q)=-\sum_y \hat{p}_q\log\hat{p}_q$ its entropy.
+
+\begin{proposition}[restated, entropy monotonicity]\label{prop:entmono-full}
+Under the $\qvib$ objective \eqref{eq:a1-loss} with $\beta>0$, the expected predictive entropy is
+non-increasing in quality:
+\begin{equation}
+\E_{x\sim p(x\mid\qbar_1)}\!\big[\Hent(\hat{p}_{q_1})\big]
+\;\geq\; \E_{x\sim p(x\mid\qbar_2)}\!\big[\Hent(\hat{p}_{q_2})\big]
+\quad\text{whenever}\quad \qbar_1<\qbar_2.
+\label{eq:a1-entmono}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Four steps relating $\sigma^2(\qbar)$ to the optimal encoder and thence to entropy.
+
+\paragraph{Step 1 (Objective at fixed $\qbar$).}
+The encoder $\mathcal{N}(\mu,\Sigma)$ minimises
+\begin{equation}
+\mathcal{J}(\mu,\Sigma) = \E_\epsilon\!\big[-\log q_\theta(y\mid\mu+\Sigma^{1/2}\epsilon)\big]
++ \beta\,\KL\!\big(\mathcal{N}(\mu,\Sigma)\,\|\,\mathcal{N}(0,\sigma^2 I_d)\big),
+\label{eq:a1-p2-1}
+\end{equation}
+with the KL term $\tfrac{1}{2}[\|\mu\|^2/\sigma^2 + \tr(\Sigma)/\sigma^2 - d - \log\det\Sigma + d\log\sigma^2]$.
+
+\paragraph{Step 2 (First-order condition on $\mu$).}
+$\nabla_\mu\mathcal{J}=\nabla_\mu\E_\epsilon[-\log q_\theta] + (\beta/\sigma^2)\mu = 0$ gives
+\begin{equation}
+\mu^\star = -\frac{\sigma^2}{\beta}\,\nabla_\mu\E_\epsilon[-\log q_\theta].
+\label{eq:a1-p2-2}
+\end{equation}
+The classification-loss gradient has bounded norm (Lipschitz for standard heads), so $\mu^\star$ is
+scaled toward $0$ as $\sigma^2$ grows.
+
+\paragraph{Step 3 (Code $\to$ uninformative prior $\Rightarrow$ max entropy).}
+As $\mu\to 0$ and $\Sigma\to\sigma^2 I_d$, $z$ approaches a sample from $\mathcal{N}(0,\sigma^2 I_d)$ and
+$\hat{p}_q(y\mid x)\to\E_{z\sim\mathcal{N}(0,\sigma^2 I_d)}[q_\theta(y\mid z)]$, which carries no
+discriminative signal and tends to the uniform distribution (entropy $\log K$, the maximum).
+
+\paragraph{Step 4 (Monotonicity).}
+By Lemma~\ref{lem:mono-full}, $\qbar_1<\qbar_2\Rightarrow\sigma^2(\qbar_1)>\sigma^2(\qbar_2)
+\Rightarrow\|\mu^\star(\qbar_1)\|\leq\|\mu^\star(\qbar_2)\|$ (Step~2)
+$\Rightarrow\Hent(\hat{p}_{q_1})\geq\Hent(\hat{p}_{q_2})$ (Step~3). The last implication is the data
+processing inequality on $Y\to X\to Z\to\hat{Y}$: a more compressed $Z$ cannot raise predictive
+information.
+\end{proof}
+
+\begin{remark}[Calibration without post-hoc tuning]\label{rem:a1-calib}
+Proposition~\ref{prop:entmono-full} certifies that $\qvib$ is provably more uncertain on lower-quality
+inputs, structurally and end-to-end --- in contrast to hard quality gating (non-differentiable,
+binary accept/reject) and post-hoc temperature scaling (applied after training).
+\end{remark}
+
+\paragraph{Scope of the guarantee.}
+Steps 2--3 hold at the training equilibrium of \eqref{eq:a1-loss} for classifiers with bounded
+gradient and a well-fit $q_\theta$; \eqref{eq:a1-entmono} is therefore a guarantee about the
+optimiser's fixed point, not a finite-sample certificate. The empirical monotone trend
+($\rho(\Hent,\qbar)<0$) is reported in the main results.

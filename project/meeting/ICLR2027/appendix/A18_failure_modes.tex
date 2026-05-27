@@ -1,0 +1,82 @@
+% Appendix A18 — failure-mode clustering details.
+% Source-of-truth: project/results/failure_mode_clusters_v2.json (approach_C_kmeans_quality,
+% recommended; audited 2026-05-27) + project/plans/L21_failure_mode_taxonomy.md.
+% Frozen: n=57 confidently-wrong on ITB-LQ, KMeans k=3, proportions 49.1/31.6/19.3.
+% Anonymized: scorer via \visiscore, benchmark via \itb; clinical language per R3 (no reader claims).
+
+\section{Failure-Mode Clustering Details}\label{app:a18}
+
+\subsection{Methodology}\label{app:a18-method}
+We isolate the \emph{confidently-wrong} predictions of the standard-VIB baseline on \itb-LQ ---
+predictions with $\hat{p}>0.85$ on a true negative (false positive) or $\hat{p}<0.15$ on a true
+positive (false negative) --- yielding $n=57$ cases. We then run KMeans with $k=3$ on the
+standardised five-dimensional quality vector $q\in[0,1]^5$ from \visiscore. Three interpretable modes
+emerge, distinguished cleanly along single quality axes (Table~\ref{tab:failure-centroids}): heavy
+blur by $q_1<0.005$, colour distortion by a cold/shifted $q_4\approx 0.28$, and an
+adequate-quality residual.
+
+\subsection{Per-Cluster Quality Centroids}\label{app:a18-centroids}
+\begin{table}[t]
+\centering
+\caption{KMeans ($k=3$) centroids over the five quality dimensions for the $57$ confidently-wrong
+\itb-LQ cases. FP/FN counts show the error direction; all three modes are false-negative dominated.}
+\label{tab:failure-centroids}
+\begin{tabular}{lrrccccccc}
+\toprule
+Mode & $n$ & \% & $\qbar$ & $q_1$ & $q_2$ & $q_3$ & $q_4$ & $q_5$ & FP/FN \\
+ & & & & sharp. & bright. & compl. & col.\ temp & contr. & \\
+\midrule
+Heavy blur            & $28$ & $49.1$ & $0.331$ & $0.003$ & $0.511$ & $0.837$ & $0.738$ & $0.135$ & $6/22$ \\
+Colour-distorted blur & $18$ & $31.6$ & $0.310$ & $0.004$ & $0.485$ & $0.924$ & $0.275$ & $0.255$ & $2/16$ \\
+Diagnostically ambig. & $11$ & $19.3$ & $0.381$ & $0.020$ & $0.724$ & $0.850$ & $0.706$ & $0.252$ & $1/10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Mode 1 --- Heavy blur ($49.1\%$).}
+Extreme defocus or motion blur ($q_1\approx 0.003$, far below the $0.005$ legibility floor) with
+$\qbar\approx 0.33$, below the salvage lower bound $\tauenh$. Fine discriminative cues (lesion border,
+pigment network) are destroyed; $22$ of $28$ cases are false negatives.
+
+\paragraph{Mode 2 --- Colour-distorted blur ($31.6\%$).}
+Moderate blur compounded by a severe colour-temperature shift ($q_4\approx 0.28$) at
+$\qbar\approx 0.31$, on the $\tauenh$ boundary. Colour correction is a well-posed deterministic
+problem, but the residual blur means enhancement alone may not lift $\qbar$ past $\tauhigh$.
+
+\paragraph{Mode 3 --- Diagnostically ambiguous ($19.3\%$).}
+Adequate quality ($q_1\approx 0.020$, roughly $6\times$ the other modes; $\qbar\approx 0.38$, inside
+the salvage band $[\tauenh,\tauhigh]$), yet still confidently wrong. Here quality is \emph{not} the
+bottleneck --- the cases are intrinsically hard (borderline lesions) --- so enhancement cannot help.
+
+\subsection{Mitigation via the Agent Policy}\label{app:a18-mitigation}
+Each mode maps to a distinct channel of the four-action policy of Theorem~\ref{thm:agent}
+(Table~\ref{tab:failure-mitigation}). Crucially, Mode~3 exposes why a quality threshold alone is
+insufficient: $\qbar$ lies in the salvage band, but the appropriate action is not
+enhance-then-diagnose. The policy therefore gates on a \emph{secondary} signal --- the predictive
+entropy $\Hent(\hat{p}_x)$ --- routing high-entropy in-band cases to query/refuse rather than enhance.
+This is exactly the entropy gate already present in the policy of \cref{sec:thm2}; the taxonomy here
+is its empirical motivation.
+
+\begin{table}[t]
+\centering
+\caption{Per-mode prescribed action under the policy of Theorem~\ref{thm:agent}.}
+\label{tab:failure-mitigation}
+\begin{tabular}{llll}
+\toprule
+Mode & $\qbar$ & Action & Rationale \\
+\midrule
+Heavy blur            & $0.33$ ($<\tauenh$)        & query ($\actq$)   & $\Tw$ ineffective below the salvage band \\
+Colour-distorted blur & $0.31$ ($\approx\tauenh$)  & enhance ($\acte$) & colour is well-posed; cascade to query if needed \\
+Diagnostically ambig. & $0.38$ (in band, high $\Hent$) & refuse ($\actr$) & quality adequate; difficulty is inherent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Representative samples.}
+A grid of representative cases per mode (anonymised crops, three modes $\times$ four examples) is
+provided with the released benchmark; we omit raw images here for anonymity.
+
+\paragraph{Clinical framing.}
+For Mode~3 the agent \emph{defers to specialist review} rather than asserting a diagnosis; we make no
+claim of reader confirmation, and clinical value is assessed only through decision-curve analysis and
+triage simulation (\cref{sec:exp-dca}).

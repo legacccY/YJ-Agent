@@ -1,0 +1,51 @@
+% Appendix A20 — cost-benefit deployment analysis (methodology).
+% Source: ACCEPTANCE_CRITERIA.md L13 (cost-benefit: missed-melanoma / retake / referral cost,
+% DALY/QALY framing) + STORY_FRAMEWORK A20. METHODOLOGY ONLY; dollar/DALY figures and the
+% simulated operating curves are PENDING (M3) and not reported here (red line 4).
+% Anonymized; clinical framing per R3 (simulation/decision-curve language, no reader claims).
+
+\section{Cost--Benefit Deployment Analysis}\label{app:a20}
+
+\subsection{Motivation}\label{app:a20-motiv}
+A quality-triage system trades one cost (retakes and specialist referrals) against another (missed or
+mis-staged lesions). Whether this trade is favourable cannot be read off accuracy alone; it depends on
+the relative costs of each error and action. This appendix specifies the decision-analytic model used
+to assess that trade; the numerical instantiation is reported in \cref{sec:exp-dca}.
+
+\subsection{Cost Model}\label{app:a20-model}
+For a case routed to action $a\in\{\actd,\acte,\actq,\actr\}$ with true label $y$ and prediction
+$\hat{y}$, we assign an expected cost
+\begin{equation}
+C(a,y,\hat{y}) = c_{\mathrm{err}}(y,\hat{y}) + c_{\mathrm{act}}(a),
+\label{eq:a20-cost}
+\end{equation}
+where $c_{\mathrm{err}}$ is the diagnostic-error cost (a false negative on a malignant lesion
+dominates, reflecting downstream morbidity, optionally expressed in DALY/QALY units) and
+$c_{\mathrm{act}}$ is the operational cost of the action (negligible for $\actd$; a capture cost for
+$\actq$; a specialist-time cost for $\actr$; an inference/enhancement cost for $\acte$). All cost
+constants are exposed as parameters and swept rather than fixed to a single jurisdiction.
+
+\subsection{Net Benefit and Decision Curves}\label{app:a20-netbenefit}
+We report \emph{net benefit} as a function of the decision threshold $p_t$,
+\begin{equation}
+\mathrm{NB}(p_t) = \frac{\mathrm{TP}}{N} - \frac{\mathrm{FP}}{N}\cdot\frac{p_t}{1-p_t},
+\label{eq:a20-nb}
+\end{equation}
+and compare the closed-loop agent against (i) treat-all, (ii) treat-none, and (iii) direct diagnosis
+without triage. Decision-curve dominance over a clinically relevant $p_t$ range is the headline
+deployment claim; it requires no human readers and is computed entirely from held-out predictions.
+
+\subsection{Triage Simulation}\label{app:a20-sim}
+On top of the static cost model we simulate the closed loop: degraded inputs are routed by the policy
+of Theorem~\ref{thm:agent}, retakes draw a higher-quality re-capture from the paired data,
+enhancement applies $\Tw$, and referrals remove the case from automated decision. Sweeping the
+quality thresholds $(\tauenh,\tauhigh)$ traces an operating curve of expected cost versus referral
+rate, identifying the band where triage is economically favourable. The simulation inherits the
+safety boundary of \cref{sec:exp-salvage} (low salvage rate on severely degraded inputs is intended,
+not a failure).
+
+\subsection{Reporting and Limitations}\label{app:a20-limits}
+We report the cost model as a \emph{sensitivity analysis} over the cost constants rather than a single
+point estimate, since real costs vary by health system. The analysis is a deployment-feasibility
+argument, not a health-economic evaluation; a formal cost-effectiveness study with jurisdiction-specific
+inputs is out of scope and listed as future work in \cref{sec:discussion}.

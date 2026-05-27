@@ -1,0 +1,46 @@
+% Appendix A26 — reproducibility, release, and compute.
+% Source: project/CODEBASE_README.md + DATA_INVENTORY.md (infra facts only; author/venue/old numbers
+% from that file are NOT used — de-anonymization + prior-venue-number red lines). Anonymized throughout.
+
+\section{Reproducibility, Release, and Compute}\label{app:a26}
+
+\subsection{Environment}\label{app:a26-env}
+All experiments run under Python~3.12 with PyTorch and CUDA~12.x on a single consumer-grade GPU
+(an RTX~4070-class laptop GPU). A pinned \texttt{requirements.txt} and a one-command
+\texttt{reproduce.sh} are released; no multi-GPU or cluster resources are required, by design ---
+the system targets consumer-device deployment and is reproducible on commodity hardware.
+
+\subsection{Data Splits and Leakage Control}\label{app:a26-splits}
+Training data are split $70/10/20$ (train/val/test) \emph{by image identifier}, so that no image
+appears in more than one split. The quality scorer, diagnosis model, and enhancement model are
+trained on the training split only; \itb evaluation uses the held-out test split and the external
+pools (Appendix~\ref{app:a4}). Quality labels and the split index are released as CSVs.
+
+\subsection{Determinism and Robustness to Seeds}\label{app:a26-seeds}
+The diagnosis model is trained under three fixed seeds ($\{42, 123, 2024\}$); we report mean and
+coefficient of variation, with headline configurations exhibiting CV below $2\%$ across seeds. Random
+number generators (Python, NumPy, PyTorch) are seeded explicitly and deterministic kernels are
+enabled where available.
+
+\subsection{Compute Budget}\label{app:a26-compute}
+The diagnosis model trains in roughly half an hour per seed (batch $256$, $\sim\!30$ epochs) on the
+GPU above. The enhancement model is trained in three stages over a longer schedule (pixel
+restoration, DP-Loss fine-tuning, quality-hinge calibration; \cref{sec:enhance}). Inference for the
+full \itb benchmark across all baselines completes in minutes. We report wall-clock times with the
+released logs so the budget is auditable.
+
+\subsection{Release Artefacts}\label{app:a26-release}
+We release, via an anonymous repository and an archival record (DOI assigned on acceptance):
+(i) full training and evaluation code with configuration files for every reported run;
+(ii) the frozen quality-scorer and diagnosis checkpoints;
+(iii) the \itb v1.0 metadata, subset labels, and pre-computed baseline predictions
+(Appendix~\ref{app:a4}), under CC-BY-NC-SA~4.0;
+(iv) the LLM-judge rubric and prompts (Appendix~\ref{app:a19}).
+Raw images are obtained from their original public sources under their respective licences; we
+redistribute only derived metadata.
+
+\subsection{Reproduction Path}\label{app:a26-path}
+The released \texttt{reproduce.sh} runs the pipeline end to end: download and split data, precompute
+features, train the diagnosis model, build \itb, run all baselines, and regenerate the figures and
+significance tests. Each stage writes a checkpoint and a log so partial reproduction is possible
+without rerunning the whole pipeline.

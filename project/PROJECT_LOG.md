@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-05-27（会话 7，Appendix 全面 LaTeX 化 + 主文正文 + bib，纯写作零实验）
+
+### 完成（全在 `meeting/ICLR2027/`，pdflatex+bibtex 全程 exit 0）
+- **A1 Q-VIB full proofs** `appendix/A1_qvib.tex`：Prop1 ELBO(5 步) + Lemma1 单调 + Lemma2 softmax ℓ∞→ℓ1(清理源文档含糊段，给干净 Jacobian 算子范数证明) + Thm1 attention drift(4 步) + Prop2 熵单调(4 步)。**5-theorem closure LaTeX 化全齐**(A1+A2+A2.3+A3)。+ `A1_qvib_compact.tex` 接 §3。
+- **主文 Abstract→§9 正文填充**：Intro(problem/gaps/hook/C1-C4) + Related Work + §3-§6 + §8(failure 3-mode 49/32/19 + limitations) + §9。§7 只搭结构留 TODO 占位(红线4：未冻结数字不写)。+ Ethics Statement + Reproducibility Statement(ICLR 标准节)。
+- **A4 ITB 构建协议** `A4_itb_construction.tex`：源池/质量打分/降质模型/子集定义/组成表(LQ300/HQ360/Edge660/Diverse1500=2820，从 itb_subsets.csv 实读)/QC/release。**纠错**：实为 Edge660/Diverse1500(非旧约 ~500/~600)；ITB= 真实curation+合成降质混合(LQ=ISIC heavy/Edge=light+medium/Diverse=Fitz original)，与 VisiEnhance 训练用 paired_dataset 149K 不同。
+- **A18 Failure modes** `A18_failure_modes.tex`：源 `failure_mode_clusters_v2.json`(权威)。KMeans k=3 n=57(阈值 FP>0.85/FN<0.15)，质心表(49.1/31.6/19.3%)，per-mode→4-action，entropy gate 实证动机。
+- **A19 LLM-judge 协议** `A19_llm_judge.tex`：3 LLM panel + 200 case 分层 + 4 轴 rubric + Cohen/Fleiss κ>0.5 floor + disclaimer。设计参数是 protocol(非结果)，ratings/κ pending。
+- **A20 Cost-benefit** `A20_cost_benefit.tex`：cost model + net-benefit + triage simulation 方法论，数字 pending。
+- **A21 Pre-emptive rebuttal** `A21_rebuttal.tex`：L20 草稿**重写非 paste**，5-concern，label 全换真实名，**删光未冻结/编造数字**(real-LQ ECE0.13/artifact≤5%/cross-modality ρ 等)，不点名 BMVC venue(脱敏)。
+- **A23 Reader-study disclaimer** + **A26 Reproducibility**(环境/seed/split/Zenodo，CODEBASE_README 去匿名后取 infra) + **A0 Notation 表**。
+- **references.bib**(19 篇外部引用) + preamble natbib + 全文 `\citep/\citet/\citealp` 接线。
+- **DATA_INVENTORY 纠错**：Edge/Diverse/LQ/HQ 计数+阈值对齐 csv。
+
+### 当前 paper 状态
+- **33 页**(主文 9 章 stub-filled + Ethics/Repro + Appendix A0/A1/A2/A2.3/A3/A4/A18/A19/A20/A21/A23/A26)，bibtex 19 ref 全 defined，零 undefined cite/ref，全 tex 零 banned 字样(Q-VIB/VisiScore/Bayesian/we prove/doctors confirmed/BMVC/MICCAI/作者名)。
+
+### 待续（全部 gated on 实验，本会话纯写作不能碰）
+- §7 result tables(Table1/E3/E5/cross-domain/fairness) + A5/A16/A17/A22/A24 → **必须 Plan A 重训 + re-eval 后才有 frozen 数字**(红线4)
+- 续训 ep15→200(`/loop /run-experiment`)
+- Plan A re-eval 后：重导 n=19878 per-sample csv + 决定 cross-domain 锁定值
+
+### 命中率
+- 本会话纯写作产出(theory LaTeX + 防御附录 + repro)，无新实验 → 命中率维持 ~38%。A 类(L1-L5 全 LaTeX 化)+ E 类(L19/L20/L21 全 LaTeX 化)写作侧 deliverable 落地，降低 reviewer 第一轮风险。
+
+---
+
 ## 2026-05-27（会话 6，锁定数字 audit + hook 假阳性 + 5-theorem β/√ε 一致性）
 
 ### 完成

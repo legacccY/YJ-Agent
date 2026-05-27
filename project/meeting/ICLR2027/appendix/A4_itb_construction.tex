@@ -1,0 +1,73 @@
+% Appendix A4 — ITB benchmark construction protocol.
+% Source-of-truth: project/results/itb_subsets.csv (2820 rows, audited 2026-05-27) +
+% project/release/scripts/download_itb.py + project/DATA_INVENTORY.md.
+% Composition is a FROZEN released artifact; per-subset diagnostic metrics (§7) are re-run for this work.
+% Anonymized: 5-head scorer via \visiscore, benchmark via \itb. No literal internal names.
+
+\section{\itb{} Benchmark Construction Protocol}\label{app:a4}
+
+\subsection{Source Pools}\label{app:a4-source}
+\itb v1.0 is curated from two public, separately licensed dermatology pools: ISIC~2020
+(dermoscopic) and Fitzpatrick17k (clinical, skin-tone annotated). Raw images are obtained from their
+original sources; \itb redistributes only image-level metadata (quality scores, subset labels,
+diagnostic targets) and pre-computed baseline predictions, under CC-BY-NC-SA~4.0 with a Zenodo DOI
+assigned on acceptance. The released table contains $2820$ image-level rows.
+
+\subsection{Quality Scoring}\label{app:a4-scoring}
+Every candidate image is scored by the frozen five-head assessor \visiscore, producing
+$q\in[0,1]^5$ (sharpness, brightness, completeness, colour temperature, contrast); the scalar
+$\qbar=\tfrac{1}{5}\sum_d q_d$ drives subset assignment. The scorer attains PLCC $0.924$ / SRCC
+$0.895$ against paired quality annotations, validated by $487$ expert quality-control labels.
+
+\subsection{Degradation Model}\label{app:a4-degrade}
+To populate the low- and boundary-quality strata with controlled severity, ISIC~2020 images are
+passed through a deterministic degradation pipeline targeting the four \emph{recoverable} quality
+dimensions --- blur (sharpness), illumination (brightness), colour cast (colour temperature), and
+contrast. Completeness ($q_3$, field-of-view loss) is excluded from synthesis because it is not
+recoverable by enhancement and is instead handled by the agent's query-for-retake channel. Three
+severity tiers --- \emph{light}, \emph{medium}, \emph{heavy} --- compose these corruptions with
+increasing strength; exact parameters are fixed and shipped in the released configuration for
+reproducibility. The Fitzpatrick17k pool is used at its \emph{original} level (no synthetic
+degradation) to preserve authentic skin-tone diversity.
+
+\subsection{Subset Definitions and Composition}\label{app:a4-subsets}
+Four quality-stratified subsets are defined by source, degradation level, and $\qbar$:
+\begin{itemize}
+\item \textbf{\itb-LQ} --- ISIC~2020 under \emph{heavy} degradation, $\qbar<0.45$ (low-quality stress test);
+\item \textbf{\itb-HQ} --- ISIC~2020 at \emph{original} level, $\qbar>0.50$ (high-quality reference);
+\item \textbf{\itb-Edge} --- ISIC~2020 under \emph{light}/\emph{medium} degradation, boundary $\qbar\in[0.40,0.55]$ (the decision-critical band);
+\item \textbf{\itb-Diverse} --- Fitzpatrick17k at \emph{original} level, spanning Fitzpatrick I--VI (fairness and cross-source generalisation).
+\end{itemize}
+The resulting v1.0 composition is given in Table~\ref{tab:itb-comp}. The pool is class-imbalanced
+($754$ malignant / $2820$ total, $\approx 26.7\%$), matching the screening regime the system targets.
+
+\begin{table}[t]
+\centering
+\caption{\itb{} v1.0 composition (from \texttt{itb\_subsets.csv}). Quality $\qbar$ is the mean of the
+five-head scores; ranges are empirical over the subset.}
+\label{tab:itb-comp}
+\begin{tabular}{lrllcc}
+\toprule
+Subset & $n$ & Source & Level & $\qbar$ range & $\qbar$ mean \\
+\midrule
+\itb-LQ      & $300$  & ISIC 2020       & heavy            & $0.054$--$0.450$ & $0.370$ \\
+\itb-HQ      & $360$  & ISIC 2020       & original         & $0.500$--$0.814$ & $0.609$ \\
+\itb-Edge    & $660$  & ISIC 2020       & light / medium   & $0.400$--$0.550$ & $0.489$ \\
+\itb-Diverse & $1500$ & Fitzpatrick17k  & original         & $0.064$--$0.867$ & $0.543$ \\
+\midrule
+Total        & $2820$ & --              & --               & $0.054$--$0.867$ & --     \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Quality Control}\label{app:a4-qc}
+A held-out set of $487$ images carries expert quality-control labels used to validate the automated
+$\qbar$ assignment; subset boundaries were checked against these labels to ensure that the LQ/Edge/HQ
+strata are perceptually separable and not artefacts of the scorer.
+
+\subsection{Release and Evaluation Note}\label{app:a4-release}
+The released package provides \texttt{itb\_subsets.csv} (composition above),
+\texttt{itb\_predictions.csv} (pre-computed predictions for the nine baselines of
+\cref{sec:benchmark}), and the frozen scorer weights. The benchmark \emph{composition} is fixed; the
+per-subset diagnostic metrics reported in \cref{sec:exp} are recomputed for this work rather than
+inherited, so that all headline numbers correspond to the models evaluated here.

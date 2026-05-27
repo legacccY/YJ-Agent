@@ -1,0 +1,38 @@
+% Appendix A0 — consolidated notation. Symbols match preamble macros and Appendices A1-A3.
+% No experimental numbers; pure reference table.
+
+\section{Notation}\label{app:a0}
+
+\begin{table}[h]
+\centering
+\caption{Symbols used throughout the paper and appendices.}
+\label{tab:notation}
+\begin{tabular}{ll}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\mathcal{X},\mathcal{Y},\mathcal{Z}$ & input image space, label set $\{1,\dots,K\}$, latent space $\mathbb{R}^d$ \\
+$q\in[0,1]^5$, $\qbar$ & five-dimensional quality vector and its mean (\visiscore output) \\
+$p_\phi(z\mid x,q)$ & stochastic quality-conditional encoder \\
+$q_\theta(y\mid z)$ & classifier (variational likelihood) \\
+$r_\psi(z\mid q)$ & quality-adaptive marginal prior \\
+$\sigma^2(\qbar)$ & prior variance, $\sigma_0^2+(1-\sigma_0^2)\sigmoid(-\alpha(\qbar-\tau))$ (Lemma~\ref{lem:mono}) \\
+$\beta$ & information-bottleneck trade-off parameter \\
+$\KL(\cdot\,\|\,\cdot)$, $\Hent(\cdot)$, $I(\cdot;\cdot)$ & KL divergence (nats), Shannon entropy, mutual information \\
+$\hat{p}_q(y\mid x)$ & predictive distribution $\E_{z\sim p_\phi}[q_\theta(y\mid z)]$ \\
+$a_i,a'_i$ & attention rows before / after quality modulation (Theorem~\ref{thm:drift}) \\
+$L_{\tilde{u}},L_{\tilde{v}}$, $\varepsilon$ & embedding Lipschitz constants; worst-case quality deviation \\
+$\Tw$ & deterministic diagnosis-preserving enhancement map \\
+$\Ldp$, $\epsilon$ & diagnosis-preserving (KL) loss and its budget (Lemma~\ref{lem:dp}) \\
+$\Zenh,\Zref$ & latents from enhanced / reference inputs \\
+$\Lq$, $M$ & classifier Lipschitz constant; label-entropy bound $\log K$ \\
+$\beta=M\Lq/\sqrt{2}$ & Pinsker-optimal constant in the mutual-information bound \\
+$\delta_{\TV}$ & total-variation distance \\
+$\tauenh,\tauhigh,\taulow$ & quality thresholds defining the agent's salvage band \\
+$\actd,\acte,\actq,\actr$ & agent actions: direct, enhance, query, refuse \\
+$\hhigh$ & predictive-entropy gate for the cautioned/refuse channel \\
+$\Ragent,\Rdirect$ & expected risk of the agent / of direct diagnosis (Theorem~\ref{thm:agent}) \\
+$\ECE$, $\epsilon_{\mathrm{qts}}$ & expected calibration error; composite-calibration residual (Cor.~\ref{cor:composite-compact}) \\
+\bottomrule
+\end{tabular}
+\end{table}

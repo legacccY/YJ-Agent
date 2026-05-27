@@ -1,0 +1,49 @@
+% Compact statements of the quality-conditional bottleneck (§3.2--§3.5).
+% Full proofs: Appendix A1 (appendix/A1_qvib.tex).
+
+\begin{proposition}[\qvib{} Evidence Lower Bound]\label{prop:elbo}
+For any encoder $p_\phi(z\mid x,q)$, classifier $q_\theta(y\mid z)$, quality-adaptive prior
+$r_\psi(z\mid q)$, and $\beta>0$,
+\begin{equation}
+\log p(y\mid x,q) \;\geq\;
+\E_{z\sim p_\phi(z\mid x,q)}\!\big[\log q_\theta(y\mid z)\big]
+- \beta\,\KL\!\big(p_\phi(z\mid x,q)\,\|\,r_\psi(z\mid q)\big).
+\label{eq:elbo}
+\end{equation}
+Setting $r_\psi(z\mid q)\equiv\mathcal{N}(0,I_d)$ recovers standard VIB \citep{alemi2017deep};
+$\qvib$ thus strictly generalises it by conditioning the prior on perceptual quality.
+Proof: Appendix~\ref{app:a1-prop1}.
+\end{proposition}
+
+\begin{lemma}[Monotone quality-adaptive prior]\label{lem:mono}
+With $r_\psi(z\mid q)=\mathcal{N}(0,\sigma^2(\qbar)I_d)$ and
+$\sigma^2(\qbar)=\sigma_0^2+(1-\sigma_0^2)\,\sigmoid(-\alpha(\qbar-\tau))$ ($\alpha>0$), the prior
+variance $\sigma^2(\qbar)$ is strictly decreasing in $\qbar$: low quality $\to$ wide
+(uninformative) prior, high quality $\to$ tight prior. Proof: Appendix~\ref{app:a1-lemma1}.
+\end{lemma}
+
+\begin{theorem}[Quality-aware attention drift]\label{thm:drift}
+Let the quality embeddings $\tilde{u},\tilde{v}$ be $L_{\tilde{u}}$-, $L_{\tilde{v}}$-Lipschitz with
+$\tilde{u}(0)=\tilde{v}(0)=0$, and $\varepsilon=\max_i\|\mathbf{1}-q_i\|_\infty$ the worst-case
+quality deviation. Then the modulated attention rows satisfy
+\begin{equation}
+\max_{1\leq i\leq n}\|a'_i-a_i\|_1 \;\leq\; 10\,L_{\tilde{u}}L_{\tilde{v}}\,\varepsilon^2.
+\label{eq:drift}
+\end{equation}
+Under spectral normalisation ($L_{\tilde{u}}=L_{\tilde{v}}=1$) the drift is at most $10\varepsilon^2$.
+Proof (via a softmax $\ell_\infty\!\to\!\ell_1$ bound, Lemma~\ref{lem:softmax}):
+Appendix~\ref{app:a1-thm1}.
+\end{theorem}
+
+\begin{proposition}[Quality-calibrated entropy]\label{prop:entmono}
+Under the $\qvib$ objective with $\beta>0$, the expected predictive entropy is non-increasing in
+quality:
+\begin{equation}
+\E_{x\sim p(x\mid\qbar_1)}\!\big[\Hent(\hat{p}_{q_1})\big]
+\;\geq\; \E_{x\sim p(x\mid\qbar_2)}\!\big[\Hent(\hat{p}_{q_2})\big]
+\quad\text{whenever}\quad \qbar_1<\qbar_2.
+\label{eq:entmono}
+\end{equation}
+The model is provably more uncertain on lower-quality inputs --- a structural, end-to-end
+guarantee, not post-hoc calibration. Proof: Appendix~\ref{app:a1-prop2}.
+\end{proposition}
