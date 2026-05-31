@@ -28,6 +28,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+os.environ.setdefault("WANDB_DISABLE_SERVICE", "true")  # fix WinError 64 on Windows
 import wandb
 
 from data.enhance_dataset import EnhanceDataset
@@ -45,6 +46,8 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--config", required=True)
     p.add_argument("--resume", default=None, help="Path to checkpoint to resume from")
+    p.add_argument("--model-only", action="store_true",
+                   help="Load only model weights (skip optimizer/scheduler) — use for cross-stage resume")
     return p.parse_args()
 
 
@@ -69,6 +72,9 @@ def get_lpips(device):
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
 def psnr(pred: torch.Tensor, target: torch.Tensor) -> float:
+    # ⚠️ 口径：batch 聚合 MSE → dB（训练监控用，偏保守 ~4-5 dB）。
+    # 论文/验收报告须用 per-image PSNR（scripts/eval_nocrop_e1.py 的 psnr_perimg_*）。
+    # 口径定义见 project/ACCEPTANCE_CRITERIA.md「PSNR 口径定义」专节。
     mse = F.mse_loss(pred, target).item()
     return 10 * np.log10(1.0 / (mse + 1e-8))
 
@@ -285,12 +291,13 @@ def main():
     if resume_path and Path(resume_path).exists():
         ckpt = torch.load(resume_path, map_location=device, weights_only=False)
         model.load_state_dict(ckpt["model"])
-        optimizer.load_state_dict(ckpt["optimizer"])
-        scheduler.load_state_dict(ckpt["scheduler"])
-        start_epoch = ckpt.get("epoch", 0) + 1
-        best_psnr = ckpt.get("best_psnr", 0.0)
-        no_improve = ckpt.get("no_improve", 0)
-        print(f"[INFO] Resumed from {resume_path} (epoch {start_epoch})")
+        if not args.model_only:
+            optimizer.load_state_dict(ckpt["optimizer"])
+            scheduler.load_state_dict(ckpt["scheduler"])
+            start_epoch = ckpt.get("epoch", 0) + 1
+            best_psnr = ckpt.get("best_psnr", 0.0)
+            no_improve = ckpt.get("no_improve", 0)
+        print(f"[INFO] Resumed from {resume_path} (epoch {start_epoch}, model-only={args.model_only})")
 
     # ── WandB ─────────────────────────────────────────────────────────────────
     wcfg = cfg.get("wandb", {})

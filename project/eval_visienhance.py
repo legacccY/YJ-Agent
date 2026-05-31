@@ -278,6 +278,8 @@ def main():
     p.add_argument("--ckpt", required=True, help="VisiEnhance-Net checkpoint")
     p.add_argument("--b3-ckpt", default="D:/YJ-Agent/checkpoints/efficientnet_b3_isic.pth")
     p.add_argument("--exp", nargs="+", default=["E1", "E3", "E4", "E5", "E6", "E12"])
+    p.add_argument("--labels-csv", default=None,
+                   help="Override cfg.data.labels_csv (use nocrop CSV for pixel-aligned eval)")
     args = p.parse_args()
 
     cfg = OmegaConf.load(args.config)
@@ -287,6 +289,8 @@ def main():
     visiscore = load_visiscore(cfg.frozen_models.visiscore_ckpt, device)
 
     dcfg = cfg.data
+    if args.labels_csv:
+        dcfg.labels_csv = args.labels_csv
     results = {}
 
     # ── E1 ─────────────────────────────────────────────────────────────────────

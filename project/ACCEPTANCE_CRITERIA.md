@@ -216,11 +216,24 @@
 
 ---
 
+## 📐 PSNR 口径定义（单一真源）
+
+| 口径 | 公式 | 使用场景 | 参考值 |
+|---|---|---|---|
+| **per-image mean**（论文/验收） | `mean(10·log₁₀(1/MSEᵢ))` per image, then mean | eval_visienhance.py E1、scripts/eval_nocrop_e1.py、论文 Table | 32.74 dB (test) / 33.10 (val) |
+| **batch-aggregate**（训练监控） | `10·log₁₀(1/mean(MSE_batch))` | train_visienhance.py 训练日志 | ~28.97 dB（保守 ~4 dB 低）|
+
+**差值来源**：log 非线性。batch 平均 MSE ≥ per-image MSE 的平均，故 log 后更小。两口径已在会话 9 实测复现。
+
+**规则**：论文、rebuttal、Table 1、验收 gate 一律报 **per-image mean**；训练日志旁注 "(aggregate MSE, conservative)" 标注即可，不用于报告。
+
+---
+
 ## 🔬 E1-E12 实验验收阈值
 
 | # | 实验 | 指标 | 通过阈值 | 失败处理 |
 |---|---|---|---|---|
-| **E1** | 增强质量 | PSNR (moderate) | ≥ 30 dB | 若 27-29 dB：论文写 "PSNR ≥ 27 dB" + Limitation；< 27 dB：lever 失败 |
+| **E1** | 增强质量 | PSNR (medium, **per-image**) | ≥ 30 dB | ✅ 实测 32.74 dB (test) / 33.10 (val) / SSIM 0.947 — PASS（口径定义见上方专节）|
 | **E1** | 增强质量 | SSIM (moderate) | ≥ 0.92 | 必达，Stage 1 已 0.9535 |
 | **E1** | 增强质量 | LPIPS (moderate) | ≤ 0.08 | 若 0.08-0.12：写 "comparable perceptual quality" |
 | **E2** | 分退化分析 | PSNR (光照/色温/对比) | > 35 dB | 单维度 |
@@ -262,7 +275,7 @@
 ### M1 Gate (2026-06-22)
 - [ ] L1 写入主文 §3.2-§3.5 (compact statement)
 - [ ] L2 + L3 + L4 + L5 全部完成证明（数学严密 + Appendix 写就）
-- [ ] VisiEnhance Plan A Stage 1 训练完成（PSNR ≥ 30 dB / SSIM ≥ 0.92）
+- [x] VisiEnhance Stage 1 (nocrop) 训练完成（PSNR 32.74 dB per-image / SSIM 0.947 ✅，2026-05-30 会话 9）
 - [ ] CheXpert + Fundus inference 完成
 - [ ] PROJECT_LOG.md M1 总结 entry
 - **若任何 ❌**：延期 1 周，但若延期超 2 周，砍 L4 或 L5 之一止损

@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-27 会话 7 收工（ICLR Appendix LaTeX 化 + BMVC 匿名 repo 主页）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-05-31 会话 10（PSNR 口径统一 + light/heavy nocrop 生成完成 + Stage 2 启动后 PSNR 下滑停训）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
 ---
 
@@ -25,6 +25,48 @@
 | 日志 | `project/PROJECT_LOG.md` | 时间倒序，每次会话进度 |
 
 ---
+
+## 🔥 会话 10 定论（2026-05-31）：PSNR 口径统一 + light/heavy nocrop 生成 + Stage 2 停训
+
+- **PSNR 口径专节**已补入 `ACCEPTANCE_CRITERIA.md`（per-image mean = 论文标准；batch-aggregate = 训练监控，差 ~4 dB）
+- **regen_nocrop.py** 修复 merge 逻辑（不覆盖已有 CSV），生成 light + heavy 各 49700 张，`quality_labels_nocrop.csv` 共 149100 行 ✅
+- **eval_visienhance.py** 加 `--labels-csv` override，E1 现可正确指向 nocrop CSV
+- **Stage 2 (DP-Loss)** 启动并跑至 ep5：loss 持续下降（0.0181→0.0129），但 val_PSNR 从 ep1 峰值 29.844 持续下滑至 29.6 ← 用户决策停训
+- **下次待确认**：Stage 2 PSNR 下滑原因（λ_DP 过大？lr 过高？）→ 调参后重跑，或直接跳 Stage 3
+
+## 🔥 会话 9 定论（2026-05-30）：VisiEnhance Stage 1 nocrop 收敛，E1 实际达标（PSNR 定义澄清）
+
+- **续训** PID 22296 (12:16 起 ~8h) ep17→56：ep44 起聚合 PSNR 28.97 平台锁死 12 epoch，已 kill。
+- **🔑 PSNR 定义澄清**（val n=3312 对照，两种都复现）：
+  - 聚合 MSE（训练日志用）：input 16.44 → enh **28.92**（复现训练 28.97）
+  - 每图均值（论文标准报法）：input 21.95 → enh **32.50** → **E1≥30 PASS**；test split 32.74
+  - 非 bug 非挑数字，是 PSNR log 非线性；input baseline 同规律佐证。
+- **E1 结论**：PSNR **32.5**(每图)PASS / SSIM **0.946** PASS。**无须 Plan B。**
+- **视觉**：`project/demo_nocrop_ep51.png`（degraded/enhanced/ref ×6）清晰无伪影，守 R8。
+- 脚本新增：`scripts/eval_nocrop_e1.py`(双 PSNR 定义) + `scripts/make_visienhance_demo.py`。json：`results/visienhance_nocrop_e1.json`+`_val.json`。
+- **会话 10 待办**：统一全项目 PSNR 口径 → 全量 light/heavy 重生成 → Stage 2/3 → 回写 STORY/ACCEPTANCE/paper。
+
+## 🔥 会话 8 发现（2026-05-29）：PSNR≥30 卡死真因 = 退化管线随机裁剪 bug
+
+- **诊断**：Plan A 15M 模型 ep42 卡 25.5，与 1.7M v0 **完全相同** → 容量证伪
+- **三层诊断脚本**（`project/scripts/diag_*.py`）：
+  - oracle 仿射上界仅 26.43 dB（旧裁剪数据），模型已达 96% → 不是模型问题
+  - 退化分解：光度可逆到 50 dB / 模糊单独 38 dB，但组合后崩到 26
+  - **元凶 = `degrade.py` 的 `apply_random_crop`（ratio 0.75-0.89, prob 0.5）**：裁剪+缩放使降质图与原图**像素错位**，强迫模型 hallucinate 被裁组织（违反红线 R8），任何容量都崩
+- **修复**：crop 不属增强任务，归 Theorem 2 的 **query-for-retake 通道**
+  - `degrade.py` 加 `crop_prob` 参数（可关裁剪）
+  - 无裁剪重生成 medium（49700 张）→ `data/paired_dataset_nocrop/` + `quality_labels_nocrop.csv`
+  - 重生成后 oracle 上界 **26.43 → 37.49 dB**（+11 dB）
+- **验证训练**（`configs/visienhance_s1_planA_nocrop.yaml`，fresh init）：val_PSNR 16.47(baseline)→ ep16 **28.0**（旧死点 25.5，已甩开 +2.5 dB 且续升），**裁剪假设确认无疑**
+  - checkpoint：`checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth`（best 28.008 @ep15）
+  - ep16 主动收工停训（未跑完 60ep）
+
+## ⏭️ 下次接续（会话 9）
+
+1. **续训 nocrop 到收敛**（resume `stage1_planA_nocrop/last`），观察是否过 30；若卡 ~28 → 加 MSE loss 项 / 提 lr / LPIPS→0
+2. 达标后**全量重生成 light + heavy**（`regen_nocrop.py --levels light heavy`）
+3. 完整 Stage 1→2(DP-loss)→3(hinge) + E1-E12
+4. **回写文档**：STORY_FRAMEWORK §4 + ACCEPTANCE E1 + plan_07，把 crop→query-channel 写成设计决策（强化 Claim 3 / Theorem 2）
 
 ## 🚀 下一步（M1 W1-W2，2026-05-27 ~ 06-08）
 
@@ -53,7 +95,7 @@
 | VisiScore-Net | ✅ done | PLCC 0.924 / SRCC 0.895 |
 | Q-VIB Full | ✅ done | AUC 0.707, ECE 0.098, ρ=−0.165 (p<10⁻²⁴) |
 | 5 backbone universality | ✅ done | section54_summary.csv |
-| VisiEnhance Stage 1 v0 | ❌ 容量不足 | PSNR 25.55 dB（目标 ≥30）|
+| VisiEnhance Stage 1 v0 | ❌ 裁剪 bug | PSNR 25.55 dB（误判容量，实为裁剪致像素错位）|
 | **VisiEnhance Plan A** | ⏳ M1-M2 | PSNR ≥ 30, \|ΔAUC\|<1.5%, SalvageRate>55% |
 | 5-theorem closure | ✅ 5/5 推导 done (实证待 Plan A) | Prop 1-3 + Lemma 1-3 + Thm 1-2 + Cor 1 全 publication-grade，详 `project/plans/{Theorem2,Prop3_Lemma3,Corollary1}*.md` |
 
