@@ -115,26 +115,62 @@ def build_qvib_encoder(cfg, device):
     return encoder
 
 
-def dp_loss(encoder, x_enh: torch.Tensor, x_ref: torch.Tensor,
-            q_enh: torch.Tensor, q_ref: torch.Tensor) -> torch.Tensor:
-    """KL( p_φ(z|x_enh,q_enh) ‖ p_φ(z|x_ref,q_ref) ) — Lemma 3.
+_IMAGENET_MEAN = (0.485, 0.456, 0.406)
+_IMAGENET_STD = (0.229, 0.224, 0.225)
 
-    Uses image-only path: passes a dummy ABCD (zeros) and EfficientNet features
-    extracted inline via a light feature extractor. For training purposes this
-    approximation is sufficient; full evaluation uses proper ABCD + EfficientNet.
+
+def build_efnet_extractor(device):
+    """Frozen, differentiable EfficientNet-B0 feature extractor (1280-D).
+
+    Mirrors precompute_efficientnet.py: features → avgpool → flatten on
+    ImageNet-normalised 224px input. Params frozen (requires_grad_(False)) but
+    the graph stays differentiable so gradients flow back through x_enh.
+    """
+    from torchvision.models import EfficientNet_B0_Weights, efficientnet_b0
+    base = efficientnet_b0(weights=EfficientNet_B0_Weights.DEFAULT)
+    extractor = nn.Sequential(base.features, base.avgpool, nn.Flatten()).to(device).eval()
+    extractor.requires_grad_(False)
+    return extractor
+
+
+def _efnet_feats(extractor, x: torch.Tensor) -> torch.Tensor:
+    """x in [0,1] RGB at any size → ImageNet-normalised 224 → (B, 1280)."""
+    mean = torch.tensor(_IMAGENET_MEAN, device=x.device).view(1, 3, 1, 1)
+    std = torch.tensor(_IMAGENET_STD, device=x.device).view(1, 3, 1, 1)
+    x224 = F.interpolate(x, size=224, mode="bilinear", align_corners=False)
+    return extractor((x224 - mean) / std)
+
+
+def dp_loss(encoder, efnet_extractor, visiscore,
+            x_enh: torch.Tensor, x_ref: torch.Tensor) -> torch.Tensor:
+    """KL( p_φ(z|x_enh) ‖ p_φ(z|x_ref) ) — Lemma 3.
+
+    Real image path: x_enh (with grad) and x_ref (detached target) each go
+    through the frozen VisiScore-Net (q) and frozen EfficientNet-B0 (visual
+    token). Gradients flow into VisiEnhance via the x_enh branch, so the KL is
+    no longer constant w.r.t. the enhancer. The previous all-zeros dummy path
+    produced zero gradient and silently disabled DP-Loss.
+
+    ABCD clinical tokens are unavailable at enhancement-training time; we pass
+    zeros for both branches (identical → cancels), so the KL is driven by the
+    image-derived visual token + quality vector, which is what Stage 2 optimises.
     """
     B = x_enh.shape[0]
     dummy_abcd = torch.zeros(B, 4, device=x_enh.device)
-
-    # Use EfficientNet features if encoder expects them; otherwise zero
     efnet_dim = getattr(encoder, "efnet_dim", 0)
-    dummy_efnet = torch.zeros(B, efnet_dim, device=x_enh.device) if efnet_dim > 0 else None
 
+    # Reference branch: frozen target, no grad.
     with torch.no_grad():
-        mu_ref, lsq_ref = encoder(dummy_abcd, q_ref, dummy_efnet)
-    mu_enh, lsq_enh = encoder(dummy_abcd, q_enh, dummy_efnet)
+        q_ref = visiscore(x_ref)
+        feat_ref = _efnet_feats(efnet_extractor, x_ref) if efnet_dim > 0 else None
+        mu_ref, lsq_ref = encoder(dummy_abcd, q_ref, feat_ref)
 
-    # KL( N(mu_enh, Σ_enh) ‖ N(mu_ref, Σ_ref) ) analytically
+    # Enhanced branch: carries gradient through VisiScore + EfficientNet into x_enh.
+    q_enh = visiscore(x_enh)
+    feat_enh = _efnet_feats(efnet_extractor, x_enh) if efnet_dim > 0 else None
+    mu_enh, lsq_enh = encoder(dummy_abcd, q_enh, feat_enh)
+
+    # KL( N(mu_enh, Σ_enh) ‖ N(mu_ref, Σ_ref) ) analytically.
     var_enh = torch.exp(lsq_enh).clamp(1e-8)
     var_ref = torch.exp(lsq_ref).clamp(1e-8)
     kl = 0.5 * (
@@ -148,7 +184,7 @@ def dp_loss(encoder, x_enh: torch.Tensor, x_ref: torch.Tensor,
 
 # ── Train / Val epoch ──────────────────────────────────────────────────────────
 
-def run_epoch(phase, loader, model, visiscore, qvib_enc, lpips_fn, optimizer, scaler, cfg, device):
+def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device):
     is_train = phase == "train"
     model.train() if is_train else model.eval()
 
@@ -179,9 +215,7 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, lpips_fn, optimizer, sc
                     loss = loss + lam.lambda_lpips * lp
 
                 if stage >= 2 and lam.lambda_dp > 0 and qvib_enc is not None:
-                    with torch.no_grad():
-                        q_ref = visiscore(x_ref)
-                    dp = dp_loss(qvib_enc, x_enh, x_ref, q_low, q_ref)
+                    dp = dp_loss(qvib_enc, efnet_extractor, visiscore, x_enh, x_ref)
                     loss = loss + lam.lambda_dp * dp
 
                 if stage >= 3 and lam.lambda_quality > 0:
@@ -242,10 +276,14 @@ def main():
 
     # ── Frozen Q-VIB encoder (stage 2+) ───────────────────────────────────────
     qvib_enc = None
+    efnet_extractor = None
     if cfg.stage >= 2:
         try:
             qvib_enc = build_qvib_encoder(cfg, device)
             print("[INFO] Q-VIB encoder loaded (frozen)")
+            if getattr(qvib_enc, "efnet_dim", 0) > 0:
+                efnet_extractor = build_efnet_extractor(device)
+                print("[INFO] EfficientNet-B0 extractor loaded (frozen, differentiable) for DP-Loss")
         except Exception as e:
             print(f"[WARN] Could not load Q-VIB encoder: {e}. DP-Loss disabled.")
 
@@ -320,8 +358,8 @@ def main():
 
     # ── Training loop ─────────────────────────────────────────────────────────
     for epoch in range(start_epoch, tcfg.epochs):
-        tr = run_epoch("train", train_loader, model, visiscore, qvib_enc, lpips_fn, optimizer, scaler, cfg, device)
-        vl = run_epoch("val",   val_loader,  model, visiscore, qvib_enc, lpips_fn, optimizer, scaler, cfg, device)
+        tr = run_epoch("train", train_loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device)
+        vl = run_epoch("val",   val_loader,  model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device)
         scheduler.step()
 
         elapsed_h = (time.time() - t0) / 3600

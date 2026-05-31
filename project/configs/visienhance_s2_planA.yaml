@@ -18,7 +18,7 @@ data:
   split_csv:  D:/YJ-Agent/data/isic_split.csv
   img_size: 128
   severity: mixed
-  val_severity: medium
+  val_severity: mixed       # match train dist; medium-only val gave false "PSNR drop" signal
   batch_size: 16
   num_workers: 0
 
@@ -29,7 +29,7 @@ train:
   amp: true
   seed: 42
   early_stop_patience: 999
-  resume_from: D:/YJ-Agent/checkpoints/visienhance/stage1_planA/best_visienhance.pth
+  resume_from: D:/YJ-Agent/checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth
 
 loss:
   lambda_l1: 1.0
