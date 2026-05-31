@@ -1,6 +1,8 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-31 会话 10（PSNR 口径统一 + light/heavy nocrop 生成完成 + Stage 2 启动后 PSNR 下滑停训）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-05-31 会话 11（Stage 2「PSNR 下滑」三 bug 诊断+修复：DP-Loss 死代码复活/resume 改 nocrop/val→mixed，重训运行中 PID 16208）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+
+> 🔵 **会话 11 接续要点**：Stage 2 重训中（DP-Loss 首次真生效，λ_dp=0.05 未验证）。第一个 epoch 出 val_PSNR 后重点看 DP 是否把 PSNR 压太低；若过低按 plan decision gate 降 λ_dp→0.02。修复已 commit `49c70624`。诊断三 bug：①DP-Loss 喂全零 dummy + no_grad → 梯度恒 0，Stage 2 实为裸跑 Stage 1（Lemma 3 从未生效）；②resume 错指 stage1_planA（裁剪 bug 废 ckpt），改 stage1_planA_nocrop；③val=medium-only vs train=mixed → 假 PSNR 跌，改 val→mixed。CLAUDE.md 新增「工具调用纪律」节（删文件用 Remove-Item 不用 rm，防级联取消）。
 
 ---
 

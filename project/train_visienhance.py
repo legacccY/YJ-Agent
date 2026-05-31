@@ -19,6 +19,12 @@ import sys
 import time
 from pathlib import Path
 
+# OpenMP/MKL env must be set before numpy/torch import, else intermittent
+# OMP Error #15 (libiomp5md.dll already initialized) can abort the process,
+# especially under detached Start-Process launches.
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import numpy as np
 import torch
 import torch.nn as nn
