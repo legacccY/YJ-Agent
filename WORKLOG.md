@@ -1,8 +1,8 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-05-31 会话 11（Stage 2「PSNR 下滑」三 bug 诊断+修复：DP-Loss 死代码复活/resume 改 nocrop/val→mixed，重训运行中 PID 16208）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-06-01 会话 13（Stage1 @256 收敛达标 ep40 手停 → Stage2 @256 DP-Loss 启动 job 1433944）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
-> 🔵 **会话 11 接续要点**：Stage 2 重训中（DP-Loss 首次真生效，λ_dp=0.05 未验证）。第一个 epoch 出 val_PSNR 后重点看 DP 是否把 PSNR 压太低；若过低按 plan decision gate 降 λ_dp→0.02。修复已 commit `49c70624`。诊断三 bug：①DP-Loss 喂全零 dummy + no_grad → 梯度恒 0，Stage 2 实为裸跑 Stage 1（Lemma 3 从未生效）；②resume 错指 stage1_planA（裁剪 bug 废 ckpt），改 stage1_planA_nocrop；③val=medium-only vs train=mixed → 假 PSNR 跌，改 val→mixed。CLAUDE.md 新增「工具调用纪律」节（删文件用 Remove-Item 不用 rm，防级联取消）。
+> 🔵 **会话 13 接续要点**：**Stage2 @256 运行中 = job 1433944**（gpu4090n5，起 20:21，λ_dp=0.1，lr 1e-5，80 epoch，patience=999 不早停要盯）。Stage1 @256（旧 job 1433796）跑到 **ep40 手动停**（聚合 val_PSNR best **30.145**、SSIM 0.9847；曲线仍微爬但增幅 ~0.1dB/6ep，E1 早 PASS，不值耗 22h）→ best ckpt 已冻结备份 `stage1_planA_256/best_visienhance_frozen.pth`。旧依赖 job 1433799 已弃（afterok 落空），Stage2 改 fresh sbatch 重提。启动逐项验证通过（resume `model-only=True` + `_raw_model.load_state_dict`、`weights_only=False`、DP-Loss EfficientNet 加载、train=69564/val=9936、val_severity=mixed、无 NaN/OOM）。**E7 已 PASS**（McNemar p=4e-12，ΔAUC_enh +0.84%，ΔKL −0.067）。**E3 仍 FAIL**（ΔAUC 4.2% vs <1.5%；一致率 87% vs >95%）根因=分辨率失配，靠 Stage2 @256 + λ_dp 压。收尾要做：①查 1433944 状态（`python hpc_monitor.py 1433944` 或 GUI）②Stage2 完成 sync best ckpt 回本地 ③`eval_diag_paired.py` 复测 E3/E7 ④若 ΔAUC 仍>1.5% 升 λ_dp→0.2 重跑。脚本：`project/eval_diag_paired.py`、`eval_diag_hires_v2.py`。256 config：`configs/visienhance_s{1,2}_planA_256_hpc.yaml`。
 
 ---
 

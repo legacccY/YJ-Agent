@@ -1,0 +1,17 @@
+{
+  "split": "val",
+  "n": 3312,
+  "psnr_perimg_input": 22.328,
+  "psnr_perimg_enhanced": 33.104,
+  "psnr_perimg_gain": 10.776,
+  "psnr_perimg_std": 6.413,
+  "psnr_aggmse_input": 16.274,
+  "psnr_aggmse_enhanced": 28.466,
+  "ssim_enhanced_mean": 0.9467,
+  "E1_target_psnr": 30.0,
+  "E1_pass_perimg": true,
+  "E1_pass_aggmse": false,
+  "ssim_target": 0.92,
+  "ssim_pass": true,
+  "eval_seconds": 60.3
+}

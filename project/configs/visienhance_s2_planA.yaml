@@ -30,6 +30,9 @@ train:
   seed: 42
   early_stop_patience: 999
   resume_from: D:/YJ-Agent/checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth
+  model_only: true   # cross-stage: load Stage 1 weights only, fresh optimizer/scheduler/epoch.
+                     # NOTE: if Stage 2 itself gets interrupted, set this false AND
+                     # point resume_from at stage2_planA/last to restore full state.
 
 loss:
   lambda_l1: 1.0

@@ -1,6 +1,7 @@
-# Stage 1 Plan A: Basic Restoration Pre-training (15M capacity)
-# base_channels=64, mid_blocks=8 — upgrade from v0 (32/2/1.7M)
-# Target: val PSNR >= 30 dB
+# Stage 1 Plan A (NO-CROP validation): pixel-aligned degradation only.
+# Hypothesis: removing random crop lifts oracle ceiling 31.75 -> 39.84 dB,
+# making PSNR>=30 reachable. Validate on medium before full 3-level regen.
+# base_channels=64, mid_blocks=6 -> ~15M (same as planA).
 
 stage: 1
 
@@ -13,10 +14,10 @@ model:
   film_scale: 0.1
 
 data:
-  labels_csv: D:/YJ-Agent/data/quality_labels_all.csv
+  labels_csv: D:/YJ-Agent/data/quality_labels_nocrop.csv
   split_csv:  D:/YJ-Agent/data/isic_split.csv
   img_size: 128
-  severity: mixed
+  severity: medium        # only medium regenerated for this validation run
   val_severity: medium
   batch_size: 16
   num_workers: 0
@@ -28,7 +29,7 @@ train:
   amp: true
   seed: 42
   early_stop_patience: 30
-  resume_from: D:/YJ-Agent/checkpoints/visienhance/stage1_planA/last_visienhance.pth
+  resume_from: D:/YJ-Agent/checkpoints/visienhance/stage1_planA_nocrop/last_visienhance.pth
 
 loss:
   lambda_l1: 1.0
@@ -48,9 +49,9 @@ frozen_models:
     use_tokenizer: true
 
 output:
-  checkpoint_dir: D:/YJ-Agent/checkpoints/visienhance/stage1_planA
+  checkpoint_dir: D:/YJ-Agent/checkpoints/visienhance/stage1_planA_nocrop
 
 wandb:
   project: visienhance
-  name: stage1_planA
+  name: stage1_planA_nocrop
   mode: offline

@@ -80,9 +80,20 @@ def apply_color_shift(img: np.ndarray, cfg: dict) -> np.ndarray:
     return img_f.astype(np.uint8)
 
 
-def degrade_image(img: np.ndarray, level: str, target_size: int = 256) -> np.ndarray:
-    """对单张图片应用退化，返回退化后的图片"""
+def degrade_image(
+    img: np.ndarray,
+    level: str,
+    target_size: int = 256,
+    crop_prob: float | None = None,
+) -> np.ndarray:
+    """对单张图片应用退化，返回退化后的图片。
+
+    crop_prob: 随机裁剪激活概率。None=用默认 DEGRADATION_PROBS["crop"]。
+    设 0 = 关闭裁剪（enhance 配对数据用，保像素对齐，不强迫模型 hallucinate 被裁组织）。
+    裁剪属取景错位，归 Theorem 2 query-for-retake 通道，不属增强任务。
+    """
     cfg = DEGRADATION_LEVELS[level]
+    p_crop = DEGRADATION_PROBS["crop"] if crop_prob is None else crop_prob
     result = img.copy()
 
     if random.random() < DEGRADATION_PROBS["blur"]:
@@ -91,7 +102,7 @@ def degrade_image(img: np.ndarray, level: str, target_size: int = 256) -> np.nda
         result = apply_brightness(result, cfg)
     if random.random() < DEGRADATION_PROBS["color_shift"]:
         result = apply_color_shift(result, cfg)
-    if random.random() < DEGRADATION_PROBS["crop"]:
+    if random.random() < p_crop:
         result = apply_random_crop(result, cfg, target_size)
     else:
         result = cv2.resize(result, (target_size, target_size), interpolation=cv2.INTER_LINEAR)

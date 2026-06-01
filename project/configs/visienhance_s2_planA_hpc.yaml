@@ -1,0 +1,58 @@
+# Stage 2 Plan A: HPC 版本 (XJTLU gpu4090)
+# DP-Loss = KL(p_φ(z|x_enh) ‖ p_φ(z|x_ref))  [Lemma 3]
+# VisiScore-Net + Q-VIB encoder both frozen.
+# Resume from Stage 1 Plan A best checkpoint (model weights only).
+
+stage: 2
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: /gpfs/work/bio/jiayu2403/visienhance/data/quality_labels_nocrop_hpc.csv
+  split_csv:  /gpfs/work/bio/jiayu2403/visienhance/data/isic_split.csv
+  img_size: 128
+  severity: mixed
+  val_severity: mixed
+  batch_size: 32        # 4090 24GB 足够，本地 16 是保守值
+  num_workers: 8        # HPC 8 CPU，充分利用
+
+train:
+  epochs: 80
+  lr: 1.0e-5
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 999
+  resume_from: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth
+  model_only: true
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  lambda_dp: 0.05
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/best_visiscore.pth
+  qvib_ckpt:     /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efnet/best_qad.pth
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage2_planA
+
+wandb:
+  project: visienhance
+  name: stage2_planA_hpc
+  mode: offline

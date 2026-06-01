@@ -1,0 +1,59 @@
+# Stage 1 Plan A @256 (HPC, XJTLU gpu4090) — 分辨率对齐重训.
+# 动机: 128 训练 / 256 评估 失配 -> E3 ΔAUC 4.2% FAIL. B3(224) + VisiScore(224) 皆 224 原生,
+#       仅 VisiEnhance 卡 128. 对齐到 256(center-crop 224 喂 B3) 消除混淆, 压 ΔAUC.
+# 数据: paired_dataset_nocrop 本就是 256px(训练原 downscale 到 128), 无需重生成.
+# from scratch: 128 权重因感受野/BN 统计不匹配, 不能续 -> resume_from=null.
+# base_channels=64, mid_blocks=6 -> ~15M (同 planA).
+
+stage: 1
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: /gpfs/work/bio/jiayu2403/visienhance/data/quality_labels_nocrop_hpc.csv
+  split_csv:  /gpfs/work/bio/jiayu2403/visienhance/data/isic_split.csv
+  img_size: 256           # ← 核心改动 (原 128)
+  severity: mixed         # light+medium+heavy 全用 (原 nocrop 验证只 medium)
+  val_severity: mixed
+  batch_size: 8           # 256 = 4x 像素, 24GB 显存降 batch (原 32). OOM 则降 4.
+  num_workers: 8
+
+train:
+  epochs: 200
+  lr: 1.0e-4              # batch 变小梯度噪声升; 若早期不稳降 5e-5
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 30
+  resume_from: null       # ← from scratch (128 权重不兼容 256)
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  lambda_dp: 0.0
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/best_visiscore.pth
+  qvib_ckpt: null
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage1_planA_256
+
+wandb:
+  project: visienhance
+  name: stage1_planA_256_hpc
+  mode: offline

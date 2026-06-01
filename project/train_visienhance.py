@@ -197,6 +197,9 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
     stage = cfg.stage
     lam = cfg.loss
     total_loss = total_psnr = total_ssim = n = 0
+    # Per-component accumulators (raw, un-weighted) — DP is the Stage 2 success
+    # metric (plan: "DP-Loss 收敛到 < 0.05"). Previously never logged → flying blind.
+    total_l1 = total_lpips = total_dp = 0.0
 
     ctx = torch.enable_grad() if is_train else torch.no_grad()
     with ctx:
@@ -208,20 +211,25 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
             with torch.no_grad():
                 q_low = visiscore(x_low)        # [B, 5]
 
+            l1_val = lp_val = dp_val = 0.0
             with autocast(enabled=cfg.train.amp):
                 x_enh = model(x_low, q_low)
 
-                loss = F.l1_loss(x_enh, x_ref) * lam.lambda_l1
+                l1 = F.l1_loss(x_enh, x_ref)
+                l1_val = l1.item()
+                loss = l1 * lam.lambda_l1
 
                 if lam.lambda_lpips > 0 and lpips_fn is not None:
                     # Resize to 224 for LPIPS to save VRAM (~3GB saved at 384px)
                     e224 = F.interpolate(x_enh * 2 - 1, size=224, mode="bilinear", align_corners=False)
                     r224 = F.interpolate(x_ref * 2 - 1, size=224, mode="bilinear", align_corners=False)
                     lp = lpips_fn(e224, r224).mean()
+                    lp_val = lp.item()
                     loss = loss + lam.lambda_lpips * lp
 
                 if stage >= 2 and lam.lambda_dp > 0 and qvib_enc is not None:
                     dp = dp_loss(qvib_enc, efnet_extractor, visiscore, x_enh, x_ref)
+                    dp_val = dp.item()
                     loss = loss + lam.lambda_dp * dp
 
                 if stage >= 3 and lam.lambda_quality > 0:
@@ -243,12 +251,18 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
             total_loss += loss.item() * B
             total_psnr += psnr(x_enh.detach(), x_ref) * B
             total_ssim += ssim_approx(x_enh.detach(), x_ref) * B
+            total_l1 += l1_val * B
+            total_lpips += lp_val * B
+            total_dp += dp_val * B
             n += B
 
     return {
         "loss": total_loss / n,
         "psnr": total_psnr / n,
         "ssim": total_ssim / n,
+        "l1": total_l1 / n,
+        "lpips": total_lpips / n,
+        "dp": total_dp / n,
     }
 
 
@@ -332,16 +346,22 @@ def main():
     best_psnr = 0.0
     no_improve = 0
     resume_path = args.resume or cfg.train.get("resume_from", None)
+    # model_only can be set via CLI (--model-only) OR config (train.model_only).
+    # Config form is safer for cross-stage resume launched by /run-experiment,
+    # which auto-passes --resume but NOT --model-only → without this, a Stage 2
+    # start from a Stage 1 checkpoint would wrongly load Stage 1's optimizer/
+    # scheduler/epoch and silently corrupt the fine-tune.
+    model_only = args.model_only or cfg.train.get("model_only", False)
     if resume_path and Path(resume_path).exists():
         ckpt = torch.load(resume_path, map_location=device, weights_only=False)
-        model.load_state_dict(ckpt["model"])
-        if not args.model_only:
+        _raw_model.load_state_dict(ckpt["model"])
+        if not model_only:
             optimizer.load_state_dict(ckpt["optimizer"])
             scheduler.load_state_dict(ckpt["scheduler"])
             start_epoch = ckpt.get("epoch", 0) + 1
             best_psnr = ckpt.get("best_psnr", 0.0)
             no_improve = ckpt.get("no_improve", 0)
-        print(f"[INFO] Resumed from {resume_path} (epoch {start_epoch}, model-only={args.model_only})")
+        print(f"[INFO] Resumed from {resume_path} (epoch {start_epoch}, model-only={model_only})")
 
     # ── WandB ─────────────────────────────────────────────────────────────────
     wcfg = cfg.get("wandb", {})
@@ -371,8 +391,11 @@ def main():
         elapsed_h = (time.time() - t0) / 3600
         eta_h = elapsed_h / (epoch - start_epoch + 1) * (tcfg.epochs - epoch - 1)
 
+        dp_str = ""
+        if cfg.stage >= 2:
+            dp_str = f"| train_DP={tr['dp']:.4f} | val_DP={vl['dp']:.4f} "
         print(f"Epoch {epoch:03d} | train_loss={tr['loss']:.4f} | val_PSNR={vl['psnr']:.2f} "
-              f"| val_SSIM={vl['ssim']:.4f} | best={best_psnr:.2f} | ETA {eta_h:.1f}h")
+              f"| val_SSIM={vl['ssim']:.4f} {dp_str}| best={best_psnr:.2f} | ETA {eta_h:.1f}h")
 
         if _wandb_ok:
             try:
@@ -388,6 +411,9 @@ def main():
             "train_loss": round(tr["loss"], 4),
             "val_psnr": round(vl["psnr"], 3),
             "val_ssim": round(vl["ssim"], 4),
+            "train_dp": round(tr["dp"], 5),
+            "val_dp": round(vl["dp"], 5),
+            "train_l1": round(tr["l1"], 5),
             "best_val_psnr": round(best_psnr, 3),
             "no_improve_epochs": no_improve,
             "elapsed_h": round(elapsed_h, 2),

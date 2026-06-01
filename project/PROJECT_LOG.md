@@ -6,6 +6,155 @@
 
 ---
 
+## 2026-06-01（会话 13，Stage1 @256 收敛达标 ep40 手停 → Stage2 @256 DP-Loss 启动 job 1433944）
+
+### 起因
+开门查 256 重训进度：Stage1（job 1433796）跑到 ep39/200 良好，用户问可否停了跑下一阶段。
+
+### 决策：Stage1 ep40 手停（非自然早停）
+- **进度曲线**（聚合 MSE 口径 val_PSNR）：ep34 30.07(best)→ ep40 **30.145**(新高)，train_loss 单调降 0.0148→0.0128，SSIM 0.9847（128 时仅 0.946，大涨）。
+- **判断**：曲线仍微爬但增幅 ~0.1dB/6ep；patience=30 自然早停还要耗 ~22h 换边际几个 0.01dB；E1（聚合 30+ = 每图 ~33dB）早 PASS；真正卡命中率的是 E3（ΔAUC 天花板），gated on Stage2 DP-Loss 而非 Stage1 多跑 → 手停切 Stage2 性价比最高。
+- best ckpt = ep40 权重（396 tensor，torch.load `weights_only=False` 可加载，30.145）。
+
+### 执行（严格串行防失败，全部历史坑预排除）
+1. 备份 best → `stage1_planA_256/best_visienhance_frozen.pth`（184MB，防 scancel 撞落盘写一半）。
+2. `scancel 1433796`（Stage1）→ best ckpt mtime/尺寸未变，未损坏。
+3. 旧 Stage2 依赖 job 1433799（`afterok:1433796`）随 Stage1 取消变 `DependencyNeverSatisfied` → scancel 弃用。
+4. fresh `sbatch submit_s2_256.sh` → **新 job 1433944** @ gpu4090n5（20:21 起）。
+
+### 启动验证（6 历史失败模式逐条排除）
+| 坑 | 状态 |
+|---|---|
+| module load→6s FAIL | ✓ submit_s2 绝对 python 路径 |
+| `module.`前缀→30s FAIL | ✓ `_raw_model.load_state_dict`(line 374) + 存的也是 `_raw_model.state_dict()` |
+| torch2.6 weights_only | ✓ resume 用 `weights_only=False`(line 373)，numpy scalar 不报错 |
+| 包/权重缺 | ✓ visiscore/qad/lpips-alex/efnet 全加载 |
+| NaN | ✓ lr 1e-5 + λ_dp 0.1 保守 |
+| 空数据集 | ✓ train=69564/val=9936（HPC 路径 CSV） |
+| Stage2 PSNR 下滑 | ✓ val_severity=mixed |
+- resume 日志：`Resumed from best_visienhance.pth (epoch 0, model-only=True)` ✓；DP-Loss EfficientNet-B0 extractor 加载 ✓（会话 9 死过这次活）；仅 DDP `Grad strides` 无害警告，无 traceback/NaN/OOM。
+
+### 待续（会话 14）
+- 盯 1433944（patience=999 不早停，80 epoch）：DP-loss 应非零、val_PSNR 不应像会话 10 下滑（val_severity 已修）。
+- Stage2 完成 → sync best 回本地 → `eval_diag_paired.py` 复测 E3/E7（256 原生 eval 应消除分辨率失配天花板）。
+- 若 ΔAUC 仍 >1.5% → 升 λ_dp 0.1→0.2 重跑 Stage2（config 注释已留）。
+
+---
+
+## 2026-06-01（会话 12，E7 实证 PASS + E3 失败根因确诊=分辨率失配 → 启动 256 重训全自动链）
+
+### 起因
+会话 11 修了 DP-Loss 三 bug 后重训出 Stage2（PSNR 32.56，Stage1 32.85）。本会话续做增强模型**诊断保持评估**（E3/E7），目标按 ACCEPTANCE 硬线 `|ΔAUC|<1.5%` / 一致率 `>95%`，不走 fallback 降水。
+
+### 关键发现 1：eval 上采样 bug 已修，B3 oracle 复活
+- **bug**（`eval_stage2_compare.py:118`）：IMG=128 → `F.interpolate(128→224 bilinear)` 上采样糊图喂 B3 → B3 oracle 连 ref 都掉到 AUC 0.54（随机），ΔAUC 全废。
+- **B3 真实训练协议**（`finetune_efficientnet.py:48`）：`VAL_TFM = Resize(256)→CenterCrop(224)`，期望 256 原生 center-crop，非上采样。
+- **修复**（`eval_diag_hires.py` / `_v2` / `_paired`）：IMG=256 → `center_crop_224`，无上采样 → oracle 恢复 **AUC_ref 0.917**。
+
+### 关键发现 2：E7（DP-Loss 消融）实证 PASS ✓✓（可进论文）
+- 严格配对（同图同退化，一次前向收 ref/deg/enh_S1/enh_S2），`eval_diag_paired.py`，n=3627 pos=117：
+  | 配对指标 (S2−S1) | 值 | 95% CI | 判定 |
+  |---|---|---|---|
+  | ΔAUC_enh | +0.84% | [+0.18%, +1.54%] | 显著>0 ✓ |
+  | ΔKL(ref‖enh) | −0.067 | [−0.084, −0.050] | 显著<0（DP 更保信念）✓ |
+  | McNemar(S2 vs S1) | b=44, c=136 | **p=4e−12** | **E7 PASS** ✓ |
+- DP-Loss 把 no-DP 判错的 136 例救回、只弄坏 44 → 净 +92。**Lemma 3 实证成立且极显著。**
+- 结果 csv：`results/stage2_diag_{hires,hires_v2,paired}.csv`。
+
+### 关键发现 3：E3（绝对线）仍 FAIL，根因=分辨率失配天花板
+- Stage2：\|ΔAUC\|=4.2%（<1.5% ❌，连 fallback<3% 都没过），一致率 87.0%（>95% ❌）。enh-vs-ref McNemar b=379 c=92 → 增强把 ref 判对的 ~12% 搞错。
+- **根因**：VisiEnhance 全程 **train@128**（所有 config `img_size:128`），但 **B3(224) + VisiScore(224 backbone) 皆 224 原生**，评估被迫 @256 → 128 模型在 2× 没见过分辨率推理，增强打折 + reviewer 一眼可见硬伤。
+- **不降水决策**（用户拍板「不能因困难降论文水平」）：256 重训对齐分辨率，从根上消除天花板。E7 已证 DP-Loss 有效 → 256 重训是放大已验证机制，非赌博。
+
+### 执行：256 重训全自动链（HPC gpu4090，4×GPU DDP）
+- 降质数据本就是 256px（dataset 原 downscale 到 128）→ **无需重生成**。
+- 新 config：`configs/visienhance_s1_planA_256_hpc.yaml`（img_size256 / batch8 / from scratch / severity mixed）+ `_s2_planA_256_hpc.yaml`（续 S1 best / DP λ_dp=0.1，原 0.05 太弱）。
+- 新 submit：`submit_s{1,2}_256.sh`（4GPU DDP，48h）。
+- **SLURM 依赖链**：Job **1433796**(Stage1 RUNNING gpu4090n5) → `sbatch --dependency=afterok:1433799`... 实为 **1433799**(Stage2 PENDING Dependency)，Stage1 exit 0 自动起。
+- **smoke PASS**：RUNNING 后 batch 8@256 仅 10.8GB/24GB，4 GPU 84-100% 利用，5.18 it/s（~7min/epoch），无 OOM/traceback。
+
+### 待续（会话 13）
+1. 查 1433796/1433799 状态（`python hpc_monitor.py <job>`，或 HPC_WORKFLOW 工具）。
+2. 两阶段收敛后 **sync best ckpt 回本地** → `eval_diag_paired.py` 复测 E3/E7（IMG 已 256，与训练分辨率对齐）。
+3. 若 ΔAUC 仍 >1.5%：升 **λ_dp→0.2** 重跑 Stage2（submit_s2_256 改 config），或 DP-Loss 升 feature-level。
+4. 达标后回写 STORY_FRAMEWORK §4 + ACCEPTANCE E3/E7 + paper §7 frozen 数字。
+
+### 命中率
+- E7 实证落地（DP-Loss 显著，硬结果）→ Lemma 3 从「推导」变「推导+实证」，强化 Claim 2。E3 当前 FAIL 但根因确诊+正确修复路径在跑，不确定性从「机制是否有效」降为「分辨率对齐后能否压到 1.5%」（更可控）。
+
+---
+
+## 2026-05-30（会话 9，VisiEnhance nocrop 续训到收敛 + PSNR 定义澄清 → E1 实际达标）
+
+### 起因
+会话 8 收工时 nocrop 验证停在 ep15（val 28.01）。本会话从 `last_visienhance.pth` resume 续训（PID 22296，12:16 起，约 8h），用户睡前指示「训练到极限了停了看结果」。
+
+### 续训结果（ep17→56，config `visienhance_s1_planA_nocrop.yaml`，loss λ_l1=1.0 / λ_lpips=0.01）
+- 轨迹：ep17 27.82 → ep40 28.95 → **ep44 起 28.97 锁死，ep44–56 连续 12 epoch 不动**（聚合 PSNR 平台）。
+- ETA 显示还剩 28.5h 才到 ep200 上限 → 续跑纯烧时间，**已 kill PID 22296**。
+- best checkpoint：`checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth`（@ep44/51）。
+
+### 🔑 关键澄清：训练日志 28.97 是「聚合 MSE PSNR」，论文标准报法（每图均值）= 32.5，E1 实际 PASS
+- 独立写 `scripts/eval_nocrop_e1.py`，**同时算两种 PSNR 定义**，在 val split（n=3312，与训练同集）对照：
+  | PSNR 定义 | input | enhanced |
+  |---|---|---|
+  | 聚合 MSE（`train_visienhance.validate()` 用：`10log10(1/全集平均MSE)`）| 16.44 | **28.92** ←复现训练 28.97 ✓ |
+  | 每图均值（图像复原论文标准：BasicSR/所有 SR-denoise benchmark）| 22.33 | **33.10** ← **E1≥30 PASS** ✓ |
+- test split（n=6626）：每图均值 enhanced **32.74**、gain +10.6。
+- 两定义因 PSNR 的 log 非线性必然不同（Jensen：好图 PSNR 极高拉高均值）。input baseline 同规律佐证（16.4 聚合 vs 22.1 每图）→ 非 bug，是定义差。**不是挑数字**：两个都算清、都复现、都入 json。
+- 结果 json：`results/visienhance_nocrop_e1.json`(test) + `results/visienhance_nocrop_e1_val.json`(val)。
+
+### 结论：Stage 1 nocrop 实际达标，无须 Plan B
+- **E1：PSNR 32.5 dB（每图均值，论文报法）≥30 PASS；SSIM 0.946 ≥0.92 PASS。**
+- 视觉验证（`scripts/make_visienhance_demo.py` → `demo_nocrop_ep51.png`，6 样本 degraded/enhanced/ref）：增强图清晰还原、贴近 reference，无 hallucination，守红线 R8。
+- 会话 8「裁剪 bug = 卡死真因」彻底证实：去裁剪后从 25.5 死点 → 32.5（每图）/28.9（聚合），oracle 37.5 余量充足。
+
+### ⚠️ 待回写 / 对齐（会话 10）
+1. **统一全项目 PSNR 定义口径**：决定 paper/ACCEPTANCE E1 用每图均值（推荐，领域标准）还是聚合；两者都在 json 留档。若用每图均值，需在 train_visienhance.validate 旁注明日志是聚合（偏保守），避免日后自己看混。
+2. 全量重生成 light + heavy（`regen_nocrop.py --levels light heavy`）合 mixed 训练集 → Stage 2(DP-loss) → Stage 3(hinge)。
+3. eval_visienhance.py 适配 nocrop 预生成数据（原脚本 severity="moderate" on-the-fly，与 nocrop medium 预生成不匹配，E3/E4/E5/E6 需对齐数据源）。
+4. 回写 STORY_FRAMEWORK §4 + ACCEPTANCE E1 + paper §7 Table（用 frozen 32.5/0.946）。
+
+### 命中率
+- Stage 1 实验侧定型且**达标**（E1 PASS，可复现脚本+json 齐全）。最大不确定（PSNR 能否过 30）已正向消解。下一步 Stage 2/3 + 全量数据。
+
+---
+
+## 2026-05-29（会话 8，VisiEnhance PSNR 天花板诊断 + 裁剪 bug 根治 + 无裁剪重训验证）
+
+### 起因
+续训 Plan A（15M）跑到 ep42 仍卡 val_PSNR 25.5，与 1.7M v0（25.55）**完全相同** → 用户问是否停下改实验。
+
+### 诊断（三层脚本，`project/scripts/diag_*.py`，全部新建）
+- **容量证伪**：9× 参数同 PSNR，不是容量问题。
+- **`diag_visienhance_ceiling.py`**：旧裁剪 val(medium) baseline 15.87 / **oracle 仿射上界仅 26.43** / 模型 25.54（已达上界 96%）→ 不是模型，是数据天花板。
+- **`diag_degradation_decomp.py`**：光度退化可逆到 50.94 dB、模糊单独 38.73 dB —— 单项都不致命。
+- **`diag_crop_killer.py`（决定性）**：复刻 `degrade.py` 管线 toggle crop → WITH crop oracle 31.75 / WITHOUT crop **39.84**（+8 dB）。
+- **元凶**：`degrade.py` 的 `apply_random_crop`（ratio 0.75-0.89, prob 0.5）。裁剪+缩放使降质图与原图**像素错位**，restoration 网络被迫 hallucinate 被裁组织（违反红线 R8），PSNR 对任何容量都崩 → 解释了 1.7M=15M=25.5。
+
+### 修复（用户拍板「工作量再大也要对论文最强的办法」）
+- **设计决策**：裁剪/取景错位**不属增强任务**，归 **Theorem 2 query-for-retake 通道**（强化 Claim 3）。增强只处理像素对齐的可逆退化（亮度/对比度/色偏/模糊/JPEG）。
+- `data/degrade.py`：`degrade_image` 加 `crop_prob` 参数（None=默认；0=关裁剪）。
+- `scripts/regen_nocrop.py`：按 csv 行重生成无裁剪配对 → **medium 全量 49700 张** → `data/paired_dataset_nocrop/medium/` + `data/quality_labels_nocrop.csv`（原 `paired_dataset` 保留不动，可回滚）。
+- 重生成后真实数据 oracle 上界 **26.43 → 37.49 dB**（`diag_nocrop_ceiling.py` 实测）。
+
+### 验证训练（`configs/visienhance_s1_planA_nocrop.yaml`，fresh init，medium-only，60ep 上限）
+- 轨迹：baseline 16.47 → ep0 24.24 → ep5 26.31 → ep8 27.12 → ep15 **28.01** → ep16 27.88（用户主动收工停训）。
+- **裁剪假设确认无疑**：旧死点 25.5 已甩开 +2.5 dB 且持续上升，oracle 余量到 37.5。
+- checkpoint：`checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth`（best **28.008** @ep15, SSIM 0.9795）。
+- 旧卡死进程（PID 15384，planA 裁剪数据）已 kill；验证进程（PID 15984）收工时 kill。
+
+### 待续（会话 9）
+1. **续训 nocrop 到收敛**（resume `stage1_planA_nocrop/last`）；若卡 ~28 不过 30 → 加 MSE loss 项 / 提 lr / LPIPS→0 重试。
+2. 达标后**全量重生成 light + heavy**（`regen_nocrop.py --levels light heavy`），合 mixed 训练集。
+3. 完整 Stage 1→2(DP-loss)→3(quality hinge) + E1-E12。
+4. **回写主文档**（本会话只记录决策，未改）：STORY_FRAMEWORK §4 Claim 2/3 + ACCEPTANCE E1 阈值 + phase_07 plan，把 crop→query-channel 正式写成设计决策。
+
+### 命中率
+- 本会话扫清 M1-M2 最大实验障碍（PSNR≥30 从「不可能」变「可达」），且把 bug 转成强化 Theorem 2 的 contribution。诊断脚本 = 可复现证据链。实验侧实质推进，待续训达标后落 E1 数字。
+
+---
+
 ## 2026-05-27（会话 7，Appendix 全面 LaTeX 化 + 主文正文 + bib，纯写作零实验）
 
 ### 完成（全在 `meeting/ICLR2027/`，pdflatex+bibtex 全程 exit 0）

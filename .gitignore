@@ -42,3 +42,7 @@ Thumbs.db
 *.log
 data/cache_*.npy
 *.npy
+
+# 会话8 无裁剪重生成数据（可由 regen_nocrop.py 复现）
+data/paired_dataset_nocrop/
+data/quality_labels_nocrop.csv

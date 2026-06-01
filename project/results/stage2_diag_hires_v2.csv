@@ -1,0 +1,3 @@
+model,auc_ref,auc_deg,auc_enh,dAUC,consistency,kl_ref_enh,dangerous_flip,n_dangerous_base,auc_enh_ci,dAUC_ci,kl_ci
+Stage1 (no DP),0.9168,0.8503,0.8663,-0.0505,0.8481,0.3973,0.1216,74,"[0.843,0.890]","[-0.070,-0.031]","[0.363,0.430]"
+"Stage2 (DP, HPC)",0.9168,0.8503,0.8747,-0.0421,0.8701,0.3306,0.1486,74,"[0.852,0.897]","[-0.061,-0.022]","[0.300,0.362]"

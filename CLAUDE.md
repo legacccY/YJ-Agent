@@ -76,6 +76,7 @@
 - 写论文 / draft tex / 改章节 → 全文 Read `STORY_FRAMEWORK.md` + `ACCEPTANCE_CRITERIA.md`
 - 跑实验 / 改 config / 训练 → Read `DATA_INVENTORY.md` + 对应 `plans/phase_XX_*.md`
 - BMVC 相关 → Read `meeting/BMVC/SUBMITTED.md`（确认封印状态）
+- **HPC 训练 / 提交任务 / 查进度** → Read `project/HPC_WORKFLOW.md`（凭证 + 目录 + 工具路径）
 
 **禁止**：跳过 1-4 直接动手。SessionStart hook 已注入 4 文件读档提醒，必须遵守。
 

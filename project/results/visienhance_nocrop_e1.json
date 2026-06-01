@@ -1,0 +1,14 @@
+{
+  "split": "test",
+  "n": 6626,
+  "psnr_input_mean": 22.133,
+  "psnr_enhanced_mean": 32.744,
+  "psnr_gain": 10.611,
+  "psnr_enhanced_std": 6.252,
+  "ssim_enhanced_mean": 0.9461,
+  "E1_target_psnr": 30.0,
+  "E1_pass": true,
+  "ssim_target": 0.92,
+  "ssim_pass": true,
+  "eval_seconds": 126.6
+}

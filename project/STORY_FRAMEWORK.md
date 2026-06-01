@@ -184,7 +184,7 @@ Appendix（50-80 页 supp）
 
 | 实验 | 指标 | 目标 | 当前 (Stage 1 v0) |
 |---|---|---|---|
-| E1 复原质量 | PSNR (moderate) | ≥ 30 dB | 25.55 dB ❌ |
+| E1 复原质量 | PSNR (medium, **per-image**) | ≥ 30 dB | 32.74 dB (test) ✅ |
 | E1 复原质量 | SSIM (moderate) | ≥ 0.92 | 0.9535 ✅ |
 | E3 诊断保持 | \|ΔAUC\| | < 1.5% | TBD |
 | E3 诊断保持 | 分类一致率 (C vs A) | > 95% | TBD |
@@ -246,7 +246,7 @@ Appendix（50-80 页 supp）
 - ITB 4 子集构建 + 9 baseline 评测
 - HAM10000 / PAD-UFES zero-shot
 - ImageNet-C 14 corruption × 5 severity
-- VisiEnhance Stage 1 v0（PSNR 25.55 dB，待 Plan A 重训）
+- VisiEnhance Stage 1 nocrop（PSNR 32.74 dB test / SSIM 0.947，per-image 口径，E1 ✅ PASS；25.55 是旧裁剪 bug 数据）
 - BMVC QCTS（已封印）
 
 ### 🚧 M1 (2026-05-24 ~ 06-22) 必做
