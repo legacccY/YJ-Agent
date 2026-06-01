@@ -46,3 +46,13 @@ data/cache_*.npy
 # 会话8 无裁剪重生成数据（可由 regen_nocrop.py 复现）
 data/paired_dataset_nocrop/
 data/quality_labels_nocrop.csv
+
+# 会话13 仓库瘦身：整个 data/ 不进 git（数据集可下载/缓存可重生成，见 DATA_INVENTORY）
+# 例外用 git add -f 显式跟踪小复现文件（isic_split.csv 等）
+data/
+# 大型二进制 / 媒体（绝不进 git，历史已用 filter-repo 清除）
+*.zip
+*.exe
+*.mp4
+*.webm
+*.mov
