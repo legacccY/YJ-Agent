@@ -2,6 +2,24 @@
 
 ---
 
+## 2026-06-02 — 会话 2：环境修复 + 数据解压 + smoke test 通过
+
+**完成**：
+- 验 CUDA：torch 2.7.0+cu126，`torch.cuda.is_available()` = True ✅
+- 补装缺失依赖：nibabel 5.4.2 + torchio 1.2.0（官方代码依赖，REPRO_PLAN 未列）
+- ISIC GT 解压：2596 files ✅
+- ISIC Input 解压（11GB）：2596 files ✅（Input/GT 配对完整）
+- **R1 smoke test（2 epoch）全路径通过**：数据加载 → 训练 → per-patient Dice eval → CSV + JSON，零崩溃
+  - R3 params = 25,920 **PASS <100K** ✅
+  - 2 epoch Dice = 0.525（正常，未收敛）
+
+**下一步（会话 3 开门即办）**：
+1. 启 R1 正式训练（R1_EPOCHS=300，Start-Process 新窗口）
+2. 训练约 38h（7.6 min/epoch × 300），每 25 epoch 自动 eval，50 epoch 存 ckpt
+3. 完成后读 `results/r1_hippocampus_single_summary.json` 看 Dice vs 0.86 threshold
+
+---
+
 ## 2026-06-02 — 会话 1：计划重定位 + 框架迁移 + 官方代码落地
 
 **完成**：
@@ -19,9 +37,7 @@
   - 现 torch 被卸空（env 里暂无 torch 模块，属正常中间态）。
 
 **下一步（开门即办，严格按序）**：
-1. **解 C 盘空间**（任选）：
-   - (a) 推荐：把 conda env 建到 D 盘 → `conda create -p D:\YJ-Agent\project\meeting\Med-NCA\envs\mednca python=3.9`，再装 torch cu118 + requirements（pip 缓存/TMP 也指 D：`$env:TMP="D:\tmp"; $env:PIP_CACHE_DIR="D:\pipcache"`）
-   - (b) 或清 C 盘腾 ≥6GB（清 pip/conda cache、temp、回收站）后原 env 重装 cu118
+1. ✅ env 留 C 盘。`conda clean --all` 已腾出 7.5GB；cu118 torch 在装（log `code/torch4.log`）。
 2. 验 `python -c "import torch; print(torch.cuda.is_available())"` == True
 3. CPU/GPU 各跑通官方 1 batch（`R1_EPOCHS=2` smoke 验代码路径）
 4. 发 R1 正式训练（`R1_EPOCHS=300` 起，Start-Process 开窗 + log 轮询）→ per-image Dice vs 0.86

@@ -2,7 +2,7 @@
 
 **最后更新**：2026-06-02 会话 15（核实会话14真实状态 → probe 标定 λ → 抓出并修复 DDP 脚手架回退 → 重建 DDP 启 v2 训练 job 1434145 跑中 ~13h）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
-> 🆕 **新独立子项目 Med-NCA**（顶会复现→创新，与 ICLR 主线并行）：计划 `project/meeting/Med-NCA/REPRO_PLAN.md`、日志 `.../PROJECT_LOG.md`。会话1 进度：框架迁移完 + 官方代码 clone + Hippocampus 数据齐 + R1 脚本就绪；**阻塞 = C 盘满（2.3GB）装不下 cu118 torch，下次先把 conda env 建到 D 盘**。
+> 🆕 **新独立子项目 Med-NCA**（顶会复现→创新，与 ICLR 主线并行）：计划 `project/meeting/Med-NCA/REPRO_PLAN.md`、日志 `.../PROJECT_LOG.md`。**会话2 进度**：CUDA 通 + nibabel/torchio 补装 + ISIC 全解压（GT+Input 各 2596）+ R1 smoke test 2ep 通（params=25920 PASS）。**下一步 = 启 R1 正式训练 300 epoch（~38h）**。
 
 > 🔵 **会话 15 接续要点（下一步从这开始）**：Stage2 **v2 训练 job 1434145 RUNNING**（gpu4090n2，4×GPU DDP，80 epoch，ETA ~13h，4.24 it/s），启动 smoke 已过（resume OK、train=80607 oversample 生效、无 NaN）。λ 已 probe 标定回填：**λ_dp=0.005**（DP项≈10%L1）/ **λ_hinge=0.04**（hinge项≈18%L1），probe 实测 KL_enh=0.468/L1=0.0223/hinge=0.116。**DDP 重建已 commit cefa521**（会话13 在 HPC 手改的 DDP 脚手架曾未入版控、被覆盖丢失，本会话重建并锁进 git）。监控 GUI 已开（`hpc_live_gui.py 1434145`）。
 >
