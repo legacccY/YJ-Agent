@@ -42,8 +42,12 @@ class EnhanceDataset(Dataset):
         split: str = "train",
         img_size: int = 256,
         severity: str = "mixed",
+        meta_csv: str = None,
+        return_target: bool = False,
+        pos_oversample: int = 1,
     ):
         self.img_size = img_size
+        self.return_target = return_target
 
         labels = pd.read_csv(labels_csv)
         splits = pd.read_csv(split_csv)
@@ -61,6 +65,24 @@ class EnhanceDataset(Dataset):
             df["degraded_path"].apply(lambda p: Path(p).exists()) &
             df["original_path"].apply(lambda p: Path(p).exists())
         ]
+
+        # Merge melanoma target (0/1) for DP-Loss / pos-hinge (Stage 2 v2).
+        if meta_csv is not None:
+            meta = pd.read_csv(meta_csv)[["isic_id", "target"]]
+            meta["isic_id"] = meta["isic_id"].astype(str)
+            df = df.merge(meta, on="isic_id", how="left")
+            df["target"] = df["target"].fillna(0).astype(int)
+        elif "target" not in df.columns:
+            df = df.copy()
+            df["target"] = 0
+
+        # Oversample positives (melanoma ~1.7%) so each batch sees enough pos for
+        # the pos-hinge to have signal. Duplicates rows (DDP-agnostic, no sampler).
+        if pos_oversample > 1:
+            pos = df[df["target"] == 1]
+            if len(pos) > 0:
+                df = pd.concat([df] + [pos] * (pos_oversample - 1), ignore_index=True)
+
         self.df = df.reset_index(drop=True)
 
     def __len__(self) -> int:
@@ -74,7 +96,7 @@ class EnhanceDataset(Dataset):
 
         if low_bgr is None or ref_bgr is None:
             t = torch.zeros(3, self.img_size, self.img_size)
-            return t, t
+            return (t, t, 0) if self.return_target else (t, t)
 
         if low_bgr.shape[:2] != (self.img_size, self.img_size):
             low_bgr = cv2.resize(low_bgr, (self.img_size, self.img_size), interpolation=cv2.INTER_AREA)
@@ -83,6 +105,8 @@ class EnhanceDataset(Dataset):
 
         x_low = _TO_TENSOR(cv2.cvtColor(low_bgr, cv2.COLOR_BGR2RGB))
         x_ref = _TO_TENSOR(cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2RGB))
+        if self.return_target:
+            return x_low, x_ref, int(row.get("target", 0))
         return x_low, x_ref
 
 

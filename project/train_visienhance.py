@@ -188,9 +188,68 @@ def dp_loss(encoder, efnet_extractor, visiscore,
     return kl
 
 
+# ── B3-sourced DP-Loss + pos-hinge (Stage 2 v2) ─────────────────────────────────
+# Root cause of dangerous_flip↑ in v1: DP-Loss used Q-VIB/B0 latent (ABCD zeroed,
+# no diagnosis signal) while eval uses the B3 oracle → train/eval mismatch. v2 makes
+# DP-Loss and eval share the same B3 classifier, plus an explicit pos-hinge so true
+# melanomas are not flipped to benign by enhancement.
+
+_B3_CROP = 224
+
+
+def build_b3(ckpt_path, device):
+    """Frozen, differentiable EfficientNet-B3 melanoma classifier (eval oracle).
+
+    Mirrors eval_stage2_compare.load_b3: torchvision efficientnet_b3 + 2-class head.
+    Params frozen (requires_grad_(False)) but graph stays differentiable so
+    gradients flow back into VisiEnhance through x_enh.
+    """
+    from torchvision.models import efficientnet_b3
+    net = efficientnet_b3(weights=None)
+    net.classifier = nn.Sequential(nn.Dropout(p=0.3, inplace=True),
+                                   nn.Linear(net.classifier[1].in_features, 2))
+    ck = torch.load(ckpt_path, map_location=device, weights_only=False)
+    missing, unexpected = net.load_state_dict(ck["model"] if "model" in ck else ck, strict=False)
+    assert not missing and not unexpected, f"b3 load mismatch: {missing[:3]} / {unexpected[:3]}"
+    net.to(device).eval().requires_grad_(False)
+    return net
+
+
+def _b3_logits(b3, x: torch.Tensor) -> torch.Tensor:
+    """x in [0,1] RGB @256 → center-crop 224 → ImageNet-norm → B3 logits.
+
+    Identical preprocessing to eval_diag_paired.center_crop_224 + _NORM, so the
+    training objective is on the exact same input the eval metric scores.
+    """
+    o = (x.shape[-1] - _B3_CROP) // 2
+    xc = x[..., o:o + _B3_CROP, o:o + _B3_CROP]
+    mean = torch.tensor(_IMAGENET_MEAN, device=x.device).view(1, 3, 1, 1)
+    std = torch.tensor(_IMAGENET_STD, device=x.device).view(1, 3, 1, 1)
+    return b3((xc - mean) / std)
+
+
+def dp_loss_b3(b3, x_enh, x_ref, y, margin):
+    """B3-sourced diagnosis-preserving loss + pos-hinge.
+
+      kl    = KL( softmax B3(enh) ‖ softmax B3(ref) )   [Lemma 3 方向]
+      hinge = mean_{y==1} relu(margin − p_enh[:, mel])   真阳增强后 mel 概率不准掉破 margin
+    """
+    with torch.no_grad():
+        logp_ref = F.log_softmax(_b3_logits(b3, x_ref), dim=-1)   # detached target
+    logp_enh = F.log_softmax(_b3_logits(b3, x_enh), dim=-1)       # carries grad
+    p_enh = logp_enh.exp()
+    kl = (p_enh * (logp_enh - logp_ref)).sum(dim=-1).mean()
+    pos = (y == 1)
+    if pos.any():
+        hinge = F.relu(margin - p_enh[pos, 1]).mean()
+    else:
+        hinge = torch.zeros((), device=x_enh.device)
+    return kl, hinge
+
+
 # ── Train / Val epoch ──────────────────────────────────────────────────────────
 
-def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device):
+def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=None):
     is_train = phase == "train"
     model.train() if is_train else model.eval()
 
@@ -199,11 +258,17 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
     total_loss = total_psnr = total_ssim = n = 0
     # Per-component accumulators (raw, un-weighted) — DP is the Stage 2 success
     # metric (plan: "DP-Loss 收敛到 < 0.05"). Previously never logged → flying blind.
-    total_l1 = total_lpips = total_dp = 0.0
+    total_l1 = total_lpips = total_dp = total_hinge = 0.0
 
     ctx = torch.enable_grad() if is_train else torch.no_grad()
     with ctx:
-        for x_low, x_ref in tqdm(loader, desc=phase, leave=False, ncols=80):
+        for batch in tqdm(loader, desc=phase, leave=False, ncols=80):
+            if len(batch) == 3:
+                x_low, x_ref, y = batch
+                y = y.to(device, non_blocking=True)
+            else:
+                x_low, x_ref = batch
+                y = None
             x_low = x_low.to(device, non_blocking=True)
             x_ref = x_ref.to(device, non_blocking=True)
 
@@ -211,7 +276,7 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
             with torch.no_grad():
                 q_low = visiscore(x_low)        # [B, 5]
 
-            l1_val = lp_val = dp_val = 0.0
+            l1_val = lp_val = dp_val = hinge_val = 0.0
             with autocast(enabled=cfg.train.amp):
                 x_enh = model(x_low, q_low)
 
@@ -227,7 +292,14 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
                     lp_val = lp.item()
                     loss = loss + lam.lambda_lpips * lp
 
-                if stage >= 2 and lam.lambda_dp > 0 and qvib_enc is not None:
+                if stage >= 2 and lam.lambda_dp > 0 and b3 is not None:
+                    # v2: B3-sourced DP-Loss + pos-hinge (train/eval same oracle).
+                    dp, hinge = dp_loss_b3(b3, x_enh, x_ref, y, lam.get("hinge_margin", 0.5))
+                    dp_val = dp.item()
+                    hinge_val = hinge.item()
+                    loss = loss + lam.lambda_dp * dp + lam.get("lambda_hinge", 0.0) * hinge
+                elif stage >= 2 and lam.lambda_dp > 0 and qvib_enc is not None:
+                    # v1: legacy Q-VIB latent DP-Loss.
                     dp = dp_loss(qvib_enc, efnet_extractor, visiscore, x_enh, x_ref)
                     dp_val = dp.item()
                     loss = loss + lam.lambda_dp * dp
@@ -254,6 +326,7 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
             total_l1 += l1_val * B
             total_lpips += lp_val * B
             total_dp += dp_val * B
+            total_hinge += hinge_val * B
             n += B
 
     return {
@@ -263,6 +336,7 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
         "l1": total_l1 / n,
         "lpips": total_lpips / n,
         "dp": total_dp / n,
+        "hinge": total_hinge / n,
     }
 
 
@@ -307,6 +381,12 @@ def main():
         except Exception as e:
             print(f"[WARN] Could not load Q-VIB encoder: {e}. DP-Loss disabled.")
 
+    # ── Frozen B3 oracle (stage 2 v2: B3-sourced DP-Loss + pos-hinge) ──────────
+    b3 = None
+    if cfg.stage >= 2 and cfg.frozen_models.get("b3_ckpt", None):
+        b3 = build_b3(cfg.frozen_models.b3_ckpt, device)
+        print("[INFO] EfficientNet-B3 oracle loaded (frozen, differentiable) for v2 DP-Loss + pos-hinge")
+
     # ── LPIPS ─────────────────────────────────────────────────────────────────
     lpips_fn = get_lpips(device) if cfg.loss.lambda_lpips > 0 else None
 
@@ -315,11 +395,17 @@ def main():
     train_ds = EnhanceDataset(
         labels_csv=dcfg.labels_csv, split_csv=dcfg.split_csv,
         split="train", img_size=dcfg.img_size, severity=dcfg.severity,
+        meta_csv=dcfg.get("meta_csv", None),
+        return_target=(b3 is not None),
+        pos_oversample=dcfg.get("pos_oversample", 1),
     )
     val_severity = dcfg.get("val_severity", dcfg.severity)
     val_ds = EnhanceDataset(
         labels_csv=dcfg.labels_csv, split_csv=dcfg.split_csv,
         split="val", img_size=dcfg.img_size, severity=val_severity,
+        meta_csv=dcfg.get("meta_csv", None),
+        return_target=(b3 is not None),
+        pos_oversample=1,
     )
     print(f"[INFO] train={len(train_ds)}, val={len(val_ds)}")
 
@@ -384,8 +470,8 @@ def main():
 
     # ── Training loop ─────────────────────────────────────────────────────────
     for epoch in range(start_epoch, tcfg.epochs):
-        tr = run_epoch("train", train_loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device)
-        vl = run_epoch("val",   val_loader,  model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device)
+        tr = run_epoch("train", train_loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=b3)
+        vl = run_epoch("val",   val_loader,  model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=b3)
         scheduler.step()
 
         elapsed_h = (time.time() - t0) / 3600
@@ -393,7 +479,8 @@ def main():
 
         dp_str = ""
         if cfg.stage >= 2:
-            dp_str = f"| train_DP={tr['dp']:.4f} | val_DP={vl['dp']:.4f} "
+            dp_str = (f"| train_DP={tr['dp']:.4f} | val_DP={vl['dp']:.4f} "
+                      f"| train_H={tr['hinge']:.4f} | val_H={vl['hinge']:.4f} ")
         print(f"Epoch {epoch:03d} | train_loss={tr['loss']:.4f} | val_PSNR={vl['psnr']:.2f} "
               f"| val_SSIM={vl['ssim']:.4f} {dp_str}| best={best_psnr:.2f} | ETA {eta_h:.1f}h")
 
@@ -413,6 +500,8 @@ def main():
             "val_ssim": round(vl["ssim"], 4),
             "train_dp": round(tr["dp"], 5),
             "val_dp": round(vl["dp"], 5),
+            "train_hinge": round(tr["hinge"], 5),
+            "val_hinge": round(vl["hinge"], 5),
             "train_l1": round(tr["l1"], 5),
             "best_val_psnr": round(best_psnr, 3),
             "no_improve_epochs": no_improve,

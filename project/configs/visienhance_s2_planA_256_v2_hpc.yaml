@@ -1,0 +1,65 @@
+# Stage 2 Plan A @256 v2 (HPC) — B3-sourced DP-Loss + pos-hinge.
+# v1 根因: DP-Loss 用 Q-VIB/B0 latent (ABCD 置零, 无诊断语义) 而 eval 用 B3 oracle →
+#   train/eval 错配, dangerous_flip 0.054→0.176 恶化. v2 让 DP-Loss 与 eval 同源 (B3),
+#   加 pos-hinge 显式禁止真阳翻阴, pos 过采样 10x 补 1.7% 不平衡.
+# DP-Loss = KL(softmax B3(enh) ‖ softmax B3(ref)) [Lemma 3 方向] + λ_h·relu(margin - p_enh[mel])_{y=1}.
+# Resume from Stage 1 @256 best (model weights only). VisiScore + Q-VIB + B3 冻结.
+
+stage: 2
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: /gpfs/work/bio/jiayu2403/visienhance/data/quality_labels_nocrop_hpc.csv
+  split_csv:  /gpfs/work/bio/jiayu2403/visienhance/data/isic_split.csv
+  meta_csv:   /gpfs/work/bio/jiayu2403/visienhance/data/train-metadata.csv
+  img_size: 256
+  severity: mixed
+  val_severity: mixed
+  batch_size: 8
+  num_workers: 8
+  pos_oversample: 10        # melanoma ~1.7% → ~15%, 给 pos-hinge 足够信号
+
+train:
+  epochs: 80
+  lr: 1.0e-5
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 999
+  resume_from: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage1_planA_256/best_visienhance.pth
+  model_only: true
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  lambda_dp: 1.0            # ← PLACEHOLDER, probe 标定后回填 (目标 DP 项 ≈ 5-20% L1)
+  lambda_hinge: 1.0         # ← PLACEHOLDER, probe 标定后回填
+  hinge_margin: 0.5         # 真阳 enh 的 mel 概率不准掉破 0.5 (= 不翻阴)
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/best_visiscore.pth
+  qvib_ckpt:     /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efnet/best_qad.pth
+  b3_ckpt:       /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efficientnet_b3_isic.pth
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage2_planA_256_v2
+
+wandb:
+  project: visienhance
+  name: stage2_planA_256_v2_hpc
+  mode: offline

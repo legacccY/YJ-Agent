@@ -1,8 +1,17 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-06-01 会话 13（Stage1 @256 收敛达标 ep40 手停 → Stage2 @256 DP-Loss 启动 job 1433944）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-06-02 会话 14（Stage2 v1 停训诊断 → E3/E7 实测 → dflip 根因定位 → Stage2 v2 代码改完待标定重训）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
-> 🔵 **会话 13 接续要点**：**Stage2 @256 运行中 = job 1433944**（gpu4090n5，起 20:21，λ_dp=0.1，lr 1e-5，80 epoch，patience=999 不早停要盯）。Stage1 @256（旧 job 1433796）跑到 **ep40 手动停**（聚合 val_PSNR best **30.145**、SSIM 0.9847；曲线仍微爬但增幅 ~0.1dB/6ep，E1 早 PASS，不值耗 22h）→ best ckpt 已冻结备份 `stage1_planA_256/best_visienhance_frozen.pth`。旧依赖 job 1433799 已弃（afterok 落空），Stage2 改 fresh sbatch 重提。启动逐项验证通过（resume `model-only=True` + `_raw_model.load_state_dict`、`weights_only=False`、DP-Loss EfficientNet 加载、train=69564/val=9936、val_severity=mixed、无 NaN/OOM）。**E7 已 PASS**（McNemar p=4e-12，ΔAUC_enh +0.84%，ΔKL −0.067）。**E3 仍 FAIL**（ΔAUC 4.2% vs <1.5%；一致率 87% vs >95%）根因=分辨率失配，靠 Stage2 @256 + λ_dp 压。收尾要做：①查 1433944 状态（`python hpc_monitor.py 1433944` 或 GUI）②Stage2 完成 sync best ckpt 回本地 ③`eval_diag_paired.py` 复测 E3/E7 ④若 ΔAUC 仍>1.5% 升 λ_dp→0.2 重跑。脚本：`project/eval_diag_paired.py`、`eval_diag_hires_v2.py`。256 config：`configs/visienhance_s{1,2}_planA_256_hpc.yaml`。
+> 🔵 **会话 14 接续要点（下一步从这开始）**：Stage2 v1 @256（job 1433944）ep63 手停，eval（job 1434102）实测结论——**E7 PASS**（ΔAUC_enh **+0.0122** CI[+.0021,+.0222]、ΔKL **−0.081**、McNemar p=1.7e-15），**E3 仍 FAIL**（dAUC **2.03%** borderline 未破 1.5%；一致率 **93.3%** 未破 95%），⚠️ **dangerous_flip 0.054→0.176 恶化 3×**（真阳黑色素瘤被增强翻阴，临床红线）。**根因**：v1 DP-Loss 用 Q-VIB/B0 latent（ABCD 置零、无诊断语义）而 eval 用 B3 oracle → **train/eval 错配**。**v2 修复已改完代码**（B3-sourced DP-Loss = KL(softmax B3(enh)‖B3(ref)) + pos-hinge relu(0.5−p_enh[mel])_{y=1} + pos 过采样 10×）：改了 `data/enhance_dataset.py`（meta_csv merge target/return_target/pos_oversample）+ `train_visienhance.py`（build_b3 + dp_loss_b3 + run_epoch 解包&log hinge + main load b3）+ 新 config `configs/visienhance_s2_planA_256_v2_hpc.yaml`。**代码本地未验证未上传**。
+>
+> **下一步（严格按序）**：
+> ① 写 `project/scripts/probe_b3_dp.py`（仿 `probe_dp_magnitude.py`）：在 Stage1@256 best 上测 **B3 KL(enh‖ref) + hinge + L1 量级**
+> ② 上传 HPC：`enhance_dataset.py`、`train_visienhance.py`、config v2、probe 脚本（sftp，记得 sed 去 CRLF）
+> ③ 跑 probe 单 GPU job（~5min）→ 拿量级 → **回填 config 的 λ_dp/λ_hinge**（目标 DP 项 ≈ 5-20% L1）→ **报数字给用户确认（gate，烧 12h 前必停）**
+> ④ `/loop /run-experiment project/train_visienhance.py project/configs/visienhance_s2_planA_256_v2_hpc.yaml`（4 GPU，~12h，输出 `stage2_planA_256_v2/` 不覆盖旧）
+> ⑤ 训完 sync best ckpt + `eval_diag_paired.py` 复测 → **看 dflip 是否降回 + dAUC 是否破 1.5% + 一致率破 95%**
+>
+> **本地已存**：Stage2 v1 best ckpt `project/checkpoints/visienhance/stage2_planA_256/best_visienhance.pth`（PSNR 30.09）+ eval 结果 `project/results/stage2_diag_paired.csv`。HPC eval 脚本已就位（`code/eval_diag_paired.py`、`eval_stage2_compare.py`、`run_eval_hpc.py`）+ B3 ckpt + train-metadata.csv 已上传 HPC。HPC 当前无运行 job。
 
 ---
 
