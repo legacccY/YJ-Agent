@@ -29,9 +29,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from omegaconf import OmegaConf
 from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
 os.environ.setdefault("WANDB_DISABLE_SERVICE", "true")  # fix WinError 64 on Windows
@@ -249,9 +250,11 @@ def dp_loss_b3(b3, x_enh, x_ref, y, margin):
 
 # ── Train / Val epoch ──────────────────────────────────────────────────────────
 
-def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=None):
+def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=None, distributed=False):
     is_train = phase == "train"
     model.train() if is_train else model.eval()
+    # Only rank 0 shows the progress bar (4 bars otherwise spam stderr).
+    _show_bar = (not distributed) or dist.get_rank() == 0
 
     stage = cfg.stage
     lam = cfg.loss
@@ -262,7 +265,7 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
 
     ctx = torch.enable_grad() if is_train else torch.no_grad()
     with ctx:
-        for batch in tqdm(loader, desc=phase, leave=False, ncols=80):
+        for batch in tqdm(loader, desc=phase, leave=False, ncols=80, disable=not _show_bar):
             if len(batch) == 3:
                 x_low, x_ref, y = batch
                 y = y.to(device, non_blocking=True)
@@ -329,6 +332,17 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
             total_hinge += hinge_val * B
             n += B
 
+    # DDP: sum per-rank accumulators so metrics are over the *global* sample set
+    # (each rank only sees its DistributedSampler shard). n becomes the global
+    # count, so the divisions below give the true dataset-wide averages.
+    if distributed:
+        acc = torch.tensor(
+            [total_loss, total_psnr, total_ssim, total_l1, total_lpips, total_dp, total_hinge, n],
+            device=device, dtype=torch.float64,
+        )
+        dist.all_reduce(acc, op=dist.ReduceOp.SUM)
+        total_loss, total_psnr, total_ssim, total_l1, total_lpips, total_dp, total_hinge, n = acc.tolist()
+
     return {
         "loss": total_loss / n,
         "psnr": total_psnr / n,
@@ -345,7 +359,20 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
 def main():
     args = parse_args()
     cfg = OmegaConf.load(args.config)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # ── Distributed setup (torchrun injects LOCAL_RANK/RANK/WORLD_SIZE; falls
+    # back to single-GPU when launched with plain python) ───────────────────────
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    rank = int(os.environ.get("RANK", 0))
+    world_size = int(os.environ.get("WORLD_SIZE", 1))
+    distributed = world_size > 1
+    if distributed:
+        dist.init_process_group(backend="nccl")
+        torch.cuda.set_device(local_rank)
+        device = torch.device("cuda", local_rank)
+    else:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    is_main = rank == 0
 
     torch.manual_seed(cfg.train.get("seed", 42))
     np.random.seed(cfg.train.get("seed", 42))
@@ -360,7 +387,17 @@ def main():
         film_hidden=mcfg.get("film_hidden", 128),
         film_scale=mcfg.get("film_scale", 0.1),
     ).to(device)
-    print(f"[INFO] VisiEnhanceNet params: {model.param_count()/1e6:.1f}M")
+    if is_main:
+        print(f"[INFO] VisiEnhanceNet params: {model.param_count()/1e6:.1f}M")
+
+    # _raw_model = the unwrapped net. DDP wraps it for gradient sync; resume loads
+    # and checkpoints save through _raw_model so state_dict keys never carry the
+    # `module.` prefix (the bug that 30s-killed earlier DDP resumes).
+    _raw_model = model
+    if distributed:
+        model = nn.parallel.DistributedDataParallel(
+            model, device_ids=[local_rank], output_device=local_rank,
+        )
 
     # ── Frozen VisiScore-Net ───────────────────────────────────────────────────
     visiscore = VisiScoreNet(pretrained=False).to(device)
@@ -410,13 +447,16 @@ def main():
     print(f"[INFO] train={len(train_ds)}, val={len(val_ds)}")
 
     nw = dcfg.get("num_workers", 2)
+    train_sampler = DistributedSampler(train_ds, shuffle=True) if distributed else None
+    val_sampler = DistributedSampler(val_ds, shuffle=False) if distributed else None
     train_loader = DataLoader(
-        train_ds, batch_size=dcfg.batch_size, shuffle=True,
+        train_ds, batch_size=dcfg.batch_size, shuffle=(train_sampler is None),
+        sampler=train_sampler,
         num_workers=nw, pin_memory=True,
         persistent_workers=(nw > 0), multiprocessing_context="spawn" if nw > 0 else None,
     )
     val_loader = DataLoader(
-        val_ds, batch_size=dcfg.batch_size, shuffle=False,
+        val_ds, batch_size=dcfg.batch_size, shuffle=False, sampler=val_sampler,
         num_workers=nw, pin_memory=True,
         persistent_workers=(nw > 0), multiprocessing_context="spawn" if nw > 0 else None,
     )
@@ -447,97 +487,114 @@ def main():
             start_epoch = ckpt.get("epoch", 0) + 1
             best_psnr = ckpt.get("best_psnr", 0.0)
             no_improve = ckpt.get("no_improve", 0)
-        print(f"[INFO] Resumed from {resume_path} (epoch {start_epoch}, model-only={model_only})")
+        if is_main:
+            print(f"[INFO] Resumed from {resume_path} (epoch {start_epoch}, model-only={model_only})")
 
     # ── WandB ─────────────────────────────────────────────────────────────────
     wcfg = cfg.get("wandb", {})
     _wandb_ok = False
-    try:
-        wandb.init(
-            project=wcfg.get("project", "visienhance"),
-            name=f"stage{cfg.stage}",
-            config=OmegaConf.to_container(cfg, resolve=True),
-            mode=wcfg.get("mode", "offline"),
-            resume="allow",
-        )
-        _wandb_ok = True
-    except Exception as e:
-        print(f"[WARN] wandb.init failed — metrics will not be tracked: {e}", flush=True)
+    if is_main:
+        try:
+            wandb.init(
+                project=wcfg.get("project", "visienhance"),
+                name=f"stage{cfg.stage}",
+                config=OmegaConf.to_container(cfg, resolve=True),
+                mode=wcfg.get("mode", "offline"),
+                resume="allow",
+            )
+            _wandb_ok = True
+        except Exception as e:
+            print(f"[WARN] wandb.init failed — metrics will not be tracked: {e}", flush=True)
 
     out_dir = Path(cfg.output.checkpoint_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    if is_main:
+        out_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
     # ── Training loop ─────────────────────────────────────────────────────────
     for epoch in range(start_epoch, tcfg.epochs):
-        tr = run_epoch("train", train_loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=b3)
-        vl = run_epoch("val",   val_loader,  model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=b3)
+        if distributed:
+            train_sampler.set_epoch(epoch)  # reshuffle per epoch across ranks
+        tr = run_epoch("train", train_loader, model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=b3, distributed=distributed)
+        vl = run_epoch("val",   val_loader,  model, visiscore, qvib_enc, efnet_extractor, lpips_fn, optimizer, scaler, cfg, device, b3=b3, distributed=distributed)
         scheduler.step()
 
         elapsed_h = (time.time() - t0) / 3600
         eta_h = elapsed_h / (epoch - start_epoch + 1) * (tcfg.epochs - epoch - 1)
 
-        dp_str = ""
-        if cfg.stage >= 2:
-            dp_str = (f"| train_DP={tr['dp']:.4f} | val_DP={vl['dp']:.4f} "
-                      f"| train_H={tr['hinge']:.4f} | val_H={vl['hinge']:.4f} ")
-        print(f"Epoch {epoch:03d} | train_loss={tr['loss']:.4f} | val_PSNR={vl['psnr']:.2f} "
-              f"| val_SSIM={vl['ssim']:.4f} {dp_str}| best={best_psnr:.2f} | ETA {eta_h:.1f}h")
+        # vl is identical on every rank after the all-reduce, so `improved` is too.
+        improved = vl["psnr"] > best_psnr
 
-        if _wandb_ok:
-            try:
-                wandb.log({"epoch": epoch, **{f"train/{k}": v for k, v in tr.items()},
-                           **{f"val/{k}": v for k, v in vl.items()}, "lr": scheduler.get_last_lr()[0]})
-            except Exception as e:
-                print(f"[WARN] wandb.log failed (skipped): {e}", flush=True)
+        # All file I/O (log, wandb, state, checkpoints) only on rank 0.
+        if is_main:
+            dp_str = ""
+            if cfg.stage >= 2:
+                dp_str = (f"| train_DP={tr['dp']:.4f} | val_DP={vl['dp']:.4f} "
+                          f"| train_H={tr['hinge']:.4f} | val_H={vl['hinge']:.4f} ")
+            print(f"Epoch {epoch:03d} | train_loss={tr['loss']:.4f} | val_PSNR={vl['psnr']:.2f} "
+                  f"| val_SSIM={vl['ssim']:.4f} {dp_str}| best={best_psnr:.2f} | ETA {eta_h:.1f}h")
 
-        write_state({
-            "stage": cfg.stage,
-            "epoch": epoch,
-            "total_epochs": tcfg.epochs,
-            "train_loss": round(tr["loss"], 4),
-            "val_psnr": round(vl["psnr"], 3),
-            "val_ssim": round(vl["ssim"], 4),
-            "train_dp": round(tr["dp"], 5),
-            "val_dp": round(vl["dp"], 5),
-            "train_hinge": round(tr["hinge"], 5),
-            "val_hinge": round(vl["hinge"], 5),
-            "train_l1": round(tr["l1"], 5),
-            "best_val_psnr": round(best_psnr, 3),
-            "no_improve_epochs": no_improve,
-            "elapsed_h": round(elapsed_h, 2),
-            "eta_h": round(eta_h, 2),
-            "status": "training",
-        })
+            if _wandb_ok:
+                try:
+                    wandb.log({"epoch": epoch, **{f"train/{k}": v for k, v in tr.items()},
+                               **{f"val/{k}": v for k, v in vl.items()}, "lr": scheduler.get_last_lr()[0]})
+                except Exception as e:
+                    print(f"[WARN] wandb.log failed (skipped): {e}", flush=True)
 
-        # Save latest checkpoint
-        ckpt_payload = {
-            "epoch": epoch, "model": model.state_dict(),
-            "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
-            "best_psnr": best_psnr, "no_improve": no_improve,
-        }
-        torch.save(ckpt_payload, out_dir / "last_visienhance.pth")
+            write_state({
+                "stage": cfg.stage,
+                "epoch": epoch,
+                "total_epochs": tcfg.epochs,
+                "train_loss": round(tr["loss"], 4),
+                "val_psnr": round(vl["psnr"], 3),
+                "val_ssim": round(vl["ssim"], 4),
+                "train_dp": round(tr["dp"], 5),
+                "val_dp": round(vl["dp"], 5),
+                "train_hinge": round(tr["hinge"], 5),
+                "val_hinge": round(vl["hinge"], 5),
+                "train_l1": round(tr["l1"], 5),
+                "best_val_psnr": round(best_psnr, 3),
+                "no_improve_epochs": no_improve,
+                "elapsed_h": round(elapsed_h, 2),
+                "eta_h": round(eta_h, 2),
+                "status": "training",
+            })
 
-        # Save best
-        if vl["psnr"] > best_psnr:
+            # Checkpoint saves _raw_model (unwrapped) → no `module.` key prefix.
+            ckpt_payload = {
+                "epoch": epoch, "model": _raw_model.state_dict(),
+                "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+                "best_psnr": best_psnr, "no_improve": no_improve,
+            }
+            torch.save(ckpt_payload, out_dir / "last_visienhance.pth")
+            if improved:
+                torch.save(ckpt_payload, out_dir / "best_visienhance.pth")
+
+        # Control state advances identically on every rank (keeps the loop in
+        # lockstep so early-stop / range never deadlocks under DDP).
+        if improved:
             best_psnr = vl["psnr"]
             no_improve = 0
-            torch.save(ckpt_payload, out_dir / "best_visienhance.pth")
         else:
             no_improve += 1
 
         # Early stopping (stage 1 only)
         if cfg.stage == 1 and no_improve >= tcfg.get("early_stop_patience", 5):
-            print(f"[INFO] Early stop at epoch {epoch} (no improvement for {no_improve} epochs)")
+            if is_main:
+                print(f"[INFO] Early stop at epoch {epoch} (no improvement for {no_improve} epochs)")
             break
 
-    write_state({"stage": cfg.stage, "status": "done", "best_val_psnr": round(best_psnr, 3)})
-    if _wandb_ok:
-        try:
-            wandb.finish()
-        except Exception:
-            pass
-    print(f"[DONE] Stage {cfg.stage} finished. Best val PSNR = {best_psnr:.3f} dB")
+    if is_main:
+        write_state({"stage": cfg.stage, "status": "done", "best_val_psnr": round(best_psnr, 3)})
+        if _wandb_ok:
+            try:
+                wandb.finish()
+            except Exception:
+                pass
+        print(f"[DONE] Stage {cfg.stage} finished. Best val PSNR = {best_psnr:.3f} dB")
+
+    if distributed:
+        dist.destroy_process_group()
 
 
 if __name__ == "__main__":

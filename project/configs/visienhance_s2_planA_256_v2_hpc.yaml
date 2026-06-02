@@ -39,8 +39,8 @@ train:
 loss:
   lambda_l1: 1.0
   lambda_lpips: 0.01
-  lambda_dp: 1.0            # ← PLACEHOLDER, probe 标定后回填 (目标 DP 项 ≈ 5-20% L1)
-  lambda_hinge: 1.0         # ← PLACEHOLDER, probe 标定后回填
+  lambda_dp: 0.005          # probe 标定: DP 项 ≈ 10% L1 (KL_enh=0.468, L1=0.0223 @Stage1 best)
+  lambda_hinge: 0.04        # probe 标定: hinge 项 ≈ 18% L1 (hinge=0.116 over 22 pos)
   hinge_margin: 0.5         # 真阳 enh 的 mel 概率不准掉破 0.5 (= 不翻阴)
   lambda_quality: 0.0
   quality_target: 0.55
