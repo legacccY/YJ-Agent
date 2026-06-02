@@ -56,3 +56,12 @@ data/
 *.mp4
 *.webm
 *.mov
+
+# Med-NCA 子项目
+# 官方仓库，可重 clone
+project/meeting/Med-NCA/M3D-NCA-official/
+# 论文 PDF，大媒体本地留
+project/meeting/Med-NCA/*.pdf
+# 安装临时标记与日志
+project/meeting/Med-NCA/code/*_done.txt
+project/meeting/Med-NCA/code/*.log
