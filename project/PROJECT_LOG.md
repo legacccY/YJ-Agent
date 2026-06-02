@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-06-02（会话 15，会话14 真实状态核实 → probe 标定 λ → 抓出 DDP 回退根因 → 重建 DDP + 启 v2 训练 job 1434145）
+
+### 起因
+会话14 收工记录把「v2 代码已改完」写得接近完工，实际「config v2 没写、probe 没写、没上传 HPC、没 job、代码未跑未验证」。本会话先核实真实状态再动手，不照抄乐观措辞盲跑。
+
+### 核实结论（纠 WORKLOG 措辞）
+- config v2 **其实写了**（commit f5ed2ec，65 行，但 λ 是 placeholder=1.0 未标定）；v2 代码（enhance_dataset meta-merge/oversample + train_visienhance build_b3/dp_loss_b3/hinge）**也在文件里**。
+- 但 **probe 脚本不存在、HPC 零上传、无 job、代码从没跑过** → 用户描述属实，改动全本地未验证。
+
+### 执行（标定链，全过）
+1. **本地 smoke**：py_compile 三文件 OK；CPU 假张量验 `dp_loss_b3`（KL/hinge/梯度/无正样本边界）OK；pandas 验 meta-merge + oversample OK。
+2. **写 `scripts/probe_b3_dp.py`**（仿 probe_dp_magnitude）：测 B3 KL/hinge/L1 量级。
+3. **上传 HPC**（sftp + sed 去 CRLF）：train/dataset/config v2/probe + 新 `submit_probe_b3.sh`。HPC 端 py_compile + yaml parse 验证。
+4. **probe job 1434129**（单 GPU ~80s，兼 HPC smoke）实测：**KL(enh‖ref)=0.468**（baseline KL(input)=0.992，enh 砍半）、**L1=0.0223**、PSNR=30.39、**hinge=0.116**（22 真阳）。真黑色素瘤 mel-prob ref0.596→enh0.697（方向对），但 31.8% 真阳 enh mel-prob<0.5（hinge 要救的翻转）。
+5. **GATE 报数字 → 用户选 A 温和**：`λ_dp=0.005`（DP项≈10%L1）/ `λ_hinge=0.04`（hinge项≈18%L1）。placeholder 1.0 会让 DP 项=L1 的 21 倍砸烂 PSNR，标定必须。
+
+### 关键事故 + 修复：丢失的 DDP 脚手架
+- 回填 λ 启 **v2 训练 job 1434137 → 46s 秒退**：`train_visienhance.py:443 NameError: _raw_model is not defined`。
+- **根因**：session-13 在 HPC 跑通的 4-GPU DDP 版，是**直接在 HPC 手改加的整套 DDP 脚手架，从未 commit 回 git**。git 版（含会话14 改动）是 DDP 之前的单卡版（无 init_process_group、`_raw_model` 只引用不定义）。我上传 v2 覆盖了 HPC 唯一能跑的 DDP 版，旧 .pyc 也被重编译覆盖 → 不可恢复。session-13 `.out` 的真 DDP warning 证明 DDP 当时是真的。
+- **用户拍板 A：重建 DDP**。重建 9 处：import dist+DistributedSampler / main 顶 init_process_group(nccl)+LOCAL_RANK 设备(单卡回退) / `_raw_model`=未包装+DDP wrap(resume/存档走 _raw_model 杜绝 module. 前缀) / train+val DistributedSampler+set_epoch / run_epoch 跨卡 all_reduce 累加器(val 指标全局算) / 日志·wandb·state·存档全 rank-0 guard + best/no_improve 全 rank 同步防死锁 / 结尾 destroy_process_group。
+- 本地+HPC py_compile OK → **job 1434145 启动 smoke 通过**：resume OK(_raw_model 活)、train=80607(oversample 生效)、4.24 it/s 稳定、无 NaN/OOM、**ETA ~13h**（80 epoch）。
+- **commit cefa521** 锁住 DDP 重建（杜绝再丢）。GUI 监控开（job 1434145）。
+
+### 待续（会话 16）
+1. 盯 1434145 跑完（~13h，patience=999 不早停，80 epoch）。**真验证点**：`val_DP` 应非零且随训练降、`val_PSNR` 不应像会话10 下滑（val_severity 已 mixed）。
+2. 训完 **sync best ckpt 回本地** → `eval_diag_paired.py` 复测 E3/E7：看 **dangerous_flip 是否从 0.176 降回**、**dAUC 是否破 1.5%**、**一致率是否破 95%**。
+3. 若 E3 仍 FAIL：升 λ_dp/λ_hinge 或 DP-Loss 升 feature-level，再跑。达标后回写 STORY_FRAMEWORK §4 + ACCEPTANCE E3/E7 + paper §7 frozen 数字。
+
+### 命中率
+- DDP 脚手架事故是历史欠债（手改未入版控）的一次性清算，已 commit 杜绝复发。v2 机制（B3 同源 DP-Loss + pos-hinge）已上 HPC 实跑、标定有据。E3 能否破线仍是最大不确定，但路径可控（标定→重跑→必要时升 λ）。
+
+---
+
 ## 2026-06-01（会话 13，Stage1 @256 收敛达标 ep40 手停 → Stage2 @256 DP-Loss 启动 job 1433944）
 
 ### 起因
