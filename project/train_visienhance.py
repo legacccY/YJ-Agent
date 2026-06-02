@@ -44,7 +44,10 @@ from models.visiscore import VisiScoreNet
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["WANDB_DISABLE_SERVICE"] = "1"  # prevent asyncio WinError 64 crash on Windows
-STATE_PATH = Path("D:/YJ-Agent/log/experiment_state.json")
+# HPC submit scripts export STATE_PATH (→ logs/experiment_state.json) for the live
+# GUI monitor; fall back to the local Windows path when run outside SLURM. Hardcoding
+# the Windows path made HPC writes land in a literal `D:/...` dir → GUI saw nothing.
+STATE_PATH = Path(os.environ.get("STATE_PATH", "D:/YJ-Agent/log/experiment_state.json"))
 
 
 # ── Args ───────────────────────────────────────────────────────────────────────
