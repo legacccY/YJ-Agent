@@ -1,0 +1,14 @@
+{
+  "tag": "single",
+  "n": 78,
+  "dice_mean": 0.6282,
+  "dice_std": 0.0968,
+  "ci95": [
+    0.6054,
+    0.6468
+  ],
+  "threshold": 0.86,
+  "verdict": "FAIL",
+  "epochs": 300,
+  "params": 25920
+}

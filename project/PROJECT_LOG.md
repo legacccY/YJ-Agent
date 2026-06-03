@@ -6,6 +6,44 @@
 
 ---
 
+## 2026-06-03（会话 17，还原未记日志的 v3/v4 迭代 → 抢 v4 best ckpt 评 E3/E7 → dflip 根因诊断：85% 是 enhance 主动造成）
+
+### 起因
+开门「hpc 跑好了」，连 HPC 核实发现状态与会话 15 记录对不上：v2 job 1434145 已被取消（ep60 存 frozen），HPC 上另有 **v4 job 1434527 在跑**（ep60/80），本地有未提交 v3 config。**会话 16 在 HPC 跑了 v3/v4 两轮但从未记日志**（又是「HPC 手改/迭代未入版控」的老坑），本会话从 config header + ckpt 产物还原全过程。
+
+### 还原 v2→v3→v4 演进（config header + diff）
+| 版本 | λ_dp | λ_hinge | hinge 形式 | dangerous_flip |
+|---|---|---|---|---|
+| v1 | — | — | DP 用 Q-VIB/B0 latent（与 eval B3 不同源）| 0.054→0.176 ↑ |
+| v2 | 0.005 | 0.005 | prob hinge，量级太小 | — |
+| v3 | 0.05 | 0.04 | prob-margin hinge → **train_H 饱和**（B3 在 train 拟合 p→1，安全方向零梯度）| 0.054→0.243 ↑更坏 |
+| **v4** | 0.05 | 0.04 | **logit-space 相对 hinge** `relu(logit_ref[mel]-logit_enh[mel]).clamp(0,3)`，无饱和 | **0.176（没降）** |
+
+v4 = v3 的 λ，但 hinge 改 logit-space 修 v3 饱和。v4 训练曲线：val_PSNR 30.17（ep45 起平台锁死，E1 守住）、val_DP≈0.105 横盘不降、val_H≈0.072。
+
+### 执行
+1. sftp 抢 v4 best ckpt（ep46 PSNR-best）→ 本地 `project/checkpoints/visienhance/stage2_planA_256_v4/`。
+2. 改 `eval_stage2_compare.py` CKPTS S2 指向 v4，跑 `eval_diag_paired.py`（n=3627, pos=117）。
+3. **取消 v4 job 1434527**（PSNR 平台、dflip 注定不变、继续是烧 GPU）→ 排队的 **mednca_r 1434661 上 gpu4090n7，RUNNING**。
+4. 写 `diag_dflip_v4.py` 查 dflip 根因。
+
+### 结果：E7 PASS，E3 仍卡，dflip 根因揪出
+- **E7（配对 S2 vs S1，DP 有没有用）PASS ✅**：ΔAUC_enh=+0.0299 CI[+0.011,+0.049] 显著>0；ΔKL=−0.2915 CI 显著<0；McNemar p=4.2e-59。**DP-Loss 比 no-DP 全面更好，论点立得住。**
+- **E3（绝对诊断保持）仍没过**：dAUC=−0.0204 borderline、一致率 0.9446（差 0.5%）、**dangerous_flip=0.1757（和 v1 一样，三版 hinge 都没压下）**。
+- **🔴 dflip 根因（`diag_dflip_v4.py`）**：mask=74 个 ref 正确报阳的黑色素瘤，flip 13 个。归因 **B（enhance 主动翻 pd≥0.5→pe<0.5）= 11/13 = 85%**，A（退化已翻 enhance 无辜）仅 15%。**不是 borderline**：被翻 mel 的 ref 置信度中位 0.81、含 pr=1.000。全体 mel 上 enhance 平均把恶性置信度 0.92→0.81（−0.11），只 40% 改善。逐例：pr=1.0→pe=0.498、pr=0.806/pd=0.999→pe=0.176。
+  - **判读**：VisiEnhance 系统性「美化」黑色素瘤——恶性特征（不对称/毛糙边界/杂色/暗斑）被当低质噪声磨平。λ_hinge=0.04 顶不住 L1+LPIPS 主梯度。**红线 R8 的直接实证。**
+
+### 决策 + 待续（会话 18）
+- **不急重训**。优先把 dflip 做成论文 figure（mel 置信度 ref→deg→enh 下滑曲线 + 11 例 enhance-caused flip 病灶磨平对比图）——零训练、最有冲击力。
+- **framing 转向**：E3 从「必须全过的红线」降级为 motivation 证据；主推 **E7（DP 相对增益显著）+ dflip 实证**，共同论证「感知增强 vs 诊断保持」真实对立 → 坐实 Claim 3 / Theorem 2（query-for-retake：有些图不该增强、该重拍）。
+- loss 真要救 dflip：弃继续加 hinge λ，转 **mask 加权 L1（病灶区不准磨平）** 或 **feature-level DP（B3 中间特征对齐）**。
+- ⚠️ HPC 现跑 **mednca_r 1434661**（Med-NCA 子项目，非本项目）；本项目 GPU 暂空。
+
+### 命中率
+E7 稳了是加分；dflip 根因清晰（85% enhance 主动、红线实证）反而把故事从「增强器调参」抬到「揭示 perceptual-vs-diagnostic tension」的高度，与 Theorem 2 闭环。E3 绝对达标仍是开放项，但已有可控路径（重选型/mask-L1/feature-DP）+ 诚实 framing 兜底。教训重申：HPC 迭代必须每轮记日志 + commit config，本会话又踩一次（v3/v4 靠产物还原）。
+
+---
+
 ## 2026-06-02（会话 15，会话14 真实状态核实 → probe 标定 λ → 抓出 DDP 回退根因 → 重建 DDP + 启 v2 训练 job 1434145）
 
 ### 起因

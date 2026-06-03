@@ -232,20 +232,31 @@ def _b3_logits(b3, x: torch.Tensor) -> torch.Tensor:
     return b3((xc - mean) / std)
 
 
-def dp_loss_b3(b3, x_enh, x_ref, y, margin):
-    """B3-sourced diagnosis-preserving loss + pos-hinge.
+def dp_loss_b3(b3, x_enh, x_ref, y, hinge_clamp=3.0):
+    """B3-sourced diagnosis-preserving loss + logit-space pos-hinge.
 
       kl    = KL( softmax B3(enh) ‖ softmax B3(ref) )   [Lemma 3 方向]
-      hinge = mean_{y==1} relu(margin − p_enh[:, mel])   真阳增强后 mel 概率不准掉破 margin
+      hinge = mean_{y==1} relu(logit_ref[mel] − logit_enh[mel]).clamp(max=hinge_clamp)
+
+    Logit 空间相对 hinge：惩罚「增强把真阳 mel-logit 压低」——这正是 dangerous_flip 的
+    产生机制。改自旧的绝对-margin 版 relu(margin − p_enh[mel])：B3 oracle 在 ISIC train
+    split 上过拟合，对 train 真阳给 p≈1 的饱和分，使绝对 hinge 恒零（train_H=0，安全项整个
+    训练零梯度）。logit 差绕开饱和（p 差被压没时 logit 差仍大），且与 ref 同图配对、不依赖
+    B3 绝对校准。logits_ref detached → 梯度只经 logits_enh，最小化即顶高真阳 mel-logit。
+    clamp 上限防个别大 gap 样本梯度爆。诊断见 scripts/diag{2,3}_hinge.py（横评 5 方案 +
+    clamp 扫描 + flip 预测 AUC 0.949 + 像素级闭环 un-flip 0.384→1.0）。
     """
     with torch.no_grad():
-        logp_ref = F.log_softmax(_b3_logits(b3, x_ref), dim=-1)   # detached target
-    logp_enh = F.log_softmax(_b3_logits(b3, x_enh), dim=-1)       # carries grad
+        logits_ref = _b3_logits(b3, x_ref)                        # detached target
+        logp_ref = F.log_softmax(logits_ref, dim=-1)
+    logits_enh = _b3_logits(b3, x_enh)                            # carries grad
+    logp_enh = F.log_softmax(logits_enh, dim=-1)
     p_enh = logp_enh.exp()
     kl = (p_enh * (logp_enh - logp_ref)).sum(dim=-1).mean()
     pos = (y == 1)
     if pos.any():
-        hinge = F.relu(margin - p_enh[pos, 1]).mean()
+        gap = logits_ref[pos, 1] - logits_enh[pos, 1]            # >0 当增强压低 mel-logit
+        hinge = gap.clamp_min(0).clamp(max=hinge_clamp).mean()
     else:
         hinge = torch.zeros((), device=x_enh.device)
     return kl, hinge
@@ -300,7 +311,7 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
 
                 if stage >= 2 and lam.lambda_dp > 0 and b3 is not None:
                     # v2: B3-sourced DP-Loss + pos-hinge (train/eval same oracle).
-                    dp, hinge = dp_loss_b3(b3, x_enh, x_ref, y, lam.get("hinge_margin", 0.5))
+                    dp, hinge = dp_loss_b3(b3, x_enh, x_ref, y, lam.get("hinge_clamp", 3.0))
                     dp_val = dp.item()
                     hinge_val = hinge.item()
                     loss = loss + lam.lambda_dp * dp + lam.get("lambda_hinge", 0.0) * hinge

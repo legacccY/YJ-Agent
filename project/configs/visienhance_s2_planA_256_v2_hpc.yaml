@@ -2,7 +2,9 @@
 # v1 根因: DP-Loss 用 Q-VIB/B0 latent (ABCD 置零, 无诊断语义) 而 eval 用 B3 oracle →
 #   train/eval 错配, dangerous_flip 0.054→0.176 恶化. v2 让 DP-Loss 与 eval 同源 (B3),
 #   加 pos-hinge 显式禁止真阳翻阴, pos 过采样 10x 补 1.7% 不平衡.
-# DP-Loss = KL(softmax B3(enh) ‖ softmax B3(ref)) [Lemma 3 方向] + λ_h·relu(margin - p_enh[mel])_{y=1}.
+# DP-Loss = KL(softmax B3(enh) ‖ softmax B3(ref)) [Lemma 3 方向] + λ_h·relu(logit_ref[mel]-logit_enh[mel]).clamp(0,3)_{y=1}.
+# v3 修: v2 绝对-margin hinge train_H 恒零(B3 在 train split 过拟合饱和 p≈1) → 安全项零梯度,
+#   dangerous_flip 0.054→0.243 恶化. v3 改 logit 空间相对 hinge (抗饱和+同图配对). 诊断: diag2/diag3.
 # Resume from Stage 1 @256 best (model weights only). VisiScore + Q-VIB + B3 冻结.
 
 stage: 2
@@ -40,8 +42,9 @@ loss:
   lambda_l1: 1.0
   lambda_lpips: 0.01
   lambda_dp: 0.005          # probe 标定: DP 项 ≈ 10% L1 (KL_enh=0.468, L1=0.0223 @Stage1 best)
-  lambda_hinge: 0.04        # probe 标定: hinge 项 ≈ 18% L1 (hinge=0.116 over 22 pos)
-  hinge_margin: 0.5         # 真阳 enh 的 mel 概率不准掉破 0.5 (= 不翻阴)
+  lambda_hinge: 0.005       # v3 logit-hinge 标定: mean_mag(C=3)=0.97 → hinge 项 ≈ 22% L1 (diag3)
+  hinge_clamp: 3.0          # logit-space 相对 hinge 上限: relu(logit_ref[mel]-logit_enh[mel]).clamp(max=3)
+                            # 旧 hinge_margin=0.5 绝对版 train_H 恒零(B3 train 饱和) → 改 logit 相对式
   lambda_quality: 0.0
   quality_target: 0.55
 
@@ -57,9 +60,9 @@ frozen_models:
     use_tokenizer: true
 
 output:
-  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage2_planA_256_v2
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage2_planA_256_v3
 
 wandb:
   project: visienhance
-  name: stage2_planA_256_v2_hpc
+  name: stage2_planA_256_v3_hpc
   mode: offline

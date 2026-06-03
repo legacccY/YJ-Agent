@@ -1,0 +1,14 @@
+{
+  "tag": "pseudo10",
+  "n": 78,
+  "dice_mean": 0.636,
+  "dice_std": 0.0969,
+  "ci95": [
+    0.6137,
+    0.6544
+  ],
+  "threshold": 0.86,
+  "verdict": "FAIL",
+  "epochs": 300,
+  "params": 25920
+}

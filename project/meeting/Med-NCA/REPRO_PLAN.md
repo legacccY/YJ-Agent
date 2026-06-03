@@ -182,6 +182,9 @@
 6. **改预处理后先验像素对齐**（§1 红线 6）。
 7. **指标口径**：报告值 per-image，监控值 aggregate，不混（§3）。
 8. **装 CUDA torch 前先 `df -h` 看盘**：cu118 wheel ~2.5GB，conda env 默认在 C 盘；C 盘 <6GB 必先把 env 建到 D 盘（`conda create -p D:\...\envs\mednca`）或腾空间。会话 1 在此栽过（`[Errno 28] No space left`，C 盘仅 2.3GB）。
+9. **重训前必清 model_path 目录**：官方 `Experiment.reload()`(Experiment.py:82) 启动时若目录存在 `config.dt` 就**整个覆盖运行时 config**，`n_epoch` 被旧值锁死、env 变量静默失效。会话 3 栽过（连两次「300/1000ep」实际只训 ~8 epoch）。`Remove-Item -Recurse checkpoints/<exp>` 后再训。注意：summary 里 `epochs` 字段是 python 变量照抄，**不能当真实训练轮数**，真实轮数 = `range(currentStep, get_max_steps()+1)`。
+10. **NCA 训练慢的真因是计算密集非数据**：64 步顺序推理×N 级不可并行，GPU 利用率低时先别急着怪 DataLoader。`Model_BasicNCA.update:71` 的 fire-mask `torch.rand` 默认 CPU 生成再 `.to(device)`，每步一次同步停顿 → 用 `code/fast_nca.py` 的 device-rand subclass 修（数学等价，不改官方）。修后 GPU 满载但仍 60-90s/epoch（4070 Laptop），1000ep ≈ 20h，属正常成本。
+11. **本地单 GPU 上绝不并发第二个训练/推理 job**。会话 4 栽过：R1（Hippocampus）在本地 4070（8GB）跑到 ep72 时，为「并行」启了 R2 smoke，GPU 显存一度逼近满（7869/8188 MiB）；随后 `Stop-Process` 杀 smoke 的控制事件波及 R1 进程，触发 Intel MKL 的 `forrtl: error ... window-CLOSE event`（KERNELBASE/KERNEL32/ntdll 栈），**R1 进程假活（CPU 近 0、已脱离 GPU）实则卡死**。损失 ep50~72，从 `epoch_50` ckpt resume 找回。教训：① 单卡训练期间不碰 GPU（第二个 job 走 HPC 或排队等第一个完）；② 进程假活看三件：GPU 显存是否仍占、`nvidia-smi --query-compute-apps` 里有没有该 pid、CPU 时间是否还在涨——log 冻结+脱离 GPU+CPU 不动 = 死，即便进程还在；③ 这正是 §1 红线 5「训练串行」的物理依据，别只当纪律。
 
 ---
 

@@ -2,9 +2,21 @@
 Faithful to official src/examples/train_Med_NCA.py + per-patient Dice CSV + bootstrap 95% CI.
 Acceptance R1: per-image (per-volume) Dice mean >= 0.86.
 """
-import os, sys, json, csv, time
+import os, sys, json, csv, time, subprocess
 import numpy as np
 import torch
+
+SEED = 42
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+
+def git_commit():
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=r"D:\YJ-Agent", stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        return "unknown"
 
 ROOT = r"D:\YJ-Agent\project\meeting\Med-NCA"
 OFFICIAL = os.path.join(ROOT, "M3D-NCA-official")
@@ -12,7 +24,8 @@ sys.path.insert(0, OFFICIAL)
 os.chdir(OFFICIAL)  # src imports + relative paths
 
 from src.datasets.Nii_Gz_Dataset_3D import Dataset_NiiGz_3D
-from src.models.Model_BackboneNCA import BackboneNCA
+sys.path.insert(0, os.path.join(ROOT, "code"))
+from fast_nca import FastBackboneNCA as BackboneNCA  # GPU-rand patch, math-equivalent
 from src.losses.LossFunctions import DiceBCELoss, DiceLoss
 from src.utils.Experiment import Experiment
 from src.agents.Agent_Med_NCA import Agent_Med_NCA
@@ -61,6 +74,15 @@ t0 = time.time()
 agent.train(loader, loss_function)
 print(f"[R1] train done in {(time.time()-t0)/60:.1f} min", flush=True)
 
+# 真实训练轮数：从 Experiment 取，绝不信 python 变量 N_EPOCH（config.dt 覆盖陷阱见 REPRO_PLAN §9 #9）
+epochs_target = exp.get_max_steps()      # config 实际生效的 n_epoch（config.dt 若存在会覆盖）
+epochs_trained = exp.currentStep         # 实际训到第几 epoch
+commit = git_commit()
+print(f"[R1] epochs_target={epochs_target} epochs_trained={epochs_trained} "
+      f"(N_EPOCH var={N_EPOCH}) seed={SEED} commit={commit}", flush=True)
+if epochs_trained < epochs_target:
+    print(f"[R1][WARN] 未训满：trained {epochs_trained} < target {epochs_target}", flush=True)
+
 # ---- Eval: per-patient Dice + bootstrap CI ----
 def bootstrap_ci(vals, n=1000, seed=0):
     rng = np.random.default_rng(seed)
@@ -77,12 +99,14 @@ for ens, tag in [(False, "single"), (True, "pseudo10")]:
     out_csv = os.path.join(ROOT, "results", f"r1_hippocampus_{tag}.csv")
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
     with open(out_csv, "w", newline="") as f:
-        w = csv.writer(f); w.writerow(["patient_id", "dice"])
-        for pid, d in ch0.items(): w.writerow([pid, d])
+        w = csv.writer(f); w.writerow(["patient_id", "dice", "seed", "git_commit"])
+        for pid, d in ch0.items(): w.writerow([pid, d, SEED, commit])
     verdict = "PASS" if mean >= 0.86 else "FAIL"
     summary = {"tag": tag, "n": len(vals), "dice_mean": round(mean, 4),
                "dice_std": round(std, 4), "ci95": [round(lo, 4), round(hi, 4)],
-               "threshold": 0.86, "verdict": verdict, "epochs": N_EPOCH, "params": n_params}
+               "threshold": 0.86, "verdict": verdict,
+               "epochs_target": epochs_target, "epochs_trained": epochs_trained,
+               "params": n_params, "seed": SEED, "git_commit": commit}
     print(f"[R1-{tag}] {json.dumps(summary)}", flush=True)
     with open(os.path.join(ROOT, "results", f"r1_hippocampus_{tag}_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)

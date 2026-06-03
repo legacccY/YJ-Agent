@@ -1,0 +1,94 @@
+# Stage 2 Plan A @256 v3 (HPC) — 修复 val_DP 卡死不降
+#
+# ══ v2 → v3 改动（共 4 处）═══════════════════════════════════════════
+#
+# 1. lambda_dp: 0.005 → 0.05   (+10x)
+#    根因 A（主因）：λ_dp=0.005 太小，KL 项贡献权重 ≈0.5% total_loss
+#    （0.005 × KL~0.11 = 0.00055，而 L1~0.010 × 1.0 = 0.010）
+#    梯度信号被 L1 淹没 10-20x，optimizer 几乎感知不到 KL 方向。
+#    标定逻辑已失效：probe 时 KL_enh=0.468，但训练中 val_DP 实测 ~0.11
+#    → probe 基准已过时（S1 best 的 KL 和 S2 第 1 epoch 完全不同）。
+#    0.05 使 DP 项 ≈ L1 同量级，允许 KL 方向真正竞争。
+#
+# 2. lambda_hinge: 0.005 → 0.04   (+8x)
+#    根因 B：lambda_hinge=0.005 × mean_hinge~0.152 = 0.00076，
+#    占 total_loss < 1%，安全项实质无效。
+#    0.04 使 hinge 贡献 ≈ 0.006，与 DP 项保持约 1:8 比例
+#    （hinge 是辅助约束，不应主导，但要有实质梯度）。
+#
+# 3. lr: 1.0e-5 → 3.0e-5   (+3x)
+#    根因 C（次要）：细粒度 fine-tune lr=1e-5 太小，配合小 λ，
+#    DP 方向累积更新量极低（每步 update ∝ lr × λ × grad）。
+#    3e-5 仍在 fine-tune 安全区（不破坏 S1 学到的 L1 质量），
+#    但给 DP/hinge 足够 step size。
+#    注意：cosine scheduler T_max=80，eta_min=1e-7，不需改 schedule。
+#
+# 4. output.checkpoint_dir: ...v3 → ...v4  (避免和已有 v3 目录冲突)
+#    wandb.name 同步改为 stage2_planA_256_v4_hpc
+#
+# ══ 不改的参数（有意保留）════════════════════════════════════════════
+# - hinge_clamp=3.0：logit-space 相对 hinge 上限，已经过 diag3 验证
+# - pos_oversample=10：维持 mel 正样本密度，给 hinge 足够正样本
+# - batch_size=8, epochs=80：HPC 资源匹配
+# - model_only=true：从 S1 best 读权重，不继承 S1 optimizer
+# - resume_from：仍指向 S1 @256 best（v3 是重新训练，不 resume v2）
+# ═════════════════════════════════════════════════════════════════════
+
+stage: 2
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: /gpfs/work/bio/jiayu2403/visienhance/data/quality_labels_nocrop_hpc.csv
+  split_csv:  /gpfs/work/bio/jiayu2403/visienhance/data/isic_split.csv
+  meta_csv:   /gpfs/work/bio/jiayu2403/visienhance/data/train-metadata.csv
+  img_size: 256
+  severity: mixed
+  val_severity: mixed
+  batch_size: 8
+  num_workers: 8
+  pos_oversample: 10        # melanoma ~1.7% → ~15%，给 pos-hinge 足够信号
+
+train:
+  epochs: 80
+  lr: 3.0e-5                # v2=1e-5 → v3=3e-5：+3x，DP 方向步幅够用但不破坏 L1
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 999
+  resume_from: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage1_planA_256/best_visienhance.pth
+  model_only: true
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  lambda_dp: 0.05           # v2=0.005 → v3=0.05：+10x，使 KL 项梯度与 L1 同量级
+  lambda_hinge: 0.04        # v2=0.005 → v3=0.04：+8x，hinge 贡献从 <1% 升到 ~6%
+  hinge_clamp: 3.0          # logit-space 相对 hinge 上限，diag3 验证保留
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/best_visiscore.pth
+  qvib_ckpt:     /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efnet/best_qad.pth
+  b3_ckpt:       /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efficientnet_b3_isic.pth
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage2_planA_256_v4
+
+wandb:
+  project: visienhance
+  name: stage2_planA_256_v4_hpc
+  mode: offline

@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-02 — 会话 3：R1 启训 + 两大根因诊断（config.dt resume 陷阱 + NCA 计算密集）+ 过夜 1000ep
+
+**多 agent 并行**：R1（本地 4070）训练 + sonnet subagent 备 R2 代码（HPC 被 ICLR job 1434145 占，按「被占用就本地」全留本地串行）。
+
+**R2 代码就位**（subagent 交付，未训）：
+- `code/dataset_isic2d.py`：2D RGB JPG dataset 适配类（官方只有 nii 专用，无现成 2D RGB）。过滤垃圾文件 + 像素对齐（img INTER_CUBIC / GT INTER_NEAREST 同 dsize）。
+- `code/run_r2_isic.py`：结构对齐 R1，input_channels=3，per-image Dice + bootstrap CI。
+- ⚠️ 风险点：input_size fine patch=64 对 ISIC ~700×900 原图可能太小（Dice<0.752 第一排查点 = 64→128/256）；channel_n=16 下 RGB 吃 3 slot 有效隐藏维 15→13。
+
+**🔴 根因 1 — `Experiment.reload()` 的 config.dt 陷阱**：
+官方 `Experiment.py:82` 启动时若 model_path 目录存在 `config.dt` 就**整个覆盖运行时 config**，`get_max_steps()`(:73) 于是返回旧存的 `n_epoch`，**env 变量 R1_EPOCHS 静默失效**。导致连续两次「300/1000 epoch」其实都只训了 ~8 真 epoch（同 8min、同 Dice 0.628）。summary 里的 `epochs` 字段是假的（只是 python 变量 N_EPOCH 照抄）。**修复 = 每次重训前 `Remove-Item -Recurse checkpoints/r1_hippocampus`**（清掉 config.dt + data_split.dt）。
+
+**🔴 根因 2 — 训练慢真因 = NCA 计算密集，非数据瓶颈**：
+- 现象：60-90s/epoch，1000ep ≈ 17-25h。曾见 GPU 1-3%（误判数据瓶颈），实为 batch 间隙采样。
+- 查明：`Model_BasicNCA.update:71` 的 fire-mask `torch.rand([...])` 在 **CPU** 生成再 `.to(device)`，每步一次 CPU→GPU 同步（64 步×2 级×136 batch）。
+- 修复（不动官方，§2 #5 允许的外部 subclass）：`code/fast_nca.py` 的 `FastBackboneNCA` 覆盖 `update`，rand 直接 device 生成。数学等价（仍 Bernoulli mask，仅 RNG 流换 GPU）。`run_r1` 已改用它。
+- patch 后 GPU 拉到 89%（真在算），但 epoch 仍 60-90s → **本质 GPU-compute-bound**，NCA 64 步顺序推理不可并行，4070 Laptop 满载即此速。压不动。
+
+**数据集事实校正**：Datasplit = **182 train / 78 test 个体积**（非 slice），dataset 展开成 ~6528 slice → 136 batch/epoch（batch 48）。
+
+**当前状态（15:58）**：R1 patched 1000ep 在独立 PowerShell 窗口跑（pid 变动，~20h，过夜）。用户决策「跑满 1000ep」。Monitor armed（崩溃+完成）。每 50 epoch 存 ckpt（`checkpoints/r1_hippocampus/models/`），每 25 epoch tensorboard eval（不打印 stdout Dice）。
+
+**Dice 进展（真 epoch 数）**：2ep→0.525，~8ep→0.628（single）/0.636（pseudo10，R4 方向成立 ensemble>single）。论文 0.882 / 阈值 0.86。1000ep 跑完看是否欠训。
+
+**下一步（会话 4 开门即办）**：
+1. 读 `results/r1_hippocampus_single_summary.json`（epochs 字段看是否真 1000）+ pseudo10。Dice ≥0.86 → R1 PASS 冻结；<0.86 → 看是平台（真 gap，深挖 slice 轴/归一化/loss）还是仍在爬（加 epoch）。
+2. R1 出结果后跑 R2（先 `Remove-Item checkpoints/r2_*` 防 config.dt 陷阱）→ ISIC Dice vs 0.752。
+3. R1+R2+R3 全 PASS → 冻结 baseline，进 Phase 1 创新选型（§7 候选 A-E，需用户 gate）。
+
+---
+
 ## 2026-06-02 — 会话 2：环境修复 + 数据解压 + smoke test 通过
 
 **完成**：

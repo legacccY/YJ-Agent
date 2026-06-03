@@ -1,19 +1,19 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-06-02 会话 15（核实会话14真实状态 → probe 标定 λ → 抓出并修复 DDP 脚手架回退 → 重建 DDP 启 v2 训练 job 1434145 跑中 ~13h）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
+**最后更新**：2026-06-03 会话 17（还原未记日志的 v3/v4 → 抢 v4 best ckpt 评 E3/E7 → dflip 根因：85% 是 enhance 主动造成的 R8 实证）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
-> 🆕 **新独立子项目 Med-NCA**（顶会复现→创新，与 ICLR 主线并行）：计划 `project/meeting/Med-NCA/REPRO_PLAN.md`、日志 `.../PROJECT_LOG.md`。**会话2 进度**：CUDA 通 + nibabel/torchio 补装 + ISIC 全解压（GT+Input 各 2596）+ R1 smoke test 2ep 通（params=25920 PASS）。**下一步 = 启 R1 正式训练 300 epoch（~38h）**。
+> 🆕 **新独立子项目 Med-NCA**（顶会复现→创新，与 ICLR 主线并行）：计划 `project/meeting/Med-NCA/REPRO_PLAN.md`、日志 `.../PROJECT_LOG.md`。**HPC 现跑 mednca_r job 1434661**（gpu4090n7，本项目 GPU 让位给它）。本地侧会话 3 已启 R1 patched 1000ep（过夜，~20h）。
 
-> 🔵 **会话 15 接续要点（下一步从这开始）**：Stage2 **v2 训练 job 1434145 RUNNING**（gpu4090n2，4×GPU DDP，80 epoch，ETA ~13h，4.24 it/s），启动 smoke 已过（resume OK、train=80607 oversample 生效、无 NaN）。λ 已 probe 标定回填：**λ_dp=0.005**（DP项≈10%L1）/ **λ_hinge=0.04**（hinge项≈18%L1），probe 实测 KL_enh=0.468/L1=0.0223/hinge=0.116。**DDP 重建已 commit cefa521**（会话13 在 HPC 手改的 DDP 脚手架曾未入版控、被覆盖丢失，本会话重建并锁进 git）。监控 GUI 已开（`hpc_live_gui.py 1434145`）。
+> 🔵 **会话 17 接续要点（下一步从这开始）**：v4 Stage2 已评完并取消（job 1434527 取消让 mednca 上）。**E7 PASS**（DP vs no-DP：ΔAUC +0.0299 显著、ΔKL −0.29 显著、McNemar p=4e-59）；**E3 仍卡**（dAUC −0.020 borderline、一致率 0.945、**dangerous_flip 0.176 三版 hinge 都没压下**）。**🔴 dflip 根因（`diag_dflip_v4.py`）：13 个翻转里 85% 是 enhance 主动把阳翻阴（非退化），且非 borderline（含 pr=1.0），enhance 平均把 mel 置信度 0.92→0.81 → 系统性「美化」黑色素瘤、红线 R8 实证。**
 >
-> **下一步（会话 16）**：
-> ① 盯 1434145 跑完（~13h）。**真验证点**：`val_DP` 非零且随训降、`val_PSNR` 不下滑（val_severity 已 mixed）。
-> ② 训完 **sync best ckpt 回本地** → `eval_diag_paired.py` 复测 E3/E7：看 **dangerous_flip 是否从 0.176 降回 + dAUC 破 1.5% + 一致率破 95%**。
-> ③ 若 E3 仍 FAIL：升 λ_dp/λ_hinge 或 DP-Loss 升 feature-level 再跑；达标后回写 STORY_FRAMEWORK §4 + ACCEPTANCE E3/E7 + paper §7 frozen 数字。
+> **下一步（会话 18）**：
+> ① **优先出 dflip figure**（零训练、最有冲击力）：mel 置信度 ref→deg→enh 下滑曲线 + 11 例 enhance-caused flip 病灶磨平对比图。
+> ② **framing 转向**：E3 降级为 motivation 证据，主推 E7 + dflip 实证 → 坐实 Claim 3 / Theorem 2（query-for-retake）。回写 STORY_FRAMEWORK §4 + ACCEPTANCE E3/E7。
+> ③ loss 真要救 dflip：弃加 hinge λ，转 **mask 加权 L1（病灶区不准磨平）** 或 **feature-level DP（B3 中间特征对齐）**。
 >
-> **本地已存**：Stage2 v1 best ckpt `project/checkpoints/visienhance/stage2_planA_256/best_visienhance.pth`（PSNR 30.09）+ eval `project/results/stage2_diag_paired.csv`。HPC：v2 训练输出落 `checkpoints/visienhance/stage2_planA_256_v2/`（不覆盖旧 v1）；eval 脚本（`code/eval_diag_paired.py`、`eval_stage2_compare.py`、`run_eval_hpc.py`）+ B3 ckpt + train-metadata.csv 就位。
+> **本地已存**：v4 best ckpt `project/checkpoints/visienhance/stage2_planA_256_v4/best_visienhance.pth`（ep46 PSNR-best）；eval 结果 `project/results/stage2_diag_paired.csv`（dAUC/KL/McNemar）；诊断脚本 `project/diag_dflip_v4.py`。
 >
-> ⚠️ **教训**：HPC 端手改代码必须 commit 回 git，否则被本地上传覆盖即永久丢失（本会话踩了一次，已修）。
+> ⚠️ **教训重申**：HPC 迭代必须每轮记日志 + commit config，会话 16 的 v3/v4 又没记、靠产物还原（第二次踩同一坑）。
 
 ---
 

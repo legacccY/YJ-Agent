@@ -1,0 +1,18 @@
+{
+  "seed": 0,
+  "bootstrap_n": 1000,
+  "git_commit": "1dbd1364",
+  "r4": {
+    "mean_diff": 0.007778821847377679,
+    "ci95": [
+      0.004694684728597983,
+      0.010641208749551039
+    ],
+    "n_pairs": 78,
+    "verdict": "PASS"
+  },
+  "r5": {
+    "status": "pending",
+    "message": "R5 pending: needs variance export from inference"
+  }
+}
