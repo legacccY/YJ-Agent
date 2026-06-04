@@ -1,0 +1,52 @@
+{
+  "phase": "Phase 0 — 最小复现",
+  "R1": {
+    "task": "MSD Task04 Hippocampus (Med-NCA 2D slice-wise)",
+    "ckpt": "checkpoints/r1_hippocampus/models/epoch_300",
+    "epochs_trained": 300,
+    "epochs_target_paper": 1000,
+    "dice_single_mean": 0.8661,
+    "dice_single_std": 0.0333,
+    "dice_single_ci95": [0.858, 0.8731],
+    "dice_pseudo10_mean": 0.8669,
+    "dice_pseudo10_std": 0.0319,
+    "dice_pseudo10_ci95": [0.8593, 0.8737],
+    "threshold": 0.86,
+    "paper_dice": 0.882,
+    "verdict": "PASS",
+    "n_test": 78,
+    "seed": 42,
+    "git_commit": "9d844b58"
+  },
+  "R3": {"params": 25920, "threshold": 100000, "verdict": "PASS", "note": "R1 hippocampus channel_n=16"},
+  "R4": {"mean_diff": 0.00081, "ci95": [0.00024, 0.00149], "n_pairs": 78, "verdict": "PASS", "note": "ensemble>single, CI 排除 0"},
+  "C1": {"task": "inference_steps vs Dice sweep", "steps": [1,2,4,8,16,32,48,64], "anchor_64_dice": 0.866, "elbow_steps": 32, "verdict": "PASS", "note": "64步=0.866 复现 anchor，拐点~32", "file": "results/c1_steps_summary.json"},
+  "S1": {"task": "deterministic eval rerun", "max_abs_diff": 0.0, "n": 78, "verdict": "PASS", "note": "single 同 seed 复跑 vs 冻结 csv，逐例 0 差", "file": "results/s1_determinism_summary.json"},
+  "V1": {"task": "robustness degradation curves", "perturbations": ["scale","translate","noise","bias_field","ghosting"], "verdict": "DONE", "note": "5 类逐档 per-patient Dice delta；noise std0.4 崩到 0.03，scale/translate 较敏感", "file": "results/v1_robustness_summary.json"},
+  "V2_R5": {"task": "NQM fail-detection + Spearman correlation", "detection_rate": 1.0, "n_fail_dice_lt_0.8": 2, "spearman_rho": 0.4963, "spearman_p": 1e-06, "n": 78, "verdict": "DONE", "note": "NQM top-2 命中全部 fail 例；ρ=0.496 显著（NQM 越高 Dice 越低方向成立）", "file": "results/v2_r5_summary.json"},
+  "R2": {
+    "task": "MSD Task05 Prostate (Med-NCA 2D slice-wise, channel_n=32, 256x256)",
+    "status": "ROOT_CAUSE_FOUND_REtrain_in_progress",
+    "first_run_verdict": "FAIL (job 1435267, Dice 0.0, 发散)",
+    "root_cause_REAL": "真因 = 我方 FastBackboneNCA（提速 subclass，把 fire-mask rand 从 CPU 挪 GPU）改了 RNG 流 → 随机 fire mask 序列不同 → 在 prostate 大配置(ch32/256/64步)边缘稳定区，fast 版梯度爆炸(logits -1e9, Dice 0)、官方原版 BackboneNCA(CPU rand)正常收敛。",
+    "proof": "忠实 smoke (job 1435372, 官方 BackboneNCA + 无裁剪 + lr16e-4 + 64步): loss ep1=1.25→ep5=1.01 健康降, Dice@5ep=0.33 (fast 版同点=0.0)。坐实真凶是 fast subclass 非官方配置。",
+    "rejected_fix": "会话早期加梯度裁剪+降lr 的 smoke (job 1435362, Dice 0.37) 违反零偏离红线(§1#8)，作废，仅算诊断。",
+    "faithful_retrain": {"hpc_job": 1435378, "config": "官方原版 BackboneNCA + ch32 + steps64 + 256x256 + lr16e-4 + 无裁剪 + 300ep + 官方 prostate notebook 一字不差", "model_tag": "r2_prostate", "status": "RUNNING", "eta_h": "10-25"},
+    "paper_target": 0.838, "unet_baseline": 0.799, "params": 70016,
+    "debug_jobs": [1435324, 1435325],
+    "files": ["results/r2_efficiency.json"]
+  },
+  "R1_refaithful": {
+    "reason": "旧 R1 (0.8661) 用了 FastBackboneNCA + 非官方超参(ch16/steps64/batch48) → 按零偏离红线(§1#8)作废重训",
+    "config": "官方原版 BackboneNCA + 官方 hippocampus config.dt 全套: ch32/steps16/batch40/rescale=True/input16->64/lr16e-4/1500ep",
+    "smoke": "2ep 本地 Dice 0.6203(single)/0.64(pseudo10), 健康 (一次偶发 CUDA unknown error, 重试即过)",
+    "machine": "本地 4070, ~3.5min/epoch, 1500ep~89h → eval每25ep早停于收敛",
+    "model_tag": "r1_hippocampus_official", "status": "RUNNING (local Start-Process)",
+    "old_number_superseded": "0.8661 (fast版, 作废)"
+  },
+  "R2_efficiency": {"params": 70016, "peak_mem_mb": 121.64, "latency_ms_per_slice": 173.553, "macs_gmacs": 310.311, "note": "prostate config 本地 4070 测，dummy 输入；与 Dice 失败无关，纯算力四件套", "file": "results/r2_efficiency.json"},
+  "_NOTE_fast_subclass": "旧 R1/R3/R4/C1/S1/V1/V2/R5 全部基于 FastBackboneNCA 模型算出。按零偏离红线(§1#8)，R1 官方原版重训出新冻结点后，这些行为刻画需用新 ckpt 重算覆盖（C1/S1/V1/V2/R5 待 R1 official 收敛后重跑）。",
+  "min_repro": "真因揪出=fast subclass RNG(非配置)。R1+R2 均以官方原版零偏离重训中(R1本地1500ep/R2 HPC job1435378 300ep)。两者忠实 PASS 后才算地基就绪→转 Phase 1 gate。",
+  "red_line_added": "§1 #8 复现完全按官方零偏离（2026-06-04 作者立）",
+  "updated": "2026-06-04 会话6（复查补账 + 揪出 fast-RNG 真因 + 立零偏离红线 + R1/R2 官方原版重训启）"
+}

@@ -12,6 +12,6 @@ case "$norm" in
 esac
 
 cat <<'EOF'
-[ICLR 2027 大项目 active] Read order if writing tex/数字: project/README.md → STORY_FRAMEWORK.md → ACCEPTANCE_CRITERIA.md → DATA_INVENTORY.md → PROJECT_LOG.md. BMVC SEALED. Opus 在 project/ 内关 caveman。
+[ICLR 2027 大项目 active] Read order if writing tex/数字: project/README.md → STORY_FRAMEWORK.md → ACCEPTANCE_CRITERIA.md → DATA_INVENTORY.md → PROJECT_LOG.md. BMVC SEALED. Opus 在 project/ 内默认开 caveman，用户说「关」才关。
 EOF
 exit 0

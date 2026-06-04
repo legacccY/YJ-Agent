@@ -2,7 +2,7 @@
 
 **最后更新**：2026-06-03 会话 17（还原未记日志的 v3/v4 → 抢 v4 best ckpt 评 E3/E7 → dflip 根因：85% 是 enhance 主动造成的 R8 实证）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`
 
-> 🆕 **新独立子项目 Med-NCA**（顶会复现→创新，与 ICLR 主线并行）：计划 `project/meeting/Med-NCA/REPRO_PLAN.md`、日志 `.../PROJECT_LOG.md`。**HPC 现跑 mednca_r job 1434661**（gpu4090n7，本项目 GPU 让位给它）。本地侧会话 3 已启 R1 patched 1000ep（过夜，~20h）。
+> 🆕 **新独立子项目 Med-NCA**（顶会复现→创新，与 ICLR 主线并行）：计划 `project/meeting/Med-NCA/REPRO_PLAN.md`、日志 `.../PROJECT_LOG.md`。**会话 7（06-04）：揪出 R2 发散真因 = 我方 `FastBackboneNCA` 提速 subclass 改了 RNG 流（非官方配置错）—— 上网溯源官方配置一字不差 + diff 源码相同 + 忠实 smoke（官方 BackboneNCA）loss 健康降 Dice@5ep=0.33 坐实。🔴 作者立永久红线 §1#8「复现完全按官方零偏离」（禁加裁剪/降lr/换实现/提速 subclass）。旧 R1 0.8661（fast版）+ 早期加裁剪方案均作废。** **会话 8（06-05）：R1 官方版 PASS（0.8644 三源一致）+ R2 官方版 0.672 FAIL 非崩溃 + 全套行为档案官方重算 + 6 页 6 图 LaTeX 复现报告。** **会话 9（06-05）：核实 R2 配置 11/12 项一字不差官方、唯一缺口=epoch（301 vs 1000）；诊断收敛趋势=未饱和（loss ep125→300 0.37→0.27 没平 + 验证 Dice ep275 冲 0.795 贴 UNet 基线）→ 延 1000ep 重训提交 HPC job 1436075（RUNNING，~10h），监控 `hpc_mednca_gui.py 1436075`。** 下一步：盯 1436075 ep1000 eval vs 0.838 看 gap 缩多少 → R2 是否翻 PASS。
 
 > 🔵 **会话 17 接续要点（下一步从这开始）**：v4 Stage2 已评完并取消（job 1434527 取消让 mednca 上）。**E7 PASS**（DP vs no-DP：ΔAUC +0.0299 显著、ΔKL −0.29 显著、McNemar p=4e-59）；**E3 仍卡**（dAUC −0.020 borderline、一致率 0.945、**dangerous_flip 0.176 三版 hinge 都没压下**）。**🔴 dflip 根因（`diag_dflip_v4.py`）：13 个翻转里 85% 是 enhance 主动把阳翻阴（非退化），且非 borderline（含 pr=1.0），enhance 平均把 mel 置信度 0.92→0.81 → 系统性「美化」黑色素瘤、红线 R8 实证。**
 >

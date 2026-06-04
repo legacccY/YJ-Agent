@@ -1,0 +1,33 @@
+{
+  "tag": "single",
+  "n": 9,
+  "dice_mean": 0.672,
+  "dice_std": 0.1477,
+  "ci95": [
+    0.5754,
+    0.7654
+  ],
+  "paper_target": 0.838,
+  "unet_baseline": 0.799,
+  "pass_ci_contains_paper": false,
+  "pass_point_estimate": false,
+  "verdict": "FAIL",
+  "epochs_target": 300,
+  "epochs_trained": 301,
+  "params": 70016,
+  "seed": 42,
+  "git_commit": "unknown",
+  "label_mode": "whole_gland_binary",
+  "input_modality": "T2_only_channel0",
+  "channel_n": 32,
+  "input_size": [
+    [
+      64,
+      64
+    ],
+    [
+      256,
+      256
+    ]
+  ]
+}

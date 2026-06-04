@@ -1,0 +1,15 @@
+{
+  "check": "S1_deterministic_eval",
+  "n_compared": 78,
+  "n_frozen": 78,
+  "n_rerun": 78,
+  "max_abs_diff": 0.0,
+  "mean_dice_rerun": 0.86439,
+  "mean_dice_frozen": 0.86439,
+  "threshold": 0.0001,
+  "verdict": "PASS",
+  "seed": 42,
+  "device": "cuda:0",
+  "git_commit": "9d844b58",
+  "note": "single \u63a8\u7406 (pseudo_ensemble=False) \u540c seed \u590d\u8dd1 vs \u51bb\u7ed3 csv"
+}

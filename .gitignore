@@ -65,3 +65,5 @@ project/meeting/Med-NCA/*.pdf
 # 安装临时标记与日志
 project/meeting/Med-NCA/code/*_done.txt
 project/meeting/Med-NCA/code/*.log
+
+_mednca_repo/

@@ -1,0 +1,82 @@
+{
+  "task": "V2_NQM_detection + R5_correlation",
+  "n_volumes": 78,
+  "n_fail_dice_lt_0.8": 2,
+  "n_pass_dice_ge_0.8": 76,
+  "dice_stats": {
+    "mean": 0.8751,
+    "std": 0.0343,
+    "min": 0.6861,
+    "max": 0.9268
+  },
+  "nqm_stats": {
+    "mean": 0.049953,
+    "std": 0.013162,
+    "min": 0.035194,
+    "max": 0.104827
+  },
+  "V2_detection": {
+    "method": "按 NQM 降序，取 top-2（= n_fail）命中 Dice<0.8 case 数",
+    "top_k": 2,
+    "hits": 2,
+    "detection_rate": 1.0,
+    "paper_anchor_pct": 94.6,
+    "detection_by_topN_pct": {
+      "top50pct_k39": {
+        "k": 39,
+        "hits": 2,
+        "n_fail": 2,
+        "detection_rate": 1.0
+      },
+      "top60pct_k47": {
+        "k": 47,
+        "hits": 2,
+        "n_fail": 2,
+        "detection_rate": 1.0
+      },
+      "top70pct_k55": {
+        "k": 55,
+        "hits": 2,
+        "n_fail": 2,
+        "detection_rate": 1.0
+      },
+      "top75pct_k59": {
+        "k": 59,
+        "hits": 2,
+        "n_fail": 2,
+        "detection_rate": 1.0
+      },
+      "top80pct_k63": {
+        "k": 63,
+        "hits": 2,
+        "n_fail": 2,
+        "detection_rate": 1.0
+      },
+      "top90pct_k71": {
+        "k": 71,
+        "hits": 2,
+        "n_fail": 2,
+        "detection_rate": 1.0
+      },
+      "top95pct_k75": {
+        "k": 75,
+        "hits": 2,
+        "n_fail": 2,
+        "detection_rate": 1.0
+      }
+    }
+  },
+  "R5_spearman": {
+    "rho": 0.4737,
+    "p_value_approx": 3e-06,
+    "n": 78,
+    "p_note": "正态近似（t → z，df=n-2；n≥30 误差<1%；若 n<30 略保守），无 scipy 依赖"
+  },
+  "calibration_note": "NQM 口径来自官方 Agent.py labelVariance()：10x sigmoid 预测→逐像素 std→NQM = sum(std_map) / sum(mean_map)。Dice 用 hard threshold 0.5 on ensemble mean。10x 推理随机性来自 cell_fire_rate=0.5（stochastic mask），与论文一致。本脚本实现直接在每个 slice 做 10x 推理，最终 slice 拼接成 volume 再聚合。",
+  "seed": 42,
+  "git_commit": "9d844b58",
+  "device": "cuda:0",
+  "epochs_trained": 151,
+  "n_ensemble": 10,
+  "dice_fail_threshold": 0.8
+}

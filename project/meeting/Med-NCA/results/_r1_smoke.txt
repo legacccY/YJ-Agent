@@ -1,0 +1,28 @@
+[R1] device=cuda:0 epochs=2
+Datasplit-> train entries: 182, val entries: 0, test entries: 78
+Datasplit-> train entries: 182, val entries: 0, test entries: 78
+[R3] total params = 70016 (PASS <100K)
+Epoch: 1
+Dataset size: 163
+Traceback (most recent call last):
+  File "D:\YJ-Agent\project\meeting\Med-NCA\code\run_r1_hippocampus.py", line 79, in <module>
+    agent.train(loader, loss_function)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\agents\Agent.py", line 191, in train
+    loss_item = self.batch_step(data, loss_f)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\agents\Agent_Multi_NCA.py", line 17, in batch_step
+    outputs, targets = self.get_outputs(data)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\agents\Agent_Med_NCA.py", line 203, in get_outputs
+    outputs = self.model[m](inputs_loc, steps=self.getInferenceSteps(), fire_rate=self.exp.get_from_config('cell_fire_rate'))
+  File "D:\Anaconda\envs\mednca\lib\site-packages\torch\nn\modules\module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\Anaconda\envs\mednca\lib\site-packages\torch\nn\modules\module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\models\Model_BasicNCA.py", line 89, in forward
+    x2 = self.update(x, fire_rate).clone() #[...,3:][...,3:]
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\models\Model_BasicNCA.py", line 72, in update
+    stochastic = stochastic.float().to(self.device)
+RuntimeError: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

@@ -1,0 +1,20 @@
+{
+  "tag": "pseudo10",
+  "impl": "official_BackboneNCA",
+  "config": "ch32_steps16_rescale",
+  "n": 78,
+  "dice_mean": 0.8663,
+  "dice_std": 0.0334,
+  "ci95": [
+    0.8582,
+    0.8735
+  ],
+  "paper_target": 0.886,
+  "threshold": 0.86,
+  "verdict": "PASS",
+  "epochs_target": 1500,
+  "epochs_trained": 151,
+  "params": 70016,
+  "seed": 42,
+  "git_commit": "9d844b58"
+}

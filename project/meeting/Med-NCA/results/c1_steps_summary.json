@@ -1,0 +1,109 @@
+{
+  "experiment": "C1_inference_steps_vs_dice",
+  "steps_sweep": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    48,
+    64
+  ],
+  "seed": 42,
+  "git_commit": "9d844b58",
+  "device": "cuda:0",
+  "anchor": {
+    "steps": 16,
+    "expected_dice": 0.8644,
+    "actual_dice": 0.8652,
+    "tolerance": 0.005,
+    "verdict": "PASS",
+    "note": "official trained at steps16; peak Dice at steps16; over-stepping (>=48) collapses"
+  },
+  "convergence_elbow_steps": 16,
+  "convergence_observation": "官方版训练步数=16。推理 Dice 在 steps=16 达峰 0.865，偏离训练步数即退化：steps=32 降至 0.808，steps>=48 灾难性崩溃（0.236/0.123）。NCA 推理步数必须匹配训练步数，Med-NCA 非 over-step-stable（与 fast 版训练 steps64 单调饱和相反）。",
+  "r1_convergence_csv_ref": "D:\\YJ-Agent\\project\\meeting\\Med-NCA\\results\\r1_convergence.csv",
+  "per_steps": [
+    {
+      "steps": 1,
+      "n": 78,
+      "dice_mean": 0.1045,
+      "dice_std": 0.0107,
+      "ci95": [
+        0.1022,
+        0.1068
+      ]
+    },
+    {
+      "steps": 2,
+      "n": 78,
+      "dice_mean": 0.1167,
+      "dice_std": 0.0113,
+      "ci95": [
+        0.1143,
+        0.1191
+      ]
+    },
+    {
+      "steps": 4,
+      "n": 78,
+      "dice_mean": 0.1802,
+      "dice_std": 0.0169,
+      "ci95": [
+        0.1763,
+        0.1839
+      ]
+    },
+    {
+      "steps": 8,
+      "n": 78,
+      "dice_mean": 0.6751,
+      "dice_std": 0.0522,
+      "ci95": [
+        0.6632,
+        0.6866
+      ]
+    },
+    {
+      "steps": 16,
+      "n": 78,
+      "dice_mean": 0.8652,
+      "dice_std": 0.0328,
+      "ci95": [
+        0.8573,
+        0.872
+      ]
+    },
+    {
+      "steps": 32,
+      "n": 78,
+      "dice_mean": 0.8084,
+      "dice_std": 0.0346,
+      "ci95": [
+        0.8004,
+        0.8156
+      ]
+    },
+    {
+      "steps": 48,
+      "n": 78,
+      "dice_mean": 0.2355,
+      "dice_std": 0.0558,
+      "ci95": [
+        0.2232,
+        0.2478
+      ]
+    },
+    {
+      "steps": 64,
+      "n": 78,
+      "dice_mean": 0.1234,
+      "dice_std": 0.0234,
+      "ci95": [
+        0.1182,
+        0.1285
+      ]
+    }
+  ]
+}

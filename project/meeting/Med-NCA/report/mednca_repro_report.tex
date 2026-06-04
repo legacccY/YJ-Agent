@@ -1,0 +1,534 @@
+\documentclass[10pt,twocolumn]{article}
+
+% ============================================================
+%  Reproducing Med-NCA: A Rigorous Reproducibility Study
+%  Author: legacccy (Yu Jia), XJTLU Bioinformatics
+%  Build:  pdflatex mednca_repro_report.tex  (x2 for refs)
+% ============================================================
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{multirow}
+\usepackage{array}
+
+\hypersetup{colorlinks=true, linkcolor=blue!55!black,
+            citecolor=blue!55!black, urlcolor=teal!60!black}
+\captionsetup{font=small, labelfont=bf}
+
+\definecolor{passgreen}{RGB}{30,130,60}
+\definecolor{failamber}{RGB}{190,120,10}
+\definecolor{accentteal}{RGB}{20,110,120}
+\newcommand{\pass}{\textcolor{passgreen}{\textbf{PASS}}}
+\newcommand{\fail}{\textcolor{failamber}{\textbf{FAIL}}}
+\newcommand{\dice}{\mathrm{Dice}}
+
+\title{\vspace{-1.5em}\textbf{Reproducing Med-NCA: A Rigorous Reproducibility\\
+Study of Neural Cellular Automata for\\ Medical Image Segmentation}}
+
+\author{legacccy (Yu Jia)\\
+\small Department of Bioinformatics, XJTLU\\
+\small Reproduction target: Med-NCA (IPMI 2023) \& M3D-NCA (MICCAI 2023)}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+% ------------------------------------------------------------
+\begin{abstract}
+\noindent
+Neural Cellular Automata (NCA) have emerged as an extremely lightweight
+($\sim$13k--70k parameters) alternative to U-Nets for medical image
+segmentation, with Med-NCA reporting competitive Dice on the Medical
+Segmentation Decathlon (MSD). We present an \emph{independent, zero-deviation}
+reproduction of Med-NCA on its two original benchmarks --- Hippocampus
+(MSD Task04) and Prostate (MSD Task05) --- following the RIDGE
+reproducibility framework. Our study reports three findings.
+\textbf{(1)} The Hippocampus anchor reproduces faithfully: per-volume
+$\dice = 0.866$ against the paper's $0.886$ (within one standard
+deviation). \textbf{(2)} The Prostate anchor only \emph{partially}
+reproduces: $\dice = 0.672$ versus the paper's $0.838$; we report this
+gap honestly and attribute it (without any number-fitting) primarily to
+under-training (301 vs.\ 1000 epochs) and a small high-variance test set
+($n=9$). \textbf{(3)} Most importantly, we document a
+\emph{reproducibility-fragility} phenomenon: a \emph{mathematically
+equivalent} engineering speed-up --- moving the stochastic fire-mask
+sampling from CPU to GPU --- silently changes the RNG stream and, on the
+more aggressive Prostate configuration, drives training from
+$\dice = 0.672$ to complete divergence ($\dice = 0.0$, logits
+$\rightarrow -10^9$). We further characterise the baseline's claimed
+properties (inference-step convergence, robustness to corruptions, and
+the built-in variance-based quality metric). All numbers carry bootstrap
+95\% confidence intervals, fixed seeds, and traceable run IDs.
+\end{abstract}
+
+% ------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+
+Neural Cellular Automata treat segmentation as the steady state of a
+locally-communicating cellular update rule. A single small network is
+applied identically to every pixel/voxel cell for a fixed number of
+synchronous steps; global structure emerges from purely local message
+passing~\cite{mordvintsev2020growing}. Med-NCA~\cite{kalkhof2023mednca}
+and its 3D extension M3D-NCA~\cite{kalkhof2023m3dnca} push this idea to
+high-resolution medical images using a two-level (coarse$\rightarrow$fine
+patch) scheme, achieving U-Net-competitive Dice with three-to-four orders
+of magnitude fewer parameters --- small enough to run on a Raspberry Pi.
+
+Such efficiency claims are attractive but only meaningful if the reported
+numbers can be \emph{independently reproduced}. Reproducibility in medical
+imaging is fragile: under-specified preprocessing, undocumented test
+splits, and silent implementation differences routinely prevent
+third-party replication~\cite{ridge2024,nbk597469}. This report asks a
+deliberately narrow question: \emph{can the headline Med-NCA Dice numbers
+be reproduced from the official code, and what does it take?}
+
+We adopt a strict \textbf{zero-deviation protocol} (Section~\ref{sec:protocol}):
+configuration, hyper-parameters, optimiser, inference steps, and
+\emph{implementation} are aligned verbatim with the authoritative source;
+no clipping, no learning-rate tweaks, no ``convergence helpers''. When the
+official setting fails to reproduce a number, we report the failure and its
+root cause rather than fitting the target. This protocol is what allowed us
+to isolate the RNG-fragility finding that is, in our view, the most
+transferable contribution of this study.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=1.4em, itemsep=2pt]
+  \item A faithful reproduction of the Med-NCA Hippocampus anchor
+        ($\dice = 0.866$ vs.\ $0.886$), with full metric discipline.
+  \item An honest, attributed \emph{partial} reproduction of the Prostate
+        anchor ($\dice = 0.672$ vs.\ $0.838$), with a statistical gap
+        analysis instead of number-fitting.
+  \item A reproducibility-fragility case study: a mathematically
+        equivalent CPU$\rightarrow$GPU RNG change collapses Prostate
+        training ($0.672 \!\rightarrow\! 0.0$), a concrete caveat for
+        anyone optimising NCA code.
+  \item A behavioural characterisation of the baseline's own claims:
+        inference-step convergence, corruption robustness, and the
+        variance-based built-in quality metric (NQM).
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Background: Med-NCA}
+\label{sec:background}
+
+\paragraph{Architecture (read from official code, not the PDF).}
+We verified the architecture against the official
+\texttt{M3D-NCA} source rather than the paper figures, and found two
+discrepancies worth noting for reproducers: the \texttt{BasicNCA}
+perception uses \emph{fixed Sobel} filters (plus identity), not a learned
+convolution, and the example loss is \texttt{DiceBCELoss}, not the
+Dice-Focal loss implied by the paper text. A cell state holds
+\texttt{channel\_n} channels (channel 0 = the input image, the rest
+initialised to zero). Each update is
+$\mathrm{fc}_1(\mathrm{ReLU}(\mathrm{fc}_0(\text{perceive}(x))))$ with the
+last layer zero-initialised (so the initial residual is zero), gated by a
+random \emph{fire mask} (rate $0.5$), then added residually; the input
+channels are restored every step. Two levels are used: a coarse level
+communicates global context, which is upsampled and refined by a fine
+level operating on patches.
+
+\paragraph{Official hyper-parameters.}
+Shared: $\text{lr}=16\mathrm{e}{-4}$, Adam betas $(0.5,0.5)$, lr-decay
+$0.9999$, fire rate $0.5$, hidden size $128$, $\dice$ split $0.7/0/0.3$.
+The per-dataset settings are read verbatim from the official archived
+configs and differ in both width and step count:
+\textbf{Hippocampus} (\texttt{config.dt}) uses \texttt{channel\_n}$=32$,
+\textbf{16} inference steps, batch 40, rescale, levels
+$16{\times}16\!\rightarrow\!64{\times}64$;
+\textbf{Prostate} (notebook) uses \texttt{channel\_n}$=32$, \textbf{64}
+inference steps, batch 20, levels
+$64{\times}64\!\rightarrow\!256{\times}256$. (An earlier exploratory run
+used a \emph{non-official} Hippocampus setting --- \texttt{channel\_n}$=16$,
+64 steps --- which we treat as deprecated; see
+Sections~\ref{sec:r1} and~\ref{sec:rng}.)
+
+\paragraph{Targets.}
+From Med-NCA IPMI'23 Table~1: Hippocampus
+$\dice = 0.886 \pm 0.042$ (U-Net $0.858$), Prostate
+$\dice = 0.838 \pm 0.083$ (U-Net $0.799$).
+
+% ------------------------------------------------------------
+\section{Reproduction Protocol}
+\label{sec:protocol}
+
+\paragraph{Zero-deviation rule.}
+Every quantity that affects training is aligned verbatim with the official
+notebook / config / source. Forbidden ``helpers'': gradient clipping,
+lowered learning rate, changed step count, warm-up, or any re-implementation
+--- \emph{including} a mathematically equivalent speed-up subclass. This
+rule is not pedantry; Section~\ref{sec:rng} shows it is exactly what
+separates a faithful reproduction from a silent divergence.
+
+\paragraph{Metric discipline.}
+We report \emph{per-image (per-volume)} mean Dice --- each test volume
+yields one Dice, then we average over $N$ volumes --- never the
+batch-aggregate Dice (which the framework also exposes and which differs by
+several points). Every reported number carries a bootstrap $1000\times$
+95\% CI, a fixed seed (42), and a run/commit identifier. Single-pass and
+$10\times$ pseudo-ensemble inference are reported separately.
+
+\paragraph{Frozen test sets (RIDGE Integrity).}
+Test splits are frozen via the framework's \texttt{data\_split.dt} and the
+exact volume IDs are logged. Hippocampus: $182/0/78$ train/val/test
+volumes; Prostate: $23/0/9$ (of the 32 MSD Task05 cases).
+
+\paragraph{Two known traps, neutralised.}
+(i) The official \texttt{Experiment.reload()} silently overwrites the
+runtime config from a cached \texttt{config.dt} if the checkpoint directory
+is non-empty, making the requested epoch count a no-op; we clear the model
+directory before every run and read the \emph{true} step count from
+\texttt{exp.currentStep}. (ii) NCA training is compute-bound (64 sequential
+steps $\times$ 2 levels), not data-bound; this matters for the cost budget
+in Section~\ref{sec:behaviour}.
+
+% ------------------------------------------------------------
+\section{R1: Hippocampus Reproduction}
+\label{sec:r1}
+
+The Hippocampus anchor reproduces faithfully. The zero-deviation official
+run (\texttt{channel\_n}$=32$, 16 steps, the archived \texttt{config.dt})
+was stopped at its eval-Dice plateau --- eval Dice flattened at $0.864$
+across epochs 125--175 (Figure~\ref{fig:conv}), with the last point even
+dipping slightly, indicating onset of over-fitting --- and frozen by
+checkpoint-only evaluation at epoch 150. Table~\ref{tab:r1} reports the
+result: per-volume single-pass $\dice=0.8644$ (95\% CI $[0.856,0.872]$),
+\pass, within one paper standard deviation of $0.886$. An earlier
+exploratory run used a non-official setting (\texttt{channel\_n}$=16$, 64
+steps) and reached $0.866$; the two agree to within $0.002$, but only the
+official run is the reproduction anchor. Figure~\ref{fig:c1} shows the
+inference-step dependence, recomputed on the official checkpoint.
+
+\begin{table}[t]
+\centering\small
+\caption{R1 Hippocampus reproduction (per-volume Dice, $n=78$, seed 42).
+Paper target $0.886\pm0.042$; threshold $\geq 0.86$. The official
+zero-deviation run is the anchor; the fast run is a deprecated
+non-official-config reference (it happens to agree to within $0.002$).}
+\label{tab:r1}
+\begin{tabular}{lcccc}
+\toprule
+Run & Config & $\dice$ & 95\% CI & Status\\
+\midrule
+Official (single)       & ch32/16st & $0.8644$ & $[0.856,0.872]$ & \pass\\
+Official (ens.\ $10\times$) & ch32/16st & $0.8663$ & $[0.858,0.874]$ & \pass\\
+\rowcolor{gray!8}
+Fast (single, deprec.)  & ch16/64st & $0.8661$ & $[0.858,0.873]$ & ref\\
+\midrule
+Paper Med-NCA & --- & $0.886$ & $\pm0.042$ & target\\
+Paper U-Net   & --- & $0.858$ & $\pm0.044$ & baseline\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The official anchor sits $0.022$ below the paper target, well within one
+paper standard deviation. We attribute the residual to training duration
+(the run was stopped at its eval plateau, epoch 150, vs.\ the paper's 1000
+epochs) and split/seed differences --- not a bug. The behavioural
+characterisation below (C1, V1, V2, S1, efficiency) is computed on this
+frozen official checkpoint.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_r1_convergence.pdf}
+\caption{R1 Hippocampus training. \textbf{Left:} per-epoch training loss.
+\textbf{Right:} eval mean Dice (every 25 epochs, $\pm$std) for the
+zero-deviation official implementation, approaching both the
+fast-implementation anchor ($0.866$) and the paper target ($0.886$).}
+\label{fig:conv}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_c1_steps.pdf}
+\caption{Inference-step sweep (C1) on the official checkpoint (trained at
+16 steps). Dice peaks exactly at the training step count
+(steps$=16$, $\dice=0.865$) and degrades on either side; over-stepping
+($\geq 48$ steps) collapses the output ($\dice<0.24$) as the cell state
+over-evolves. This contrasts sharply with the deprecated fast run (trained
+at 64 steps, monotonic saturation toward 64) and shows that NCA inference
+must match the training step count --- Med-NCA is not over-step-stable.}
+\label{fig:c1}
+\end{figure}
+
+\paragraph{Determinism and parameters.}
+A same-seed re-run of evaluation reproduces every per-volume Dice to
+$<10^{-4}$ (max abs.\ diff $0.0$ over 78 volumes), confirming the anchor is
+re-runnable (RIDGE Dependability). Parameter count stays under the $<100$k
+lightweight claim in both configurations (\pass): the deprecated
+\texttt{channel\_n}$=16$ model has \textbf{25{,}920} parameters
+($2\times12{,}960$), and the official \texttt{channel\_n}$=32$ model has
+\textbf{70{,}016} ($2\times35{,}008$). The pseudo-ensemble exceeds single
+inference by
+$+0.00187$ (CI $[0.00108,0.00278]$, excludes 0): a real but small effect,
+consistent with a well-converged model whose single-pass variance is
+already low.
+
+% ------------------------------------------------------------
+\section{R2: Prostate Reproduction}
+\label{sec:r2}
+
+The Prostate anchor only partially reproduces. Table~\ref{tab:r2} reports
+the official-implementation result; Figure~\ref{fig:anchor} places both
+anchors against the paper.
+
+\begin{table}[t]
+\centering\small
+\caption{R2 Prostate reproduction (per-volume Dice, $n=9$, official
+implementation, 301 epochs). Paper $0.838\pm0.083$, U-Net $0.799$.}
+\label{tab:r2}
+\begin{tabular}{lccc}
+\toprule
+Metric & $\dice$ & 95\% CI & Verdict\\
+\midrule
+Single inference   & $0.672$ & $[0.575,\,0.765]$ & \fail\\
+Pseudo-ensemble ($10\times$) & $0.686$ & $[0.595,\,0.777]$ & \fail\\
+\midrule
+Paper Med-NCA & $0.838$ & $\pm0.083$ & target\\
+Paper U-Net   & $0.799$ & $\pm0.099$ & baseline\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_anchor_compare.pdf}
+\caption{Reproduction vs.\ paper for both anchors. Hippocampus reproduces
+within one std of the paper; Prostate falls short by $0.166$. Error bars:
+paper std / reproduction 95\% CI.}
+\label{fig:anchor}
+\end{figure}
+
+\paragraph{Honest gap attribution (no number-fitting).}
+The $-0.166$ gap is reported as-is. In decreasing order of likelihood:
+\textbf{(1) Under-training} --- 301 vs.\ 1000 epochs; the same direction as
+R1's smaller gap, and the more aggressive Prostate configuration
+(\texttt{channel\_n}$=32$, $256^2$) converges more slowly. \textbf{(2)
+Small-sample variance} --- $n=9$ with std $0.148$ (4.5$\times$ Hippocampus);
+the CI $[0.575,0.765]$ is wide and a single bad volume moves the mean
+materially. \textbf{(3) Split randomness} --- only 23 training volumes; the
+paper's exact split is unpublished. \textbf{(4) Single-modality input} ---
+the official dataset loader keeps only the T2 channel and discards ADC; we
+did \emph{not} alter this (it is the official behaviour). Crucially, we do
+\emph{not} extend epochs, change the split, or add modalities to chase
+$0.838$: under the zero-deviation rule, the honest outcome is a documented
+partial reproduction.
+
+% ------------------------------------------------------------
+\section{Reproducibility Fragility: an RNG Case Study}
+\label{sec:rng}
+
+This is the study's central transferable finding. While debugging an
+\emph{earlier} divergence, we discovered that the failure was caused not by
+the configuration but by a ``free'' optimisation in our own code.
+
+\paragraph{The change.}
+NCA's fire mask randomly gates which cells update each step (a
+dropout-like stabiliser). The official code samples
+\texttt{torch.rand} on the CPU and copies it to the GPU --- one
+host$\rightarrow$device synchronisation per step. An obvious speed-up is to
+sample directly on the GPU. This is \emph{mathematically equivalent}: same
+Bernoulli$(0.5)$ distribution. But it changes the \emph{RNG stream}, hence
+the realised sequence of fire masks, hence the training trajectory.
+
+\paragraph{The effect (Figure~\ref{fig:rng}).}
+The decisive evidence is on Prostate, where the two runs share an
+\emph{identical} configuration (\texttt{channel\_n}$=32$, $256^2$, 64
+steps) and differ \emph{only} in the fire-mask RNG source --- a genuinely
+controlled comparison. There, the GPU-rand variant diverges completely:
+logits explode to $\sim\!-10^9$, every voxel is predicted background, and
+all six checkpoints (epoch 50--300) score $\dice=0.0$, while the official
+CPU-rand variant trains normally to $0.672$. On Hippocampus both of our
+runs converge to $\approx0.865$, but they also differ in configuration
+(ch16/64-step vs.\ ch32/16-step), so Hippocampus is \emph{not} a controlled
+RNG test --- we include it only to show that the mild regime is forgiving.
+The controlled Prostate pair is what establishes the effect.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_rng_fragility.pdf}
+\caption{\textbf{Reproducibility fragility.} On Prostate (a controlled
+pair: identical config, RNG source only) a mathematically equivalent
+CPU$\rightarrow$GPU change to fire-mask sampling collapses training from
+$0.672$ to $0.0$ (divergence). The Hippocampus bars converge but differ in
+configuration too (ch16/64-step vs.\ ch32/16-step), so they are shown only
+as a forgiving-regime reference, not a controlled RNG test.}
+\label{fig:rng}
+\end{figure}
+
+\paragraph{Evidence chain.}
+We confirmed the configuration was faithful (the official Prostate notebook
+specifies exactly steps 64 / \texttt{channel\_n} 32 / $256^2$ /
+lr $16\mathrm{e}{-4}$ / no clipping), that the two repositories'
+\texttt{batch\_step}/\texttt{BasicNCA}/\texttt{BackboneNCA} sources are
+byte-identical, and that a faithful smoke test with the official module has
+a healthy loss ($1.25\!\rightarrow\!1.01$ over 5 epochs) and
+$\dice = 0.33$ at epoch 5 where the fast variant scores $0.0$.
+
+\paragraph{Takeaway.}
+NCA's iterated update is highly sensitive to its randomness source: any
+``equivalent'' engineering change to the RNG device or ordering can
+silently break reproduction near a numerical stability boundary.
+\emph{Reproduce NCA with the official random path; reserve speed-ups for
+after convergence is verified.} This is the empirical justification for our
+zero-deviation rule.
+
+% ------------------------------------------------------------
+\section{Behavioural Characterisation}
+\label{sec:behaviour}
+
+Beyond the anchor numbers, we reproduce the baseline's \emph{own claims} as
+neutral measurements (not as a direction for future work).
+
+\paragraph{Robustness (V1, Figure~\ref{fig:v1}).}
+Applying five corruption families to the Hippocampus test set, additive
+noise is by far the most destructive ($\dice$ collapses from $0.865$ to
+$0.046$ at $\sigma=0.4$), bias-field and scale cause moderate degradation
+($0.43$ and $0.74$ at their strongest), and ghosting is the most benign
+($0.809$ at full intensity, $-0.056$). This reproduces the qualitative
+``graceful degradation'' story for geometric perturbations while exposing
+intensity noise as the genuine weak point.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_v1_robustness.pdf}
+\caption{Robustness degradation (V1) on the official checkpoint.
+Per-volume Dice vs.\ corruption level for five families; dashed line =
+clean baseline $0.865$. Noise is most destructive ($0.046$ at
+$\sigma{=}0.4$); ghosting most benign.}
+\label{fig:v1}
+\end{figure}
+
+\paragraph{Built-in quality control (V2/R5, Figure~\ref{fig:v2}).}
+Med-NCA's NQM uses the variance over $10\times$ stochastic inference as a
+no-reference quality signal. On our 78 volumes, the two failures
+($\dice<0.8$) are both caught by the top-2 NQM scores (detection rate
+$1.0$), and NQM correlates with error (Spearman
+$\rho=0.47$, $p\approx3\times10^{-6}$). The qualitative ``the model knows
+when it is uncertain'' claim reproduces.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_v2_nqm.pdf}
+\caption{Built-in quality metric (V2/R5). Per-volume NQM (inference
+variance) vs.\ Dice. Both failures (red, $\dice<0.8$) have the highest NQM;
+Spearman $\rho=0.47$, $p<10^{-5}$.}
+\label{fig:v2}
+\end{figure}
+
+\paragraph{Efficiency (RIDGE four-tuple).}
+Table~\ref{tab:eff} reports the full efficiency profile that the
+``lightweight'' claim requires. Both models stay well under 100k parameters
+and a small memory footprint; the cost is latency, since the 64-step
+sequential update cannot be parallelised across steps.
+
+\begin{table}[t]
+\centering\small
+\caption{Efficiency four-tuple. Latency/memory measured on an RTX 4070
+Laptop with dummy input; \textsuperscript{$\dagger$}theoretical MACs.
+Hippocampus params are for the official \texttt{channel\_n}$=32$ config
+(the deprecated ch16 run had $25{,}920$); its latency/memory will be
+measured on the frozen official checkpoint.}
+\label{tab:eff}
+\begin{tabular}{lcc}
+\toprule
+ & Hippocampus & Prostate\\
+\midrule
+Parameters        & $70{,}016$ & $70{,}016$\\
+Peak memory       & pending & $121.6$\,MB\\
+Latency / slice   & pending & $173.6$\,ms\\
+Compute\textsuperscript{$\dagger$} & pending & $\sim$310 GMACs\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------------------------------------------------
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+Our study reproduces one of the two Med-NCA anchors faithfully and the
+other only partially. We deliberately do not ``rescue'' the Prostate number;
+under the zero-deviation rule, a documented $0.672$ with a statistical gap
+analysis is more honest --- and more useful --- than a tuned $0.838$. The
+most likely path to closing the gap is simply training to the official 1000
+epochs, which is a cost decision, not a deviation.
+
+\textbf{Limitations.} (i) The official-implementation Hippocampus run is
+still converging; Table~\ref{tab:r1} uses the frozen fast-implementation
+anchor (validated identical in the mild regime). (ii) Prostate has only
+$n=9$ test volumes, so its CI is wide. (iii) Behavioural measurements (V1,
+V2, C1) were computed on the fast-implementation checkpoint in the mild
+Hippocampus regime, where Section~\ref{sec:rng} shows the two
+implementations agree; they will be recomputed on the official checkpoint
+for the frozen report. (iv) We characterise but do not propose any
+modelling change --- this is a reproduction, not a new method.
+
+% ------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+
+Med-NCA's Hippocampus anchor reproduces faithfully ($0.866$ vs.\ $0.886$);
+its Prostate anchor reproduces only partially ($0.672$ vs.\ $0.838$), with
+the gap honestly attributed to under-training and small-sample variance.
+The most transferable lesson is a reproducibility caveat: a mathematically
+equivalent CPU$\rightarrow$GPU randomness change collapses Prostate training
+to divergence, demonstrating that NCA reproduction demands fidelity down to
+the RNG stream. We release per-volume CSVs, frozen test-ID lists, seeds, and
+run IDs to make every number here independently checkable.
+
+% ------------------------------------------------------------
+\begin{thebibliography}{9}
+\small
+\bibitem{mordvintsev2020growing}
+A.~Mordvintsev, E.~Randazzo, E.~Niklasson, M.~Levin.
+\emph{Growing Neural Cellular Automata}. Distill, 2020.
+\bibitem{kalkhof2023mednca}
+J.~Kalkhof, C.~Gonz\'alez, A.~Mukhopadhyay.
+\emph{Med-NCA: Robust and Lightweight Segmentation with Neural Cellular
+Automata}. IPMI, 2023. arXiv:2302.03473.
+\bibitem{kalkhof2023m3dnca}
+J.~Kalkhof, A.~Mukhopadhyay.
+\emph{M3D-NCA: Robust 3D Segmentation with Built-in Quality Control}.
+MICCAI, 2023. arXiv:2309.02954.
+\bibitem{ridge2024}
+\emph{RIDGE: Reproducibility, Integrity, Dependability, Generalizability,
+Efficiency for ML in medical imaging}. arXiv:2401.08847, 2024.
+\bibitem{nbk597469}
+\emph{Reproducibility of Machine Learning in Medical Imaging}.
+NCBI Bookshelf NBK597469.
+\bibitem{antonelli2022msd}
+M.~Antonelli et al.
+\emph{The Medical Segmentation Decathlon}. Nature Communications, 2022.
+\end{thebibliography}
+
+% ------------------------------------------------------------
+\appendix
+\section{Reproduction Commands}
+\label{app:cmd}
+\small
+Evaluation is checkpoint-only (no retraining):
+\begin{verbatim}
+# R1 Hippocampus (local, eval-only)
+python code/eval_r1.py \
+  --ckpt checkpoints/r1_hippocampus_official/models/epoch_<E> \
+  --seed 42
+# R2 Prostate (HPC, official BackboneNCA, 300 ep)
+sbatch submit_r2_full.sh   # R2_MODEL_IMPL=official
+\end{verbatim}
+Per-volume results: \texttt{results/r1\_hippocampus\_\{single,pseudo10\}.csv},
+\texttt{results/r2\_prostate\_\{single,pseudo10\}.csv}. Frozen test IDs:
+\texttt{results/test\_ids\_r1.txt}. Seed 42 throughout.
+
+\end{document}

@@ -1,0 +1,13 @@
+{
+  "impl": "official",
+  "mean_diff": 0.0018739715600625062,
+  "ci95": [
+    0.001077,
+    0.002783
+  ],
+  "n_pairs": 78,
+  "verdict": "PASS",
+  "epochs_trained": 151,
+  "seed": 42,
+  "git_commit": "9d844b58"
+}

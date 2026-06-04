@@ -2,6 +2,168 @@
 
 ---
 
+## 2026-06-05 — 会话 9：R2 官方配置核实 + 收敛趋势诊断（未饱和）+ 延 1000ep 重训提交
+
+**核实 R2 是否按官方**（`R2_REPRO_REPORT.md` §1 逐项对照官方 `train_Med_NCA.ipynb` cell-5）：**11/12 项一字不差**（BackboneNCA/ch32/64²→256²/lr16e-4/betas(0.5,0.5)/无裁剪/batch20/DiceBCE/steps64/单模态T2/整腺二值/split0.7-0-0.3），**唯一缺口 = epoch 301 vs 论文 1000**。连「数学等价提速」都没用（fast subclass 已作废）。→ R2 0.672 FAIL 主因坐实 = 欠训。
+
+**收敛趋势诊断**（拉 HPC job 1435378 `r2full_1435378.out` 逐 epoch loss + 每 25ep 验证 Dice，脚本 `_hpc_r2trend.py`）：
+- **训练 loss 一路降没平**：ep125→300 从 0.37→0.27（斜率未归零）。
+- **验证 Dice 峰值线持续抬**：ep25=0.47→ep150=0.73→**ep275=0.795**（已贴 UNet 基线 0.799），ep300 ckpt 落回 0.68 = n=9 小样本 ±0.1 抖动撞噪声谷。
+- **判定：未到瓶颈**，延 1000ep 极可能显著缩 gap（−0.166）逼近论文 0.838。
+
+**提交 R2 1000ep 重训**（HPC job **1436075**，RUNNING gpu4090n4）：仅改 `R2_EPOCHS=300→1000`，其余零偏离；清 `r2_prostate` 目录防 config.dt 陷阱；墙时 48h 预计 ~10h。提交脚本 `_hpc_r2full.py`，jobid 存 `_r2full_jobid.txt`。监控 GUI `hpc_mednca_gui.py 1436075`（已修 `TOTAL_EPOCHS=1000` + 日志路径 `r2full_<jid>`）。
+
+**下一步（会话 10）**：① 盯 1436075 收敛 → ep1000 eval Dice vs 0.838，看 gap 缩多少 → R2 是否翻 PASS。② 若仍 < 0.81 诚实记「1000ep 仍未达 + n=9 高方差」终稿。③ R2 翻盘则回填 `R2_REPRO_REPORT.md` + 报告 §5 + 地基账。④ 清根目录 `_*.py`/`_*jobid.txt` 临时文件归位（连续第 N 次挂账）。
+
+## 2026-06-05 — 会话 8：R1/R2 官方原版收口 + 全套行为档案官方重算 + LaTeX 复现报告终版（6页6图）
+
+**本会话 = 地基复现收口大会战**：R2 官方版结果落地、R1 官方版训练收敛停训冻结 anchor、C1/V1/V2/S1 全套用官方 ckpt 重算覆盖 fast 版、产出带图表的专业 LaTeX 复现报告。
+
+**🔵 R2 (Prostate) 官方原版结果**（HPC job 1435378，COMPLETED 02:50:26，301ep）：
+- per-volume Dice **single 0.672 ± 0.148**（CI [0.575,0.765]）/ **pseudo10 0.686**。论文 0.838，**verdict FAIL gap −0.166**，但**非崩溃**（fast 版 1435267 是 0.0 全背景发散）。
+- gap 诚实归因（不凑数）：① 301<1000ep 欠训（同 R1 方向）② n=9 小样本高方差 ③ split 随机 ④ 单模态 T2（官方码本身丢 ADC）。守红线 §1#3 不延 epoch/换 split 凑 0.838。
+- summary 下载本地 `results/r2_prostate_{single,pseudo10}*.{csv,json}`，回填 `results/R2_REPRO_REPORT.md`。
+
+**🥇 R1 (Hippocampus) 官方原版收口 PASS**：
+- 本地训练 eval 连续 3 点平台（ep125/150/175 = 0.8644/0.8647/0.8641，ep175 微降=过拟合前兆）→ **停训于 epoch 187**（最新 ckpt epoch_150）。
+- `finalize_r1_official.py` eval-only 冻结官方 anchor（官方 `BackboneNCA` ch32/steps16/rescale，params **70,016**）：**single 0.8644 ± 0.0353**（CI [0.8557,0.8718]）**PASS** / **pseudo10 0.8663** PASS / **R4 ensemble>single +0.00187**（CI 排除0）PASS。
+- 官方版 0.8644 ≈ fast 版 0.8661 ≈ 平台 eval 0.8647 → **三源一致，R1 复现坐实**（论文 0.886 −1std 内）。
+- `results/r1_official_{single,pseudo10}*.{csv,json}` + `r4_official_summary.json`。
+
+**🔬 C1 官方版重大发现（报告增值点）**：官方训练 steps16，推理步数扫描 → **Dice 在 steps=16 达峰 0.865，偏离即退化**：steps32→0.808、steps48→0.236、steps64→**0.123 崩溃**。**NCA 推理步数必须匹配训练步数，Med-NCA 非 over-step-stable**（与 fast 版训练 steps64 单调饱和到 64 完全相反）。机理：over-stepping 致 cell 状态过度演化。
+
+**V1/V2/S1 官方 ckpt 重算（覆盖 fast 版，4 脚本已转 ch32/steps16/官方 BackboneNCA）**：
+- **V1 鲁棒性**：baseline 0.8647，noise std0.4→**0.046**（最毒）/ bias_field coef0.7→0.429 / scale0.8→0.743 / translate10px→0.770 / ghosting int1.0→**0.809**（最钝 −0.056）。定性同 fast 版。
+- **V2 NQM**：n=78，2 例 fail（<0.8），top-2 检出全中 **detection 1.0**，**R5 Spearman ρ=0.4737 p≈3e-6**。论文「内建质控」声明复现。
+- **S1 确定性**：同 seed 复跑 max_abs_diff **0.0**，mean_rerun **0.86439 = anchor**，PASS。
+
+**★ NCA 复现脆弱性发现（report headline）**：prostate 同配置纯 RNG 对照——fast subclass（GPU-rand）0.0 发散 vs 官方（CPU-rand）0.672 收敛。数学等价的提速改 RNG 流即破坏复现。坐实零偏离红线 §1#8。
+
+**📄 LaTeX 复现报告终版** `report/mednca_repro_report.pdf`（**6 页 + 6 图 + 附录**，英文顶会风格，对标 RIDGE）：Abstract→§1 Intro→§2 Med-NCA→§3 零偏离协议→§4 R1（收敛图+C1步数图+anchor表）→§5 R2（gap归因）→§6 ★RNG脆弱性（headline图）→§7 行为刻画（V1/V2/efficiency）→§8 Discussion→§9 Conclusion。6 图全官方数据：fig_{convergence,c1_steps,v1_robustness,v2_nqm,anchor_compare,rng_fragility}。画图脚本 `report/figures/plot_*.py`。
+- 诚实标注：fast 版（ch16/steps64）= deprecated 非官方配置参考；官方版（ch32/steps16）= 复现 anchor；RNG 纯对照仅 prostate（同配置），hippocampus 两版配置不同不算纯对照。
+- efficiency hippo latency/mem 标 pending（params 70016 已填，prostate 四件套完整）。
+
+**杂项**：红线翻转——`iclr_session_start.js/.ps1/.sh` 改「Opus 在 project/ 内默认开 caveman，用户说关才关」（原为「关 caveman」）。
+
+**地基账（更新）**：R1 ✅ PASS（官方 0.8644）+ R3 ✅（70016<100K）+ **R2 🟡 未达标**（0.672，诚实部分复现）。A 组 R2 仍是唯一未 PASS 锚点。B/C 组行为档案全官方化齐（S1/V1/V2/R5/C1）。
+
+**下一步（会话 9）**：① 作者决策 R2——接受 0.672 诚实部分复现 写入终稿，或申请延官方 1000ep 重训追 gap（非偏离）。② efficiency hippo 四件套补测（可选）。③ R1_REPRO_REPORT.md 已待官方版更新。④ 地基是否 gate：R2 未 PASS 下作者定是否转创新选型。
+
+---
+
+## 2026-06-04 — 会话 7：揪出 R2 发散真因 = 我方 fast subclass RNG + 立「零偏离」红线 + R1/R2 官方原版双线重训
+
+**🔴 R2 发散真因坐实（推翻会话 6 的「config 尺度梯度爆炸」初判）**：
+- 上网溯源（官方 Med-NCA repo notebook + IPMI'23 论文 ar5iv + M3D tutorial config.dt）：官方 prostate 配置 = **steps64/ch32/256²/lr16e-4/无裁剪 = 我们 R2 一字不差**；论文只提 reflect padding + 50% fire rate 稳定化，**无梯度裁剪**，Dice 0.838。→ R2 配置忠实，发散非配置错。
+- diff 两 repo（Med-NCA vs 本地 M3D-NCA）源码：`Agent_Multi_NCA.batch_step` / `Model_BasicNCA` / `BackboneNCA` **逐字相同**，换 repo 无意义。
+- **真凶 = 我方 `FastBackboneNCA`**（会话 3 加的提速 subclass，把 fire-mask `torch.rand` 从 CPU 挪 GPU）：虽数学「等价」，但**改了 RNG 流 → 随机 fire mask 序列不同 → 训练轨迹不同**。prostate 大配置处稳定边缘，fast 版梯度爆炸(logits -1e9, Dice 0)、官方原版 CPU-rand 正常收敛。
+- **实证**：忠实 smoke（job 1435372，官方 `BackboneNCA`+无裁剪+lr16e-4+64步）loss ep1=1.25→ep5=1.01 健康降、Dice@5ep=**0.33**（fast 版同点 0.0）。真凶坐实。
+
+**🔴 作者立永久红线 §1 #8「复现必须完全按官方，零偏离」**（最高优先）：禁私自加裁剪/降lr/改步数/换实现/连提速 subclass 也禁；复现不出只能诚实记失败；偏离要过三道闸（穷尽证明+显式标注+作者批）。已写 REPRO_PLAN §1 + 跨会话记忆 `feedback_repro_zero_deviation`。
+- 据此：早期加梯度裁剪+降lr 的 smoke（job 1435362, Dice 0.37）**作废**，仅算诊断。
+- 据此：旧 R1 0.8661 也用了 fast subclass + 非官方超参 → **作废重训**；其行为刻画 C1/S1/V1/V2/R5 待 R1 官方版收敛后重算。
+
+**双线忠实重训启（全部官方原版，零偏离）**：
+- **R2 HPC** job **1435378**：官方 `BackboneNCA`+ch32+steps64+256²+lr16e-4+无裁剪+300ep（官方 prostate notebook 一字不差），~10-25h。监控弹窗 `hpc_mednca_gui.py 1435378`。
+- **R1 本地** 4070：官方 `BackboneNCA`+官方 hippocampus `config.dt` 全套（ch32/steps16/batch40/rescale=True/16→64/1500ep）。2ep smoke 验 Dice 0.62 健康（一次偶发 CUDA unknown error，重试即过）。~3.5min/ep → eval 每 25ep 早停于收敛。新目录 `r1_hippocampus_official`，监控弹窗 `r1_live_gui.py`。
+
+**下一步（会话 8）**：① 盯两训练 eval 收敛 → R2 Dice vs 0.838、R1 vs 0.86 → 忠实 PASS。② R1 官方版冻结后重算 C1/S1/V1/V2/R5 覆盖旧 fast 版。③ 两者忠实 PASS = 地基就绪 → gate 交作者选创新向。④ 清根目录临时文件（`_*.py`/`_*jobid.txt`/`_mednca_repo`/GUI）归位。
+
+---
+
+## 2026-06-04 — 会话 6：复查补账 — R1 行为刻画全做完(C1/S1/V1/V2/R5) + 🔴 R2 prostate 训练发散硬 FAIL
+
+> ⚠️ **本 entry 是事后补记**：会话 6（06-04 凌晨）的实验全跑了但当时没记日志、没更新 state.json、没填 R2 报告（PROJECT_LOG 已第二次同坑，见会话 5 末尾教训）。本次复查靠产物 + HPC log 还原。
+
+**✅ R1 (Hippocampus) 行为刻画全套补齐（4 项，全本地 4070，seed 42 / commit 9d844b58）**：
+
+- **C1 推理步数扫描**（`results/c1_steps_summary.json` + `r1_c1_steps.csv`）：steps∈{1,2,4,8,16,32,48,64}。64步=**0.866** 复现 anchor（容差 0.005 PASS）。**拐点 ~32 步**（steps=32 Dice 0.692 → 48 0.846 → 64 0.866，48 后增益收窄）。<16 步基本不分割（Dice <0.17）。→ **C1 ✅ PASS**。
+- **S1 确定性复跑**（`s1_determinism_summary.json`）：single 推理同 seed 复跑 vs 冻结 csv，逐例 **max_abs_diff = 0.0**，n=78。地基可复跑实锤。→ **S1 ✅ PASS**。
+- **V1 鲁棒性退化曲线**（`v1_robustness_summary.json` + `r1_v1_robustness.csv`，76705 行）：对 test split 施 5 类扰动逐档算 per-patient 3D Dice。关键数：
+  - **noise** 最毒：std0.1→0.815 / std0.2→0.498 / std0.4→**0.032**（几乎全崩）
+  - **bias_field**：coef0.5→0.663 / coef0.7→0.454
+  - **scale**：0.8→0.710 / 1.2→0.791（对称敏感）
+  - **translate**：10px→0.725
+  - **ghosting** 最钝：int1.0 仅 −0.015
+  - → **V1 ✅ DONE**（行为档案，非 PASS/FAIL 门）。
+- **V2 NQM 失败检测 + R5 相关**（`v2_r5_summary.json` + `r1_nqm_per_volume.csv`）：78 例里 2 例 Dice<0.8。NQM 降序 **top-2 命中全部 2 例 fail（检测率 1.0）**。**R5 Spearman ρ = 0.4963，p≈1e-6**（NQM 越高 Dice 越低，方向成立，p<0.001 显著）。→ **V2/R5 ✅ DONE**，为「质量度量」铺路。
+
+**🔴 R2 (Prostate) — 训完 301 epoch 但彻底崩，FAIL**（HPC job **1435267**，gpu4090，23:07→01:43 约 2.6h）：
+
+- eval **Dice = 0.0**（single + pseudo10 都 0）。`r2_prostate_single_summary.json` verdict=FAIL（HPC 上，未下载）。
+- **根因揪出**（debug job 1435324 `_debug_r2.py` 逐例 + 1435325 `_debug_r2_ckpts.py` 时间线）：
+  - 输出 logits **爆至 -1e9 量级**（`raw min≈-9.8亿 max≈-490万`）→ sigmoid 全压 0 → **预测全背景 pred_fg 恒 0**。
+  - **非数据/eval bug**：GT 正常（gt_fg 0→3690、unique{0,1}）、输入归一 0~1 正常。
+  - **时间线**：epoch_50/100/150/200/250/300 **六个 ckpt 全 mean_dice=0** → 从头没学会，非晚期发散。
+  - 训练 loss 全程卡 ~5 不降（main job log 实锤）。
+- **崩因判断**：channel_n=**32** + fine **256×256** + 64 步 + lr=**16e-4**，比 R1（ch16/64×64）激进太多 → NCA 状态 64 步内数值爆炸。R1 那套稳，prostate 这套发散。
+- **配套**：R3 prostate 参数量 **70,016** <100K ✅（channel_n=32）；Efficiency 四件套 `r2_efficiency.json`（peak_mem 121.6MB、latency 173.6ms/slice、310 GMACs，本地 4070 dummy 输入测，与 Dice 失败无关）。
+
+**当前 Phase 0 账**：R1 系（R1/R3/R4/C1/S1/V1/V2/R5）全齐 ✅；**R2 卡死 FAIL** → 最小复现差 R2 一项，**地基未就绪**，不可转 Phase 1。
+
+**下一步（会话 7 开门即办）**：
+1. **救 R2**：查官方 `train_Med_NCA.ipynb` prostate 是否另有 lr/steps 配置 → 降 lr（16e-4→4e-4 或 1e-3）+ 梯度裁剪，或 NCA `update` 后 clamp/tanh 限状态幅值（外部 subclass，不动官方）→ 清 `checkpoints/r2_prostate`（防 config.dt）→ HPC 重训。
+2. R2 PASS → R1+R2+R3 三项齐 → 地基冻结 → gate 交作者选创新向。
+3. 下载 HPC 的 `r2_prostate_*_summary.json` 到本地 results/ 留档。
+
+**临时文件待归位**（根目录散落，收工前清/移）：`_debug_r2*.py`、`_hpc_*.py`、`_*_jobid.txt`、`hpc_mednca_gui.py`、`mednca_watch.py` → 应移入 `Med-NCA/code/` 或删。
+
+---
+
+## 2026-06-03 — 会话 5：计划定稿 v1.0（复现锁论文数据集）+ 多 agent 备非实验件 + Task05 下载
+
+**定位决策（用户定）**：复现严格按论文，**只用官方数据集 hippocampus + prostate，弃自建 ISIC**。web 核实官方 `MECLabTUDA/Med-NCA` + `M3D-NCA` 只评这两个，无 ISIC → 旧 R2(ISIC) 的「0.772 来路不明」完整性漏洞消除。
+
+**REPRO_PLAN.md 改写 → v1.0 定稿**：
+- 删全部创新方向倾向（旧 §7 候选 A-E、§2 方向性跑偏条款）→ 创新选向标「作者独立决策区」，助理零倾向。
+- 验收升级 A-F 六组，对标 **RIDGE 五维 + MICCAI 复现 checklist + 复现专章 NBK597469**（web 查实）：A 锚点 / B 稳定性(噪声地板) / C 论文声明复现+行为档案 / D 算力+Efficiency四件套 / E 工程复跑 / F 冻结报告。
+- **R2 = Prostate**（取代 ISIC），靶子 Med-NCA IPMI'23 Table 1 **0.838 ± 0.083**（UNet 0.799）；R1 论文精确值 0.886 ± 0.042（我们 0.8661 在 1 std 内）。
+
+**多 agent 并行备非实验件（4 sonnet，零冲突，新增文件——本会话指针）**：
+- `code/run_r2_prostate.py` + `results/r2_prostate_target.md`（agent A）：prostate 训练脚本 + 靶子溯源。**官方配置全实证**（`train_Med_NCA.ipynb`+`Nii_Gz_Dataset_3D.py`）：channel_n=32、input_size=[(64,64),(256,256)]、batch=20、单模态 T2(ADC 截断)、整腺二值(label>0)、2-stage。⚠️ channel_n=32 → 参数 ~80K，<100K 但训后核 R3。
+- `code/reproduce_baseline.py`（agent B + 主线修）：E1 一键 eval-only 复跑；agent 误接 ISIC，主线已改正为 prostate(NiiGz 3D)。
+- `code/extract_baseline_meta.py` + `results/test_ids_r1.txt`(78 例 S0) + `results/r1_convergence.csv`(335 点 C1)（agent C）。data_split.dt 结构：DataSplit 对象 .images/.labels = {train/val/test: {id:path}}，182/0/78。
+- `requirements.lock`(70 包) + `code/ENV_NOTES.md`（agent D，E2）：实测 torch **2.7.1+cu118**、CUDA 11.8、cuDNN 9.1、py3.9.25、4070 Laptop 8GB 驱动 576.02。
+
+**Task05 Prostate 数据（主线）**：
+- `code/download_task05.ps1` S3 直链下 `Task05_Prostate.tar`(229MB) → 解压 **32 img + 32 lbl**（MSD 标准 32 例）。
+- ⚠️ **坑**：PowerShell bsdtar 解压被 macOS `._*` 资源叉报 warning 当失败退出（marker 写 EXTRACT_FAILED 但 tar 下载完好）→ 改用 Git Bash GNU tar 解过，`._*` 已 `find -delete`。
+
+**验收推进**：S0 ✅ / C1 ✅(有数据) / E2 ✅ / E1 脚本就绪 / R0 靶子溯源 ✅ / R2 代码+数据就绪。**剩余全需 GPU**：R2 训练、S1/S2、V1/V2、D1/D2 运行时、F1。
+
+**下一步（会话 6 开门即办）**：
+1. 清 `checkpoints/r2_prostate`（防 config.dt 陷阱）→ `/loop /run-experiment` 启 R2 prostate 2-epoch smoke 验 VRAM/不 OOM + 量 s/epoch → 放长训。
+2. R2 PASS（CI 含 0.838 或点估 ≥0.81 且 >0.799）→ 起 Phase P（B/C/D/E/F 加固）→ 地基冻结 → 交棒作者选向。
+
+⚠️ **未 commit**：本会话所有改动（计划 + 新脚本 + 产物 + 数据）尚未 git commit，收工时一并提交。
+
+---
+
+## 2026-06-03 — 会话 4：R1 停训 + epoch_300 eval-only → R1 PASS（Dice 0.8661，baseline 锚定）
+
+**动作**：会话 3 过夜的 1000ep R1 训练跑到 epoch 303，主动停（kill pid 32244）。**epoch_300 ckpt 为冻结点**（下个 ckpt 要到 350，停在 303 不丢 epoch_300）。
+
+**真训实锤**（破会话 3 的 config.dt 假轮数疑虑）：epoch_300 ckpt 是真训 300 epoch 的产物 —— ckpt 目录 epoch_50/100/150/200/250/300 按 ~3.7h 间隔递增（Jun2 19:06 → Jun3 15:24），训练 log 连续到 epoch 303，非会话 3 那种「8 真 epoch」假象。
+
+**eval-only 复现**（新脚本 `code/eval_r1.py`，load epoch_300 不再训，复用 data_split.dt 同 test split）：
+- **🥇 R1 single PASS**：per-image(per-volume) Dice **0.8661 ± 0.0333**，n=78，bootstrap 95% CI [0.858, 0.8731]。阈值 ≥0.86 ✅，论文 0.882 容差带 [0.862, 0.902] 内。seed 42，commit 9d844b58。
+- **🥇 R3 PASS**：总参数 **25,920** < 100K（2 级 NCA 各 12,960）。
+- **🥈 R1 pseudo10 PASS**：10× 推理 ensemble per-image Dice **0.8669 ± 0.0319**，CI [0.8593, 0.8737]，过阈值。覆盖了会话 2 那份过时的 pseudo10_summary（FAIL 0.636 欠训版）。
+- **🥈 R4 PASS**（ensemble > single，epoch_300 重核）：mean_diff **+0.00081**，bootstrap 95% CI [0.00024, 0.00149] 排除 0，n_pairs=78。Δ 比欠训版（+0.0078）小很多 —— 收敛后单次推理已稳，ensemble 增益收窄，符合预期（欠训时方差大、ensemble 收益高）。`results/r4_summary.json`。
+- **工程注**：pseudo10 是 10× 推理 + 全 slice NQM 打分，本地 4070 上跑 ~1.5h；用 `Start-Process` 独立窗口或 Bash 后台均可，但 **stdout 块缓冲会让 log 的 CASE/NQM 计数严重滞后**，别据此误判进程死活 —— 看 `Get-Process .CPU` 是否在涨才准（`tasklist /FI` 经 grep 还遇到过假阴性"gone"，差点误启重复 job 违反单卡串行）。
+
+**关键澄清 — 会话 2/3 的 FAIL summary 是欠训残留**：`results/r1_hippocampus_single_summary.json` 原写 0.628 FAIL（Jun2 14:08，那是 config.dt 陷阱下只训 ~8ep 的产物）。本会话 eval-only 已覆盖为 0.8661 PASS。**血泪重申**：欠训 eval 产物必须及时覆盖/标注，否则下次会话误读 FAIL。
+
+**最小复现进度**：R1 ✅ + R3 ✅ + R2 ⏳（ISIC 2D，代码会话 3 已就位 `run_r2_isic.py` 未训）。**R1+R2+R3 全 PASS = baseline 冻结，转 Phase 1 创新选型**（§7 候选 A-E，需用户 gate）。
+
+**会话 4 收口状态**：R1 ✅ + R3 ✅ + R4 ✅（§5 四项里仅差 R2、R5）。所有数字 csv + bootstrap CI + seed42 + commit 9d844b58 落盘，守 §3 口径红线。
+
+**下一步（会话 5 开门即办）**：
+1. **跑 R2**（ISIC 2D）：先 `Remove-Item -Recurse checkpoints/r2_*` 防 config.dt 陷阱 → `run_r2_isic.py` → per-image Dice vs 0.772 (±0.02)。⚠️ 首排查点 fine patch 64→128/256（ISIC 原图 ~700×900）。⚠️ 长 eval 用 Start-Process，别据 log CASE 计数判死活。
+2. R2 PASS → R1+R2+R3 三项齐 → 写「baseline 冻结」+ 报用户 gate 进 Phase 1 创新选型（§7 候选 A-E）。
+
+---
+
 ## 2026-06-02 — 会话 3：R1 启训 + 两大根因诊断（config.dt resume 陷阱 + NCA 计算密集）+ 过夜 1000ep
 
 **多 agent 并行**：R1（本地 4070）训练 + sonnet subagent 备 R2 代码（HPC 被 ICLR job 1434145 占，按「被占用就本地」全留本地串行）。

@@ -1,0 +1,12 @@
+{
+  "mean_diff": 0.0008064951652135605,
+  "ci95": [
+    0.00024,
+    0.001488
+  ],
+  "n_pairs": 78,
+  "verdict": "PASS",
+  "epochs_trained": 301,
+  "seed": 42,
+  "git_commit": "9d844b58"
+}

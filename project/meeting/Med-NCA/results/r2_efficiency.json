@@ -1,0 +1,26 @@
+{
+  "params": 70016,
+  "params_check_70016": true,
+  "peak_mem_mb": 121.64,
+  "latency_ms_per_slice": 173.553,
+  "latency_std_ms": 3.299,
+  "latency_n_runs": 20,
+  "flops_method": "theoretical_MACs_2conv_2linear_per_step_x64x2stage",
+  "device_name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "inference_steps": 64,
+  "channel_n": 32,
+  "input_size": [
+    [
+      64,
+      64
+    ],
+    [
+      256,
+      256
+    ]
+  ],
+  "seed": 42,
+  "note": "2-stage coarse(64x64,64step)+fine(256x256,64step); dummy randn input, no real data; latency measured with cuda.synchronize; peak_mem measured over one full 2-stage pass",
+  "macs": 310311387136,
+  "macs_gmacs": 310.311
+}

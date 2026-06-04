@@ -11,8 +11,8 @@ import re
 import time
 import tkinter as tk
 
-LOG = r"D:\YJ-Agent\project\meeting\Med-NCA\results\r1_train.log"
-TARGET_EPOCH = 1000          # R1 论文目标轮数
+LOG = r"D:\YJ-Agent\project\meeting\Med-NCA\results\r1_official_train.log"
+TARGET_EPOCH = 1500          # 官方 config.dt n_epoch（早停于收敛）
 REFRESH_MS = 5000            # 5s 刷新
 STALE_SEC = 600              # log 超 10min 不更新 = 疑似卡死/结束
 

@@ -48,11 +48,6 @@
 ### Playwright
 - 可控制真实 Chrome 浏览器，执行点击、填表、截图、抓取动态或需登录页面等操作
 
-### Notion
-- 可读写 Notion 页面和数据库，支持创建、编辑、查询内容
-- 配置文件：`C:\Users\yj200\.claude\mcp.json`
-- 注意：需在 Notion 页面中手动添加 Integration 连接，才能访问对应页面
-
 ### Firecrawl
 - 将任意网页转为干净文本，供 AI 分析使用（免费 500 次/月）
 - 配置文件：`C:\Users\yj200\.claude\mcp.json`

@@ -1,0 +1,69 @@
+[R1] device=cuda:0 epochs=2
+Datasplit-> train entries: 182, val entries: 0, test entries: 78
+Datasplit-> train entries: 182, val entries: 0, test entries: 78
+[R3] total params = 70016 (PASS <100K)
+Epoch: 1
+Dataset size: 163
+1 loss = 1.0376298431238513
+Epoch: 2
+Dataset size: 163
+2 loss = 0.695064309915882
+[R1] train done in 8.4 min
+[R1] epochs_target=2 epochs_trained=3 (N_EPOCH var=2) seed=42 commit=9d844b58
+__________________________ CASE 0 __________________________
+__________________________ CASE 1 __________________________
+__________________________ CASE 2 __________________________
+__________________________ CASE 3 __________________________
+__________________________ CASE 4 __________________________
+__________________________ CASE 5 __________________________
+__________________________ CASE 6 __________________________
+__________________________ CASE 7 __________________________
+__________________________ CASE 8 __________________________
+__________________________ CASE 9 __________________________
+__________________________ CASE 10 __________________________
+__________________________ CASE 11 __________________________
+__________________________ CASE 12 __________________________
+__________________________ CASE 13 __________________________
+__________________________ CASE 14 __________________________
+__________________________ CASE 15 __________________________
+__________________________ CASE 16 __________________________
+__________________________ CASE 17 __________________________
+__________________________ CASE 18 __________________________
+__________________________ CASE 19 __________________________
+__________________________ CASE 20 __________________________
+__________________________ CASE 21 __________________________
+__________________________ CASE 22 __________________________
+__________________________ CASE 23 __________________________
+__________________________ CASE 24 __________________________
+__________________________ CASE 25 __________________________
+__________________________ CASE 26 __________________________
+__________________________ CASE 27 __________________________
+__________________________ CASE 28 __________________________
+__________________________ CASE 29 __________________________
+__________________________ CASE 30 __________________________
+__________________________ CASE 31 __________________________
+__________________________ CASE 32 __________________________
+__________________________ CASE 33 __________________________
+__________________________ CASE 34 __________________________
+__________________________ CASE 35 __________________________
+__________________________ CASE 36 __________________________
+182, 0.6013157963752747, 
+__________________________ CASE 37 __________________________
+__________________________ CASE 38 __________________________
+__________________________ CASE 39 __________________________
+__________________________ CASE 40 __________________________
+__________________________ CASE 41 __________________________
+Traceback (most recent call last):
+  File "D:\YJ-Agent\project\meeting\Med-NCA\code\run_r1_hippocampus.py", line 99, in <module>
+    loss_log = agent.getAverageDiceScore(pseudo_ensemble=ens)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\agents\Agent.py", line 159, in getAverageDiceScore
+    loss_log = self.test(diceLoss, save_img=[], pseudo_ensemble=pseudo_ensemble, showResults=showResults)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\agents\Agent.py", line 332, in test
+    data = self.prepare_data(data, eval=True)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\agents\Agent_NCA.py", line 110, in prepare_data
+    inputs = self.make_seed(inputs)
+  File "D:\YJ-Agent\project\meeting\Med-NCA\M3D-NCA-official\src\agents\Agent_NCA.py", line 64, in make_seed
+    seed = torch.zeros((img.shape[0], img.shape[1], img.shape[2], self.exp.get_from_config('channel_n')), dtype=torch.float32, device=self.device)#torch.from_numpy(np.zeros([img.shape[0], img.shape[1], img.shape[2], self.exp.get_from_config('channel_n')], np.float32)).to(self.device)
+RuntimeError: CUDA error: unknown error
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

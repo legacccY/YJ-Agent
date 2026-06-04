@@ -25,27 +25,32 @@ os.chdir(OFFICIAL)  # src imports + relative paths
 
 from src.datasets.Nii_Gz_Dataset_3D import Dataset_NiiGz_3D
 sys.path.insert(0, os.path.join(ROOT, "code"))
-from fast_nca import FastBackboneNCA as BackboneNCA  # GPU-rand patch, math-equivalent
+from src.models.Model_BackboneNCA import BackboneNCA  # 官方原版（CPU rand，零偏离）
 from src.losses.LossFunctions import DiceBCELoss, DiceLoss
 from src.utils.Experiment import Experiment
 from src.agents.Agent_Med_NCA import Agent_Med_NCA
 
-N_EPOCH = int(os.environ.get("R1_EPOCHS", "300"))   # paper uses 1000; start 300, extend if Dice<0.86
+# 忠实官方 hippocampus 存档 config.dt（2026-06-04 作者定「全部原版」）：
+#   channel_n=32 / inference_steps=16 / batch=40 / rescale=True / input_size 16->64
+#   (旧 R1 用 ch16/steps64/batch48 + FastBackboneNCA，非官方 → 作废重训)
+N_EPOCH = int(os.environ.get("R1_EPOCHS", "1500"))   # 官方 config.dt n_epoch=1500（按 ckpt 收敛可早停）
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
+MODEL_TAG = os.environ.get("R1_MODEL_TAG", "r1_hippocampus_official")  # 新目录，不污染旧 fast 版
 
 config = [{
     'img_path':   os.path.join(ROOT, "data", "Task04_Hippocampus", "imagesTr"),
     'label_path': os.path.join(ROOT, "data", "Task04_Hippocampus", "labelsTr"),
-    'model_path': os.path.join(ROOT, "checkpoints", "r1_hippocampus"),
+    'model_path': os.path.join(ROOT, "checkpoints", MODEL_TAG),
     'device': DEVICE,
     'unlock_CPU': True,
     'lr': 16e-4, 'lr_gamma': 0.9999, 'betas': (0.5, 0.5),
     'save_interval': 50, 'evaluate_interval': 25,
-    'n_epoch': N_EPOCH, 'batch_size': 48,
-    'channel_n': 16, 'inference_steps': 64, 'cell_fire_rate': 0.5,
+    'n_epoch': N_EPOCH, 'batch_size': 40,
+    'channel_n': 32, 'inference_steps': 16, 'cell_fire_rate': 0.5,
     'input_channels': 1, 'output_channels': 1, 'hidden_size': 128,
     'train_model': 1,
     'input_size': [(16, 16), (64, 64)],
+    'rescale': True,          # 官方 config.dt = True（旧 R1 缺此键）
     'data_split': [0.7, 0, 0.3],
 }]
 

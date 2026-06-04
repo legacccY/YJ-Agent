@@ -1,14 +1,17 @@
 {
   "tag": "pseudo10",
   "n": 78,
-  "dice_mean": 0.636,
-  "dice_std": 0.0969,
+  "dice_mean": 0.64,
+  "dice_std": 0.083,
   "ci95": [
-    0.6137,
-    0.6544
+    0.6199,
+    0.6564
   ],
   "threshold": 0.86,
   "verdict": "FAIL",
-  "epochs": 300,
-  "params": 25920
+  "epochs_target": 2,
+  "epochs_trained": 3,
+  "params": 70016,
+  "seed": 42,
+  "git_commit": "9d844b58"
 }

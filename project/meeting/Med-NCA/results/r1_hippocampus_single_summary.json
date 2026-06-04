@@ -1,14 +1,17 @@
 {
   "tag": "single",
   "n": 78,
-  "dice_mean": 0.6282,
-  "dice_std": 0.0968,
+  "dice_mean": 0.6203,
+  "dice_std": 0.0784,
   "ci95": [
-    0.6054,
-    0.6468
+    0.6016,
+    0.6363
   ],
   "threshold": 0.86,
   "verdict": "FAIL",
-  "epochs": 300,
-  "params": 25920
+  "epochs_target": 2,
+  "epochs_trained": 3,
+  "params": 70016,
+  "seed": 42,
+  "git_commit": "9d844b58"
 }

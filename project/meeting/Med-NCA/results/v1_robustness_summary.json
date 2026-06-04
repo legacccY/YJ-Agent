@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "seed": 42,
+    "commit": "9d844b58",
+    "device": "cuda:0",
+    "desc": "V1 鲁棒性退化曲线：对 test split 施加 scale/translate/noise/bias_field/ghosting 扰动，逐档算 per-patient 3D Dice（slice=2 轴聚合）。mean_dice_delta = mean_dice - baseline_mean_dice。正值代表高于 baseline（不太可能），负值代表退化。"
+  },
+  "by_type": {
+    "scale": {
+      "baseline_level": "1.00",
+      "baseline_mean_dice": 0.8645,
+      "levels": {
+        "0.80": {
+          "n": 78,
+          "mean_dice": 0.7431,
+          "std_dice": 0.0665,
+          "mean_dice_delta": -0.1214
+        },
+        "0.90": {
+          "n": 78,
+          "mean_dice": 0.8038,
+          "std_dice": 0.0542,
+          "mean_dice_delta": -0.0607
+        },
+        "1.00": {
+          "n": 78,
+          "mean_dice": 0.8645,
+          "std_dice": 0.0351,
+          "mean_dice_delta": 0.0
+        },
+        "1.10": {
+          "n": 78,
+          "mean_dice": 0.8543,
+          "std_dice": 0.038,
+          "mean_dice_delta": -0.0102
+        },
+        "1.20": {
+          "n": 78,
+          "mean_dice": 0.8073,
+          "std_dice": 0.062,
+          "mean_dice_delta": -0.0572
+        }
+      }
+    },
+    "translate": {
+      "baseline_level": "0px",
+      "baseline_mean_dice": 0.8648,
+      "levels": {
+        "0px": {
+          "n": 78,
+          "mean_dice": 0.8648,
+          "std_dice": 0.0329,
+          "mean_dice_delta": 0.0
+        },
+        "2px": {
+          "n": 78,
+          "mean_dice": 0.8593,
+          "std_dice": 0.0364,
+          "mean_dice_delta": -0.0055
+        },
+        "5px": {
+          "n": 78,
+          "mean_dice": 0.8343,
+          "std_dice": 0.0421,
+          "mean_dice_delta": -0.0305
+        },
+        "10px": {
+          "n": 78,
+          "mean_dice": 0.7702,
+          "std_dice": 0.0516,
+          "mean_dice_delta": -0.0946
+        }
+      }
+    },
+    "noise": {
+      "baseline_level": "std0.00",
+      "baseline_mean_dice": 0.8648,
+      "levels": {
+        "std0.00": {
+          "n": 78,
+          "mean_dice": 0.8648,
+          "std_dice": 0.0334,
+          "mean_dice_delta": 0.0
+        },
+        "std0.05": {
+          "n": 78,
+          "mean_dice": 0.8593,
+          "std_dice": 0.0362,
+          "mean_dice_delta": -0.0054
+        },
+        "std0.10": {
+          "n": 78,
+          "mean_dice": 0.8344,
+          "std_dice": 0.0454,
+          "mean_dice_delta": -0.0304
+        },
+        "std0.20": {
+          "n": 78,
+          "mean_dice": 0.5766,
+          "std_dice": 0.0839,
+          "mean_dice_delta": -0.2882
+        },
+        "std0.40": {
+          "n": 78,
+          "mean_dice": 0.0459,
+          "std_dice": 0.0222,
+          "mean_dice_delta": -0.8189
+        }
+      }
+    },
+    "bias_field": {
+      "baseline_level": "coef0.0",
+      "baseline_mean_dice": 0.8647,
+      "levels": {
+        "coef0.0": {
+          "n": 78,
+          "mean_dice": 0.8647,
+          "std_dice": 0.0339,
+          "mean_dice_delta": 0.0
+        },
+        "coef0.1": {
+          "n": 78,
+          "mean_dice": 0.8622,
+          "std_dice": 0.0348,
+          "mean_dice_delta": -0.0025
+        },
+        "coef0.3": {
+          "n": 78,
+          "mean_dice": 0.8077,
+          "std_dice": 0.0606,
+          "mean_dice_delta": -0.057
+        },
+        "coef0.5": {
+          "n": 78,
+          "mean_dice": 0.6539,
+          "std_dice": 0.0726,
+          "mean_dice_delta": -0.2108
+        },
+        "coef0.7": {
+          "n": 78,
+          "mean_dice": 0.4291,
+          "std_dice": 0.1124,
+          "mean_dice_delta": -0.4357
+        }
+      }
+    },
+    "ghosting": {
+      "baseline_level": "int0.00",
+      "baseline_mean_dice": 0.865,
+      "levels": {
+        "int0.00": {
+          "n": 78,
+          "mean_dice": 0.865,
+          "std_dice": 0.0333,
+          "mean_dice_delta": 0.0
+        },
+        "int0.25": {
+          "n": 78,
+          "mean_dice": 0.8632,
+          "std_dice": 0.0329,
+          "mean_dice_delta": -0.0018
+        },
+        "int0.50": {
+          "n": 78,
+          "mean_dice": 0.8578,
+          "std_dice": 0.0348,
+          "mean_dice_delta": -0.0072
+        },
+        "int0.75": {
+          "n": 78,
+          "mean_dice": 0.8406,
+          "std_dice": 0.04,
+          "mean_dice_delta": -0.0244
+        },
+        "int1.00": {
+          "n": 78,
+          "mean_dice": 0.8092,
+          "std_dice": 0.0492,
+          "mean_dice_delta": -0.0558
+        }
+      }
+    }
+  }
+}

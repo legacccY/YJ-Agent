@@ -13,5 +13,5 @@ if ($input_json -match '"cwd"\s*:\s*"([^"]+)"') {
 $norm = $cwd -replace '\\', '/'
 if ($norm -notmatch 'YJ-Agent') { exit 0 }
 
-Write-Output "[ICLR 2027 大项目 active] Read order if writing tex/数字: project/README.md → STORY_FRAMEWORK.md → ACCEPTANCE_CRITERIA.md → DATA_INVENTORY.md → PROJECT_LOG.md. BMVC SEALED. Opus 在 project/ 内关 caveman。"
+Write-Output "[ICLR 2027 大项目 active] Read order if writing tex/数字: project/README.md → STORY_FRAMEWORK.md → ACCEPTANCE_CRITERIA.md → DATA_INVENTORY.md → PROJECT_LOG.md. BMVC SEALED. Opus 在 project/ 内默认开 caveman，用户说「关」才关。"
 exit 0
