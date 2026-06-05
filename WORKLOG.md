@@ -1,6 +1,6 @@
 # 工作日志（快速指针）
 
-**最后更新**：2026-06-05 Med-NCA 会话 11（R2 终判：逐行核实零偏离官方 → 9-seed×1000ep 扫描 **0/9 存活** → 真因=NCA fire-mask GPU-RNG 在 ep1 即掷定盆地，CPU seed 锁不住 → R2 改判「官方配置不可复现至论文规模」升为报告主结论）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`（ICLR 主线）+ `project/meeting/Med-NCA/PROJECT_LOG.md`（Med-NCA）
+**最后更新**：2026-06-05 Med-NCA 会话 12（**收尾交付**：按会话 9-11 终判全量重写 LaTeX 复现报告 `report/mednca_repro_report.pdf`（8 页 7 图 3 附录，R2 改判「不可复现至论文规模」+ §6 RNG 三档证据 + 🆕 附录 B 踩坑全志 11 条）+ 新 headline 图 `fig_seed_sweep`（9-seed 三联：ep1 双峰盆地/中途断崖/0-11 到 1000ep）+ 打包 `project/meeting/mednca_repro_package_2026-06-05.zip`（7.68MB，含 R1 官方 ckpt 可 eval-only 复跑 0.864，排除 22GB 原始数据，附 README_PACKAGE.md）。已验 0 原始数据泄漏）| **完整进度**：见 `D:/YJ-Agent/project/PROJECT_LOG.md`（ICLR 主线）+ `project/meeting/Med-NCA/PROJECT_LOG.md`（Med-NCA）
 
 > 🆕 **新独立子项目 Med-NCA**（顶会复现→创新，与 ICLR 主线并行）：计划 `project/meeting/Med-NCA/REPRO_PLAN.md`、日志 `.../PROJECT_LOG.md`。**会话 7（06-04）：揪出 R2 发散真因 = 我方 `FastBackboneNCA` 提速 subclass 改了 RNG 流（非官方配置错）—— 上网溯源官方配置一字不差 + diff 源码相同 + 忠实 smoke（官方 BackboneNCA）loss 健康降 Dice@5ep=0.33 坐实。🔴 作者立永久红线 §1#8「复现完全按官方零偏离」（禁加裁剪/降lr/换实现/提速 subclass）。旧 R1 0.8661（fast版）+ 早期加裁剪方案均作废。** **会话 8（06-05）：R1 官方版 PASS（0.8644 三源一致）+ R2 官方版 0.672 FAIL 非崩溃 + 全套行为档案官方重算 + 6 页 6 图 LaTeX 复现报告。** **会话 9（06-05）：核实 R2 配置 11/12 项一字不差官方、唯一缺口=epoch（301 vs 1000）；诊断收敛趋势=未饱和（loss ep125→300 0.37→0.27 没平 + 验证 Dice ep275 冲 0.795 贴 UNet 基线）→ 延 1000ep 重训提交 HPC job 1436075（RUNNING，~10h），监控 `hpc_mednca_gui.py 1436075`。** 下一步：盯 1436075 ep1000 eval vs 0.838 看 gap 缩多少 → R2 是否翻 PASS。
 
