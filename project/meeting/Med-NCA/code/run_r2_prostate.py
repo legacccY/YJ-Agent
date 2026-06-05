@@ -24,7 +24,7 @@ import os, sys, json, csv, time, subprocess
 import numpy as np
 import torch
 
-SEED = 42
+SEED = int(os.environ.get("R2_SEED", "42"))   # 多 seed 脆弱性扫描；seed 非官方方法 config
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 

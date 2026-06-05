@@ -1,0 +1,137 @@
+{
+  "42": {
+    "jobid": 1436781,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 4.3303,
+    "last_healthy_ep": null,
+    "crash_ep": 1,
+    "peak_dice": null,
+    "max_ep_reached": 15,
+    "classification": "ep1_bad_basin"
+  },
+  "43": {
+    "jobid": 1436782,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 1.5002,
+    "last_healthy_ep": 60,
+    "crash_ep": 61,
+    "peak_dice": 0.4972,
+    "max_ep_reached": 103,
+    "classification": "mid_cliff@ep61"
+  },
+  "44": {
+    "jobid": 1436783,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 3.337,
+    "last_healthy_ep": null,
+    "crash_ep": 1,
+    "peak_dice": 0.0,
+    "max_ep_reached": 27,
+    "classification": "ep1_bad_basin"
+  },
+  "45": {
+    "jobid": 1436784,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 4.5146,
+    "last_healthy_ep": null,
+    "crash_ep": 1,
+    "peak_dice": null,
+    "max_ep_reached": 18,
+    "classification": "ep1_bad_basin"
+  },
+  "46": {
+    "jobid": 1436785,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 1.2922,
+    "last_healthy_ep": 121,
+    "crash_ep": 122,
+    "peak_dice": 0.6183,
+    "max_ep_reached": 170,
+    "classification": "mid_cliff@ep122"
+  },
+  "47": {
+    "jobid": 1437000,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 4.1721,
+    "last_healthy_ep": null,
+    "crash_ep": 1,
+    "peak_dice": null,
+    "max_ep_reached": 11,
+    "classification": "ep1_bad_basin"
+  },
+  "48": {
+    "jobid": 1437001,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 4.2638,
+    "last_healthy_ep": null,
+    "crash_ep": 1,
+    "peak_dice": null,
+    "max_ep_reached": 16,
+    "classification": "ep1_bad_basin"
+  },
+  "49": {
+    "jobid": 1437002,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 3.8491,
+    "last_healthy_ep": null,
+    "crash_ep": 1,
+    "peak_dice": null,
+    "max_ep_reached": 18,
+    "classification": "ep1_bad_basin"
+  },
+  "50": {
+    "jobid": 1437003,
+    "impl": "official",
+    "steps": 64,
+    "lr": "0.0016",
+    "ep1_loss": 4.4206,
+    "last_healthy_ep": null,
+    "crash_ep": 1,
+    "peak_dice": null,
+    "max_ep_reached": 10,
+    "classification": "ep1_bad_basin"
+  },
+  "_global": {
+    "n_seeds": 9,
+    "survived_to_1000ep": 0,
+    "convergence_rate_to_1000ep": "0/9",
+    "config": "official zero-deviation: BackboneNCA ch32 steps64 lr16e-4 256² 1000ep",
+    "crash_epoch_spread": "ep1 ~ ep185 (无安全期)",
+    "best_partial": "1435378 = 0.672 @ ep301 (论文 0.838, gap -0.166)",
+    "history_runs": {
+      "1435378_301ep": {
+        "reached_ep": 301,
+        "crashed": false,
+        "final_dice": 0.672,
+        "note": "唯一跑满(主动停)"
+      },
+      "1436075_1000ep": {
+        "crash_ep": 185,
+        "crashed": true,
+        "note": "会话10"
+      },
+      "1436470_1000ep": {
+        "crash_ep": 99,
+        "crashed": true,
+        "note": "会话10"
+      }
+    },
+    "verdict": "R2 FAIL — 官方配置 NCA 训练不稳定致不可训满 1000ep，非我方偏离"
+  }
+}

@@ -2,6 +2,107 @@
 
 ---
 
+## 2026-06-05 — 会话 11：1436470 第三次发散 → 逐行核实零偏离官方 → 转「多 seed 脆弱性扫描」并行 5 job
+
+### 背景：连续两次 1000ep 全发散，回头质疑「是否真按官方」
+- **1436470（会话 10 重提的 1000ep）跑到 ep99 又发散**（loss 死平 5.64 + 验证 Dice 0.0），signature 同 1436075。**三连战绩：1435378(301ep)✅0.672 / 1436075(1000ep)❌ / 1436470(1000ep)❌**。2/3 发散太高，不该甩锅 RNG，scancel 止损后逐行核对官方。
+
+### 🔬 逐行核实「零偏离官方」（结论：是，全官方）
+对照官方 `M3D-NCA-official/train_Med_NCA.ipynb` cell-5 + `src/` 源码：
+- **config 逐字一致**：lr16e-4 / lr_gamma0.9999 / betas(0.5,0.5) / n_epoch1000 / batch20 / channel_n32 / **inference_steps64**（确认官方 prostate notebook 原值，之前纠结的 config.dt=16 是 hippocampus tutorial 存档，无关）/ cell_fire_rate0.5 / in-out_channels1 / input_size[(64,64),(256,256)] / data_split[0.7,0,0.3]。
+- **实现全官方原版**：model=`OfficialBackboneNCA`、agent=`OfficialAgent_Med_NCA`、data=`Dataset_NiiGz_3D`、loss=`DiceBCELoss`，零 subclass。
+- **归一化官方**：`__getitem__` 用 `torchio.ZNormalization()` + `RescaleIntensity(0,1, percentiles 0.5-99.5)`，强度规整 [0,1]，非 bug。
+- **收敛 run 与发散 run 跑同一份代码同一 config，唯一变量 = RNG。**
+
+### ★ 发散真机理（比「RNG 玄学」更具体，报告增值）
+R2 用 **64 inference steps @ 256²**，R1 hippocampus 仅 **16 steps @ 64²**。NCA 是递归更新，64 步 = R1 的 4× 递归深度 → cell 状态指数放大空间大 → 落发散盆地概率高。官方论文报 0.838 = 挑了个收敛 run 报单值、未报方差。**复现研究价值点：量化「官方配置在 prostate 大尺度上的收敛概率」。**
+
+### 执行：转「多 seed 脆弱性扫描」（作者决策「最硬」方案）
+- **改训练脚本**：`run_r2_prostate.py` 第 27 行 `SEED` 改 env 驱动（`R2_SEED`，默认 42）；MODEL_TAG 已 env 驱动 → 每 seed 独立目录 `r2_seed_{N}` 防污染。**seed 非官方方法 config，零偏离。**
+- **查 qos `4gpus` 上限**：MaxJobsPU=4 同时跑 / MaxSubmitPU=8 队列 / MaxTRESPU gpu=4。→ **可并行**（本地「训练串行」红线仅适用 Windows 单 GPU 抢占，HPC 独立 GPU+目录+log 物理隔离，作者批准并行）。
+- **并行提 5 个 seed job（42-46）** `_hpc_r2seed.py`：4 RUNNING + seed46 PENDING(QOSMaxJobsPerUserLimit 自动补位)。jobid 存 `_r2seed_jobids.txt`。
+  - jobid：42→1436781 / 43→1436782 / 44→1436783 / 45→1436784 / 46→1436785。
+- **监控**：新 `hpc_r2seed_check.py`（多 seed 快照 + 发散检测 loss>3+Dice0）。**发散早杀策略**：~ep15 命中 signature → scancel 该 seed（省 GPU ~10 分钟）；收敛的放跑满 1000ep eval。
+- **ep1 早期苗头**（同 config 仅 seed 不同）：seed43 loss1.5（疑收敛）/ seed44 3.34 / seed45 4.52（疑发散）→ 脆弱性从 ep1 可见。
+
+### ★★ 重大发现：NCA 中途断崖式崩溃（推翻「发散只在早期」假设）
+- 首轮 ep15 筛查：3/5 早发散（42@ep14 / 44@ep27 / 45@ep17，loss>4.5 Dice0），早 scancel。剩 43/46 看似收敛。
+- **但 seed 43 中途崩**：loss 健康降到 ep60=0.766，**ep61 单 epoch 暴涨 3.901 → 之后永卡 >4.5**（ep103=4.31 死局）。**不是渐变是悬崖** —— 健康训 60ep 后单步雪崩。scancel 1436782。
+- **教训**：早杀策略不安全，NCA 可中途崩，必须盯到 ep1000。检测器修：Dice 塌判定 `==0.0`→`<0.05`（43 崩后 Dice=0.004 漏报）。
+- **分布更新（更严峻）**：**4/5 发散（42 早/43 中途/44 早/45 早）+ 1/5 仅存（46）**。收敛率从看似 2/5 跌到 ≤1/5。
+- **headline 升级**：官方零偏离配置 prostate 不仅 60% 早期发散，且「健康收敛 run 也可能 ep60 后断崖崩」→ 复现危机证据更硬（单个 seed 健康轨迹不代表能跑完）。
+
+### ★★★ 真因精确定位：生死在 epoch 1 由 GPU fire-mask 随机性掷定（seed 锁不住）
+对比各 run 的 **ep1 loss**（首 epoch 末，健康该 ~1.25）：
+
+| run | seed | ep1 loss | 结局 |
+|---|---|---|---|
+| 1435378 | 42 | **1.25** | 健康→0.672 |
+| 1436781 | **42** | **4.33** | 开局坏→发散 |
+| 1436783 | 44 | 3.34 | 开局坏 |
+| 1436784 | 45 | 4.51 | 开局坏 |
+| 1436785 | 46 | 1.29 | 健康(在跑) |
+
+**两大铁证**：
+1. **多数不是「中途崩」是「ep1 即死」**：42/44/45 第 1 epoch loss 就 3.3-4.5，开局直落发散盆地，从没健康过（监控 ep14-27 才标红=首次查的时刻，非崩塌时刻）。**唯一真·中途崩 = seed 43**（健康 60ep → ep61 跳崖）。
+2. **同 seed 42 两次 run，ep1=1.25 vs 4.33 完全分叉**：同 seed/config/init，第 1 epoch 即分道 → `np.seed+torch.manual_seed` **锁不住真随机源**。
+- **真凶 = NCA 随机 fire-mask**（`cell_fire_rate=0.5`，每步随机 50% cell 更新×64 步），用 GPU rand 流 + CUDA 非确定 kernel，不受 CPU seed 控。每 run 掷不同 mask 序列 → 64 步放大 → **ep1 即决定好盆地(1.25)/坏盆地(4.5)**。
+- **headline 终版**（最硬）：官方零偏离配置 prostate，**收敛与否在第一个 epoch 由不可控 GPU fire-mask 随机性掷定，seed 完全锁不住**（同 seed 42 一收敛一发散实证）。比「跑越久越容易崩」「fast-subclass 改 RNG」都强。
+- ⚠️ 修正「1435378 短训没崩」误解：不是跑得短躲过，是 **ep1 抽中好盆地**后一路稳；与 epoch 数无关。
+
+### ★★★★ 终极结果：0/9 跑满 1000ep —— 官方配置无一存活（含历史 11 次尝试全灭）
+| 结果 | seed/run | 死在 |
+|---|---|---|
+| 唯一跑完(主动停非崩) | 1435378 | 301ep, 0.672 |
+| 崩 | 1436075 / 1436470 | ep185 / ep99 |
+| ep1 坏盆地即死 | 42,44,45,47,48,49,50 | ep1 (loss3.3-5.5) |
+| 中途断崖 | seed 43 | ep61 (健康60ep后跳崖) |
+| 中途断崖 | seed 46 | ep~120 (健康109ep Dice0.618 后崩) |
+- **seed 46 = 最强反例**：赢 ep1 抽签 + 跨过 seed43 的 ep61 崩区，ep109 Dice 已 0.618（逼近 1435378 终值 0.672），**仍在 ep110-124 断崖崩**。证明**没有安全期，任何 epoch 都可能崩**。
+- **崩塌点分布 ep1→ep185 全程散布** → 官方配置 prostate 实际**不可训满 1000ep**，0.838 用公开代码练不到。1435378 的 301ep/0.672 是 11 次里唯一的幸存者且未跑满。
+- **1435378 ckpt 已丢**（`rm -rf r2_prostate` 删）→ 无法续训；且 9 新 seed 无一活过 ep169，0.672 本身近乎不可复现。
+
+### R2 终稿定论（建议）
+- **R2 = FAIL，但归因强且诚实**：非我方偏离（逐行核实零偏离）、非欠训，而是**官方配置 NCA 训练不稳定性致 11/11 无法跑满**。最好部分结果 1435378=0.672@301ep（论文 0.838，gap −0.166）。
+- R2 复现 verdict：**「官方配置在 prostate 上不可稳定训练至论文轮数；0/9 fresh seed 存活至 ep1000，崩塌点 ep1-185 全程散布」** → 这是比单个 Dice 数字更重的复现性发现，升级为报告主结论之一。
+
+### headline 终版（报告 §6 核心，三档证据从弱到强）
+1. (会话 7) fast-subclass 改 RNG 流 → 单点发散对照。
+2. (会话 10) 同 config 同 seed 42 两次 1000ep 发散。
+3. **(会话 11) n=9 seed 扫描：收敛率 1/9；同 seed 42 ep1 loss 1.25(收敛) vs 4.33(发散) 分叉；机理 = NCA fire-mask(cell_fire_rate0.5×64步) 用 GPU-rand 流，CPU seed 锁不住，ep1 即掷定盆地。** ← 最硬，主推。
+
+### 下一步（会话 11 接续）
+- ① 盯 seed 46 到 ep1000（**不能信任早停**，seed 43 证明好盆地也可能中途崩）。出最终 Dice vs 0.838 看 gap → R2 是否翻 PASS（≥0.81）或诚实记「收敛时 Dice X + 收敛率 11%」。
+- ② 跑完立即下载 seed 46 best ckpt 到本地（防再丢）。
+- ③ 报告 §6 用 ep1 loss 分叉表 + fire-mask 机理重写；地基账 R2 更新。
+- ④ 清根目录临时 `_hpc_r2seed*.py`/`_r2seed_jobids.txt`/`_hpc_r2full.py`/`_r2full_jobid.txt`。
+- ② 汇总 headline：`收敛 N/5 + 收敛 run Dice mean±std + 发散率` → 报告 §6 RNG 脆弱性（比 fast-subclass 对照硬）。
+- ③ 决定 R2 终稿数字：若有收敛 run 达 ~0.81 则翻 PASS；否则诚实记「官方配置 prostate 收敛率 N/5 + 收敛时 Dice X」。
+- ④ 清根目录临时文件 `_hpc_r2seed.py`/`_r2seed_jobids.txt`/`_hpc_r2full.py`/`_r2full_jobid.txt`（连续挂账）。
+
+## 2026-06-05 — 会话 10：1436075 静默发散诊断（同 config 同 seed 仍炸）→ 杀 + 重提 1436470 + 监控弃弹窗改终端
+
+### ⚠️ 训练问题记录（作为参考 — NCA 复现脆弱性又一实证）
+**现象**：1000ep 重训 job **1436075** 跑到 ep185 时被发现**静默发散**：
+- 训练 loss 从 **ep1=4.80 起就死平在 ~5.0**（4.6–5.8 抖），185ep 完全不降。
+- 中期验证 **`Average Dice Loss 3d: 0, 0.0`**（格式 `0, X`，第二个数 X 才是真 mean Dice），连续 7 个验证点 patient 23-31 **全 0.0**。
+
+**对比老 run 1435378（301ep，成功）**：ep1 loss=**1.25** → 降到 0.8；验证 Dice 0.47→0.60→0.70→0.73。**起点 loss 就差 4 倍。**
+
+**根因确诊（非欠训/非打印 bug/非配置错）**：两 run 打印 config **完全相同**（`impl=official steps=64 lr=0.0016 grad_clip=0.0 seed=42`），test split 同一批 patient（23-31）。同 seed 同 config 却一收敛一发散 → **官方 Med-NCA 复现非 bit 级可复现**：`np.random.seed(42)+torch.manual_seed(42)` 锁不住 DataLoader shuffle worker RNG + CUDA 非确定 kernel + NCA fire-mask 随机流。prostate 大配置（256²/64步）处**稳定边缘**，run 间 RNG 噪声偶尔把轨迹推进发散盆地。**这正是报告 headline「NCA RNG 脆弱性」的又一直接实证**（会话 7 是 fast-subclass 改 RNG 致发散，本次是同 config 纯运气发散，更强）。
+
+**🔑 发散 signature（存档供日后秒判，勿再等 185ep）**：`过 ep10 后 loss 仍 >3.0(健康起点~1.25) + 验证 Dice==0` = 死局，不会恢复，立即 scancel。旧 `hpc_mednca_gui.py` 只查 nan/oom **漏报这种静默发散**，烧了 2.5h GPU 才被肉眼发现。
+
+### 执行
+1. **scancel 1436075**（队列确认清空）—— 跑 185ep 死局烧 GPU，0 价值。
+2. **零偏离重提 1000ep → job 1436470**（RUNNING gpu4090n4，`_hpc_r2full.py`，config 一字未改，赌这次 RNG 落收敛盆地，像 1435378 一样）。
+3. **监控弃 tkinter 弹窗**（黑屏风险 + 漏报发散）→ 新建 `hpc_mednca_check.py`（终端单次快照 / `watch` 轮询，**内置发散检测** loss>3 死平 + Dice 0 → 报红）。`hpc_mednca_gui.py` 弃用。
+
+### 下一步（接续）
+- ① 盯 1436470 **前 ~20ep**：ep1 loss 该 ~1.25、验证 Dice 该非 0 = 落收敛盆地；若又是 loss>3 + Dice 0 → 再 scancel 重抽（或固定更多 RNG 源 / 接受老 run 301ep 0.672 写终稿）。
+- ② 收敛则跑完 1000ep eval Dice vs 0.838，看 gap。
+- ③ 把「同 config 发散」这次写进报告 §6 RNG 脆弱性（比 fast-subclass 对照更硬）。
+
 ## 2026-06-05 — 会话 9：R2 官方配置核实 + 收敛趋势诊断（未饱和）+ 延 1000ep 重训提交
 
 **核实 R2 是否按官方**（`R2_REPRO_REPORT.md` §1 逐项对照官方 `train_Med_NCA.ipynb` cell-5）：**11/12 项一字不差**（BackboneNCA/ch32/64²→256²/lr16e-4/betas(0.5,0.5)/无裁剪/batch20/DiceBCE/steps64/单模态T2/整腺二值/split0.7-0-0.3），**唯一缺口 = epoch 301 vs 论文 1000**。连「数学等价提速」都没用（fast subclass 已作废）。→ R2 0.672 FAIL 主因坐实 = 欠训。
