@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1780658850.89566 "mednca_repro_report.tex" "mednca_repro_report.pdf" "mednca_repro_report" 1780658852.09515 0
+["pdflatex"] 1780661849.77943 "mednca_repro_report.tex" "mednca_repro_report.pdf" "mednca_repro_report" 1780661851.03314 0
   "e:/texlive/2025/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1755583606 2375 baa924870cfb487815765f9094cf3728 ""
   "e:/texlive/2025/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1755583606 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
   "e:/texlive/2025/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc" 1755583606 2840 216e6e45ad352e2456e1149f28885bee ""
@@ -24,9 +24,11 @@
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmr7.tfm" 1755583606 12064 09aa3eeac96bf141d673bb1b0385ce55 ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmr9.tfm" 1755583606 12084 b7f5e4c003de6f57f07c7e9fee73a37c ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmri10.tfm" 1755583606 17148 9556e1b5f936b77a796f68d2d559ba99 ""
+  "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmri7.tfm" 1755583606 17168 78a37e395d0470967cfda94332b0716a ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmri9.tfm" 1755583606 17148 ca1ae65757b004f470b8cd636199f6fc ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtk10.tfm" 1755583606 1368 5bfeb1cf8f9f0acdb7436bfaa8e0da4e ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtt10.tfm" 1755583606 1372 2ef2c2b492b3c4cd7879fe083abbb061 ""
+  "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtt8.tfm" 1755583606 1380 64228d979098ac090aa3f98d5aa8ad3e ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtt9.tfm" 1755583606 1372 a2ff2d4391a2d6bba15b518acb79e80f ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtti10.tfm" 1755583606 1372 0dcee1a56926aed3dd9ded91b7563563 ""
   "e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/lmex10.tfm" 1755583606 992 ce925c9346c7613270a79afbee98c070 ""
@@ -151,13 +153,13 @@
   "figures/fig_anchor_compare.pdf" 1780617574 16329 00742cddad49689d7bba6e7ed5f3d5a8 ""
   "figures/fig_c1_steps.pdf" 1780617574 19187 0bee0cbc2da4780c2c8bbd4e553a05db ""
   "figures/fig_r1_convergence.pdf" 1780617574 30990 afa5202ff50d0cbbc5a2735857c5cd58 ""
-  "figures/fig_rng_fragility.pdf" 1780617574 27847 985efe42d3c6371efe42d90214d17bb9 ""
+  "figures/fig_rng_fragility.pdf" 1780661598 31120 7a3ea7610756523dd32a8dd3f82adc92 ""
   "figures/fig_seed_sweep.pdf" 1780658614 43880 11d9c329412d50007c2397b61eaea8ee ""
   "figures/fig_v1_robustness.pdf" 1780617574 41358 e57bb79cf953193c9a61b36cca7b1b15 ""
   "figures/fig_v2_nqm.pdf" 1780617574 28383 e9547ecbe3dbef291fe169056663874e ""
-  "mednca_repro_report.aux" 1780658851 14166 3d386dd93b6a792c6246f4a4b9c95a3d "pdflatex"
-  "mednca_repro_report.out" 1780658851 3213 857e23c686acfaac08b73ff41a885574 "pdflatex"
-  "mednca_repro_report.tex" 1780658838 37375 11214ce553a874519c08edb0eb6e2144 ""
+  "mednca_repro_report.aux" 1780661850 14921 fd35bc9985359e07d8091d6d5d8d7001 "pdflatex"
+  "mednca_repro_report.out" 1780661850 3449 f2259cf1038e92ddf0060d7c396772e5 "pdflatex"
+  "mednca_repro_report.tex" 1780661833 42105 56fd71407d59a45a2d372da39cd28181 ""
   (generated)
   "mednca_repro_report.aux"
   "mednca_repro_report.log"

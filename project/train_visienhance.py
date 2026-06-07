@@ -232,6 +232,47 @@ def _b3_logits(b3, x: torch.Tensor) -> torch.Tensor:
     return b3((xc - mean) / std)
 
 
+def _b3_feat(b3, x: torch.Tensor) -> torch.Tensor:
+    """B3 最终卷积特征图 (分类器读的诊断语义层): x[0,1]@256 → crop224 → norm → features.
+
+    返回 (B, 1536, 7, 7). 用于 feature-level DP: 对齐此图即强制 enh 保住 B3 用来判读的
+    空间结构 (病灶不对称/边界/纹理), 比输出层 prob 监督梯度密集得多.
+    """
+    o = (x.shape[-1] - _B3_CROP) // 2
+    xc = x[..., o:o + _B3_CROP, o:o + _B3_CROP]
+    mean = torch.tensor(_IMAGENET_MEAN, device=x.device).view(1, 3, 1, 1)
+    std = torch.tensor(_IMAGENET_STD, device=x.device).view(1, 3, 1, 1)
+    return b3.features((xc - mean) / std)
+
+
+def dp_feat_loss(b3, x_enh, x_ref, y, hinge_clamp=3.0):
+    """Feature-level DP (v5): channel-wise cosine 对齐 B3 最终特征图 + 保留 logit pos-hinge.
+
+      feat  = mean_{b,h,w} [ 1 − cos( f_enh[:,h,w], f_ref[:,h,w] ) ]    f = B3.features
+      hinge = mean_{y==1} relu(logit_ref[mel] − logit_enh[mel]).clamp(max=hinge_clamp)
+
+    v4 的输出层 prob-KL 是单标量监督, 被 L1+LPIPS 主梯度碾压 → dangerous_flip 压不下.
+    feature-DP 在 7×7×1536 每个位置给梯度, 信号密度高数量级, 直接惩罚「增强改了 B3 判读
+    所依赖的诊断结构」(病灶磨平的本质). f_ref detached, 梯度只经 f_enh. cosine 不惩罚整体
+    亮度/对比缩放 (那是增强该做的), 只惩罚结构方向偏移 → 与 R8「不发明/不抹除病灶」对齐.
+    """
+    with torch.no_grad():
+        f_ref = _b3_feat(b3, x_ref)                              # (B,C,H,W) detached
+        logits_ref = _b3_logits(b3, x_ref)
+    f_enh = _b3_feat(b3, x_enh)                                  # carries grad
+    fr = F.normalize(f_ref, dim=1)
+    fe = F.normalize(f_enh, dim=1)
+    feat = (1.0 - (fr * fe).sum(dim=1)).mean()                  # 空间+batch 均值
+    pos = (y == 1)
+    if pos.any():
+        logits_enh = _b3_logits(b3, x_enh)
+        gap = logits_ref[pos, 1] - logits_enh[pos, 1]
+        hinge = gap.clamp_min(0).clamp(max=hinge_clamp).mean()
+    else:
+        hinge = torch.zeros((), device=x_enh.device)
+    return feat, hinge
+
+
 def dp_loss_b3(b3, x_enh, x_ref, y, hinge_clamp=3.0):
     """B3-sourced diagnosis-preserving loss + logit-space pos-hinge.
 
@@ -310,8 +351,11 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
                     loss = loss + lam.lambda_lpips * lp
 
                 if stage >= 2 and lam.lambda_dp > 0 and b3 is not None:
-                    # v2: B3-sourced DP-Loss + pos-hinge (train/eval same oracle).
-                    dp, hinge = dp_loss_b3(b3, x_enh, x_ref, y, lam.get("hinge_clamp", 3.0))
+                    # v2: 输出层 prob-KL+hinge;  v5: feature-level DP (dp_mode=feat) + hinge.
+                    if lam.get("dp_mode", "prob") == "feat":
+                        dp, hinge = dp_feat_loss(b3, x_enh, x_ref, y, lam.get("hinge_clamp", 3.0))
+                    else:
+                        dp, hinge = dp_loss_b3(b3, x_enh, x_ref, y, lam.get("hinge_clamp", 3.0))
                     dp_val = dp.item()
                     hinge_val = hinge.item()
                     loss = loss + lam.lambda_dp * dp + lam.get("lambda_hinge", 0.0) * hinge

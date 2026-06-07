@@ -22,67 +22,74 @@
 \@writefile{toc}{\contentsline {paragraph}{Metric discipline.}{2}{section*.8}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Frozen test sets (RIDGE Integrity).}{2}{section*.9}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Two known traps, neutralised.}{2}{section*.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}R1: Hippocampus Reproduction}{2}{section.4}\protected@file@percent }
-\newlabel{sec:r1}{{4}{2}{R1: Hippocampus Reproduction}{section.4}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces R1 Hippocampus reproduction (per-volume Dice, $n=78$, seed 42). Paper target $0.886\pm 0.042$; threshold $\geq 0.86$. The official zero-deviation run is the anchor; the fast run is a deprecated non-official-config reference (it happens to agree to within $0.002$).}}{3}{table.caption.11}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
 \newlabel{tab:r1}{{1}{3}{R1 Hippocampus reproduction (per-volume Dice, $n=78$, seed 42). Paper target $0.886\pm 0.042$; threshold $\geq 0.86$. The official zero-deviation run is the anchor; the fast run is a deprecated non-official-config reference (it happens to agree to within $0.002$)}{table.caption.11}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces R1 Hippocampus training. \textbf  {Left:} per-epoch training loss. \textbf  {Right:} eval mean Dice (every 25 epochs, $\pm $std) for the zero-deviation official implementation, approaching both the fast-implementation anchor ($0.866$) and the paper target ($0.886$).}}{3}{figure.caption.12}\protected@file@percent }
 \newlabel{fig:conv}{{1}{3}{R1 Hippocampus training. \textbf {Left:} per-epoch training loss. \textbf {Right:} eval mean Dice (every 25 epochs, $\pm $std) for the zero-deviation official implementation, approaching both the fast-implementation anchor ($0.866$) and the paper target ($0.886$)}{figure.caption.12}{}}
-\@writefile{toc}{\contentsline {paragraph}{Determinism and parameters.}{3}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}R1: Hippocampus Reproduction}{3}{section.4}\protected@file@percent }
+\newlabel{sec:r1}{{4}{3}{R1: Hippocampus Reproduction}{section.4}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Inference-step sweep (C1) on the official checkpoint (trained at 16 steps). Dice peaks exactly at the training step count (steps$=16$, $\mathrm  {Dice}=0.865$) and degrades on either side; over-stepping ($\geq 48$ steps) collapses the output ($\mathrm  {Dice}<0.24$) as the cell state over-evolves. NCA inference must match the training step count --- Med-NCA is \emph  {not} over-step-stable.}}{3}{figure.caption.13}\protected@file@percent }
 \newlabel{fig:c1}{{2}{3}{Inference-step sweep (C1) on the official checkpoint (trained at 16 steps). Dice peaks exactly at the training step count (steps$=16$, $\dice =0.865$) and degrades on either side; over-stepping ($\geq 48$ steps) collapses the output ($\dice <0.24$) as the cell state over-evolves. NCA inference must match the training step count --- Med-NCA is \emph {not} over-step-stable}{figure.caption.13}{}}
+\@writefile{toc}{\contentsline {paragraph}{Determinism and parameters.}{3}{section*.14}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5}R2: Prostate --- Not Reproducible at Paper Scale}{3}{section.5}\protected@file@percent }
 \newlabel{sec:r2}{{5}{3}{R2: Prostate --- Not Reproducible at Paper Scale}{section.5}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}The single-run result and an honest gap}{3}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}The under-training hypothesis --- and its falsification}{3}{subsection.5.2}\protected@file@percent }
+\citation{kalkhof2023mednca}
 \@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces R2 Prostate, best partial run (per-volume Dice, $n=9$, official implementation, 301 epochs --- the only non-crashed attempt). Paper $0.838\pm 0.083$, U-Net $0.799$.}}{4}{table.caption.15}\protected@file@percent }
 \newlabel{tab:r2}{{2}{4}{R2 Prostate, best partial run (per-volume Dice, $n=9$, official implementation, 301 epochs --- the only non-crashed attempt). Paper $0.838\pm 0.083$, U-Net $0.799$}{table.caption.15}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Reproduction vs.\ paper for both anchors. Hippocampus reproduces within one std of the paper; the best Prostate run falls short by $0.166$. Error bars: paper std / reproduction 95\% CI.}}{4}{figure.caption.16}\protected@file@percent }
 \newlabel{fig:anchor}{{3}{4}{Reproduction vs.\ paper for both anchors. Hippocampus reproduces within one std of the paper; the best Prostate run falls short by $0.166$. Error bars: paper std / reproduction 95\% CI}{figure.caption.16}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}The 9-seed sweep: $0/9$ survive}{4}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}The under-training hypothesis --- and its falsification}{4}{subsection.5.2}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces 9-seed sweep detail (zero-deviation, 1000-ep target). ``ep1 basin'' from the first-epoch loss; ``crash'' is the epoch of the loss cliff. Peak Dice is the best validation Dice seen before collapse (``---'' = never produced foreground).}}{4}{table.caption.18}\protected@file@percent }
 \newlabel{tab:seed}{{3}{4}{9-seed sweep detail (zero-deviation, 1000-ep target). ``ep1 basin'' from the first-epoch loss; ``crash'' is the epoch of the loss cliff. Peak Dice is the best validation Dice seen before collapse (``---'' = never produced foreground)}{table.caption.18}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Root cause: an uncontrolled CUDA RNG stream}{4}{subsection.5.4}\protected@file@percent }
-\newlabel{sec:r2root}{{5.4}{4}{Root cause: an uncontrolled CUDA RNG stream}{subsection.5.4}{}}
-\@writefile{toc}{\contentsline {paragraph}{Verdict.}{4}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}The 9-seed sweep: $0/9$ survive}{4}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Root cause: an unstable config plus uncontrolled floating-point nondeterminism}{4}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:r2root}{{5.4}{4}{Root cause: an unstable config plus uncontrolled floating-point nondeterminism}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{(i) The config is dynamically unstable.}{4}{section*.19}\protected@file@percent }
+\citation{pytorch_repro}
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces \textbf  {The Prostate instability (zero-deviation, 9-seed sweep).} \textbf  {(a)} Epoch-1 training loss is bimodal: $2/9$ seeds land in the good basin ($\approx 1.3$), $7/9$ in the bad basin ($3.3$--$4.5$); the basin is fixed on the very first epoch. \textbf  {(b)} Full loss trajectories: the $7$ bad-basin seeds stay flat-high; the $2$ good-basin seeds (green) train healthily, then collapse off a cliff at epochs 61 and 122. \textbf  {(c)} Crash-epoch timeline over all 11 official-config attempts (9 fresh seeds + 2 history 1000-ep runs + 1 manually-stopped 301-ep run): $0/11$ reach the paper's 1000 epochs.}}{5}{figure.caption.17}\protected@file@percent }
 \newlabel{fig:seed}{{4}{5}{\textbf {The Prostate instability (zero-deviation, 9-seed sweep).} \textbf {(a)} Epoch-1 training loss is bimodal: $2/9$ seeds land in the good basin ($\approx 1.3$), $7/9$ in the bad basin ($3.3$--$4.5$); the basin is fixed on the very first epoch. \textbf {(b)} Full loss trajectories: the $7$ bad-basin seeds stay flat-high; the $2$ good-basin seeds (green) train healthily, then collapse off a cliff at epochs 61 and 122. \textbf {(c)} Crash-epoch timeline over all 11 official-config attempts (9 fresh seeds + 2 history 1000-ep runs + 1 manually-stopped 301-ep run): $0/11$ reach the paper's 1000 epochs}{figure.caption.17}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Reproducibility Fragility: the RNG, Three Ways}{5}{section.6}\protected@file@percent }
-\newlabel{sec:rng}{{6}{5}{Reproducibility Fragility: the RNG, Three Ways}{section.6}{}}
-\@writefile{toc}{\contentsline {paragraph}{(1) A ``free'' optimisation breaks it (controlled, single pair).}{5}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{(2) The same config diverges across runs.}{5}{section*.21}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces \textbf  {Fragility face (1): the controlled pair.} On Prostate (identical config, RNG source only) a mathematically equivalent CPU$\rightarrow $GPU change to fire-mask sampling collapses training from $0.672$ to $0.0$. The Hippocampus bars converge but differ in configuration too (ch16/64-step vs.\ ch32/16-step), so they are shown only as a forgiving-regime reference, not a controlled RNG test.}}{5}{figure.caption.23}\protected@file@percent }
-\newlabel{fig:rng}{{5}{5}{\textbf {Fragility face (1): the controlled pair.} On Prostate (identical config, RNG source only) a mathematically equivalent CPU$\rightarrow $GPU change to fire-mask sampling collapses training from $0.672$ to $0.0$. The Hippocampus bars converge but differ in configuration too (ch16/64-step vs.\ ch32/16-step), so they are shown only as a forgiving-regime reference, not a controlled RNG test}{figure.caption.23}{}}
-\@writefile{toc}{\contentsline {paragraph}{(3) The same \emph  {seed} diverges (strongest).}{5}{section*.22}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Takeaway.}{5}{section*.24}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Robustness degradation (V1) on the official checkpoint. Per-volume Dice vs.\ corruption level for five families; dashed line = clean baseline $0.865$. Noise is most destructive ($0.046$ at $\sigma {=}0.4$); ghosting most benign.}}{6}{figure.caption.26}\protected@file@percent }
-\newlabel{fig:v1}{{6}{6}{Robustness degradation (V1) on the official checkpoint. Per-volume Dice vs.\ corruption level for five families; dashed line = clean baseline $0.865$. Noise is most destructive ($0.046$ at $\sigma {=}0.4$); ghosting most benign}{figure.caption.26}{}}
+\@writefile{toc}{\contentsline {paragraph}{(ii) Fixed seeds do not make it reproducible.}{5}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Why one run ``succeeded'' --- survivorship.}{5}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Verdict.}{5}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Reproducibility Fragility: Three Levels of Nondeterminism}{5}{section.6}\protected@file@percent }
+\newlabel{sec:rng}{{6}{5}{Reproducibility Fragility: Three Levels of Nondeterminism}{section.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{(1) A ``free'' RNG-stream change breaks it (controlled pair).}{5}{section*.23}\protected@file@percent }
+\citation{pytorch_repro}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces \textbf  {Two levels of nondeterminism, both on Prostate.} \textbf  {(a)} A mathematically equivalent CPU$\rightarrow $GPU change to the fire-mask RNG \emph  {stream} collapses training from $0.672$ to $0.0$. \textbf  {(b)} With the official seed-controlled fire mask held fixed, the \emph  {same} seed 42 still gives epoch-1 loss $1.25$ (converged) vs.\ $4.33$ (diverged) across two runs --- the deciding perturbation is cuDNN/atomic floating-point nondeterminism, not the seed.}}{6}{figure.caption.26}\protected@file@percent }
+\newlabel{fig:rng}{{5}{6}{\textbf {Two levels of nondeterminism, both on Prostate.} \textbf {(a)} A mathematically equivalent CPU$\rightarrow $GPU change to the fire-mask RNG \emph {stream} collapses training from $0.672$ to $0.0$. \textbf {(b)} With the official seed-controlled fire mask held fixed, the \emph {same} seed 42 still gives epoch-1 loss $1.25$ (converged) vs.\ $4.33$ (diverged) across two runs --- the deciding perturbation is cuDNN/atomic floating-point nondeterminism, not the seed}{figure.caption.26}{}}
+\@writefile{toc}{\contentsline {paragraph}{(2) The same config diverges across runs (FP nondeterminism).}{6}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{(3) The same \emph  {seed} diverges (strongest).}{6}{section*.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Takeaway.}{6}{section*.27}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Robustness degradation (V1) on the official checkpoint. Per-volume Dice vs.\ corruption level for five families; dashed line = clean baseline $0.865$. Noise is most destructive ($0.046$ at $\sigma {=}0.4$); ghosting most benign.}}{6}{figure.caption.29}\protected@file@percent }
+\newlabel{fig:v1}{{6}{6}{Robustness degradation (V1) on the official checkpoint. Per-volume Dice vs.\ corruption level for five families; dashed line = clean baseline $0.865$. Noise is most destructive ($0.046$ at $\sigma {=}0.4$); ghosting most benign}{figure.caption.29}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {7}Behavioural Characterisation}{6}{section.7}\protected@file@percent }
 \newlabel{sec:behaviour}{{7}{6}{Behavioural Characterisation}{section.7}{}}
-\@writefile{toc}{\contentsline {paragraph}{Robustness (V1, Figure~\ref {fig:v1}).}{6}{section*.25}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Built-in quality control (V2/R5, Figure~\ref {fig:v2}).}{6}{section*.27}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Efficiency (RIDGE four-tuple).}{6}{section*.29}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Built-in quality metric (V2/R5). Per-volume NQM (inference variance) vs.\ Dice. Both failures (red, $\mathrm  {Dice}<0.8$) have the highest NQM; Spearman $\rho =0.47$, $p<10^{-5}$.}}{6}{figure.caption.28}\protected@file@percent }
-\newlabel{fig:v2}{{7}{6}{Built-in quality metric (V2/R5). Per-volume NQM (inference variance) vs.\ Dice. Both failures (red, $\dice <0.8$) have the highest NQM; Spearman $\rho =0.47$, $p<10^{-5}$}{figure.caption.28}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Efficiency four-tuple. Latency/memory measured on an RTX 4070 Laptop with dummy input; \textsuperscript  {$\dagger $}theoretical MACs. Hippocampus params are for the official \texttt  {channel\_n}$=32$ config (the deprecated ch16 run had $25{,}920$); its latency/memory are pending a measurement pass on the frozen official checkpoint.}}{6}{table.caption.30}\protected@file@percent }
-\newlabel{tab:eff}{{4}{6}{Efficiency four-tuple. Latency/memory measured on an RTX 4070 Laptop with dummy input; \textsuperscript {$\dagger $}theoretical MACs. Hippocampus params are for the official \texttt {channel\_n}$=32$ config (the deprecated ch16 run had $25{,}920$); its latency/memory are pending a measurement pass on the frozen official checkpoint}{table.caption.30}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {8}Discussion and Limitations}{6}{section.8}\protected@file@percent }
-\newlabel{sec:discussion}{{8}{6}{Discussion and Limitations}{section.8}{}}
+\@writefile{toc}{\contentsline {paragraph}{Robustness (V1, Figure~\ref {fig:v1}).}{6}{section*.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Built-in quality control (V2/R5, Figure~\ref {fig:v2}).}{6}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Efficiency (RIDGE four-tuple).}{6}{section*.32}\protected@file@percent }
 \bibcite{mordvintsev2020growing}{1}
 \bibcite{kalkhof2023mednca}{2}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Built-in quality metric (V2/R5). Per-volume NQM (inference variance) vs.\ Dice. Both failures (red, $\mathrm  {Dice}<0.8$) have the highest NQM; Spearman $\rho =0.47$, $p<10^{-5}$.}}{7}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:v2}{{7}{7}{Built-in quality metric (V2/R5). Per-volume NQM (inference variance) vs.\ Dice. Both failures (red, $\dice <0.8$) have the highest NQM; Spearman $\rho =0.47$, $p<10^{-5}$}{figure.caption.31}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Efficiency four-tuple. Latency/memory measured on an RTX 4070 Laptop with dummy input; \textsuperscript  {$\dagger $}theoretical MACs. Hippocampus params are for the official \texttt  {channel\_n}$=32$ config (the deprecated ch16 run had $25{,}920$); its latency/memory are pending a measurement pass on the frozen official checkpoint.}}{7}{table.caption.33}\protected@file@percent }
+\newlabel{tab:eff}{{4}{7}{Efficiency four-tuple. Latency/memory measured on an RTX 4070 Laptop with dummy input; \textsuperscript {$\dagger $}theoretical MACs. Hippocampus params are for the official \texttt {channel\_n}$=32$ config (the deprecated ch16 run had $25{,}920$); its latency/memory are pending a measurement pass on the frozen official checkpoint}{table.caption.33}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Discussion and Limitations}{7}{section.8}\protected@file@percent }
+\newlabel{sec:discussion}{{8}{7}{Discussion and Limitations}{section.8}{}}
+\@writefile{toc}{\contentsline {paragraph}{Two faces of the same recurrence.}{7}{section*.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Limitations.}{7}{section*.35}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Conclusion}{7}{section.9}\protected@file@percent }
+\newlabel{sec:conclusion}{{9}{7}{Conclusion}{section.9}{}}
 \bibcite{kalkhof2023m3dnca}{3}
 \bibcite{ridge2024}{4}
 \bibcite{nbk597469}{5}
 \bibcite{antonelli2022msd}{6}
-\@writefile{toc}{\contentsline {paragraph}{Two faces of the same stochasticity.}{7}{section*.31}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Limitations.}{7}{section*.32}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {9}Conclusion}{7}{section.9}\protected@file@percent }
-\newlabel{sec:conclusion}{{9}{7}{Conclusion}{section.9}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Reproduction Commands}{7}{appendix.A}\protected@file@percent }
-\newlabel{app:cmd}{{A}{7}{Reproduction Commands}{appendix.A}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {B}Engineering Pitfall Log}{7}{appendix.B}\protected@file@percent }
-\newlabel{app:pitfalls}{{B}{7}{Engineering Pitfall Log}{appendix.B}{}}
+\bibcite{pytorch_repro}{7}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Reproduction Commands}{8}{appendix.A}\protected@file@percent }
+\newlabel{app:cmd}{{A}{8}{Reproduction Commands}{appendix.A}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Engineering Pitfall Log}{8}{appendix.B}\protected@file@percent }
+\newlabel{app:pitfalls}{{B}{8}{Engineering Pitfall Log}{appendix.B}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {C}Per-seed Sweep Data}{8}{appendix.C}\protected@file@percent }
 \newlabel{app:seed}{{C}{8}{Per-seed Sweep Data}{appendix.C}{}}
-\gdef \@abspage@last{8}
+\gdef \@abspage@last{9}

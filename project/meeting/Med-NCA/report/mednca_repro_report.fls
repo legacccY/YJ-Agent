@@ -253,6 +253,13 @@ INPUT ./figures/fig_seed_sweep.pdf
 INPUT ./figures/fig_seed_sweep.pdf
 INPUT ./figures/fig_seed_sweep.pdf
 INPUT ./figures/fig_seed_sweep.pdf
+INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtt8.tfm
+INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtt8.tfm
+INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtti10.tfm
+INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmri7.tfm
+INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtti10.tfm
+INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmri7.tfm
+INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmtti10.tfm
 INPUT e:/texlive/2025/texmf-dist/fonts/tfm/public/lm/ec-lmbxi10.tfm
 INPUT ./figures/fig_rng_fragility.pdf
 INPUT ./figures/fig_rng_fragility.pdf

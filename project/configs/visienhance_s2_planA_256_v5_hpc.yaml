@@ -1,0 +1,67 @@
+# Stage 2 Plan A @256 v5 (HPC) — feature-level DP + pos-hinge.
+# v4 (输出层 prob-KL + logit-hinge) dangerous_flip 仍 0.176: 标量 prob 监督被 L1+LPIPS
+#   主梯度碾压, 救不动「病灶结构被磨平」. v5 改 feature-level DP: channel-wise cosine 对齐
+#   B3 最终特征图 (1536×7×7, 分类器直接读的诊断语义层) → 每空间位置都有梯度, 信号密度高
+#   数量级, 直接惩罚 enh 改了 B3 判读所依赖的结构. 保留 logit pos-hinge 守黑色素瘤方向.
+# dp_mode=feat 切到 dp_feat_loss; lambda_dp 经 scripts/probe_feat_dp.py 标定 (feat~20% L1).
+# Resume from Stage 1 @256 best. VisiScore + B3 冻结.
+
+stage: 2
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: /gpfs/work/bio/jiayu2403/visienhance/data/quality_labels_nocrop_hpc.csv
+  split_csv:  /gpfs/work/bio/jiayu2403/visienhance/data/isic_split.csv
+  meta_csv:   /gpfs/work/bio/jiayu2403/visienhance/data/train-metadata.csv
+  img_size: 256
+  severity: mixed
+  val_severity: mixed
+  batch_size: 8
+  num_workers: 8
+  pos_oversample: 10
+
+train:
+  epochs: 80
+  lr: 3.0e-5
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 999
+  resume_from: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage1_planA_256/best_visienhance.pth
+  model_only: true
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  dp_mode: feat            # v5: 切 dp_feat_loss (channel-wise cosine 对齐 B3 最终特征图)
+  lambda_dp: 0.019         # probe(job1440973)标定: feat 项 ≈30% L1 (feat=0.350,L1=0.0223). B激进
+  lambda_hinge: 0.04       # 沿用 v4 logit-hinge (probe: hinge=0.364→~65% L1, 安全项强守阳)
+  hinge_clamp: 3.0
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/best_visiscore.pth
+  qvib_ckpt:     /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efnet/best_qad.pth
+  b3_ckpt:       /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efficientnet_b3_isic.pth
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage2_planA_256_v5
+
+wandb:
+  project: visienhance
+  name: stage2_planA_256_v5_hpc
+  mode: offline

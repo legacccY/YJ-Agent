@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-06-07（会话 18，找回会话17未存档进度 → 出 dflip headline 图 → feature-DP v5 全管线 + 启 4 卡重训 job 1440985）
+
+### 起因
+开门「之前做 ICLR 没存档，找回 + 看 HPC」。核实：ICLR 主线卡在会话 17（06-03），之后 commit 全是 Med-NCA（会话 9-12 借走 HPC）。本地无未提交 ICLR 产物。查 CC transcript 发现**闪退会话 ef5d153a（11:50）= 本找回任务的前一次尝试**，崩在一次 malformed tool call，期间没写盘 → **零工作丢失**。闪退前用户已拍方向「并行：HPC 重训 + 本地回写」。HPC 队列空，整台归 ICLR。
+
+### 轨① dflip headline 图（会话 18 待办①，零训练交付）
+- 写 `dump_dflip_figure_data.py`（单次前向落盘 per-sample mel 概率 + dangerous-flip 病灶 ref/deg/enh 三联 npz）+ `render_dflip_figure.py`（slopegraph + 病灶网格）。
+- **笔记本 4070 反复 CUDA illegal-memory-access**（batch 8/16 炸、报错层乱跳，显存才用 1.2/8GB 非 OOM = driver/cuDNN 大负载不稳）→ **转 HPC**。写 `run_dflip_hpc.py`（patch 路径 wrapper，仿 run_eval_hpc）+ `submit_dflip.sh`，HPC 单卡 4090 **3 分钟跑完**（job 1440970），sftp 回 CSV + 13 npz。
+- **数字精确复现会话 17**：mask(ref 正确报阳 mel)=74、dangerous_flip=13、B_enh 主动翻=11（85%）。
+- 出 `report/figures/fig_dflip.{pdf,png}`：(a) 74 mel 的 B3 mel-prob ref→deg→enh slopegraph，均值 0.93→0.81，13 条红线跌破 0.5；(b) 4 例 enhance-caused flip 病灶磨平三联（红框 enhanced 行）。**红线 R8 直接实证。**
+
+### 轨② feature-DP v5 全管线（救 dangerous_flip，会话 18 待办③升级版）
+- **诊断 v4 为何没压下**：输出层 prob-KL 是单标量监督，被 L1+LPIPS 主梯度碾压。
+- **v5 = feature-level DP**：`dp_feat_loss`（train_visienhance.py 新增）channel-wise cosine 对齐 **B3 最终特征图**（1536×7×7，分类器直读的诊断语义层）→ 每空间位置都有梯度，信号密度高数量级；保留 v4 logit pos-hinge。`dp_mode=feat` 配置开关，不破 v4 路径。本地 CPU smoke 过（feat map shape/grad/边界）。
+- **防 clobber**：diff HPC 现版 train（归一化 LF）确认差异仅我加的两块，HPC 的 DDP 版其余一字不差，零覆盖风险（吸取会话 15 教训）。
+- **probe 标定 job 1440973**：feat(enh,ref)=**0.350**（降质基线 0.465，增强只补回 0.115 → 剩 0.35 缺口 = dflip 根源）、L1=0.0223、PSNR 30.39（E1 有 3dB 余量）。**GATE 用户选 B 激进**：λ_dp=0.019（feat 项≈30% L1）、λ_hinge=0.04（沿用 v4）。
+- **启 4 卡 v5 训练 job 1440985**（gpu4090n10，80ep，patience=999，ETA ~13-15h）。smoke 验证 PASS：DDP 4 rank 全加载、resume stage1_256、it/s 起来、零 Traceback。config v5 + 5 脚本全上 HPC。
+
+### 待续（会话 19）
+1. **盯 1440985 训完** → sync best ckpt → `eval_diag_paired.py` 复测 E3/E7：看 **dangerous_flip 是否从 0.176 破** + dAUC/一致率。dflip dump 管线（HPC 版）现成，可直接复跑出新图对比。
+2. **framing 回写（本会话只读未改，明确欠债）**：STORY_FRAMEWORK §4 + Claim 2/3 + ACCEPTANCE E3/E7 —— E3 降级为 motivation（query-for-retake/Thm2 证据），主推 E7 PASS + dflip 实证。
+3. fig_dflip 接进 paper §4/§7 + 跑 `/validate-figures`。
+
+### 命中率
+轨①把会话 17 的 dflip 根因变成可上版的 headline figure（红线 R8 实证、数字溯源全绿）。轨②从「继续调 hinge λ」升级到机制更对的 feature-level DP（直击 B3 特征 0.35 缺口），probe 有据、激进标定、E1 余量托底。**本会话严守纪律**：每步落盘 + config 入版控 + diff 防 clobber + 训练 smoke 验证后才走人——清偿会话 14-17 反复踩的「HPC 迭代不记日志/手改不入版控」欠债。仍开放：feature-DP 能否真破 dangerous_flip 待 13h 后见分晓；framing 回写顺延。
+
+---
+
 ## 2026-06-03（会话 17，还原未记日志的 v3/v4 迭代 → 抢 v4 best ckpt 评 E3/E7 → dflip 根因诊断：85% 是 enhance 主动造成）
 
 ### 起因
