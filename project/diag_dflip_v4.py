@@ -8,6 +8,7 @@
 复用 eval_diag_paired.collect_all (同图同退化, 严格配对).
 cwd=project.
 """
+import os
 import numpy as np
 import torch
 
@@ -17,7 +18,7 @@ from eval_stage2_compare import (load_visienhance, load_visiscore, load_b3,
 
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu") if os.environ.get("FORCE_CPU") else torch.device("cuda" if torch.cuda.is_available() else "cpu")
     visiscore = load_visiscore(VISISCORE, device)
     b3 = load_b3(B3, device)
     models = {name: load_visienhance(CFG, path, device) for name, path in CKPTS.items()}

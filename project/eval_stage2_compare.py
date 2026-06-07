@@ -66,7 +66,7 @@ _TT = transforms.ToTensor()
 
 CKPTS = {
     "Stage1 (no DP)":  f"{ROOT}/checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth",
-    "Stage2 (DP, HPC)": f"{ROOT}/project/checkpoints/visienhance/stage2_planA_256_v4/best_visienhance.pth",
+    "Stage2 (DP, HPC)": f"{ROOT}/project/checkpoints/visienhance/stage2_planA_256_v5/best_visienhance.pth",
 }
 
 # model cfg (Plan A 15M)

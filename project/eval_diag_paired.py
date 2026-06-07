@@ -55,8 +55,8 @@ def collect_all(models, visiscore, b3, df, device):
 
     R, D, ys = [], [], []
     E = {name: [] for name in models}
-    for s in range(0, len(df), 16):
-        rows = df.iloc[s:s + 16]
+    for s in range(0, len(df), 4):
+        rows = df.iloc[s:s + 4]
         lows, refs = [], []
         for j, row in rows.iterrows():
             img = cv2.imread(str(row.original_path))

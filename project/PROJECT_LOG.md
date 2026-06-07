@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-06-07（会话 19，盯 v5 job 1440985 训练中 → 测 dflip 受阻于本地 GPU 不稳 → CPU eval 唯一稳路）
+
+### 起因
+开门「查 job 1440985 + 把现有数据拿出来看 flip 达标没」。
+
+### 查 job 1440985（v5 feature-DP，4 卡）
+- **RUNNING ep40/80**，ETA ~7h（到 ep80）。
+- **val_PSNR 30.17 全程锁 30.1–30.17 → E1 守住**（增强质量没被牺牲）。
+- **val_DP 单调降 0.293（ep0）→ 0.198（ep40），−32%** = B3 特征在向 ref 对齐，feature-DP 机制**确实起效**（v4 输出层 prob-KL 压不动，换 feature-level 后 loss 真动了）。但 ep30→40 只降 0.007，**已趋平渐近 ~0.198**，剩 40 epoch 估计只再削一点。
+- **val_H（hinge）0.078 横盘不降，train_H→0.006**：hinge 项又泛化不动（同 v3/v4），**全靠 feature-DP 项扛**。
+
+### 关键认知
+**dangerous_flip 不在训练指标里**（val_DP 是 cosine 距离 loss、val_H 是 logit hinge loss，都 ≠ 翻转比例）。要测 flip 达标没，**必须跑 `eval_diag_paired.py`**（会话 17 出 0.176 的就是它，协议 degrade@256→enh@256→crop224→B3，算 dangerous_flip）。
+
+### 测 dflip 受阻 → 本地 GPU 确认不可用
+- 本地 v5 **ep37 PSNR-best ckpt 已 sync**（`project/checkpoints/visienhance/stage2_planA_256_v5/best_visienhance.pth`，22:16，中途 ckpt 非最终）。`eval_stage2_compare.py` CKPTS S2 已指 v5（eval_diag_paired import 它的 CKPTS）。
+- **本地 4070 跑 eval 三连崩 CUDA illegal-access**：崩点乱跳（conv_transpose2d → layer_norm）、**batch 降到 4 也崩**、显存才用 1.2GB **非 OOM**、`CUDA_LAUNCH_BLOCKING=1` 也救不了。→ **坐实 4070 laptop 跑 visienhance 前向是 driver/cuDNN 硬件层不稳，软改无解**（会话 18 同结论再验证）。
+- **HPC 4090 配额满**：训练 job 1440985 占 `gres/gpu=4`（QOS=4gpus 全占），新 GPU eval job 只能 PEND 等训完 ~7h，比 CPU 慢。
+- → **CPU（`CUDA_VISIBLE_DEVICES=-1`）是唯一即时稳路**，约 30-50min（batch 4）。注：CPU log 在跑完前几乎空（Python stdout 重定向文件块缓冲 + collect_all 无中途 print），非卡死。收工时 CPU eval 未出结果即停。
+
+### 改动
+- `eval_diag_paired.py` batch 16→4（试 GPU 用，CPU 也兼容；以后 HPC GPU 跑可改回 16 提速）。
+- `diag_dflip_v4.py` 加 `FORCE_CPU` 环境开关（用户 IDE 改，应对本地 GPU 不稳）。
+- `eval_stage2_compare.py` CKPTS S2 v4→v5（用户改）。
+
+### 待续（会话 20）
+1. **出 ep37 dflip 预览**：`cd project && CUDA_VISIBLE_DEVICES=-1 python eval_diag_paired.py > eval_v5_cpu.log 2>&1`（约 30-50min；**本地 GPU 别试，必崩**；想看进度加 tqdm+`python -u`）。看 dangerous_flip vs v4 的 0.176。
+2. **最终定论**：job 1440985 训完（ep80，~7h 后）→ HPC sync 最终 best ckpt → **HPC GPU 跑 eval**（那时卡空、3min）出最终 dflip。看破没破 0.176 + dAUC/一致率（E3）+ 配对 E7。
+3. **framing 回写欠债**（会话 17/18 顺延至今）：STORY §4 + Claim2/3 + ACCEPTANCE E3/E7 —— E3 降级 motivation、主推 E7+dflip 实证。
+
+### 命中率
+feature-DP 机制信号是正的（val_DP 真降 −32%、E1 余量足），但 ① val_DP 趋平、② hinge 仍泛化不动、③ val_DP≠dflip 三点意味着「flip 破 0.176」仍未证实，只能等 eval。本地 GPU 彻底判死（三崩坐实），以后这类前向 eval 固定走 CPU 或 HPC 空卡。
+
+---
+
 ## 2026-06-07（会话 18，找回会话17未存档进度 → 出 dflip headline 图 → feature-DP v5 全管线 + 启 4 卡重训 job 1440985）
 
 ### 起因
