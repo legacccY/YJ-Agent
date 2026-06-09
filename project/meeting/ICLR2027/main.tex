@@ -251,7 +251,8 @@ The deterministic enhancer raises per-image PSNR to $32.7$~dB --- a $+10.1$~dB g
 input (SSIM $0.91$) over $n=19{,}878$ held-out images under mixed degradation severity (E1) --- clearing
 the $30$~dB restoration gate that also guards the non-vacuity condition of
 Proposition~\ref{prop:entropy}. End-to-end inference (quality scoring $+$ enhancement) runs at
-$16$~ms/image ($p_{95}=17$~ms) on a single GPU (E12), within a real-time budget. A per-degradation
+$16$~ms/image ($p_{95}=17$~ms) on a single GPU (E12), comfortably within the $50$~ms real-time budget.
+A per-degradation
 breakdown (E2) shows the enhancer is strongest on brightness ($37.7$~dB) and blur ($35.8$~dB), weaker
 on colour-shift ($33.8$~dB), and --- notably --- \emph{harmful} on contrast degradation ($29.1$~dB,
 below the $32.3$~dB of the degraded input itself), a limitation we return to in \cref{sec:discussion}.

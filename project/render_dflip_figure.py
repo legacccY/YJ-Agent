@@ -102,7 +102,7 @@ def main():
     panel_a(fig.add_subplot(gs[0]), mel)
     panel_b(fig, gs[1], panels, ncols=min(4, len(panels)))
     fig.savefig(FIG_DIR / "fig_dflip.pdf", bbox_inches="tight")
-    fig.savefig(FIG_DIR / "fig_dflip.png", dpi=180, bbox_inches="tight")
+    fig.savefig(FIG_DIR / "fig_dflip.png", dpi=300, bbox_inches="tight")
     print(f"saved -> {FIG_DIR}/fig_dflip.pdf|png")
 
 
