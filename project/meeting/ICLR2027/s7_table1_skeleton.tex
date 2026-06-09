@@ -1,0 +1,50 @@
+% §7 Main Results — Table 1 SKELETON (\input from main.tex §7 Experiments).
+% STRUCTURE ONLY: every data cell is a placeholder (--). NO numbers enter here
+% until the source csv is FROZEN after Plan A re-training, M2 (red line 4).
+% Packages used: booktabs (\toprule/\midrule/\bottomrule), multirow (stratum header span).
+% Both are loaded in preamble.tex.
+%
+% Dimensions: 9 baseline rows + 1 bold Ours row = 10 method rows;
+%   2 quality strata (\itb-LQ, \itb-HQ) x 4 metrics (AUC, ECE, QCDI, rho) = 8 data columns
+%   + 1 method-name column = 9 columns.
+%
+% ANTI-DRIFT R10: the \qcts row is the prior BMVC post-hoc method, kept as ONE ablation.
+%   At camera-ready it MUST be reported against the corresponding \qvib (Ours) row on the
+%   SAME frozen split (no cross-paper number reuse). See main.tex §6 Baselines.
+
+\begin{table}[t]
+\centering
+\caption{Main results on the quality-stratified \itb{} benchmark. Nine baselines (three
+method families: uncertainty estimation, calibration, information bottleneck) versus our
+\qvib{}, reported \emph{per quality stratum} (low-quality \itb-LQ, high-quality \itb-HQ)
+rather than pooled. Metrics: AUC ($\uparrow$), ECE ($\downarrow$), the quality-conditional
+diagnostic index QCDI, and the entropy--quality correlation $\rho(\Hent,\qbar)$ (more
+negative = entropy rises as quality falls, the intended behaviour). Bootstrap $95\%$ CIs
+($2000$ resamples) are added at camera-ready. \textbf{All cells are pending the Plan~A
+re-training freeze (M2); no values are reported until the source csv is frozen.} The \qcts{}
+row is the prior post-hoc method (BMVC) included as a single ablation and will be re-evaluated
+against the \qvib{} row on the identical frozen split.}
+\label{tab:main}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l cccc cccc}
+\toprule
+ & \multicolumn{4}{c}{\itb-LQ (low quality)} & \multicolumn{4}{c}{\itb-HQ (high quality)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+Method
+ & AUC$\uparrow$ & ECE$\downarrow$ & QCDI & $\rho(\Hent,\qbar)$
+ & AUC$\uparrow$ & ECE$\downarrow$ & QCDI & $\rho(\Hent,\qbar)$ \\
+\midrule
+Direct classifier            & -- & -- & -- & -- & -- & -- & -- & -- \\
+MC dropout                   & -- & -- & -- & -- & -- & -- & -- & -- \\
+Deep ensemble                & -- & -- & -- & -- & -- & -- & -- & -- \\
+Evidential                   & -- & -- & -- & -- & -- & -- & -- & -- \\
+Focal / label-smoothing      & -- & -- & -- & -- & -- & -- & -- & -- \\
+Standard VIB                 & -- & -- & -- & -- & -- & -- & -- & -- \\
+VIB $+$ temperature scaling  & -- & -- & -- & -- & -- & -- & -- & -- \\
+\qcts{} (BMVC)               & -- & -- & -- & -- & -- & -- & -- & -- \\
+\midrule
+\textbf{Ours (\qvib{})}      & -- & -- & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}

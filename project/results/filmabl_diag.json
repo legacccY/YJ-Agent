@@ -1,0 +1,22 @@
+[
+  {
+    "variant": "with-FiLM_S1",
+    "dAUC": -0.0325,
+    "consistency": 0.9018,
+    "KL": 0.2397,
+    "dflip": 0.0541,
+    "mcnemar_b": 301,
+    "mcnemar_c": 55,
+    "p": 3.43e-42
+  },
+  {
+    "variant": "no-FiLM_S1",
+    "dAUC": -0.0421,
+    "consistency": 0.866,
+    "KL": 0.3486,
+    "dflip": 0.0405,
+    "mcnemar_b": 438,
+    "mcnemar_c": 48,
+    "p": 7.46e-80
+  }
+]

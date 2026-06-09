@@ -1,0 +1,5 @@
+=== VisiEnhance e12 Job 1441322 Node gpu4090n3 Start Mon Jun  8 10:58:10 CST 2026 ===
+[E12] device=cuda  img=256  warmup=20  N=200
+[E12] mean=16.08 ms  p50=15.88  p95=17.01  (<50.0 ms)  PASS
+saved -> results/e12_speed.csv
+=== done exit=0 Mon Jun  8 10:58:38 CST 2026 ===

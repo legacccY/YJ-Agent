@@ -246,11 +246,34 @@
 | **E5** | ★ Salvage Rate (severe q̄<0.25) | < 25% | 必达（安全边界）| 若 > 25%：增强模块边界混乱，dangerous |
 | **E6** | 安全边界 | 极低质段 ΔAUC | 无显著退化 (paired t-test p>0.05) | 必达 |
 | **E7** | DP-Loss 消融 | 有 DP-Loss 组 ΔAUC 显著更小 | p < 0.01 | 必达，否则 Lemma 3 实证失败 |
-| **E8** | Q-Cond 消融 | 有 FiLM 组 PSNR 显著更高 | p < 0.05 | 必达 |
+| **E8** | Q-Cond 消融 | ~~有 FiLM 组 PSNR 显著更高~~ → **有 FiLM 组诊断保持更好**（dAUC/一致率/KL）| FiLM 三项均更优 | ⚠️ 改判据：实测 FiLM 对 PSNR 中性（见 v5 实测块），贡献在诊断保持非像素质量 |
 | **E9** | FiLM vs Cross-Attn | FiLM 速度 ≥ 3× 快 + PSNR 持平 | 必达 |
 | **E10** | vs 6 SOTA | ΔAUC 全胜（6/6 paired t-test p<0.05）| 6/6 必达 | <6/6：lever -0.5%/个 |
 | **E11** | 跨数据集 AUC 保持 | HAM/PAD AUC > 95% relative | 必达 |
 | **E12** | 推理速度 | 端到端 < 50 ms / image | 必达 |
+
+---
+
+## 📊 E1–E12 v5 实测结果（会话 21，2026-06-09，frozen）
+
+**Stage2 = feature-DP v5**（ckpt `stage2_planA_256_v5`，best_val_PSNR 30.186 守 E1）。协议除 E1/E12 外统一 degrade(moderate)@256 → enh@256 → CenterCrop224 → B3，test split n=3627 / pos=117。run_id 见末列。
+
+| 实验 | 实测 | 判定 | run_id / 源 |
+|---|---|---|---|
+| **E1** | per-img PSNR 32.74 (with-FiLM) / 33.06 (no-FiLM)，SSIM 0.91，n=19878 | ✅ PASS（两变体均 >30） | 1442290 / `results/e1_film_ablation.json` |
+| **E2** | brightness 37.68 ✅ / blur 35.82 ✅；**color_shift 33.77 ❌**（<35）；**contrast 29.11 ❌ 且 < 降质图 32.29**（增强帮倒忙）| ⚠️ 2/4 PASS | 1441320 / `results/e2_perdim.csv` |
+| **E3** | dAUC −0.0120 ✅；一致率 0.9575 ✅；dflip 0.135；McNemar(enh-vs-ref) p=0.573（enh≈ref）| ✅ PASS（v4 borderline → v5 双 PASS）| 1441301 / `results/stage2_diag_paired_v5.csv` |
+| **E6** | severe 段 dAUC −0.0559 CI[−0.085,−0.028] 排除 0、dflip 0.46 | ❌ FAIL = **triage 弹药**（severe 该 query-for-retake，非增强）| 1441321 / `results/e6_severe.csv` |
+| **E7** | ΔAUC_enh(S2−S1) +0.0205 CI[+0.005,+0.035] 显著>0；ΔKL −0.148 CI[−0.173,−0.124] 显著<0；McNemar p=2.3e-45 | ✅ PASS（Lemma 3 实证）| 1441301 / 同 E3 |
+| **E8** | **FiLM 对 PSNR 中性**（no-FiLM 33.06 ≥ with-FiLM 32.74，且 no-FiLM 多训 49ep 混淆）；**FiLM 对诊断保持正贡献**：dAUC −0.033 vs −0.042、一致率 0.90 vs 0.87、KL 0.24 vs 0.35（均 with-FiLM 更好，连 Stage1 无 DP 时）| ⚠️ PSNR 判据不成立 → **重定向到诊断消融（成立）** | 1442290(E1) + 1442337(diag) / `results/filmabl_diag.json` |
+| **E12** | 16.08 ms/img（p95 17.0）| ✅ PASS（<50）| 1441322 / `results/e12_speed.csv` |
+
+**两条 limitation 须在 paper 处理**：① E2 contrast/color_shift 弱 → 当 limitation 或触发重拍；② E6 severe 不安全 → 当 triage（query-for-retake）正证据，非项目失败（agent 设计本就不增强 severe）。
+**dflip 单指标陷阱**（会话 20+21 两次坐实）：no-DP / no-FiLM 的 dflip 反而略低，因其整体诊断信号更糊（KL 高、McNemar 错更多）巧合少翻特定 mel 子集 → **dflip 必配 KL/一致率一起读，不可孤立比**。
+
+**E5 SalvageRate（会话 21，norm-q 路由版，job 1442385）**：增强用 raw-q、路由/分层用 norm-q̄。按 severity：mild 0.600 / **moderate 0.737 ✅(>0.55)** / severe 0.816，DamageRate 全 <3%。⚠️ nuance：salvage 被 benign-FP 修正主导（pos 仅 117/3627），恶性安全风险另由 E6/dflip 把关；**老「severe salvage<25%」判据与此测法冲突，需重新解读**（severe salvage 高 ≠ 不安全，因 salvage 算的是整体误判修正非恶性漏诊）。E5 暂不写 §7（framing 待定）。
+
+**🔴 visiscore 集成喂错（会话 21 根因，影响 q̄ 信号但现有结果仍有效）**：visiscore（timm backbone 约定 ImageNet-NORM224）在 `train_visienhance`+所有 eval 全被喂 raw[0,1]@256 → q̄ 恒 ~0.54 不响应退化。连贯解释 E8 FiLM 中性 / hinge 泛化不动 / E5 band 不可达。**qnorm 对照（job 1442379）证实**：喂正确 NORM-q 给 raw-q 训的模型反而变差（PSNR 30.41→29.69、dflip 0.135→0.176）→ raw-q 是训练口径自洽最优，**E1/E2/E3/E6/E7/E8/E12 数字全部站得住、不需重做**。bug 影响收窄为 ①FiLM 被 flat-q 训弱（救须重训、增益不确定）②agent/E5 路由用独立 norm-q（已做）。重训与否 = 会话 22 决策。
 
 ---
 

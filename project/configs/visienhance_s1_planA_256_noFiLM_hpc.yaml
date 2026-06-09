@@ -1,0 +1,59 @@
+# E8 消融: Stage 1 Plan A @256 NO-FiLM (HPC, gpu4090) — FiLM 关闭对照.
+# 与 visienhance_s1_planA_256_hpc.yaml 完全同 recipe, 唯一区别: film_scale 0.1 -> 0.0.
+# film_scale=0 => FiLM 公式 (1+0*g)*feat + 0*b = 恒等; 且 g/b 梯度 = film_scale*(.) = 0,
+#   FiLM MLP 永不更新, 等价无质量条件调制 (no quality conditioning).
+# 公平消融: 同 4 卡 DDP / batch 8 / 有效 batch 32 / 200ep / early_stop 30 / seed 42 / lr 1e-4.
+# 对照基线 = stage1_planA_256 (film_scale 0.1, E1 PSNR 32.74). E8 比 PSNR (paired t, p<0.05).
+
+stage: 1
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.0          # ← E8 唯一改动 (基线 0.1) = no-FiLM
+
+data:
+  labels_csv: /gpfs/work/bio/jiayu2403/visienhance/data/quality_labels_nocrop_hpc.csv
+  split_csv:  /gpfs/work/bio/jiayu2403/visienhance/data/isic_split.csv
+  img_size: 256
+  severity: mixed
+  val_severity: mixed
+  batch_size: 8
+  num_workers: 8
+
+train:
+  epochs: 200
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 30
+  resume_from: null
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  lambda_dp: 0.0
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/best_visiscore.pth
+  qvib_ckpt: null
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage1_planA_256_noFiLM
+
+wandb:
+  project: visienhance
+  name: stage1_planA_256_noFiLM_hpc
+  mode: offline

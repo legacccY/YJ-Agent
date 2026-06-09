@@ -1,0 +1,14 @@
+=== VisiEnhance EVAL (E3/E7 paired) Job 1441301 Node gpu4090n2 Start Mon Jun  8 10:00:06 CST 2026 ===
+device=cuda  n=3627  pos=117  neg=3510
+
+--- 每模型 (E3 诊断保持) ---
+Stage1 (no DP): dAUC=-0.0325(FAIL)  一致率=0.9018(FAIL)  KL=0.2397  dflip=0.0541  McNemar(enh-vs-ref) b=301 c=55 p=3.43e-42
+Stage2 (DP): dAUC=-0.0120(PASS)  一致率=0.9575(PASS)  KL=0.0912  dflip=0.1351  McNemar(enh-vs-ref) b=81 c=73 p=0.573
+
+--- 配对 S2-S1 (bootstrap B=2000, E7) ---
+ΔAUC_enh (S2-S1) = +0.0205  CI[+0.0051,+0.0349]  显著>0=是
+ΔKL    (S2-S1) = -0.1482  CI[-0.1733,-0.1236]  显著<0(DP更好)=是
+McNemar(S2 vs S1 预测正确): b(S1对S2错)=39 c(S1错S2对)=277 p=2.27e-45  E7(p<0.01)=PASS
+
+saved -> results/stage2_diag_paired.csv
+=== done exit=0 Mon Jun  8 10:03:40 CST 2026 ===

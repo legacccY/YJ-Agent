@@ -2,7 +2,7 @@
 
 顺序: 先 import eval_stage2_compare 并改其模块属性 (LABELS/CKPTS/...),
 再 import dump_dflip_figure_data (它顶层从 eval_stage2_compare as E 取常量, 此时已 patch).
-镜像本地配置: S1=stage1_planA_nocrop, S2=stage2_planA_256_v4. cwd 必须 = code/.
+镜像本地配置: S1=stage1_planA_nocrop, S2=stage2_planA_256_v5 (feature-DP). cwd 必须 = code/.
 """
 import sys
 sys.path.insert(0, ".")
@@ -17,7 +17,7 @@ E.VISISCORE = f"{ROOT}/checkpoints/best_visiscore.pth"
 E.B3 = f"{ROOT}/checkpoints/efficientnet_b3_isic.pth"
 E.CKPTS = {
     "Stage1 (no DP)":   f"{ROOT}/checkpoints/visienhance/stage1_planA_nocrop/best_visienhance.pth",
-    "Stage2 (DP, v4)":  f"{ROOT}/checkpoints/visienhance/stage2_planA_256_v4/best_visienhance.pth",
+    "Stage2 (DP, v5)":  f"{ROOT}/checkpoints/visienhance/stage2_planA_256_v5/best_visienhance.pth",
 }
 
 import dump_dflip_figure_data as D

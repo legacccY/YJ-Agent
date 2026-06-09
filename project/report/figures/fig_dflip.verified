@@ -1,0 +1,16 @@
+fig_dflip v5 — VALIDATED 2026-06-09 (ICLR 会话 21)
+
+数据源: results/dflip_persample.csv (n=3627, v5 feature-DP ckpt, job 1442284)
+核查:
+- mask(mel ref正确报阳)=74, flip(pe<0.5)=10, B_enh(pd>=0.5)=8 — 与图标注一致
+- mean pr/pe = 0.93/0.824 — 图标注 "0.93->0.82" 一致
+- pr/pe 范围 0-1, y轴0-1无截断
+- panel(b) top4 B_enh pe = 0.05/0.03/0.16/0.43 与 npz 一致
+- 字体 8-9.5pt, PDF矢量, 配色色盲可分
+
+Simpson's Paradox:
+- 图内无悖论(单模型v5固定mel子集配对轨迹, 自然ISIC test split 非分层ITB)
+- 跨模型dflip对比悖论(S1 no-DP 0.054 < v5 0.135)=framing注意点, 不在本图, 正文配KL/一致率读
+
+vs v4(会话18): flip 13->10, B_enh 11->8, mean pe 0.81->0.82(几乎同) — feature-DP压了3个翻转
+状态: PASS, 可进 paper §4/§7

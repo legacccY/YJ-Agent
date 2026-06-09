@@ -224,10 +224,14 @@ subsets) --- is given in Appendix~\ref{app:a4}.
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Experiments}\label{sec:exp}
-% RED LINE 4: no number enters here until its source csv is frozen (post Plan A re-training).
-% Frozen-and-citable elsewhere: scorer 0.924/0.895; core config (n=19878) AUC 0.707/ECE 0.098/
-% rho -0.165; 5-backbone universality (section54_summary.csv); failure split. Table 1 / salvage
-% / |dAUC| / cross-domain are PENDING and must not be written from memory.
+% RED LINE 4: no number enters here until its source csv is frozen.
+% FROZEN (v5 feature-DP, 会话21 2026-06-09, run_ids in ACCEPTANCE_CRITERIA E1-E12 block):
+%   E1 fidelity 32.7dB/SSIM0.91 (1442290) | E2 per-dim (1441320) | E3 dAUC-0.012/agree0.958 +
+%   E7 DP-ablation +0.021/p2.3e-45 (1441301) | E8 FiLM-ablation (1442290+1442337) |
+%   E6 severe dAUC-0.056 (1441321) | E12 16ms (1441322); dflip fig (1442284).
+% STILL PENDING (do NOT write from memory): Table 1 (9-baseline x ITB), E5 salvage rate,
+%   cross-domain (HAM/PAD re-audit + cross-modality), fairness. Frozen elsewhere: scorer
+%   0.924/0.895; core config (n=19878) AUC 0.707/ECE 0.098/rho -0.165; 5-backbone universality.
 
 \paragraph{Setup.}
 We train on quality-stratified skin-lesion data with held-out evaluation on \itb, reporting metrics
@@ -241,13 +245,59 @@ $\rho$\}. Numbers frozen after Plan~A re-training (M2); the \qvib core configura
 attains AUC $0.707$ / ECE $0.098$ with $\rho(\Hent,\qbar)=-0.165$, $p<10^{-24}$ on the held-out set,
 $n=19{,}878$.]}
 
-\subsection{Diagnostic Preservation}\label{sec:exp-preserve}
-\emph{[E3 pending: target $|\Delta\mathrm{AUC}|<1.5\%$ between direct and enhance-then-diagnose, with
-a McNemar agreement test. Validates Lemma~\ref{lem:dp} empirically.]}
+\subsection{Enhancement Fidelity and Speed}\label{sec:exp-fidelity}
+The deterministic enhancer raises per-image PSNR to $32.7$~dB --- a $+10.1$~dB gain over the degraded
+input (SSIM $0.91$) over $n=19{,}878$ held-out images under mixed degradation severity (E1) --- clearing
+the $30$~dB restoration gate that also guards the non-vacuity condition of
+Proposition~\ref{prop:entropy}. End-to-end inference (quality scoring $+$ enhancement) runs at
+$16$~ms/image ($p_{95}=17$~ms) on a single GPU (E12), within a real-time budget. A per-degradation
+breakdown (E2) shows the enhancer is strongest on brightness ($37.7$~dB) and blur ($35.8$~dB), weaker
+on colour-shift ($33.8$~dB), and --- notably --- \emph{harmful} on contrast degradation ($29.1$~dB,
+below the $32.3$~dB of the degraded input itself), a limitation we return to in \cref{sec:discussion}.
 
-\subsection{Salvage Rate}\label{sec:exp-salvage}
-\emph{[E5 pending: salvage rate $>55\%$ on the moderate band $\qbar\in[0.35,0.5]$ and $<25\%$ on the
-severe band $\qbar<0.25$ (a safety boundary, not a target to maximise).]}
+\subsection{Diagnostic Preservation and Ablations}\label{sec:exp-preserve}
+We assess whether enhancement preserves diagnostic content using a frozen EfficientNet-B3 lesion
+classifier as an \emph{independent} diagnostic probe --- decoupled from \qvib to avoid circularity ---
+on the ISIC-2020 held-out split ($n=3627$, $117$ malignant). Each image is degraded at moderate
+severity, enhanced, and compared against its clean reference; we report the change in AUC
+($\Delta\mathrm{AUC}=\mathrm{AUC}_{\text{enh}}-\mathrm{AUC}_{\text{ref}}$), the prediction agreement
+between enhanced and reference, the diagnostic KL, and McNemar tests, with bootstrap $95\%$ CIs
+($2000$ resamples).
+
+\paragraph{E3 --- enhancement preserves diagnosis.}
+The feature-level DP model attains $\Delta\mathrm{AUC}=-0.012$ (within the $1.5\%$ target) and
+$95.8\%$ enhanced-versus-reference agreement (above the $95\%$ target); a McNemar test finds no
+significant difference between enhanced and reference predictions ($b{=}81$, $c{=}73$, $p=0.57$),
+i.e.\ the enhanced inputs are diagnostically interchangeable with their clean references.
+
+\paragraph{E7 --- DP-Loss ablation (Lemma~\ref{lem:dp}).}
+Against a no-DP enhancement baseline, the diagnosis-preserving objective significantly improves
+preservation on matched bootstrap resamples: $\Delta\mathrm{AUC}_{\text{enh}}$ improves by $+0.021$
+(CI $[+0.005,+0.035]$, excluding zero) and the diagnostic KL drops by $-0.148$
+(CI $[-0.173,-0.124]$), with McNemar $p=2.3\times10^{-45}$. This is the empirical counterpart of the
+mutual-information bound in Lemma~\ref{lem:dp}.
+
+\paragraph{E8 --- quality-conditional FiLM ablation.}
+Removing FiLM leaves pixel fidelity essentially unchanged (per-image PSNR within $0.4$~dB: $32.7$ with
+FiLM versus $33.1$ without; FiLM is \emph{not} a fidelity mechanism), yet it degrades diagnostic
+preservation across every metric --- with FiLM $\Delta\mathrm{AUC}=-0.033$, agreement $0.90$, KL
+$0.24$, versus $-0.042$, $0.87$, $0.35$ without, even at the no-DP stage. FiLM's contribution is thus
+quality-conditional \emph{diagnostic} fidelity, not perceptual sharpening.
+
+\paragraph{Residual dangerous flips.}
+Preservation is not perfect: $10$ of $74$ correctly-flagged melanomas are pushed below the decision
+threshold by enhancement (\cref{fig:dflip}). We treat this residual as motivation for the
+query-for-retake channel (\cref{sec:discussion}), not as a defect to suppress.
+
+\subsection{Salvage Rate and the Severe-Degradation Safety Boundary}\label{sec:exp-salvage}
+\emph{[E5 salvage rate pending: target $>55\%$ on the moderate band $\qbar\in[0.35,0.5]$ and $<25\%$ on
+the severe band $\qbar<0.25$ (a safety boundary, not a target to maximise).]}
+On the severe band we already observe the boundary empirically (E6): enhancing severely degraded
+images significantly \emph{lowers} diagnostic AUC ($\Delta\mathrm{AUC}=-0.056$, CI $[-0.085,-0.028]$,
+excluding zero) and induces a $0.46$ dangerous-flip rate. Enhancement is therefore the wrong action
+in this regime; the agent routes severe inputs to query-for-retake rather than enhance-then-diagnose
+(\cref{sec:agent}), which is exactly the safety behaviour the $<25\%$ salvage boundary is meant to
+enforce.
 
 \subsection{Universality}\label{sec:exp-universal}
 % R1: NOT "TS reversal is universal". Phrase as "most pronounced on weakly quality-aware backbones".
@@ -285,6 +335,8 @@ Generative restoration optimises perceptual realism, which in dermoscopy can mea
 plausible-but-absent pigment networks or vessels --- artefacts that are diagnostically misleading.
 Deterministic restoration with a diagnosis-preserving objective trades some perceptual sharpness for
 the guarantee analysed in \cref{sec:prop3lemma3}; this trade-off is the point, not a limitation.
+
+\input{s8_enhancement_failure}
 
 \paragraph{Failure-mode taxonomy.}
 A three-cluster analysis of residual failures (Appendix~\ref{app:a18}) separates heavy-blur

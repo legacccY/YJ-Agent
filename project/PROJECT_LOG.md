@@ -6,7 +6,111 @@
 
 ---
 
-## 2026-06-07（会话 19，盯 v5 job 1440985 训练中 → 测 dflip 受阻于本地 GPU 不稳 → CPU eval 唯一稳路）
+## 2026-06-09（会话 21，E8 消融定论 → fig_dflip v5 重出 → framing 回写清偿核心欠债）
+
+### 起因
+开门「继续 ICLR + 看 HPC」。用户追加：全力保证质量、可上网搜信息、多 agent 提效但我把关、自动干不要停。
+
+### 查 HPC：E8 no-FiLM 撞墙
+- **E8 job 1441338 = TIMEOUT**（撞 24h walltime，ep99/200，no_improve 仅 9 = 非自然收敛但 best 已趋平）。best_val_psnr 30.434（聚合口径）。ckpt 在 `stage1_planA_256_noFiLM/`。其余项全 0（无 FiLM/DP/hinge）配置对。squeue 空。
+- **口径坑**：30.434 是训练聚合口径，with-FiLM 招牌 32.74 是 per-image test 口径（差 ~4dB），且基线聚合 val 已被 v5 stage2 覆盖 → 无同口径对照，孤立下不了结论。用户拍：不续训，跑 E1 同口径对照。
+
+### 主任务：fig_dflip v5 重出（✅）
+- `run_dflip_hpc.py` S2 v4→v5（feature-DP 只改训练 loss，模型架构同 v4，CFG 通用）；清 HPC 旧 v4 dump 防 stale；submit → **job 1442284，~2.5min**。
+- **结果**：mask=74（同 v4，ref 不变）、**flip 13→10、B_enh 11→8**，与 eval 的 0.176→0.135 一致。均值 pr/pe 0.93→0.824。
+- 拉回 CSV+10 npz → `render_dflip_figure.py` 出 `report/figures/fig_dflip.{pdf,png}`（v4 数据备份 `*_v4`）。
+- **/validate-figures PASS**：数字全核（mask74/flip10/B_enh8/均值 0.93→0.82 = CSV 实算一致）、轴域 0-1 无截断、PDF 矢量、字体 >7pt、配色色盲可分。Simpson：图内无悖论（单模型固定 mel 子集自然 split），跨模型 dflip 悖论是 framing 注意点不在本图。写 `fig_dflip.verified`。
+
+### E1 + FiLM 诊断双消融（E8 完整故事）
+- **E1 同口径对照**（job 1442290，test n=19878，关键：按 config film_scale 0.1/0.0 构建模型加载否则错）：with-FiLM per-img 32.74 / no-FiLM **33.06**，SSIM 0.910/0.914。**FiLM 对 PSNR 中性甚至微负**（且 no-FiLM 多训 49ep 混淆，不能干净声称 FiLM 损 PSNR）。两者都 E1 PASS。
+- **认知**：E8 当初按「FiLM 涨 PSNR」设判据 = 错方向，reviewer 会问「FiLM 不涨 PSNR 要它干嘛」。→ FiLM 真正该测诊断保持。用户拍补跑。
+- **FiLM 诊断消融**（job 1442337，monkeypatch load_visienhance 按路径选 film_scale）：with-FiLM dAUC −0.0325/一致率 0.9018/KL 0.2397 **全面优于** no-FiLM −0.0421/0.8660/0.3486。no-FiLM 唯独 dflip 略低（0.041 vs 0.054）= 同一 KL 混淆陷阱（no-FiLM KL 高、McNemar 错 438 vs 301，整体更糊才巧合少翻）。**结论：FiLM 价值在诊断保持非 PSNR，连 Stage1 无 DP 时即成立。reviewer 攻击拆解。**
+
+### framing 回写（清偿会话 17/18/19/20 顺延核心欠债，✅）
+- **ACCEPTANCE**：E12 表后插「E1–E12 v5 实测块」（全判定 + run_id 溯源）；E8 判据从「FiLM PSNR 更高」改判「FiLM 诊断保持更好」（诚实标 PSNR 判据不成立，红线：失败如实报）。
+- **STORY**：锁定数字表填 E3 双 PASS + 加 E7/E8 行；Claim 2 加「FiLM 诊断角色 + 禁卖 PSNR 增益」+ Claim 3 加「dflip 残留 + E6 severe = query-for-retake 正面弹药 + 文献支撑」。
+- **文献**（sonnet subagent 调研，我把关真实性）：4 类锚点（Blau-Michaeli CVPR18 / Cohen MICCAI18 幻觉 / Geifman NeurIPS17 selective / EyeQ+teledermatology 重拍）+ gap → 存 `plans/lit_visienhance_dflip_refs.md`。
+
+### 追加：§7/§8 paper TEX 回写（火力全开 3 线并行，main.pdf 33→36 页编译干净）
+用户拍「火力全开多 agent」。侦察：paper 骨架 ALIVE（main.tex + 全套 appendix 已编译），§7 全 `[pending]` + RED LINE 4「v5 训完前不填数字」→ **v5 frozen 红线解除**。3 线并行无文件冲突：
+- **主线 main.tex §7**：§7.2 Enhancement Fidelity（E1 32.7dB/SSIM0.91 + E12 16ms + E2 含 contrast 帮倒忙 limitation）；§7.3 Diagnostic Preservation 填 E3（dAUC −0.012/agree 0.958/McNemar p=0.57，frozen B3 probe 独立 Q-VIB）+ E7（+0.021 CI 排零/p=2.3e-45）+ E8 FiLM 消融（PSNR 中性诊断更优）+ residual dflip；§7.4 加 E6 severe 安全边界。RED LINE 4 注释标 run_id。
+- **Subagent A**：references.bib 补 18 文献核真实 source（纠 3 处署名错）。三锚点 key 与 draft 占位完全匹配。
+- **Subagent B**：起草 dflip figure+§8 两段 → `s8_enhancement_failure.tex`，我审（figure*→figure 单栏、核 thm:agent label）后 `\input` §8。
+- **编译**：多 pass 后 **zero undefined**，fig 嵌入 page 10。把关：数字口径全核（B3 probe vs Q-VIB、SSIM 标 mixed、FiLM 不卖 PSNR），subagent 只碰独立文件。
+
+### 追加 2：🔴 揪出 visiscore 集成喂错根因 + qnorm 验证 + E5 norm-q（火力全开续）
+推进 E5 SalvageRate（发现其实是 eval 非训练，会话 20 误标「建 Stage3 agent」）时，smoke 暴露：**visiscore q̄ 在 mild/moderate/severe 恒定 ~0.54 不动**（severe min 0.509，frac<0.5=0）→ ACCEPTANCE 的 q̄ band（moderate[0.35,0.5]/severe<0.25）根本不可达。
+- **根因**：visiscore 是 timm backbone（约定吃 ImageNet-NORM 224），但 `train_visienhance` line335 + 所有 eval（dump_dflip/eval_diag_paired/eval_e6）全喂 **raw[0,1]@256**。实测 NORM 输入下 q̄ clean 0.589→severe 0.446 单调响应、各维正常；raw 下退化。
+- **连贯解释多个历史异常**：① E8「FiLM 对 PSNR 中性」= FiLM 在恒定 q 上训没东西可调制（非本质无用）；② 会话18/19「hinge 泛化不动」= hinge 也作用在退化 q；③ E5 band 不可达。
+- **qnorm 验证对照**（job 1442379，raw-q vs NORM-q 给同一 v5）：raw PSNR 30.41/dAUC −0.012/dflip 0.135 vs norm 29.69/−0.0195/0.176 → **喂 NORM-q 给 raw-q 训的模型全面变差**（train/eval 失配预期），增强对 q 敏感度小（mel 概率差 0.026）。**结论：现有 E3/E7/E8/dflip 数字全部站得住（raw-q 是训练口径自洽最优，不需重做）**；bug 真实影响收窄为 ① FiLM 被 flat-q 训弱（想救须重训，增益不确定）② agent/E5 路由需正确 norm-q（不用重训增强器，加独立标量即可）。
+- **用户决策**：① agent/E5 加独立 norm-q 路由标量重算（不重训）；② 增强器 norm-q 重训暂不排（保留现结果，FiLM 当下界）；③ E8/limitation 的「喂法欠优」诚实注解先不写（等重训决定）。
+- **E5 norm-q 版**（job 1442385，增强用 raw-q、路由/分层用 norm-q̄）：按 severity 分层 SalvageRate mild 0.60 / moderate **0.737✅(>0.55)** / severe 0.816，DamageRate 全 <3%。norm-q̄ 三分位：low/mid ~0.79、high 0.625（越脏越多可救）。**nuance：salvage 被 benign-FP 修正主导（pos 仅 117/3627），恶性安全风险另由 E6/dflip 把关；老「severe salvage<25%」判据与此测法冲突，需重新解读**。E5 暂不写 §7（framing 待定）。
+
+### 待续（会话 22）
+1. ~~§4/§7 paper TEX 回写~~ ✅ 本会话已做（§7 frozen 数字 + §8 dflip/E6 + 18 文献 + 编译干净）。下一步：§7 Table 1（9-baseline×ITB）骨架可先搭（数字留 pending，待 M2 重训）。
+2. **visiscore 喂错后续决策**：是否 norm-q 重训增强器（赌 FiLM/agent/E5 大改善 vs 数天 HPC）。E5 framing（salvage 的 benign-dominated nuance + severe 判据重解读）。E8 是否加「FiLM 下界」注解。**全 gated on 重训与否决定**。
+3. 已就位脚本（本地+HPC code/）：`eval_e5_salvage.py`+`run_e5_hpc.py`、`eval_qnorm_compare.py`+`run_qnorm_hpc.py`。Table 1 骨架 `s7_table1_skeleton.tex`（subagent，待 \input）。
+2. **M2 重训类**（需用户拍，训练串行红线）：E5 SalvageRate（建 Stage3 agent）、E9 FiLM-vs-CrossAttn、E10 6 SOTA（红线禁扩散）、E11 HAM/PAD 传 HPC、E4 增强图重跑 Q-VIB 链。
+3. E2 contrast/color_shift 弱 + E6 severe 不安全 = 两条 limitation 写进 paper（前者 limitation/重拍、后者 triage 正证据）。
+
+### 命中率
+本会话把 E8 从「PSNR 消融失败」翻成「FiLM 诊断保持正贡献 + reviewer 攻击拆解」，fig_dflip 升 v5 并验证通过，**最关键是清了顺延 4 个会话的 framing 回写欠债**（STORY+ACCEPTANCE 全对齐 v5 实测）。纪律严守：每步落盘 + run_id 溯源 + config/脚本入版控 + 图过 validate-figures + 当场写日志（反复踩的「HPC 不记日志」坑这次没踩）。多 agent 仅外包文献调研（只读、我把关真实性），HPC 提交/训练判停全主线亲自。
+**会话后半最大收获 = 揪出 visiscore 集成喂错（raw vs NORM224）根因**，连贯解释 E8/hinge/E5 三个历史异常，且 qnorm 对照证实现有结果仍有效（影响收窄、不需重做）。这是「火力全开推 E5」意外刨出的系统级 bug——正是 smoke 验证纪律（提交前小样跑）救的命，否则会拿一个 q̄ 退化下的 E5 数字进 paper。把关价值远超多跑一个实验。3 个 subagent（文献/bib/Table1 骨架）全只碰独立文件，数字/红线/编译主线核。
+
+---
+
+## 2026-06-08（会话 20，v5 训完 → HPC GPU 跑 E3/E7 → E3 AUC+一致率翻 PASS，dflip 0.176→0.135 破卡点）
+
+### 起因
+开门「查 HPC 在跑没，没在跑就把 E3/E7 做了，注意 flip」。
+
+### 查 HPC
+- **v5 job 1440985 已训完**（squeue 空）：stage2 `completed`、exit 0、`best_val_psnr=30.186`、结束 2026-06-08 05:07。best ckpt = ep~37（Jun 7 23:35 存，之后 80ep 没再刷新）。E1 守住（30.19 > 30）。
+- HPC GPU 全空 → 按会话 19 待办②走 HPC GPU eval（比 CPU 快）。
+
+### 执行
+1. 改 HPC `code/run_eval_hpc.py` CKPTS Stage2：`stage2_planA_256_v2` → `_v5`（sed，Stage1 仍 `stage1_planA_256`）。
+2. `sbatch eval_submit.sh` → **job 1441301**（gpu4090n2，单卡），3.5min 跑完（10:00→10:03）。协议：degrade(moderate)@256 → enh@256 → CenterCrop224 → B3。n=3627, pos=117。
+3. sftp 拉回 `results/eval_v5_E3E7_1441301.out` + `results/stage2_diag_paired_v5.csv`。
+
+### 结果：E3 大幅回血，E7 续 PASS
+**Stage2 v5（feature-DP）E3 诊断保持**：
+| 指标 | v4 | **v5** | 判定 |
+|---|---|---|---|
+| dAUC | −0.0204 borderline | **−0.0120** | ✅ PASS（<0.015）|
+| 一致率 | 0.9446 FAIL | **0.9575** | ✅ PASS（>0.95）|
+| dangerous_flip | 0.176 卡死三版 | **0.135** | ↓23%，破卡点但未归零 |
+| McNemar(enh-vs-ref) | — | b=81 c=73 **p=0.573** | enh≈ref 无显著差（好）|
+
+**E7 配对（S2 v5 vs S1 no-DP）PASS ✅**：ΔAUC_enh=+0.0205 CI[+0.005,+0.035] 显著>0；ΔKL=−0.148 CI[−0.173,−0.124] 显著<0；McNemar b=39 c=277 **p=2.3e-45**。
+
+### 反直觉点（须在 framing 处理）
+**Stage1(no-DP) dflip=0.054 < v5 的 0.135**。但 Stage1 整体崩（dAUC −0.033/一致率 0.90/KL 0.24 全 FAIL、McNemar enh-vs-ref b=301 c=55 p=3e-42 = enh 比 ref 错一大片）。即 no-DP「少翻特定 mel」是因它整体诊断信号都糊掉、巧合保留这 117 子集；v5 用整体诊断质量（AUC+KL+一致率）换 E3 双 PASS，dflip 没归零但比 v4 好。**dflip 单指标不可孤立比 S1/S2**，要配 KL/一致率一起读。
+
+### 待续（会话 21）
+1. **framing 回写（会话 17/18/19 顺延至今的核心欠债）**：E3 现 AUC+一致率 PASS、dflip 0.135 残留 → 主推 **E7 PASS + dflip 残留实证 query-for-retake**（Claim 3/Thm 2）。回写 STORY §4 + Claim2/3 + ACCEPTANCE E3/E7。
+2. **fig_dflip 用 v5 重出**（会话 18 的 dflip 图是 v4 ep46）：HPC dflip 管线（`run_dflip_hpc.py`+`submit_dflip.sh`）现成，ckpt 改指 v5 重跑 → slopegraph + 病灶磨平网格用 v5 数字。接进 paper + `/validate-figures`。
+3. dflip 0.135 仍非 0：若要再压，会话 17 备选 mask 加权 L1（病灶区不准磨平）仍开放，但优先级降——E3 双 PASS 已够上版，dflip 残留正好当 query-for-retake 论据。
+
+### 命中率
+feature-DP v5 兑现了：E3 的 dAUC + 一致率从 FAIL/borderline 翻双 PASS、dflip 破了 v4 三版都卡的 0.176（→0.135）。E7 稳。故事现可正面讲「DP-Loss 显著提升诊断保持（E7）+ E3 达标，残留 dflip 坐实 perceptual-vs-diagnostic tension → query-for-retake」。唯一新债：S1<S2 的 dflip 反直觉须在文里讲清（配 KL 读）。framing 回写不能再拖。
+
+### 追加（同会话）：E2/E6/E12 并行 eval 批次（HPC 4 卡，2 sonnet subagent 写脚本→主线审→主线提交）
+**把关**：用户列的 8 个没跑实验，核实后只 E2/E6/E12 是「v5 ckpt 上 on-the-fly eval」可今晚跑；E4 要对增强图重跑 MobileSAM(ABCD)+EfficientNet 特征喂 Q-VIB（4 模型链，降级主线细建）；E5 要建 Stage3 agent；E8/E9 要重训；E10 要 6 baseline（红线禁扩散）；E11 要传 HAM/PAD 到 HPC。subagent 只写脚本不提交（HPC 提交主线亲自），主线审脚本防伪造/协议错后 sbatch。
+- 新脚本（本地+HPC code/）：`eval_e2_perdim.py`+`run_e2_hpc.py`、`eval_e6_severe.py`+`run_e6_hpc.py`、`eval_e12_speed.py`+`run_e12_hpc.py`。submit_{e2,e6,e12}.sh。job 1441320/1441321/1441322，各单卡 ~2-8min。
+- 结果（存 `results/e2_perdim.csv`+`e6_severe.csv`+`e12_speed.csv`+对应 .out）：
+  - **E12 速度 PASS**：16.08 ms/img（p95 17.0，<50）。
+  - **E2 分退化 2/4 PASS**：brightness 37.68 ✅、blur 35.82 ✅；**color_shift 33.77 ❌**（<35）、**contrast 29.11 ❌ 且 < 降质图 32.29**（对比度退化时增强器帮倒忙=真弱点）。注：@256 测，E1 是 @128。
+  - **E6 severe 安全边界 FAIL（但=故事弹药）**：dAUC −0.0559 CI[−0.085,−0.028] 排除 0、dangerous_flip 0.46。severe 段增强显著拉低诊断 → **实证 Claim3/Thm2 的 severe→query-for-retake 通道**（图太烂别增强、该重拍）。验收表写「必达」，但 agent 设计本就不增强 severe，这是「为何要有追问通道」的正证据，非项目失败。
+- **E8 可行性（用户定 eval 批后串行启）**：模型无 use_film 开关，但 `film_scale=0` → FiLM 恒等 + MLP 零梯度 = 等价 no-FiLM，**config 改一个数即可消融，零代码改动零 clobber**。训一个 Stage1 no-FiLM 对照比 PSNR vs with-FiLM（E1 32.74）。待确认启法后主线亲自启（训练串行红线）。
+- **欠债更新**：E2 contrast/color_shift 弱、E6 severe 不安全 = 两条要在 paper 处理（contrast 当 limitation 或触发重拍；severe 当 triage 证据）。framing 回写仍欠。
+
+### 追加 2：E8 no-FiLM 启训（job 1441338 RUNNING）+ mask-L1 把关定性
+- 用户拍「E8 + dflip mask-L1 各 2 卡并行」。把关后：
+  - **E8 = config-only**（`film_scale 0.1→0.0` 等价 no-FiLM，零代码改动）。新 config `visienhance_s1_planA_256_noFiLM_hpc.yaml`（其余与基线 `stage1_planA_256` 完全同 recipe）+ 独立 STATE_PATH=`logs/state_e8_nofilm.json`。输出 `checkpoints/visienhance/stage1_planA_256_noFiLM/`。
+  - **卡荒**：集群 7×8 卡全 mix 被别 lab 多天作业占满，单节点 4 卡连号难 → 4 卡版 job 1441326 调度器估 6/12（4 天后）。**用户拍砍 2 卡**：cancel 1441326，`submit_e8_2gpu.sh`（gpu:2/nproc2/24h walltime，有效 batch 16 vs 基线 32 = 脚注级，FiLM 效应远大于 batch）→ **job 1441338 秒上 RUNNING（gpu4090n3）**，ep4 val_PSNR 27.67↑健康、~18min/ep、early_stop30、无 Traceback。待跑完比 best_val_PSNR vs 基线 32.74。
+  - **dflip mask-L1 ≠ config 是 build，未启**：train loss 仅 l1+lpips+dp+hinge+quality，零 mask 基建。要 ① MobileSAM 出 149K 训练图病灶 mask ② 加 mask 加权 L1 loss ③ 标定 λ。下一焦点任务（且当前卡荒，2 卡都难再凑）。
+- **教训**：4 卡大请求在共享忙集群会排几天；config-only 消融优先用 2 卡抢早，batch 差异脚注兜底。
 
 ### 起因
 开门「查 job 1440985 + 把现有数据拿出来看 flip 达标没」。

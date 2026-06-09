@@ -1,0 +1,18 @@
+=== VisiEnhance e2 Job 1441320 Node gpu4090n2 Start Mon Jun  8 10:58:07 CST 2026 ===
+device=cuda
+test 原图数: 2000
+  [PASS] brightness      PSNR_deg=13.70  PSNR_enh=37.68 (≥35.0)  SSIM_enh=0.9871  n=2000
+  [FAIL] color_shift     PSNR_deg=25.83  PSNR_enh=33.77 (≥35.0)  SSIM_enh=0.9886  n=2000
+  [FAIL] contrast        PSNR_deg=32.29  PSNR_enh=29.11 (≥35.0)  SSIM_enh=0.9703  n=2000
+  [PASS] blur            PSNR_deg=36.67  PSNR_enh=35.82 (≥28.0)  SSIM_enh=0.9216  n=2000
+
+===== E2 Per-Dimension Summary =====
+axis            psnr_deg  psnr_enh  thresh  ssim_enh     n  verdict
+-------------------------------------------------------------------
+brightness         13.70     37.68    35.0    0.9871  2000  PASS
+color_shift        25.83     33.77    35.0    0.9886  2000  FAIL
+contrast           32.29     29.11    35.0    0.9703  2000  FAIL
+blur               36.67     35.82    28.0    0.9216  2000  PASS
+
+saved -> results/e2_perdim.csv
+=== done exit=0 Mon Jun  8 11:02:28 CST 2026 ===

@@ -1,0 +1,12 @@
+=== VisiEnhance e6 Job 1441321 Node gpu4090n3 Start Mon Jun  8 10:58:10 CST 2026 ===
+[E6] device=cuda  severity=severe
+[E6] n=3627  pos=117  neg=3510
+
+[E6] auc_ref=0.9169  auc_deg=0.8172  auc_enh=0.8610  dAUC=-0.0559
+     consistency=0.9200  KL=0.2487  dangerous_flip=0.4595
+
+[E6] Bootstrap dAUC (B=2000): mean=-0.0557  95% CI=[-0.0846, -0.0284]
+
+[E6] 判定: FAIL  (ci_hi < 0: 增强显著拉低诊断 AUC (severe 降质段不安全))
+saved -> results/e6_severe.csv
+=== done exit=0 Mon Jun  8 11:00:05 CST 2026 ===

@@ -40,7 +40,11 @@
 > - **Proposition 3**：若 $\bar{q}(T_\omega(x,q)) > \bar{q}(x)$，则 $\mathbb{E}[H(\hat{p}_{T_\omega(x,q)})] \leq \mathbb{E}[H(\hat{p}_x)]$（增强降低诊断熵）
 > - **Lemma 3**：$\mathcal{L}_{\text{DP}} \leq \epsilon \implies I(Z_{\text{enh}};Y) \geq I(Z_{\text{ref}};Y) - \beta\sqrt{\epsilon}$（互信息下界保持，$\beta = M L_{q_\theta}/\sqrt{2}$，$\sqrt{\epsilon}$ Pinsker-optimal）
 
-**绝对禁止**：用 GAN / 扩散模型做骨干（医学伪影红线）/ 把 enhancement 写成 super-resolution
+> **📊 v5 实证（会话 21）**：
+> - **DP-Loss 实证（E7，Lemma 3）**：feature-level DP（对齐 B3 1536×7×7 诊断特征）使 ΔAUC_enh +0.0205 显著>0、ΔKL −0.148 显著<0、McNemar p=2.3e-45 → DP 组诊断保持显著优于无 DP。E3 在 v5 翻双 PASS（dAUC −0.012 / 一致率 0.9575）。
+> - **FiLM 角色澄清（E8）**：FiLM 对**像素 PSNR 中性**（with/without 都 ≥32.7 dB per-image，E1 PASS），但对**诊断保持有独立正贡献**（dAUC −0.033 vs −0.042、一致率 0.90 vs 0.87、KL 0.24 vs 0.35，均 with-FiLM 更好，连 Stage1 无 DP 时即成立）。**写作必须把 FiLM 卖点定位在 quality-conditional 诊断保真，绝不写成「FiLM 提升复原质量」**——审稿人会拿 PSNR 中性反打。
+
+**绝对禁止**：用 GAN / 扩散模型做骨干（医学伪影红线）/ 把 enhancement 写成 super-resolution / **把 FiLM 卖成 PSNR 增益（实测中性）**
 **必须写**："deterministic restoration with quality-conditional FiLM modulation，never generative diffusion，因为生成式模型在皮肤镜域有发明色素网络/血管结构的伪影风险"
 
 ### Claim 3：Closed-Loop Quality-Triage Agent
@@ -48,6 +52,11 @@
 > VisiScore → VisiEnhance OR 追问 → Q-VIB 诊断的双通道决策，4 通道精细分级（A1 高质 / A2 准高 / B 增强 / C 极低）。
 > - **Theorem 2**：双通道决策的 expected risk bound — 给定 quality scalar $\bar{q}$、增强映射 $T_\omega$、退化阈值 $\tau$，agent 的 expected risk $\mathcal{R}_{\text{agent}}(x)$ 上界为 $\mathcal{R}_{\text{direct}}(x) - \Delta(\bar{q}, T_\omega)$，$\Delta > 0$ 当且仅当 $\bar{q} \in [\tau_{\text{enh}}, \tau_{\text{high}}]$
 > - **Corollary 1**：Q-VIB + QCTS 复合的 ECE upper bound（连 BMVC 故事 + 给出 deployment-time guarantee）
+
+> **📊 v5 实证（会话 21）—— query-for-retake 通道的正面弹药**：
+> - **残留 dangerous_flip = 设计动机非缺陷**：即便 v5 DP 把整体诊断保持做到 E3 双 PASS，仍有 10/74 真黑色素瘤被增强压到决策线下（dflip 0.135，headline 图 `report/figures/fig_dflip.{pdf,png}`，红线 R8 实证）。**这正是「不该把所有低质图都增强」的实证** → 落到 Theorem 2 的 query-for-retake 通道。
+> - **E6 severe 段坐实门控**：极低质段增强显著拉低诊断（dAUC −0.056 CI 排除 0、dflip 0.46）→ severe 图增强帮倒忙、该追问重拍。agent 设计本就不增强 severe，这是「为何要有追问通道」的正证据。
+> - **文献支撑**：perception-distortion tradeoff（Blau & Michaeli, CVPR 2018）+ 生成式恢复幻觉损诊断（Cohen et al., MICCAI 2018）+ selective prediction/defer（Geifman & El-Yaniv, NeurIPS 2017）+ 皮肤科远程摄影引导重拍（teledermatology IQA, PMC10468541）。**gap = 前人各有半块，无人把 质量分级→增强 OR 追问→诊断 串成带 risk bound 的闭环**（本文新意）。
 
 **绝对禁止**：写 "agent generates diagnosis" — agent 不诊断，它**决策何时诊断/增强/追问**
 **必须写**："The closed-loop agent decides among four channels — direct diagnosis, cautioned diagnosis, enhance-then-diagnose, or query-for-retake — based on quality-stratified thresholds with theoretical risk bounds."
@@ -186,10 +195,13 @@ Appendix（50-80 页 supp）
 |---|---|---|---|
 | E1 复原质量 | PSNR (medium, **per-image**) | ≥ 30 dB | 32.74 dB (test) ✅ |
 | E1 复原质量 | SSIM (moderate) | ≥ 0.92 | 0.9535 ✅ |
-| E3 诊断保持 | \|ΔAUC\| | < 1.5% | TBD |
-| E3 诊断保持 | 分类一致率 (C vs A) | > 95% | TBD |
+| E3 诊断保持 | \|ΔAUC\| | < 1.5% | **−0.0120 ✅**（v5 feature-DP，job 1441301）|
+| E3 诊断保持 | 分类一致率 (C vs A) | > 95% | **0.9575 ✅** |
+| E3 诊断保持 | dangerous_flip | （残留，配 KL 读）| 0.135（v4 0.176→v5，未归零 → query-for-retake 弹药）|
+| E7 DP-Loss 消融 | ΔAUC_enh (S2−S1) 显著>0 | p<0.01 | **+0.0205 CI[+.005,+.035]，McNemar p=2.3e-45 ✅**（Lemma 3 实证）|
+| E8 FiLM 消融 | 诊断保持（非 PSNR）| FiLM 更好 | dAUC −.033 vs −.042 / 一致率 .90 vs .87 / KL .24 vs .35 ✅（PSNR 中性）|
 | E5 双通道效率 | SalvageRate (moderate q̄∈[0.35,0.5]) | > 55% | TBD |
-| E5 双通道效率 | SalvageRate (severe q̄<0.25) | < 25% | TBD（安全边界）|
+| E5 双通道效率 | SalvageRate (severe q̄<0.25) | < 25% | TBD（安全边界；E6 severe dAUC −0.056 显著退化 → triage）|
 
 ### 跨域 zero-shot（已 done）
 

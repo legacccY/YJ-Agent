@@ -1,0 +1,71 @@
+% ═══════════════════════════════════════════════════════════════════════════════
+% DRAFT — dangerous-flip headline figure + two §8 Discussion paragraphs.
+% Standalone draft; NOT yet \input into main.tex. Paths are relative to
+% meeting/ICLR2027/ (main.tex location). Citation keys are placeholders pending
+% references.bib: blau2018perception, cohen2018distribution, geifman2017selective.
+% ═══════════════════════════════════════════════════════════════════════════════
+
+% ---------------------------------------------------------------------------
+% FIGURE BLOCK — dangerous-flip headline
+% ---------------------------------------------------------------------------
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../../report/figures/fig_dflip.pdf}
+  \caption{\textbf{Enhancement can suppress malignant cues (dangerous flips).}
+  \textbf{(a)} Slopegraph of the B3 classifier's melanoma probability for the
+  $74$ reference melanomas that are correctly called positive on clean input,
+  tracked across the three states reference (clean) $\rightarrow$ degraded
+  $\rightarrow$ enhanced. The mean melanoma probability drifts from $0.93$ on
+  reference to $0.82$ after enhancement, and for $10/74$ ($13.5\%$) lesions
+  enhancement pushes the probability below the $0.5$ decision line --- a
+  \emph{dangerous flip} from a correct malignant call to a benign one.
+  \textbf{(b)} Four enhance-caused flips shown as triplets
+  (reference\,$\vert$\,degraded\,$\vert$\,enhanced). Malignant signs ---
+  asymmetry, irregular borders, mottled colouration --- are smoothed away as if
+  they were low-quality noise; the enhanced row collapses to melanoma
+  probabilities $0.05/0.03/0.16/0.43$, all flipped to benign. These are
+  \emph{residual} failures of feature-DP \visienhance{} v5, our strongest
+  enhancement model: even when aggregate diagnostic performance stays within
+  tolerance ($|\Delta\mathrm{AUC}|<1.5\%$), a small set of lesions is harmed.
+  This is the empirical case for \emph{not} enhancing every low-quality image.}
+  \label{fig:dflip}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+% §8 DISCUSSION — two paragraphs (\paragraph style, matching sec:discussion)
+% ---------------------------------------------------------------------------
+
+\paragraph{Enhancement can suppress malignant cues.}
+Figure~\ref{fig:dflip} documents a failure that survives even our strongest
+enhancement model. For $10$ of the $74$ correctly-called reference melanomas,
+feature-DP \visienhance{} v5 drives the melanoma probability below the decision
+line, turning a correct malignant call into a benign one; the case triplets in
+panel~(b) show why, as asymmetry, irregular borders, and mottled colour are
+smoothed away as though they were capture noise. We read this as the inherent
+cost of the perception--distortion trade-off \citep{blau2018perception}: an
+operator that makes a degraded image look clean cannot, in general, also
+preserve every diagnostically load-bearing high-frequency cue, and a generative
+restorer would do worse still by hallucinating plausible-but-absent pathology
+\citep{cohen2018distribution}. We therefore suggest that the right response to
+``enhancement might hurt this image'' is not a sharper enhancer but a different
+action: the residual flips in Figure~\ref{fig:dflip} are precisely the empirical
+motivation for the \emph{query-for-retake} channel of our four-channel policy
+(Theorem~\ref{thm:agent}). When enhancement is expected to harm rather than help,
+the system should decline to enhance and ask for a re-capture, keeping the
+harmful transformation out of the diagnostic path entirely.
+
+\paragraph{Severe degradation is a retake signal, not an enhancement target.}
+The same logic is borne out at the low-quality extreme. On the severe subset we
+observe that enhancement \emph{lowers} diagnostic performance by a margin whose
+confidence interval excludes zero ($\Delta\mathrm{AUC}=-0.056$, $95\%$ CI
+$[-0.085,\,-0.028]$), with a dangerous-flip rate of $0.46$ (E6). Pushing a
+heavily degraded image through any deterministic restorer asks it to invent
+detail it cannot recover, and in our measurements this systematically erodes
+rather than rescues the diagnosis. Our agent design anticipates this: severe
+inputs are routed to \emph{query-for-retake} rather than enhance-then-diagnose,
+in the spirit of selective prediction, where abstaining on inputs outside the
+reliable operating region is preferable to a confident error
+\citep{geifman2017selective}. We therefore read these severe-subset losses not
+as a failure of the enhancement module but as positive evidence for triage: some
+images should be re-acquired, not repaired, and a system that knows which is
+which is safer than one that enhances unconditionally.
