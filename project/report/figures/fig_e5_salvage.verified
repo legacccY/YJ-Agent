@@ -1,0 +1,12 @@
+fig_e5_salvage — VALIDATED 2026-06-09 (ICLR 会话 21)
+
+数据源: results/e5_salvage_persample.csv (norm-q 路由版, job 1442385, n=10881=3627×3sev)
+脚本: plot_e5_salvage.py
+核查:
+- (a) SalvageRate(蓝实线) 随 norm-q̄ 降而升、DamageRate(橙虚线)贴底, target 0.55 参考线, "dirtier→more salvageable"
+- (b) per-severity 柱: SalvageRate mild0.600/moderate0.737/severe0.816, DamageRate 0.009/0.015/0.025 (全<0.03), norm-q̄ 0.548/0.532/0.457
+- 数字与 e5_salvage.csv 一致; 配色 Okabe-Ito 色盲友好; 字体>=8pt; PDF矢量+PNG300dpi
+
+framing 注意(同 PROJECT_LOG 会话21): SalvageRate 被 benign-FP 修正主导(pos仅117/3627), 恶性安全风险另由 E6/dflip 把关; 老「severe salvage<25%」判据与此测法冲突, 需重新解读。E5 暂未写进 main.tex §7(framing 待定)。
+
+状态: 图质量 PASS; framing 待会话22定后再接 paper。

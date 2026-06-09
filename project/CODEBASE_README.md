@@ -123,6 +123,46 @@ project/
 | J | Deep Ensemble | 5 independently trained Std VIB models (Lakshminarayanan 2017) |
 | G | Q-VIB+TokFT* | Supplementary: higher AUC at cost of calibration |
 
+## VisiEnhance Evaluation Suite (E1–E12)
+
+> Registered session 21 (2026-06-09). These scripts evaluate the **VisiEnhance** enhancement model and the quality-routing agent, on top of the Q-VIB triage core. All run on **XJTLU HPC** (local RTX 4070 Laptop crashes on VisiEnhance forward — see Notes). Each evaluator has a `run_*_hpc.py` paramiko wrapper and, where applicable, a `submit_*.sh` SLURM script.
+
+### Evaluation scripts
+
+| Script | Experiment | What it computes |
+|--------|-----------|------------------|
+| `eval_diag_paired.py` | E3 / E7 | Diagnosis-preserving paired eval (degrade@256 → enhance → crop224 → B3); dAUC, agreement rate, KL, dangerous_flip + paired bootstrap |
+| `eval_e2_perdim.py` | E2 | Per-degradation-dimension PSNR |
+| `eval_e6_severe.py` | E6 | Safety margin dAUC on the *severe* degradation band |
+| `eval_e12_speed.py` | E12 | End-to-end inference speed |
+| `eval_e5_salvage.py` | E5 | SalvageRate (norm-q routing: enhance uses raw-q, routing tier uses norm-q̄) |
+| `eval_qnorm_compare.py` | — | visiscore feeding A/B: raw-q[0,1]@256 vs ImageNet-NORM-q |
+
+### Ablation / figure scripts
+
+| Script | Purpose |
+|--------|---------|
+| `run_e1_ablation_hpc.py` | E1 — FiLM same-pipeline PSNR ablation |
+| `run_eval_filmabl_hpc.py` | FiLM diagnosis ablation |
+| `dump_dflip_figure_data.py` + `render_dflip_figure.py` | `fig_dflip` — dump data then render |
+| `plot_e5_salvage.py` | `fig_e5_salvage` plot |
+
+### HPC wrappers & submit scripts
+
+- **paramiko wrappers** (submit + monitor on HPC): `run_e2_hpc.py`, `run_e6_hpc.py`, `run_e12_hpc.py`, `run_e5_hpc.py`, `run_qnorm_hpc.py`, `run_dflip_hpc.py`, `run_e1_ablation_hpc.py`, `run_eval_filmabl_hpc.py`
+- **SLURM submit scripts**: `submit_e5.sh`, `submit_qnorm.sh`, `submit_filmabl.sh`, `submit_e1abl.sh`, `submit_dflip.sh` (E2/E6/E12 are submitted directly by their `run_*_hpc.py` wrappers, no standalone `submit_*.sh`)
+
+### E1–E12 status (as of session 21)
+
+| Done (has data) | Pending (needs retrain / new data) |
+|-----------------|------------------------------------|
+| ✅ E1, E2, E3, E5, E6, E7, E8, E12 | ❌ E4, E9, E10, E11 |
+
+### Notes (read before extending — avoids known pitfalls)
+
+- **visiscore feeding口径**: visiscore must be fed **ImageNet-NORM 224** inputs (timm backbone). The current enhance/eval chain feeds **raw [0,1] @256**, which degrades q̄ (discovered session 21, see `PROJECT_LOG.md`). The enhancement model's **raw-q training口径 is self-consistent**, so existing results remain valid; the **agent / E5 routing uses an independent norm-q̄** path.
+- **Local GPU**: running VisiEnhance forward on the RTX 4070 Laptop reliably triggers a CUDA illegal-access crash → run all VisiEnhance eval on **HPC or CPU**.
+
 ## Citation
 
 ```bibtex
