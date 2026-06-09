@@ -24,8 +24,8 @@
 - ★ **Geifman & El-Yaniv, Selective Classification for Deep Neural Networks, NeurIPS 2017；SelectiveNet, ICML 2019** — reject option 理论基石（risk-coverage），四通道 reject/defer 锚点。
 - **Fu et al., EyeQ (Retinal Image Gradability Good/Usable/Reject), MICCAI 2019** — 质量门控「不足该拒用非强行分析」，与质量分级→门控几乎同构。
 - **Araújo et al., DR|GRADUATE (uncertainty-aware DR grading + referral), Medical Image Analysis 2020 (arXiv:1910.11777)** — 不确定性 + 转专家。
-- **Saeidi et al., Learning IQA by Reinforcing Task-Amenable Data Selection, IPMI 2021 (arXiv:2102.07615)** — 按下游任务价值（非视觉质量）门控，最贴本文。
-- **Vodrahalli et al., Explainable IQA in Teledermatological Photography (PMC10468541)** — 皮肤科远程摄影标 poor quality + 引导重拍（retake）。皮肤镜域最直接重拍先例。
+- **Saeed et al., Learning IQA by Reinforcing Task-Amenable Data Selection, IPMI 2021 (arXiv:2102.07615)** — 按下游任务价值（非视觉质量）门控，最贴本文。（原误记 Saeidi；bib key `saeed2021learning`）
+- **Jalaboi et al., Explainable Image Quality Assessments in Teledermatological Photography, Telemedicine and e-Health 2023 (PMC10468541)** — 皮肤科远程摄影标 poor quality + 引导重拍（retake）。皮肤镜域最直接重拍先例。（原误记 Vodrahalli；bib key `jalaboi2023explainable`）
 
 ## Gap（本文新意一句话）
 前人各有半块：理论有 perception-distortion tradeoff、实证有生成式幻觉损诊断、方法有 task-aware restoration、机制有质量门控/拒识。**无人把 质量分级→诊断保持增强 OR 追问重拍→诊断 串成带理论 risk bound 的闭环 quality-triage agent，并实证增强对真阳黑色素瘤的系统性危害边界（dangerous flip）**。task-aware 增强默认「增强总帮忙」、门控只做拒识不接增强决策、幻觉研究只警示不治理 → 本文填空。

@@ -240,10 +240,11 @@ correlation, an accompanying $p$-value. Full reproduction details --- environmen
 compute budget, and released artefacts --- are in Appendix~\ref{app:a26}.
 
 \subsection{Main Results}\label{sec:exp-main}
-\emph{[Table~1 pending: nine baselines $\times$ \{ITB-LQ, ITB-HQ\} $\times$ \{AUC, ECE, QCDI,
-$\rho$\}. Numbers frozen after Plan~A re-training (M2); the \qvib core configuration already
-attains AUC $0.707$ / ECE $0.098$ with $\rho(\Hent,\qbar)=-0.165$, $p<10^{-24}$ on the held-out set,
-$n=19{,}878$.]}
+\Cref{tab:main} reports the nine baselines against \qvib{} per quality stratum; the data cells are
+pending the Plan~A re-training freeze (M2, red line~4). The \qvib{} core configuration already attains
+AUC $0.707$ / ECE $0.098$ with $\rho(\Hent,\qbar)=-0.165$ ($p<10^{-24}$) on the held-out set
+($n=19{,}878$).
+\input{s7_table1_skeleton}
 
 \subsection{Enhancement Fidelity and Speed}\label{sec:exp-fidelity}
 The deterministic enhancer raises per-image PSNR to $32.7$~dB --- a $+10.1$~dB gain over the degraded
