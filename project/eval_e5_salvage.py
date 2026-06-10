@@ -37,6 +37,7 @@ META      = f"{ROOT}/data/raw/isic2020/train-metadata.csv"
 VISISCORE = f"{ROOT}/checkpoints/best_visiscore.pth"
 B3        = f"{ROOT}/checkpoints/efficientnet_b3_isic.pth"
 CKPT_V5   = f"{ROOT}/project/checkpoints/visienhance/stage2_planA_256_v5/best_visienhance.pth"
+OUT_SUFFIX = ""   # v6 launcher sets "_v6" so re-eval does not overwrite v5 baseline csv
 
 IMG, CROP = 256, 224
 NEG_PER_POS = 30
@@ -141,9 +142,9 @@ def main():
               f"{st['SalvageRate']:>12}{st['DamageRate']:>11}{st['n_pos']:>6}")
 
     Path("results").mkdir(exist_ok=True)
-    pd.DataFrame(out).to_csv("results/e5_salvage.csv", index=False)
-    data.to_csv("results/e5_salvage_persample.csv", index=False)
-    print("\nsaved -> results/e5_salvage.csv (+ _persample.csv)")
+    pd.DataFrame(out).to_csv(f"results/e5_salvage{OUT_SUFFIX}.csv", index=False)
+    data.to_csv(f"results/e5_salvage{OUT_SUFFIX}_persample.csv", index=False)
+    print(f"\nsaved -> results/e5_salvage{OUT_SUFFIX}.csv (+ _persample.csv)")
 
 
 if __name__ == "__main__":
