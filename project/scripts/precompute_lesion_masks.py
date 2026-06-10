@@ -108,6 +108,9 @@ def main():
     ap.add_argument("--out-size", type=int, default=OUT)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--debug-overlay", action="store_true")
+    ap.add_argument("--shard", type=int, default=0, help="this shard index [0,nshards)")
+    ap.add_argument("--nshards", type=int, default=1, help="run N parallel procs, each a disjoint shard")
+    ap.add_argument("--skip-existing", action="store_true", help="skip ids whose mask png already exists")
     args = ap.parse_args()
 
     import pandas as pd
@@ -119,11 +122,15 @@ def main():
     uniq = df.drop_duplicates("isic_id")[["isic_id", "original_path"]].reset_index(drop=True)
     if args.limit > 0:
         uniq = uniq.iloc[: args.limit]
-    print(f"[data] {len(uniq)} unique isic_ids -> {out_dir}")
+    if args.nshards > 1:
+        uniq = uniq.iloc[args.shard :: args.nshards].reset_index(drop=True)
+    print(f"[data] shard {args.shard}/{args.nshards}: {len(uniq)} ids -> {out_dir}")
 
     tiers = {"otsu": 0, "grabcut": 0, "gaussian": 0}
     done = skipped = 0
     for _, row in uniq.iterrows():
+        if args.skip_existing and (out_dir / f"{row['isic_id']}.png").exists():
+            continue
         bgr = cv2.imread(str(row["original_path"]))
         if bgr is None:
             skipped += 1
