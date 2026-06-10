@@ -23,15 +23,19 @@ cd "$HPC_BASE/code"
 
 echo "=== v6 EVAL Job $SLURM_JOB_ID Node $SLURMD_NODENAME Start $(date) ==="
 
-echo "--- [1/3] E3/E7 paired diag (v6) ---"
+echo "--- [1/4] E1 gate per-image PSNR/SSIM (v6) ---"
+$PY run_e1_hpc_v6.py
+echo "  E1 exit=$?"
+
+echo "--- [2/4] E3/E7 paired diag (v6) ---"
 $PY run_eval_hpc_v6.py
 echo "  E3 exit=$?"
 
-echo "--- [2/3] dflip dump (v6) ---"
+echo "--- [3/4] dflip dump (v6) ---"
 $PY run_dflip_hpc_v6.py
 echo "  dflip exit=$?"
 
-echo "--- [3/3] E5 salvage (v6) ---"
+echo "--- [4/4] E5 salvage (v6) ---"
 $PY run_e5_hpc_v6.py
 echo "  E5 exit=$?"
 
