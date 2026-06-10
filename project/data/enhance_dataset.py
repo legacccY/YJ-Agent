@@ -45,9 +45,14 @@ class EnhanceDataset(Dataset):
         meta_csv: str = None,
         return_target: bool = False,
         pos_oversample: int = 1,
+        masks_dir: str = None,
     ):
         self.img_size = img_size
         self.return_target = return_target
+        # v6 mask-L1: precomputed lesion masks keyed by isic_id (see
+        # scripts/precompute_lesion_masks.py). When set, __getitem__ returns a 4th
+        # element = lesion weight [1,H,W] in [0,1]; missing file -> zeros (plain L1).
+        self.masks_dir = Path(masks_dir) if masks_dir else None
 
         labels = pd.read_csv(labels_csv)
         splits = pd.read_csv(split_csv)
@@ -96,6 +101,9 @@ class EnhanceDataset(Dataset):
 
         if low_bgr is None or ref_bgr is None:
             t = torch.zeros(3, self.img_size, self.img_size)
+            if self.masks_dir is not None:
+                z = torch.zeros(1, self.img_size, self.img_size)
+                return t, t, 0, z
             return (t, t, 0) if self.return_target else (t, t)
 
         if low_bgr.shape[:2] != (self.img_size, self.img_size):
@@ -105,6 +113,18 @@ class EnhanceDataset(Dataset):
 
         x_low = _TO_TENSOR(cv2.cvtColor(low_bgr, cv2.COLOR_BGR2RGB))
         x_ref = _TO_TENSOR(cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2RGB))
+
+        if self.masks_dir is not None:
+            mpath = self.masks_dir / f"{row['isic_id']}.png"
+            mimg = cv2.imread(str(mpath), cv2.IMREAD_GRAYSCALE)
+            if mimg is None:
+                mask = torch.zeros(1, self.img_size, self.img_size)   # missing -> plain L1
+            else:
+                if mimg.shape[:2] != (self.img_size, self.img_size):
+                    mimg = cv2.resize(mimg, (self.img_size, self.img_size), interpolation=cv2.INTER_AREA)
+                mask = torch.from_numpy(mimg.astype(np.float32) / 255.0).unsqueeze(0)
+            return x_low, x_ref, int(row.get("target", 0)), mask
+
         if self.return_target:
             return x_low, x_ref, int(row.get("target", 0))
         return x_low, x_ref

@@ -321,7 +321,12 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
     ctx = torch.enable_grad() if is_train else torch.no_grad()
     with ctx:
         for batch in tqdm(loader, desc=phase, leave=False, ncols=80, disable=not _show_bar):
-            if len(batch) == 3:
+            mask = None
+            if len(batch) == 4:                       # v6 mask-L1: (x_low, x_ref, y, mask)
+                x_low, x_ref, y, mask = batch
+                y = y.to(device, non_blocking=True)
+                mask = mask.to(device, non_blocking=True)
+            elif len(batch) == 3:
                 x_low, x_ref, y = batch
                 y = y.to(device, non_blocking=True)
             else:
@@ -338,7 +343,14 @@ def run_epoch(phase, loader, model, visiscore, qvib_enc, efnet_extractor, lpips_
             with autocast(enabled=cfg.train.amp):
                 x_enh = model(x_low, q_low)
 
-                l1 = F.l1_loss(x_enh, x_ref)
+                if mask is not None and lam.get("lambda_mask", 0.0) > 0:
+                    # mask-L1 (v6): up-weight reconstruction on lesion pixels so the
+                    # enhancer cannot smooth away diagnostic structure (melanoma damage).
+                    # w = 1 + lambda_mask * mask  -> mask=0 degenerates to plain L1.
+                    w = 1.0 + lam.lambda_mask * mask                # [B,1,H,W] broadcast
+                    l1 = (F.l1_loss(x_enh, x_ref, reduction="none") * w).mean()
+                else:
+                    l1 = F.l1_loss(x_enh, x_ref)
                 l1_val = l1.item()
                 loss = l1 * lam.lambda_l1
 
@@ -487,12 +499,14 @@ def main():
 
     # ── Data ───────────────────────────────────────────────────────────────────
     dcfg = cfg.data
+    masks_dir = dcfg.get("masks_dir", None)   # v6 mask-L1: precomputed lesion masks
     train_ds = EnhanceDataset(
         labels_csv=dcfg.labels_csv, split_csv=dcfg.split_csv,
         split="train", img_size=dcfg.img_size, severity=dcfg.severity,
         meta_csv=dcfg.get("meta_csv", None),
         return_target=(b3 is not None),
         pos_oversample=dcfg.get("pos_oversample", 1),
+        masks_dir=masks_dir,
     )
     val_severity = dcfg.get("val_severity", dcfg.severity)
     val_ds = EnhanceDataset(
@@ -501,6 +515,7 @@ def main():
         meta_csv=dcfg.get("meta_csv", None),
         return_target=(b3 is not None),
         pos_oversample=1,
+        masks_dir=masks_dir,
     )
     print(f"[INFO] train={len(train_ds)}, val={len(val_ds)}")
 
