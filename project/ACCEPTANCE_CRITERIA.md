@@ -271,7 +271,9 @@
 **两条 limitation 须在 paper 处理**：① E2 contrast/color_shift 弱 → 当 limitation 或触发重拍；② E6 severe 不安全 → 当 triage（query-for-retake）正证据，非项目失败（agent 设计本就不增强 severe）。
 **dflip 单指标陷阱**（会话 20+21 两次坐实）：no-DP / no-FiLM 的 dflip 反而略低，因其整体诊断信号更糊（KL 高、McNemar 错更多）巧合少翻特定 mel 子集 → **dflip 必配 KL/一致率一起读，不可孤立比**。
 
-**E5 SalvageRate（会话 21，norm-q 路由版，job 1442385）**：增强用 raw-q、路由/分层用 norm-q̄。按 severity：mild 0.600 / **moderate 0.737 ✅(>0.55)** / severe 0.816，DamageRate 全 <3%。⚠️ nuance：salvage 被 benign-FP 修正主导（pos 仅 117/3627），恶性安全风险另由 E6/dflip 把关；**老「severe salvage<25%」判据与此测法冲突，需重新解读**（severe salvage 高 ≠ 不安全，因 salvage 算的是整体误判修正非恶性漏诊）。E5 暂不写 §7（framing 待定）。
+**E5 SalvageRate（会话 21，norm-q 路由版，job 1442385）**：增强用 raw-q、路由/分层用 norm-q̄。按 severity：mild 0.600 / **moderate 0.737 ✅(>0.55)** / severe 0.816，DamageRate 全 <3%。⚠️ nuance：salvage 被 benign-FP 修正主导（pos 仅 117/3627），恶性安全风险另由 E6/dflip 把关；**老「severe salvage<25%」判据与此测法冲突，需重新解读**（severe salvage 高 ≠ 不安全，因 salvage 算的是整体误判修正非恶性漏诊）。
+
+**🔴 会话 22 per-class 拆案（`e5_salvage_persample.csv`，rate 有效/count×3）**：聚合 0.737「达标」**全由良性撑**——良性 salvage 75.6%(1809/2392)/damage 0.6%；**黑色素瘤 salvage 仅 5.2%(4/77)、damage 31%(85/274 correct)**（救 4 毁 85 净 −81）。**结论：E5 聚合 SalvageRate 不可当达标指标写 paper**（reviewer 拆 per-class 即崩 + 伦理误导），改写为「benign 主导 + melanoma 净负 = query-for-retake 闸门最硬证据」（Claim 3/Thm 2 利好，削 VisiEnhance 单模块卖点）。**决策（用户拍）两手**：① §7.4 现写诚实版（待会话 23 落笔，本会话收工打断）；② mask-L1 重训（病灶区不准磨平）列 M2 救 melanoma salvage，待用户拍训练。
 
 **🔴 visiscore 集成喂错（会话 21 根因，影响 q̄ 信号但现有结果仍有效）**：visiscore（timm backbone 约定 ImageNet-NORM224）在 `train_visienhance`+所有 eval 全被喂 raw[0,1]@256 → q̄ 恒 ~0.54 不响应退化。连贯解释 E8 FiLM 中性 / hinge 泛化不动 / E5 band 不可达。**qnorm 对照（job 1442379）证实**：喂正确 NORM-q 给 raw-q 训的模型反而变差（PSNR 30.41→29.69、dflip 0.135→0.176）→ raw-q 是训练口径自洽最优，**E1/E2/E3/E6/E7/E8/E12 数字全部站得住、不需重做**。bug 影响收窄为 ①FiLM 被 flat-q 训弱（救须重训、增益不确定）②agent/E5 路由用独立 norm-q（已做）。重训与否 = 会话 22 决策。
 

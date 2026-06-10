@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-06-10（会话 22，🔴 E5 per-class 拆分翻案：增强救良性毁恶性 → 定 framing 两手）
+
+### 起因
+开门「火力全开 ICLR」。读档 + 查 HPC（squeue 空、无在跑 job、GPU 全 mixed 被别 lab 占）。
+
+### 核查清三块 §7 pending 的 gate（确认今天能动哪条）
+- **Table 1（9-baseline×ITB 主结果表）= 维持 pending**：`gen_table1.py` 能算全表，但吃的 `itb_predictions.csv` 经 `git log` 溯源 = BMVC 阶段六/Sprint 产物、输出到 `meeting/BMVC/`。**红线 10：BMVC 数字禁直搬 ICLR**。skeleton + 会话 21 既定「数字留 pending 待 M2」，不擅自推翻。
+- **E11/Table 3 zero-shot = gated**：HAM10000/PAD-UFES **本地 `data/external/` 实际不存在**（DATA_INVENTORY 标注有误，待修），且 §7.4 line 312 明写「under re-audit, frozen jointly with Plan A re-eval」→ M2 gate。今天放弃。
+- **E5 = 唯一零红线可写块**（`results/e5_salvage.csv`+`_persample.csv`，会话 21 job 1442385 产物、非 BMVC）。
+
+### 🔴 关键发现：E5 per-class 拆分 → 聚合 SalvageRate 是 benign 撑的假象
+`e5_salvage_persample.csv` 按 target 真实类别拆（注：10881=3627×3 severity 叠加，**rate 有效、count 3 倍**，unique pos ~117）：
+| 类别 | salvageable | salvaged | **salvage rate** | damaged(correct→wrong) | damage rate |
+|---|---|---|---|---|---|
+| **黑色素瘤 pos** | 77 | 4 | **5.2%** | 85 / 274 correct | **31%** |
+| 良性 neg | 2392 | 1809 | **75.6%** | 50 / 8138 | 0.6% |
+- **聚合 SalvageRate 0.737「✅达标」全部由良性假阳性修正撑起**。对黑色素瘤：增强只救 5.2%、却打坏 31% 本来对的（救 4 毁 85，净 −81）。
+- 与 dflip（10/74 翻）、E6（severe AUC −0.056）**完全同向互证**：增强对良性友好、对恶性有害。
+- **结论级（非 nuance）**：E5 聚合 SalvageRate **不能当达标指标写进 paper**（医学论文 reviewer 一拆 per-class 即崩 + 伦理误导）。但这是迄今最硬的「不能无脑增强、须 agent query-for-retake 闸门」证据 → 强化 Claim 3/Thm 2，只是削 VisiEnhance 单模块「能救图」卖点。
+
+### 用户决策：两手
+1. **现写诚实版 §7.4**：per-class 如实（聚合 0.737 但 benign 主导；melanoma salvage 5.2%/damage 31% = 当下界+query-for-retake 动机，非达标指标）。⚠️ **本会话被收工打断，§7.4 尚未落笔——下会话第一件**。
+2. **mask-L1 重训登记为 M2 明确下一步**：31% 恶性 damage 正是会话 17/20 备选「mask 加权 L1（病灶区不准磨平）」要解决的，赌改善 melanoma salvage。需用户拍（训练串行红线、天级 HPC）。
+
+### 待续（会话 23，按序）
+1. **写 §7.4 E5 诚实版**（framing 已定，数据已算齐，run_id 1442385）：替换 line 295-296 placeholder，保留 E6 段，weave per-class。编译核 + 不卖聚合 salvage。
+2. 修 DATA_INVENTORY：HAM/PAD「✅本地」标注 → 实际缺，E11 需先下载或 HPC 上传。
+3. M2 重训类待用户拍：mask-L1（救 melanoma salvage，优先级升）、E9 FiLM-vs-CrossAttn、E10 6 SOTA、visiscore norm-q 重训增强器。
+
+### 命中率
+本会话纯核查零产出代码，但**揪出 E5 聚合指标的 per-class 陷阱 = 防了一个会进 paper 的伪「达标」**（聚合 0.737 看着漂亮、拆开对恶性净负）。这跟会话 21 揪 visiscore 喂错同性质——提交前拆样核数救的命。framing 方向定（两手），§7.4 落笔顺延下会话（收工打断，如实记不冒充已写）。
+
+---
+
 ## 2026-06-09（会话 21，E8 消融定论 → fig_dflip v5 重出 → framing 回写清偿核心欠债）
 
 ### 起因
