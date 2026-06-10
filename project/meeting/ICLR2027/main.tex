@@ -292,14 +292,27 @@ threshold by enhancement (\cref{fig:dflip}). We treat this residual as motivatio
 query-for-retake channel (\cref{sec:discussion}), not as a defect to suppress.
 
 \subsection{Salvage Rate and the Severe-Degradation Safety Boundary}\label{sec:exp-salvage}
-\emph{[E5 salvage rate pending: target $>55\%$ on the moderate band $\qbar\in[0.35,0.5]$ and $<25\%$ on
-the severe band $\qbar<0.25$ (a safety boundary, not a target to maximise).]}
-On the severe band we already observe the boundary empirically (E6): enhancing severely degraded
-images significantly \emph{lowers} diagnostic AUC ($\Delta\mathrm{AUC}=-0.056$, CI $[-0.085,-0.028]$,
-excluding zero) and induces a $0.46$ dangerous-flip rate. Enhancement is therefore the wrong action
-in this regime; the agent routes severe inputs to query-for-retake rather than enhance-then-diagnose
-(\cref{sec:agent}), which is exactly the safety behaviour the $<25\%$ salvage boundary is meant to
-enforce.
+\paragraph{E5 --- salvage rate is benign-dominated.}
+On the moderate band the aggregate salvage rate --- the fraction of degraded-then-misclassified
+images that enhancement restores to a correct prediction --- is $0.737$, nominally clearing the
+$>55\%$ target. This aggregate is misleading, and we deliberately do \emph{not} report it as a
+headline capability: a per-class split (independent EfficientNet-B3 probe, $n=3627$ per severity)
+shows it is almost entirely benign false-positive correction. On benign lesions enhancement salvages
+$75.6\%$ ($1809/2392$) while damaging only $0.6\%$ ($50/8138$ correctly-classified); on melanoma it
+salvages just $5.2\%$ ($4/77$) while damaging $31.0\%$ ($85/274$ correctly-classified) --- a net loss
+of $81$ malignant cases. Enhancement thus helps the benign-leaning errors that least need help and
+harms the malignant cases that matter most, mirroring the residual dangerous flips above
+(\cref{fig:dflip}) and the severe-band degradation below. We read E5 as the strongest evidence that
+\emph{blanket} enhancement is unsafe and that a query-for-retake gate is required --- not as a salvage
+benchmark to maximise. Closing the malignant salvage gap (mask-weighted reconstruction that forbids
+smoothing lesion regions) is left to future work (\cref{sec:discussion}).
+
+\paragraph{E6 --- the severe-degradation safety boundary.}
+On the severe band we observe the boundary directly: enhancing severely degraded images significantly
+\emph{lowers} diagnostic AUC ($\Delta\mathrm{AUC}=-0.056$, CI $[-0.085,-0.028]$, excluding zero) and
+induces a $0.46$ dangerous-flip rate. Enhancement is the wrong action in this regime; the agent routes
+severe inputs to query-for-retake rather than enhance-then-diagnose (\cref{sec:agent}), which is
+exactly the safety behaviour the salvage boundary is meant to enforce.
 
 \subsection{Universality}\label{sec:exp-universal}
 % R1: NOT "TS reversal is universal". Phrase as "most pronounced on weakly quality-aware backbones".
