@@ -6,6 +6,48 @@
 
 ---
 
+## 2026-06-10（会话 23，§7.4 E5 诚实版落笔 + 更正会话 22 HAM/PAD 误判）
+
+### 起因
+开门「读档，推进 ICLR」。读档 + 查 HPC（squeue 空、无在跑 job）。承接会话 23 待续第 1 件：写 §7.4。
+
+### ✅ §7.4 E5 诚实版落笔（清会话 22 收工打断的欠债）
+- per-class 数字 **python 重核 e5_salvage_persample.csv**（红线：csv 算）：melanoma salvage 5.2%（4/77）/ damage 31.0%（85/274，净 −81）；benign salvage 75.6%（1809/2392）/ damage 0.6%（50/8138）；聚合 moderate 0.737。**与会话 22 记录一字不差**。
+- 替换 main.tex line 295-296 placeholder → 两个 \paragraph：**E5（benign-dominated，明写「deliberately do NOT report aggregate as headline」+ 引 mask-weighted future work）** + **E6（severe 安全边界，dAUC −0.056/dflip 0.46）**。不卖聚合 salvage、与 dflip/E6 同向互证、落 query-for-retake。
+- **编译 zero undefined，36→37 页**（pdflatex 3-pass + bibtex）。
+
+### 🔧 更正会话 22 误判：HAM/PAD 本地其实在
+- 会话 22 PROJECT_LOG 称「HAM10000/PAD-UFES 本地 data/external/ 实际不存在、DATA_INVENTORY 标注有误」→ **核查推翻**：HAM10000 实有 10015 张（part1 5000 + part2 5015）、PAD-UFES 实有 2298 png，DATA_INVENTORY line49-50 的 ✅ 是对的。**会话 22 那句「标注有误」本身才是误判，不改 DATA_INVENTORY。**
+- **E11 真正 gate 厘清**：`external_*_predictions.csv` git 溯源 = BMVC Sprint 2 产物（commit 963006f5）→ **红线 10（BMVC 数字禁直搬 ICLR）**。所以 E11 zero-shot 是 gated on「为 ICLR 重跑」而非「缺数据下载」。数据齐 → 重跑随时可做（本地或 HPC），属 M2 re-eval 待用户拍，无下载阻塞。
+
+### §7 剩余 pending 逐条核（确认天花板：无下一个干净可填项）
+承「继续不要问」全扫 §7 未填子节，逐条溯源 gate：
+- **7.1 Table 1**：`itb_predictions.csv` git 溯源 = BMVC Sprint3（16b01a4c）→ 红线 10，须 ICLR 重跑。
+- **7.5 Table 2 universality**：`section54_summary.csv`（ICLR W1，05-19/20）数据脏——ViT-Tiny 与 ViT-Tiny(DeiT) 两行 LQ/HQ/Edge 全同但 rho 两版（+0.028 含 Diverse vs −0.16 仅 ITB）歧义、Diverse 列仅 1 行有值、缺 Std VIB 行（只 4 真 backbone npy）。且逐格 ECE 不支持「QCTS 全胜」简单叙事（TS 降 LQ ECE 但抬 HQ、QCTS 赢在 NLL/qcdi 非逐格）→ 自算 QCTS 温度公式=越红线（复现禁自创），csv 叙事须 Claim 1 谨慎框架 → **camera-ready 整合延后有理，不强填**。
+- **7.6 Table 3 cross-domain**：HAM/PAD 预测 csv = BMVC（红线 10）、跨模态（CheXpert/fundus/endoscopy）待 inference → M2。
+- **7.7 DCA**：`itb_predictions.csv`(16b01a4c)/`qcts_itb_predictions.csv`(fc5cca86「BMVC 实验全部完成」) 均 BMVC → NB(p_t) 公式确定性可算但输入须 ICLR 重跑。
+- **7.8 Fairness**：缺 Fitzpatrick I–VI 分层数据。
+- **结论**：§7.4 落笔后 §7 已推到当前 frozen ICLR 数据天花板，剩余全 gated on（BMVC 重跑 / M2 训练 / camera-ready 叙事）。逼填任一 = 越红线 10 或误述 Claim 1，**诚实停在天花板不造数**。
+
+### 待续（会话 24）
+1. M2 重训类待用户拍（训练串行红线、天级 HPC）：**mask-L1 重训**（救 melanoma salvage 5.2%/降 damage 31%，优先级最高，§7.4 已写为 future work）、E9 FiLM-vs-CrossAttn、E10 6 SOTA（禁扩散）、visiscore norm-q 重训增强器。**注：§7 进一步推进 gated on 此——M2 重训出 ICLR-own 预测后，Table1/DCA/cross-domain 才能解锁重跑。**
+2. **E11 zero-shot 为 ICLR 重跑**（数据已在本地，非阻塞）：跑 HAM/PAD zero-shot → Table 3，gated on Plan A re-eval 联合 freeze。
+3. Table 1（9-baseline×ITB）维持 pending（红线 10，待 M2）。
+
+### 追加：v6 mask-L1 重训启动（job 1442696，用户拍「重训但确保不返工」→ 全程实测验证防返工）
+用户从写作转「重训」，强约束**不要再返工**。承接 §7.4 已写的 mask-L1 future work，做 M2 第一个重训。**防返工 = 每步 smoke 实测、不盲启**：
+- **mask 来源决策 + 证伪**：用户先选 B3/ResNet Grad-CAM（防循环用 ResNet 非 B3 eval probe）。**本地 smoke 5 张证伪**：ResNet-50 Grad-CAM 在皮肤镜打**角落 vignette / 周边纹理 shortcut，不在病灶**（overlay 肉眼 + CoM/center_frac 统计双证）→ 用它 = 保护错区域 = 多日白跑。**这正是 no-rework 纪律救场**。
+- **改经典三层分割**：Otsu(LAB-L 暗区+中心最大连通域)→GrabCut(中心框,OpenCV 无下载)→中心高斯。300 张测失败率 13%→GrabCut 救→1%（实际全量 3.7% 落高斯）。零依赖/零循环/无域差/纯 CPU。overlay 证精准圈中心病灶（含淡病灶）。改用「经典分割」而非用户否过的 proxy=带证据重拍（smoke 翻了我「proxy 弱」的预判）。
+- **代码 4 件套**：`precompute_lesion_masks.py`（含 --nshards/--skip-existing）+ `enhance_dataset.py`（masks_dir→4-tuple，missing→zero=plain L1 安全）+ `train_visienhance.py`（加权 L1=L1·(1+λ_mask·mask)，仅 λ_mask>0 启用）+ config v6（λ_mask=3.0 病灶 4×，其余全同 v5 保 E1-E12 可比；喂法保 raw-q 锁定）。
+- **四道返工门全过**：① 本地机制 smoke（4-tuple/加权 L1 有限/mask=0 退化 plain L1）② HPC precompute **33126 masks=ISIC-2020 train 全覆盖**（csv 49700 unique 中 16576 是 HPC 不存在原图、dataset 本就 existence 过滤掉，零影响）③ 8 shard 并行 6.5→59/s ④ HPC dataloader smoke（collate 4-tuple + 真 mask 加载 8/8 nonzero + 加权 L1 有限）。
+- **提交 job 1442696**（4×GPU DDP，80ep，submit_v6_maskL1.sh→v6 config，PD 等资源）。**监控后台 arm**（poll 到首 epoch 验真前向无 NaN/PSNR 正常）。commit 46c124f8（prep）+ df7ff403（sharding）。
+- **赌点诚实记**：mask-L1 能否把 melanoma salvage 5.2%/damage 31% 拉上去 = 研究赌注、不保证；但**setup 已 bulletproof 不会因配置错返工**（这是「不返工」的工程定义）。结果待 ep80 + E3/E5/dflip re-eval。
+
+### 命中率
+本会话清了会话 22 收工打断的 §7.4 欠债（E5 诚实版编译进 paper，37 页），更正会话 22 一处误判（HAM/PAD 本地其实在、E11 gate 是 BMVC 红线非缺数据），**并启动 v6 mask-L1 重训（job 1442696）全程 smoke 防返工**——**最硬的一笔 = ResNet Grad-CAM 被本地 smoke 证伪**（打角落非病灶），换经典三层分割救场，否则会拿保护错区域的 mask 跑多日 HPC。核查/smoke 习惯连捉四次（会话 21 visiscore、22 E5、23 误判 + Grad-CAM 证伪）。主线亲做全部 HPC 提交/precompute/判停，零外包。
+
+---
+
 ## 2026-06-10（会话 22，🔴 E5 per-class 拆分翻案：增强救良性毁恶性 → 定 framing 两手）
 
 ### 起因
