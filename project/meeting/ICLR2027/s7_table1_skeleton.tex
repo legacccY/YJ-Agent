@@ -11,6 +11,12 @@
 % ANTI-DRIFT R10: the \qcts row is the prior BMVC post-hoc method, kept as ONE ablation.
 %   At camera-ready it MUST be reported against the corresponding \qvib (Ours) row on the
 %   SAME frozen split (no cross-paper number reuse). See main.tex §6 Baselines.
+%
+% ROW SET ALIGNED TO project/scripts/gen_table1.py GROUPS (single source of truth for
+% method display order/labels). GROUPS lists 10 methods (A,H,I,J,D,E,F,G,TS,QCTS); F
+% (\qvib{} Full) is pulled out as the bold "Ours" row, leaving the other 9 (A,H,I,J,D,E,G,
+% TS,QCTS) as the nine baselines, grouped by family: Discriminative (A,H), uncertainty
+% ensemble (I,J), VIB family (D,E,G), Post-hoc calibration (TS,QCTS).
 
 \begin{table}[t]
 \centering
@@ -35,16 +41,17 @@ Method
  & AUC$\uparrow$ & ECE$\downarrow$ & QCDI & $\rho(\Hent,\qbar)$
  & AUC$\uparrow$ & ECE$\downarrow$ & QCDI & $\rho(\Hent,\qbar)$ \\
 \midrule
-Direct classifier            & -- & -- & -- & -- & -- & -- & -- & -- \\
-MC dropout                   & -- & -- & -- & -- & -- & -- & -- & -- \\
-Deep ensemble                & -- & -- & -- & -- & -- & -- & -- & -- \\
-Evidential                   & -- & -- & -- & -- & -- & -- & -- & -- \\
-Focal / label-smoothing      & -- & -- & -- & -- & -- & -- & -- & -- \\
-Standard VIB                 & -- & -- & -- & -- & -- & -- & -- & -- \\
-VIB $+$ temperature scaling  & -- & -- & -- & -- & -- & -- & -- & -- \\
-\qcts{} (BMVC)               & -- & -- & -- & -- & -- & -- & -- & -- \\
+EfficientNet-B3               & -- & -- & -- & -- & -- & -- & -- & -- \\
+Focal $+$ LS                  & -- & -- & -- & -- & -- & -- & -- & -- \\
+MC Dropout (30$\times$)       & -- & -- & -- & -- & -- & -- & -- & -- \\
+Deep Ensemble ($5\times$)     & -- & -- & -- & -- & -- & -- & -- & -- \\
+Std VIB                       & -- & -- & -- & -- & -- & -- & -- & -- \\
+Adaptive Prior                & -- & -- & -- & -- & -- & -- & -- & -- \\
+\qvib{} $+$ TokFT$^\ast$      & -- & -- & -- & -- & -- & -- & -- & -- \\
+Std VIB $+$ TS                & -- & -- & -- & -- & -- & -- & -- & -- \\
+\qcts{} (BMVC)                & -- & -- & -- & -- & -- & -- & -- & -- \\
 \midrule
-\textbf{Ours (\qvib{})}      & -- & -- & -- & -- & -- & -- & -- & -- \\
+\textbf{Ours (\qvib{} Full)}  & -- & -- & -- & -- & -- & -- & -- & -- \\
 \bottomrule
 \end{tabular}
 \end{table}

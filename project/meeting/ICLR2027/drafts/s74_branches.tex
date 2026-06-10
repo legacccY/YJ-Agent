@@ -1,0 +1,136 @@
+% =============================================================================
+% s74_branches.tex --- Pre-written replacement text for main.tex §7.4 (E5
+% paragraph), branched on the v6 mask-weighted-L1 re-eval VERDICT.
+%
+% USAGE
+% -----
+% After `project/analyze_e5_perclass.py` finishes on the v6 (mask-L1,
+% lambda_mask=3.0, 4x lesion weight) checkpoint, it prints a VERDICT line:
+%
+%   "mask-L1 HELPS melanoma"      -> use BRANCH A below
+%   "mask-L1 does NOT help melanoma" -> use BRANCH B below
+%
+% Each branch is a drop-in replacement for main.tex lines 295-308, i.e. the
+% \paragraph{E5 --- ...} block (everything from "\paragraph{E5" through the
+% sentence ending "...left to future work (\cref{sec:discussion})."
+% inclusive). Line 294 (\subsection{...}\label{sec:exp-salvage}) and the E6
+% paragraph (310-315) are UNCHANGED in both branches.
+%
+% PLACEHOLDERS (fill in after running analyze_e5_perclass.py on v6):
+%   SALV_MEL_V6  -- v6 melanoma salvage rate, e.g. "5.2\%" -> new value
+%   DMG_MEL_V6   -- v6 melanoma damage rate (correctly-classified flipped wrong)
+%   NET_V6       -- v6 net malignant case count, signed (e.g. "-81" -> "-40" or "+12")
+%   SALV_MEL_V6_FRAC -- raw fraction form, e.g. "4/77" -> "x/77" (denominator may
+%                        differ slightly if the v6 probe re-splits; check n)
+%   DMG_MEL_V6_FRAC  -- raw fraction form, e.g. "85/274" -> "y/274"
+%   NET_V6_ABS   -- absolute value of NET_V6 for prose ("a net loss of N" /
+%                   "a net gain of N"), used only in Branch A success wording
+%
+% Frozen v5 numbers (DO NOT CHANGE, used for before/after comparison in both
+% branches): benign salvage 75.6% (1809/2392), benign damage 0.6% (50/8138),
+% melanoma salvage 5.2% (4/77), melanoma damage 31.0% (85/274), net -81,
+% aggregate salvage rate 0.737, n=3627 per severity.
+% =============================================================================
+
+
+% =============================================================================
+% BRANCH A --- mask-L1 HELPS melanoma (net rises from -81 toward / past zero)
+% =============================================================================
+% Use when VERDICT == "mask-L1 HELPS melanoma", i.e. NET_V6 > -81 (net loss
+% shrinks) and ideally NET_V6 >= 0 (net gain). Two sub-variants below depending
+% on the sign of NET_V6 --- pick ONE and delete the other before pasting into
+% main.tex.
+%
+% -----------------------------------------------------------------------
+% Variant A1 --- NET_V6 turns POSITIVE (net gain for malignant cases)
+% -----------------------------------------------------------------------
+% Use this wording if NET_V6 >= 0.
+
+\paragraph{E5 --- mask-weighted reconstruction narrows the malignant salvage gap.}
+On the moderate band the aggregate salvage rate --- the fraction of degraded-then-misclassified
+images that enhancement restores to a correct prediction --- is $0.737$, nominally clearing the
+$>55\%$ target. As in the feature-DP model, this aggregate is misleading on its own and we do
+\emph{not} report it as a headline capability: a per-class split (independent EfficientNet-B3
+probe, $n=3627$ per severity) is required to see what the aggregate hides. Under the
+feature-DP enhancer, melanoma salvage was just $5.2\%$ ($4/77$) against $31.0\%$ damage
+($85/274$ correctly-classified), a net loss of $81$ malignant cases, while benign lesions
+salvaged $75.6\%$ ($1809/2392$) at $0.6\%$ damage ($50/8138$). With \emph{mask-weighted}
+reconstruction ($\lambda_{\text{mask}}=3.0$, $4\times$ lesion-region weight, which forbids the
+enhancer from smoothing over the lesion itself), melanoma salvage rises to
+$\mathrm{SALV\_MEL\_V6}$ ($\mathrm{SALV\_MEL\_V6\_FRAC}$) while damage falls to
+$\mathrm{DMG\_MEL\_V6}$ ($\mathrm{DMG\_MEL\_V6\_FRAC}$), turning the net malignant outcome from a
+loss of $81$ cases into a \textbf{net gain of $\mathrm{NET\_V6\_ABS}$ cases}
+($\mathrm{NET\_V6}$). This is consistent with the design hypothesis: protecting the lesion
+region from over-smoothing is what lets enhancement help the class that matters most. We still
+do \emph{not} promote the aggregate $0.737$ figure, and the benign-dominated shape of the
+aggregate salvage rate is unchanged --- mask-weighted reconstruction shifts \emph{where} the
+salvage comes from, not how the headline number should be read. The residual dangerous flips on
+the moderate band (\cref{fig:dflip}) and the severe-band degradation below still motivate the
+query-for-retake channel (\cref{sec:discussion}) as the primary safety mechanism; mask-weighted
+reconstruction is a complementary mitigation for the band where enhancement \emph{is} the
+selected action, not a replacement for the gate.
+
+% -----------------------------------------------------------------------
+% Variant A2 --- NET_V6 improves but stays NEGATIVE (net loss shrinks, doesn't
+% flip sign)
+% -----------------------------------------------------------------------
+% Use this wording if NET_V6 < 0 but |NET_V6| < 81 (i.e. less negative than v5).
+
+\paragraph{E5 --- mask-weighted reconstruction reduces but does not eliminate the malignant
+salvage deficit.}
+On the moderate band the aggregate salvage rate --- the fraction of degraded-then-misclassified
+images that enhancement restores to a correct prediction --- is $0.737$, nominally clearing the
+$>55\%$ target. As in the feature-DP model, this aggregate is misleading on its own and we do
+\emph{not} report it as a headline capability: a per-class split (independent EfficientNet-B3
+probe, $n=3627$ per severity) is required to see what the aggregate hides. Under the
+feature-DP enhancer, melanoma salvage was just $5.2\%$ ($4/77$) against $31.0\%$ damage
+($85/274$ correctly-classified), a net loss of $81$ malignant cases, while benign lesions
+salvaged $75.6\%$ ($1809/2392$) at $0.6\%$ damage ($50/8138$). With \emph{mask-weighted}
+reconstruction ($\lambda_{\text{mask}}=3.0$, $4\times$ lesion-region weight, which forbids the
+enhancer from smoothing over the lesion itself), melanoma salvage rises to
+$\mathrm{SALV\_MEL\_V6}$ ($\mathrm{SALV\_MEL\_V6\_FRAC}$) and damage falls to
+$\mathrm{DMG\_MEL\_V6}$ ($\mathrm{DMG\_MEL\_V6\_FRAC}$), reducing the net malignant loss from
+$81$ to $\mathrm{NET\_V6\_ABS}$ cases ($\mathrm{NET\_V6}$). Mask-weighted reconstruction thus
+\emph{reduces but does not eliminate} the malignant-salvage deficit: protecting the lesion
+region from over-smoothing measurably helps, but enhancement still does net harm to melanoma
+cases on the moderate band. We do not promote the aggregate $0.737$ figure, which remains
+benign-dominated. We read the residual deficit, together with the dangerous flips on the
+moderate band (\cref{fig:dflip}) and the severe-band degradation below, as confirmation that a
+query-for-retake gate (\cref{sec:discussion}) --- not loss reweighting alone --- is the
+necessary safety mechanism for the malignant class; mask-weighted reconstruction is best framed
+as a partial, complementary mitigation rather than a fix.
+
+
+% =============================================================================
+% BRANCH B --- mask-L1 does NOT help melanoma (net flat or worse than -81)
+% =============================================================================
+% Use when VERDICT == "mask-L1 does NOT help melanoma", i.e. NET_V6 <= -81
+% (net loss unchanged or larger). This is essentially the current (v5) framing,
+% reinforced with the v6 negative result as evidence that loss-reweighting
+% alone cannot close the gap.
+
+\paragraph{E5 --- salvage rate is benign-dominated, and mask-weighted reconstruction does not
+close the gap.}
+On the moderate band the aggregate salvage rate --- the fraction of degraded-then-misclassified
+images that enhancement restores to a correct prediction --- is $0.737$, nominally clearing the
+$>55\%$ target. This aggregate is misleading, and we deliberately do \emph{not} report it as a
+headline capability: a per-class split (independent EfficientNet-B3 probe, $n=3627$ per severity)
+shows it is almost entirely benign false-positive correction. On benign lesions enhancement salvages
+$75.6\%$ ($1809/2392$) while damaging only $0.6\%$ ($50/8138$ correctly-classified); on melanoma it
+salvages just $5.2\%$ ($4/77$) while damaging $31.0\%$ ($85/274$ correctly-classified) --- a net loss
+of $81$ malignant cases. Enhancement thus helps the benign-leaning errors that least need help and
+harms the malignant cases that matter most, mirroring the residual dangerous flips above
+(\cref{fig:dflip}) and the severe-band degradation below. We tested whether this gap is an
+artefact of the reconstruction loss: a mask-weighted variant ($\lambda_{\text{mask}}=3.0$,
+$4\times$ lesion-region weight, forbidding the enhancer from smoothing over the lesion) yields
+melanoma salvage of $\mathrm{SALV\_MEL\_V6}$ ($\mathrm{SALV\_MEL\_V6\_FRAC}$) and damage of
+$\mathrm{DMG\_MEL\_V6}$ ($\mathrm{DMG\_MEL\_V6\_FRAC}$), a net of $\mathrm{NET\_V6}$ malignant
+cases --- statistically indistinguishable from (or worse than) the feature-DP result. Reweighting
+the reconstruction loss toward the lesion is therefore \emph{not sufficient} to close the
+malignant salvage gap: the failure mode is not "the enhancer smooths away the lesion" but
+something the per-pixel reconstruction objective cannot reach (e.g.\ the diagnostic decision
+boundary depends on texture statistics that mask-weighted L1 does not target). We read E5 as the
+strongest evidence that \emph{blanket} enhancement is unsafe and that a query-for-retake gate is
+required --- not as a salvage benchmark to maximise. We report this negative result rather than
+omit it; closing the malignant salvage gap by other means (e.g.\ diagnosis-aware or
+adversarial objectives) is left to future work (\cref{sec:discussion}).
