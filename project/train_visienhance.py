@@ -456,6 +456,8 @@ def main():
         dec_blocks=list(mcfg.dec_blocks),
         film_hidden=mcfg.get("film_hidden", 128),
         film_scale=mcfg.get("film_scale", 0.1),
+        conditioning=mcfg.get("conditioning", "film"),
+        crossattn_heads=mcfg.get("crossattn_heads", 4),
     ).to(device)
     if is_main:
         print(f"[INFO] VisiEnhanceNet params: {model.param_count()/1e6:.1f}M")
@@ -553,7 +555,16 @@ def main():
     model_only = args.model_only or cfg.train.get("model_only", False)
     if resume_path and Path(resume_path).exists():
         ckpt = torch.load(resume_path, map_location=device, weights_only=False)
-        _raw_model.load_state_dict(ckpt["model"])
+        # strict=False so cross-conditioning resume works (E9: crossattn model warm-starts
+        # the shared NAFNet backbone from a FiLM-trained Stage 1; the conditioning modules
+        # differ in keys and stay at init). For same-arch resume (FiLM->FiLM) missing/unexpected
+        # are empty — printed below so any real mismatch is visible, never silently skipped.
+        missing, unexpected = _raw_model.load_state_dict(ckpt["model"], strict=False)
+        if is_main and (missing or unexpected):
+            cond = getattr(_raw_model, "conditioning", "film")
+            print(f"[INFO] resume strict=False (conditioning={cond}): "
+                  f"{len(missing)} missing, {len(unexpected)} unexpected keys "
+                  f"(expected non-zero only for cross-conditioning warm-start)")
         if not model_only:
             optimizer.load_state_dict(ckpt["optimizer"])
             scheduler.load_state_dict(ckpt["scheduler"])

@@ -1,6 +1,6 @@
 # E9 — FiLM vs Cross-Attention Quality-Conditioning（架构消融）准备
 
-**状态：诚实 gap 标注，模型代码当前不支持 cross-attention conditioning，本文档只做规划，不产出可跑 config。**
+**状态（会话 24 更新）：代码已就绪。** 模型已支持 cross-attention conditioning（smoke 验过），v7 config 已建，resume 改 strict=False 解决跨 conditioning 暖启。**唯一剩余 = HPC 提交训练（gated on v6 训完，串行红线）。** 下方 §1 的旧「不支持」判断保留作改动前快照。
 
 ---
 
@@ -148,12 +148,18 @@ python train_visienhance.py --config configs/visienhance_s2_planA_256_v7_crossat
 
 ## 6. TODO 清单（按执行顺序）
 
-1. [ ] `models/visienhance.py`：新增 `CrossAttnConditioning` 类
-2. [ ] `models/visienhance.py`：`VisiEnhanceNet.__init__` 加 `conditioning` 参数 + dispatch
-3. [ ] `train_visienhance.py:452-459`：传入 `conditioning=mcfg.get("conditioning", "film")`
-4. [ ] `tests/test_visienhance.py`：加 cross-attn forward/grad 测试
-5. [ ] 建 `configs/visienhance_s2_planA_256_v7_crossattn_hpc.yaml`（本文档 §3 模板）
-6. [ ] 改 `run_eval_filmabl_hpc.py` → `run_eval_e9_crossattn_hpc.py`（§5）
-7. [ ] HPC 提交训练（v6 mask-L1 训完后排队，串行）
+1. [x] `models/visienhance.py`：新增 `CrossAttnConditioning` 类（n_tokens=4 quality token，feature 做 query，zero-init 残差。**修正草案缺陷**：单 KV token 退化成全局偏置非真注意力 → 改 4 token）
+2. [x] `models/visienhance.py`：`VisiEnhanceNet.__init__` 加 `conditioning`/`crossattn_heads` 参数 + `_make_conditioning` dispatch（默认 film，后向兼容）
+3. [x] `train_visienhance.py`：传入 `conditioning`/`crossattn_heads` + resume 改 **strict=False**（跨 conditioning 暖启 backbone、conditioning 留 init；FiLM→FiLM 仍 0/0 全加载）
+4. [ ] `tests/test_visienhance.py`：加 cross-attn 测试（smoke 已覆盖 forward/grad/init/resume，正式 test 可选）
+5. [x] 建 `configs/visienhance_s2_planA_256_v7_crossattn_hpc.yaml`（= v5 + conditioning:crossattn，唯一变量）
+6. [ ] 改 `run_eval_filmabl_hpc.py` → E9 launcher（§5，eval 时做，需 v7 ckpt 路径）
+7. [ ] HPC 提交训练（**gated on v6 训完，串行红线**）；提交前重传 `models/visienhance.py`+`train_visienhance.py`+v7 config 到 HPC
 
-**当前完成度：0/7（仅设计，无代码改动）。**
+**当前完成度：4/7（核心代码全就绪，smoke 验过；剩 eval launcher + HPC 提交，后者 gated on v6）。**
+
+## 7. Smoke 验证记录（会话 24，本地 CPU）
+- film: out (2,3,64,64) 15.33M、grad finite、init |out-x|=0（近恒等）✓
+- crossattn: out (2,3,64,64) 17.17M（+1.84M）、grad finite、init |out-x|=0 ✓
+- 默认 conditioning='film' → 后向兼容 v5/v6 ✓
+- resume crossattn←FiLM: 70 missing/56 unexpected 全是 conditioning 模块、**backbone 0 missing** ✓；FiLM←FiLM 0/0 ✓

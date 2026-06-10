@@ -1,0 +1,71 @@
+# Stage 2 Plan A @256 v7 (HPC) — E9 ablation: cross-attention conditioning vs FiLM.
+# IDENTICAL to v5 (feature-DP + pos-hinge) in EVERY hyperparameter EXCEPT the
+# quality-conditioning mechanism: FiLM -> CrossAttnConditioning (n_tokens=4 learned
+# quality tokens, feature map as query, zero-init residual). This isolates the single
+# variable for E9 (FiLM vs cross-attention). Compare CrossAttn(v7) against FiLM(v5) on
+# the same frozen eval split. Resume from the same Stage 1 @256 best as v5 (fair start).
+# Model code: models/visienhance.py CrossAttnConditioning (smoke-verified: forward shape,
+# finite grads, near-identity at init, +1.8M params over FiLM).
+# GATED: submit only AFTER v6 mask-L1 (job 1442696) finishes — training is serial.
+
+stage: 2
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128         # unused by crossattn branch; kept for config symmetry
+  film_scale: 0.1          # unused by crossattn branch; kept for config symmetry
+  conditioning: crossattn  # ← E9: FiLM -> cross-attention
+  crossattn_heads: 4       # 64/128/256 channels all divisible by 4
+
+data:
+  labels_csv: /gpfs/work/bio/jiayu2403/visienhance/data/quality_labels_nocrop_hpc.csv
+  split_csv:  /gpfs/work/bio/jiayu2403/visienhance/data/isic_split.csv
+  meta_csv:   /gpfs/work/bio/jiayu2403/visienhance/data/train-metadata.csv
+  img_size: 256
+  severity: mixed
+  val_severity: mixed
+  batch_size: 8
+  num_workers: 8
+  pos_oversample: 10
+
+train:
+  epochs: 80
+  lr: 3.0e-5
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+  early_stop_patience: 999
+  resume_from: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage1_planA_256/best_visienhance.pth
+  model_only: true
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  dp_mode: feat
+  lambda_dp: 0.019
+  lambda_hinge: 0.04
+  hinge_clamp: 3.0
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/best_visiscore.pth
+  qvib_ckpt:     /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efnet/best_qad.pth
+  b3_ckpt:       /gpfs/work/bio/jiayu2403/visienhance/checkpoints/efficientnet_b3_isic.pth
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: /gpfs/work/bio/jiayu2403/visienhance/checkpoints/visienhance/stage2_planA_256_v7_crossattn
+
+wandb:
+  project: visienhance
+  name: stage2_planA_256_v7_crossattn_hpc
+  mode: offline

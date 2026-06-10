@@ -115,6 +115,59 @@ class FiLMLayer(nn.Module):
         return (1.0 + self.film_scale * g) * feat + self.film_scale * b
 
 
+class CrossAttnConditioning(nn.Module):
+    """Cross-attention quality conditioning (E9 ablation vs FiLM).
+
+    The quality defect vector q̃ = 1-q is projected into n_tokens learned
+    "quality tokens" (Key/Value); the spatial feature map (HW positions) is the
+    Query. Each spatial position attends over the quality tokens, yielding a
+    spatially-varying modulation — unlike FiLM's per-channel global affine.
+
+    n_tokens > 1 is required: with a single KV token the softmax is trivially 1
+    and the output collapses to a position-independent bias (no real attention).
+
+    Output projection is zero-initialized → near-identity at start, matching
+    FiLM's zero-init philosophy so the E9 comparison starts from the same point.
+
+    Signature matches FiLMLayer: forward(feat, q_defect) -> same-shape tensor,
+    so VisiEnhanceNet.forward needs no change — only __init__ dispatch.
+    """
+
+    def __init__(self, q_dim: int, channels: int, n_heads: int = 4, n_tokens: int = 4):
+        super().__init__()
+        assert channels % n_heads == 0, f"channels {channels} not divisible by n_heads {n_heads}"
+        self.channels = channels
+        self.n_tokens = n_tokens
+        self.q_proj = nn.Linear(q_dim, channels * n_tokens)  # q̃ -> n_tokens KV tokens
+        self.norm = LayerNorm2d(channels)
+        self.attn = nn.MultiheadAttention(channels, n_heads, batch_first=True)
+        self.out_proj = nn.Conv2d(channels, channels, 1, bias=True)
+        nn.init.zeros_(self.out_proj.weight)
+        nn.init.zeros_(self.out_proj.bias)
+
+    def forward(self, feat: torch.Tensor, q_defect: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            feat:     [B, C, H, W]
+            q_defect: [B, q_dim]  (= 1 - q)
+        """
+        B, C, H, W = feat.shape
+        query = self.norm(feat).flatten(2).transpose(1, 2)        # [B, HW, C]
+        kv = self.q_proj(q_defect).view(B, self.n_tokens, C)      # [B, n_tokens, C]
+        attn_out, _ = self.attn(query, kv, kv)                    # [B, HW, C]
+        attn_out = attn_out.transpose(1, 2).reshape(B, C, H, W)
+        return feat + self.out_proj(attn_out)                     # zero-init residual
+
+
+def _make_conditioning(conditioning, q_dim, channels, film_hidden, film_scale, crossattn_heads):
+    """Build the per-block quality-conditioning module (FiLM or cross-attention)."""
+    if conditioning == "film":
+        return FiLMLayer(q_dim, channels, film_hidden, film_scale)
+    if conditioning == "crossattn":
+        return CrossAttnConditioning(q_dim, channels, n_heads=crossattn_heads)
+    raise ValueError(f"unknown conditioning '{conditioning}' (expected 'film' or 'crossattn')")
+
+
 class VisiEnhanceNet(nn.Module):
     """VisiEnhance-Net: NAFNet U-Net with per-block FiLM quality conditioning.
 
@@ -148,8 +201,14 @@ class VisiEnhanceNet(nn.Module):
         q_dim: int = 5,
         film_hidden: int = 128,
         film_scale: float = 0.1,
+        conditioning: str = "film",
+        crossattn_heads: int = 4,
     ):
         super().__init__()
+        self.conditioning = conditioning
+        _cond = lambda c: _make_conditioning(
+            conditioning, q_dim, c, film_hidden, film_scale, crossattn_heads
+        )
         if enc_blocks is None:
             enc_blocks = [2, 2]
         if dec_blocks is None:
@@ -166,11 +225,11 @@ class VisiEnhanceNet(nn.Module):
         self.downsamplers = nn.ModuleList()
         for i in range(n):
             self.enc_blocks.append(nn.Sequential(*[NAFBlock(ch[i]) for _ in range(enc_blocks[i])]))
-            self.enc_films.append(FiLMLayer(q_dim, ch[i], film_hidden, film_scale))
+            self.enc_films.append(_cond(ch[i]))
             self.downsamplers.append(nn.Conv2d(ch[i], ch[i + 1], 2, stride=2, bias=True))
 
         self.mid_blocks = nn.Sequential(*[NAFBlock(ch[n]) for _ in range(mid_blocks)])
-        self.mid_film = FiLMLayer(q_dim, ch[n], film_hidden, film_scale)
+        self.mid_film = _cond(ch[n])
 
         self.upsamplers = nn.ModuleList()
         self.dec_blocks = nn.ModuleList()
@@ -178,7 +237,7 @@ class VisiEnhanceNet(nn.Module):
         for i in reversed(range(n)):
             self.upsamplers.append(nn.ConvTranspose2d(ch[i + 1], ch[i], 2, stride=2, bias=True))
             self.dec_blocks.append(nn.Sequential(*[NAFBlock(ch[i]) for _ in range(dec_blocks[i])]))
-            self.dec_films.append(FiLMLayer(q_dim, ch[i], film_hidden, film_scale))
+            self.dec_films.append(_cond(ch[i]))
 
         self.conv_out = nn.Conv2d(ch[0], in_channels, 3, padding=1, bias=True)
         nn.init.zeros_(self.conv_out.weight)
