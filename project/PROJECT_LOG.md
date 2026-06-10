@@ -42,6 +42,15 @@
 - **四道返工门全过**：① 本地机制 smoke（4-tuple/加权 L1 有限/mask=0 退化 plain L1）② HPC precompute **33126 masks=ISIC-2020 train 全覆盖**（csv 49700 unique 中 16576 是 HPC 不存在原图、dataset 本就 existence 过滤掉，零影响）③ 8 shard 并行 6.5→59/s ④ HPC dataloader smoke（collate 4-tuple + 真 mask 加载 8/8 nonzero + 加权 L1 有限）。
 - **提交 job 1442696**（4×GPU DDP，80ep，submit_v6_maskL1.sh→v6 config，PD 等资源）。**监控后台 arm**（poll 到首 epoch 验真前向无 NaN/PSNR 正常）。commit 46c124f8（prep）+ df7ff403（sharding）。
 - **赌点诚实记**：mask-L1 能否把 melanoma salvage 5.2%/damage 31% 拉上去 = 研究赌注、不保证；但**setup 已 bulletproof 不会因配置错返工**（这是「不返工」的工程定义）。结果待 ep80 + E3/E5/dflip re-eval。
+- **训练健康确认**（监控 b9q7c9q4q）：RUNNING@gpu4090n4，4×GPU util 65-100%，**真 NaN/OOM/error grep=0**（监控 err 误报实为 DDP grad-strides UserWarning「not an error」良性、v5 同款），resumed from stage1 ✓，~11.6min/ep×80≈15h（约明早 04:00）。
+
+### 追加 2：v6 re-eval 全管线预备（训练跑时主线不空等，训完即开火零返工，✅）
+用户「继续不要停」→ 趁 v6 训练 15h 备好 re-eval，会话 24 一条 sbatch 出全部判据：
+- **`analyze_e5_perclass.py`**（判 mask-L1 成败核心）：per-class salvage/damage + v5 基线 diff + VERDICT。**验证返工门：精确复现会话 22 v5 数字**（melanoma 4/77=5.2%/85/274=31% net−81、benign 1809/2392=75.6%/0.6%）。
+- **3 launcher**（`run_{e1,eval,dflip,e5}_hpc_v6.py`）指 v6 ckpt：E1 守门(PSNR≥30 红线，mask-L1 可能压 PSNR 须查)、E3/E7 paired、dflip dump、E5 salvage。Stage2 位置[1] 键名 cosmetic、v6==v5 架构同 CFG 加载（零模型返工）。`eval_e5_salvage.py` 加 OUT_SUFFIX→`e5_salvage_v6` 不覆盖 v5 基线。
+- **`submit_eval_v6.sh`**：一个 GPU job 串 E1→E3→dflip→E5（~15min）。**全部 commit（9c42063b/bbf49bf0）+ 上传 HPC `code/`+`submit_eval_v6.sh`**（不碰训练用 train_visienhance.py，安全）。
+- **会话 24 开火步**：① 确认 job 1442696 done + best ckpt 存 → ② `sbatch submit_eval_v6.sh` → ③ 拉 `stage2_diag_paired.csv`→`_v6`、`dflip_persample.csv`→`_v6`、`e5_salvage_v6*`、`e1_v6.json` → ④ `python analyze_e5_perclass.py results/e5_salvage_v6_persample.csv --baseline results/e5_salvage_persample.csv` 看 VERDICT → ⑤ 据结果更 §7.4（mask-L1 救起→改写成功版/没救→注解下界保留 future work）。
+- 早期监控 bunwt0mq7 盯前 3 epoch val_PSNR（<28 早警 mask-L1 压 fidelity）。
 
 ### 命中率
 本会话清了会话 22 收工打断的 §7.4 欠债（E5 诚实版编译进 paper，37 页），更正会话 22 一处误判（HAM/PAD 本地其实在、E11 gate 是 BMVC 红线非缺数据），**并启动 v6 mask-L1 重训（job 1442696）全程 smoke 防返工**——**最硬的一笔 = ResNet Grad-CAM 被本地 smoke 证伪**（打角落非病灶），换经典三层分割救场，否则会拿保护错区域的 mask 跑多日 HPC。核查/smoke 习惯连捉四次（会话 21 visiscore、22 E5、23 误判 + Grad-CAM 证伪）。主线亲做全部 HPC 提交/precompute/判停，零外包。
