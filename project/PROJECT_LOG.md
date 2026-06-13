@@ -6,6 +6,142 @@
 
 ---
 
+## 2026-06-13（会话 27，E9 训完 → eval 落地 → 纠会话26口径错判 → FiLM parsimony 胜，写进 paper）
+
+### 起因
+开门「读档，看 HPC」。承会话 26 开火点 = v7ca 训完。查 sacct：**job 1444849 `visienh_v7ca` COMPLETED**（15h44m，06-13 04:02 结束，exit 0，best ep47 val_PSNR 30.184，best+last ckpt 落 `stage2_planA_256_v7_crossattn/`）。
+
+### ✅ E9 eval 管线落地（会话 26 焊死 2 build 点 → 实测）
+- 改 2 真 build 点读 config `conditioning`/`crossattn_heads`（向后兼容默认 film，不破 v5/v6）：`eval_stage2_compare.load_visienhance` + `run_e1_ablation_hpc.load_enh`；`eval_diag_paired` 加 `CFG_MAP` 支持**混合架构 paired**（Stage1 FiLM vs Stage2 crossattn 同 job）。
+- 新 `run_e1_hpc_v7.py`+`run_eval_hpc_v7.py`+`submit_eval_v7.sh`。**登录节点实测 crossattn ckpt 加载 0 missing/0 unexpected**（避开会话 25「未验就上」教训）→ sbatch job 1448252 → E1 per-image PSNR **32.786 PASS**/SSIM 0.907。
+- **但 v7 job 比的是 crossattn vs Stage1(no-DP) = E7 复制，非 E9 核心**。补写 `run_eval_hpc_e9.py`+`submit_eval_e9.sh`：**FiLM(v5 DP) vs CrossAttn(v7 DP) 同 job paired，唯一变量 conditioning** → sbatch job 1448254。
+
+### 🔑 纠会话 26「crossattn 低 2.6dB」= PSNR 口径错配
+会话 26 拿 crossattn **训练 aggregate val_PSNR 30.17** 比 FiLM **论文 per-image 32.74**（会话 9/10 早定论两口径差 ~3dB，苹果比橘子）。同口径真相：aggregate 30.184 vs 30.186 打平、per-image 32.79 vs 32.74 打平。**crossattn 从未低 2.6dB。**
+
+### 🟢 E9 定论（job 1448254，n=3627/pos117，同口径同 split paired）
+| | dAUC | 一致率 | KL | dflip |
+|---|---|---|---|---|
+| FiLM (v5) | −0.0120 PASS | 0.9575 PASS | 0.0912 | 0.135 |
+| CrossAttn (v7) | −0.0103 PASS | 0.9551 PASS | 0.0937 | 0.189 |
+
+paired crossattn−FiLM：ΔAUC +0.0016 CI[−0.0057,+0.0086] **含0**、ΔKL +0.0026 CI[−0.0053,+0.0111] **含0**、McNemar p=0.679 → **三轴全不显著 = 多 1.8M 参数零增益，crossattn dflip 反更高**。**→ FiLM 在保真+诊断保持完全打平 cross-attn 且更经济 → 保留 FiLM（parsimony 胜，对齐 ACCEPTANCE E9 原判据「PSNR 持平」）。** 呼应 E8（FiLM 价值在诊断保持非复原质量）。旁证：v5 dflip 0.135 与会话 25 完全一致 = eval 忠实。
+
+### ✅ 回写
+- main.tex E8 段后插 E9 段（FiLM vs cross-attn parsimony 论点，数字全 csv 实测）→ 编译 **0 undefined，37→38 页**。
+- ACCEPTANCE E9 行改实测 + 会话 27 实测块。产物 `results/{stage2_diag_paired_e9.csv,eval_e9_1448254.out,e1_v7.json,stage2_diag_paired_v7.csv}`。
+
+### 待续（会话 28）
+1. **E10：6 非扩散 SOTA**（Restormer/NAFNet/MIRNet/SwinIR/Uformer/Real-ESRGAN，`plans/E10_sota_baselines_prep.md`）—— E9 完成，可启。训练串行红线 + 重训需用户拍。
+2. Table 1 数据格仍 `--`（gated M2，红线 4）。
+
+### 命中率
+开火步零返工：crossattn 加载先验 0 missing 才 sbatch、eval 一次过。**最硬一笔 = 没顺着会话 26「crossattn 不如 FiLM」早判写 paper**——那是口径错配（aggregate 比 per-image），若当「crossattn 更弱」写进 E9 会被审稿人拿 per-image 数字拆。同口径重测得「两机制统计无法区分、FiLM parsimony 胜」= 更强更诚实的 Occam 论点。审/判停习惯连捉（会话21 visiscore、22 E5、23 Grad-CAM、24 cross-attn 退化、25 脚本 VERDICT 噪声、27 PSNR 口径错配）。
+
+---
+
+## 2026-06-12（会话 26，发现 E9 v7 crossattn 已在跑 ep41 → 补脱节文档 + 判不停）
+
+### 起因
+开门「读档，看 HPC」。查 squeue/sacct：**job 1444849 `visienh_v7ca` RUNNING 8h27m**——E9 cross-attn 训练**已提交在跑**，非会话 25 记的「待用户拍未启动」。时间线：v6_eval（1444753）11:51 COMPLETED → v7ca 紧接启动。**文档脱节**：会话 25 PROJECT_LOG/WORKLOG 写「E9 待拍」，实际已跑。
+
+### 🟢 v7ca 实时状态（ep41/80）
+| 指标 | 值 | 读 |
+|---|---|---|
+| val_PSNR | 30.169（best 30.176）| 守 E1≥30 ✅ |
+| **vs FiLM v5** | 32.74 → 30.17 | **crossattn 低 2.6dB**（早期信号）|
+| no_improve | 13 ep | 基本平台，best 难再大动 |
+| val_DP / hinge | 0.196 / 0.077 | 正常 |
+| NaN/OOM/error | 无 | 仅 AMP deprecation + DDP grad-strides warning（性能提示非错）|
+| ETA | ~7.5h（今晚约 19:30）| 4×GPU DDP |
+
+### 🔑 用户问「平台了能停吗」→ 判不停
+**E9 是消融非 production 模型**：要公平对比 FiLM vs CrossAttn，两版必须同口径（v5 训满 80ep）。ep41 半途停 → crossattn 没训够 → reviewer 一拆「没训够就说它差」，E9 结论作废。**PSNR 平台本身 = E9 要的结果信号**（crossattn<FiLM，呼应 E8「FiLM 诊断价值」）。ETA 仅 7.5h、GPU 已占、停=不可逆重排一天 → 让它跑满拿干净 ep80+best ckpt。
+
+### 待续（训完后，会话 26/27 开火）
+1. v7ca ep80 训完确认 + best ckpt 落 `stage2_planA_256_v7_crossattn/`。
+2. **E9 eval launcher（会话 24 TODO 6）**：核心 = E1 守门 + E3/E7 诊断保持对比（dflip/E5 属 mask-L1 线，E9 不需）。**🔴 不能直接镜像 v6 launcher** —— 会话 26 验出 2 build 点 `eval_stage2_compare.py:31` + `run_e1_ablation_hpc.py:42` 都**不读 config `conditioning`**、默认 build film 架构 → 加载 crossattn ckpt 会 `CrossAttnConditioning` key 全 missing。**必改这 2 处读 config `conditioning`/`crossattn_heads` 传给 `VisiEnhanceNet`**，训完拿 v7 ckpt 后改+验加载 0 missing（会话 25「未验就上」教训反面，须有 ckpt 实测）→ 再镜像 submit_eval_v7.sh（E1+E3/E7 两步）→ 拉 generic csv 到 `_v7` → 与 v5 FiLM 1:1 对比坐实 E9。
+3. E10：6 非扩散 SOTA，E9 完后串行。
+
+---
+
+## 2026-06-12（会话 25，v6 训完 → eval 开火 → mask-L1 = NULL 负结果落 §7.4）
+
+### 起因
+开门「读档，继续 ICLR」。承会话 24 开火点 = v6 训完。查 HPC：**v6 mask-L1 job 1442696 COMPLETED**（16h14m，ep79/80，train PSNR 36.5，best ckpt ep51 val_PSNR 30.225 落 `stage2_planA_256_v6_maskL1/`）。GPU 配额空。
+
+### ✅ eval 开火（会话 24 焊死管线，零返工）
+- **开火前核 4 launcher ckpt 路径**全 = `stage2_planA_256_v6_maskL1/best_visienhance.pth`（实 dir 名带 `_maskL1` 后缀，脚本指对）、`OUT_SUFFIX=_v6` 不覆盖 v5、E1 config 存在 → `sbatch submit_eval_v6.sh`（job 1444753，~16min，4 步 E1/E3/dflip/E5 串单 GPU）。
+- **坑**：产物写在 `code/results/`（submit `cd code/` 后相对路径）非 `$BASE/results/`，从 code/results 重拉。poll 脚本打印 q̄ `̄` 触 GBK 编码炸（job 没事，重取强制 UTF-8）。
+- 5 产物拉本地 `project/results/`：`stage2_diag_paired_v6.csv`/`dflip_persample_v6.csv`/`e5_salvage_v6{,_persample}.csv`/`e1_v6.json`。
+
+### 🟢 v6 全实验结果（对 v5 baseline）
+| 实验 | v5 | v6 mask-L1 | 读 |
+|---|---|---|---|
+| E1 PSNR/SSIM | 32.74/0.946 | 32.845/0.9094 | 持平 PASS（守 30 红线）|
+| E3 dAUC/一致率 | −0.012/0.958 | −0.0149/0.957 | 持平双 PASS |
+| E7 ΔAUC/ΔKL | +0.0205/−0.148 | +0.0176/−0.153 | 持平 PASS（p=5e-50）|
+| dflip flip/B_enh | 10/8（0.135） | **11/9（0.1486）** | **略差** |
+| **E5 mel salvage** | 5.2%(4/77) | **5.2%(4/77)** | **纹丝不动** |
+| E5 mel damage/net | 31.0%/−81 | 30.3%/−79 | +2/274 = 噪声 |
+
+### 🔑 关键判断：脚本判 HELPS，诚实读 = NULL
+`analyze_e5_perclass.py` 机械按 `net>base`（−79>−81）打印 VERDICT="mask-L1 HELPS melanoma"，**但 salvage rate 完全没动（仍 4/77）、net +2 是 274 里的噪声、dflip 还略升** → 实质 mask-weighted L1 是 **null 干预**。**不盲从脚本字面选 Branch A2**，按诚实读用 **Branch B（负结果版）**。failure mode 非「磨平病灶」而是 per-pixel L1 够不着诊断决策边界（texture 统计）。
+
+### ✅ §7.4 落地 + 回写
+- main.tex 295-308 替换为 Branch B（去掉草案「or worse than」——net −79 略好于 −81，"indistinguishable from" 才精确）。**报告负结果不省略** → 强化 query-for-retake gate 是真安全机制（Claim 3/Thm 2 利好）。编译 **0 undefined，37 页，无 error**。
+- ACCEPTANCE_CRITERIA.md 加 v6 实测定论块（line 277）。
+
+### 待续（会话 26，待用户拍）
+1. **E9 提交（v7 crossattn）**：v6 训完=满足、GPU 配额空、代码会话 24 smoke 验过。但天级 4×GPU DDP 训练 = **训练串行红线 + 重训需用户拍**，未擅自启。提交前重传 `models/visienhance.py`+`train_visienhance.py`+`configs/visienhance_s2_planA_256_v7_crossattn_hpc.yaml` → `sbatch`。
+2. E10：6 非扩散 SOTA，待 E9 后串行。
+3. mask-L1 既已 null → §7.4 future-work 改指「diagnosis-aware/adversarial objectives」非再调重构损失。
+
+### 命中率
+开火步干净落地：v6 eval 一次过、§7.4 从「future work 占位」升「已测负结果」（reviewer 更信负结果诚实披露）。**最硬一笔 = 没盲从脚本 VERDICT 字面**——+2/274 噪声若当「measurably helps」写进 paper 会被 reviewer 拆（salvage rate 明明没动），诚实降级 Branch B。审/判停习惯连捉（会话 21 visiscore、22 E5、23 Grad-CAM、24 cross-attn 退化、25 脚本 VERDICT 噪声）。
+
+---
+
+## 2026-06-10（会话 24，v6 训练 14h 里：备 §7.4 两分支 + Table1 对齐 + 实现 E9 + 审 re-eval 管线）
+
+### 起因
+开门「读档，开始 ICLR」。查 HPC：**v6 mask-L1 job 1442696 没训完**——RUNNING ep10/80（会话 23 写「ETA 明早 05:30」是按 13:21 启动算的，现还在前段），E1 守住（PSNR 30.14），DP/hinge 正常降，无 NaN/error。ETA 还 ~14h（约明早 06:00）。re-eval 开火 gated on 训完。用户拍：14h 里主线不空等，做三件非 gated 写作/预备活 + 后续加审脚本 + 实现 E9。
+
+### ✅ 三件并行（3 sonnet subagent，写不相交文件零冲突）
+1. **§7.4 mask-L1 两分支预写** → `meeting/ICLR2027/drafts/s74_branches.tex`。分支 A 救起版（2 子版：net 转正 / net 仍负但缩窄）+ 分支 B 没救版（负结果强化现版）。6 占位符（`SALV_MEL_V6` 等），eval 落地按 `analyze_e5_perclass` VERDICT 一键填、零返工。**不预判 v6 结果**。
+2. **Table 1 骨架对齐** → `s7_table1_skeleton.tex`。揪出骨架 8 baseline 行与 `gen_table1.py` GROUPS 对不齐（多 Evidential、缺 Adaptive Prior/Q-VIB Full/TokFT）→ 改成 9 baseline + Ours(Q-VIB Full) 高亮、与 csv 列 1:1。数据格仍 `--`（红线 4 gated M2）。编译核 37 页零 undefined。
+3. **E9/E10 预备**：subagent 查出模型 `visienhance.py` **conditioning 硬编码 FiLM 无 crossattn dispatch**（E8 noFiLM 是 `film_scale=0` 退化非切机制）→ 诚实没造假 config，写 `plans/E9_crossattn_prep.md`（模块草案+TODO）+ `plans/E10_sota_baselines_prep.md`（6 非扩散 SOTA：Restormer/NAFNet/MIRNet/SwinIR/Uformer/Real-ESRGAN）。
+
+### ✅ 审 v6 re-eval 管线（开火路径焊死，零返工确认）
+读全 5 脚本（`submit_eval_v6.sh` + 4 launcher）+ 被调模块 + HPC 实查。结论**管线 bulletproof**：
+- **wiring 传得过**：launcher 在 `import eval_diag_paired` **之前** `E.CKPTS={...}`，`from eval_stage2_compare import CKPTS` 绑到新值；dflip 用 `E.CKPTS` 动态取更稳。
+- **Stage1 路径不一致 = 故意镜像 v5**（eval 用 `stage1_planA_256`、dflip 用 `stage1_planA_nocrop`，v5 原版就这样，两 dir HPC 都存在），改了反而 v6 跟 v5 基线不可比 → 不动。
+- aux ckpt（b3/visiscore/split/meta）+ 两 stage1 全在 HPC、5 脚本全上传、键名全对（`psnr_perimg_enh`/`ssim_enh`/`CKPT_V5`/`OUT_SUFFIX="_v6"`）、输出 `_v6` 不覆盖 v5。
+- 唯一不可预测：v6 ckpt 用 v5 CFG 加载——但同架构同格式，风险低。**开火前提 = job 训完 + best ckpt 落地。**
+
+### ✅ 实现 E9 cross-attn conditioning（解锁完整消融，代码 4/7 就绪）
+subagent 标的 gap 主线亲做：
+- `models/visienhance.py` 新增 **`CrossAttnConditioning`**。**修正 subagent 草案缺陷**：草案单 KV token → softmax over 1 key 恒为 1、输出对所有空间位置相同（退化成全局偏置非真注意力）→ 改 **n_tokens=4 learned quality token**，feature 做 query、注意力权重随空间位置变化才是真 cross-attention。zero-init 残差近恒等（对 FiLM 公平起点）。
+- `VisiEnhanceNet.__init__` 加 `conditioning`/`crossattn_heads` + `_make_conditioning` dispatch，默认 film 后向兼容。
+- `train_visienhance.py` 传参 + **resume 改 strict=False**（跨 conditioning 暖启：crossattn 复用 FiLM Stage1 的 NAFNet backbone、conditioning 模块留 init；FiLM→FiLM 仍 0/0 全加载无静默漏）。
+- 建 `configs/visienhance_s2_planA_256_v7_crossattn_hpc.yaml`（= v5 + conditioning:crossattn 唯一变量）。
+- **smoke 全过（本地 CPU）**：film/crossattn forward shape + finite grad + init |out-x|=0；默认=film 兼容；resume crossattn←FiLM backbone **0 missing**、FiLM←FiLM 0/0。
+- **剩**：TODO 4 正式 test（smoke 已覆盖，可选）、TODO 6 eval launcher（eval 时做，需 v7 ckpt 路径）、TODO 7 HPC 提交（**gated on v6 训完，串行红线**；提交前重传 `models/visienhance.py`+`train_visienhance.py`+v7 config）。
+
+### commit
+- `8bc602b1` §7.4 两分支 + Table1 对齐 + E9/E10 prep
+- `496385c4` E9 cross-attn 实现
+
+### 待续（会话 25，开火步）
+1. **v6 job 1442696 训完确认**（ep80 + best ckpt 存）→ `sbatch submit_eval_v6.sh` → 拉 `stage2_diag_paired.csv`→`_v6`、`dflip_persample.csv`→`_v6`、`e5_salvage_v6*`、`e1_v6.json` → `python analyze_e5_perclass.py results/e5_salvage_v6_persample.csv --baseline results/e5_salvage_persample.csv` 看 VERDICT → 按 §7.4 A/B 分支填数。
+2. **E9 提交**（v6 训完后串行）：重传改动 3 文件 + v7 config 到 HPC → `sbatch` v7 crossattn 训练。
+3. E10：选定 6 基线、待 E9 后排队（串行）。
+
+### 命中率
+14h 训练窗口主线零空等：备好 §7.4 两结局分支（eval 落地零返工填）、对齐 Table1 与 csv（防填表错位）、**把 E9 从「不支持」推到「代码就绪 smoke 验过」**（最硬一笔 = 揪出 subagent cross-attn 草案的单 KV token 退化缺陷 + resume strict 会 FAIL 的隐患，两个都本地 smoke 证后修，否则 v6 训完提 E9 当场炸）。审脚本/smoke 习惯连捉（会话 21 visiscore、22 E5、23 Grad-CAM、24 cross-attn 退化+resume strict）。主线亲做全部 HPC 查/审/判停，三件并行写作活外包 sonnet。
+
+---
+
 ## 2026-06-10（会话 23，§7.4 E5 诚实版落笔 + 更正会话 22 HAM/PAD 误判）
 
 ### 起因

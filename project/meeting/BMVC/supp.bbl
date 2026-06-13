@@ -1,0 +1,32 @@
+\begin{thebibliography}{4}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Kumar et~al.(2019)Kumar, Liang, and Ma]{kumar2019verified}
+Ananya Kumar, Percy Liang, and Tengyu Ma.
+\newblock Verified uncertainty calibration.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2019.
+
+\bibitem[McAllester(1999)]{mcallester1999pac}
+David~A. McAllester.
+\newblock {PAC-Bayesian} model averaging.
+\newblock In \emph{Proceedings of the Twelfth Annual Conference on
+  Computational Learning Theory (COLT)}, pages 164--170, 1999.
+
+\bibitem[Mittal et~al.(2012)Mittal, Moorthy, and Bovik]{brisque}
+Anish Mittal, Anush~Krishna Moorthy, and Alan~Conrad Bovik.
+\newblock No-reference image quality assessment in the spatial domain.
+\newblock \emph{IEEE Transactions on Image Processing}, 21\penalty0
+  (12):\penalty0 4695--4708, 2012.
+
+\bibitem[Wang et~al.(2023)Wang, Chan, and Loy]{clipiqa}
+Jianyi Wang, Kelvin~C.K. Chan, and Chen~Change Loy.
+\newblock Exploring {CLIP} for assessing the look and feel of images.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~37, pages 2555--2563, 2023.
+
+\end{thebibliography}

@@ -286,13 +286,27 @@ preservation across every metric --- with FiLM $\Delta\mathrm{AUC}=-0.033$, agre
 $0.24$, versus $-0.042$, $0.87$, $0.35$ without, even at the no-DP stage. FiLM's contribution is thus
 quality-conditional \emph{diagnostic} fidelity, not perceptual sharpening.
 
+\paragraph{E9 --- FiLM versus cross-attention conditioning.}
+We ask whether a heavier conditioning mechanism would do better. We retrain the identical
+DP-Loss Stage-2 recipe with FiLM replaced by cross-attention conditioning ($4$ learned quality
+tokens as keys/values, the feature map as query; $+1.8$M parameters), changing only the
+conditioning module. On the same paired protocol ($n=3627$, $117$ melanomas) the two are
+statistically indistinguishable: per-image fidelity is tied ($32.79$ versus $32.74$~dB), and both
+clear E3 (cross-attention $\Delta\mathrm{AUC}=-0.010$, agreement $0.955$, KL $0.094$; FiLM
+$-0.012$, $0.958$, $0.091$). A paired bootstrap of the difference (cross-attention $-$ FiLM)
+straddles zero on every axis --- $\Delta\mathrm{AUC}=+0.002$ (95\% CI $[-0.006,+0.009]$),
+$\Delta\mathrm{KL}=+0.003$ ($[-0.005,+0.011]$), McNemar $p=0.68$ --- so the extra capacity buys no
+measurable gain, while cross-attention's residual dangerous-flip rate is in fact higher
+($0.19$ versus $0.14$). We therefore keep FiLM on parsimony grounds: it matches cross-attention on
+both fidelity and diagnostic preservation at $1.8$M fewer parameters.
+
 \paragraph{Residual dangerous flips.}
 Preservation is not perfect: $10$ of $74$ correctly-flagged melanomas are pushed below the decision
 threshold by enhancement (\cref{fig:dflip}). We treat this residual as motivation for the
 query-for-retake channel (\cref{sec:discussion}), not as a defect to suppress.
 
 \subsection{Salvage Rate and the Severe-Degradation Safety Boundary}\label{sec:exp-salvage}
-\paragraph{E5 --- salvage rate is benign-dominated.}
+\paragraph{E5 --- salvage rate is benign-dominated, and mask-weighted reconstruction does not close the gap.}
 On the moderate band the aggregate salvage rate --- the fraction of degraded-then-misclassified
 images that enhancement restores to a correct prediction --- is $0.737$, nominally clearing the
 $>55\%$ target. This aggregate is misleading, and we deliberately do \emph{not} report it as a
@@ -302,10 +316,19 @@ $75.6\%$ ($1809/2392$) while damaging only $0.6\%$ ($50/8138$ correctly-classifi
 salvages just $5.2\%$ ($4/77$) while damaging $31.0\%$ ($85/274$ correctly-classified) --- a net loss
 of $81$ malignant cases. Enhancement thus helps the benign-leaning errors that least need help and
 harms the malignant cases that matter most, mirroring the residual dangerous flips above
-(\cref{fig:dflip}) and the severe-band degradation below. We read E5 as the strongest evidence that
-\emph{blanket} enhancement is unsafe and that a query-for-retake gate is required --- not as a salvage
-benchmark to maximise. Closing the malignant salvage gap (mask-weighted reconstruction that forbids
-smoothing lesion regions) is left to future work (\cref{sec:discussion}).
+(\cref{fig:dflip}) and the severe-band degradation below. We tested whether this gap is an
+artefact of the reconstruction loss: a mask-weighted variant ($\lambda_{\text{mask}}=3.0$,
+$4\times$ lesion-region weight, forbidding the enhancer from smoothing over the lesion) yields
+melanoma salvage of $5.2\%$ ($4/77$) and damage of $30.3\%$ ($83/274$), a net of $-79$ malignant
+cases --- statistically indistinguishable from the feature-DP result. Reweighting the
+reconstruction loss toward the lesion is therefore \emph{not sufficient} to close the malignant
+salvage gap: the failure mode is not ``the enhancer smooths away the lesion'' but something the
+per-pixel reconstruction objective cannot reach (the diagnostic decision boundary depends on
+texture statistics that mask-weighted L1 does not target). We read E5 as the strongest evidence
+that \emph{blanket} enhancement is unsafe and that a query-for-retake gate is required --- not as a
+salvage benchmark to maximise. We report this negative result rather than omit it; closing the
+malignant salvage gap by other means (e.g.\ diagnosis-aware or adversarial objectives) is left to
+future work (\cref{sec:discussion}).
 
 \paragraph{E6 --- the severe-degradation safety boundary.}
 On the severe band we observe the boundary directly: enhancing severely degraded images significantly

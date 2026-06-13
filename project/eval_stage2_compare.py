@@ -28,8 +28,14 @@ from omegaconf import OmegaConf
 
 def load_visienhance(cfg, path, device):
     m = cfg.model
+    # E9: build the conditioning mechanism the ckpt was trained with (film default,
+    # crossattn for v7). Otherwise a crossattn ckpt loads into a FiLM net -> all
+    # CrossAttnConditioning keys missing (silent random conditioning).
     net = VisiEnhanceNet(base_channels=m.base_channels, enc_blocks=list(m.enc_blocks),
-                         mid_blocks=m.mid_blocks, dec_blocks=list(m.dec_blocks)).to(device)
+                         mid_blocks=m.mid_blocks, dec_blocks=list(m.dec_blocks),
+                         film_scale=float(getattr(m, "film_scale", 0.1)),
+                         conditioning=str(getattr(m, "conditioning", "film")),
+                         crossattn_heads=int(getattr(m, "crossattn_heads", 4))).to(device)
     ck = torch.load(path, map_location=device, weights_only=False)
     net.load_state_dict(ck["model"])
     return net.eval()

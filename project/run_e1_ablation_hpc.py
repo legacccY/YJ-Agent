@@ -39,16 +39,20 @@ def load_visiscore(device):
 def load_enh(cfg, ckpt, device):
     m = cfg.model
     fs = float(getattr(m, "film_scale", 0.1))
+    cond = str(getattr(m, "conditioning", "film"))   # E9: crossattn ckpt needs crossattn build
+    heads = int(getattr(m, "crossattn_heads", 4))
     model = VisiEnhanceNet(
         base_channels=m.base_channels,
         enc_blocks=list(m.enc_blocks),
         mid_blocks=m.mid_blocks,
         dec_blocks=list(m.dec_blocks),
         film_scale=fs,
+        conditioning=cond,
+        crossattn_heads=heads,
     ).to(device)
     ck = torch.load(ckpt, map_location=device, weights_only=False)
     model.load_state_dict(ck["model"])
-    print(f"  film_scale={fs}  ckpt epoch={ck.get('epoch','?')} "
+    print(f"  conditioning={cond}  film_scale={fs}  ckpt epoch={ck.get('epoch','?')} "
           f"best={ck.get('best_psnr', ck.get('best_val_psnr', ck.get('best','?')))}", flush=True)
     return model.eval()
 

@@ -26,6 +26,9 @@ from eval_stage2_compare import (load_visienhance, load_visiscore, load_b3,
 IMG, CROP = 256, 224
 NEG_PER_POS = 30
 BOOT = 2000
+# E9: optional {ckpt_name: cfg} for mixed-architecture eval (FiLM Stage1 vs crossattn
+# Stage2). None -> single CFG for all ckpts (v5/v6 behaviour, both FiLM). Set by v7 wrapper.
+CFG_MAP = None
 _TT = transforms.ToTensor()
 _NORM = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
@@ -113,7 +116,8 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     visiscore = load_visiscore(VISISCORE, device)
     b3 = load_b3(B3, device)
-    models = {name: load_visienhance(CFG, path, device) for name, path in CKPTS.items()}
+    models = {name: load_visienhance((CFG_MAP or {}).get(name, CFG), path, device)
+              for name, path in CKPTS.items()}
     df = build_df()
     print(f"device={device}  n={len(df)}  pos={int(df.target.sum())}  neg={int((df.target==0).sum())}")
 

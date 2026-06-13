@@ -104,4 +104,10 @@ quality-conditioning + DP-loss 的核心卖点（"通用增强会破坏诊断语
 6. [ ] 若 zero-shot domain gap 明显，对该方法做 fine-tune 后重新评估
 7. [ ] 写入 paper §7（消融/对比实验）
 
-**当前完成度：0/7（仅调研选型，未下载未跑）。**
+**当前完成度：2/7 代码侧铺完（会话 28，2026-06-14）**：
+- [x] TODO2 6 wrapper 落地 — `baselines/run_<m>_inference.py` + `baselines/archs/<m>_arch.py` 官方 arch 逐字 vendor（6 sonnet agent 并行），本地 import+构造+forward 256→256 全过，param 量对齐官方。
+- [x] eval entrypoint `run_e10_baseline_hpc.py` — VisiEnhance v5 vs baseline 严格 paired，per-image PSNR/SSIM（会话 27 口径锁）+ dAUC/dflip/KL + paired bootstrap（baseline−VE）。
+- [x] 下载清单 `baselines/WEIGHTS.md`（URL + 构造参数 + ckpt key）。
+- 余 TODO1/3/4/5 = HPC 侧（权重下载 + 上传 + GPU job），主线串行 + 待用户拍 GPU。zero-shot 路线（无 fine-tune）。
+
+**原始完成度：0/7（仅调研选型，未下载未跑）。**

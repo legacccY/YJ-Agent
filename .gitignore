@@ -1,4 +1,6 @@
 # 其他项目文件（非 VisiSkin-Agent）
+# 注：2026-06-10 整理后 产出/材料→huimai/，biwi_reid/train_log→archive/
+# 下列无前导斜杠模式在任意层级仍生效，挪动后照样 ignore
 biwi_reid.py
 train_log.txt
 log/

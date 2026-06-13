@@ -1,0 +1,10 @@
+{
+  "tag": "v6-maskL1",
+  "n": 19878,
+  "psnr_perimg_input": 22.665,
+  "psnr_perimg_enh": 32.845,
+  "psnr_perimg_gain": 10.181,
+  "psnr_aggmse_enh": 28.942,
+  "ssim_enh": 0.9094,
+  "sec": 521.3
+}

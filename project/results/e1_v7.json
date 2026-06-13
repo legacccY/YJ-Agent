@@ -1,0 +1,10 @@
+{
+  "tag": "v7-crossattn",
+  "n": 19878,
+  "psnr_perimg_input": 22.665,
+  "psnr_perimg_enh": 32.786,
+  "psnr_perimg_gain": 10.121,
+  "psnr_aggmse_enh": 28.931,
+  "ssim_enh": 0.907,
+  "sec": 535.9
+}

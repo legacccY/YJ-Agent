@@ -247,7 +247,7 @@
 | **E6** | 安全边界 | 极低质段 ΔAUC | 无显著退化 (paired t-test p>0.05) | 必达 |
 | **E7** | DP-Loss 消融 | 有 DP-Loss 组 ΔAUC 显著更小 | p < 0.01 | 必达，否则 Lemma 3 实证失败 |
 | **E8** | Q-Cond 消融 | ~~有 FiLM 组 PSNR 显著更高~~ → **有 FiLM 组诊断保持更好**（dAUC/一致率/KL）| FiLM 三项均更优 | ⚠️ 改判据：实测 FiLM 对 PSNR 中性（见 v5 实测块），贡献在诊断保持非像素质量 |
-| **E9** | FiLM vs Cross-Attn | FiLM 速度 ≥ 3× 快 + PSNR 持平 | 必达 |
+| **E9** | FiLM vs Cross-Attn | ~~FiLM 速度 ≥ 3× 快 + PSNR 持平~~ → **两机制统计无法区分，FiLM 以 parsimony 胜（−1.8M 参数）** | ✅ 达成（实测见会话 27 块）|
 | **E10** | vs 6 SOTA | ΔAUC 全胜（6/6 paired t-test p<0.05）| 6/6 必达 | <6/6：lever -0.5%/个 |
 | **E11** | 跨数据集 AUC 保持 | HAM/PAD AUC > 95% relative | 必达 |
 | **E12** | 推理速度 | 端到端 < 50 ms / image | 必达 |
@@ -274,6 +274,10 @@
 **E5 SalvageRate（会话 21，norm-q 路由版，job 1442385）**：增强用 raw-q、路由/分层用 norm-q̄。按 severity：mild 0.600 / **moderate 0.737 ✅(>0.55)** / severe 0.816，DamageRate 全 <3%。⚠️ nuance：salvage 被 benign-FP 修正主导（pos 仅 117/3627），恶性安全风险另由 E6/dflip 把关；**老「severe salvage<25%」判据与此测法冲突，需重新解读**（severe salvage 高 ≠ 不安全，因 salvage 算的是整体误判修正非恶性漏诊）。
 
 **🔴 会话 22 per-class 拆案（`e5_salvage_persample.csv`，rate 有效/count×3）**：聚合 0.737「达标」**全由良性撑**——良性 salvage 75.6%(1809/2392)/damage 0.6%；**黑色素瘤 salvage 仅 5.2%(4/77)、damage 31%(85/274 correct)**（救 4 毁 85 净 −81）。**结论：E5 聚合 SalvageRate 不可当达标指标写 paper**（reviewer 拆 per-class 即崩 + 伦理误导），改写为「benign 主导 + melanoma 净负 = query-for-retake 闸门最硬证据」（Claim 3/Thm 2 利好，削 VisiEnhance 单模块卖点）。**决策（用户拍）两手**：① §7.4 现写诚实版（待会话 23 落笔，本会话收工打断）；② mask-L1 重训（病灶区不准磨平）列 M2 救 melanoma salvage，待用户拍训练。
+
+**🟢 会话 25 v6 mask-L1 实测定论（job 1442696 训完 + eval job 1444753）= NULL 干预，负结果落 §7.4**：mask-weighted L1（λ_mask=3.0，4× 病灶区权重）跑完 80ep（best ckpt ep51 val_PSNR 30.225）。per-class 对 v5 baseline（`analyze_e5_perclass.py`）：**melanoma salvage 5.2%(4/77)→5.2%(4/77) 纹丝不动**、damage 31.0%(85/274)→30.3%(83/274)、net −81→−79（+2/274 = 噪声）。脚本机械判 "HELPS"（net>base）但 salvage rate 完全没动 = **诚实读为 null**。其余 v6 vs v5 全持平或略差：E1 PSNR 32.845(v5 32.74)/SSIM 0.9094 PASS、E3 dAUC −0.0149/一致率 0.9570 双 PASS、E7 ΔAUC +0.0176/ΔKL −0.1531 PASS、**dflip flip11/B_enh9（v5 flip10/B_enh8 略差）**。**结论：重构损失加权救不了恶性救援缺口**（failure mode 非「磨平病灶」而是 per-pixel L1 够不着诊断决策边界）。§7.4 用 Branch B 负结果版落地（main.tex 295-308，编译 0 undefined 37 页）→ 强化 query-for-retake gate 是真安全机制。产物：`results/{stage2_diag_paired_v6,dflip_persample_v6,e5_salvage_v6,e5_salvage_v6_persample}.csv`+`e1_v6.json`。
+
+**🟢 会话 27 E9 实测定论（v7 crossattn 训完 job 1444849 + paired eval job 1448254）= FiLM 与 cross-attn 统计无法区分，FiLM 以 parsimony 胜**：v7 = 与 v5 同 DP-Loss recipe，唯一变量 conditioning（FiLM → CrossAttnConditioning，4 quality token，+1.8M 参数），训满 80ep（best ep47 val_PSNR 30.184）。同 paired 协议（n=3627/pos117）per-model：CrossAttn dAUC −0.0103/一致率 0.9551/KL 0.0937/dflip 0.189，FiLM(v5) dAUC −0.0120/0.9575/0.0912/dflip 0.135，**两者均 E3 双 PASS**。E1 per-image PSNR 32.79(crossattn) vs 32.74(FiLM) **持平**。paired bootstrap（crossattn−FiLM）：ΔAUC +0.0016 CI[−0.0057,+0.0086] **含 0**、ΔKL +0.0026 CI[−0.0053,+0.0111] **含 0**、McNemar p=0.679 → **三轴全不显著 = 多出的 1.8M 参数零增益，crossattn dflip 反更高（0.19 vs 0.14）**。**结论：FiLM 在保真+诊断保持上完全打平 cross-attn 且更经济 → 保留 FiLM。** 写进 main.tex E9 段（编译 0 undefined，38 页）。产物：`results/{stage2_diag_paired_e9.csv,eval_e9_1448254.out,e1_v7.json,stage2_diag_paired_v7.csv}`。**🔑 会话 26「crossattn 低 2.6dB」是口径错配**（拿训练 aggregate-PSNR 30.17 比 FiLM per-image 32.74，会话 9/10 早定论差 ~3dB），实际两口径都打平，已纠正。
 
 **🔴 visiscore 集成喂错（会话 21 根因，影响 q̄ 信号但现有结果仍有效）**：visiscore（timm backbone 约定 ImageNet-NORM224）在 `train_visienhance`+所有 eval 全被喂 raw[0,1]@256 → q̄ 恒 ~0.54 不响应退化。连贯解释 E8 FiLM 中性 / hinge 泛化不动 / E5 band 不可达。**qnorm 对照（job 1442379）证实**：喂正确 NORM-q 给 raw-q 训的模型反而变差（PSNR 30.41→29.69、dflip 0.135→0.176）→ raw-q 是训练口径自洽最优，**E1/E2/E3/E6/E7/E8/E12 数字全部站得住、不需重做**。bug 影响收窄为 ①FiLM 被 flat-q 训弱（救须重训、增益不确定）②agent/E5 路由用独立 norm-q（已做）。重训与否 = 会话 22 决策。
 

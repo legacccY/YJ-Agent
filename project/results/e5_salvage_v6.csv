@@ -1,0 +1,7 @@
+stratum,n,qbar_route_mean,salvageable,salvaged,SalvageRate,DamageRate,n_pos
+sev:mild,3627,0.5481,597,347,0.5812,0.0079,117
+sev:moderate,3627,0.5316,912,677,0.7423,0.0144,117
+sev:severe,3627,0.4572,960,763,0.7948,0.024,117
+qband:low,3627,0.424,1027,798,0.777,0.0219,137
+qband:mid,3627,0.5222,608,477,0.7845,0.0093,69
+qband:high,3627,0.5906,834,512,0.6139,0.015,145

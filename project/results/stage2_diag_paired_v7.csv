@@ -1,0 +1,2 @@
+dAUC_S2_S1,dAUC_ci_lo,dAUC_ci_hi,dKL_S2_S1,dKL_ci_lo,dKL_ci_hi,mcnemar_b,mcnemar_c,mcnemar_p
+0.0221,0.0069,0.0381,-0.1455,-0.1697,-0.1204,45,278,3.835136784990006e-42

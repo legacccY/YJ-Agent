@@ -49,11 +49,14 @@
 
 ## 本地工具文件
 
+> ⚠️ HPC 脚本已统一移到 `D:\YJ-Agent\tools\`（2026-06-10 仓库整理）。
+
 | 文件 | 用途 |
 |------|------|
-| `D:\YJ-Agent\hpc_monitor.py` | 单次快照查询（job 状态 + 日志） |
-| `D:\YJ-Agent\hpc_watch.py` | 终端 watch 模式（轮询，Ctrl+C 退出） |
-| `D:\YJ-Agent\hpc_live_gui.py` | tkinter GUI 实时监控（自动刷新 + 错误检测） |
+| `D:\YJ-Agent\tools\hpc_monitor.py` | 单次快照查询（job 状态 + 日志） |
+| `D:\YJ-Agent\tools\hpc_watch.py` | 终端 watch 模式（轮询，Ctrl+C 退出） |
+| `D:\YJ-Agent\tools\hpc_live_gui.py` | tkinter GUI 实时监控（自动刷新 + 错误检测） |
+| `D:\YJ-Agent\tools\hpc_mednca_check.py` | Med-NCA job 状态/日志检查（弃 GUI 用这个） |
 
 ---
 
@@ -128,18 +131,18 @@ Stage 切换：
 
 ```bash
 # 单次查询
-python "D:\YJ-Agent\hpc_monitor.py" [job_id]
+python "D:\YJ-Agent\tools\hpc_monitor.py" [job_id]
 
 # 实时 GUI（弹窗，自动刷新）—— 必须带 job_id 参数
-python "D:\YJ-Agent\hpc_live_gui.py" [job_id]
+python "D:\YJ-Agent\tools\hpc_live_gui.py" [job_id]
 
 # 实时终端 watch
-python "D:\YJ-Agent\hpc_watch.py" [job_id] [间隔秒]
+python "D:\YJ-Agent\tools\hpc_watch.py" [job_id] [间隔秒]
 ```
 
 **弹窗快捷启动（PowerShell）：**
 ```powershell
-Start-Process python -ArgumentList '"D:\YJ-Agent\hpc_live_gui.py" <JOB_ID>'
+Start-Process python -ArgumentList '"D:\YJ-Agent\tools\hpc_live_gui.py" <JOB_ID>'
 ```
 
 GUI 特性：
