@@ -1,0 +1,33 @@
+% E10 --- VisiEnhance vs 6 generic non-diffusion restoration SOTA (zero-shot).
+% Frozen 会话28: job 1448952 (stored-mixed 降质, n=10881 paired, 117 melanoma; 与 E1 同
+% degrade 算子 -> VisiEnhance PSNR 32.79 == E1 32.74 caliber). 数字 csv: results/e10_<m>.csv.
+\begin{table}[t]
+\centering
+\caption{\textbf{E10 --- diagnosis preservation of generic restoration SOTA (zero-shot) versus
+\visienhance.} Six non-diffusion restoration/enhancement models, applied off-the-shelf with official
+pretrained weights (pretraining domain in parentheses); none sees dermoscopy or any
+diagnosis-preserving objective. All methods restore the \emph{identical} mixed-severity degraded
+inputs ($n{=}10{,}881$ paired, $117$ melanomas; same degradation operator as the E1 fidelity report,
+hence \visienhance{} PSNR matches its $32.7$~dB E1 value). $\Delta$AUC is enhanced$-$reference (closer
+to $0$ better); KL and dangerous-flip (dflip) lower is better. \visienhance{} is the only method that
+both restores fidelity and preserves diagnosis: every generic model is a significantly worse
+diagnostic preserver (paired bootstrap $\Delta\mathrm{AUC}_{\text{baseline}-\text{VE}}\in[-0.12,-0.07]$,
+all $95\%$ CIs excluding $0$, all McNemar $p<10^{-150}$).}
+\label{tab:e10}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l l c c c c c}
+\toprule
+Method & Pretraining & PSNR$\uparrow$ & SSIM$\uparrow$ & $\Delta$AUC$\to0$ & KL$\downarrow$ & dflip$\downarrow$ \\
+\midrule
+\textbf{\visienhance{} (FiLM+DP)} & dermoscopy & \textbf{32.79} & \textbf{0.907} & \textbf{$-$0.017} & \textbf{0.10} & 0.194 \\
+\midrule
+Restormer \citep{zamir2022restormer}   & real denoising  & 22.30 & 0.836 & $-$0.096 & 0.82 & 0.059 \\
+NAFNet \citep{chen2022simple}          & SIDD denoising  & 22.04 & 0.825 & $-$0.115 & 0.88 & 0.077 \\
+MIRNet-v2 \citep{zamir2022mirnetv2}    & LOL enhancement & 13.48 & 0.775 & $-$0.087 & 0.50 & 0.158 \\
+SwinIR \citep{liang2021swinir}         & colour denoising& 21.69 & 0.786 & $-$0.134 & 0.36 & 0.478 \\
+Uformer-B \citep{wang2022uformer}      & SIDD denoising  & 22.28 & 0.836 & $-$0.094 & 0.83 & 0.054 \\
+Real-ESRGAN \citep{wang2021realesrgan} & $\times2$ SR    & 21.61 & 0.818 & $-$0.083 & 0.35 & 0.234 \\
+\bottomrule
+\end{tabular}
+\end{table}

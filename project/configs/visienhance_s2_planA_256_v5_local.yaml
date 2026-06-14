@@ -1,0 +1,53 @@
+# Stage 2 Plan A @256 v5 — LOCAL paths (会话28, for local eval E4/E1 etc).
+# Mirror of *_hpc.yaml with D:/ paths. Model/loss identical (eval doesn't use train/loss).
+stage: 2
+
+model:
+  base_channels: 64
+  enc_blocks: [2, 2, 2]
+  mid_blocks: 6
+  dec_blocks: [2, 2, 2]
+  film_hidden: 128
+  film_scale: 0.1
+
+data:
+  labels_csv: D:/YJ-Agent/data/quality_labels_nocrop.csv
+  split_csv:  D:/YJ-Agent/data/isic_split.csv
+  meta_csv:   D:/YJ-Agent/data/raw/isic2020/train-metadata.csv
+  img_size: 256
+  severity: mixed
+  val_severity: mixed
+  batch_size: 8
+  num_workers: 2
+  pos_oversample: 10
+
+train:
+  epochs: 80
+  lr: 3.0e-5
+  weight_decay: 1.0e-4
+  amp: true
+  seed: 42
+
+loss:
+  lambda_l1: 1.0
+  lambda_lpips: 0.01
+  dp_mode: feat
+  lambda_dp: 0.019
+  lambda_hinge: 0.04
+  hinge_clamp: 3.0
+  lambda_quality: 0.0
+  quality_target: 0.55
+
+frozen_models:
+  visiscore_ckpt: D:/YJ-Agent/checkpoints/best_visiscore.pth
+  qvib_ckpt:     D:/YJ-Agent/checkpoints/efnet/best_qad.pth
+  b3_ckpt:       D:/YJ-Agent/checkpoints/efficientnet_b3_isic.pth
+  qvib_encoder:
+    d_model: 128
+    n_heads: 4
+    latent_dim: 64
+    efnet_dim: 1280
+    use_tokenizer: true
+
+output:
+  checkpoint_dir: D:/YJ-Agent/checkpoints/visienhance/stage2_planA_256_v5

@@ -8,8 +8,9 @@ names[0]=VisiEnhance, names[1]=baseline -> paired ΔAUC/ΔKL = baseline − Visi
 预期叙事 (E10 核心): baseline PSNR/SSIM 可能有竞争力 (纯图像质量优化), 但 dAUC/
 dangerous_flip 明显劣 (无 diagnosis-preserving 约束) -> 坐实 quality-conditioning+DP 卖点.
 
-口径锁 (会话 27 教训): PSNR=per-image mean (论文标准), 非 batch-aggregate (差 ~3dB).
-全 test split 同口径同 degrade seed, 红线 4 (不用约值).
+口径锁 (会话 28): PSNR=per-image mean. 降质=存盘 mixed 文件 (light+medium+heavy),
+对齐 run_e1_ablation_hpc EnhanceDataset(severity='mixed') 协议 -> VisiEnhance PSNR 与
+E1 32.74dB 同 caliber (残差仅来自 melanoma 平衡子集 vs E1 全 test split). 红线 4 (不用约值).
 
 用法: python run_e10_baseline_hpc.py --method nafnet
 产出: results/e10_<method>.csv. cwd=code/.
@@ -73,13 +74,16 @@ def collect(models, visiscore, b3, df, device):
         rows = df.iloc[s:s + 4]
         lows, refs = [], []
         for j, row in rows.iterrows():
-            img = cv2.imread(str(row.original_path))
-            if img is None:
+            ref = cv2.imread(str(row.original_path))
+            low = cv2.imread(str(row.degraded_path))   # 存盘 mixed 降质 (对齐 E1)
+            if ref is None or low is None:
                 continue
-            img = cv2.resize(img, (IMG, IMG), interpolation=cv2.INTER_AREA)
-            deg = _degrade_numpy(img, "moderate", random.Random(7 + j))
-            refs.append(_TT(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)))
-            lows.append(_TT(cv2.cvtColor(deg, cv2.COLOR_BGR2RGB)))
+            if ref.shape[:2] != (IMG, IMG):
+                ref = cv2.resize(ref, (IMG, IMG), interpolation=cv2.INTER_AREA)
+            if low.shape[:2] != (IMG, IMG):
+                low = cv2.resize(low, (IMG, IMG), interpolation=cv2.INTER_AREA)
+            refs.append(_TT(cv2.cvtColor(ref, cv2.COLOR_BGR2RGB)))
+            lows.append(_TT(cv2.cvtColor(low, cv2.COLOR_BGR2RGB)))
             ys.append(int(row.target))
         if not lows:
             continue
@@ -102,6 +106,25 @@ def collect(models, visiscore, b3, df, device):
     return R, D, Esoft, Epsnr, Essim, ys
 
 
+def build_df_stored():
+    """E1-caliber 子集: 存盘预生成降质文件 + mixed 严重度 (全 light+medium+heavy) +
+    melanoma 平衡 (NEG_PER_POS 个 neg *图* / pos *图*). 对齐 run_e1_ablation_hpc 的
+    EnhanceDataset(severity='mixed') 降质算子, 使 VisiEnhance PSNR 与 E1 32.74dB 同口径
+    (残差仅 = 此 melanoma 富集子集 vs E1 全 test split)."""
+    lbl = pd.read_csv(E.LABELS); lbl["isic_id"] = lbl["original_path"].apply(lambda p: Path(p).stem)
+    sp = pd.read_csv(P.SPLIT); tids = set(sp.loc[sp.split == "test", "isic_id"].astype(str))
+    meta = pd.read_csv(P.META)[["isic_id", "target"]]
+    df = lbl[lbl.isic_id.isin(tids)].merge(meta, on="isic_id")          # 不 drop_duplicates -> 全 3 档 = mixed
+    df = df[df.original_path.apply(lambda p: Path(p).exists())
+            & df.degraded_path.apply(lambda p: Path(p).exists())]
+    pos_ids = df[df.target == 1].isic_id.unique()
+    neg_ids = df[df.target == 0].isic_id.unique()
+    rng = np.random.RandomState(7)
+    k = min(len(neg_ids), NEG_PER_POS * len(pos_ids))
+    keep = set(pos_ids) | set(rng.choice(neg_ids, k, replace=False))
+    return df[df.isic_id.isin(keep)].sample(frac=1, random_state=7).reset_index(drop=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--method", required=True, help="baselines/run_<method>_inference.py 的 <method>")
@@ -117,7 +140,7 @@ def main():
     method_name = getattr(base_mod, "DISPLAY_NAME", method)
 
     models = {VE_NAME: ve, method_name: base}    # names[0]=VisiEnhance, names[1]=baseline
-    df = P.build_df()
+    df = build_df_stored()
     print(f"E10 {method_name}  device={device}  n={len(df)}  "
           f"pos={int(df.target.sum())}  neg={int((df.target==0).sum())}")
 

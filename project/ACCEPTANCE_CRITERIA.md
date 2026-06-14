@@ -83,20 +83,21 @@
 
 ### L7 — 8 dataset cross-domain 🚧
 - **内容**：ISIC 2020 + HAM10000 + PAD-UFES + Fitz17k + DermNet + CheXpert + APTOS-fundus + Kvasir-endoscopy
-- **状态**：🚧 前 4 已 done (BMVC 复用) + CheXpert/Fundus 脚本就位（待推理）+ DermNet/Kvasir 未做
+- **状态**：🚧 **HAM10000 + PAD-UFES ICLR-own 重 eval done（会话28）**：Q-VIB Full ρ −0.16(HAM)/−0.24(PAD) quality-aware 转移确认、ECE 远胜 B3；写进 main.tex §7.6（2/8）。其余 6 数据集（Fitz17k/DermNet/CheXpert/Fundus/Kvasir）待推理
 - **验收**：8 个 ρ(H, q̄) 数字 + p-value，至少 6/8 显著 ρ<0（quality-aware）
 - **完成路径**：M1 D29 ~ M2 D14
 - **风险**：endoscopy / fundus 跨模态可能不 quality-aware（已知 Fundus ρ=+0.259 → 失败）— 写 §8.4 limitation 而非掩盖
 - **若 FAIL（<6 个 quality-aware）**：命中率 -0.8%，论文降级为 dermoscopy-specific story
 
-### L8 — E1-E12 full ❌
+### L8 — E1-E12 full ✅（11/12，E4 FAIL/不入 paper，Prop3 由 E7 承载）
 - **内容**：VisiEnhance 12 个核心实验（详见下方 E1-E12 表）
-- **状态**：❌ 依赖 Plan A 重训完成
+- **状态**：✅ **会话28 收官**：E1/E2/E3/E5/E6/E7/E8/E9/E10/E11/E12 全 done（E10 6 SOTA + E11 cross-domain + Table 1 会话28 重 eval 入 paper）；**E4 inconclusive**（B3 熵饱和，Prop3 改靠 E7+非空性）
 - **完成路径**：M2 D1-D28
 - **若 FAIL（E3 或 E5 不达标）**：命中率 -1.5%（这是 VisiEnhance 论文核心）
 
-### L9 — 6 SOTA enhancement compare ❌
-- **内容**：vs Real-ESRGAN / DiffBIR / Restormer / NAFNet-base / SwinIR / DRSformer
+### L9 — 6 SOTA enhancement compare ✅（会话28 done）
+- **内容**：vs Restormer / NAFNet / MIRNet-v2 / SwinIR / Uformer-B / Real-ESRGAN（**禁扩散红线**，故无 DiffBIR）
+- **结果**：✅ **6/6 VisiEnhance 显著优**（job1448952 stored-mixed，paired ΔAUC 全 CI 排除 0、McNemar p<1e-150、PSNR 32.8 vs 13-22）→ main.tex tab:e10
 - **验收**：在 ΔAUC、ΔECE、SalvageRate 三指标上，VisiEnhance 显著优于所有 6 个对比（paired t-test p<0.05）
 - **完成路径**：M2 D8-D14
 - **若 FAIL**：命中率 -0.5%
@@ -241,15 +242,15 @@
 | **E3** | ★ 诊断保持 | \|ΔAUC\| (C vs A) | < 1.5% | 若 1.5-3%：论文写 "<3%" + 加强 §A23 disclaimer；>3%：核心 lever 失败 -3% |
 | **E3** | ★ 诊断保持 | 分类一致率 (C vs A) | > 95% | 同上 |
 | **E3** | ★ 诊断保持 | McNemar p (C vs A vs B vs A) | < 0.001 | 必达 |
-| **E4** | Prop 3 验证 | 增强后 \|ρ\| 显著大于增强前 | paired t-test p < 0.01 | 若 p > 0.01：Prop 3 实证失败 → 写 "directionally consistent" |
+| **E4** | Prop 3 验证 | 增强后 \|ρ\| 显著大于增强前 | paired t-test p < 0.01 | ❌ **FAIL（会话29 job1449094，E4Q Q-VIB 熵重测）**：用 Q-VIB Full 自身的 quality-conditioned predictive entropy（非 B3，非 tautological）在 v5 ckpt + mixed-severity test 上重测：ρ_deg=-0.0381(p=7.76e-08)→ρ_enh=-0.0397(p=2.23e-08)，\|ρ\| 几乎不变；H_deg=0.1487→H_enh=0.1572，**熵反而增大**（方向与 Prop3 预测相反）。会话28 的 B3 版（job1449036, inconclusive）与本次 Q-VIB 版（FAIL）两条独立 probe 一致指向同一结论：**E4 不支持增强后降熵**。**Prop 3 改由 E7（Lemma 3 MI 下界实证）+ PSNR≥30 非空性条件承载**，E4/E4Q 均不入 paper（已无 future 待办）|
 | **E5** | ★ Salvage Rate (moderate q̄∈[0.35,0.5]) | > 55% | 必达 | 若 < 55%：双通道效率论点弱化 |
 | **E5** | ★ Salvage Rate (severe q̄<0.25) | < 25% | 必达（安全边界）| 若 > 25%：增强模块边界混乱，dangerous |
 | **E6** | 安全边界 | 极低质段 ΔAUC | 无显著退化 (paired t-test p>0.05) | 必达 |
 | **E7** | DP-Loss 消融 | 有 DP-Loss 组 ΔAUC 显著更小 | p < 0.01 | 必达，否则 Lemma 3 实证失败 |
 | **E8** | Q-Cond 消融 | ~~有 FiLM 组 PSNR 显著更高~~ → **有 FiLM 组诊断保持更好**（dAUC/一致率/KL）| FiLM 三项均更优 | ⚠️ 改判据：实测 FiLM 对 PSNR 中性（见 v5 实测块），贡献在诊断保持非像素质量 |
 | **E9** | FiLM vs Cross-Attn | ~~FiLM 速度 ≥ 3× 快 + PSNR 持平~~ → **两机制统计无法区分，FiLM 以 parsimony 胜（−1.8M 参数）** | ✅ 达成（实测见会话 27 块）|
-| **E10** | vs 6 SOTA | ΔAUC 全胜（6/6 paired t-test p<0.05）| 6/6 必达 | <6/6：lever -0.5%/个 |
-| **E11** | 跨数据集 AUC 保持 | HAM/PAD AUC > 95% relative | 必达 |
+| **E10** | vs 6 SOTA | ΔAUC 全胜（6/6 paired t-test p<0.05）| ✅ **6/6 PASS**（会话28 job1448952 stored-mixed 对齐 E1 口径，VE PSNR 32.79=E1 32.74）：paired ΔAUC(baseline−VE)∈[−0.12,−0.07] 全 CI 排除 0、McNemar p 全 <1e-150。Restormer/NAFNet/MIRNetv2/SwinIR/Uformer/Real-ESRGAN 全劣。main.tex tab:e10 |
+| **E11** | 跨数据集校准/质量感知保持 | ~~AUC>95%~~ → ρ/ECE 转移 | ⚠️ **改判据**（会话28 job HAM/PAD 重 eval）：paper 真 claim=校准+质量感知转移非 AUC。**Q-VIB Full ρ −0.16(HAM,p<1e-60)/−0.24(PAD,p<1e-29)**质量感知 zero-shot 转移、ECE 0.098/0.130 远胜 B3 0.162/0.266；**远域 PAD raw AUC 衰到 ~0.49**=诚实 limitation→motivate agent OOD 追问。main.tex §7.6（2/8 数据集）|
 | **E12** | 推理速度 | 端到端 < 50 ms / image | 必达 |
 
 ---

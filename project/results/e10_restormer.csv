@@ -1,0 +1,4 @@
+model,psnr_perimg,ssim,dAUC,consistency,kl,dangerous_flip,mcnemar_enh_ref_p,dAUC_ci_lo,dAUC_ci_hi,dKL,dKL_ci_lo,dKL_ci_hi,mcnemar_b,mcnemar_c,mcnemar_p
+VisiEnhance (v5 FiLM DP),32.79,0.9072,-0.0172,0.9545,0.1005,0.1937,0.2425,,,,,,,,
+Restormer (real-DN),22.3,0.8361,-0.0964,0.6843,0.8179,0.0586,0.0,,,,,,,,
+PAIRED(Restormer (real-DN)−VisiEnhance (v5 FiLM DP)),,,-0.0793,,,,,-0.0957,-0.0636,0.7178,0.691,0.7444,3301.0,153.0,0.0

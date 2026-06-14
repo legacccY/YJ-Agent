@@ -1,0 +1,4 @@
+model,psnr_perimg,ssim,dAUC,consistency,kl,dangerous_flip,mcnemar_enh_ref_p,dAUC_ci_lo,dAUC_ci_hi,dKL,dKL_ci_lo,dKL_ci_hi,mcnemar_b,mcnemar_c,mcnemar_p
+VisiEnhance (v5 FiLM DP),32.79,0.9072,-0.0172,0.9545,0.1005,0.1937,0.2425,,,,,,,,
+NAFNet (SIDD-DN),22.04,0.8251,-0.1148,0.6694,0.8767,0.0766,0.0,,,,,,,,
+PAIRED(NAFNet (SIDD-DN)−VisiEnhance (v5 FiLM DP)),,,-0.0977,,,,,-0.1158,-0.0795,0.7766,0.7481,0.8044,3437.0,151.0,0.0

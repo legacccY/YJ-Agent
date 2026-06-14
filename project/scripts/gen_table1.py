@@ -26,7 +26,7 @@ from sklearn.metrics import roc_auc_score
 ROOT = Path("D:/YJ-Agent")
 PROJ = ROOT / "project"
 RES  = PROJ / "results"
-OUT  = PROJ / "meeting/BMVC/table1_main.tex"
+OUT  = PROJ / "meeting/ICLR2027/table1_main.tex"   # 会话28: ICLR 重 eval, 输出改道 (BMVC 封印禁写)
 
 # Methods (groups) — display order
 GROUPS = [
@@ -41,12 +41,12 @@ GROUPS = [
     ("VIB family", [
         ("D",  r"Std VIB"),
         ("E",  r"Adaptive Prior"),
-        ("F",  r"Q-VIB Full"),
-        ("G",  r"Q-VIB + TokFT$^\ast$"),
+        ("F",  r"\textbf{\qvib{} Full (Ours)}"),
+        ("G",  r"\qvib{} + TokFT$^\ast$"),
     ]),
     ("Post-hoc calibration", [
         ("TS",     r"Std VIB + TS"),
-        ("QCTS",   r"\textbf{Std VIB + QCTS (ours)}"),
+        ("QCTS",   r"\qcts{} (prior post-hoc)"),
     ]),
 ]
 
@@ -235,14 +235,14 @@ def main():
     L.append(r"\begin{table*}[t]")
     L.append(r"\centering")
     L.append(r"\caption{")
-    L.append(r"\textbf{Main results on the ITB benchmark.} ")
-    L.append(r"AUC and Expected Calibration Error (ECE, $M{=}15$ bins) on ITB-LQ ($n{=}300$) and ITB-HQ ($n{=}360$). ")
+    L.append(r"\textbf{Main results on the \itb{} benchmark.} ")
+    L.append(r"AUC and Expected Calibration Error (ECE, $M{=}15$ bins) on \itb-LQ ($n{=}300$) and \itb-HQ ($n{=}360$). ")
     L.append(r"\textbf{QCDI} $= \mathrm{ECE}_\mathrm{LQ} - \mathrm{ECE}_\mathrm{HQ}$ (closer to 0 = more quality-aware). ")
-    L.append(r"$\rho(\!H,\bar q\!)$: Spearman correlation between predictive entropy and quality on the full ITB pool ($n{=}2{,}820$); more negative = more quality-aware. ")
+    L.append(r"$\rho(\!H,\bar q\!)$: Spearman correlation between predictive entropy and quality on the full \itb{} pool ($n{=}2{,}820$); more negative = more quality-aware. ")
     L.append(r"Subscripts: half-width of 1{,}000-iter bootstrap 95\% CI. ")
     L.append(r"\textbf{Bold}/\underline{underline} = best/second best per column. ")
-    L.append(r"Cell shade is a per-column heat-map (red = worse, green = better, scaled to that column's range); the \textbf{Std VIB + QCTS} row is highlighted as our contribution. ")
-    L.append(r"Note that VIB-family models intentionally trade discriminative AUC for tighter calibration; the headline metrics are ECE and QCDI.")
+    L.append(r"Cell shade is a per-column heat-map (red = worse, scaled to that column's range); the \textbf{\qvib{} Full (Ours)} row is highlighted. ")
+    L.append(r"VIB-family models intentionally trade discriminative AUC for tighter, quality-aware calibration: the headline metrics are \textbf{QCDI} and $\rho$. Among trainable models, \qvib{} Full attains the best QCDI ($+0.006$) and a strongly negative $\rho$, the behaviour predicted by Prop.~2 (entropy monotone in quality); on aggregate ECE it ties Std VIB, but unlike Std VIB its calibration is quality-conditional. \qcts{} (our prior post-hoc method) is reported as a calibration ablation.")
     L.append(r"}")
     L.append(r"\label{tab:main}")
     L.append(r"\footnotesize")
@@ -250,8 +250,8 @@ def main():
     L.append(r"\renewcommand{\arraystretch}{1.05}")
     L.append(r"\begin{tabular}{l cc cc cc}")
     L.append(r"\toprule")
-    L.append(r"& \multicolumn{2}{c}{\textbf{ITB-LQ} ($n{=}300$)}"
-             r"  & \multicolumn{2}{c}{\textbf{ITB-HQ} ($n{=}360$)}"
+    L.append(r"& \multicolumn{2}{c}{\textbf{\itb-LQ} ($n{=}300$)}"
+             r"  & \multicolumn{2}{c}{\textbf{\itb-HQ} ($n{=}360$)}"
              r"  & \multicolumn{2}{c}{\textbf{Cross-stratum}} \\")
     L.append(r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}")
     L.append(r"Method & AUC\,$\uparrow$ & ECE\,$\downarrow$"
@@ -273,12 +273,11 @@ def main():
             sh_rho    = cell_shade(-r["rho"] if not np.isnan(r["rho"]) else np.nan,
                                    *rho_rng, lower_is_better=True)
 
-            # QCTS gets green cell shade on its winning columns instead of red
-            if bl == "QCTS":
-                sh_ece_lq = sh_ece_lq.replace("red", "green")
-                sh_ece_hq = sh_ece_hq.replace("red", "green")
-                sh_qcdi   = sh_qcdi.replace("red", "green")
-                sh_rho    = sh_rho.replace("red", "green")
+            # Ours = Q-VIB Full (F): green shade only on the columns it actually leads
+            # among trainable models (QCDI, rho) — honest, no forced green on tied ECE.
+            if bl == "F":
+                sh_qcdi = sh_qcdi.replace("red", "green")
+                sh_rho  = sh_rho.replace("red", "green")
 
             cells = [
                 disp_name,
@@ -292,8 +291,8 @@ def main():
                                     flags["rho"][idx]),
             ]
             row_str = " & ".join(cells) + r" \\"
-            if bl == "QCTS":
-                row_str = r"\rowcolor{green!12}" + row_str
+            if bl == "F":
+                row_str = r"\rowcolor{blue!8}" + row_str
             L.append(row_str)
             idx += 1
 

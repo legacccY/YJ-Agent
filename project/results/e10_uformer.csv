@@ -1,0 +1,4 @@
+model,psnr_perimg,ssim,dAUC,consistency,kl,dangerous_flip,mcnemar_enh_ref_p,dAUC_ci_lo,dAUC_ci_hi,dKL,dKL_ci_lo,dKL_ci_hi,mcnemar_b,mcnemar_c,mcnemar_p
+VisiEnhance (v5 FiLM DP),32.79,0.9072,-0.0172,0.9545,0.1005,0.1937,0.2425,,,,,,,,
+Uformer-B (SIDD-DN),22.28,0.8358,-0.0939,0.6825,0.8274,0.0541,0.0,,,,,,,,
+PAIRED(Uformer-B (SIDD-DN)−VisiEnhance (v5 FiLM DP)),,,-0.0768,,,,,-0.0934,-0.0611,0.7273,0.7008,0.7536,3329.0,145.0,0.0

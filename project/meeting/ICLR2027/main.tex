@@ -240,11 +240,19 @@ correlation, an accompanying $p$-value. Full reproduction details --- environmen
 compute budget, and released artefacts --- are in Appendix~\ref{app:a26}.
 
 \subsection{Main Results}\label{sec:exp-main}
-\Cref{tab:main} reports the nine baselines against \qvib{} per quality stratum; the data cells are
-pending the Plan~A re-training freeze (M2, red line~4). The \qvib{} core configuration already attains
-AUC $0.707$ / ECE $0.098$ with $\rho(\Hent,\qbar)=-0.165$ ($p<10^{-24}$) on the held-out set
-($n=19{,}878$).
-\input{s7_table1_skeleton}
+\Cref{tab:main} reports nine baselines against \qvib{} on the quality-stratified \itb{} benchmark
+($n=2{,}820$). The headline is not raw discriminative AUC --- VIB-family models deliberately trade AUC
+for calibration --- but \emph{quality-aware} calibration: the calibration gap QCDI between low- and
+high-quality strata, and the entropy--quality correlation $\rho(\Hent,\qbar)$. Among trainable models,
+\qvib{} Full attains the best QCDI ($+0.006$, CI $\pm0.059$) and a strongly negative $\rho=-0.19$ ---
+the behaviour predicted by \Cref{prop:entmono} (predictive entropy monotone in quality). On aggregate
+ECE it ties Std VIB ($0.149$ vs $0.146$ on \itb-LQ), but unlike Std VIB its calibration is conditioned
+on quality (QCDI $+0.006$ vs $+0.016$, $\rho$ $-0.19$ vs $-0.15$). \qcts{}, our prior post-hoc method,
+is the strongest \emph{post-hoc} calibrator (\itb-LQ ECE $0.079$) and is included as a calibration
+ablation. The \itb{} pool is intentionally harder (adversarial low-quality strata) than the held-out
+set on which the \qvib{} core attains AUC $0.707$ / ECE $0.098$ ($\rho=-0.165$, $p<10^{-24}$,
+$n=19{,}878$).
+\input{table1_main}
 
 \subsection{Enhancement Fidelity and Speed}\label{sec:exp-fidelity}
 The deterministic enhancer raises per-image PSNR to $32.7$~dB --- a $+10.1$~dB gain over the degraded
@@ -300,6 +308,20 @@ measurable gain, while cross-attention's residual dangerous-flip rate is in fact
 ($0.19$ versus $0.14$). We therefore keep FiLM on parsimony grounds: it matches cross-attention on
 both fidelity and diagnostic preservation at $1.8$M fewer parameters.
 
+\paragraph{E10 --- generic restoration SOTA degrades diagnosis.}
+We test whether a strong off-the-shelf restorer could replace our diagnosis-preserving training. Six
+non-diffusion restoration/enhancement models (Restormer, NAFNet, MIRNet-v2, SwinIR, Uformer-B,
+Real-ESRGAN) are run zero-shot with official weights on the same mixed-severity paired inputs
+(\cref{tab:e10}). All six are significantly worse diagnostic preservers than \visienhance: paired
+bootstraps give $\Delta\mathrm{AUC}_{\text{baseline}-\text{VE}}\in[-0.12,-0.07]$ (every $95\%$ CI
+excluding zero; every McNemar $p<10^{-150}$), and none restores fidelity (PSNR $13$--$22$~dB versus
+\visienhance{}'s $32.8$). Tellingly, \emph{lower fidelity does not mean safer}: the lowest-dflip
+baselines (Restormer, Uformer-B; dflip $\approx0.05$) barely alter the image and so trivially avoid
+flips, yet incur the largest diagnostic KL ($\approx0.8$), distorting the posterior far more than
+\visienhance{} (KL $0.10$). Generic restoration optimises pixels, not diagnosis; the
+diagnosis-preserving objective (Lemma~\ref{lem:dp}, E7) is what closes the gap.
+\input{table1_e10_sota}
+
 \paragraph{Residual dangerous flips.}
 Preservation is not perfect: $10$ of $74$ correctly-flagged melanomas are pushed below the decision
 threshold by enhancement (\cref{fig:dflip}). We treat this residual as motivation for the
@@ -345,9 +367,21 @@ the temperature-scaling failure most pronounced on weakly quality-aware backbone
 universal. \emph{[Table~2 from \texttt{section54\_summary.csv}; consolidated for camera-ready.]}
 
 \subsection{Cross-Domain Generalisation}\label{sec:exp-cross}
-\emph{[Table~3 pending: zero-shot transfer across eight datasets. HAM10000 and PAD-UFES values are
-under re-audit and frozen jointly with Plan~A re-evaluation; cross-modality sets (CheXpert, fundus,
-endoscopy, real smartphone-style ISIC) are pending inference.]}
+We test zero-shot transfer of the \emph{quality-awareness} property to two external dermatology
+datasets unseen in training: HAM10000 ($n=10{,}015$, dermoscopy) and PAD-UFES-20 ($n=2{,}298$,
+clinical smartphone macro photography --- a substantial domain shift). The headline is not raw
+discriminative AUC but whether quality-conditional calibration survives the shift. It does:
+\qvib{} Full retains a significantly negative entropy--quality correlation on both sets
+($\rho=-0.16$, $p<10^{-60}$ on HAM; $\rho=-0.24$, $p<10^{-29}$ on the far-domain PAD-UFES), whereas
+the discriminative EfficientNet-B3 has $\rho>0$ on both (e.g.\ $+0.25$ on HAM --- it grows
+\emph{more} confident as quality drops, the opposite of safe behaviour). Calibration transfers
+likewise: \qvib{} Full ECE is $0.098$ (HAM) and $0.130$ (PAD-UFES), versus $0.162$ and $0.266$ for
+EfficientNet-B3. Raw AUC, however, degrades under the larger shift --- on PAD-UFES the VIB family
+falls toward chance ($\sim0.49$) while B3 retains $0.67$ --- so quality-awareness, not discrimination,
+is what generalises zero-shot. We read the AUC drop on the far clinical domain as a positive signal
+for the agent's out-of-distribution query-for-retake path rather than a property to claim away. (Two
+of eight planned cross-domain datasets are reported here; the remaining dermatology and
+cross-modality sets are deferred to future evaluation.)
 
 \subsection{Cost--Benefit and Decision-Curve Analysis}\label{sec:exp-dca}
 % R3: phrase clinical evidence as decision-curve / triage-simulation language only.

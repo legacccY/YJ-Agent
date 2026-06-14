@@ -73,6 +73,28 @@ def load_b3(ckpt_path, device):
     return model.to(device).eval()
 
 
+def load_qvib(ckpt_path, device):
+    """Q-VIB Full (baseline F): quality-conditioned diagnosis head, used for
+    E4Q's predictive entropy (not tautological with q̄ — see compute_e4_qvib)."""
+    from models.q_vib_encoder import QVIBEncoder
+    from models.qad_classifier import QADClassifier
+    ckpt = torch.load(ckpt_path, map_location=device)
+    encoder = QVIBEncoder(abcd_dim=4, q_dim=5, d_model=128, n_heads=4,
+                          latent_dim=64, efnet_dim=1280).to(device)
+    classifier = QADClassifier(latent_dim=64, hidden_dim=128, num_classes=2).to(device)
+    encoder.load_state_dict(ckpt["encoder"])
+    classifier.load_state_dict(ckpt["classifier"])
+    return encoder.eval(), classifier.eval()
+
+
+def load_efnet_b0(device):
+    """EfficientNet-B0 visual token backbone (matches Q-VIB Full training, efnet_dim=1280)."""
+    from torchvision.models import EfficientNet_B0_Weights, efficientnet_b0
+    model = efficientnet_b0(weights=EfficientNet_B0_Weights.IMAGENET1K_V1)
+    model.classifier = torch.nn.Identity()
+    return model.to(device).eval()
+
+
 # ── Dataset helpers ────────────────────────────────────────────────────────────
 
 class RefDataset(Dataset):
@@ -188,34 +210,102 @@ def compute_e3(model, visiscore, b3, loader, device):
 
 
 @torch.no_grad()
-def compute_e4(model, visiscore, loader, device):
-    """Proposition 3: entropy–q̄ |ρ| should increase after enhancement."""
-    ent_low, ent_enh, qbar_low, qbar_enh = [], [], [], []
+def compute_e4(model, visiscore, b3, loader, device):
+    """Proposition 3: enhancement reduces predictive entropy, and the entropy--q̄
+    correlation |ρ| strengthens after enhancement. Uses REAL EfficientNet-B3 softmax
+    predictive entropy (a q̄-derived proxy would be tautological with q̄)."""
+    norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-    for x_low, x_ref, _, _ in tqdm(loader, desc="E4", ncols=80):
-        x_low = x_low.to(device)
+    def b3_prob(imgs):
+        i224 = F.interpolate(imgs, size=224, mode="bilinear", align_corners=False)
+        return torch.softmax(b3(norm(i224)), dim=-1)[:, 1]
+
+    def bent(p):
+        p = p.clamp(1e-6, 1 - 1e-6)
+        return -(p * p.log() + (1 - p) * (1 - p).log())
+
+    ent_low, ent_enh, qbar_low, qbar_enh = [], [], [], []
+    for batch in tqdm(loader, desc="E4", ncols=80):
+        x_low = batch[0].to(device)
         q_low = visiscore(x_low)
         x_enh = model(x_low, q_low)
         q_enh = visiscore(x_enh)
+        ent_low.extend(bent(b3_prob(x_low)).cpu().numpy())
+        ent_enh.extend(bent(b3_prob(x_enh)).cpu().numpy())
+        qbar_low.extend(q_low.mean(dim=-1).cpu().numpy())
+        qbar_enh.extend(q_enh.mean(dim=-1).cpu().numpy())
 
-        # Entropy proxy: use VisiScore q̄ as quality and compute entropy from
-        # uniform binary distribution scaled by q̄ (matches paper narrative)
-        # Full entropy requires Q-VIB; here we use H = -q̄ log q̄ - (1-q̄) log(1-q̄)
-        def h(qb):
-            qb = qb.clamp(1e-6, 1 - 1e-6)
-            return -(qb * qb.log() + (1 - qb) * (1 - qb).log())
-
-        qb_low = q_low.mean(dim=-1)
-        qb_enh = q_enh.mean(dim=-1)
-
-        ent_low.extend(h(qb_low).cpu().numpy())
-        ent_enh.extend(h(qb_enh).cpu().numpy())
-        qbar_low.extend(qb_low.cpu().numpy())
-        qbar_enh.extend(qb_enh.cpu().numpy())
-
+    mh_low, mh_enh = float(np.mean(ent_low)), float(np.mean(ent_enh))
+    print(f"  mean predictive H: degraded={mh_low:.4f} -> enhanced={mh_enh:.4f} "
+          f"(reduction={mh_low - mh_enh:+.4f})")
     rho_low, p_low = spearmanr(qbar_low, ent_low)
     rho_enh, p_enh = spearmanr(qbar_enh, ent_enh)
-    return rho_low, p_low, rho_enh, p_enh
+    return rho_low, p_low, rho_enh, p_enh, mh_low, mh_enh
+
+
+@torch.no_grad()
+def compute_e4_qvib(model, visiscore, encoder, classifier, efnet, loader, device, n_mc=20):
+    """Prop 3 (Q-VIB variant): predictive entropy from the trained Q-VIB Full
+    diagnosis head (baseline F), which is *explicitly* quality-conditioned via
+    the QualityTokenizer attention bias (Eq. 10) — unlike the unrelated B3
+    oracle, so its entropy-q̄ relation is not tautological with q̄ itself."""
+    from models.feature_extractor import extract_abcd
+    imagenet_norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
+    def bent(p):
+        p = p.clamp(1e-6, 1 - 1e-6)
+        return -(p * p.log() + (1 - p) * (1 - p).log())
+
+    def abcd_batch(x224):
+        """x224: (B,3,224,224) in [0,1] -> (B,4) ABCD features via OTSU mask."""
+        imgs = (x224.clamp(0, 1).permute(0, 2, 3, 1).cpu().numpy() * 255).astype(np.uint8)
+        feats = []
+        for img_rgb in imgs:
+            img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+            gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+            _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+            if mask.sum() < 0.02 * mask.size:
+                h, w = mask.shape
+                mask = np.zeros((h, w), dtype=np.uint8)
+                cv2.ellipse(mask, (w // 2, h // 2), (w // 3, h // 3), 0, 0, 360, 255, -1)
+            feats.append(extract_abcd(img_bgr, mask.astype(bool)))
+        return torch.from_numpy(np.stack(feats)).float().to(device)
+
+    def qvib_entropy(x, q):
+        """x: (B,3,H,W) in [0,1]; q: (B,5) VisiScore output -> (B,) predictive entropy."""
+        x224 = F.interpolate(x, size=224, mode="bilinear", align_corners=False)
+        abcd = abcd_batch(x224)
+        ef = efnet(imagenet_norm(x224))
+        mu, lsq = encoder(abcd, q, efnet_feat=ef)
+        probs = torch.zeros(x.shape[0], device=device)
+        for _ in range(n_mc):
+            z = encoder.reparameterize(mu, lsq)
+            probs = probs + F.softmax(classifier(z), dim=-1)[:, 1]
+        probs = (probs / n_mc).clamp(1e-6, 1 - 1e-6)
+        return bent(probs)
+
+    torch.manual_seed(42)  # reproducible MC reparameterize sampling (red line 4)
+
+    ent_low, ent_enh, qbar_low, qbar_enh = [], [], [], []
+    for batch in tqdm(loader, desc="E4Q", ncols=80):
+        x_low = batch[0].to(device)
+        q_low = visiscore(x_low)
+        x_enh = model(x_low, q_low)
+        q_enh = visiscore(x_enh)
+        ent_low.extend(qvib_entropy(x_low, q_low).cpu().numpy())
+        ent_enh.extend(qvib_entropy(x_enh, q_enh).cpu().numpy())
+        qbar_low.extend(q_low.mean(dim=-1).cpu().numpy())
+        qbar_enh.extend(q_enh.mean(dim=-1).cpu().numpy())
+
+    mh_low, mh_enh = float(np.mean(ent_low)), float(np.mean(ent_enh))
+    print(f"  [Q-VIB] mean predictive H: degraded={mh_low:.4f} -> enhanced={mh_enh:.4f} "
+          f"(reduction={mh_low - mh_enh:+.4f})")
+    rho_low, p_low = spearmanr(qbar_low, ent_low)
+    rho_enh, p_enh = spearmanr(qbar_enh, ent_enh)
+    return rho_low, p_low, rho_enh, p_enh, mh_low, mh_enh
 
 
 @torch.no_grad()
@@ -277,6 +367,8 @@ def main():
     p.add_argument("--config", required=True)
     p.add_argument("--ckpt", required=True, help="VisiEnhance-Net checkpoint")
     p.add_argument("--b3-ckpt", default="D:/YJ-Agent/checkpoints/efficientnet_b3_isic.pth")
+    p.add_argument("--qad-ckpt", default="D:/YJ-Agent/checkpoints/efnet/best_qad.pth",
+                   help="Q-VIB Full checkpoint for E4Q (entropy-q̄ retest, non-tautological)")
     p.add_argument("--exp", nargs="+", default=["E1", "E3", "E4", "E5", "E6", "E12"])
     p.add_argument("--labels-csv", default=None,
                    help="Override cfg.data.labels_csv (use nocrop CSV for pixel-aligned eval)")
@@ -323,15 +415,37 @@ def main():
 
     # ── E4 ─────────────────────────────────────────────────────────────────────
     if "E4" in args.exp:
+        b3_e4 = load_b3(args.b3_ckpt, device)
         ds = EnhanceDataset(dcfg.labels_csv, dcfg.split_csv,
                             split="test", img_size=dcfg.img_size, severity="mixed")
         loader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=2, pin_memory=True)
-        rho_low, p_low, rho_enh, p_enh = compute_e4(model, visiscore, loader, device)
-        ok = abs(rho_enh) > abs(rho_low)
+        rho_low, p_low, rho_enh, p_enh, mh_low, mh_enh = compute_e4(
+            model, visiscore, b3_e4, loader, device)
+        ok = (mh_enh <= mh_low) and (abs(rho_enh) >= abs(rho_low))
         results["E4"] = {"rho_degraded": round(rho_low, 4), "rho_enhanced": round(rho_enh, 4),
-                         "pass": ok}
-        print(f"E4 ρ_degraded={rho_low:.4f} (p={p_low:.2e})  "
-              f"ρ_enhanced={rho_enh:.4f} (p={p_enh:.2e}){PASS if ok else FAIL}")
+                         "mean_H_degraded": round(mh_low, 4), "mean_H_enhanced": round(mh_enh, 4),
+                         "pass": bool(ok)}
+        print(f"E4 ρ_deg={rho_low:.4f}(p={p_low:.2e}) ρ_enh={rho_enh:.4f}(p={p_enh:.2e}) "
+              f"H_deg={mh_low:.4f} H_enh={mh_enh:.4f}{PASS if ok else FAIL}")
+
+    # ── E4Q (Q-VIB entropy retest) ──────────────────────────────────────────────
+    if "E4Q" in args.exp:
+        if not Path(args.qad_ckpt).exists():
+            print(f"[E4Q] Q-VIB checkpoint not found at {args.qad_ckpt} — skipping")
+        else:
+            encoder, classifier = load_qvib(args.qad_ckpt, device)
+            efnet = load_efnet_b0(device)
+            ds = EnhanceDataset(dcfg.labels_csv, dcfg.split_csv,
+                                split="test", img_size=dcfg.img_size, severity="mixed")
+            loader = DataLoader(ds, batch_size=8, shuffle=False, num_workers=2, pin_memory=True)
+            rho_low, p_low, rho_enh, p_enh, mh_low, mh_enh = compute_e4_qvib(
+                model, visiscore, encoder, classifier, efnet, loader, device)
+            ok = (mh_enh <= mh_low) and (abs(rho_enh) >= abs(rho_low))
+            results["E4Q"] = {"rho_degraded": round(rho_low, 4), "rho_enhanced": round(rho_enh, 4),
+                              "mean_H_degraded": round(mh_low, 4), "mean_H_enhanced": round(mh_enh, 4),
+                              "pass": bool(ok)}
+            print(f"E4Q ρ_deg={rho_low:.4f}(p={p_low:.2e}) ρ_enh={rho_enh:.4f}(p={p_enh:.2e}) "
+                  f"H_deg={mh_low:.4f} H_enh={mh_enh:.4f}{PASS if ok else FAIL}")
 
     # ── E5 ─────────────────────────────────────────────────────────────────────
     if "E5" in args.exp:

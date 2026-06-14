@@ -6,6 +6,68 @@
 
 ---
 
+## 2026-06-14（会话 29，E4Q Q-VIB 熵重测 FAIL + Table1 多 seed agg 证伪）
+
+### 起因
+开门读档，承会话 28「待续」。AskUserQuestion 选定开火点 = **E4 Q-VIB 熵重测**。用户追加「HPC 跑的时候可以并行干别的」→ 并行处理会话 28 待续项 4「Table 1 多 seed agg」。
+
+### 🔴 E4Q：用 Q-VIB Full 自身熵重测 Prop 3，FAIL（两条独立 probe 一致）
+会话 28 的 B3 probe（job1449036）熵饱和 ln2，inconclusive。本次改用 **Q-VIB Full 的 quality-conditioned predictive entropy**（ABCD+q+EfficientNet-B0 token → QVIBEncoder → reparameterize N_MC=20 → QADClassifier → softmax entropy，非 B3 非 tautological）。`eval_visienhance.py` 新增 `compute_e4_qvib`/`load_qvib`/`load_efnet_b0` + `--exp E4Q`，本地 CPU smoke（16 图）验证管线通过后传 HPC，**job 1449094 COMPLETED**：
+- ρ_deg=-0.0381 (p=7.76e-08) → ρ_enh=-0.0397 (p=2.23e-08)：|ρ| 几乎不变
+- H_deg=0.1487 → H_enh=0.1572：**熵反而增大**（方向与 Prop3 预测相反）
+- **结论 FAIL**。两条独立 probe（B3 饱和 / Q-VIB 反向）一致指向「E4 不支持增强后降熵」。**ACCEPTANCE_CRITERIA E4 行改判 FAIL，Q-VIB-熵重测 future 待办清零**。Prop 3 继续完全由 E7（Lemma3 MI 下界）+ PSNR≥30 非空性承载，不受影响。
+
+### 🔴 Table1 多 seed agg：证伪，不可行（checkpoint 不可比）
+会话 28 待续项「s123/s2024 ckpt 在，可强化 CI」——核查发现**此路不通**：
+- `checkpoints/efnet_s123/`、`efnet_s2024/`（均 5月8日生成）是 BMVC 时期**单独训练的另一批 3-seed robustness batch**，连带 `efnet_s42/`（5月8日23:17）三者构成一组自洽集合
+- 当前 Table1 F 行（以及本次 E4Q）用的 `checkpoints/efnet/best_qad.pth`（**5月7日**，"seed 42 default"）是**另一个独立训练结果**，不在那组 batch 里
+- 跑 `run_experiments.py --baseline F --seed 42`（即 efnet_s42）验证：ITB-LQ AUC = s42 0.7192 / s123 0.7323 / s2024 0.7258 → mean±std = 0.726±0.0054，**CV≈0.7%，与 DATA_INVENTORY/CODEBASE_README 的"CV<2%"完全吻合**——但这是 `efnet_s{42,123,2024}` 那组 batch 的，不是当前 Table1 用的 `efnet/`！
+- 当前 `efnet/`（Table1 现用）ITB-LQ：AUC=0.5847、ECE=0.1489 —— 与上面那组（AUC~0.72-0.73、ECE 0.43-0.61）**判若两个模型**（Edge/HQ AUC 差 20+pp，ECE 方向也相反）
+- **结论**：`efnet/` 与 `efnet_s{42,123,2024}` 是两个不同训练产物，**不能 pool 做多 seed CI**。"CV<2%" 这条 BMVC 鲁棒性结论描述的是另一批 ckpt，跟当前 Table1/E4Q 用的主 ckpt 无关（红线10：BMVC 结论不可直接搬到 ICLR 的另一实证）。**多 seed agg 待续项关闭**：除非为 ICLR 重训一组与 `efnet/` 同配置的 {42,123,2024} 三 seed（成本高，未排期），Table1 现状不具备可加 multi-seed CI 的条件。
+- 副产物：`results/itb_results_s42.csv` / `itb_predictions_s42.csv` 新生成（efnet_s42 的 ITB 评估，留作本发现的证据存档）。
+
+### 命中率
+两条均为「审/判停」：E4Q 没有因为「换了非饱和指标就该过」而强行判 PASS——熵方向错了就是错了，老实记 FAIL。Table1 多 seed 没有因为「ckpt 文件存在就直接 pool 算 CI」——查 mtime+重跑验证发现是两个模型，没把不可比的数字塞进论文。两条都不入 paper，但避免了审稿人事后核 ckpt 来源时拆台。
+
+### 待续（会话 30）
+1. L7 余 6 数据集 cross-domain（会话28 待续项2）。
+2. L10 fairness（Fitz/sex/age，会话28 待续项3）。
+3. 会话 28+29 工作均未 commit，下次开工前先 commit。
+
+---
+
+## 2026-06-14（会话 28，§7 实验大收官：E10 口径修复 + Table 1 重 eval + E11 cross-domain，编译 39 页 0 undef）
+
+### 起因
+开门「读档，继续 ICLR」。承会话 27 开火点 = E10 6 SOTA。查 HPC：E10 job 1448770 COMPLETED。
+
+### 🔑 E10 PSNR 口径打架 → 根因诊断 + 重跑对齐（非 bug）
+首版 E10（on-the-fly）VE PSNR **30.48** ≠ E1 锁定 **32.74**。深挖三脚本（run_e10/eval_visienhance/run_e1_ablation）定根因 = **两套评测协议三层差异**（非 bug）：① 降质来源（E1 读存盘 mixed 文件 vs E10 on-the-fly `_DEG_CFG["moderate"]`）② 严重度（E1 mixed 含 light 拉高 vs E10 单一 moderate，主导项）③ 群体（E1 全 test vs E10 melanoma 平衡子集）。算法/分辨率/PSNR 公式全同。**用户拍方案 B：重跑对齐 E1**。改 `run_e10_baseline_hpc.py`（新 `build_df_stored()` 存盘 mixed 全 3 档 + melanoma 平衡、`collect()` 读 degraded_path、纠误导 docstring），登录节点验 n=10881 → job **1448952** COMPLETED（2h）。**VE PSNR 32.79 = 对齐 E1 32.74 ✓**。6/6 baseline paired ΔAUC(base−VE)∈[−0.12,−0.07] 全 CI 排除 0、McNemar p<1e-150 → 写 main.tex `tab:e10` + E10 段 + bib 补 Uformer/MIRNet-v2（联网核 metadata）。dflip 陷阱点破（低 dflip baseline KL 巨大=没改图）。
+
+### 🟢 Table 1 主结果重 eval（最大交付）
+查实：itb_predictions.csv git 溯源 = BMVC Sprint3（红线10 须重跑）。**定性翻转**：ckpt（仓库根 checkpoints/，含 3-5 seed）+ ITB 数据 + isic2020 + 管线（run_experiments.py）+ 格式化器（gen_table1.py）**全本地、GPU 在 → 重 eval 无须重训/HPC**（文档「pending M2」是当年没确认 ckpt 的过度保守）。**用户拍重 eval**。归档 10 个 BMVC csv → `python run_experiments.py --baseline all`（9 baseline，**逐位复现 BMVC** = 同 ckpt 确定性）+ `gen_qcts_iclr.py`（用存盘 qcts_params.json 绕开缺失 val cache）→ gen_table1 改道 `meeting/ICLR2027/table1_main.tex` + preamble 加 `[table]` xcolor。
+- **🔑 诚实 reframe（用户授权「合规+不降质量」）**：数据显示 Q-VIB Full 在 ITB **ECE 与 Std VIB 持平**（0.149 vs 0.146）、QCTS（BMVC 法）才是最佳校准器（0.079）。先验 efnet ckpt 真是 Q-VIB Full（tokenizer 在、F≠D）排除 bug。**headline 从「ECE 最低」改「质量感知校准 QCDI/ρ」**：F QCDI +0.006（可训练模型最佳）+ ρ −0.19 = Prop 2 实证；gen_table1 高亮从 QCTS 改 F(Ours)、QCTS 降 prior ablation。main.tex §7 prose 重写。
+
+### 🟢 E11 cross-domain（HAM/PAD）
+external_*_predictions.csv = BMVC → 重跑。`precompute_external_features.py`×2 + `run_external.py`×2（HAM 10015+PAD 2298 图，本地 GPU ~1h）。**paper 真 claim = 校准/ρ 转移非 AUC**（STORY §7.6）。**Q-VIB Full ρ −0.16(HAM,p<1e-60)/−0.24(PAD,p<1e-29)** 质量感知 zero-shot 转移、ECE 0.098/0.130 远胜 B3 0.162/0.266；**远域 PAD raw AUC ~0.49**=诚实 limitation→motivate agent OOD 追问。写 main.tex §7.6（2/8 数据集）。
+
+### ⚠️ E4 inconclusive（不入 paper，红线4 不 fudge）
+E4 原实现退化（H=f(q̄) 自相关→ρ=−1 假象）。修用真 B3 softmax 熵重测（job1449036，本地 laptop GPU 对 VisiEnhance convT 彻底废=cuDNN engine/illegal-mem，转 HPC）：mean H deg=enh=ln2(0.6931) **熵饱和**、ρ 正号(0.09→0.18,B3 自身非质量感知)→ **测不出降熵**。**Prop 3 改靠 E7（Lemma3 MI 下界实证）+ PSNR≥30 非空性条件**（paper 已有），E4 不塞假 PASS。Q-VIB-熵重测留 future。
+
+### ✅ 回写
+main.tex **39 页 0 undefined**（Table 1 + E10 tab:e10 + E11 §7.6 全入 + bib +2）。ACCEPTANCE E4/E10/E11 行 + L7/L8(11/12)/L9 lever 更新。BMVC csv 全归档 `results/_bmvc_archive/`，ICLR-own 重 eval 不碰 BMVC（红线10）。
+
+### 命中率
+**B 类实验大跨步**：L9 ✅、L8 11/12 ✅、L7 2/8。最硬两笔 =（1）E10 口径打架没顺着首版 30.48 写、深挖三脚本定三层根因 + 重跑对齐到 32.79=E1（否则审稿人拿 E1/E10 数字打架拆台）；（2）Table 1 与 E11 数据都暴露「Q-VIB raw AUC/ECE 不占优」，没硬吹、改框成「质量感知校准（QCDI/ρ）」诚实强论点（对齐 Prop 2 + 真实 claim）。审/判停习惯连捉（21 visiscore、22 E5、23 Grad-CAM、24 cross-attn、25 VERDICT 噪声、27 PSNR 口径、**28 E10 口径错配 + E4 自相关退化 + Q-VIB ECE 不占优诚实 reframe**）。
+
+### 待续（会话 29）
+1. E4 若要做：改 Q-VIB 熵（非 B3）重测降熵。
+2. L7 余 6 数据集 cross-domain。
+3. L10 fairness（Fitz/sex/age，多为现有预测切片）。
+4. Table 1 多 seed agg（s123/s2024 ckpt 在，可强化 CI）。
+
+---
+
 ## 2026-06-13（会话 27，E9 训完 → eval 落地 → 纠会话26口径错判 → FiLM parsimony 胜，写进 paper）
 
 ### 起因

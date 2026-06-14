@@ -1,0 +1,4 @@
+model,psnr_perimg,ssim,dAUC,consistency,kl,dangerous_flip,mcnemar_enh_ref_p,dAUC_ci_lo,dAUC_ci_hi,dKL,dKL_ci_lo,dKL_ci_hi,mcnemar_b,mcnemar_c,mcnemar_p
+VisiEnhance (v5 FiLM DP),32.79,0.9072,-0.0172,0.9545,0.1005,0.1937,0.2425,,,,,,,,
+MIRNet-v2 (LOL-enh),13.48,0.775,-0.0872,0.818,0.4979,0.1577,0.0,,,,,,,,
+PAIRED(MIRNet-v2 (LOL-enh)−VisiEnhance (v5 FiLM DP)),,,-0.07,,,,,-0.0876,-0.0536,0.3977,0.3761,0.4214,1683.0,254.0,3.5357969260115754e-258
