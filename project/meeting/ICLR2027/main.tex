@@ -367,21 +367,35 @@ the temperature-scaling failure most pronounced on weakly quality-aware backbone
 universal. \emph{[Table~2 from \texttt{section54\_summary.csv}; consolidated for camera-ready.]}
 
 \subsection{Cross-Domain Generalisation}\label{sec:exp-cross}
-We test zero-shot transfer of the \emph{quality-awareness} property to two external dermatology
-datasets unseen in training: HAM10000 ($n=10{,}015$, dermoscopy) and PAD-UFES-20 ($n=2{,}298$,
-clinical smartphone macro photography --- a substantial domain shift). The headline is not raw
-discriminative AUC but whether quality-conditional calibration survives the shift. It does:
-\qvib{} Full retains a significantly negative entropy--quality correlation on both sets
-($\rho=-0.16$, $p<10^{-60}$ on HAM; $\rho=-0.24$, $p<10^{-29}$ on the far-domain PAD-UFES), whereas
-the discriminative EfficientNet-B3 has $\rho>0$ on both (e.g.\ $+0.25$ on HAM --- it grows
-\emph{more} confident as quality drops, the opposite of safe behaviour). Calibration transfers
-likewise: \qvib{} Full ECE is $0.098$ (HAM) and $0.130$ (PAD-UFES), versus $0.162$ and $0.266$ for
-EfficientNet-B3. Raw AUC, however, degrades under the larger shift --- on PAD-UFES the VIB family
-falls toward chance ($\sim0.49$) while B3 retains $0.67$ --- so quality-awareness, not discrimination,
-is what generalises zero-shot. We read the AUC drop on the far clinical domain as a positive signal
-for the agent's out-of-distribution query-for-retake path rather than a property to claim away. (Two
-of eight planned cross-domain datasets are reported here; the remaining dermatology and
-cross-modality sets are deferred to future evaluation.)
+We test zero-shot transfer of the \emph{quality-awareness} property to four external dermatology
+datasets unseen in training: HAM10000 ($n=10{,}015$, dermoscopy), PAD-UFES-20 ($n=2{,}298$,
+clinical smartphone macro photography), Fitzpatrick17k ($n=16{,}574$, in-the-wild clinical
+photographs spanning all six skin types), and DermNet ($n=3{,}151$, a clinical-atlas
+malignant-vs-benign neoplasm proxy --- AK/BCC versus seborrhoeic-keratosis classes). The headline is
+not raw discriminative AUC but whether the quality-conditional uncertainty coupling survives the
+shift. The \emph{coupling itself transfers on all four sets}: \qvib{} Full retains a significantly
+negative entropy--quality correlation ($\rho=-0.16$, $p<10^{-60}$ on HAM; $\rho=-0.24$,
+$p<10^{-29}$ on PAD-UFES; $\rho=-0.20$, $p<10^{-145}$ on Fitzpatrick17k; $\rho=-0.22$,
+$p<10^{-36}$ on DermNet), and its $|\rho|$ exceeds that of Std VIB (e.g.\ $-0.13$ on Fitz, $+0.03$
+n.s.\ on DermNet) on every set, whereas the discriminative EfficientNet-B3 stays near zero or
+positive ($+0.25$ on HAM; $-0.06$ on Fitz; $-0.02$ n.s.\ on DermNet --- it does \emph{not} grow
+appropriately uncertain as quality drops). Absolute calibration, by contrast, transfers only as far
+as the domain is close: \qvib{} Full ECE is $0.098$ (HAM, dermoscopy) and $0.130$ (PAD-UFES),
+beating EfficientNet-B3 ($0.162$, $0.266$); but on the farthest dermatology domains --- Fitzpatrick17k
+clinical photos at $3\%$ melanoma prevalence, and DermNet's cross-label neoplasm proxy --- the VIB
+family is badly miscalibrated in absolute terms (ECE $0.59$ and $0.41$) and discrimination collapses
+toward chance (Fitz AUC $0.58$--$0.62$; DermNet AUC $\sim0.54$), even though uncertainty still tracks
+quality. Raw AUC likewise degrades under the larger shifts (PAD-UFES: VIB $\sim0.49$ vs B3 $0.67$).
+The property does \emph{not}, however, survive a change of imaging modality: on retinal fundus
+photographs (APTOS~2019, a diabetic-retinopathy ViT with clean-image AUC $0.99$) the entropy--quality
+correlation flips sign ($\rho=+0.14$, $p=0.03$) and quality-conditional temperature scaling collapses
+onto plain temperature scaling --- a clean boundary on the claim (Sec.~\ref{sec:discussion}). We read
+the dermatology split cleanly: the quality--uncertainty \emph{property} (Prop.~\ref{prop:entmono}) is
+what generalises zero-shot within the modality, while absolute discrimination and calibration erode
+with domain distance --- exactly the regime in which the agent's out-of-distribution
+query-for-retake path is meant to fire, rather than a property to claim away. (Four dermatology and
+one cross-modality of eight planned cross-domain sets are reported here; the remaining endoscopy and
+chest-radiograph sets are deferred.)
 
 \subsection{Cost--Benefit and Decision-Curve Analysis}\label{sec:exp-dca}
 % R3: phrase clinical evidence as decision-curve / triage-simulation language only.
@@ -391,7 +405,25 @@ model (cost structure, net-benefit definition, and triage simulation) is specifi
 Appendix~\ref{app:a20}.
 
 \subsection{Fairness}\label{sec:exp-fair}
-\emph{[Pending: stratified analysis across Fitzpatrick I--VI, sex, and age.]}
+We stratify calibration on the ISIC-derived \itb{} subsets ($n=1{,}320$ with demographic metadata)
+by sex (male/female) and by age band ($<\!40$, $40$--$60$, $>\!60$), reporting per-subpopulation
+$15$-bin ECE with $1{,}000$-sample bootstrap $95\%$ CIs and the max--min ECE gap (fairness
+threshold $0.05$). \qvib{} Full is the best-calibrated model within every slice that is not
+elderly: ECE $0.113$ (female) and $0.151$ (male) --- a sex gap of $\mathbf{0.038}$, below threshold
+--- and ECE $0.102$ ($<\!40$) and $0.059$ ($40$--$60$). Calibration degrades sharply only on the
+$>\!60$ band (ECE $0.319$, $95\%$ CI $[0.269,0.372]$), where melanoma prevalence is highest
+($144/336\approx 43\%$), inflating the age gap to $0.260$ (fail). This elderly gap is not specific
+to our model: every well-calibrated method shares it (Std VIB $0.248$, Std VIB$+$TS $0.280$,
+Adaptive-Prior $0.262$). The only models whose age gap falls below threshold --- EfficientNet-B3
+Direct ($0.006$) and \qvib{}$+$TokFT ($0.009$) --- achieve it by being \emph{uniformly}
+miscalibrated across all bands (per-band ECE $\approx 0.18$ and $\approx 0.25$ respectively), i.e.\
+parity through uniform failure rather than genuine fairness. We therefore read the result honestly:
+quality-conditioning yields the lowest absolute calibration error in every non-elderly
+subpopulation and the smallest sex gap, but the high-prevalence elderly band remains a genuine
+calibration limitation --- precisely the operating point where the agent's defer / query-for-retake
+path (Sec.~\ref{sec:agent}) is intended to fire, and a motivation for demographic-aware calibration
+in future work. Fitzpatrick skin-type I--VI stratification is reported via the Fitzpatrick17k
+cross-domain audit (Sec.~\ref{sec:exp-cross}).
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Discussion and Limitations}\label{sec:discussion}
@@ -423,7 +455,11 @@ hold, not fully watertight proofs in every regime (anti-drift rule 2). (2) \itb 
 synthetic degradations; real consumer-capture statistics may differ. (3) Learning a reliable quality
 scalar adds annotation and training cost. (4) We report no real-world clinical deployment validation;
 clinical claims rest on decision-curve analysis and simulation, not on reader confirmation
-(anti-drift rule 3; methodology in Appendix~\ref{app:a23}). We pre-emptively address five anticipated
+(anti-drift rule 3; methodology in Appendix~\ref{app:a23}). (5) The quality--uncertainty coupling is
+\emph{modality-bounded}: it transfers zero-shot across four dermatology domains
+(Sec.~\ref{sec:exp-cross}) but not to retinal fundus imaging, where the entropy--quality correlation
+reverses sign ($\rho=+0.14$) --- the scorer encodes dermoscopic, not universal, quality cues, and
+re-deployment to another modality requires re-fitting the quality channel. We pre-emptively address five anticipated
 reviewer concerns --- multiple-comparison statistics, research-versus-deployment framing, real-world
 degradation, differentiation from prior work, and enhancement safety --- in Appendix~\ref{app:a21}.
 

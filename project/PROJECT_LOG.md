@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-06-15（会话 30，L7 cross-domain 4 skin+1 跨模态边界 + L10 sex/age fairness，全入 paper 40 页；本会话产出补记+commit）
+
+### 起因
+开门读档。git status 暴露一批未追踪/已改文件（dermnet/fitz17k preds、fairness 脚本+产物、run_experiments +18、itb_predictions 全重写、main.tex +53）= **本会话已做完 L7+L10 实验且验证落地、回写 paper+ACCEPTANCE，但 PROJECT_LOG/WORKLOG 未记、未 commit**。用户「你自动跑不用问我」→ 补记 + commit 清债。
+
+### 🟢 L7 cross-domain（2/8 → 4 skin + 1 跨模态边界）
+- 新增 **Fitzpatrick17k**（n=16574，in-the-wild 临床照，全 6 肤型）+ **DermNet**（n=3151，临床图谱 AK/BCC vs SK 恶良 proxy）。管线：`scripts/build_dermnet_metadata.py` + `precompute_external_features.py`/`run_external.py`/`analyze_external.py` 加 dermnet config。产物 `results/external_{dermnet,fitz17k}_predictions.csv`（22057 / 116018 行 = 图×9 baseline）。
+- **关键诚实拆分**：ρ（质量-不确定性耦合）**4/4 skin 全转移**——Q-VIB Full ρ −0.16(HAM)/−0.24(PAD)/**−0.198(Fitz, p<1e-145)**/**−0.223(DermNet, p<1e-36)**，F |ρ|>D>B3 每集成立；但绝对 ECE/AUC 只近域保（HAM ECE 0.098/PAD 0.130 胜 B3），**远域失守**（Fitz F ECE 0.587 AUC~0.58、DermNet AUC~0.54 近随机 = 临床照域+恶良标签双偏移）。
+- **跨模态失败边界（APTOS 视网膜 fundus，n=3662）**：ρ=**+0.135(p=0.03) 方向翻正**、QCTS 塌回纯 TS、clean AUC 0.994 → property 是 **modality-bounded**。`results/crossdomain/fundus_crossdomain.{csv,json}` 重生成。
+- 回写 main.tex §7.6（2→4 skin + 1 cross-modal / 8）+ §8 Limitations(5) modality-bounded。**编译 40 页 0 undef**（接 39）。**reframe**：旧「6/8 ρ<0」阈值改读「dermatology 域内 4/4 全过 + 跨模态边界诚实标明」，非掩盖。
+
+### 🟢 L10 fairness（sex/age）
+- 套 **L10 image_id patch**（`plans/L10_image_id_patch.md`）到 `run_experiments.py` 6 runner（emit `image_name`=ISIC isic_id，纯加列零 RNG/排序改）→ ITB 全 4 子集重 eval（`itb_predictions.csv` 25381 行全重写带 image_name）→ `scripts/fairness_sex_age_breakdown.py` 出 9 baseline × {sex,age} per-subpop 15-bin ECE + 1000× bootstrap 95% CI + max-min gap（阈 0.05）。ISIC 子集 demographic 100% 匹配（n=1320），ITB-Diverse(Fitz hash) 自动排除。
+- **F（Q-VIB Full=Ours）**：sex gap **0.0382 PASS**（M 0.151/F 0.113，9 baseline 里最小 sex gap）；age gap **0.2604 FAIL**——**全 9 baseline age 全 FAIL**，祸首 >60 段（n=336、144 阳≈43% 高患病 + 普遍 miscalib，F >60 ECE 0.319 CI[0.269,0.372]）= 共性 limitation 非 Ours 独有。唯二 age「达标」的 A(B3 0.006)/G(TokFT 0.009) 靠**均匀失准**凑 parity（per-band ECE ~0.18/~0.25），非真公平。产物 `results/fairness_sex_age_breakdown.{csv,json}`。
+- 回写 main.tex §7 Fairness 段（从 Pending 填实）：sex PASS + 每切片绝对 ECE 最低卖点；age 写共性 limitation → motivate 质量×人群联合校准 future。Fitz I-VI 经 L7 Fitz17k cross-domain audit 承载。ACCEPTANCE L7/L10 行已更新。
+
+### 命中率
+两笔都诚实负结果不掩盖：L7 没把 fundus ρ 翻正号藏掉、改 reframe「property modality-bounded」+ 远域 ECE 崩明写；L10 age gap FAIL 没挑 sex-only 报、点破唯二「达标」baseline 是均匀失准凑 parity。延续审/判停传统。
+
+### 待续（会话 31）
+1. L7 余 Kvasir(endoscopy)/CheXpert(chest-radiograph)——**paper 已写明 deferred**（跨模态，非皮肤域），优先级低。
+2. L10 Fitz V-VI 等价检验（p<0.05）补全 (c) 项。
+3. M3 写作推进 / DCA-§7.7。
+
+---
+
 ## 2026-06-14（会话 29，E4Q Q-VIB 熵重测 FAIL + Table1 多 seed agg 证伪）
 
 ### 起因

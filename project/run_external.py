@@ -236,12 +236,15 @@ def run_qvib(key: str, index: pd.DataFrame, abcd: np.ndarray, q: np.ndarray,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", required=True, choices=["ham10000", "pad_ufes"])
+    parser.add_argument("--dataset", required=True,
+                        choices=["ham10000", "pad_ufes", "fitz17k", "dermnet"])
     parser.add_argument("--baseline", default="all")
     args = parser.parse_args()
 
     dataset = args.dataset
-    root    = DATA_EXT / dataset
+    # fitz17k features live in data/raw (precompute wrote them there), not data/external
+    ROOT_OVERRIDE = {"fitz17k": PROJECT_DIR.parent / "data" / "raw" / "fitzpatrick17k"}
+    root    = ROOT_OVERRIDE.get(dataset, DATA_EXT / dataset)
 
     # Load precomputed features
     idx_path   = root / "index.csv"

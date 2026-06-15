@@ -1,0 +1,1008 @@
+ 
+Contents lists available at ScienceDirect
+Medical Image Analysis
+journal homepage: www.elsevier.com/locate/media
+ 
+MED-NCA: Bio-inspired medical image segmentation
+John Kalkhof
+∗, Niklas Ihm
+, Tim Köhler
+, Bjarne Gregori, Anirban Mukhopadhyay
+Darmstadt University of Technology, Karolinenplatz 5, 64289 Darmstadt, Germany
+A R T I C L E  I N F O
+Dataset link: github.com/MECLabTUDA/M3D-
+NCA
+MSC:
+41A05
+41A10
+65D05
+65D17
+Keywords:
+Neural Cellular Automata
+Medical image segmentation
+Lightweight
+ 
+A B S T R A C T
+The reliance on computationally intensive U-Net and Transformer architectures significantly limits their 
+accessibility in low-resource environments, creating a technological divide that hinders global healthcare 
+equity, especially in medical diagnostics and treatment planning. This divide is most pronounced in low- and 
+middle-income countries, primary care facilities, and conflict zones. We introduced MED-NCA, Neural Cellular 
+Automata (NCA) based segmentation models characterized by their low parameter count, robust performance, 
+and inherent quality control mechanisms. These features drastically lower the barriers to high-quality medical 
+image analysis in resource-constrained settings, allowing the models to run efficiently on hardware as minimal 
+as a Raspberry Pi or a smartphone. Building upon the foundation laid by MED-NCA, this paper extends 
+its validation across eight distinct anatomies, including the hippocampus and prostate (MRI, 3D), liver and 
+spleen (CT, 3D), heart and lung (X-ray, 2D), breast tumor (Ultrasound, 2D), and skin lesion (Image, 2D). 
+Our comprehensive evaluation demonstrates the broad applicability and effectiveness of MED-NCA in various 
+medical imaging contexts, matching the performance of two magnitudes larger UNet models. Additionally, we 
+introduce NCA-VIS, a visualization tool that gives insight into the inference process of MED-NCA and allows 
+users to test its robustness by applying various artifacts. This combination of efficiency, broad applicability, 
+and enhanced interpretability makes MED-NCA a transformative solution for medical image analysis, fostering 
+greater global healthcare equity by making advanced diagnostics accessible in even the most resource-limited 
+environments.
+1. Introduction
+Medical image segmentation is dominated by large U-Net (Ron-
+neberger et al., 2015; Isensee et al., 2021), and Transformer-based 
+(Vaswani et al., 2017; Chen et al., 2021) models, with millions of 
+parameters. Despite their success, the deployment of these models is 
+often hindered by their high resource demands (Jaff et al., 2019). This 
+issue is particularly pronounced in low-resource environments, such as 
+primary care clinics, low- and middle-income countries, and conflict 
+zones, where the lack of robust computational infrastructure severely 
+limits the applicability of these technologies.
+There is, therefore, a pressing need for more resource-efficient deep 
+learning models that can operate effectively in constrained environ-
+ments. Such models hold the promise to democratize access to ad-
+vanced medical image analysis, helping to bridge the global healthcare 
+gap by providing high-quality diagnostic tools to underserved regions. 
+By addressing these needs, we can make important strides toward 
+global healthcare equity, ensuring that advanced medical imaging capa-
+bilities are accessible to all, regardless of their geographic or economic 
+circumstances.
+∗Corresponding author.
+E-mail address: john.kalkhof@gris.tu-darmstadt.de (J. Kalkhof).
+Inspired by the emergent properties of biological systems, von Neu-
+mann introduced Cellular Automata (Von Neumann and Burks, 1966), 
+demonstrating the potential to model complex systems through simple, 
+local rules. Early CAs generated intricate patterns and behaviors from 
+these basic rules, but the necessity for meaningful, hand-designed rules 
+constrained their adaptability and scalability, representing a substantial 
+limitation in fully realizing the potential of CAs as illustrated in Fig. 1.
+To solve this problem, Neural Cellular Automata (NCA) (Mordvint-
+sev et al., 2020) represent the update rule using a neural network. 
+This approach is inspired by the biological process of morphogene-
+sis, where cells naturally self-organize and communicate to develop 
+complex structures and organs. Through cell-to-cell interactions, NCAs 
+show emergent behavior, with complex patterns and structures forming 
+as a result of a single update rule applied iteratively to each cell. In 
+segmentation, this means that instead of using a top-down approach, 
+NCAs use local communication to leverage the state of the ‘‘voxe-
+lated world’’ and organically grow anatomical structures in the most 
+promising locations.
+Despite their potential, naive NCA implementations face consider-
+able challenges. The iterative application of NCAs across space and time 
+https://doi.org/10.1016/j.media.2025.103601
+Received 2 August 2024; Received in revised form 11 March 2025; Accepted 12 April 2025
+Medical Image Analysis 103 (2025) 103601 
+Available online 28 April 2025 
+1361-8415/© 2025 The Authors. Published by Elsevier B.V. This is an open access article under the CC BY license ( http://creativecommons.org/licenses/by/4.0/ ). 
+J. Kalkhof et al.
+Fig. 1. CAs started as a set of hand-designed rules; with the introduction of learned update rules in NCAs the first big hurdle was broken; MED-NCA solved the local communication 
+constraints and high VRAM requirements and thus solved the next set of challenges in applying CAs in medical imaging.
+leads to substantial VRAM requirements during backpropagation. For 
+instance, processing images of size 200 × 200 demands 20 GB of VRAM, 
+even when the initial model has only 70k parameters (Kalkhof et al., 
+2023). Additionally, slow communication speeds between cells hinder 
+the model’s effectiveness. Naive NCAs communicate only with direct 
+neighbors, one step at a time, which is limiting when global information 
+is needed for fine-grained segmentation tasks in medical imaging.
+To overcome these limitations, we introduced Med-NCA (Kalkhof 
+et al., 2023) and its three-dimensional counterpart, M3D-NCA (Kalkhof 
+and Mukhopadhyay, 2023). At the core of MED-NCA (Med-NCA, M3D-
+NCA) is a multi-level approach designed to address the slow local 
+communication issues inherent in NCAs (Mordvintsev et al., 2020). By 
+initiating segmentation on a coarser version of an image and progres-
+sively transferring insights to finer levels through a hierarchical NCA 
+structure, MED-NCA facilitates efficient information flow across differ-
+ent scales. This multi-level approach enables the handling of complex 
+segmentation tasks with improved accuracy and speed. It effectively 
+bridges the gap between computational efficiency and the demand 
+for precise, high-quality segmentations. By leveraging this approach, 
+MED-NCA can be run on hardware as minimal as a Raspberry Pi or a 
+smartphone (Kalkhof et al., 2024).
+We evaluate Med-NCA and M3D-NCA across eight distinct medi-
+cal image segmentation datasets, including two MRI (hippocampus and 
+prostate), two CT (spleen and liver), two X-ray (lung and heart), one 
+dermatology (lesion segmentation), and one ultrasound (breast cancer 
+segmentation) dataset. This extensive testing demonstrates that our 
+models maintain accuracy comparable to leading models such as U-
+Net (Ronneberger et al., 2015), TransUnet (Chen et al., 2021), and 
+nnUNet (Isensee et al., 2021), while greatly reducing model parameters.
+Emphasizing the critical role of model interpretability (Vellido, 
+2020), we introduce a novel visualization tool, NCA-VIS, which pro-
+vides insights into the NCA states and their dynamic processes. This 
+tool is crucial for enhancing explainability, allowing researchers and 
+clinicians to understand how the model arrives at its predictions. 
+By visualizing the internal states and interactions of NCAs, NCA-VIS
+helps in identifying and diagnosing potential failure cases, thereby 
+increasing the transparency and reliability of the model. This enhanced 
+interpretability fosters greater confidence in the model’s predictions 
+and facilitates its validation in diverse clinical scenarios. These innova-
+tions underscore the potential of Med-NCA and M3D-NCA as advanced 
+segmentation technologies that combine high performance with acces-
+sibility, paving the way for their widespread adoption in varied health-
+care settings, particularly those with limited computational resources 
+(illustrated in Fig. 2).
+The contributions of this invited manuscript over our previously 
+introduced Med-NCA and M3D-NCA are the following:
+∙We greatly enhance the validation of our Med-NCA and M3D-
+NCA methods by evaluating them across eight distinct datasets, 
+including two MRI (hippocampus and prostate), two CT (spleen 
+and liver), two X-ray (lung and heart), one dermatology (lesion 
+segmentation), and one ultrasound (breast cancer segmentation) 
+dataset.
+∙We introduce a novel visualization tool, NCA-VIS, which lever-
+ages the iterative nature of NCAs to provide users with a deeper 
+understanding of the inference process and aids in detecting 
+failure cases.
+∙We conduct a series of robustness experiments using NCA-VIS 
+to better understand the failure cases and improve the overall 
+trustworthiness of our models.
+2. Background
+In order to understand Neural Cellular Automata, we first need to 
+look at Cellular Automata (CA), which were first introduced by Von Neu-
+mann and Burks (1966). These early models laid the foundation for 
+the development of NCAs, which combine CA principles with neural 
+networks to achieve greater complexity and adaptability.
+2.1. Cellular automata
+Cellular Automata are mathematical models operating in discrete 
+time and space systems with a finite set of discrete states. The state 
+of a single automaton is defined solely by the values stored in its cell. 
+Based on the current state of an automaton and its neighboring cells, 
+typically adjacent ones, an update is performed using a definite set 
+of hand-designed rules (Wolfram, 1983). The probably most widely-
+known cellular automaton is Conway’s Game of Life (Gardner, 1970), 
+which operates by four simple update rules. Depending on the number 
+Medical Image Analysis 103 (2025) 103601 
+2 
+J. Kalkhof et al.
+Fig. 2. Med-NCA is lightweight, due to its minimal parameter size; Versatile in terms 
+of input modality and anatomy; enables visualization of the inference process due to 
+iterative nature and channel states.
+of alive neighbors and the current state of a cell, the cell will be alive or 
+dead in the next iteration. Despite the simplicity of its rules, Conway’s 
+Game of Life has been used to construct a Turing machine (Rendell, 
+2011), demonstrating the powerful potential of simple rules operating 
+within a complex world.
+2.2. Neural Cellular Automata
+Neural Cellular Automata (Mordvintsev et al., 2020) represents 
+a considerable advance over traditional Cellular Automata as they 
+overcome the limitations of finding meaningful hand-designed rules. 
+The ability to automatically learn a goal by combining deep learning 
+and CA principles opens up a wide range of possible applications. Early 
+attempts in this direction included learning automata dynamics (Wulff 
+and Hertz, 1992) and, more recently, representing the game of life 
+using convolutional neural networks (Gilpin, 2019).
+In Mordvintsev et al. (2020), the concept of deep learning-based CAs 
+was extended by introducing stochasticity into the update rules. This 
+approach, inspired by the process of biological morphogenesis, incorpo-
+rates a concept known as the fire rate. The fire rate involves the random 
+activation of cells, which forces the model to learn robustness and 
+maintain its structure even when faced with uncertain update paths. 
+This stochastic activation mimics the natural variability and adaptabil-
+ity seen in biological systems during morphogenesis. Mordvintsev et al. 
+(2020) demonstrate this by successfully growing a salamander image 
+that remains resilient to perturbations, showcasing the potential of 
+NCAs to handle complex and dynamic tasks through adaptive growth.
+Unlike typical CAs, the states of NCAs are continuous values and 
+generally have multiple dimensions. This increases the capacity of 
+information each cell can store between update steps and allows NCAs 
+to represent and process more complex data. This additional level of 
+complexity allows NCAs to perform more demanding tasks and adapt 
+to a wider range of scenarios.
+2.3. NCA-specific concepts
+Neural Cellular Automata distinguish themselves from traditional 
+deep learning models, such as UNet-based architectures, by iteratively 
+applying the same model across both spatial and temporal dimensions 
+of an image. This approach relies on several unique concepts:
+Perceptive Range: In NCAs, communication occurs locally between 
+neighboring cells, resulting in a gradual increase in the perceptive 
+range with each iterative step. For instance, to propagate information 
+across a 100 × 100 image, at least 100 steps would be needed for full 
+communication across the entire image.
+Channel Size: NCAs store and communicate information through 
+their 𝑐 channels, where each channel represents a vector stored in each 
+pixel or voxel of the spatial domain. The capacity of these vectors, or 
+channel size, dictates the amount of information that can be stored 
+and processed. Increasing the channel size can enhance the model’s 
+performance in complex tasks, such as segmentation, by allowing for 
+more detailed and nuanced representations of the input data.
+Fire Rate: The fire rate in NCAs refers to the stochastic activation of 
+each cell during the iterative process. Typically, this is implemented by 
+resetting inactive cells to their previous state at each step. Commonly 
+set to 50% in literature, the fire rate functions similarly to a dropout 
+mechanism at the pixel level, introducing regularization and preventing 
+overfitting by ensuring that not all cells are active simultaneously.
+3. Related work
+Initial studies on NCAs, such as those that learned the rules of Con-
+way’s Game of Life (Gilpin, 2019) and the ‘‘Growing NCA’’ study (Mord-
+vintsev et al., 2020), provided insights into the potential of NCAs, 
+demonstrating their ability to handle perturbations and generate com-
+plex patterns.
+3.1. NCA-based segmentation models
+The first notable application of NCAs in image segmentation was 
+demonstrated through foreground-background segmentation (Sandler 
+et al., 2020). These early successes revealed the capabilities of NCAs 
+but were limited to relatively simple tasks and small-scale images, 
+not fully utilizing the potential of NCAs in more complex scenarios. A 
+substantial barrier to their broader application has been the high VRAM 
+requirements for training NCAs on larger images.
+To address these limitations, recent advancements have introduced 
+models specifically designed for medical image segmentation. Our pre-
+viously introduced Med-NCA (Kalkhof et al., 2023) and its three-
+dimensional counterpart (Kalkhof and Mukhopadhyay, 2023), M3D-
+NCA, represent noteworthy progress in this area. These models employ 
+a multi-scale approach to segmentation, processing images at different 
+resolutions to manage VRAM usage more effectively. By iterating on 
+downscaled versions of the input image and gradually refining the 
+segmentation at higher resolutions, these models reduce computational 
+demands while maintaining accuracy.
+Med-NCA focuses on 2D segmentation tasks, while M3D-NCA ex-
+tends these techniques to 3D images. Both models incorporate training 
+strategies, such as batch duplication, to enhance stability and conver-
+gence during training. These innovations enable the effective appli-
+cation of NCAs to large-scale medical images, overcoming previous 
+challenges related to VRAM and slow communication.
+Med-NCA has demonstrated the ability to perform high-resolution 
+medical image segmentation even on low-power devices such as the 
+Raspberry Pi, achieving competitive results in hippocampus and
+prostate segmentation while being 500 times smaller than traditional 
+UNet-based models. It also shows robustness against MRI acquisi-
+tion artifacts and invariance to image scale, shape, and translation. 
+Similarly, M3D-NCA has outperformed much larger UNet models in 
+hippocampus and prostate segmentation and can operate efficiently in 
+resource-constrained environments (Kalkhof et al., 2024). Additionally, 
+M3D-NCA introduces a novel quality metric to detect segmentation 
+errors automatically, enhancing reliability and patient safety.
+The development of MED-NCA (Med-NCA, M3D-NCA) highlights 
+the potential of NCAs to provide high-quality, efficient, and adaptive 
+segmentation solutions in medical imaging. By addressing critical issues 
+of resource constraints and model scalability, these models pave the 
+way for broader adoption of NCAs in practical, real-world medical 
+applications, particularly in low-resource settings, thus contributing to 
+bridging the global healthcare gap.
+Medical Image Analysis 103 (2025) 103601 
+3 
+J. Kalkhof et al.
+Fig. 3. MED-NCA uses NCAs on multiple levels to combine coarse with high-resolution information. By patchifying on the higher levels, the VRAM is drastically reduced enabling 
+training of 3D high-resolution segmentation tasks; orange arrows indicate different model phases, with black representing the initial phase.
+3.2. UNet and transformer-based segmentation models
+UNet-based segmentation models, including the original UNet (Ron-
+neberger et al., 2015), nnUNet (Isensee et al., 2021), and transformer-
+based UNet architectures (Chen et al., 2021), have become integral 
+in medical image analysis. The original UNet employs a symmet-
+ric encoder–decoder architecture with skip connections, enabling ac-
+curate localization and effective integration of contextual informa-
+tion. nnUNet enhances this by automatically adapting its configura-
+tion to different datasets, optimizing performance without extensive 
+manual tuning. Transformer-based UNet models incorporate attention 
+mechanisms, improving the capture of long-range dependencies and 
+contextual information handling.
+Despite their popularity and the advancements they bring, these 
+models have several limitations. The high parameter counts in UNet 
+and its variants lead to increased computational complexity and their 
+substantial memory footprint, makes deployment on limited hardware 
+challenging. Additionally, the demanding infrastructure requirements 
+limit the accessibility and scalability of these models in practical appli-
+cations. While nnUNet introduces auto-ml strategies and augmentations 
+to enhance robustness, the core architecture of UNet has seen limited 
+changes in the past eight years, leading to stagnation and incremental 
+improvements.
+4. Methodology
+Our previously introduced Med-NCA for 2D and M3D-NCA archi-
+tecture for 3D solve two major problems when training NCAs for 
+segmentation tasks on high-resolution images.
+Communication speed: Due to the local communication of NCAs 
+in a naive setup to communicate across a 200 × 200 pixel image 200 
+steps are needed. Finding an update rule that is stable for this number 
+of steps is difficult. This is solved by applying NCAs in a multi-level 
+setup. It starts on a coarse resolution to get general global information, 
+then this information is scaled to the next higher resolution level and 
+introduces more fine granular information resulting in greatly increased 
+communication speeds.
+VRAM requirements: Despite their small model sizes of 10k-70k 
+parameters (Kalkhof et al., 2023), NCAs require extensive amounts of 
+VRAM during training due to the necessity to keep duplications of the 
+model across space and time in the VRAM for backpropagation. By 
+introducing patchified training into MED-NCA on the lower levels of the 
+architecture, the required VRAM is effectively reduced. The amount of 
+reduction can be controlled by the number of levels and scaling factors 
+to suit the needs of the device at hand.
+4.1. Med-NCA / M3D-NCA training
+Med-NCA and M3D-NCA share a common goal: to reduce VRAM 
+requirements and improve communication speed by addressing the 
+local communication bottleneck. These challenges are approached by 
+operating on different scales of the input image using the same model 
+architecture 𝑚 across scales but with a different set of weights 𝛿𝑛. 
+Following a coarse-to-fine approach, we begin by downscaling the input 
+image by a factor 𝑑 multiplied by the number of layers 𝑛.
+Med-NCA uses two levels of NCAs to perform segmentation. The first 
+NCA model 𝑚1 iterates for 𝑠 steps on the smallest scale to initialize 
+the segmentation process as illustrated in Fig. 3. The output ̄𝑥, now 
+containing global information, is then upscaled. In the next step, the 
+first channel of the upscaled output, which still contains the low-
+resolution image, is replaced with its high-resolution counterpart. This 
+allows the next model 𝑚2 to further refine the output while utilizing the 
+gathered global information. To reduce VRAM usage, a random patch 
+𝑝 is selected on level two, which is the same size as the smallest scale, 
+and 𝑚2 is applied iteratively for 𝑠 steps. Finally, backpropagation is 
+performed with a Dice focal loss (Lin et al., 2017) computed over the 
+last patch and the ground truth patch.
+M3D-NCA follows a similar strategy but is specifically optimized 
+for 3D images. It uses a smaller model architecture to adjust to the 
+increased memory requirements of 3D data. Additionally, M3D-NCA 
+improves on the original Med-NCA architecture, by moving from a two-
+level to an n-level architecture, thus repeating the patchification for 
+𝑛−1 times. Every additional level further reduces VRAM usage. The 
+additional complexity of the extra levels makes convergence less stable. 
+Hence, we introduced batch duplication, which duplicates the same 
+input, but with a random different patch selection, thus generalizing 
+over the stochastic components of the training pipeline. We provide 
+pseudo-code of training and inference of MED-NCA in Algorithm 1.
+In both Med-NCA and M3D-NCA, the segmentation loss (Dice focal 
+loss) is computed over the last patch and the ground truth patch. 
+Adjusting 𝑑 and 𝑛 allows precise control over VRAM usage during train-
+ing, making these models highly adaptable to varying computational 
+resources.
+Medical Image Analysis 103 (2025) 103601 
+4 
+J. Kalkhof et al.
+Fig. 4. The NCA-Vis tool offers insight into the inference process of the trained NCA in multiple steps of the process. Applying artifacts to the input data can help the user to 
+evaluate the robustness of the model. The visualization of all channels can give further insight into the model states beyond the output segmentation.
+Algorithm 1 Training and Inference of MED-NCA with 2 Levels
+1: 𝑁𝐶𝐴coarse ←InitNCAModel()
+2: 𝑁𝐶𝐴fine ←InitNCAModel()
+3: 𝐢← Image 𝐈∈R𝐶×𝐷×𝐻×𝑊
+4: 𝐠𝐭← Groundtruth 𝐆∈R𝐶×𝐷×𝐻×𝑊
+5: 𝐱← Concatenate(𝐢, EmptyChannels(𝐶−1))
+⊳ Coarse Level
+6: 𝐱coarse ← Downscale(𝐱, 𝑑)
+7: for stepscoarse do
+8:  
+𝐱coarse ←𝑁𝐶𝐴coarse(𝐱coarse)
+9: end for
+⊳ Fine Level
+10: 𝐱fine ← Upscale(𝐱coarse)
+11: 𝐱fine[0, ∶, ∶, ∶] ←𝐢[0, ∶, ∶, ∶]
+12: if Phase = ‘‘Train’’ then
+13:  
+𝐱fine ←𝐺𝑒𝑡𝑅𝑎𝑛𝑑𝑜𝑚𝑃𝑎𝑡𝑐ℎ(𝐱fine)
+14: end if
+15: for stepsfine do
+16:  
+𝐱fine ←𝑁𝐶𝐴fine(𝐱fine)
+17: end for
+18: if Phase = ‘‘Train’’ then
+19:  
+SegLoss(𝐱fine[1, ∶, ∶, ∶], getPatch(gt)).optimize()
+20: else
+21:  
+return 𝐱fine[1, ∶, ∶, ∶]
+22: end if
+4.2. Backbone NCA architecture
+The core architectures of Med-NCA and M3D-NCA are designed 
+for simplicity. For Med-NCA, the output of two 2D convolutions with 
+kernel size 𝑘 is appended with the identity of the current cell state of 
+depth 𝑐, resulting in a state vector 𝑣 of length 3𝑐. For M3D-NCA this has 
+been further simplified to a single 3D convolution, thus resulting in 𝑣
+being length 2𝑐. This vector 𝑣 merges information about surrounding 
+cells and the current cell’s stored knowledge. 𝑣 is then passed through 
+a 1 × 1 × 1 convolution of size ℎ, followed by a BatchNorm layer (Ioffe 
+and Szegedy, 2015) and a ReLU activation. Finally, another 1 × 1 × 1 
+convolution with output size 𝑐, matching the input size, allows the 
+model’s output to be added as an incremental update to the previous 
+state. The model executes this process for 𝑠 steps. Generally, the steps 
+should be chosen to allow for communication across the whole image. 
+We provide the following formula as a general guideline for the choice 
+of the step count: 𝑠= 𝑚𝑎𝑥(𝑤𝑖𝑑𝑡ℎ, ℎ𝑒𝑖𝑔ℎ𝑡, 𝑑𝑒𝑝𝑡ℎ)∕((𝑘−1)∕2) (Kalkhof and 
+Mukhopadhyay, 2023)
+4.3. Batch duplication
+Training NCA models such as M3D-NCA is unstable due to stochas-
+tic cell activation and the random patchification process, especially 
+with three or more layers. These factors cause fluctuations in the loss 
+function, hindering convergence.
+We addressed this, by introducing batch duplication in M3D-NCA. 
+This technique involves duplicating input images within each batch, 
+reducing image diversity per batch but greatly enhancing convergence 
+stability. By averaging over the variations from stochastic activations 
+and patchification, batch duplication ensures a smoother loss trajectory 
+and more reliable training, improving the model’s performance and 
+robustness in 3D image segmentation (Kalkhof and Mukhopadhyay, 
+2023).
+4.4. Pseudo ensemble
+The inherent stochasticity of Neural Cellular Automata (NCAs), re-
+sulting from random cell activations, allows them to generate multiple 
+valid segmentation masks. We harness this characteristic by running the 
+trained model ten times on the same data input, each time with differ-
+ent random activations. By averaging these ten masks, we exploit the 
+Medical Image Analysis 103 (2025) 103601 
+5 
+J. Kalkhof et al.
+Fig. 5. Random activation in NCAs result in slightly different predictions at each 
+forward pass of the inference; By taking the mean, we can simulate a pseudo ensemble 
+predicting more robust results.
+model’s variability to produce a more robust prediction, as illustrated 
+in Fig. 5.
+4.5. NQM score
+In medical image segmentation, detecting out-of-distribution (OOD) 
+data is crucial as it can lead to inaccurate segmentations (Gonzalez 
+et al., 2021). To address this issue, we introduced the NCA Quality 
+Metric (NQM) (Kalkhof and Mukhopadhyay, 2023), which quantifies 
+the reliability of segmentation predictions.
+The NQM utilizes the variance observed in multiple predictions. 
+Typically, higher variance indicates that the data differs from the 
+training set, suggesting potential inaccuracies. However, raw variance 
+can be misleading due to its dependence on the segmentation mask size. 
+To account for this, we normalize the variance by dividing the sum 
+of the standard deviations by the number of mean segmented pixels, 
+ensuring a more accurate assessment of prediction reliability. Given an 
+image volume 𝑣 and 𝑣𝑖 representing 𝑁= 10 different predictions of 
+M3D-NCA for 𝑣, the NQM is calculated by: 
+𝑁𝑄𝑀=
+∑
+𝑠∈𝑆𝐷(𝑠)
+∑
+𝑚∈𝜇(𝑚) ,
+𝑆𝐷=
+√∑𝑁
+𝑖=1(𝑣𝑖−𝜇)2
+𝑁
+,
+𝜇=
+∑𝑁
+𝑖=1 𝑣𝑖
+𝑁
+(1)
+4.6. NCA-VIS
+Neural Cellular Automata (NCAs) possess an iterative nature, with 
+information retained in the cell state between steps, making them
+uniquely suited for visualizing the inference process. To leverage this 
+potential and enhance model explainability, we have developed NCA-
+VIS, a comprehensive visualization tool designed to provide detailed 
+insights into the model’s functioning, as illustrated in Fig. 4. This 
+tool is built around key components: data selection and augmentation, 
+threshold adjustment, and channel visualization, all of which contribute 
+to improved transparency and reliability of the model’s results.
+Data Selection and Augmentation: NCA-VIS allows users to se-
+lect specific samples from the dataset, facilitating the examination of 
+individual cases, such as out-of-distribution samples or those flagged 
+by the NQM quality metric due to high variance between multiple 
+predictions. Users can introduce artifacts by drawing on the images to 
+assess the model’s robustness. Additionally, leveraging TorchIO (Pérez-
+García et al., 2021), users can apply modular augmentations to the test 
+dataset, evaluating the model’s performance under various conditions. 
+This feature is crucial for understanding how the model handles diverse 
+data scenarios.
+Threshold Adjustment: NCAs do not have a fixed upper or lower 
+bound for visualization values, which can vary strongly between in-
+ference runs and datasets. NCA-VIS addresses this by employing au-
+tomatic threshold adjustment based on identified values, with the 
+option for manual refinement. This ensures optimal use of the color 
+scale, highlighting important details and enhancing the visibility of 
+critical differences. Such flexibility guarantees that the visualizations 
+accurately reflect the model’s behavior and the data’s variability.
+Channel Visualization: This component provides a comprehensive 
+overview of all NCA channels, offering insights into the Med-NCA’s 
+responses to various image-specific artifacts. Users can visualize not 
+only the main segmentation channel but also the typically hidden 
+channels where the model stores intermediate knowledge. This visu-
+alization can be explored as a video or frame-by-frame, allowing for 
+detailed analysis of patterns and behaviors. Users can also examine the 
+variance between forward passes, identifying challenging areas within 
+the image. Moreover, NCA-VIS supports rendering visualizations in 
+both 2D and 3D formats, accommodating different input data types and 
+enhancing overall analysis.
+5. Experimental results
+5.1. Datasets
+To ensure a comprehensive evaluation of our MED-NCA architec-
+ture, we have conducted comprehensive experiments across eight di-
+verse datasets, encompassing various modalities and anatomical struc-
+tures. This broad spectrum of datasets greatly expands the scope of our 
+investigation compared to prior studies. The datasets utilized include:
+MRI Hippocampus: Comprising 195 3D T1-weighted images of 
+patients, sourced from the Medical Segmentation Decathlon. The im-
+ages are uniformly scaled to dimensions of 64 × 64 × 56 to ensure 
+comparability.
+MRI Prostate: This dataset includes 32 labeled T2-weighted
+prostate scans, from the Medical Segmentation Decathlon (Simpson 
+et al., 2019; Antonelli et al., 2022), scaled to 320 × 320 × 24.
+CT Liver: Consists of 140 labeled contrast-enhanced CT images that 
+include pre- and post-therapy scans from primary cancer patients, part 
+of the Medical Segmentation Decathlon, and scaled to 192 × 192 × 128.
+CT Spleen: Features 41 labeled CT scans, obtained from the Medical 
+Segmentation Decathlon. These images are scaled to a uniform size of 
+256 × 256 × 64 for consistent analysis, with dimensions specified upon 
+final dataset preparation.
+X-ray Lung: Encompasses 2000 labeled X-ray scans, from the Chest 
+X8 dataset (Wang et al., 2017). The segmentation masks are provided 
+by the CheXMask database (Gaggion et al., 2024). These are scaled to 
+256 × 256.
+X-ray Heart: Includes 2000 labeled X-ray scans from the Padchest 
+dataset (Bustos et al., 2020) with the masks provided by the CheXMask 
+database (Gaggion et al., 2024), and scaled to 256 × 256.
+RGB Dermatology: Consists of 2596 images from the ISIC 2018 
+dataset (Tschandl et al., 2018; Codella et al., 2019), focusing on skin 
+lesion segmentation tasks, scaled to 256 × 256.
+Ultrasound Breast Cancer: Comprises a total of 780 ultrasound 
+images, including benign, malignant, and normal cases, from the BUID 
+Breast Cancer dataset (Al-Dhabyani et al., 2020). These are scaled to 
+256 × 256, with 546 for training and 234 for testing.
+For all datasets, we maintain a consistent split of 70% for training 
+and 30% for testing. The uniform scaling of images across all datasets is 
+critical not only to conform to the limitations of the U-Net architecture 
+but also to ensure comparability across different model evaluations.
+Medical Image Analysis 103 (2025) 103601 
+6 
+J. Kalkhof et al.
+Fig. 6. Comparison of Dice accuracy and parameter count for MED-NCA, UNet, and Transformer-based architectures across eight diverse datasets.
+Table 1
+Dice accuracy with standard deviations across the eight datasets. We use the according 2D/3D architecture of MED-NCA, UNet, and nnUNet depending on the shape of the 
+dataset. less than 105 parameters; more than 107 parameters; more than 108 parameters.
+ Method
+3D
+2D
+ 
+ 
+Hippocampus
+Prostate
+Liver
+Spleen
+Dermatology
+Breast
+Lung
+Heart
+AVG  
+ MED-NCA
+0.882 ± 0.019
+0.795 ± 0.101
+0.812 ± 0.077
+0.743 ± 0.095
+0.772 ± 0.195
+0.635 ± 0.308
+0.941 ± 0.052
+0.947 ± 0.044
+0.816 
+ UNet
+0.877 ± 0.020
+0.793 ± 0.143
+0.746 ± 0.317
+0.778 ± 0.303
+0.860 ± 0.152
+0.537 ± 0.306
+0.954 ± 0.050
+0.958 ± 0.031
+0.813 
+ nnUNet
+0.903 ± 0.024
+0.817 ± 0.257
+0.962 ± 0.023
+0.971 ± 0.007
+0.903 ± 0.118
+0.760 ± 0.312
+0.966 ± 0.038
+0.965 ± 0.026
+0.906 
+ TransUNet 2D
+0.851 ± 0.033
+0.868 ± 0.031
+0.949 ± 0.018
+0.952 ± 0.023
+0.903 ± 0.110
+0.711 ± 0.354
+0.964 ± 0.037
+0.963 ± 0.028
+0.895 
+5.2. Infrastructure
+All experiments were conducted on a system with an Nvidia RTX 
+3090 GPU and an Intel i7-12700 processor, with all models imple-
+mented in PyTorch (Paszke et al., 2019). The implementations of 
+Med-NCA and M3D-NCA are available at , which will be updated with 
+the NCA-VIS tool upon acceptance. We use Med-NCA as defined in 
+the original paper for images of size 256 × 256 with a step count of 
+64 (Kalkhof et al., 2023). As our 3D datasets show greater variations, 
+we set the kernel size on each level to 7 and a step count of 20, while 
+we use a two-level architecture, except for the hippocampus dataset 
+as it is small enough to be handled by a single level. For the prostate 
+dataset, following the approach in our M3D-NCA publication, we use 
+step counts of 20 and 40 (Kalkhof and Mukhopadhyay, 2023). For 
+the baselines, we used the official implementation of UNet (Perez-
+Garcia, 2019), nnUNet (Isensee et al., 2021) and the model architecture 
+provided for TransUNet in (Chen et al., 2021). All models are optimized 
+with the Adam optimizer (Adam, 2024).
+6. Quantitative results
+The quantitative results of our study, presented in Table 1, under-
+score the efficacy of MED-NCA across various medical image segmenta-
+tion tasks. Remarkably, despite being 2–3 orders of magnitude smaller 
+than current state-of-the-art models, MED-NCA achieves performance 
+comparable to UNet, demonstrating its efficiency and robustness (see 
+Fig. 6).
+For segmentation tasks involving the hippocampus, prostate, lung, 
+and heart, the performance of MED-NCA closely matches that of UNet. 
+Notably, for ultrasound breast and CT liver tasks, MED-NCA surpasses 
+UNet by 6.6–9.8%, whereas UNet outperforms MED-NCA by 3.5-8.8% 
+in CT spleen and image lesion tasks. When averaged across all eight 
+datasets, the performance of both models is similar. This is particularly 
+noteworthy given that all MED-NCA configurations contain fewer than 105
+parameters, making them at least two orders of magnitude smaller than the 
+corresponding UNet. It is plausible that further hyperparameter tuning 
+could narrow the performance gaps observed in specific datasets, an 
+area not fully explored in our study. We show this through an ablation 
+study on the breast and liver dataset, demonstrating that there is no 
+universally optimal number of steps, as shown in Table 2.
+There remains a noticeable performance gap between standard 
+UNet and MED-NCA compared to nnUNet and TransUNet, particu-
+larly in more complex datasets such as MRI prostate, CT liver, image 
+lesion, and ultrasound breast. However, this disparity could likely 
+be mitigated through a more advanced training pipeline, similar to 
+the one employed by nnUNet, which utilizes extensive preprocessing 
+and augmentations during training. However, nnUNet and TransUNet 
+models are not feasible on low-end hardware due to their extensive 
+computational requirements, hence preventing them from fulfilling our 
+target of being operable in resource-constrained environments.
+Medical Image Analysis 103 (2025) 103601 
+7 
+J. Kalkhof et al.
+Fig. 7. Qualitative results of MED-NCA, UNet, nnUNet, and TransUnet across eight datasets (hippocampus, prostate, liver, spleen, heart, lung, breast tumor, and dermatology). 
+MED-NCA consistently produces smoother and more coherent segmentations, particularly in the dermatology, hippocampus, and breast tumor datasets. In contrast, UNet often 
+predicts additional volumes, leading to over-segmentation, especially noticeable in the ultrasound and X-ray lung results.
+Table 2
+Evaluating MED-NCA across different step counts reveals no universally optimal number 
+of steps. Instead, it functions as a hyperparameter that should be fine-tuned based on 
+the dataset and required perceptive range.
+ Dataset
+Steps
+Dice
+ 
+ 
+Breast
+16
+0.565 ± 0.276 
+ 
+32
+0.611 ± 0.287 
+ 
+64
+0.635 ± 0.308 
+ 
+Liver
+10
+0.846 ± 0.062 
+ 
+20
+0.812 ± 0.077 
+ 
+30
+0.779 ± 0.062 
+Overall, our results highlight the potential of MED-NCA as a highly 
+efficient and effective model for medical image segmentation. Its ability 
+to achieve comparable performance with lower computational require-
+ments positions it as a valuable tool for resource-constrained envi-
+ronments. By adopting more advanced training techniques, as demon-
+strated by nnUNet, MED-NCA’s performance could be further enhanced, 
+potentially closing the gap with the leading models while still remain-
+ing suitable for resource-constrained settings (see Table 2).
+7. Qualitative results
+The qualitative results in Fig. 7 illustrate that across all eight 
+datasets, the four segmentation models — MED-NCA, UNet, nnUNet, 
+and TransUNet — primarily differ in their handling of the edges of 
+the segmentation regions. For each dataset, including the hippocampus, 
+prostate, liver, spleen, heart, lung, breast tumor, and skin lesion, the 
+models generally show similar performance in terms of overall seg-
+mentation accuracy. However, MED-NCA consistently tends to produce 
+smoother segmentations.
+In particular, MED-NCA’s smooth segmentation is prominently ob-
+served in the dermatology, hippocampus, and breast tumor dataset, 
+where the model avoids irregular edges and maintains a more coherent 
+boundary. In contrast, UNet frequently predicts additional volumes, 
+leading to over-segmentation in some cases, as seen in the ultrasound 
+and X-ray lung results. This tendency of UNet to over-predict is less 
+prevalent in MED-NCA, which results in cleaner and more accurate 
+delineations of the target structures.
+8. NQM score segmentation quality predictions
+To further validate the reliability of the built-in quality control 
+mechanism of our model, we evaluated the correlation between the 
+NCA Quality Metric (NQM) and the Dice score across the four 3D 
+datasets: hippocampus, prostate, spleen, and liver. These datasets were 
+all trained using M3D-NCA and thus fulfilled the architecture require-
+ments.
+Our results in Fig. 9, where we perform a linear regression across 
+all four datasets, demonstrate a strong negative correlation of −0.84 
+between the NQM and the Dice score, demonstrating that higher NQM 
+values reliably predict lower segmentation accuracy. This correlation 
+confirms that the NQM is an effective measure for detecting potential 
+segmentation failures. By integrating NQM into our framework, we can 
+reasonably ensure the robustness and reliability of our 3D segmentation 
+results.
+9. Robustness experiments using NCA-VIS
+Our novel NCA-VIS tool not only allows us to visualize the inference 
+process of NCAs, providing a deeper understanding of how they react 
+to unseen inputs and artifacts but also enables the application of 
+augmentations and hand-drawn alterations to investigate their behavior 
+further.
+Medical Image Analysis 103 (2025) 103601 
+8 
+J. Kalkhof et al.
+Fig. 8. Robustness tests with different artifacts applied using the NCA-VIS tool.
+Fig. 9. The NQM score shows a strong negative correlation of −0.84 to the Dice 
+accuracy across all 3D datasets.
+To demonstrate how robustness evaluation can be performed, we 
+present the inference process of MED-NCA in Fig. 8. This figure shows 
+how erasing and adding information to the image can cause notable 
+changes in the early steps of the NCA, but also how the model manages 
+to recover. In cases of noise and ghosting artifacts, the model generally 
+withstands strong alterations while still achieving a good segmentation 
+result.
+Overall, this visualization enhances the explainability of the NCA’s 
+inference process, demonstrating how iterative updates lead to the final 
+prediction. It also serves as a valuable tool for assessing the model’s 
+robustness and transparency, providing insights into the underlying 
+mechanisms driving its performance.
+10. Training VRAM requirements
+MED-NCA substantially reduces VRAM requirements of NCAs dur-
+ing training, enabling NCAs to process high-resolution medical images 
+efficiently. This is achieved through a multi-level architecture com-
+bined with patchified training. The scalability of the architecture allows 
+precise control over the required VRAM by adjusting two primary 
+values: the scale factor and the number of hierarchical levels.
+Table 3 shows VRAM measurements for various configurations of 
+MED-NCA. For instance, training on a 2D image of size 256 × 256 with 
+a scale factor of 2 across two levels requires 4678 MB of VRAM. By 
+increasing the scale factor to 8, VRAM consumption drastically drops 
+to only 326 MB. Similarly, for 3D segmentation tasks with input sizes 
+of 192 × 192 × 128, adjusting the scale factor and levels from (4, 2) to 
+(4, 3) reduces VRAM usage from 7261 MB down to just 296 MB.
+This demonstrates how MED-NCA can be effectively controlled to 
+fit available hardware constraints.
+11. Hardware requirements
+Neural Cellular Automata (NCA) architectures have distinct hard-
+ware resource characteristics during inference, especially concerning 
+RAM usage, due to their iterative application without scaling. Unlike 
+architectures such as UNets, which process the image by compressing 
+information into a latent space, NCA-based models operate on the same 
+image scale iteratively, reducing RAM requirements during inference.
+Medical Image Analysis 103 (2025) 103601 
+9 
+J. Kalkhof et al.
+Fig. 10. (A) Inference Speed of MED-NCA 2D/3D and UNet 2D/3D on a Raspberry PI. (B) Max RAM used during inference on Raspberry PI (C) Inference time of Med-NCA on 
+images the size 256 × 256 across different Android devices; X: out of RAM.
+Table 3
+VRAM requirements during training of different setups of MED-NCA (with batch size = 
+1). MED-NCA can be adjusted to fit the needs of the available hardware (2D Med-NCA: 
+c=32, h=128, s=64; 3D M3D-NCA: c=16, h=64, s=20).
+ Input Size
+Scale Factor
+Level
+VRAM in MB 
+ 
+256 × 256
+2
+2
+4678
+ 
+ 
+4
+2
+1229
+ 
+ 
+8
+2
+326
+ 
+ 
+192 × 192 × 128
+4
+2
+7261
+ 
+ 
+8
+2
+2073
+ 
+ 
+4
+3
+296
+ 
+ 
+2
+4
+1743
+ 
+To illustrate the efficiency of MED-NCA architectures in terms of 
+memory usage, we performed experiments on resource-limited hard-
+ware, specifically a Raspberry Pi 4B with only 2 GB of RAM and several 
+Android smartphones. All Raspberry Pi experiments use the same Py-
+Torch framework used for the experiments in this manuscript, while 
+smartphone experiments utilized a TensorFlow Lite implementation 
+due to mobile deployment limitations.
+Our experiments, illustrated in Fig. 10, showed that MED-NCA 
+greatly outperforms UNet architectures in memory usage, particularly 
+evident at larger image sizes. For example, UNet models quickly ex-
+haust the available RAM on a Raspberry Pi when processing 2D images 
+larger than approximately 512 × 512. In contrast, Med-NCA success-
+fully handles images of size 1024 × 1024. This difference becomes 
+even more pronounced in 3D medical imaging, where UNet models 
+are limited to a size of about 64 × 64 × 56. Contrarily, M3D-NCA 
+can handle volumes up to a size of 192 × 192 × 128 without running 
+out of memory. Additionally, we evaluated the inference speed on the 
+Raspberry Pi, showing that NCAs are around 1.5 to 3 times faster than 
+a UNet when choosing a moderate step count of 20 per level.
+Furthermore, we extended our investigation to smartphones us-
+ing a TensorFlow Lite implementation of Med-NCA, demonstrating 
+robust performance across several Android smartphones, including a 
+Pixel 1, Moto g31, Poco M5, Samsung S10, and Pixel 6a. In our 
+evaluations, Med-NCA processed 256 × 256 images within reasonable 
+inference times ranging from 2 to 5 s, depending on device specifica-
+tions. Previously, we have even demonstrated that this TensorFlow Lite 
+implementation allows for training directly on smartphones, though at 
+considerably slower speeds (1–3 days depending on the device (Kalkhof 
+et al., 2024)).
+These experiments conclusively demonstrate that MED-NCA models 
+greatly reduce RAM requirements during inference and thus bring high-
+quality medical image segmentation on minimal and widely available 
+hardware, promoting greater global healthcare accessibility and equity.
+12. Conclusion
+Our work extends the validation of the MED-NCA model, demon-
+strating its capacity to overcome the limitations of traditional U-Net-
+based methods in resource-constrained environments. By offering a 
+low-parameter, robust, and adaptive segmentation solution, MED-NCA 
+meets the critical need for accessible and high-quality medical image 
+analysis in settings such as low- and middle-income countries, primary 
+care facilities, and conflict zones. This advancement contributes to 
+bridging the gap in global healthcare quality and equity.
+MED-NCA’s low computational demands allow it to run efficiently 
+on minimal hardware, such as a Raspberry Pi or a smartphone, dras-
+tically lowering barriers to advanced medical image analysis. Our 
+extensive validation across eight distinct anatomies — hippocampus 
+and prostate (MRI, 3D), liver and spleen (CT, 3D), heart and lung 
+(X-ray, 2D), breast tumor (Ultrasound, 2D), and skin lesion (Image, 
+2D) — demonstrates its broad applicability and effectiveness. Despite 
+Medical Image Analysis 103 (2025) 103601 
+10 
+J. Kalkhof et al.
+its compact size, MED-NCA matches the performance of much larger 
+models like UNet, highlighting its efficiency and robustness.
+The introduction of NCA-VIS further enhances the interpretability 
+of MED-NCA, providing insights into its inference process and allowing 
+users to test its robustness through various artifacts. This combina-
+tion of efficiency, broad applicability, and enhanced interpretability 
+positions MED-NCA as a transformative solution for medical image 
+analysis. By making advanced diagnostics accessible in even the most 
+resource-limited environments, MED-NCA fosters greater global health-
+care equity and potentially improves the quality of care for underserved 
+populations.
+CRediT authorship contribution statement
+John Kalkhof: Writing – review & editing, Writing – original draft, 
+Visualization, Validation, Supervision, Software, Resources, Project ad-
+ministration, Methodology, Investigation, Formal analysis, Data cu-
+ration, Conceptualization. Niklas Ihm: Visualization, Software. Tim 
+Köhler: Visualization, Software. Bjarne Gregori: Visualization, Soft-
+ware. Anirban Mukhopadhyay: Writing – review & editing, Writing – 
+original draft, Supervision, Conceptualization.
+Declaration of competing interest
+The authors declare that they have no known competing finan-
+cial interests or personal relationships that could have appeared to 
+influence the work reported in this paper.
+Data availability
+Our current codebase, which includes the methods Med-NCA and 
+M3D-NCA is available under github.com/MECLabTUDA/M3D-NCA. We 
+will add the NCA-VIS visualization tool to this repository upon accep-
+tance.
+References
+Adam, D., 2024. Medical AI could be’dangerous’ for poorer nations, WHO warns. 
+Nature.
+Al-Dhabyani, W., Gomaa, M., Khaled, H., Fahmy, A., 2020. Dataset of breast ultrasound 
+images. Data Brief 28, 104863.
+Antonelli, M., Reinke, A., Bakas, S., Farahani, K., Kopp-Schneider, A., Landman, B.A., 
+Litjens, G., Menze, B., Ronneberger, O., Summers, R.M., van Ginneken, B., 
+Bilello, M., Bilic, P., Christ, P.F., Do, R.K.G., Gollub, M.J., Heckers, S.H., Huis-
+man, H., Jarnagin, W.R., McHugo, M.K., Napel, S., Pernicka, J.S.G., Rhode, K., 
+Tobon-Gomez, C., Vorontsov, E., Meakin, J.A., Ourselin, S., Wiesenfarth, M., 
+Arbeláez, P., Bae, B., Chen, S., Daza, L., Feng, J., He, B., Isensee, F., Ji, Y., Jia, F., 
+Kim, I., Maier-Hein, K., Merhof, D., Pai, A., Park, B., Perslev, M., Rezaiifar, R., 
+Rippel, O., Sarasua, I., Shen, W., Son, J., Wachinger, C., Wang, L., Wang, Y., 
+Xia, Y., Xu, D., Xu, Z., Zheng, Y., Simpson, A.L., Maier-Hein, L., Cardoso, M.J., 
+2022. The Medical Segmentation Decathlon. Nat. Commun. 13, 4128. http://dx.
+doi.org/10.1038/s41467-022-30695-9, arXiv:2106.05735.
+Bustos, A., Pertusa, A., Salinas, J.-M., De La Iglesia-Vaya, M., 2020. Padchest: A large 
+chest x-ray image dataset with multi-label annotated reports. Med. Image Anal. 66, 
+101797.
+Chen, J., Lu, Y., Yu, Q., Luo, X., Adeli, E., Wang, Y., Lu, L., Yuille, A.L., Zhou, Y., 2021. 
+Transunet: Transformers make strong encoders for medical image segmentation. 
+arXiv preprint arXiv:2102.04306.
+Codella, N., Rotemberg, V., Tschandl, P., Emre Celebi, M., Dusza, S., Gutman, D., 
+Helba, B., Kalloo, A., Liopyris, K., Marchetti, M., Kittler, H., Halpern, A., 2019. 
+Skin lesion analysis toward melanoma detection 2018: A challenge hosted by the 
+international skin imaging collaboration (ISIC). http://dx.doi.org/10.48550/arXiv.
+1902.03368, ArXiv E-Prints, arXiv:1902.03368.
+Gaggion, N., Mosquera, C., Mansilla, L., Saidman, J.M., Aineseder, M., Milone, D.H., 
+Ferrante, E., 2024. CheXmask: a large-scale dataset of anatomical segmentation 
+masks for multi-center chest x-ray images. Sci. Data (ISSN: 2052-4463) 11, http:
+//dx.doi.org/10.1038/s41597-024-03358-1.
+Gardner, M., 1970. Mathematical games. Sci. Am. 222, 132–140.
+Gilpin, W., 2019. Cellular automata as convolutional neural networks. Phys. Rev. E 
+100, 032402.
+Gonzalez, C., Gotkowski, K., Bucher, A., Fischbach, R., Kaltenborn, I., Mukhopad-
+hyay, A., 2021. Detecting when pre-trained nnu-net models fail silently for covid-19 
+lung lesion segmentation. In: Medical Image Computing and Computer Assisted 
+Intervention–MICCAI 2021: 24th International Conference, Strasbourg, France, 
+September 27–October 1, 2021, Proceedings, Part VII 24. Springer, pp. 304–314.
+Ioffe, S., Szegedy, C., 2015. Batch normalization: Accelerating deep network training by 
+reducing internal covariate shift. In: International Conference on Machine Learning. 
+pmlr, pp. 448–456.
+Isensee, F., Jaeger, P.F., Kohl, S.A., Petersen, J., Maier-Hein, K.H., 2021. NnU-Net: a 
+self-configuring method for deep learning-based biomedical image segmentation. 
+Nature Methods 18, 203–211.
+Jaff, D., Leatherman, S., Tawfik, L., 2019. Improving quality of care in conflict settings: 
+access and infrastructure are fundamental. Int. J. Qual. Heal. Care.
+Kalkhof, J., González, C., Mukhopadhyay, A., 2023. Med-nca: Robust and lightweight 
+segmentation with neural cellular automata. In: International Conference on 
+Information Processing in Medical Imaging. Springer, pp. 705–716.
+Kalkhof, J., Mukhopadhyay, A., 2023. M3D-NCA: Robust 3D segmentation with built-
+in quality control. In: International Conference on Medical Image Computing and 
+Computer-Assisted Intervention. Springer, pp. 169–178.
+Kalkhof, J., Ranem, A., Mukhopadhyay, A., 2024. Unsupervised training of neural 
+cellular automata on edge devices. arXiv:2407.18114.
+Lin, T.-Y., Goyal, P., Girshick, R., He, K., Dollár, P., 2017. Focal loss for dense object 
+detection. In: Proceedings of the IEEE International Conference on Computer Vision. 
+pp. 2980–2988.
+Mordvintsev, A., Randazzo, E., Niklasson, E., Levin, M., 2020. Growing neural cellular 
+automata. Distill 5, e23.
+Paszke, A., Gross, S., Massa, F., Lerer, A., Bradbury, J., Chanan, G., Killeen, T., 
+Lin, Z., Gimelshein, N., Antiga, L., Desmaison, A., Kopf, A., Yang, E., DeVito, Z., 
+Raison, M., Tejani, A., Chilamkurthy, S., Steiner, B., Fang, L., Bai, J., Chintala, S., 
+2019. Pytorch: An imperative style, high-performance deep learning library. In: 
+Wallach, H., Larochelle, H., Beygelzimer, A., d’Alché Buc, F., Fox, E., Garnett, R. 
+(Eds.), Advances in Neural Information Processing Systems, vol. 32. Curran 
+Associates, Inc., URL https://proceedings.neurips.cc/paper_files/paper/2019/file/
+bdbca288fee7f92f2bfa9f7012727740-Paper.pdf.
+Perez-Garcia, F., 2019. fepegar/unet: First published version of PyTorch U-Net. http:
+//dx.doi.org/10.5281/zenodo.3522306.
+Pérez-García, F., Sparks, R., Ourselin, S., 2021. TorchIO: a python library for efficient 
+loading, preprocessing, augmentation and patch-based sampling of medical images 
+in deep learning. Comput. Methods Programs Biomed. 208, 106236.
+Rendell, P., 2011. A universal turing machine in conway’s game of life. In: 2011 
+International Conference on High Performance Computing & Simulation. IEEE, pp. 
+764–772.
+Ronneberger, O., Fischer, P., Brox, T., 2015. U-net: Convolutional networks for 
+biomedical image segmentation. In: International Conference on Medical Image 
+Computing and Computer-Assisted Intervention. Springer, pp. 234–241.
+Sandler, M., Zhmoginov, A., Luo, L., Mordvintsev, A., Randazzo, E., y Arcas, B.A., 2020. 
+Image segmentation via cellular automata. CoRR, arXiv:2008.04965.
+Simpson, A.L., Antonelli, M., Bakas, S., Bilello, M., Farahani, K., van Ginneken, B., 
+Kopp-Schneider, A., Landman, B.A., Litjens, G., Menze, B.H., Ronneberger, O., 
+Summers, R.M., Bilic, P., Christ, P.F., Do, R.K.G., Gollub, M., Golia-Pernicka, J., 
+Heckers, S., Jarnagin, W.R., McHugo, M., Napel, S., Vorontsov, E., Maier-Hein, L., 
+Cardoso, M.J., 2019. A large annotated medical image dataset for the development 
+and evaluation of segmentation algorithms. CoRR, arXiv:1902.09063.
+Tschandl, P., Rosendahl, C., Kittler, H., 2018. The HAM10000 dataset, a large collection 
+of multi-source dermatoscopic images of common pigmented skin lesions. Sci. Data 
+5, 1–9.
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł., 
+Polosukhin, I., 2017. Attention is all you need. Adv. Neural Inf. Process. Syst. 30.
+Vellido, A., 2020. The importance of interpretability and visualization in machine 
+learning for applications in medicine and health care. Neural Comput. Appl. 32, 
+18069–18083.
+Von Neumann, J., Burks, A.W., 1966. Theory of self-reproducing automata.
+Wang, X., Peng, Y., Lu, L., Lu, Z., Bagheri, M., Summers, R.M., 2017. Chestx-
+ray8: Hospital-scale chest x-ray database and benchmarks on weakly-supervised 
+classification and localization of common thorax diseases. In: Proceedings of the 
+IEEE Conference on Computer Vision and Pattern Recognition. pp. 2097–2106.
+Wolfram, S., 1983. Statistical mechanics of cellular automata. Rev. Modern Phys. 55, 
+601.
+Wulff, N., Hertz, J.A., 1992. Learning cellular automaton dynamics with neural 
+networks. Adv. Neural Inf. Process. Syst. 5.
+Medical Image Analysis 103 (2025) 103601 
+11 

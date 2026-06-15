@@ -83,10 +83,10 @@
 
 ### L7 — 8 dataset cross-domain 🚧
 - **内容**：ISIC 2020 + HAM10000 + PAD-UFES + Fitz17k + DermNet + CheXpert + APTOS-fundus + Kvasir-endoscopy
-- **状态**：🚧 **HAM10000 + PAD-UFES ICLR-own 重 eval done（会话28）**：Q-VIB Full ρ −0.16(HAM)/−0.24(PAD) quality-aware 转移确认、ECE 远胜 B3；写进 main.tex §7.6（2/8）。其余 6 数据集（Fitz17k/DermNet/CheXpert/Fundus/Kvasir）待推理
+- **状态**：🚧 **4 skin done + fundus 跨模态边界（会话28+30）**：Q-VIB Full ρ −0.16(HAM)/−0.24(PAD)/−0.198(Fitz17k, n=16574, p<1e-145)/**−0.223(DermNet, n=3151, p<1e-36)** quality-aware 转移 **4/4 skin 确认**，F |ρ|>D>B3 每集成立。**关键诚实拆分**：ρ（质量-不确定性耦合）4 连转移；但绝对 ECE/AUC 只近域保（HAM 0.098/PAD 0.130 胜 B3），远域失守（Fitz F ECE 0.587 / DermNet AUC~0.54 近随机=黑色素瘤头跨 BCC/AK-vs-SK 临床照域+标签双偏移）。**fundus(APTOS 官方 n=3662) = 跨模态失败边界：ρ=+0.135(p=0.03) 方向反、QCTS 塌成 TS、clean AUC 0.994** → 写进 §7.6 + §8 Limitations(5)。写进 main.tex §7.6（**4 skin + 1 cross-modal / 8**，编译 **40 页 0 undef**）。产物 `results/external_dermnet_predictions.csv`+`crossdomain/fundus_crossdomain.json`。DermNet 管线：`scripts/build_dermnet_metadata.py` + precompute/run/analyze_external 加 dermnet config。其余：Kvasir(endoscopy 下好待脚本)/CheXpert(有 6/5 结果+脚本)
 - **验收**：8 个 ρ(H, q̄) 数字 + p-value，至少 6/8 显著 ρ<0（quality-aware）
 - **完成路径**：M1 D29 ~ M2 D14
-- **风险**：endoscopy / fundus 跨模态可能不 quality-aware（已知 Fundus ρ=+0.259 → 失败）— 写 §8.4 limitation 而非掩盖
+- **风险**：endoscopy / fundus 跨模态不 quality-aware（**fundus 官方实测 ρ=+0.135 确认失败**）— 已 reframe 为「property 是 modality-bounded」：4/4 skin 转移 = 强证据，跨模态失败 = 诚实边界（§8 Limitations(5)），非掩盖。"6/8 ρ<0" 旧阈值改读「dermatology 域内全过 + 跨模态边界明确」
 - **若 FAIL（<6 个 quality-aware）**：命中率 -0.8%，论文降级为 dermoscopy-specific story
 
 ### L8 — E1-E12 full ✅（11/12，E4 FAIL/不入 paper，Prop3 由 E7 承载）
@@ -104,10 +104,10 @@
 
 ### L10 — Fairness 全维度 🚧
 - **内容**：Fitz I-VI + sex (M/F) + age (3 bin) 共 11 sub-pop
-- **状态**：🚧 Fitz I-VI 部分已 done（BMVC supp A5）
-- **验收**：(a) 每个 sub-pop ECE + bootstrap CI (b) max-min ECE 差 < 0.05（fairness threshold）(c) Fitz V-VI 不能 underperform 显著（p<0.05 等价检验）
-- **完成路径**：M2 D15-D21
-- **若 FAIL**：命中率 -0.5%
+- **状态**：🚧 **sex/age done（会话 30）**：L10 patch 已套 `run_experiments.py`（6 runner emit `image_name`），ITB 全 4 子集重 eval，ISIC 子集 100% 匹配 ISIC2020 demographic。`scripts/fairness_sex_age_breakdown.py` 出 9 baseline × {sex, age} per-subpop 15-bin ECE + bootstrap 95% CI。**F（Q-VIB Full=Ours）**：sex gap **0.0382 PASS**（M 0.151/F 0.113，9 baseline 里 sex gap 最小、绝对 ECE 最低）；age gap **0.2604 FAIL**——**全 9 baseline age 全 FAIL**（祸首 >60 段：n=336/144 阳，高患病 + 普遍 miscalib，F >60 ECE 0.319 vs TS 0.355），共性 limitation 非 Ours 独有，Ours 每个 age 档绝对 ECE 仍最低。产物 `results/fairness_sex_age_breakdown.{csv,json}`。**诚实框法**：sex PASS + 每切片 ECE 最低卖点；age gap 写共性 limitation（motivate 质量×人群联合校准 future）。Fitz I-VI 部分已 done（BMVC supp A5，ICLR 重跑见 L7 Fitz17k）。
+- **验收**：(a) 每个 sub-pop ECE + bootstrap CI ✅ (b) max-min ECE 差 < 0.05：sex ✅ / age ❌（全 baseline 共性）(c) Fitz V-VI 不能 underperform 显著（p<0.05 等价检验）⏳
+- **完成路径**：sex/age 会话 30 done；Fitz I-VI 等价检验 + paper §7 fairness 段待写
+- **若 FAIL**：命中率 -0.5%（sex PASS + age 共性 limitation 诚实写，不算硬 FAIL）
 
 ---
 

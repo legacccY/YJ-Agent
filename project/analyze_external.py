@@ -38,6 +38,8 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 PRED_FILES = {
     "HAM10000":  RESULTS_DIR / "external_ham10000_predictions.csv",
     "PAD-UFES":  RESULTS_DIR / "external_pad_ufes_predictions.csv",
+    "Fitz17k":   RESULTS_DIR / "external_fitz17k_predictions.csv",
+    "DermNet":   RESULTS_DIR / "external_dermnet_predictions.csv",
 }
 
 BASELINE_DISPLAY = {

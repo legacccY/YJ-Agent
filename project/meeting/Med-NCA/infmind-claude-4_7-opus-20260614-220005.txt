@@ -1,0 +1,229 @@
+[Claude 4.7 Opus · 2026-06-14T13:58:12.997Z]
+
+SCP-JEPA：稳定细胞预测器驱动的可解释联合嵌入世界模型
+从「NCA 替代 ViT」到「NCA 解锁 ViT 做不到的事」
+配套：CheXWorld（CVPR 2024）+ MED-NCA（MedIA 2025）+ Med-NCA 复现报告
+目标会议：CVPR / ICCV / NeurIPS
+最后更新：2026-06-14
+核心叙事（一句话版）
+ViT predictor 给你一个黑盒预测。NCA predictor 给你预测 + 不确定性 + 可解释轨迹 + 随时推理。且在适当稳定化后，下游分数不输 ViT。
+0.1 为什么不是原来的 NCA-JEPA 方案
+原方案（NCA-JEPA pilot）验证的假设是「NCA predictor 比 ViT predictor 更好（省参 + 等变）」。经过批判性审视，这个假设存在三个结构性缺陷：
+| 缺陷 | 详情 |
+|---|---|
+| 省参不是痛点 | JEPA 预训练成本大头在 ViT encoder（86M 参数，300 epoch，8 GPU），predictor 省 100× 参数对总成本影响≈0 |
+| 等变优势前提存疑 | ViT + 充足旋转数据增强能学出近似等变性；CheXWorld 的 domain variation modeling 已经在做类似的事 |
+| 稳定性是动力学本质问题 | 复现报告：0/11 前列腺跑满 epoch，同种子不同盆地。Spectral norm 降低放大因子但 128 步链乘法的指数敏感性仍在 |
+结论：不要打「NCA 比 ViT 更好」这场可能打不赢的仗——打「NCA 能做到 ViT 做不到的事」这场仗。
+0.2 NCA 不可替代的三张牌
+这三张牌来自 MED-NCA 和复现报告的实证基础，不是凭空想象：
+| 能力 | NCA predictor | ViT predictor | 证据来源 |
+|---|---|---|---|
+| 內建认知不确定性（Epistemic UQ） | 随机点火 + 10× 推理方差 → 天然质量信号 | ❌ 需额外贝叶斯头 | 复现报告 §5：NQM Spearman ρ=0.47，检出率 1.0 |
+| 可解释推理轨迹（Interpretable rollout） | 每步通道状态可视化，展示预测如何"生长" | ❌ 注意力图粗粒度 | MED-NCA Fig.4：NCA-VIS 通道可视化 |
+| 随时推理（Anytime prediction） | 迭代过程可提前终止，粗糙但快速 | ❌ 全或无 | NCA 的迭代本质（Growing NCA, Mordvintsev et al. 2020） |
+这三张牌构成论文的 moat——即使下游分数略低于 ViT predictor（≤3 AUROC），审稿人也无法否认这些能力 ViT 没有。
+本方案只回答三个问题（不多做）
+Pillar 1 — 稳定性：经过系统稳定化（spectral norm + EMA anchoring + deterministic mode）的 NCA predictor，在 JEPA 框架下能否稳定训练、不塌缩、不出现双峰盆地？
+Pillar 2 — 表示质量：稳定化后的 NCA predictor 在下游 linear probe 上是否不显著差于 ViT predictor（非劣效性检验，ΔAUROC > -3）？
+Pillar 3 — 独有能力（Moat）：NCA predictor 的 (a) 方差是否编码有意义的预测不确定性？(b) 通道状态是否形成可解释的解剖结构？(c) 随时推理的步数-质量 trade-off 曲线是否平滑可用？
+⚠️ 本方案不追 SOTA、不上 3D、不做多模态。只要信号 + 独有能力成立，不要终版数字。
+⚠️ 复用 I-JEPA 官方代码库 + CheXWorld 预训练 pipeline，只换 predictor 模块。
+Feasibility Pre-Check（先花 48 GPU 小时验证危险假设）
+⚠️ 这是本方案最重要的模块。 在投入 4 周主实验前，用极小规模实验验证最危险的 4 个假设。任一红灯 → 先修再进，不硬推。
+2.1 四道预检
+| # | 假设 | 检法 | 时间 | 绿灯标准 |
+|---|---|---|---|---|
+| PC-1 | NCA 训纯预测任务（latent L2 loss）比分割任务（Dice loss）更稳 | ViT-S backbone，NIH ChestX-ray14 子集 10K，跑最简单的 I-JEPA（mask-only，无全局/域建模），NCA predictor 无任何约束，3 seed × 50 epoch | 6h | 3/3 无发散（loss 无 NaN、无 plateau>3 于 >5 epoch）、塌缩 canary 健康。若 0/3 存活 → NCA 连纯预测都稳不住，直接转保底路线 B（§9） |
+| PC-2 | 稳定化三件套（spectral norm + EMA anchor + deterministic）压得住塌缩 | 同 PC-1 设置，加三件套，3 seed × 50 epoch，对比 PC-1 的无约束组 | 6h | 3/3 存活 + loss 轨迹平滑 + 跨 seed 一致性（loss 终点 std<0.1）。若仍不稳 → 加梯度裁剪 + 降低学习率，再试一轮（+6h） |
+| PC-3 | NCA 的推理方差编码了预测质量信号 | 取 PC-2 的冻结 checkpoint，10× 随机推理，计算 per-sample predictor 输出方差 vs 预测 L2 error 的 Spearman ρ | 2h | ρ ≥ 0.3（中等相关），p < 0.05。若 ρ ≈ 0 → 「不确定性」牌打不了，调整叙事重心到可解释性+随时推理 |
+| PC-4 | NCA predictor 下游不掉崖 | PC-2 checkpoint，VinDr-CXR 1% linear probe，对比同条件 ViT predictor baseline | 8h（含 baseline） | ΔAUROC > -5。若差 >5 → 转路线 C（诊断工具叙事，§9） |
+预检总时间：~48 GPU 小时（单卡 RTX 4090），2 天内可完成。
+2.2 预检后的三个决策路径
+PC-1~4 全绿 → 进 Phase 1（稳定性工程 + 三能力验证），风险可控
+PC-1/PC-2 红灯 → 转路线 B（纯稳定性理论论文），NCA-JEPA 作为 case study
+PC-1/PC-2 绿但 PC-4 红灯（下游掉崖）→ 转路线 C（诊断工具叙事）
+PC-1/PC-2 绿但 PC-3 红灯（方差无用）→ 保留 UQ 为次要贡献，主推可解释性
+方法框架：SCP-JEPA
+3.1 整体架构
+与 CheXWorld 共享 backbone（ViT-S, 预训练用 ViT-B），仅替换 predictor 模块：
+Input → Context Encoder (ViT, EMA→Target Encoder) → NCA Predictor → Predicted Target Embedding
+                                                              ↑
+                                                       Latent z (mask/Δ/a)
+NCA predictor 内部结构：
+Input: context features h_x + mask tokens with PE
+  ↓
+For step = 1 to S:
+  Perceive: Conv3×3(h) + identity → 局部邻域感知
+  Update: fc₁(ReLU(fc₀(perceive))) → 残差增量
+  Fire mask: Bernoulli(0.5) → 随机激活
+  Residual: h ← h + fire_mask ⊙ update
+  Re-inject: h[0] ← input_embedding (保持输入锚定)
+Output: predicted target embeddings ĥ_y
+3.2 稳定化三件套（理论依据）
+问题本质：NCA predictor 是一个迭代动力系统 h{t+1} = ht + mt ⊙ fθ(h_t)。当 Jacobian 谱半径在某步超过 1，扰动指数放大。128 步（2 层 × 64 步）的链乘法使即使 ~10⁻⁷ 的 cuDNN 浮点扰动也能在终点造成 ~10² 的差异。
+三件套：
+| 组件 | 机制 | 理论依据 | 实现 |
+|---|---|---|---|
+| Spectral Normalization | 约束每步更新函数的 Lipschitz 常数 < 1 | 压缩映射原理：Banach 不动点定理保证迭代收敛 | torch.nn.utils.spectral_norm 包在 conv/fc 层 |
+| EMA Target Anchoring | EMA target encoder 提供稳定预测目标，防止 predictor 追逐自身漂移 | 与 I-JEPA 原版一致，但在此处额外起到「稳定锚」作用——predictor 不直接拟合自身输出 | 复用 I-JEPA 的 EMA target，momentum 0.996→1.0 |
+| Deterministic Mode | 训练时关掉 cuDNN benchmark、启 deterministic algorithms、固定 fire mask 的 torch.manualseed | 消除 cuDNN/atomic 不确定性，使种子级复现成为可能（复现报告 §4 的直接教训） | cudnn.deterministic=True, cudnn.benchmark=False, usedeterministic_algorithms(True) |
+3.3 三个独有能力的形式化
+能力 1：內建认知不确定性（Built-in Epistemic UQ）
+给定输入 x，运行 predictor K 次（每次 fire mask 不同）
+μy = (1/K) Σk gϕ(hx; z, m_k)
+σy = std({gϕ(hx; z, mk)}_{k=1..K})
+预测不确定性 = ||σ_y||₂  （per-sample predictor 输出方差）
+关联验证：||σ_y||₂ vs 预测 L2 error 的 Spearman ρ。若 ρ ≥ 0.3 → 方差是有效的预测质量信号。
+能力 2：可解释推理轨迹（Interpretable Rollout）
+记录 predictor 内部通道状态 {h^(t)}_{t=1..S}（S 步迭代中每步的隐藏状态）
+用 NCA-VIS 风格可视化每步的通道激活
+目标：观察到从"模糊全局猜测" → "逐步细化局部解剖结构"的涌现过程
+定性分析 + 可能的用户研究（2-3 位放射科医生评估轨迹是否具有解剖学意义）。
+能力 3：随时推理（Anytime Prediction）
+质量曲线：Q(k) = 在 k 步提前终止时的预测质量（vs 满步预测的 cosine similarity）
+计算 Q(1), Q(2), Q(4), Q(8), Q(16), Q(32), Q(64)
+目标：Q(k) 单调递增且前期快速收敛，展示"可牺牲精度换速度"的灵活性
+对照臂设计（4 臂，控变量）
+| 臂 | predictor | 步数 | 验什么 |
+|---|---|---|---|
+| A0 | ViT predictor（I-JEPA 原版） | 1（单次前向） | 基线：管线 sanity + 下游上限 |
+| A1 | vanilla NCA predictor（无约束） | S=64 | 反例：NCA 直接搬入 JEPA 是否依然塌缩（预期：比分割任务稳但仍可能不稳） |
+| A2 | 稳定 NCA predictor（三件套） | S=64 | Pillar 1+2 主臂：稳定化是否有效 + 下游是否不劣于 A0 |
+| A3 | 稳定 NCA predictor（三件套，同 A2）| S=64 | Pillar 3 主臂：在 A2 的 checkpoint 上评估三能力（不确定性+可解释性+随时推理） |
+A3 和 A2 是同一个模型，不做独立的训练臂——A2 训完后直接评估三能力。
+所有 NCA 臂 predictor 参数预算 ≤ A0（ViT predictor 参数量）。
+A1 可选（时间紧可砍），但保留能讲「问题→修复」的干净故事。
+量化指标
+Pillar 1（稳定性）
+| 指标 | 定义 | 绿灯标准 |
+|---|---|---|
+| Loss 轨迹 | 无 NaN、无 flat-high（>3 持续 >5 epoch） | 3/3 seed 全程健康 |
+| 塌缩 canary | token 嵌入 std / 有效秩 / KoLeo 熵 | 全程高于阈值（阈值从 A0 正常训练的 50% 分位取） |
+| 跨 seed 一致性 | 3 seed 终点 loss 的 std | < 0.1 |
+| 盆地双峰检测 | ep1 loss 的分布（复现报告 §3.3 的 signature） | 无双峰——所有 seed ep1 loss 在同一簇 |
+Pillar 2（表示质量 — 非劣效性）
+| 指标 | 定义 | 绿灯标准 |
+|---|---|---|
+| Linear probe AUROC | VinDr-CXR, RSNA, ChestX-ray14, CheXpert @ 1%/10%/100% | A2 的 AUROC 均值 - A0 的 AUROC 均值 > -3（非劣效性边界） |
+| 旋转 OOD | {15°,30°,90°} 旋转测试图的下游 AUROC | A2 下降幅度 ≤ A0 下降幅度（副指标，不设硬门） |
+Pillar 3（独有能力）
+| 指标 | 定义 | 绿灯标准 |
+|---|---|---|
+| UQ 质量 | predictor 方差 vs 预测 L2 error 的 Spearman ρ | ρ ≥ 0.3, p < 0.05 |
+| 可视化质量 | 通道状态是否呈现可解释的解剖结构 | 非正式定性评估（≥2 人认可） |
+| 随时推理曲线 | Q(k) vs k 的单调性和收敛速度 | Q(8) ≥ 0.7 × Q(64)（8 步内收敛到 70% 质量） |
+Silent-bug 哨兵（强制，继承原 Pilot + 复现报告教训）
+跑任何实验前，以下 8 条必须先过。任一红灯 = 管线 bug，先修再跑。
+归一化 assert：log 喂入张量的 mean/std == 期望 NORM 统计；raw 值溜进来直接 raise
+EMA sanity：target ≠ context（momentum 在动）；target encoder 不吃梯度
+塌缩 canary：嵌入 std < 阈值 → flag（不是「loss 真好」）
+overfit-one-batch：全跑前，模型须把单 batch loss 压到≈0；压不下 = 代码 bug，立即 abort
+z-shuffle 对照：打乱 mask/条件 z → 下游应掉。不掉 = z 没接进去
+Determinism 留痕：记录 cudnn.deterministic / benchmark / seed
+静默发散检测（复现报告 §B.3）：epoch 10 后 loss>3 且持续 → 自动标记为 dead，取消后续
+预测任务 overfit（新增）：对单张图反复预测，NCA predictor 应在 10 个 epoch 内将 L2 loss 压到 < 0.01。压不下 → NCA 连纯预测都学不动，检查 predictor 架构
+实验排期
+Phase 0：Feasibility Pre-Check（Day 1–2）
+| 天 | 活 |
+|---|---|
+| D1 上午 | 拉 I-JEPA 官方库，搭最小 pipeline（ViT-S + 10K NIH 子集 + mask-only JEPA）；建哨兵 1-8 |
+| D1 下午 | 跑 PC-1（无约束 NCA predictor，3 seed × 50 epoch） |
+| D2 上午 | 跑 PC-2（稳定化三件套，3 seed × 50 epoch）；如果红灯，加梯度裁剪+降 lr 再一轮 |
+| D2 下午 | 跑 PC-3（方差 vs PE 相关）和 PC-4（1% linear probe vs ViT baseline） |
+| D2 晚 | Pre-Check 判定会议 → 绿/黄/红路径决策 |
+Phase 1：稳定性工程 + 下游基线（Day 3–14）
+| 天 | 活 |
+|---|---|
+| D3–4 | 实现完整稳定化 NCA predictor 模块（spectral norm + EMA anchor + deterministic mode + re-inject）；接 FiLM 条件注入；单元测试 |
+| D5–6 | 跑 A1（无约束 NCA）× 3 seed，记录塌缩 signature；确认 A1 确实比 A2 差（故事需要） |
+| D7–10 | 跑 A2（稳定 NCA）× 3 seed @ ViT-S/50K/100 epoch；逐 epoch 记录 Pillar 1 全指标 |
+| D11 | Gate 1 判定（稳定性） |
+| D12–14 | 跑 A0（ViT predictor baseline）× 3 seed；下游 linear probe 1%/10%/100%（VinDr-CXR, RSNA, ChestX-ray14, CheXpert） |
+Phase 2：三能力验证（Day 15–21）
+| 天 | 活 |
+|---|---|
+| D15–16 | Pillar 2 判定：A2 vs A0 下游对比 → Gate 2 判定（非劣效性） |
+| D17–18 | Pillar 3(a)：UQ 质量——方差 vs PE 相关，MC dropout baseline 对比 |
+| D19 | Pillar 3(b)：可解释性——通道状态可视化，选取 5-10 个典型案例 |
+| D20 | Pillar 3(c)：随时推理——步数-质量曲线 |
+| D21 | Gate 3 判定（三能力至少两项达标） |
+Phase 3：升级 + 写作（Day 22–30）
+| 天 | 活 |
+|---|---|
+| D22–24 | 升级到 ViT-B backbone + 完整 CheXWorld 数据（~0.5M）+ 300 epoch；复跑 A0 和 A2 |
+| D25–27 | 完整下游评估（8 benchmark） + 旋转 OOD + 消融实验 |
+| D28–30 | 论文写作初稿 |
+决策门（预定义 if-then，失败不临时改主意）
+Gate 0 — Feasibility Pre-Check（Day 2）
+条件：PC-1~4 全部绿灯。
+✅ 全绿 → 进 Phase 1
+🟡 PC-1/PC-2 红灯 → 🔴 RED：转路线 B（纯稳定性理论论文，§9）
+🟡 PC-1/PC-2 绿但 PC-4 红灯（ΔAUROC < -5）→ 🟡 AMBER：转路线 C（诊断工具叙事，§9）
+🟡 PC-3 红灯（方差无预测力）→ UQ 降级为次要贡献，主推可解释性+随时推理
+Gate 1 — Pillar 1 稳定性（Day 11）
+条件（A2，3 seed）：3/3 跑完无发散无 NaN 且 塌缩 canary 全程健康 且 跨 seed loss std < 0.1 且 无盆地双峰。
+✅ 过 → 进 Gate 2
+❌ 不过 → 🔴 RED：转路线 B。即使三件套也救不住 → 写成"我们发现 NCA-JEPA 的根本稳定性上限"，本身是贡献。
+Gate 2 — Pillar 2 非劣效性（Day 16）
+条件（A2 vs A0，3 seed）：A2 在所有 benchmark 的 AUROC 均值 - A0 均值 > -3（非劣效性边界）。
+✅ 过 → 进 Gate 3（理想加分：A1 塌缩而 A2 稳定，故事干净）
+❌ 不过但差距在 3-5 之间 → 🟡 AMBER：放宽非劣效性边界到 -5，强化三能力叙事（「少 100× 参数的 predictor 接近 ViT 性能 + 三大额外能力」）
+❌ 不过且差距 >5 → 🔴 RED：转路线 C（诊断工具叙事）
+Gate 3 — Pillar 3 独有能力（Day 21）
+条件：Pillar 3(a)(b)(c) 中至少两项达标。
+✅ 过 → 🟢 GREEN：完整论文推进（升级 ViT-B + 0.5M 数据 + 300 epoch）
+❌ 仅一项达标 → 🟡 AMBER：以达标的那项为核心卖点，另外两项作为补充
+❌ 零项达标 → 🔴 RED：转路线 B（NCA-JEPA 作为稳定性分析的 case study）
+灾难预案（三条退路，不白做）
+| 路径 | 触发条件 | 论文方向 | 目标会议 |
+|---|---|---|---|
+| 路线 B：稳定性理论 | Gate 0 PC-1/PC-2 红灯 或 Gate 1 红灯 或 Gate 3 零能力 | 「迭代预测器在自监督学习中的稳定性：表征、分析与修复」——NCA-JEPA 作为主要 case study。核心贡献是稳定性问题的系统表征+理论分析+修复方案 | NeurIPS / ICLR |
+| 路线 C：诊断工具 | Gate 0 PC-4 红灯 或 Gate 2 红灯（Δ>5） | 「当世界模型预测失败时：用细胞预测器可视化联合嵌入的盲区」——NCA predictor 即使不准，其通道状态可视化可以诊断 ViT predictor 的几何/解剖盲区 | CVPR / ECCV |
+| 路线 D：轻量推理 | 三能力中仅「随时推理」达标，且下游不掉崖 | 「随时推理的世界模型：用细胞预测器实现自适应计算」——主打 anytime prediction 的效率优势 + 边缘部署 | MICCAI / MIDL |
+算力预算
+| 阶段 | 卡型 | 卡数 | 时间 |
+|---|---|---|---|
+| Phase 0（Pre-Check） | RTX 4090 | 1 | 2 天 |
+| Phase 1（ViT-S/50K/100ep） | RTX 4090 | 4（并行 seed+臂） | 12 天 |
+| Phase 2（三能力评估） | RTX 4090 | 1 | 6 天 |
+| Phase 3（ViT-B/0.5M/300ep） | RTX 4090 | 8 | 3 天 |
+总计：~4 周，~300 GPU·天。你有 ≥4 卡数天的预算绰绰有余。
+与现有工作的定位
+| 工作 | 与本方案的关系 |
+|---|---|
+| I-JEPA (Assran et al., 2023) | 基础框架——复用其 JEPA pipeline + EMA target |
+| CheXWorld (Yue et al., CVPR 2024) | 医学 JEPA 的 SOTA baseline——复用其预训练数据/任务，我们换 predictor |
+| MED-NCA (Kalkhof et al., MedIA 2025) | NCA 分割的 SOTA——复用其 NCA 架构 + NCA-VIS 可视化 + NQM 思想 |
+| MC Dropout (Gal & Ghahramani, 2016) | UQ baseline——NCA 的随机点火类似于内置的 MC dropout，但我们的是架构原生而非外挂 |
+| Efficient ViT / Edge Deployment | 不直接竞争——我们的主贡献不是效率，是可解释+不确定+anytime 三大能力 |
+| Equivariant SSL (Dangovski et al., ICLR 2022) | 等变表征学习——NCA 的等变性是自然涌现的，不需要显式的等变损失 |
+本方案的独特位置：首次将迭代细胞式预测器引入 JEPA 框架，并且不追求 SOTA 而是展示 ViT predictor 不具备的新能力（不确定性、可解释轨迹、随时推理）。
+反跑偏红线
+只验证 3 个 pillar + 3 个能力，不顺手加任务/加模态
+Pre-Check 不过不进 Phase 1
+决策门数字达不到就按预案走，不临时找理由续命
+即使最终走路线 B/C/D，Phase 0 的产物仍然可复用，不算白做
+下游评估用「只评 checkpoint」方式（复现报告规矩），不重训
+所有 run 记录 seed + cudnn flags + job ID，确保可追溯
+附录 A：Pre-Check 的具体实现指引
+PC-1: 无约束 NCA predictor, 3 seed
+PREDICTOR=nca_vanilla STEPS=64 STABILIZE=none SEEDS="42,43,44" EPOCHS=50
+python precheck_pc1.py
+PC-2: 稳定化三件套, 3 seed
+PREDICTOR=ncastable STEPS=64 STABILIZE="spectralnorm+ema_anchor+deterministic" SEEDS="42,43,44" EPOCHS=50
+python precheck_pc2.py
+PC-3: 方差 vs PE 相关性
+CKPT=checkpoints/pc2/seed42/ep50.pt K=10
+python precheckpc3variance.py --ckpt $CKPT --k $K
+PC-4: 1% linear probe
+CKPTNCA=checkpoints/pc2/seed42/ep50.pt CKPTVIT=checkpoints/a0/seed42/ep50.pt
+python precheckpc4probe.py --ncackpt $CKPTNCA --vitckpt $CKPTVIT --data_ratio 0.01
+附录 B：与审稿人预对峙
+| 审稿人可能的攻击 | 预判回应 |
+|---|---|
+| "只是把 predictor 换了，novelty 不够" | 换 predictor 不是贡献——贡献是 (1) 首次表征并修复迭代预测器在 JEPA 中的稳定性问题，(2) 展示了 ViT predictor 不具备的三项能力。这些能力来自 NCA 的架构本质，不是调参能获得的 |
+| "下游分数没超过 ViT predictor" | 本工作的目标不是超越 ViT，而是展示在不显著降低性能的前提下，NCA predictor 额外提供不确定性、可解释性和随时推理。这是 capability paper，不是 SOTA paper |
+| "不确定性不就是 MC dropout 吗" | 有相似性但本质不同：MC dropout 是外挂的（训练后加 dropout），NCA 的随机点火是训练和推理原生一体的。我们会在实验里对标 MC dropout baseline |
+| "稳定性方案不就是 spectral norm + 确定性模式吗，太简单" | 简单的方案能解决一个此前被忽视的系统性问题，这恰恰是好论文的特征。我们提供了从动力系统角度的理论分析，解释为什么这三件套是必要且充分的 |
+| "为什么不用 NCA 替代 encoder 而只是 predictor" | NCA 的迭代本质使其不适合做 encoder（延迟高、不适合大批量预训练）。但在 predictor 位置，其局部等变性和随机性恰好转化为三项独有能力。encoder 的 ViT 贡献表示质量，predictor 的 NCA 贡献新能力——两者互补 |

@@ -72,6 +72,34 @@ DATASET_CFG = {
         ],
         "img_ext":    ".png",
     },
+    # Fitzpatrick17k: clinical (non-dermoscopy) photos, lives in data/raw not data/external.
+    # Cross-domain L7: melanoma = positive (3 label variants), images named <md5hash>.jpg.
+    "fitz17k": {
+        "root":       Path("D:/YJ-Agent/data/raw/fitzpatrick17k"),
+        "meta_csv":   Path("D:/YJ-Agent/data/raw/fitzpatrick17k/fitzpatrick17k.csv"),
+        "img_col":    "md5hash",
+        "label_col":  "label",
+        "positive":   {"melanoma", "malignant melanoma", "superficial spreading melanoma ssm"},
+        "malignant":  {"melanoma", "malignant melanoma", "superficial spreading melanoma ssm",
+                       "basal cell carcinoma", "squamous cell carcinoma"},
+        "img_dirs":   [Path("D:/YJ-Agent/data/raw/fitzpatrick17k/images")],
+        "img_ext":    ".jpg",
+    },
+    # DermNet: clinical (non-dermoscopy) atlas. Malignant-vs-benign neoplasm proxy:
+    # AK/BCC class = positive(1), Seborrheic-Keratoses class = benign(0). Melanoma/nevi
+    # mixed folder + 20 inflammatory classes excluded (see build_dermnet_metadata.py).
+    # image_id = path relative to dermnet root (includes .jpg) -> img_ext "" so find_image
+    # resolves root/<image_id> directly.
+    "dermnet": {
+        "root":       DATA_DIR / "dermnet",
+        "meta_csv":   DATA_DIR / "dermnet" / "dermnet_metadata.csv",
+        "img_col":    "image_id",
+        "label_col":  "label",
+        "positive":   {"Actinic Keratosis Basal Cell Carcinoma and other Malignant Lesions"},
+        "malignant":  {"Actinic Keratosis Basal Cell Carcinoma and other Malignant Lesions"},
+        "img_dirs":   [DATA_DIR / "dermnet"],
+        "img_ext":    "",
+    },
 }
 
 
@@ -116,7 +144,8 @@ def build_index(cfg: dict) -> pd.DataFrame:
         if img_path is None:
             missing += 1
             continue
-        target = int(dx == cfg["positive"])
+        pos = cfg["positive"]
+        target = int(dx in pos) if isinstance(pos, (set, list, tuple)) else int(dx == pos)
         target_mal = int(dx in cfg["malignant"])
         rows.append({
             "image_id":       iid,
@@ -260,7 +289,8 @@ def run(dataset: str):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", required=True, choices=["ham10000", "pad_ufes"])
+    parser.add_argument("--dataset", required=True,
+                        choices=["ham10000", "pad_ufes", "fitz17k", "dermnet"])
     args = parser.parse_args()
     run(args.dataset)
 

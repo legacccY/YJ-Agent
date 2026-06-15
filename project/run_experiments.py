@@ -161,6 +161,7 @@ def run_b3_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
     for subset in sorted(itb["subset"].unique()):
         sub = itb[itb["subset"] == subset]
         all_probs, all_targets, all_qbar = [], [], []
+        all_ids = []
         for _, row in tqdm(sub.iterrows(), total=len(sub), desc=subset, leave=False):
             img_bgr = cv2.imread(str(row["image_path"]))
             if img_bgr is None:
@@ -174,6 +175,7 @@ def run_b3_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
             all_probs.append(prob)
             all_targets.append(int(row["target"]))
             all_qbar.append(float(row["qbar"]))
+            all_ids.append(str(row["isic_id"]))
 
         if not all_probs:
             continue
@@ -189,6 +191,7 @@ def run_b3_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
         for i in range(len(targets_arr)):
             pred_rows.append({
                 "baseline": "A", "baseline_name": "EfficientNet-B3 (Direct)", "subset": subset,
+                "image_name": all_ids[i],
                 "prob_pos": float(probs_arr[i, 1]), "target": int(targets_arr[i]),
                 "qbar": float(qbar_arr[i]), "kl_term": 0.0, "prior_var": 0.0,
             })
@@ -210,6 +213,7 @@ def run_ts_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
     for subset in sorted(itb["subset"].unique()):
         sub = itb[itb["subset"] == subset]
         all_probs, all_targets, all_qbar = [], [], []
+        all_ids = []
         for _, row in tqdm(sub.iterrows(), total=len(sub), desc=subset, leave=False):
             img = cv2.imread(str(row["image_path"]))
             if img is None:
@@ -225,6 +229,7 @@ def run_ts_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
             all_probs.append(probs[0].cpu().numpy())
             all_targets.append(int(row["target"]))
             all_qbar.append(float(row["qbar"]))
+            all_ids.append(str(row["isic_id"]))
 
         if not all_probs:
             continue
@@ -239,6 +244,7 @@ def run_ts_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
         for i in range(len(targets_arr)):
             pred_rows.append({
                 "baseline": "TS", "baseline_name": cfg["name"], "subset": subset,
+                "image_name": all_ids[i],
                 "prob_pos": float(probs_arr[i, 1]), "target": int(targets_arr[i]),
                 "qbar": float(qbar_arr[i]), "kl_term": 0.0, "prior_var": 0.0,
             })
@@ -258,6 +264,7 @@ def run_focal_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
     for subset in sorted(itb["subset"].unique()):
         sub = itb[itb["subset"] == subset]
         all_probs, all_targets, all_qbar = [], [], []
+        all_ids = []
 
         for _, row in tqdm(sub.iterrows(), total=len(sub), desc=subset, leave=False):
             img = cv2.imread(str(row["image_path"]))
@@ -277,6 +284,7 @@ def run_focal_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
             all_probs.append(probs)
             all_targets.append(int(row["target"]))
             all_qbar.append(float(row["qbar"]))
+            all_ids.append(str(row["isic_id"]))
 
         if not all_probs:
             continue
@@ -294,6 +302,7 @@ def run_focal_baseline(itb: pd.DataFrame, pred_rows: list) -> list[dict]:
         for i in range(len(targets_arr)):
             pred_rows.append({
                 "baseline": "H", "baseline_name": cfg["name"], "subset": subset,
+                "image_name": all_ids[i],
                 "prob_pos": float(probs_arr[i, 1]), "target": int(targets_arr[i]),
                 "qbar": float(qbar_arr[i]), "kl_term": 0.0, "prior_var": 0.0,
             })
@@ -311,6 +320,7 @@ def run_qvib_baseline(key: str, cfg: dict, itb: pd.DataFrame, pred_rows: list) -
         sub = itb[itb["subset"] == subset]
         all_probs, all_targets, all_qbar = [], [], []
         all_kl, all_prior_var = [], []
+        all_ids = []
 
         for _, row in tqdm(sub.iterrows(), total=len(sub), desc=subset, leave=False):
             img = cv2.imread(str(row["image_path"]))
@@ -332,6 +342,7 @@ def run_qvib_baseline(key: str, cfg: dict, itb: pd.DataFrame, pred_rows: list) -
             all_qbar.append(float(row["qbar"]))
             all_kl.append(kl)
             all_prior_var.append(pvar)
+            all_ids.append(str(row["isic_id"]))
 
         if not all_probs:
             continue
@@ -350,6 +361,7 @@ def run_qvib_baseline(key: str, cfg: dict, itb: pd.DataFrame, pred_rows: list) -
         for i in range(len(targets_arr)):
             pred_rows.append({
                 "baseline": key, "baseline_name": cfg["name"], "subset": subset,
+                "image_name": all_ids[i],
                 "prob_pos": float(probs_arr[i, 1]), "target": int(targets_arr[i]),
                 "qbar": float(qbar_arr[i]),
                 "kl_term": float(all_kl[i]), "prior_var": float(all_prior_var[i]),
@@ -374,6 +386,7 @@ def run_mcdropout_baseline(cfg: dict, itb: pd.DataFrame, pred_rows: list) -> lis
     for subset in sorted(itb["subset"].unique()):
         sub = itb[itb["subset"] == subset]
         all_probs, all_targets, all_qbar = [], [], []
+        all_ids = []
 
         for _, row in tqdm(sub.iterrows(), total=len(sub), desc=subset, leave=False):
             img = cv2.imread(str(row["image_path"]))
@@ -402,6 +415,7 @@ def run_mcdropout_baseline(cfg: dict, itb: pd.DataFrame, pred_rows: list) -> lis
             all_probs.append(probs_mc[0].cpu().numpy())
             all_targets.append(int(row["target"]))
             all_qbar.append(float(row["qbar"]))
+            all_ids.append(str(row["isic_id"]))
 
         if not all_probs:
             continue
@@ -419,6 +433,7 @@ def run_mcdropout_baseline(cfg: dict, itb: pd.DataFrame, pred_rows: list) -> lis
         for i in range(len(targets_arr)):
             pred_rows.append({
                 "baseline": "I", "baseline_name": cfg["name"], "subset": subset,
+                "image_name": all_ids[i],
                 "prob_pos": float(probs_arr[i, 1]), "target": int(targets_arr[i]),
                 "qbar": float(qbar_arr[i]), "kl_term": 0.0, "prior_var": 0.0,
             })
@@ -442,6 +457,7 @@ def run_ensemble_baseline(cfg: dict, itb: pd.DataFrame, pred_rows: list) -> list
     for subset in sorted(itb["subset"].unique()):
         sub = itb[itb["subset"] == subset]
         all_probs, all_targets, all_qbar = [], [], []
+        all_ids = []
 
         for _, row in tqdm(sub.iterrows(), total=len(sub), desc=subset, leave=False):
             img = cv2.imread(str(row["image_path"]))
@@ -464,6 +480,7 @@ def run_ensemble_baseline(cfg: dict, itb: pd.DataFrame, pred_rows: list) -> list
             all_probs.append(avg_probs[0].cpu().numpy())
             all_targets.append(int(row["target"]))
             all_qbar.append(float(row["qbar"]))
+            all_ids.append(str(row["isic_id"]))
 
         if not all_probs:
             continue
@@ -481,6 +498,7 @@ def run_ensemble_baseline(cfg: dict, itb: pd.DataFrame, pred_rows: list) -> list
         for i in range(len(targets_arr)):
             pred_rows.append({
                 "baseline": "J", "baseline_name": cfg["name"], "subset": subset,
+                "image_name": all_ids[i],
                 "prob_pos": float(probs_arr[i, 1]), "target": int(targets_arr[i]),
                 "qbar": float(qbar_arr[i]), "kl_term": 0.0, "prior_var": 0.0,
             })
