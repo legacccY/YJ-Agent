@@ -8,6 +8,7 @@
   },
   "dca_max_nb": {
     "EfficientNet-B3": 0.1863,
+    "Q-VIB+TokFT": 0.1793,
     "Std VIB": 0.1856,
     "Std VIB + QCTS": 0.1919
   },
@@ -18,17 +19,23 @@
       "ci_lo": 0.1426,
       "ci_hi": 0.2333
     },
+    "G": {
+      "method": "Q-VIB+TokFT",
+      "max_nb_point": 0.1798,
+      "ci_lo": 0.139,
+      "ci_hi": 0.2232
+    },
     "D": {
       "method": "Std VIB",
-      "max_nb_point": 0.1863,
-      "ci_lo": 0.1449,
-      "ci_hi": 0.2326
+      "max_nb_point": 0.1862,
+      "ci_lo": 0.1418,
+      "ci_hi": 0.2328
     },
     "D+QCTS": {
       "method": "Std VIB + QCTS",
-      "max_nb_point": 0.1926,
+      "max_nb_point": 0.192,
       "ci_lo": 0.1481,
-      "ci_hi": 0.2424
+      "ci_hi": 0.2357
     }
   },
   "triage_at_20pct_referral": {
@@ -36,6 +43,11 @@
       "referral_rate": 0.2,
       "sens_auto": 0.818,
       "missed_positive_rate": 0.167
+    },
+    "Q-VIB+TokFT": {
+      "referral_rate": 0.187,
+      "sens_auto": 0.788,
+      "missed_positive_rate": 0.183
     },
     "Std VIB": {
       "referral_rate": 0.163,

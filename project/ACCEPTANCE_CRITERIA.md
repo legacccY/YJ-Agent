@@ -116,7 +116,8 @@
 
 ### L11 — DCA + Net Benefit + Triage simulation ✅
 - **状态**：✅ BMVC 已 done（QCTS max NB=0.192 vs VIB 0.186，bootstrap CI overlap）
-- **ICLR 扩展**：(a) Q-VIB + VisiEnhance 复合 DCA (b) cost-aware triage (c) clinical decision threshold sensitivity
+- **🟢 会话 32 §7.7 ICLR 重跑落地**：`run_dca_triage.py` on ICLR `itb_predictions.csv`（红线10），ITB-LQ n=300 净收益四法 95% CI 全重叠（0.179–0.192 不可区分）、triage@20% Direct 最优（sens 0.818）、**补强最强变体 Q-VIB+TokFT 后结论未翻转**（0.788 匹配不超 Direct）→ §7.7 写成 **calibration-driven reliable abstention** 诚实负结果、主动认负「make no claim enhancement raises net benefit」防 R3。main.tex §7.7 占位→实数段+figure `fig:dca`+ref，**41 页 0 undefined 编译过**。产物 `report/figures/fig_dca_triage.*`+`results/dca/*`。
+- **ICLR 扩展（仍开口）**：(a) Q-VIB + VisiEnhance 复合 DCA ❌ (b) cost-aware triage ❌ (c) clinical decision threshold sensitivity ❌（基础 DCA/triage 已落，复合+cost 维度待 M3）
 - **完成路径**：M2 D22-D28 + M3 D1-D7
 - **若 FAIL**：命中率 -1%
 
@@ -360,13 +361,13 @@
 | 类 | 状态 | 预估贡献 |
 |---|---|---|
 | 基线 ICLR | 30% | +30% |
-| A 理论（L1 ✅ + L2-5 🚧❌）| 1/5 done | +1% (currently) |
-| B 实验（L6 ✅ + L7 🚧 + L8-10 ❌）| 1/5 done | +0.5% |
-| C 临床（L11 ✅ + L12-14 ❌）| 1/4 done | +1% |
+| A 理论（L1-5 ✅ 推导全闭环）| 5/5 done | +5% |
+| B 实验（L6/L8/L9 ✅ + L7/L10 🚧 诚实负结果）| 3/5 + 2 部分 | ~+2.5% |
+| C 临床（L11 ✅ 含 §7.7 ICLR + L12-14 ❌）| 1/4 done | +1% |
 | D 复现（L15 🚧 + L16-18 ❌）| 0/4 done | 0% |
-| E 防御（L19-21 ❌）| 0/3 done | 0% |
-| F 附加（L22-25 ❌）| 0/4 done | 0% |
-| **当前预估** | — | **~32.5%** |
+| E 防御（L19-21 ✅ draft v1，待 M4 终稿）| 3/3 draft | ~+1.5% |
+| F 附加（L25 ✅ draft + L22-24 ❌）| 1/4 draft | ~+0.5% |
+| **当前预估（会话32 重算）** | A 闭环+B 主体过 | **~40.5%** |
 | **M1 Gate 后预估** | A 类 ~80%, B 类 ~40% | ~52% |
 | **M2 Gate 后预估** | A/B 类 ~100%, C/F 类 ~50% | ~67% |
 | **M3 Gate 后预估** | 主体完成 | ~74% |

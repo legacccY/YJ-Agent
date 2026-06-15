@@ -399,10 +399,46 @@ chest-radiograph sets are deferred.)
 
 \subsection{Cost--Benefit and Decision-Curve Analysis}\label{sec:exp-dca}
 % R3: phrase clinical evidence as decision-curve / triage-simulation language only.
-\emph{[Pending: net-benefit decision-curve analysis and a triage simulation indicating the operating
-range where enhance-then-diagnose improves net benefit over direct diagnosis.]} The decision-analytic
-model (cost structure, net-benefit definition, and triage simulation) is specified in
-Appendix~\ref{app:a20}.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../../report/figures/fig_dca_triage.pdf}
+  \caption{\textbf{Decision-curve and triage analysis on \itb{}-LQ ($n=300$).}
+  \textbf{(a)} Net-benefit decision curves across decision thresholds (treat-all and
+  treat-none references shown). Maximum net benefit is statistically indistinguishable
+  among direct diagnosis and all information-bottleneck variants ($0.179$--$0.192$;
+  overlapping $95\%$ bootstrap CIs). \textbf{(b)} Confidence-gated triage: auto-handled
+  sensitivity versus referral budget. The well-calibrated \qvib{}+TokFT tracks direct
+  diagnosis ($0.788$ vs.\ $0.818$ at a $20\%$ budget), while under-confident Std VIB and
+  Std VIB${}+{}$QCTS collapse, missing $70$--$73\%$ of positives. The bottleneck's value
+  is calibration-driven reliable abstention, not a raw-discrimination gain.}
+  \label{fig:dca}
+\end{figure}
+
+We evaluate clinical utility on \itb{}-LQ ($n=300$, the worst-case low-quality
+deployment subset) through net-benefit decision-curve analysis (DCA) and a
+confidence-gated triage simulation, rather than discrimination metrics alone
+(Fig.~\ref{fig:dca}).
+Across the clinically relevant threshold range, the maximum net benefit is
+\emph{statistically indistinguishable} among direct diagnosis and the
+information-bottleneck variants: EfficientNet-B3 (Direct) $0.186$
+($95\%$ CI $[0.143,0.233]$), \qvib{}+TokFT $0.179$ $[0.139,0.223]$,
+Std VIB $0.186$ $[0.142,0.233]$, and Std VIB${}+{}$QCTS $0.192$ $[0.148,0.236]$
+($2{,}000$-sample bootstrap; all CIs overlap). We therefore make \emph{no} claim
+that enhancement raises net benefit over direct diagnosis.
+
+The clinical value instead surfaces under \emph{confidence-gated triage}, where
+low-confidence cases are referred to a human reader. At a $20\%$ referral budget,
+the well-calibrated \qvib{}+TokFT \emph{matches} direct diagnosis on
+auto-handled sensitivity ($0.788$ vs.\ $0.818$, missed-positive rate $0.183$ vs.\
+$0.167$), whereas the under-confident Std VIB and Std VIB${}+{}$QCTS variants
+collapse ($0.137$/$0.143$ sensitivity, missing $70$--$73\%$ of positives) because
+their compressed posteriors rarely cross the referral threshold. The operative
+finding is thus one of \emph{calibration-driven reliable abstention}: the value of
+the bottleneck is not a raw-discrimination gain --- which direct diagnosis already
+attains on this subset --- but a posterior whose confidence can safely gate the
+agent's out-of-distribution query-for-retake path (\S\ref{sec:exp-cross}). The
+decision-analytic model (cost structure, net-benefit definition, and triage
+simulation) is specified in Appendix~\ref{app:a20}.
 
 \subsection{Fairness}\label{sec:exp-fair}
 We stratify calibration on the ISIC-derived \itb{} subsets ($n=1{,}320$ with demographic metadata)

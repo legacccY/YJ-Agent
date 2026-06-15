@@ -6,6 +6,37 @@
 
 ---
 
+## 2026-06-15（会话 32，§7.7 DCA/triage 诚实负结果落定 + Read 幻觉叫停 + BMVC 封印误覆写修复）
+
+### 起因
+承会话 31 待续「DCA §7.7」。开工即叫停：**Read 工具幻觉**——凭空"读出"不存在的 `results/agent_triage_sim.csv`（假数据 43.2%/10.3% 配 XXX/YYY 占位），差点填进 §7.7 = 踩红线 4。Glob 验：该文件不存在。本会话改全程 Bash/Grep 核数字，不信 Read 缓存。
+
+### ✅ §7.7 落定（全 csv-backed）
+- **红线 4 守住**：agent_triage_sim 系幻觉（Glob: No files found），main.tex §7.7 占位未被污染。
+- **ICLR 重跑（红线 10）**：`run_dca_triage.py` on `results/itb_predictions.csv`（06-15 ICLR-current）+ `qcts_itb_predictions.csv`（06-14）。dca csv 与 06-05 BMVC 版逐字节同值 → 重跑同值可辩护。
+- **诚实负结果**（ITB-LQ n=300）：净收益四法 95% CI 全重叠（maxNB 0.179–0.192，统计不可区分）；triage@20% Direct 最优（sens 0.818）。补强最强变体 **Q-VIB+TokFT（加入脚本 methods=G）后结论未翻转**：matches Direct（0.788 vs 0.818）但不超越，欠信 Std VIB/+QCTS 崩（漏 70–73%）。
+- **价值重定向**：写成 calibration-driven reliable abstention（非原始判别增益），呼应 §7.6 域距 + agent OOD retake。主动认负 `make no claim enhancement raises net benefit`（防 R3）。
+
+### 🔧 BMVC 封印误覆写修复
+- 脚本原硬编码 `OUT_FIG = meeting/BMVC/figures`，重跑时**误覆写封印图** `fig_dca_triage.{pdf,svg}` → `git checkout HEAD --` 还原，status clean。
+- `OUT_FIG` 改 → `report/figures`（项目配图惯例 `../../report/figures/`）。
+
+### 📄 paper + 产物
+- main.tex §7.7：占位 → 实数段 + figure float `\label{fig:dca}` + 正文 `ef`。括号/美元/figure 环境配平核过，label `app:a20`/`sec:exp-cross` 均真实。
+- 图：`report/figures/fig_dca_triage.{pdf,svg,png}`（含 4 方法）。
+- 教训：写 LaTeX 反斜杠经 heredoc `\` 被塌成 `\` 致 `ef`→CR，最终用 `bytes([0x5c])` 构造修复。
+
+### 命中率
+诚实负结果第四次不掩盖（sex/age/fitz 后轮到 DCA）：临床决策两轴 proposed 均未赢过 direct baseline，但点破价值在可靠弃权 + 主动声明不吹净收益 → 审稿人查临床证据不被拆，与全文 OOD/校准故事自洽。Read 幻觉险些进 paper 被 Glob 拦下。
+
+### 待续（会话 33）
+1. M3 写作主推进。
+2. L7 余 Kvasir/CheXpert（paper 已 deferred）。
+3. push 远端历史分叉待用户拍（force-with-lease）。
+4. （可选）fig_dca_triage 是否需 PDF 编译目检一遍版式。
+
+---
+
 ## 2026-06-15（会话 31，L10 Fitz I-VI 肤型公平性补全 + paper §7 数字审计 0 drift；多线程 2 agent）
 
 ### 起因

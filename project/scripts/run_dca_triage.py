@@ -33,8 +33,9 @@ from scipy.stats import bootstrap as scipy_bootstrap
 
 ROOT = Path("D:/YJ-Agent/project")
 OUT_DATA = ROOT / "results/dca"
-OUT_FIG = ROOT / "meeting/BMVC/figures"
+OUT_FIG = ROOT / "report/figures"
 OUT_DATA.mkdir(parents=True, exist_ok=True)
+OUT_FIG.mkdir(parents=True, exist_ok=True)
 
 # Published dermatologist performance (ISIC 2018 challenge, Haenssle et al. 2018)
 DERM_AUC = 0.88
@@ -124,12 +125,14 @@ def main():
 
     methods = {
         "A":     "EfficientNet-B3",
+        "G":     "Q-VIB+TokFT",
         "D":     "Std VIB",
         "D+QCTS": "Std VIB + QCTS",
     }
 
     COLORS = {
         "A": "#636363",
+        "G": "#d62728",
         "D": "#1f77b4",
         "D+QCTS": "#2ca02c",
     }
