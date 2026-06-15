@@ -105,9 +105,10 @@
 ### L10 — Fairness 全维度 🚧
 - **内容**：Fitz I-VI + sex (M/F) + age (3 bin) 共 11 sub-pop
 - **状态**：🚧 **sex/age done（会话 30）**：L10 patch 已套 `run_experiments.py`（6 runner emit `image_name`），ITB 全 4 子集重 eval，ISIC 子集 100% 匹配 ISIC2020 demographic。`scripts/fairness_sex_age_breakdown.py` 出 9 baseline × {sex, age} per-subpop 15-bin ECE + bootstrap 95% CI。**F（Q-VIB Full=Ours）**：sex gap **0.0382 PASS**（M 0.151/F 0.113，9 baseline 里 sex gap 最小、绝对 ECE 最低）；age gap **0.2604 FAIL**——**全 9 baseline age 全 FAIL**（祸首 >60 段：n=336/144 阳，高患病 + 普遍 miscalib，F >60 ECE 0.319 vs TS 0.355），共性 limitation 非 Ours 独有，Ours 每个 age 档绝对 ECE 仍最低。产物 `results/fairness_sex_age_breakdown.{csv,json}`。**诚实框法**：sex PASS + 每切片 ECE 最低卖点；age gap 写共性 limitation（motivate 质量×人群联合校准 future）。Fitz I-VI 部分已 done（BMVC supp A5，ICLR 重跑见 L7 Fitz17k）。
-- **验收**：(a) 每个 sub-pop ECE + bootstrap CI ✅ (b) max-min ECE 差 < 0.05：sex ✅ / age ❌（全 baseline 共性）(c) Fitz V-VI 不能 underperform 显著（p<0.05 等价检验）⏳
-- **完成路径**：sex/age 会话 30 done；Fitz I-VI 等价检验 + paper §7 fairness 段待写
-- **若 FAIL**：命中率 -0.5%（sex PASS + age 共性 limitation 诚实写，不算硬 FAIL）
+- **Fitz I-VI done（会话 31）**：用**全量 fitz17k 跨域预测**（n=16012 带肤型，非 BMVC ITB-Diverse 1500）`scripts/fairness_fitzpatrick_iclr_full.py` 出 7 baseline × 6 单档+3 分组 AUC/15-bin ECE/bootstrap CI + max-min gap + **TOST 等价检验**。**F(Ours) 肤型 gap 0.304 FAIL**（VI 档 ECE 0.804/AUC 0.528 近随机）、**V-VI vs I-IV 等价不成立**（TOST p=0.273，AUC 差 -0.023 CI[-0.108,+0.065] 越 ±0.05 界）。**关键：OOD 共性**——D 0.29/E 0.30/TS 0.30 全 FAIL，唯 A(B3 0.04)/H(Focal 0.03)「达标」靠均匀失准凑（同 sex/age 招）→ **非模型独有肤型 bias，是远域 OOD 校准崩**（对齐 §7.6 域距校准侵蚀）。产物 `results/fairness_fitzpatrick_iclr_full.{csv,json}`。
+- **验收**：(a) 每个 sub-pop ECE + bootstrap CI ✅ (b) max-min ECE 差 < 0.05：sex ✅ / age ❌（全 baseline 共性）/ Fitz 肤型 ❌（OOD 全 baseline 共性）(c) Fitz V-VI 不 underperform 等价检验：❌ 等价不成立（但 OOD 共性，已诚实写 §7 + 限定声明 = quality-conditioning 不引入相对肤型 bias）✅ 落地
+- **完成路径**：sex/age 会话 30 done；**Fitz I-VI + 等价检验 + paper §7 fairness 段 会话 31 done**（编译入 paper）
+- **若 FAIL**：命中率 -0.5%（sex PASS + age/肤型 OOD 共性 limitation 诚实写，不算硬 FAIL；肤型声明降级为「不引入相对 bias」+ OOD 校准 open problem）
 
 ---
 

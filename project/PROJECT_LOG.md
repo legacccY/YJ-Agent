@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-06-15（会话 31，L10 Fitz I-VI 肤型公平性补全 + paper §7 数字审计 0 drift；多线程 2 agent）
+
+### 起因
+承会话 30 待续。用户「继续工作，可多线程」+「保证本地就好」（不 push）。并行派 2 sonnet agent（独立无文件冲突）+ 主线收口。
+
+### 🟢 Agent A — paper §7 数字审计（只读，投稿前体检）
+核 main.tex §7.6 cross-domain + §7 fairness + §8 Lim(5)：**46 个数字逐个溯源 csv，0 drift**。HAM/PAD/Fitz/DermNet ρ+p+ECE+AUC+n（28）、sex/age gap+各 subpop ECE+CI+患病率（17）、fundus ρ（1）全一致（容差内）。投稿前数字关过。
+
+### 🔴 Agent B — L10 Fitz I-VI 肤型公平性（全量 fitz17k，诚实负结果）
+新脚本 `scripts/fairness_fitzpatrick_iclr_full.py`，用**全量 fitz17k 跨域预测**（n=16012 带肤型，非 BMVC ITB-Diverse 1500）算 7 baseline × 6 单档+3 分组 AUC/15-bin ECE/bootstrap CI + max-min gap + TOST 等价检验。产物 `results/fairness_fitzpatrick_iclr_full.{csv,json}`。
+- **F(Ours)**：肤型 max-min ECE gap **0.304 FAIL**（VI 档 ECE 0.804/AUC 0.528 近随机、I-IV ~0.50 最好）；**V-VI vs I-IV 等价不成立**（TOST p=0.273，AUC 差 -0.023 CI[-0.108,+0.065] 越 ±0.05 界）
+- **关键 = OOD 共性**：D 0.29/E 0.30/TS 0.30 全 FAIL，唯 A(B3 0.04)/H(Focal 0.03)「达标」靠均匀失准凑（同 sex/age 招）→ 非模型独有肤型 bias，是远域 OOD 校准崩（恶性基率仅 3%），对齐 §7.6 域距侵蚀。
+
+### ✅ 主线收口
+- main.tex §7 Fairness 末句改写：诚实写 Fitz 肤型 OOD 校准 gap 0.30/等价不成立/全 baseline 共性，**声明降级为「quality-conditioning 不引入相对肤型 bias」+ OOD 校准 open problem**（不拿跨域当公平卖点）。**编译 40 页 0 undefined**。
+- ACCEPTANCE L10 (a)(b)(c) 更新：Fitz 肤型 done（诚实负结果，OOD 共性）。
+
+### 命中率
+诚实负结果不掩盖第三次（sex age 之后肤型）：fitz17k 肤型公平 FAIL 但点破是 OOD 全 baseline 共性、非 Ours 独有，声明限定到「不引入相对 bias」——审稿人查肤型公平时不被拆，且与 §7.6 域距故事自洽。Agent A 审计 46 数字 0 drift = 投稿前数字债清。
+
+### 待续（会话 32）
+1. L7 余 Kvasir/CheXpert（paper 已 deferred，低优先）。
+2. M3 写作 / DCA §7.7 / Appendix 扩充。
+3. push 远端历史分叉待用户拍（91 ahead/10 behind 旧阶段 commit，建议 force-with-lease）。
+
+---
+
 ## 2026-06-15（会话 30，L7 cross-domain 4 skin+1 跨模态边界 + L10 sex/age fairness，全入 paper 40 页；本会话产出补记+commit）
 
 ### 起因

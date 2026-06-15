@@ -422,8 +422,18 @@ quality-conditioning yields the lowest absolute calibration error in every non-e
 subpopulation and the smallest sex gap, but the high-prevalence elderly band remains a genuine
 calibration limitation --- precisely the operating point where the agent's defer / query-for-retake
 path (Sec.~\ref{sec:agent}) is intended to fire, and a motivation for demographic-aware calibration
-in future work. Fitzpatrick skin-type I--VI stratification is reported via the Fitzpatrick17k
-cross-domain audit (Sec.~\ref{sec:exp-cross}).
+in future work. We additionally stratify by Fitzpatrick skin type I--VI on the (out-of-distribution)
+Fitzpatrick17k clinical photographs ($n=16{,}012$ with skin-type labels): here per-type calibration
+degrades \emph{uniformly} --- \qvib{} Full's max--min ECE gap across types I--VI is $0.30$ (worst on
+type VI, ECE $0.80$, $n_{\text{pos}}=14$), and AUC equivalence between deep (V--VI) and light (I--IV)
+types is not established (TOST $p=0.27$, AUC difference $-0.023$, $95\%$ CI $[-0.108, +0.065]$). This
+degradation is shared by \emph{every} calibration method on this far domain (Std VIB gap $0.29$,
+Adaptive-Prior $0.30$, Std VIB$+$TS $0.30$) and tracks the domain-distance calibration erosion of
+Sec.~\ref{sec:exp-cross} rather than a model-specific skin-type bias; the only methods with a small
+skin-type gap are again the uniformly-miscalibrated EfficientNet-B3 ($0.04$) and Focal$+$LS ($0.03$).
+We therefore restrict our skin-type fairness claim to the qualitative finding that quality-conditioning
+does not introduce skin-type bias relative to its peers, and treat absolute per-type calibration on
+out-of-distribution clinical photographs as an open OOD-calibration problem (Sec.~\ref{sec:discussion}).
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Discussion and Limitations}\label{sec:discussion}

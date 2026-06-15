@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "pred_csv": "results/external_fitz17k_predictions.csv",
+    "meta_csv": "data/raw/fitzpatrick17k/fitzpatrick17k.csv",
+    "n_bins": 15,
+    "n_boot": 1000,
+    "seed": 42,
+    "ece_gap_thresh": 0.05,
+    "tost_bound": 0.05,
+    "pred_unique_images": 16574,
+    "joined_unique_images_known_skintype": 16012
+  },
+  "baselines": {
+    "A": {
+      "baseline_name": "EfficientNet-B3 (Direct)",
+      "ece_by_skintype": {
+        "I": 0.06391412884730616,
+        "II": 0.05798041438118711,
+        "III": 0.05703922218406625,
+        "IV": 0.059436474351338586,
+        "V": 0.05822269161450062,
+        "VI": 0.0975151385803978
+      },
+      "ece_maxmin_gap": 0.04047591639633155,
+      "ece_gap_pass": true,
+      "tost_VVI_vs_IIV": {
+        "auc_deep_VVI": 0.5726183310533516,
+        "auc_light_IIV": 0.6179653232543869,
+        "auc_diff": -0.04534699220103533,
+        "n_deep": 2168,
+        "n_light": 13844,
+        "tost_p_lower": 0.466,
+        "tost_p_upper": 0.03,
+        "tost_p": 0.466,
+        "equivalent": false,
+        "diff_ci_lo": -0.14456590846267559,
+        "diff_ci_hi": 0.05472768270006141,
+        "bound": 0.05
+      }
+    },
+    "D": {
+      "baseline_name": "Std VIB",
+      "ece_by_skintype": {
+        "I": 0.6846167247006948,
+        "II": 0.5856353447645639,
+        "III": 0.5167620714372454,
+        "IV": 0.5213141357889537,
+        "V": 0.6498369745784411,
+        "VI": 0.8068703637847046
+      },
+      "ece_maxmin_gap": 0.29010829234745916,
+      "ece_gap_pass": false,
+      "tost_VVI_vs_IIV": {
+        "auc_deep_VVI": 0.5654883720930233,
+        "auc_light_IIV": 0.5828336055750586,
+        "auc_diff": -0.017345233482035316,
+        "n_deep": 2168,
+        "n_light": 13844,
+        "tost_p_lower": 0.219,
+        "tost_p_upper": 0.058,
+        "tost_p": 0.219,
+        "equivalent": false,
+        "diff_ci_lo": -0.09853942545804473,
+        "diff_ci_hi": 0.06315595097150116,
+        "bound": 0.05
+      }
+    },
+    "E": {
+      "baseline_name": "Adaptive Prior",
+      "ece_by_skintype": {
+        "I": 0.6671202333289612,
+        "II": 0.5643139413034755,
+        "III": 0.49655121808485636,
+        "IV": 0.5045911438787588,
+        "V": 0.6333258575045997,
+        "VI": 0.7981012861068383
+      },
+      "ece_maxmin_gap": 0.3015500680219819,
+      "ece_gap_pass": false,
+      "tost_VVI_vs_IIV": {
+        "auc_deep_VVI": 0.5784404924760602,
+        "auc_light_IIV": 0.6017132690828737,
+        "auc_diff": -0.023272776606813483,
+        "n_deep": 2168,
+        "n_light": 13844,
+        "tost_p_lower": 0.28,
+        "tost_p_upper": 0.055,
+        "tost_p": 0.28,
+        "equivalent": false,
+        "diff_ci_lo": -0.10928248966480428,
+        "diff_ci_hi": 0.06322876827068075,
+        "bound": 0.05
+      }
+    },
+    "F": {
+      "baseline_name": "Q-VIB Full",
+      "ece_by_skintype": {
+        "I": 0.6697225745703044,
+        "II": 0.5684766393934657,
+        "III": 0.5000497450544037,
+        "IV": 0.5112764657739532,
+        "V": 0.6430642914738681,
+        "VI": 0.8042501403033498
+      },
+      "ece_maxmin_gap": 0.30420039524894615,
+      "ece_gap_pass": false,
+      "tost_VVI_vs_IIV": {
+        "auc_deep_VVI": 0.5780519835841313,
+        "auc_light_IIV": 0.6014117198826853,
+        "auc_diff": -0.023359736298553924,
+        "n_deep": 2168,
+        "n_light": 13844,
+        "tost_p_lower": 0.273,
+        "tost_p_upper": 0.057,
+        "tost_p": 0.273,
+        "equivalent": false,
+        "diff_ci_lo": -0.10797412859530325,
+        "diff_ci_hi": 0.0647612671800393,
+        "bound": 0.05
+      }
+    },
+    "G": {
+      "baseline_name": "Q-VIB+TokFT",
+      "ece_by_skintype": {
+        "I": 0.8320795904293854,
+        "II": 0.7940910111867435,
+        "III": 0.7587314996811501,
+        "IV": 0.7659718666566587,
+        "V": 0.8463680542472675,
+        "VI": 0.9203728629452154
+      },
+      "ece_maxmin_gap": 0.1616413632640653,
+      "ece_gap_pass": false,
+      "tost_VVI_vs_IIV": {
+        "auc_deep_VVI": 0.5831135430916553,
+        "auc_light_IIV": 0.6219529053594545,
+        "auc_diff": -0.03883936226779916,
+        "n_deep": 2168,
+        "n_light": 13844,
+        "tost_p_lower": 0.393,
+        "tost_p_upper": 0.031,
+        "tost_p": 0.393,
+        "equivalent": false,
+        "diff_ci_lo": -0.13278250236457062,
+        "diff_ci_hi": 0.057548808127984616,
+        "bound": 0.05
+      }
+    },
+    "H": {
+      "baseline_name": "Focal+LS",
+      "ece_by_skintype": {
+        "I": 0.6870522435171789,
+        "II": 0.6875330800323836,
+        "III": 0.6965120207730054,
+        "IV": 0.6999358920603507,
+        "V": 0.704654730423867,
+        "VI": 0.7184500266247846
+      },
+      "ece_maxmin_gap": 0.03139778310760577,
+      "ece_gap_pass": true,
+      "tost_VVI_vs_IIV": {
+        "auc_deep_VVI": 0.478500683994528,
+        "auc_light_IIV": 0.6248080007288028,
+        "auc_diff": -0.14630731673427483,
+        "n_deep": 2168,
+        "n_light": 13844,
+        "tost_p_lower": 0.973,
+        "tost_p_upper": 0.0,
+        "tost_p": 0.973,
+        "equivalent": false,
+        "diff_ci_lo": -0.24014585412325037,
+        "diff_ci_hi": -0.04848900564644775,
+        "bound": 0.05
+      }
+    },
+    "TS": {
+      "baseline_name": "Std VIB + TS",
+      "ece_by_skintype": {
+        "I": 0.6500463121127265,
+        "II": 0.5480499831094142,
+        "III": 0.47821148410225517,
+        "IV": 0.47848687550077784,
+        "V": 0.6035373474265324,
+        "VI": 0.7740840706768937
+      },
+      "ece_maxmin_gap": 0.2958725865746385,
+      "ece_gap_pass": false,
+      "tost_VVI_vs_IIV": {
+        "auc_deep_VVI": 0.6287058823529412,
+        "auc_light_IIV": 0.5390793992461976,
+        "auc_diff": 0.08962648310674359,
+        "n_deep": 2168,
+        "n_light": 13844,
+        "tost_p_lower": 0.0,
+        "tost_p_upper": 0.794,
+        "tost_p": 0.794,
+        "equivalent": false,
+        "diff_ci_lo": -0.0005618302091108473,
+        "diff_ci_hi": 0.18028072405408307,
+        "bound": 0.05
+      }
+    }
+  }
+}
