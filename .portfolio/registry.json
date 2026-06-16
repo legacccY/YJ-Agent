@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-06-16T19",
+  "updated": "2026-06-16T23",
   "note": "跨论文协调单一真源。多终端窗口共享此文件 + locks/。规避 context 压缩断链，仿 run-experiment state.json 模式。",
   "projects": {
     "iclr": {
@@ -9,9 +9,10 @@
       "deadline": "2026-09-22 (abstract) / 2026-09-29 (full)",
       "status": "active",
       "priority": 1,
-      "phase": "M3 写作推进（会话35：大编队第三轮体检→①引用保真：bib 作者错×3 + kim→salinas 重命名 + 84/74 经 Salinas Table4 坐实 + A4 487/PLCC 口径拆分；②理论 rigor 大修[reject 级]：Prop3 被 E4 证伪却充 proof→降级 sketch+E7/PSNR 承载、proof 口径全加 scope、Thm2 加显式 unimodal 假设、Cor1 min→单边、Prop1 补 ELBO、Lemma3 σ̄ 显式化；6 文件，常数未动经 reviewer 复验自洽。50 页 0 undef 0 TODO。数字侧 PENDING 全阻塞在 Plan A 重训=拍板点+训练锁被 nca-jepa 占）",
+      "phase": "M3 写作推进（会话36：大编队第四轮体检→打前三轮空白角度：①Abstract headline 拉齐 §7.4 负结果[用户拍板，bounded+motivates-gate]②§2 补 selective-prediction/defer 段[STORY强制，+rabanser/mehrtens 2 引用]③Limitations 补 low-AUC 0.55-0.59[核csv改正HQ混入drift]+单probe依赖④tab:main 重复label清理。50页0undef。｜会话35：大编队第三轮体检→①引用保真：bib 作者错×3 + kim→salinas 重命名 + 84/74 经 Salinas Table4 坐实 + A4 487/PLCC 口径拆分；②理论 rigor 大修[reject 级]：Prop3 被 E4 证伪却充 proof→降级 sketch+E7/PSNR 承载、proof 口径全加 scope、Thm2 加显式 unimodal 假设、Cor1 min→单边、Prop1 补 ELBO、Lemma3 σ̄ 显式化；6 文件，常数未动经 reviewer 复验自洽。50 页 0 undef 0 TODO。数字侧 PENDING 全阻塞在 Plan A 重训=拍板点+训练锁被 nca-jepa 占）",
       "home": "project/",
       "story": "project/STORY_FRAMEWORK.md",
+      "acceptance": "project/ACCEPTANCE_CRITERIA.md",
       "log": "project/PROJECT_LOG.md"
     },
     "bmvc": {
@@ -29,12 +30,25 @@
       "name": "NCA-JEPA",
       "venue": "TBD (arXiv pilot → NeurIPS/ICLR)",
       "deadline": "pilot Gate0 ~D2",
-      "status": "pilot-ready",
+      "status": "pilot-amber",
       "priority": 2,
-      "phase": "Phase 0 待用户放行（HPC）",
+      "phase": "Phase0 全 7 job 训完 + eval + /stage-gate = 🟡 AMBER（不放行）。实测：A2 收敛健康（3 seed final-loss std≈0.002、Q 单调、无发散）但全臂 L_f∈[1.003,1.940] >1，顶撞 02 理论预言（L_f 0.2-0.5）+ 命中 §10/§11 自定红灯（L_f>1=SN bug 先修）；A2 Q(1)≤0.731<A0+ 0.975（anytime 落 §9.1 RED，已降辅项）。主线诊断 estimate_lf 口径 bug（随机点 + 测 J_cell 非 I+J_δ+fire）→ L_f>1 大概率测量错非 SN 失败。岔路口：修估计器重测，L_f<1→Gate1 PASS 走 GREEN；真>1→退路 B（独家负结果发稳定性理论）。阻断 5 项见 04_LOG。PC-1 A1 仅 seed42（非 3/3）。",
       "home": "project/meeting/Med-NCA/NCA-JEPA/",
       "story": "project/meeting/Med-NCA/NCA-JEPA/01_创新计划.md",
+      "acceptance": "project/meeting/Med-NCA/NCA-JEPA/03_pilot_NIH_ChestXray14.md",
       "log": "project/meeting/Med-NCA/NCA-JEPA/04_LOG.md"
+    },
+    "medad-failmap": {
+      "name": "MedAD-FailMap",
+      "venue": "ICLR/NeurIPS (主, analysis track) → MICCAI/MedIA (退路)",
+      "deadline": "TBD (capability paper, Phase0 预检先行)",
+      "status": "planning",
+      "priority": 3,
+      "phase": "立项当天（2026-06-16）。方向=重建式医学异常检测的失败何时可预测：协变量化失败边界(phase diagram)+per-image 可靠性判据(借放射学 conspicuity 桥)+多方法对比边界。三假设降为分析工具。来自 MedSeg-UQ 塌缩后大部队探路(两轮+三次 reviewer 裁)，立项前已核：数据🟢(MedIAnomaly Zenodo 7 集)、算力🟢(重建 AD 模型小)、协变量失败边界 novelty🟢(穷举真空白)。incumbent=HKUST Cai 组(MedIAnomaly+AE4AD)走协变量正交轴绕开。下一步 Phase0 可行性预检(拍板点+训练锁)。",
+      "home": "project/meeting/MedAD-FailMap/",
+      "story": "project/meeting/MedAD-FailMap/01_STORY.md",
+      "acceptance": "project/meeting/MedAD-FailMap/02_ACCEPTANCE.md",
+      "log": "project/meeting/MedAD-FailMap/04_LOG.md"
     }
   },
   "training_lock": {

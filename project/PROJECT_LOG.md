@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-06-16（会话 36，大编队第四轮投稿前体检 → 没深审过的角度收口：claim-evidence 对齐 + selective-prediction Related 缺口 + Limitations 补强）
+
+### 起因
+用户「ICLR 读档，大部队开看不需要 GPU 的活」。承会话 35。数字侧 PENDING 仍全阻塞在 Plan A 重训（拍板点 + 训练锁被他窗 nca-jepa 持 7 活 job，HPC）→ 本轮纯写作侧。派第四轮体检大编队（reviewer 对抗审 + researcher Related 缺口扫 + verifier cross-ref/编号完整性），专打前三轮（数字/幽灵证据/引用+证明）没深碰的角度。
+
+### 🟢 大编队第四轮体检结果
+- **reviewer（4 角度对抗审）**：无新 reject 级硬伤（前三轮已挤干）。报 4 MAJOR：①Abstract 把 VisiEnhance 卖「restores salvageable inputs」vs §7.4 黑色素瘤净损 81 例（claim-framing 张力，头号 reject 风险）②Abstract headline 0.707/−0.165 是 held-out 池、§7 无 result 段/CI ③§2 缺 selective prediction / learning-to-defer 整条线（query-gate 就是 defer）④Limitations 漏 low-AUC + 单 probe 依赖。+4 MINOR（s8 过时注释 / fig:dflip float 归位 / Fitz n=14 caveat / n=1320 来源）。
+- **researcher（Related 缺口）**：联网查出 2025-26 强相关、reviewer 会问「怎么没引」的工作——selective-prediction 侧 Rabanser 2025（校准≠选择可靠性）+ Mehrtens 2025（conformal 在 derm 偏移失效）；动机侧 MedQ-Deg（Calibration Shift / AI Dunning-Kruger）+「When AI and Experts Agree on Error」（κ=0.08 低质致歧义）+ FVIB + CLUE 等，全带 arXiv/DOI。
+- **verifier（cross-ref/编号）**：179 label / 92 ref 全闭合 0 dangling；51 cite / 49 bib entry 全闭合；12 float 全有 caption+label。唯一实质问题：`tab:main` 在未 input 的草稿 `s7_table1_skeleton.tex` 重复定义（误 include 隐患）。
+
+### ✅ 落地修复（main.tex + references.bib，全编译过 50 页 0 undef）
+- **核 STORY 定性**：reviewer 的 #1/#3/#4 其实是把 paper 拉回 STORY（第17行 quality-triage framing / 第57行 dflip=设计动机 / 第59行 selective-prediction 文献支撑），非偏离 → #2/#3/#4 自主修，#1 改 Abstract headline 措辞按拍板点 #4 经用户拍板放行。
+- **#1 Abstract（用户拍板「改」）**：「restores salvageable inputs」→「restores moderately degraded inputs..., while its bounded failure on severely degraded malignant cases is precisely what the query-for-retake channel is designed to catch」。数字不动，把 enhancement 弱点主动框为 query-gate 设计动机，与 §7.4 负结果 + STORY 第57行对齐。
+- **#3 §2 补段**：新增「Selective prediction and learning-to-defer」——把 query-for-retake 定位为 quality-conditioned defer，引 geifman2017/2019（已在库）+ rabanser2025uncertainty + mehrtens2025pitfalls（references.bib 新增 2 条 @misc，作者字段严格用 researcher 核实值，Rabanser institution 标 TODO-verify 未臆造）。
+- **#4 Limitations 补 (6)(7)**：(6) 校准向 VIB 家族 ITB-LQ 判别 AUC 仅 **0.55–0.59**（核 table1_main.tex：Std VIB 0.553/Adaptive 0.588/Q-VIB Full 0.585/QCTS 0.563，**改正 reviewer 口头的 0.55-0.61 把 HQ 0.606-0.615 混入的 drift**）；(7) 诊断保持只靠单一 frozen EfficientNet-B3 probe → 结论 probe-dependent。
+- **verifier tab:main**：`git mv s7_table1_skeleton.tex → drafts/`，消除重复 label 误 include 隐患。
+
+### 命中率
+第四轮专打前三轮空白角度：claim-framing 张力（headline 卖能力 / 正文证负结果）是 Medical AI reviewer 最易抓的 over-claim 点，主动把弱点变设计动机；§2 补 selective-prediction 段堵 scope reviewer「ignored learning-to-defer」；Limitations 诚实列 low-AUC + 单 probe（不藏）。全程数字核 csv（抓出并改正 reviewer 口头 AUC 区间的 HQ 混入 drift，守红线4）。引用作者字段严用 researcher 核实值、缺项标 TODO 不臆造（守会话35 教训）。编译 **50 页 0 undefined**。
+
+### ✅ 续批（同会话，4 个 MINOR 全清，编译 50 页 0 undef / 0 重复 label）
+- **s8 过时注释**：`s8_enhancement_failure.tex` 头注释还写「Standalone draft; NOT yet \input」+「Citation keys are placeholders」，实际已 input（main.tex:545）且 cite 已实 → 改为「§8 Discussion 段，fig:dflip 已移 §7.3，本段反引」。
+- **fig:dflip float 归位**：图原定义在 s8（随 §8 input），却在 §7.3（line 357/373）正引 → 读者在 §7.3 被告知「见图」图却飘到 §8。把整个 figure 块从 s8 移到 main.tex §7.3「Residual dangerous flips」段后（首个 cref 处），s8 仅留两段 §8 讨论（反引图，合法）。
+- **Fitz type VI caveat**：type VI ECE 0.80 仅 n_pos=14 → 加「smallest deep-skin cell 太稀疏不足以可靠点估计，不过度解读」（§7.8 本已有 uniform/qualitative/open-OOD 多重 caveat，再补单元格稀疏性）。
+- **n=1320 来源**：fairness § 的 n=1320 补「the subset of the \itb{} pool carrying sex and age metadata」明确与主表 ITB n=2820 关系。
+
+### 待续（会话 37）
+1. **数字侧仍全阻塞在 Plan A 重训**（A19/A20/s7 \TODO / triage sim）—— 启训=拍板点 + 训练锁被 nca-jepa 占。
+2. （可选）researcher 给的强动机引用 MedQ-Deg（Calibration Shift / AI Dunning-Kruger）/「When AI and Experts Agree on Error」（κ=0.08 低质致歧义）/ FVIB 按需加强 §1/§2，本轮只补了 STORY 强制的 selective-prediction 缺口，其余按需。
+3. （可选）#2 held-out headline 仅缺 CI（无 per-sample csv），Plan A re-export 后补。
+4. 本会话改动未 commit（main.tex / references.bib / s8_enhancement_failure.tex / drafts/s7_table1_skeleton.tex 移动 / PROJECT_LOG / registry）。
+
+---
+
 ## 2026-06-16（会话 35，大编队第三轮投稿前体检 → 引用保真收口：bib 作者错 + 84/74 溯源 + A4 口径歧义）
 
 ### 起因

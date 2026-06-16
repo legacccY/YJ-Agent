@@ -63,10 +63,15 @@
 | Agent | model | caveman | 何时派 |
 |---|---|---|---|
 | `researcher` | sonnet | ON | 查文献 / 官方源码 / 超参（返回带引用；查不到标 TODO 绝不臆想） |
+| `planner` | opus | **OFF** | 设计实验矩阵/消融/baseline，拆模糊目标为可跑 run（先读 STORY+ACCEPTANCE，判据对齐验收，只设计不写码不跑） |
+| `coder` | sonnet | ON | 写改实验代码/训练脚本/预处理/画图/修 bug/pytest（Windows 规范内嵌；**不启训练**，写完交主线跑） |
 | `writer` | opus | **OFF** | 写改 tex 章节（先读 STORY+ACCEPTANCE，数字先过 verifier） |
+| `analyst` | sonnet | ON | 跑后解读 csv/state.json，算趋势出图找 pattern + 建议下一步（区别 verifier 只核单点对不对） |
 | `verifier` | sonnet | ON | 核数字：Bash/Grep 核 csv，**禁 Read 看数据**，三方对账 |
 | `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计 |
 | `optimizer` | sonnet | ON | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
+
+> 八角色覆盖科研全闭环：调研(researcher)→设计(planner)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析三条腿**——派对应 agent。
 
 **自动多 sonnet 并行**（无须每次征求同意）：任务含多个彼此独立、无文件冲突的子任务时，主动同时派多个 sonnet，每个给完整冷启动上下文（路径/目标/禁止项）。
 **例外——主线亲自串行，绝不外包**：训练启停、HPC 提交/上传、危险删除（Remove-Item / kill 进程）等关键路径/实时操作。
@@ -80,7 +85,8 @@
 - **Agent Team**（真 teammate，共享任务表自协调，Ctrl+T 看）：大型多阶段、teammate 间需互相挑战/共享中途发现 → 我当 lead 拆任务表、起 teammate。
 
 **标准战队编制（按任务）**：
-- 推一篇论文「探路/调研」：`researcher`×3-4（文献/竞品/官方超参/SOTA 各一）并行 → `reviewer` 收口找漏洞 → 主线综合。
+- 推一篇论文「探路/调研」：`researcher`×3-4（文献/竞品/官方超参/SOTA 各一）并行 → `reviewer` 收口找漏洞 → 主线综合。（一键 `/paper-scout`）
+- 推一轮实验「设计→出结果」：`planner` 设计矩阵 → `coder` 并行实现各 config（无文件冲突可多 sonnet）→ **🛑（拍板）主线 `/loop /run-experiment` 跑** → `analyst` 解读+出图 → `verifier` 核关键数字。（一键 `/experiment-cycle <project>`）
 - 写一章：`verifier`（核数字）→ `writer`（写）→ `reviewer`（对抗审）流水。
 - 投稿冲刺：researcher（缺引用）+ verifier（数字三方对账）+ reviewer（十角色）大编队并行。
 
@@ -103,7 +109,8 @@
 
 - **ON 仅限**：内部沟通 / 与用户对话（省 token）。
 - **一律 OFF**：任何写作 / 文字保真任务（tex、正文、rebuttal、bib、references、论文 md）。倾向关。
-- 写论文类文件时 `writing_caveman_off.js` hook 会自动提醒；Writer/Reviewer agent spec 已内置 OFF。
+- 写论文类文件时 `writing_caveman_off.js` hook 会自动提醒；Writer/Reviewer/Planner agent spec 已内置 OFF（planner 计划是决策依据，需清晰）。
+- coder/analyst = ON（代码/分析报告可压缩回执，但**代码、报错、数字、csv 路径、列名原样不动**）。
 
 ---
 
@@ -131,6 +138,10 @@
 | 任务 | 动作 |
 |---|---|
 | 新论文 | `/spin-off-paper`（建标准 schema + 登记 registry） |
+| 探路调研 | `/paper-scout`（researcher×4 + reviewer 扇出） |
+| 设计实验 | `/design-experiment <project>`（planner 出实验矩阵，对齐判据） |
+| 跑一轮完整实验 | `/experiment-cycle <project>`（planner→coder→🛑拍板→跑→analyst→verifier 全自动串） |
+| 分析结果 | `/analyze-results <project>`（analyst 趋势/出图/对判据 + 建议，训练 done 后 hook 会提醒） |
 | 出图 | `/validate-figures` + `academic-figure-prompt` skill |
 | 阶段切换 | `/phase-transition` |
 | 投稿前 | `/pre-submit-check`（数字三方对账 + 脱敏 + 图验证） |

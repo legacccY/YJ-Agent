@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-06-16",
+  "updated": "2026-06-16T22",
   "note": "跨论文共享数据集地址单一真源。本地 + HPC 路径、下载源、用途、状态都在此。任何脚本/config 引用数据集前先查此表，不重复硬编码、不臆想路径。新增数据集或换路径只改这里 + 在引用处指向。状态: ready=就位可用 / partial=部分就位 / todo=待下载。",
   "hosts": {
     "local": "D:/YJ-Agent",
@@ -109,6 +109,17 @@
       "used_by": ["nca-jepa"],
       "purpose": "NCA-JEPA pilot 预训练 + linear probe; 对齐 CheXWorld 224² 输入",
       "status": "ready(本地+HPC 均部署验通)"
+    },
+    "medianomaly_bench": {
+      "name": "MedIAnomaly benchmark (7 集)",
+      "n": null,
+      "subsets": "RSNA(胸片) / VinDr-CXR(胸片) / BrainTumor(脑MRI) / LAG(眼底) / Camelyon16(病理,有像素mask) / BraTS2021(脑MRI FLAIR,有像素mask) / ISIC2018-Task3(皮镜,nevus=正常)",
+      "local": "TODO 待下载到 project/meeting/MedAD-FailMap/data/",
+      "hpc": "TODO",
+      "source": "Zenodo 统一预处理打包 2.4GB: https://zenodo.org/records/12677223 ; codebase: https://github.com/caiyu6666/MedIAnomaly (注: VinDr 需 PhysioNet credentialed, LAG 需联系作者; 无则 RSNA 替代)",
+      "used_by": ["medad-failmap"],
+      "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估; ISIC2018-Task3 可用本地 HAM10000 NV 子集(6705图)零下载对接",
+      "status": "todo"
     }
   }
 }

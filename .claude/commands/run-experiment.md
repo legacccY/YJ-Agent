@@ -6,7 +6,9 @@ description: 多 agent 实验运行流水线：pytest 测试 → GPU 验证 → 
 # 用法：/loop /run-experiment <script_path> [config_path]
 # 重要：必须用 /loop 前缀触发，否则 ScheduleWakeup 无法工作
 
-你是 VisiSkin-Agent 实验运行流水线的编排者。按以下 STEP 顺序执行。
+你是 YJ-Agent 实验运行流水线的编排者。按以下 STEP 顺序执行。
+
+> 分工：实验**代码改动由 coder 完成**（写完自测 pytest 交「就绪」），本流水线只负责**跑**（持训练锁串行）。跑完 done → 接 `/analyze-results` 让 analyst 解读。完整闭环见 `project/PROJECT_LIFECYCLE.md`。
 
 ---
 
@@ -181,6 +183,7 @@ print(f'log_age={age_min:.1f}min')
 
 **status == "done"**：
 - 打印：`实验完成！run_name=<name>，共 <N> epoch，最佳 PLCC=<x>，checkpoint: <best_path>`
+- **建议接力**：`→ 跑 /analyze-results <project> 让 analyst 解读趋势/出图/对判据，再 /checkpoint 落档`（`results_ready.js` hook 也会在收尾提醒）
 - 不调 ScheduleWakeup
 
 **status == "error_minor" 且 retry_count < 3**：

@@ -24,8 +24,9 @@ calibration alone is insufficient. The system (i) scores perceptual quality with
 assessor (\visiscore), (ii) routes each input to one of four actions --- direct diagnosis,
 cautioned diagnosis, enhance-then-diagnose, or query-for-retake --- and (iii) diagnoses under a
 quality-conditional information bottleneck (\qvib) whose predictive uncertainty is provably tied to
-quality. A deterministic, diagnosis-preserving enhancement module (\visienhance) restores salvageable
-inputs without generative hallucination. We give an end-to-end theoretical closure
+quality. A deterministic, diagnosis-preserving enhancement module (\visienhance) restores moderately degraded
+inputs without generative hallucination, while its bounded failure on severely degraded malignant
+cases is precisely what the query-for-retake channel is designed to catch. We give an end-to-end theoretical closure
 (Propositions~1--3, Lemmas~1--3, Theorems~1--2, Corollary~1), including a Lipschitz attention-drift
 bound, a quality--entropy monotonicity guarantee, a mutual-information bound for enhancement, and an
 expected-risk bound for the agent's routing decision. On a quality-stratified benchmark (\itb), the
@@ -116,6 +117,18 @@ objective and analyse the generative failure mode explicitly in \cref{sec:discus
 No-reference IQA \citep{mittal2012brisque,wang2023clipiqa} and dermatology challenges (ISIC) motivate quality-aware
 evaluation. \itb adds an explicitly quality-stratified protocol with paired low-/high-quality
 subsets, enabling the quality-conditional analysis our claims require.
+
+\paragraph{Selective prediction and learning-to-defer.}
+Selective classification and reject-option models abstain when confidence is low
+\citep{geifman2017selective,geifman2019selectivenet}, and recent analyses argue that calibration and
+selective reliability are distinct objectives: a well-calibrated model can still order inputs poorly,
+so abstention must be governed separately from confidence alone \citep{rabanser2025uncertainty}.
+Conformal alternatives provide coverage guarantees but degrade under the input and label shift typical
+of dermatology, where distributional change voids their assumptions \citep{mehrtens2025pitfalls}. Our
+query-for-retake channel is a \emph{quality-conditioned} instance of this family: rather than deferring
+on confidence alone, it routes on a perceptual-quality estimate that the bottleneck
+(\Cref{prop:entmono}) ties to predictive uncertainty, so that severely degraded inputs --- on which
+enhancement is unsafe (\Cref{sec:exp-preserve}) --- are sent for recapture instead of diagnosed.
 
 \paragraph{Human reader studies and AI--clinician comparison.}
 Reader studies place expert dermatologist accuracy on dermoscopic melanoma recognition in the range of
@@ -344,6 +357,29 @@ Preservation is not perfect: $10$ of $74$ correctly-flagged melanomas are pushed
 threshold by enhancement (\cref{fig:dflip}). We treat this residual as motivation for the
 query-for-retake channel (\cref{sec:discussion}), not as a defect to suppress.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../../report/figures/fig_dflip.pdf}
+  \caption{\textbf{Enhancement can suppress malignant cues (dangerous flips).}
+  \textbf{(a)} Slopegraph of the B3 classifier's melanoma probability for the
+  $74$ reference melanomas that are correctly called positive on clean input,
+  tracked across the three states reference (clean) $\rightarrow$ degraded
+  $\rightarrow$ enhanced. The mean melanoma probability drifts from $0.93$ on
+  reference to $0.82$ after enhancement, and for $10/74$ ($13.5\%$) lesions
+  enhancement pushes the probability below the $0.5$ decision line --- a
+  \emph{dangerous flip} from a correct malignant call to a benign one.
+  \textbf{(b)} Four enhance-caused flips shown as triplets
+  (reference\,$\vert$\,degraded\,$\vert$\,enhanced). Malignant signs ---
+  asymmetry, irregular borders, mottled colouration --- are smoothed away as if
+  they were low-quality noise; the enhanced row collapses to melanoma
+  probabilities $0.05/0.03/0.16/0.43$, all flipped to benign. These are
+  \emph{residual} failures of feature-DP \visienhance{} v5, our strongest
+  enhancement model: even when aggregate diagnostic performance stays within
+  tolerance ($|\Delta\mathrm{AUC}|<1.5\%$), a small set of lesions is harmed.
+  This is the empirical case for \emph{not} enhancing every low-quality image.}
+  \label{fig:dflip}
+\end{figure}
+
 \subsection{Salvage Rate and the Severe-Degradation Safety Boundary}\label{sec:exp-salvage}
 \paragraph{E5 --- salvage rate is benign-dominated, and mask-weighted reconstruction does not close the gap.}
 On the moderate band the aggregate salvage rate --- the fraction of degraded-then-misclassified
@@ -483,7 +519,8 @@ range rather than a single point estimate; the corresponding simulated operating
 curves are deferred to that appendix and are not asserted here.
 
 \subsection{Fairness}\label{sec:exp-fair}
-We stratify calibration on the ISIC-derived \itb{} subsets ($n=1{,}320$ with demographic metadata)
+We stratify calibration on the ISIC-derived \itb{} subsets ($n=1{,}320$, the subset of the \itb{}
+pool carrying sex and age metadata)
 by sex (male/female) and by age band ($<\!40$, $40$--$60$, $>\!60$), reporting per-subpopulation
 $15$-bin ECE with $1{,}000$-sample bootstrap $95\%$ CIs and the max--min ECE gap (fairness
 threshold $0.05$). \qvib{} Full is the best-calibrated model within every slice that is not
@@ -504,7 +541,8 @@ in future work. We additionally stratify by Fitzpatrick skin type I--VI on the (
 Fitzpatrick17k clinical photographs ($n=16{,}012$, the skin-type-labelled subset of the
 $16{,}574$-image cross-domain set in \S\ref{sec:exp-cross}): here per-type calibration
 degrades \emph{uniformly} --- \qvib{} Full's max--min ECE gap across types I--VI is $0.30$ (worst on
-type VI, ECE $0.80$, $n_{\text{pos}}=14$), and AUC equivalence between deep (V--VI) and light (I--IV)
+type VI, ECE $0.80$, $n_{\text{pos}}=14$; this smallest deep-skin cell is too sparse for a reliable
+per-type point estimate and we do not over-interpret it), and AUC equivalence between deep (V--VI) and light (I--IV)
 types is not established (TOST $p=0.27$, AUC difference $-0.023$, $95\%$ CI $[-0.108, +0.065]$). This
 degradation is shared by \emph{every} calibration method on this far domain (Std VIB gap $0.29$,
 Adaptive-Prior $0.30$, Std VIB$+$TS $0.30$) and tracks the domain-distance calibration erosion of
@@ -548,7 +586,15 @@ clinical claims rest on decision-curve analysis and simulation, not on reader co
 \emph{modality-bounded}: it transfers zero-shot across four dermatology domains
 (Sec.~\ref{sec:exp-cross}) but not to retinal fundus imaging, where the entropy--quality correlation
 reverses sign ($\rho=+0.14$) --- the scorer encodes dermoscopic, not universal, quality cues, and
-re-deployment to another modality requires re-fitting the quality channel. We pre-emptively address five anticipated
+re-deployment to another modality requires re-fitting the quality channel. (6) On the adversarial
+\itb-LQ pool the diagnostic AUC of the calibration-first VIB family is low in absolute terms
+($0.55$--$0.59$): \qvib{}
+deliberately trades discriminative accuracy for quality-conditional calibration, so it should not be
+read as a competitive standalone classifier on hard pools, and its value lies in routing and
+abstention rather than raw discrimination. (7) Diagnosis-preservation (\Cref{sec:exp-preserve}) is
+measured against a single frozen \mbox{EfficientNet-B3} probe; the preservation conclusions are
+therefore probe-dependent and a second independent diagnostic backbone would strengthen them. We
+pre-emptively address five anticipated
 reviewer concerns --- multiple-comparison statistics, research-versus-deployment framing, real-world
 degradation, differentiation from prior work, and enhancement safety --- in Appendix~\ref{app:a21}.
 

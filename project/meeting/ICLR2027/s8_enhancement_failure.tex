@@ -1,35 +1,10 @@
 % ═══════════════════════════════════════════════════════════════════════════════
-% DRAFT — dangerous-flip headline figure + two §8 Discussion paragraphs.
-% Standalone draft; NOT yet \input into main.tex. Paths are relative to
-% meeting/ICLR2027/ (main.tex location). Citation keys are placeholders pending
-% references.bib: blau2018perception, cohen2018distribution, geifman2017selective.
+% §8 Discussion paragraphs (two), \input into main.tex at \section{Discussion...}.
+% The dangerous-flip headline figure (fig:dflip) now lives in §7.3 (main.tex,
+% near its first \cref); these paragraphs reference it backward. Paths relative to
+% meeting/ICLR2027/. Citations (blau2018perception, cohen2018distribution,
+% geifman2017selective) are resolved in references.bib.
 % ═══════════════════════════════════════════════════════════════════════════════
-
-% ---------------------------------------------------------------------------
-% FIGURE BLOCK — dangerous-flip headline
-% ---------------------------------------------------------------------------
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{../../report/figures/fig_dflip.pdf}
-  \caption{\textbf{Enhancement can suppress malignant cues (dangerous flips).}
-  \textbf{(a)} Slopegraph of the B3 classifier's melanoma probability for the
-  $74$ reference melanomas that are correctly called positive on clean input,
-  tracked across the three states reference (clean) $\rightarrow$ degraded
-  $\rightarrow$ enhanced. The mean melanoma probability drifts from $0.93$ on
-  reference to $0.82$ after enhancement, and for $10/74$ ($13.5\%$) lesions
-  enhancement pushes the probability below the $0.5$ decision line --- a
-  \emph{dangerous flip} from a correct malignant call to a benign one.
-  \textbf{(b)} Four enhance-caused flips shown as triplets
-  (reference\,$\vert$\,degraded\,$\vert$\,enhanced). Malignant signs ---
-  asymmetry, irregular borders, mottled colouration --- are smoothed away as if
-  they were low-quality noise; the enhanced row collapses to melanoma
-  probabilities $0.05/0.03/0.16/0.43$, all flipped to benign. These are
-  \emph{residual} failures of feature-DP \visienhance{} v5, our strongest
-  enhancement model: even when aggregate diagnostic performance stays within
-  tolerance ($|\Delta\mathrm{AUC}|<1.5\%$), a small set of lesions is harmed.
-  This is the empirical case for \emph{not} enhancing every low-quality image.}
-  \label{fig:dflip}
-\end{figure}
 
 % ---------------------------------------------------------------------------
 % §8 DISCUSSION — two paragraphs (\paragraph style, matching sec:discussion)

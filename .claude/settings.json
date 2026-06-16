@@ -39,6 +39,12 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\drift_guard.js\"",
             "timeout": 3,
             "statusMessage": "drift guard..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\use_the_squad.js\"",
+            "timeout": 3,
+            "statusMessage": "squad routing nudge..."
           }
         ]
       }
@@ -88,6 +94,12 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\new_file_pointer.js\"",
             "timeout": 4,
             "statusMessage": "new-file pointer check..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\coder_handoff_gate.js\"",
+            "timeout": 10,
+            "statusMessage": "coder py_compile gate..."
           }
         ]
       }
@@ -100,6 +112,12 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\stage_progress.js\"",
             "timeout": 6,
             "statusMessage": "stage progress check..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\results_ready.js\"",
+            "timeout": 4,
+            "statusMessage": "results-ready check..."
           }
         ]
       }

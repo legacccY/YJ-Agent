@@ -10,11 +10,13 @@
 | 项目 | 会场 | Deadline | 状态 | 优先级 | home |
 |---|---|---|---|---|---|
 | **ICLR** VisiSkin-Agent | ICLR 2027 | 09-22 abs / 09-29 full | 🟢 active：M2 收官→M3 写作 | P1 | `project/` |
-| **NCA-JEPA** | TBD→NeurIPS/ICLR | pilot Gate0 ~D2 | 🟡 pilot-ready：Phase0 待放行(HPC) | P2 | `project/meeting/Med-NCA/NCA-JEPA/` |
+| **NCA-JEPA** | TBD→NeurIPS/ICLR | pilot Gate0 ~D2 | 🟡 pilot-AMBER：Phase0 训完+stage-gate 不放行（L_f 红灯，待修估计器重测定 GREEN/退路B） | P2 | `project/meeting/Med-NCA/NCA-JEPA/` |
 | **BMVC** QCTS | BMVC 2026 | 已投 05-24 | 🔒 sealed：仅 rebuttal | P9 | `project/meeting/BMVC/` |
+| **MedAD-FailMap** | ICLR/NeurIPS→MICCAI/MedIA | TBD | 🟡 planning：立项当天→Phase0 预检 | P3 | `project/meeting/MedAD-FailMap/` |
 
 未来槽位：HuimaiMed/脉枢（命名见 memory）。新论文 → `/spin-off-paper` 自动登记 registry + 建标准 schema。
-- **MedSeg-UQ（医学分割+不确定性，pre-立项·待问导师）**：调研+理论见 `project/meeting/MedSeg-UQ/`（`00`矩阵 / `02` ★1 trade-off=MICCAI档 / `05` ★3 multicalibration / `04` LOG）。三轮审稿结论：纯顶会理论下界这条路塌缩（★1 minimax 不存在、★3=junction-tree 拼接），真实可发档=MICCAI/MedIA。**战略停在「问王水花教授定会场/资源」**，未立项。
+- **MedAD-FailMap（重建式医学异常检测·失败何时可预测，2026-06-16 立项）**：MedSeg-UQ 塌缩后大部队探路（两轮+三次 reviewer 裁）收口。方向=协变量化失败边界(phase diagram)+per-image 可靠性判据(借放射学 conspicuity 桥)+多方法对比边界；三假设降为分析工具。capability/机理型非刷 SOTA。立项前四闸全绿（数据/算力/novelty 撞车/绕开 HKUST incumbent 正交轴）。入口 `project/meeting/MedAD-FailMap/00_README.md`，探路全档 `project/meeting/方向探路_2026-06-16.md`。下一步 Phase0 预检（拍板点+训练锁）。
+- **MedSeg-UQ（医学分割+不确定性，已停·塌缩存档）**：调研+理论见 `project/meeting/MedSeg-UQ/`。三轮审稿结论：纯顶会理论下界塌缩（★1 minimax 不存在、★3=junction-tree 拼接），真实可发档=MICCAI/MedIA。已被 MedAD-FailMap 取代为新方向，存档备查。
 
 > **项目规范真源**：新项目立项 / 新阶段开启 / 自主运行边界 / 拍板点清单全在 [`project/PROJECT_LIFECYCLE.md`](project/PROJECT_LIFECYCLE.md)。默认自主一直跑，只在拍板点停。
 
@@ -75,7 +77,7 @@
 ## 各项目下一步
 
 - **ICLR**：M3 写作起步。读 `project/README.md` → STORY_FRAMEWORK → ACCEPTANCE_CRITERIA → DATA_INVENTORY → PROJECT_LOG。
-- **NCA-JEPA**：等用户放行 Phase 0（HPC，~48 GPU·hrs，Gate0-3 决策门）。读 `project/meeting/Med-NCA/NCA-JEPA/00_README.md`。
+- **NCA-JEPA**：Phase0 全 7 job 训完 + eval + /stage-gate=AMBER。下一步=修 `eval_anytime.estimate_lf` 口径（真实迭代状态 + I+J_δ+fire）→ 现有 ckpt 重测全臂 L_f → L_f<1 则 Gate1 PASS 走 GREEN / 真>1 转退路 B。阻断 5 项见 `04_LOG` 最新 entry。
 - **BMVC**：被动等审稿，到则 rebuttal（`meeting/BMVC/rebuttal/`）。
 
 > 详细历史日志各项目 `04_LOG.md` / `PROJECT_LOG.md`。旧根级 WORKLOG 已归档 `project/archive/2026-06_portfolio_reorg/`。

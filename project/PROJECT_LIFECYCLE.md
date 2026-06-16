@@ -74,6 +74,40 @@ PASS → 自动：①旧阶段归档 ②从 STORY/ACCEPTANCE 预填下阶段 suc
 
 ---
 
+## 🔬 科研闭环标准流水线（每条腿 → agent → 交接点）
+
+阶段内推进按这条流水线走，**每条腿派对应 agent，别主线串行硬扛**。八角色覆盖全闭环：
+
+```
+调研        → researcher      带引用结论（文献/官方超参/SOTA）
+  ↓ 交接：结论 + 官方超参 → planner 用作设计输入
+设计实验    → planner         实验矩阵（run/变量/seed/预期/对齐 ACCEPTANCE 判据/可并行）
+  ↓ 交接：矩阵表 → coder 按表逐 run 实现
+写实验代码  → coder           训练脚本/model/loss/预处理/画图，自测 pytest，标「就绪」
+  ↓ 交接：就绪代码 + config → 主线（拍板点，不外包）
+🛑 跑训练   → 主线 /loop /run-experiment   持训练锁串行，state.json 自动监控
+  ↓ 交接：state.json status=done + 结果 csv → analyst 解读
+分析结果    → analyst         趋势/消融对比/出图/异常/建议下一步，对判据标 ✅❌
+  ↓ 交接：要写进 paper 的数字 → verifier 先核
+核数字      → verifier        三方对账 registry↔STORY↔tex，Bash 核 csv 禁 Read
+  ↓ 交接：已核数字 → writer 只用已核值
+写论文      → writer          写/改 §X，遵守 R-rules 防御写法
+  ↓ 交接：草稿 → reviewer 攻
+审稿/反跑偏 → reviewer        十角色对抗 + STORY 审计，severity 标注
+  ↓
+大阶段收口  → /stage-gate     verifier + opus reviewer 严判 PASS/FAIL，不达不放行
+
+横切：optimizer（自优化协作系统） · drift_guard/training_lock/stage_progress/use_the_squad/coder_handoff_gate/results_ready（hook 自动护栏）
+```
+
+**一键编排 skill**（不用手记每棒派谁）：
+- `/paper-scout` —— 调研腿（researcher 扇出）。
+- `/design-experiment <project>` —— 设计腿（planner）。
+- `/experiment-cycle <project>` —— **设计→写码→🛑跑→分析→核数** 整条中段自动串，人只在跑训练拍板点介入。
+- `/analyze-results <project>` —— 分析腿（analyst），训练 done 后 `results_ready` hook 会提醒跑。
+
+---
+
 ## 速查
 
 | 场景 | 动作 |

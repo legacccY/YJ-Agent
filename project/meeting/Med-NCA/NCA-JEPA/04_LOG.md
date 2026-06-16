@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-06-16 — pilot 全 7 job 训完 + eval + /stage-gate 严判 = 🟡 AMBER（不放行）
+- **训练全完**：7 job 全 COMPLETED 50ep。eval_anytime 出全部 Q(k)+L_f csv（results/anytime_*.csv），aggregate 出 trade-off 图（results/tradeoff.png）。
+- **verifier(V-gate) 核绿**：8 csv 数字零 drift、Q 全单调；a2 S16 三 seed L_f mean=1.0263 std=0.0031；final-loss 0.095/0.100/0.098(std≈0.002)。三 seed eval 数差异（L_f/Q 各不同）反证 ckpt 未被并发覆盖（不同文件）。
+- **核心实测**（全 Bash 核 csv）：
+  - A0+(ViT早退): Q(1)=0.975（窄、近无损）；NCA 各臂 Q(1)=0.63–0.85 < A0+ → **raw anytime 上 ViT 压顶，NCA 不占优**。
+  - a2 S 扫描 trade-off 单调：S4 L_f=1.940/Q1=0.850 → S32 L_f=1.003/Q1=0.631（S↑→L_f→1⁺ 逼近收缩临界、Q1↓）。stability↔anytime 张力实测成立（合 Bassily）。
+  - **全 L_f>1（1.003–1.940），无一形式收缩**。
+- **🛑 reviewer(R-gate,opus) 抓到致命伤 → AMBER**：
+  1. 🔴 **L_f 实测全 >1 顶撞理论 + 命中自定红灯**：02 写 L_f 典型 0.2–0.5（数值例 0.35），§10/§11 绿灯明文「L_f<1.0，>1.0→SN 有 bug 先修」。实测全 >1 → 按自定 if-then 应「先修再判」，不能推 Gate 过。
+  2. 🔴 **L_f 估计器口径 bug（主线诊断）**：`eval_anytime.estimate_lf()` ① 在 `torch.randn` 随机点估 Jacobian（非真实迭代状态，docstring 与实现不符）；② 测 `J_cell`（更新增量 δ）而非残差全映射 `I+J_δ`(+fire_rate)。任一致 L_f 系统性偏高 → L_f>1 大概率是测量错非 SN 失败。
+  3. ❌ **PC-1 不达**：A1 vanilla 只跑 seed42（非 3/3），且单 seed A1 未塌缩 → 「vanilla 塌缩、三件套治好」反例没立住、对照失效。
+  4. 🟠 **PC-2「可控」未坐实**：A2 L_f≈1.026 ≈ A1 L_f=1.041（SN 仅移 ~1.5%），「SN 控了什么」答不上（待 #2 修后重测）。
+  5. 🟠 **Gate1 canary 项无实测**（results 只有 Q(k)，无 std/rank/KoLeo 轨迹）；Gate2（下游 AUROC）PENDING 未跑（合理，后续阶段）。
+  6. 🟠 **registry.gates.Gate3 仍写 anytime「一等」**，与已降辅项的 01/03 脱节，须同步。
+- **三态总判 = AMBER**（03:246「Gate1 过但能力/非劣弱」）：严格说 L_f 红灯未清连 Gate1 都不能判过。给 AMBER 非 RED 的理由 = L_f>1 极可能是 #2 估计器 bug + A2 收敛面（loss std 0.002/无发散/无双峰）真实健康。
+- **诚实定性**：A2 anytime 按 §9.1 自定阈值落 RED（Q1≤0.731<0.95，劣于 A0+），已降辅项；稳定性硬项因 L_f 口径问题悬置（修后再判）。
+- **阻断清单（不放行，须先清）**：① 修 estimate_lf 口径（真实状态 + I+J_δ + fire）→ 重测全臂 L_f；② A1 补 seed123/2024 + A1↔A2 L_f 配对；③ 出 A2 三 seed canary 轨迹核 Gate1；④ registry Gate3 同步；⑤ 02 全文 L_f 数值预言(0.2-0.5/0.35/(1+L_f)^S)按实测返修或标待验。
+- **命中率**：若 #1 修后 L_f<1 → 回 Gate1 PASS 走 GREEN（稳定性核心）；若真>1 → 转退路 B（「latent NCA+SN 仍 L_f>1 无法形式收缩」当独家负结果发稳定性理论）。
+- 训练锁已请用户删（powershell-via-bash 被门禁拦）。本轮文件：3 个 S config + 多处 framing 收敛(writer) + L_f bug 诊断 + 全 eval csv/图。
+
 ## 2026-06-16 — A1/A2 NCA 臂 pilot 批量首训启动（HPC，用户放行）
 - **用户拍板放行训练**：canary 串行先验 → 4 卡并行批量。持 `.portfolio/locks/training.lock`（全 7 job 镜像）。
 - **trade-off 扫描前件落地**：建 `configs/a2_scp_nca_vits_nih10k_S{4,8,32}.yaml`（除 `nca_steps` 外与 a2 S16 完全一致，复现零偏离）；`hpc/sbatch_pilot.sh` 加 `a2_s4/a2_s8/a2_s32` 映射；eval_anytime aggregate 按文件名当 label，吃新 S 命名无需改。
