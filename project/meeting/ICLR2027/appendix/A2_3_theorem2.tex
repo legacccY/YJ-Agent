@@ -32,6 +32,13 @@ with $0<\taulow<\tauenh<\tauhigh<1$ chosen by validation grid search; $\hhigh$ (
 percentile of the validation entropy distribution) separates ``quality-sufficient but
 intrinsically ambiguous'' cases that enhancement cannot salvage.
 
+\begin{assumption}[Unimodal enhancement gain]\label{as:unimodal}
+The expected gross enhancement gain $\qbar\mapsto\E[\Gen(x)\mid\qbar(x)=\qbar]$ is unimodal in
+$\qbar$ on $(0,1)$. This is an empirical modelling assumption (supported by the salvage-rate
+curve), not a derived property; the threshold construction in Lemma~\ref{lem:window} relies on
+it to guarantee that the effective enhancement band is a single connected interval.
+\end{assumption}
+
 \subsubsection{Auxiliary lemmas}\label{app:a2-thm2-lemmas}
 \begin{lemma}[Entropy--risk coupling]\label{lem:entropy-risk}
 For a calibrated predictor with TV calibration error $\delta_{\TV}$ and bounded
@@ -45,17 +52,28 @@ $|\E_p[\ell]-\E_{\hat{p}}[\ell]|\leq M\,\delta_{\TV}(\hat{p},p)$.
 \end{proof}
 
 \begin{lemma}[Enhancement risk reduction]\label{lem:enh-risk}
-Under Proposition~\ref{prop:entropy-full} (and Lemma~\ref{lem:dp-full}),
+Define the gross gain through the post-enhancement predictive entropy,
+$\Gen(x):=\Rdirect(x)-\big(1-e^{-\E[\Hent_{\Tw(x,q)}]}\big)$. Then, using only
+Lemma~\ref{lem:entropy-risk} (entropy--risk coupling) and the DP-loss calibration bound of
+Lemma~\ref{lem:dp-full},
 \begin{equation}
-\Rdirect(x) - \Renh(x) \;\geq\; \Gen(x) - c_e - M\delta_{\TV},
-\qquad \Gen(x):=\Rdirect(x)-\big(1-e^{-\E[\Hent_{\mathrm{enh}}]}\big)\geq 0.
+\Rdirect(x) - \Renh(x) \;\geq\; \Gen(x) - c_e - M\delta_{\TV}.
 \label{eq:enh-gain}
 \end{equation}
+On the salvage band where $\Gen(x)>0$ (an empirical condition, equivalently a positive
+$\Delta\mathrm{AUC}_{\mathrm{enh}}$; validated by experiment E7), the right-hand side is
+positive whenever $\Gen(x)>c_e+M\delta_{\TV}$.
 \end{lemma}
-\begin{proof}
-Substitute the entropy reduction \eqref{eq:p3-full} into Lemma~\ref{lem:entropy-risk}:
-$\Renh(x)-c_e \leq 1-\exp(-\E[\Hent_{\Tw(x,q)}]) + M\delta_{\TV} \leq \Rdirect(x)+M\delta_{\TV}$,
-then rearrange. The gross gain $\Gen(x)$ is non-negative.
+\begin{proof}[Derivation (under the stated assumptions; see Threats to validity)]
+Apply Lemma~\ref{lem:entropy-risk} to the enhanced input:
+$\Renh(x)-c_e \leq 1-\exp(-\E[\Hent_{\Tw(x,q)}]) + M\delta_{\TV}$, then rearrange against
+$\Rdirect(x)$ to obtain \eqref{eq:enh-gain}. We do \emph{not} invoke a net predictive-entropy
+reduction from Proposition~\ref{prop:entropy-full} (which is not empirically supported);
+instead, $\Gen(x)$ is defined directly from the post-enhancement entropy, and its positivity
+on the salvage band is an empirical premise carried by the DP-loss mutual-information lower
+bound (Lemma~\ref{lem:dp-full}, experiment E7) rather than a consequence of
+Proposition~\ref{prop:entropy-full}. Accordingly $\Gen(x)$ is not asserted to be non-negative
+for every $x$; it is positive only on the empirically identified band.
 \end{proof}
 
 \begin{lemma}[Enhancement effectiveness window]\label{lem:window}
@@ -69,8 +87,10 @@ of completeness $q_3$), $\Tw$ cannot raise quality, so $\E[\Hent_{\mathrm{enh}}]
 and $\Gen\approx 0$. Inside the band, Proposition~\ref{prop:entropy-full} gives a significant
 entropy drop, hence $\Gen>c_e$. The thresholds are
 $\tauenh=\inf\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$ and
-$\tauhigh=\sup\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$; if $\Gen$ is unimodal in $\qbar$
-(empirically supported by the salvage-rate curve), the band is a non-empty connected set.
+$\tauhigh=\sup\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$; under
+Assumption~\ref{as:unimodal} ($\E[\Gen]$ unimodal in $\qbar$), the super-level set
+$\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$ is a single connected interval, so the band is a
+non-empty connected set.
 \end{proof}
 
 \begin{lemma}[Query/refuse safety]\label{lem:query-refuse}
@@ -86,18 +106,24 @@ by $c_q$. The refuse branch is a constant referral cost.
 
 \subsubsection{Main result}\label{app:a2-thm2-main}
 \begin{theorem}[Closed-loop agent expected-risk bound]\label{thm:agent}
-Let $\Tw$ be a diagnosis-preserving enhancement satisfying Proposition~\ref{prop:entropy-full}
-and Lemma~\ref{lem:dp-full} with calibration error $\delta_{\TV}$, and let $\pi^{*}$ be the
-threshold policy \eqref{eq:agent-policy}. Then for any $x$,
+Let $\Tw$ be a diagnosis-preserving enhancement satisfying Lemma~\ref{lem:dp-full} with
+calibration error $\delta_{\TV}$ (its information-preservation guarantee; we do not rely on a
+net-entropy claim from Proposition~\ref{prop:entropy-full}), let
+Assumption~\ref{as:unimodal} hold, and let $\pi^{*}$ be the threshold policy
+\eqref{eq:agent-policy}. Then for any $x$,
 \begin{equation}
 \Ragent(x) \;\leq\; \Rdirect(x) - \Delta(\qbar(x),\Tw),
 \qquad
-\Delta(\qbar,\Tw) > 0 \iff \qbar\in[\tauenh,\tauhigh],
+\Delta(\qbar,\Tw) > 0 \;\text{ if }\; \qbar\in(\tauenh,\tauhigh)
+\text{ and } \E[\Gen]>c_e+M\delta_{\TV},
 \label{eq:thm2}
 \end{equation}
 and on the enhance channel
-$\Delta(\qbar,\Tw)\big|_{\qbar\in[\tauenh,\tauhigh]}
+$\Delta(\qbar,\Tw)\big|_{\qbar\in(\tauenh,\tauhigh)}
 = \E_{x:\qbar(x)=\qbar}[\Gen(x)] - c_e - M\delta_{\TV}$.
+Outside this sub-band the policy reverts to query/refuse/direct and $\Delta=0$, so the bound
+holds with equality; we state the strict improvement as a sufficient condition on the
+enhancement band rather than as an ``if and only if''.
 \end{theorem}
 \begin{proof}
 We consider the four cases of the policy partition \eqref{eq:agent-policy}.
@@ -141,8 +167,12 @@ the empirical salvage-rate ($\pisalv$) and $|\Delta\mathrm{AUC}|$ metrics.
 \paragraph{Threats to validity.}
 The Gibbs lower bound in Lemma~\ref{lem:entropy-risk} is tighter for $K=2$ than for large $K$;
 the calibration term treats ECE as a TV proxy (a piecewise-linear calibration map closes the
-gap, Appendix~A2.3.5); the unimodality of $\Gen$ in Lemma~\ref{lem:window} is empirical and
-excluded only when $\Tw$ does not collapse (Stage-1 PSNR$\,\geq 30$\,dB gate); and
+gap, Appendix~A2.3.5); the unimodality of $\Gen$ (Assumption~\ref{as:unimodal}) is an empirical
+modelling assumption rather than a derived property, and the salvage-band non-emptiness it
+underwrites holds only when $\Tw$ does not collapse (Stage-1 PSNR$\,\geq 30$\,dB gate); the
+positivity of the gross gain $\Gen$ rests on the DP-loss mutual-information lower bound
+(Lemma~\ref{lem:dp-full}, experiment E7), not on a net predictive-entropy reduction from
+Proposition~\ref{prop:entropy-full}, which is not empirically supported; and
 Theorem~\ref{thm:agent} is an expected-risk bound, with a Hoeffding finite-sample companion
 $|\hat{\Delta}_{\mathrm{avg}}-\Delta_{\mathrm{avg}}|\leq M\sqrt{\log(2/\delta)/(2n)}$
 (Appendix~A2.3.6).

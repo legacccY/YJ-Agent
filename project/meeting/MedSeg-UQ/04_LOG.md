@@ -63,7 +63,76 @@
 
 **16. 第二轮 reviewer 已派（后台）**：审修订版 §9-§11（E1 低 prevalence 修正是否堵漏、E2 锐化、E5 辩护够不够），回来并入。
 
-**下一步**：等 reviewer-2 → 据其修；E1 系数+一般B收尾；E2 小病灶按 §10.1 攻；（立项后）P3 实证 + verifier Bash 核 mL1-ACE 绝对值精度。
+**17. reviewer-2 回汇 + E1 全面降级（重要诚实回退）**：
+   - **CRITICAL**：低 prevalence「修正」**没堵洞**——「候选区铺满前景」零样本、σ-无关拿 Dice=2/3>校准最优0.505，excess O(1)。第一轮 f≡1 漏洞只是搬家。根因：Dice-excess 主项来自前景位置/普遍性（公开），非 resolve 隐藏 σ（我把 σ 放 O(ε) 维度）。
+   - 附带：引理9.2′ 常数错（ε=1/√(8nβ) 给 TV≈0.707≠½，须 1/√(16nβ)）。
+   - **命中红线「不把弱结果当强卖」**：撤回全部「E1 严格✅/COLT级/minimax已建立」。E1 → **OPEN**。
+   - reviewer-2 正面验证 **§10 E2 最扎实**：Nc 是唯一控制参数（数值 Nc=100 偏差~0.001/Nc=1~0.16）、Jensen 偏差系统向下、O(1/Nc) 衰减，全对；小病灶标 OPEN 诚实必要。
+   - reviewer-2 指 §11 三辩护均偏弱：P2 证明**没用到 Dice non-proper**（只用 Dice≤1 + E[fp]=E[f²]@cal）= Lipschitz泛函+ECE 实例化；E1 垮 → E5 无硬支柱。
+   - **主线再自检**：连 reviewer 给的「ECE-约束 minimax」方向也有洞——flooding 小候选区全局 ECE₁=β（小），被背景稀释，排不掉。**正确度量须 region-conditional calibration（接 ★3/E4）。E1 比两轮以为的更深。**
+   - 已据此修 §6/§9/§11/heading：E1 全面 OPEN、撤过度声称、记正确方向(conditional-cal minimax)。
+
+**诚实总定位**：扎实可用 = A1 下 P1+P2（洞补）+ E2 大前景（reviewer 数值验证）= **workshop/期刊级**。冲 COLT 的命门 = E1 的 conditional-calibration-约束 minimax，**全新未证，比预想深**。**E1 证成前不立项、不对外称下界结果。**
+
+**18. E1 第三次尝试（§9.1，候选未确认）**：改 **region-conditional calibration（cECE，只在候选区算）** 约束。主线自验非退化：flooding 候选区 cECE=½>δ 被排除（全局 ECE₁=β 排不掉，换度量是关键）；部分承诺/背景承诺/半 flooding 初步看也堵。候选定理：cECE≤δ 下 σ-unaware worst-case excess≤O(1/√(nβ))。**已派 reviewer-3 专攻找退化洞（按自己承诺，不提前称成）。**
+
+**诚实状态汇总（给后续窗口）**：
+- 🟢 **扎实**：A1 下 P1（校准最优=E[p²]/E[p]）+ P2（ECE₁≥(E[p]/3)(𝔇−𝔇_cal*)，洞已补）+ E2 大前景（Nc≫1，reviewer 数值验证）= workshop/期刊级，正确可用。
+- 🔴 **OPEN 命门**：E1 minimax（前两次构造翻车，第三次 cECE 候选待 reviewer-3 裁）。E1 成→COLT；不成→期刊档。
+- **纪律教训**：E1 连翻三次源于「自验通过就写已成」。今后理论先派 reviewer 裁再落「已证」。
+
+**19. reviewer-3 否决第三次 + E1 最终停证（重大战略回退）**：
+   - reviewer-3：第三次 cECE 构造也垮——退化预测器=候选区常数 f=½+δ、背景0，cECE=δ 满约束却拿 excess≈δ/2=Θ(δ)（hard-Dice Θ(1)）。我候选定理漏 O(δ) 项，该项免费=P2 换皮。
+   - **主线深层分析（§9.2）**：三次同一病根逼出根本矛盾——「σ 统计难辨(Le Cam 需 KL 小)」⟺「两区都有前景」⟺「flooding 有效」⟺「excess 免费」。**「σ 难辨」与「flooding 无效」不可兼得。**
+   - **裁定**：超出 P2 的额外 finite-sample minimax floor **大概率不存在**（唯一逃逸=稀疏多位置，但退化成 detection 样本复杂度，非新 trade-off floor）。**E1 停证，撤出论文卖点，不追 COLT。**
+   - 全文重新定位：§0/§6/§9/§11 改为 **MICCAI/MedIA/TMI 应用理论档**。
+
+**═══ 最终诚实定位（三轮 reviewer + 深层分析挤完水分）═══**
+- 🟢 **真实可用（论文骨干）**：A1 下 P1（校准最优=E[p²]/E[p]=aleatoric 封顶）+ P2（ECE₁≥(E[p]/3)·Dice-excess，洞补）+ E2 大前景有限-N 修正。正确、自洽、机制清晰。
+- ⛔ **COLT/NeurIPS 纯理论不可达**：E1 minimax 三次失败 + 结构矛盾 → 大概率不存在。
+- 🟡 **唯一真增量 OPEN**：E2 小病灶 Nc=O(1) 随机-Dice 下界（§10.1）。
+- **会场**：MICCAI/MedIA（贴导师领域、算力低），**非顶理论会**。
+- **纪律教训**：理论「自验通过就写已成」连害三次；今后先 reviewer 裁再落「已证」。
+
+**用户拍板**：换理论更高的 ★ 重推（★1 trade-off 降 MICCAI 档存档于 `02`）。
+
+**20. ★ 选型（3 路 researcher 收敛）**：
+   - **★2 最优聚合=高塌缩弃**：Guarino et al. **CVPR'26 已做经验版**且实证「无单一最优算子」；Neyman-Roughgarden'21 已奠基 proper-scoring→最优聚合；SDC 做 Dice 特例。
+   - **★3 分割 multicalibration=选**（塌缩中-低）：核心硬问题零先例（含 COLT'25 全程序）——**空间 Markov/CRF 结构能否打破高维 MC 指数下界 d^Ω(1/ε²)**（Tang 2505.21460 + 2601.05245 开放方向）。竞品 Fair Risk Control(ICML'24 demographic+post-hoc)、Liu-Wu'24(NLP) 不覆盖。
+   - 建 `05_理论框架_★3`：锚定 reading-(b) 结构化联合分布 MC（outcome 2^HW 指数，Markov 因子化坍缩有效维度=COLT 核心；reading-(a) 逐像素=poly 平凡避开）。
+   - **严守 E1 教训**：先建 1D Markov 链 toy 验「结构红利是否存在」（未知二元，正反都可发）→ 算出再写定理 → reviewer 裁 → 上一般 CRF。
+
+**21. ★3 形式化钉死（researcher）**：reading-(b)=部分空白。最危险塌缩=Kuleshov-Liang'15（结构化预测校准，但非 multi-group/无复杂度分析/不用因子化）。推荐形式化=**clique-marginal multicalibration**，复杂度参数(n,k,|G|,ε)，目标 poly(n^k,|G|,1/ε) vs 朴素 exp(n)。防塌缩四条精确区分(Kuleshov/Low-Degree-MC/Tang/Decision-cal)已记 §1.5。
+
+**22. ★3 toy 初推（主线，正信号有边界）**：1D 链——clique 边际低维(4维)→ 校准 (n−1)·|G| 个低维子问题=poly(n)；链/树 joint 由 clique 边际定(junction-tree)→ 结构红利存在。**浮现核心参数=treewidth**，候选主定理 **复杂度 poly(n,|G|,1/ε)·exp(O(treewidth))**（图模型推断的 treewidth 参数化搬进 MC）。**诚实边界**：clique 校准⟹全联合 仅当 truth 是该结构；诚实 claim=局部边际校准。
+
+**23. 派 reviewer-4 攻 toy（后台，按纪律不庆祝先找洞）**：重点攻——(a) 结构红利是否**平凡/稻草人**（clique 边际本就低维，「朴素联合 MC=exp(n)」是不是没人会做的假靶）(b) treewidth 主定理是否=**Kuleshov'15+junction-tree 教科书的平凡组合**(c) online 对抗下红利是否转移(2601.05245 的 Ω 会不会打在每个 clique)。
+
+**24. reviewer-4 裁 ★3：当前形态大体塌缩**：
+   - toy「结构红利」=稻草人（朴素联合 MC over 2^n 是自定义靶，外部无人主张；真问题=局部边际校准本就 poly，没打破任何外部下界）。
+   - treewidth 主定理上界=junction-tree(教科书)+per-marginal 校准机械拼接，treewidth 进复杂度纯因推断已知事实，非 MC 新难度→塌缩。
+   - 退守局部边际校准=Kuleshov'15+Hébert-Johnson 直接叠加，无本质差异。
+   - **唯一窄活路**：弃 batch/打破指数叙事，只赌 online 对抗 regret（链上证严格优于逐 clique 独立基线、gap 源自 MC 对抗性）。但 2601.05245 的 Ω(T^{2/3}) 可能逐边触发吃光红利，reviewer 判也很可能塌缩。
+
+**═══ 大局诚实判断（★1 三翻 + ★3 塌缩后）═══**
+两个理论上限最高的 ★ 深推后**都塌缩成「整合已知结果」**（★1→refinement+无 minimax；★3→junction-tree+per-marginal）。强信号：**医学分割 UQ 的硬理论早被 calibration/multicalibration/conformal 社区做完，「搬到分割」普遍 incremental**。「纯顶会(CVPR/ICLR/NeurIPS/COLT)靠理论」对本配置(本科+导师 IEEE 期刊/医学影像+低算力)是逆梯度。
+**这是拍板点**：①接受 MICCAI/MedIA 档(★1 的 P1+P2+E2+实证,真实可发) ②赌 ★3 online-regret 窄门(高风险,reviewer 判likely塌缩) ③换大方向(非「医学分割理论下界」这类)。需用户定。
+
+---
+
+## 2026-06-16 收工
+
+**用户拍板**：战略**先停,问王水花教授再定**（会场偏好/资源/是否有理论合作者）。本窗不再往下推，等导师反馈。
+
+**本次完成**：
+1. MedSeg-UQ 从零完成立项前调研：8 路 researcher 选题矩阵+文献矩阵+理论深挖矩阵+导师画像（`00`），定向 ★1。
+2. ★1 calibration-Dice trade-off 理论：P1（校准最优=aleatoric 封顶）+ P2（ECE₁≥(E[p]/3)·Dice-excess，致命洞已修）+ E2 大前景有限-N，三轮 reviewer + 主线自检挤干水分；E1 minimax 经结构矛盾判**大概率不存在** → 降 MICCAI/MedIA 档存档（`02`）。
+3. 转 ★3 multicalibration（`05`）：形式化钉死，但 reviewer-4 判 toy=稻草人、treewidth 上界=junction-tree 机械拼接，大体塌缩，仅余 online-regret 窄门。
+4. 大局结论：医学分割 UQ 纯理论下界这条路对本配置**逆梯度**，硬理论已被 calibration/MC/conformal 社区做完。
+
+**待导师定**：①会场（接受 MICCAI/MedIA 真实可发 vs 硬冲 CV/ML 三大会）②若冲三大会则需转方法/实证类（吃算力）③是否有理论合作者支撑 ★3 online 窄门。
+
+**纪律教训沉淀**：理论「自验通过就写已成」连害 ★1 三翻；今后先 reviewer 裁再落「已证」。本项目已认领 `.portfolio/locks/medseg-uq.claim`，pre-立项（未跑 /spin-off-paper，registry 未建）。
 
 **下一步（待办）**
 - [ ] E1 严格化：引理9.2 t↔sign 定量 + reduction Markov 论证 + 定常数 c₁。

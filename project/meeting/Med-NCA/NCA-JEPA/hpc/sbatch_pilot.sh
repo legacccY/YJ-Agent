@@ -2,6 +2,7 @@
 # NCA-JEPA pilot 单臂训练。提交（A0 baseline）：
 #   sbatch --export=ALL,ARM=a0,SEED=42 --job-name=ncaj_a0_s42 hpc/sbatch_pilot.sh
 # A1/A2 多 seed：ARM=a1|a2，SEED=42|123|2024（每 seed 一个 job，qos 上限 4 卡可并行）
+# trade-off S 扫描：ARM=a2_s4|a2_s8|a2|a2_s32（a2=S16），各训一 ckpt → eval_anytime 出 §9.1 主图
 #SBATCH --account=shuihuawang
 #SBATCH --partition=gpu4090
 #SBATCH --qos=4gpus
@@ -14,6 +15,8 @@
 ROOT=/gpfs/work/bio/jiayu2403/nca-jepa
 PY=/gpfs/work/bio/jiayu2403/.conda/envs/yjcu124py310/bin/python
 export EXP_LOG_ROOT=$ROOT/logs
+# 单节点多 job 并发时唯一 MASTER_PORT，避免固定 40112 抢端口致 DDP init 失败
+export MASTER_PORT=$(( 20000 + (SLURM_JOB_ID % 20000) ))
 ARM=${ARM:-a0}
 SEED=${SEED:-42}
 
@@ -22,7 +25,10 @@ case "$ARM" in
   a0) CFG=configs/a0_vit_vits_nih10k.yaml ;;
   a0plus) CFG=configs/a0plus_earlyexit_vit_vits_nih10k.yaml ;;
   a1) CFG=configs/a1_vanilla_nca_vits_nih10k.yaml ;;
-  a2) CFG=configs/a2_scp_nca_vits_nih10k.yaml ;;
+  a2) CFG=configs/a2_scp_nca_vits_nih10k.yaml ;;        # = S16（默认主臂）
+  a2_s4)  CFG=configs/a2_scp_nca_vits_nih10k_S4.yaml ;;   # trade-off 扫描点
+  a2_s8)  CFG=configs/a2_scp_nca_vits_nih10k_S8.yaml ;;
+  a2_s32) CFG=configs/a2_scp_nca_vits_nih10k_S32.yaml ;;
   *)  echo "未知 ARM=$ARM"; exit 1 ;;
 esac
 

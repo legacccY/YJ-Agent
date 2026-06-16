@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-06-16 — A1/A2 NCA 臂 pilot 批量首训启动（HPC，用户放行）
+- **用户拍板放行训练**：canary 串行先验 → 4 卡并行批量。持 `.portfolio/locks/training.lock`（全 7 job 镜像）。
+- **trade-off 扫描前件落地**：建 `configs/a2_scp_nca_vits_nih10k_S{4,8,32}.yaml`（除 `nca_steps` 外与 a2 S16 完全一致，复现零偏离）；`hpc/sbatch_pilot.sh` 加 `a2_s4/a2_s8/a2_s32` 映射；eval_anytime aggregate 按文件名当 label，吃新 S 命名无需改。
+- **🟢 canary A2_s42（job 1450889）健康** = scp_nca 训练 loop 真 GPU 首验通过（NCA 臂从没端到端训过的集成风险解除）：ep1 loss 0.318 → ep1 avg 0.209 → ep4 loss 0.200，有限无 NaN，warmup lr 正常，~120ms/iter。`[ERR]` 误报（grep 抓到 `torch.cuda.amp.autocast` 弃用警告字样）。
+- **批量 7 job 提交**（qos 4 卡，pend 自动排队）：1450889 a2_s42(canary) / 1450891 a1_s42(vanilla 发散对照) / 1450892 a2s4_s42 / 1450893 a2s8_s42 / 1450894 a2s32_s42 / 1450895 a2_s123 / 1450896 a2_s2024。后三 PENDING(QOSMaxJobsPerUserLimit，正常)。config sanity 确认 predictor_type/S 值全对。
+- **监控**：Monitor `_hpc_mon_batch.py` 盯全 7 job state+loss+发散/错误/终态（A1 vanilla 发散是预期对照非 bug）。
+- **目的**：A2 三 seed(42/123/2024)→Gate1 收敛判定；S∈{4,8,16,32}→§9.1 trade-off 主图（A0+ 基准线已在 Q1=0.975）；A1 vs A2→稳定化三件套是否压塌缩/发散。
+- **⚠️ 并发暴露两个 infra bug（已修，非训练语义偏离）**：首批 4 job（a2s4/a2s32/a2_s123/a2_s2024）报 `Traceback` 但 slurm 标 COMPLETED（sbatch 末尾 echo 吞了 python 退出码）。根因二连：① `distributed.py` 固定 `MASTER_PORT=40112`+`MASTER_ADDR=localhost`，同节点多 job 抢端口→`init_process_group` 失败→落回 ws=1 但 `train.py:275` 仍无条件调 DDP→「Default process group has not been initialized」崩；② checkpoint 路径 `folder/jepa-latest.pth.tar` **不含 seed**，同臂多 seed 并发会互撞且只剩末位 ckpt。
+- **修复（纯 infra，不碰 lr/步数/架构/数据，复现零偏离）**：① sbatch 按 `SLURM_JOB_ID` 注入唯一 `MASTER_PORT`；② `distributed.py` 改 `setdefault` 认 env 端口；③ `train.py` folder 加 `_seed{N}` 后缀隔离。3 个运行中 job（889/891/893，老码）不受推码影响，继续健康；4 个失败 resubmit（898/899/900/901，新码）端口/目录全唯一，a2s4(898) 复跑没再崩。
+- **3 活 job 收敛健康**（监控实时）：a2_s42 loss→0.159、a1_s42→0.147、a2s8_s42→0.191（均 ep 多步，无 NaN）。
+- **下一步**：全批 COMPLETED → 各 ckpt 跑 eval_anytime（注意 ckpt 路径：老码 889/891/893 无 seed 后缀，新码 898-901 有 `_seed{N}`）→ aggregate 出 trade-off 图 → Gate1/Gate3 判定。删训练锁。
+
 ## 2026-06-16 — A0+ 臂落地 + stability-vs-anytime trade-off 升一等指标
 - **拍板执行探路两大 framing 决策**（探路报告 §5 致命伤①②）：用户拍板后 2 researcher 并行查官方源 → 落档。
 - **新增 A0+ 臂**（4→5 臂）：early-exit ViT predictor = N 层 ViT + 每层 `Linear(pred_emb,enc_emb)` L2 head + **等权聚合**（MSDNet 官方 `ParallelCriterion` weight=1，ICLR'18 1703.09844；MeViT 2106.15183 证 early-exit+regression 可行）。参数 ≈ A0 不偷加。打死「ViT 也能 early-exit」reviewer 攻击（reject 级）。

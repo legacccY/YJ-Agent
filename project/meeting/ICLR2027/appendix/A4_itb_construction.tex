@@ -17,7 +17,9 @@ assigned on acceptance. The released table contains $2820$ image-level rows.
 Every candidate image is scored by the frozen five-head assessor \visiscore, producing
 $q\in[0,1]^5$ (sharpness, brightness, completeness, colour temperature, contrast); the scalar
 $\qbar=\tfrac{1}{5}\sum_d q_d$ drives subset assignment. The scorer attains PLCC $0.924$ / SRCC
-$0.895$ against paired quality annotations, validated by $487$ expert quality-control labels.
+$0.895$ against paired quality annotations ($n{=}500$ held-out validation split); separately, the
+Fitzpatrick17k pool contributes $487$ expert quality-control labels used during curation to audit and
+clean the retained cases.
 
 \subsection{Degradation Model}\label{app:a4-degrade}
 To populate the low- and boundary-quality strata with controlled severity, ISIC~2020 images are

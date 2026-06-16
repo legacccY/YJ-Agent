@@ -67,12 +67,29 @@ Insert the prior $r_\psi(z\mid q)$:
 \end{equation}
 
 \paragraph{Step 4 (Variational approximations).}
-Replace the intractable likelihood $p(y\mid z)$ by $q_\theta(y\mid z)$, and use the KL identity
+Replace the intractable likelihood $p(y\mid z)$ by $q_\theta(y\mid z)$. For the remaining two
+density-ratio terms in \eqref{eq:a1-p1-3}, take expectations under $p_\phi$ and use the
+definition of the KL divergence on each ratio:
+\begin{align}
+\E_{p_\phi}\!\Big[\log\tfrac{r_\psi(z\mid q)}{p_\phi(z\mid x,q)}\Big]
+&= -\KL\!\big(p_\phi(z\mid x,q)\,\|\,r_\psi(z\mid q)\big),
+\label{eq:a1-p1-4a}\\
+\E_{p_\phi}\!\Big[\log\tfrac{p(z\mid x,q)}{p_\phi(z\mid x,q)}\Big]
+&= -\KL\!\big(p_\phi(z\mid x,q)\,\|\,p(z\mid x,q)\big).
+\label{eq:a1-p1-4b}
+\end{align}
+Adding and subtracting $\log p_\phi(z\mid x,q)$ inside the third ratio of \eqref{eq:a1-p1-3}
+(equivalently, multiplying and dividing by $p_\phi$) before taking the expectation is what
+produces the reference distribution $p_\phi$ in both KL terms; the cross term from the second
+ratio of \eqref{eq:a1-p1-3} is exactly \eqref{eq:a1-p1-4a}. Combining,
 \begin{equation}
 \E_{p_\phi}\!\Big[\log\tfrac{p(z\mid x,q)}{r_\psi(z\mid q)}\Big]
-= \KL\!\big(p_\phi\,\|\,r_\psi\big) - \KL\!\big(p_\phi\,\|\,p(\cdot\mid x,q)\big).
+= \KL\!\big(p_\phi\,\|\,r_\psi\big) - \KL\!\big(p_\phi\,\|\,p(\cdot\mid x,q)\big),
 \label{eq:a1-p1-4}
 \end{equation}
+where the sign follows from $\E_{p_\phi}[\log(p_\phi/r_\psi)]=\KL(p_\phi\|r_\psi)$ and
+\eqref{eq:a1-p1-4b}.
+% VERIFIED (会话35 theory reviewer): eq a1-p1-4a/4b sign bookkeeping matches the canonical two-line ELBO identity; log(p/r_psi)=log(p/p_phi)+log(p_phi/r_psi) under E_{p_phi} gives -KL(p_phi||p)+KL(p_phi||r_psi). No sign error.
 
 \paragraph{Step 5 (Drop the non-negative residual).}
 Since $\KL(p_\phi\,\|\,p(\cdot\mid x,q))\geq 0$, substituting \eqref{eq:a1-p1-3}--\eqref{eq:a1-p1-4}
@@ -252,18 +269,25 @@ Lemma~\ref{lem:softmax}.
 Let $\hat{p}_q(y\mid x)=\E_{z\sim p_\phi(z\mid x,q)}[q_\theta(y\mid z)]$ be the predictive
 distribution and $\Hent(\hat{p}_q)=-\sum_y \hat{p}_q\log\hat{p}_q$ its entropy.
 
-\begin{proposition}[restated, entropy monotonicity]\label{prop:entmono-full}
-Under the $\qvib$ objective \eqref{eq:a1-loss} with $\beta>0$, the expected predictive entropy is
-non-increasing in quality:
+\begin{proposition}[restated, entropy monotonicity at the optimiser's fixed point]\label{prop:entmono-full}
+Consider the $\qvib$ objective \eqref{eq:a1-loss} with $\beta>0$, evaluated at a training
+equilibrium (fixed point of \eqref{eq:a1-loss}) at which (C1)~the classifier $q_\theta$ has
+bounded gradient and is well fit, and (C2)~the predictive entropy is governed by the
+$\sigma^2(\qbar)$-driven term, i.e.\ the variance-driven contribution of Steps~2--3 dominates
+the mean-fit contribution. Under (C1)--(C2), the expected predictive entropy at the fixed point
+is non-increasing in quality:
 \begin{equation}
 \E_{x\sim p(x\mid\qbar_1)}\!\big[\Hent(\hat{p}_{q_1})\big]
 \;\geq\; \E_{x\sim p(x\mid\qbar_2)}\!\big[\Hent(\hat{p}_{q_2})\big]
 \quad\text{whenever}\quad \qbar_1<\qbar_2.
 \label{eq:a1-entmono}
 \end{equation}
+This is a statement about the optimiser's fixed point under (C1)--(C2), not a finite-sample
+certificate.
 \end{proposition}
 
-\begin{proof}
+\begin{proof}[Derivation (under conditions (C1)--(C2) at the optimiser's fixed point; see the
+scope note below and the main-text Limitations for non-watertight regimes)]
 Four steps relating $\sigma^2(\qbar)$ to the optimal encoder and thence to entropy.
 
 \paragraph{Step 1 (Objective at fixed $\qbar$).}

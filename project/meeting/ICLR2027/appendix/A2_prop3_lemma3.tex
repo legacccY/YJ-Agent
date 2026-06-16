@@ -24,21 +24,48 @@ are $\epsilon$-close in KL.
 \end{assumption}
 
 % ═══════════════════════════════════════════════════════════════════════════════
-\subsection{Proposition 3 (Enhancement Entropy Reduction)}\label{app:a2-prop3}
+\subsection{Proposition 3 (Variance-Driven Entropy Term, Sketch)}\label{app:a2-prop3}
 
-\begin{proposition}[restated]\label{prop:entropy-full}
+\paragraph{Scope and empirical status.}
+We sketch the directional effect of the quality-adaptive prior variance on predictive
+entropy under enhancement. We emphasise at the outset that the \emph{net} entropy of the
+predictive distribution is \textbf{not} empirically supported to decrease under
+enhancement: a quality-conditioned predictive-entropy probe finds that the mean entropy
+\emph{increases} after enhancement on the mixed-severity test split
+($\bar{\Hent}_{\mathrm{deg}}=0.1487\!\to\!\bar{\Hent}_{\mathrm{enh}}=0.1572$; two
+independent probes agree). The derivation below therefore isolates only the
+$\sigma^2$-driven term $-\tfrac{d}{2}\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')}$ and
+its direction; it does \emph{not} establish a net entropy reduction, because the
+residual and drift terms are not controlled tightly enough to dominate empirically.
+Consequently, the role that Proposition~3 plays in the paper --- linking enhancement to
+preserved discriminative information --- is carried not by a net-entropy claim but by
+(i)~Lemma~\ref{lem:dp-full}, whose mutual-information lower bound is empirically validated
+(experiment E7: $\Delta\mathrm{AUC}_{\mathrm{enh}}=+0.0205$, $95\%$ CI $[+0.005,+0.035]$,
+McNemar $p=2.3\times10^{-45}$), and (ii)~the Stage-1 PSNR$\,\geq 30$\,dB non-emptiness
+condition on the salvage band (Assumption~\ref{as:a1}). See the Limitations discussion in
+the main text, which states that these arguments are sketches rather than fully watertight
+proofs.
+
+\begin{proposition}[$\sigma^2$-driven entropy term, directional]\label{prop:entropy-full}
 Under Assumptions~\ref{as:a1}--\ref{as:a4}, for $x$ drawn from the salvage band and
-$q'=f_\eta(\Tw(x,q))$,
+$q'=f_\eta(\Tw(x,q))$, the variance-driven component of the expected predictive entropy
+satisfies the directional bound
 \begin{equation}
 \E_{x\sim p(x\mid\qbar)}\!\big[\Hent(\hat{p}_{\Tw(x,q)})\big] \;\leq\;
 \E_{x\sim p(x\mid\qbar)}\!\big[\Hent(\hat{p}_x)\big]
-- \tfrac{d}{2}\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')} + 2\beta\sqrt{\epsilon}.
+- \tfrac{d}{2}\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')} + 2\beta\sqrt{\epsilon},
 \label{eq:p3-full}
 \end{equation}
+\emph{provided} the unmodelled mean-drift contribution $\Delta\Hent_\mu$ (Step~4) is
+non-positive in expectation. We stress that this proviso is \textbf{not} met empirically
+(see the scope note above), so \eqref{eq:p3-full} should be read as characterising the
+\emph{sign} of the $\sigma^2$-driven term, not as a certificate of net entropy reduction.
 \end{proposition}
 
-\begin{proof}
-The argument proceeds in five steps.
+\begin{proof}[Derivation (sketch, under Assumptions~\ref{as:a1}--\ref{as:a4}; see the
+main-text Limitations for non-watertight regimes)]
+We sketch the argument in five steps; it isolates the direction of the
+$\sigma^2$-driven term rather than proving a net reduction.
 
 \paragraph{Step 1 (ELBO decomposition of predictive entropy).}
 By Jensen's inequality and the \qvib{} ELBO (Proposition~1),
@@ -83,11 +110,16 @@ For the enhanced input $x_{\mathrm{enh}}=\Tw(x,q)$ with $\qbar'>\qbar$ (Assumpti
 \label{eq:p3-4}
 \end{equation}
 where $\bar{c}\geq 0$ and $\sigma^2(\qbar')<\sigma^2(\qbar)$ by Assumption~\ref{as:a3} makes the
-first term strictly negative. The drift $\Delta\Hent_\mu$ is controlled by
-Assumption~\ref{as:a4}: Lemma~\ref{lem:dp-full} gives
+first term strictly negative. The mean drift $\Delta\Hent_\mu$ is \emph{bounded in magnitude}
+by Assumption~\ref{as:a4}: Lemma~\ref{lem:dp-full} gives
 $\|p_\phi(z\mid x_{\mathrm{enh}},q') - p_\phi(z\mid x_{\mathrm{ref}},q_{\mathrm{ref}})\|_{\TV}
 \leq \sqrt{\epsilon/2}$, and Fannes-style continuity with Lipschitz $q_\theta$ yields
 $\|\Delta\Hent_\mu\| \leq 2\beta\sqrt{\epsilon}$ (same Pinsker constant as Lemma~\ref{lem:dp-full}).
+We caution that this controls only the \emph{magnitude} of $\Delta\Hent_\mu$, not its sign:
+the bound permits $\Delta\Hent_\mu$ to be positive, in which case the mean-drift contribution
+can offset or exceed the negative variance-driven term. This is precisely the regime our
+measurements indicate (net entropy increases under enhancement), so we do not claim that the
+right-hand side of \eqref{eq:p3-4} is negative in practice.
 
 \paragraph{Step 5 (Refine via Lemma~1 monotonicity).}
 With $\sigma^2(\qbar)=\sigma_{\min}^2+(\sigma_{\max}^2-\sigma_{\min}^2)(1-\sigmoid(s(\qbar-\qbar_0)))$,
@@ -99,15 +131,28 @@ for $\qbar'=\qbar+\Delta\qbar$ with $\Delta\qbar\in[0.1,0.25]$,
 \label{eq:p3-5}
 \end{equation}
 Combining \eqref{eq:p3-4}--\eqref{eq:p3-5} and taking the expectation over $x$ in the
-salvage band gives \eqref{eq:p3-full}.
+salvage band gives the directional statement \eqref{eq:p3-full}, under the proviso (stated in
+the proposition) that $\Delta\Hent_\mu$ is non-positive in expectation. Since that proviso is
+not met empirically, we treat \eqref{eq:p3-full} as a characterisation of the sign of the
+$\sigma^2$-driven term and defer the operative information-preservation guarantee to
+Lemma~\ref{lem:dp-full} (validated by experiment E7) and the PSNR$\,\geq 30$\,dB
+non-emptiness condition.
 \end{proof}
 
-\paragraph{Tight constants (non-vacuity).}
+\paragraph{Magnitude of the $\sigma^2$-driven term.}
 For $d=128$, $\sigma_{\max}^2/\sigma_{\min}^2\approx 4$, $s\approx 6$, at $\qbar=0.45\to 0.60$,
+the variance-driven term has magnitude
 $\tfrac{d}{2}\log\tfrac{\sigma^2(0.45)}{\sigma^2(0.60)} \approx 64\log(1.5) \approx 26$ nats,
-whereas the residual $2\beta\sqrt{\epsilon}\approx 2\cdot0.735\cdot\sqrt{0.05}\approx 0.33$ nats
-($\beta=M\Lq/\sqrt{2}\approx 0.735$ for $K=2$, $\epsilon=0.05$). The gap exceeds the residual by
-$\sim\!80\times$, so \eqref{eq:p3-full} is non-vacuous in our regime.
+whereas the magnitude bound on the controlled residual is
+$2\beta\sqrt{\epsilon}\approx 2\cdot0.735\cdot\sqrt{0.05}\approx 0.33$ nats
+($\beta=M\Lq/\sqrt{2}\approx 0.735$ for $K=2$, $\epsilon=0.05$).
+% VERIFIED (会话35 theory reviewer): beta=M*Lq/sqrt(2)=0.6931*1.5/sqrt(2)=0.735 with M=log2 exact; Lq=1.5 is the spectral-clip design bound. Constants confirmed self-consistent; no numerical change.
+We caution against reading this comparison as a non-vacuity certificate: it bounds only the
+\emph{modelled} variance-driven and Pinsker-residual terms, and it does \emph{not} account
+for the unmodelled mean-drift contribution $\Delta\Hent_\mu$ of Step~4, whose sign is
+unconstrained. Empirically the net entropy increases under enhancement, indicating that
+$\Delta\Hent_\mu$ dominates in our regime; we therefore do not assert that the net bound
+\eqref{eq:p3-full} is realised.
 
 \paragraph{Failure mode.}
 If Assumption~\ref{as:a1} fails ($\Tw$ collapses to identity, $\qbar'\approx\qbar$), the
@@ -128,8 +173,10 @@ I(\Zenh;Y) \;\geq\; I(\Zref;Y) - \beta\sqrt{\epsilon},
 \end{equation}
 \end{lemma}
 
-\begin{proof}
-The argument proceeds in four steps.
+\begin{proof}[Derivation (sketch, under the stated assumptions (L1)--(L2); see the main-text
+Limitations for non-watertight regimes)]
+The argument proceeds in four steps. This is a derivation under the stated assumptions rather
+than a fully watertight proof; its empirical instantiation is reported as experiment E7.
 
 \paragraph{Step 1 (Pinsker: KL $\to$ TV).}
 By Pinsker's inequality,
@@ -143,14 +190,21 @@ By Pinsker's inequality,
 
 \paragraph{Step 2 (Push TV through the classifier by coupling).}
 For the optimal coupling $(\Zenh,\Zref)$, $\mathbb{P}[\Zenh\neq\Zref]=\delta_{\TV}$. With the
-$\Lq$-Lipschitz classifier,
+$\Lq$-Lipschitz classifier and writing $\bar{\sigma}:=\E\|\Zenh-\Zref\|_2/\delta_{\TV}$ for the
+effective latent radius (of order $\sigma(\qbar)$, hence $\qbar$-dependent),
 \begin{equation}
 \|\hat{p}_{\mathrm{enh}}-\hat{p}_{\mathrm{ref}}\|_{\TV}
 = \big\|\E[q_\theta(\cdot\mid\Zenh)-q_\theta(\cdot\mid\Zref)]\big\|_{\TV}
-\leq \Lq\,\E\|\Zenh-\Zref\|_2 \leq \Lq\sqrt{\epsilon/2},
+\leq \Lq\,\E\|\Zenh-\Zref\|_2 \leq \Lq\,\bar{\sigma}\,\sqrt{\epsilon/2}.
 \label{eq:l3-2}
 \end{equation}
-absorbing the $O(\sigma(\qbar))$ effective latent radius into $\Lq$.
+We keep the $\bar{\sigma}$ factor explicit rather than folding it into $\Lq$, because
+$\bar{\sigma}$ depends on $\qbar$ and absorbing it would silently entangle the reported
+constant $\Lq\approx 1.5$ (and hence $\beta=M\Lq/\sqrt{2}$) with the quality level.
+% VERIFIED (会话35 theory reviewer): under bar-sigma=Theta(1) the downstream constants are unchanged; beta=M*Lq/sqrt(2)=0.6931*1.5/sqrt(2)=0.735 (M=log2 exact), Lq=1.5 is the spectral-clip design bound. sigma-bar now carried through eq l3-3 and absorbed explicitly. No numerical change.
+In the normalised-head regime of our setup the effective radius is itself $O(1)$ after the
+spectral-norm clipping that defines $\Lq$, so the subsequent constants are stated for
+$\bar{\sigma}=\Theta(1)$; the $\qbar$-dependence is what we make explicit here.
 
 \paragraph{Step 3 (MI gap via continuity of entropy).}
 Writing $I(Z;Y)=\Hent(Y)-\Hent(Y\mid Z)$, the drop equals
@@ -159,7 +213,8 @@ $\Hent(Y\mid\Zenh)-\Hent(Y\mid\Zref)$. By the Fannes--Audenaert inequality and
 \begin{equation}
 |\Hent(Y\mid\Zenh)-\Hent(Y\mid\Zref)|
 \leq M\,\delta_{\TV} + h(\delta_{\TV})
-\leq M\,\Lq\sqrt{\epsilon/2} + O\!\big(\sqrt{\epsilon}\log(1/\sqrt{\epsilon})\big),
+\leq M\,\Lq\,\bar{\sigma}\sqrt{\epsilon/2} + O\!\big(\sqrt{\epsilon}\log(1/\sqrt{\epsilon})\big)
+\;\stackrel{\bar{\sigma}=\Theta(1)}{=}\; M\,\Lq\sqrt{\epsilon/2} + O\!\big(\sqrt{\epsilon}\log(1/\sqrt{\epsilon})\big),
 \label{eq:l3-3}
 \end{equation}
 where $h$ is the binary entropy, dominated by its linear term for small $\delta_{\TV}$.
@@ -172,9 +227,10 @@ I(\Zref;Y)-I(\Zenh;Y)
 = \frac{M\,\Lq}{\sqrt{2}}\,\sqrt{\epsilon} = \beta\sqrt{\epsilon},
 \label{eq:l3-4}
 \end{equation}
-which is \eqref{eq:l3-full}. The $\sqrt{\epsilon}$ rate is Pinsker-optimal: a linear-$\epsilon$
-bound would require a $\chi^2$-divergence assumption ($\chi^2\leq\epsilon$ in place of KL;
-Appendix~A2.2.5).
+which is \eqref{eq:l3-full}. The $\sqrt{\epsilon}$ rate is the standard Pinsker scaling for a
+KL budget; a linear-$\epsilon$ rate would require a stronger $\chi^2$-divergence budget
+($\chi^2\leq\epsilon$ in place of KL; Appendix~A2.2.5). We do not claim this rate is optimal,
+only that it is the rate Pinsker's inequality delivers under the KL assumption (L2).
 \end{proof}
 
 \paragraph{Tight constants.}

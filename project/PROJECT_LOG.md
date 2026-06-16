@@ -6,6 +6,46 @@
 
 ---
 
+## 2026-06-16（会话 35，大编队第三轮投稿前体检 → 引用保真收口：bib 作者错 + 84/74 溯源 + A4 口径歧义）
+
+### 起因
+用户「读档，大编队开始 ICLR 工作」+「一直跑别停」。承会话 34 待续。认领 iclr.claim（win-iclr-s35）。训练锁被他窗 nca-jepa 持（HPC job 1450845），ICLR 纯写作不冲突。数字 PENDING（A19/A20/A21 + drafts/s7 的 \TODO）全阻塞在 Plan A 重训（拍板点 + 训练锁被占）→ 本轮只做写作侧无新数活。3 路并行（verifier 全稿数字 + reviewer 反跑偏/幽灵证据 + researcher 引用闭合）→ 主线分诊修。
+
+### 🟢 大编队体检结果
+- **verifier（全稿数字）**：main.tex + appendix + table*.tex 所有数值回 csv 三方对账，**0 DRIFT**。会话34 触碰项全确认（E1 32.8/22.7/+10.1、ρ −0.192/−0.191、Table 2 universality 20 数、E5 分母 4/77 85/274 2392、Abstract 0.707/0.098/−0.165 源 eval_report_ablation.md）。
+- **reviewer（反跑偏 + 十角色快扫）**：无新 reject/MAJOR。会话34 两修复（universality de-overclaim + 幽灵证据清除）确认干净无残留、与实数自洽。3 个 🟡 转 verifier 核（§7.7 AUC 0.585 vs §7.2 0.707 口径、A4 487 标注、§7.6「all four」措辞）。
+- **researcher（引用闭合）**：37 cite 全闭合无 orphan cite；查出 **3 处 bib 作者错** + kim2024systematic 的 DOI 实为 Salinas et al（非 Kim）= 红线4风险待澄清。
+
+### ✅ 落地修复（references.bib + main.tex + A4，全编译过）
+- **bib 作者保真 ×3**：maul2024 二作 `Jamiolkowski, Dariusz → Dagmar`（真为女性名）；mistry2026 `Mistry, M. → Khaylen`（首名缩写错）；kim/salinas author `Kim, Hyeong Rae → Salinas, Maria Paz` + 补 `pages={125}`。
+- **84%/74% 溯源（researcher 复核，红线4虚惊解除）**：正文 §2「pooled expert sens/spec near 84%/74% \citep{...}」**数字成立** —— 出自 Salinas 2024 (npj Dig Med 7:125) Table 4「Expert Dermatologists」行（84.2%/74.4%，区别于 all clinicians 79.8/73.6）。正文加「dermatologist」精确化对应该行。**非错挂**，仅 bib 作者字段错（已修）。
+- **key 重命名**：`kim2024systematic → salinas2024systematic`（bib + 唯一 cite 同步），消除「key 名 Kim 指向 Salinas 文」的未来混淆源。
+- **A4 口径歧义修（verifier 查出）**：A4 §Quality Scoring 原句把「PLCC 0.924/SRCC 0.895」与「487 expert QC labels」并写，暗示 PLCC/SRCC 在 487 上算；实际两者不同集（**PLCC/SRCC 源 eval_report_visiscore.md n=500 synthetic paired val；487 源 fitzpatrick17k.csv QC 列 504−17 mislabel**），无「487-labels 的 PLCC/SRCC」产物。诚实改写：PLCC/SRCC 挂回真源 n=500 held-out val，487 据实写成「curation 中审计/清洗用的专家 QC 标注」，不臆造未做的验证指标（守红线4）。
+- **§7.6 措辞软化**：「drives ρ more negative in all four backbones」→「in each of the four」（reviewer 低优先，降挑刺面，事实仍属实 4/4 更负）。
+- **0.585 / 0.707 双池确认**：verifier 坐实 0.585 源 itb_results.csv（F/ITB-LQ n=300），0.707 源 held-out n=19878，两池不同且 tex 两处均有 pool 说明，口径正确无矛盾。
+
+### 命中率
+第三轮体检主攻引用层（前两轮主攻正文数字 + 幽灵证据）：bib 作者错虽不渲染但 reviewer 可借 DOI 反查打假（诚信面）；84/74 经 researcher 联网坐实非错挂（避免误删真数据=另一种红线）；A4 口径歧义是「把两个真数字并写成一个未做的验证」=比单纯错数更隐蔽的 overclaim，投稿前拆。全程数字一律 csv 核（0 drift），不动待 Plan A 重训的 PENDING 数（守红线4，不编造）。编译 **47 页 0 undefined**。
+
+### ✅ 续批（同会话，理论附录 rigor 大修——reject 级硬伤收口）
+数字侧阻塞在重训，转审本会话未碰的角度：派理论 reviewer 对抗审 5 定理证明（A1 Q-VIB / A2 Prop3-Lemma3 / A2_3 Thm2 / A3 Cor1）。
+
+- **🔴 CRITICAL（已修）**：Prop 3「增强降熵」被自家 **E4 实验证伪**（H_deg 0.1487→H_enh 0.1572 反增，两独立 probe 一致，ACCEPTANCE E4=FAIL）却仍以完整 `\begin{proof}` 呈现 = 理论+复现 reviewer 交叉火力 reject 弹药。主线核真源确认属实（E4 真 FAIL + STORY R2 line 239 已明令 Prop3 用「derive/sketch」+ Limitations 已写「not watertight」）→ 判定修它=拉回既定 STORY R2 合规=自主-safe（非偏离 STORY）。
+- **MAJOR（已修）**：附录自称 proof/qed 与正文「sketches not watertight」打架（违 R2）；Prop 2 条件未进 statement；Thm 2 把经验 unimodal 当公理推 iff；Cor 1 min(...) 第一项缺证（Jensen 反向）；Prop 1 参考分布配平跳步；Lemma 3 把 q̄-依赖量藏进常数 Lq + 「Pinsker-optimal」overclaim。
+- **writer 修 6 文件**（A2_prop3_lemma3 + 其 compact §4.4 主体 + A1_qvib + A2_3_theorem2 + A3_corollary1 + A0_notation）：Prop3 降级 σ²-term sketch + 明写「净降熵未被实证，角色由 E7（ΔAUC_enh +0.0205, McNemar p=2.3e-45）+ PSNR≥30 非空性承载」；proof 口径全加 scope 声明；Prop2 条件 (C1)(C2) 提进 statement；Thm2 加显式 `Assumption [Unimodal enhancement gain]` + iff 弱化为充分条件；Cor1 min→单边 `≤ECE(QCTS)+ε_qts`；Prop1 补两行 ELBO 恒等式；「Pinsker-optimal」→「standard Pinsker scaling」。**未自行改任何数值常数**，留 4 处 TODO-verify。
+- **理论 reviewer 复验 4 处 TODO-verify**：#2 β=M·Lq/√2=0.6931·1.5/√2=0.735（M=log2 精确）OK、#3 Prop1 ELBO 符号 OK、#4 Cor1 单边方向 OK 且 0.116 valid（min(0.098,0.079)=0.079 同值）；仅 **#1 σ̄ 形式跳步**（l3-2 引入 σ̄ 但 l3-3/l3-4 公式凭空丢）→ 主线据 reviewer 修法在 eq l3-3 显式带 σ̄ 再 `\stackrel{σ̄=Θ(1)}{=}` 吸收。4 处 TODO-verify 全更新为 VERIFIED 闭环注释。
+- 重编 **50 页 0 undefined**（理论展开 +3 页），无 TODO-verify 残留。
+
+### 命中率（理论段）
+理论 rigor 是 ICLR 头号 reject 向。第三轮体检前两轮没碰证明，这轮专审挖出 Prop3 被自家实验证伪的 reject 级硬伤——这是「定理预测被证伪却仍当 proof 写」，比单个数字错更致命。修法严守 honesty 方向（宁可弱化/加显式假设/降级 sketch，绝不 overclaim），且全程对齐既有 STORY R2 决策（不是新立场=非拍板点）。writer 不擅改常数留 TODO、reviewer 复验闭环、主线补最后形式跳步 = 三层交叉防红线。
+
+### 待续（会话 36）
+1. **数字侧全阻塞在 Plan A 重训**（A19 LLM-judge / A20 cost 模拟曲线 / drafts/s7 SOTA 表 \TODO / triage sim）—— 启训 = 拍板点，且训练锁现被 nca-jepa 占（HPC）。需用户放行 + 锁释放后才能推。
+2. camera-ready 前：宏名 `\visienhance`/`\visiscore` → 中性名跨 10 .tex 重命名（仅上传源码时需要，初投 PDF-only 不暴露）。
+3. 本会话改动未 commit（references.bib / main.tex / A4_itb_construction.tex / PROJECT_LOG）。push 远端历史分叉待用户拍。
+
+---
+
 ## 2026-06-16（会话 34，大编队第二轮投稿前体检 → 2 幽灵证据诚信项收口 + L13 cost-benefit 入文 + 0.707 溯源澄清）
 
 ### 起因

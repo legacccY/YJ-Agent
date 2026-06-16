@@ -14,7 +14,7 @@
 | **BMVC** QCTS | BMVC 2026 | 已投 05-24 | 🔒 sealed：仅 rebuttal | P9 | `project/meeting/BMVC/` |
 
 未来槽位：HuimaiMed/脉枢（命名见 memory）。新论文 → `/spin-off-paper` 自动登记 registry + 建标准 schema。
-- **MedSeg-UQ（医学分割+不确定性，pre-立项调研中）**：选题/文献/理论矩阵见 `project/meeting/MedSeg-UQ/00_选题调研_2026-06-16.md`。主推方向 ★1 Calibration–Dice trade-off 下界（纯顶会向）。待拍板立项。
+- **MedSeg-UQ（医学分割+不确定性，pre-立项·待问导师）**：调研+理论见 `project/meeting/MedSeg-UQ/`（`00`矩阵 / `02` ★1 trade-off=MICCAI档 / `05` ★3 multicalibration / `04` LOG）。三轮审稿结论：纯顶会理论下界这条路塌缩（★1 minimax 不存在、★3=junction-tree 拼接），真实可发档=MICCAI/MedIA。**战略停在「问王水花教授定会场/资源」**，未立项。
 
 > **项目规范真源**：新项目立项 / 新阶段开启 / 自主运行边界 / 拍板点清单全在 [`project/PROJECT_LIFECYCLE.md`](project/PROJECT_LIFECYCLE.md)。默认自主一直跑，只在拍板点停。
 

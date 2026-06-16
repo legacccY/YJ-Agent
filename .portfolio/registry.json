@@ -9,7 +9,7 @@
       "deadline": "2026-09-22 (abstract) / 2026-09-29 (full)",
       "status": "active",
       "priority": 1,
-      "phase": "M3 写作推进（会话34：A21 SLICE-3D/LLM-judge 幽灵证据收口 + L13 cost-benefit 入 A20 + 0.707 溯源澄清；47 页 0 undef。待续 §7.7 DCA 主模型 triage + E1 基线锚 + 清注释）",
+      "phase": "M3 写作推进（会话35：大编队第三轮体检→①引用保真：bib 作者错×3 + kim→salinas 重命名 + 84/74 经 Salinas Table4 坐实 + A4 487/PLCC 口径拆分；②理论 rigor 大修[reject 级]：Prop3 被 E4 证伪却充 proof→降级 sketch+E7/PSNR 承载、proof 口径全加 scope、Thm2 加显式 unimodal 假设、Cor1 min→单边、Prop1 补 ELBO、Lemma3 σ̄ 显式化；6 文件，常数未动经 reviewer 复验自洽。50 页 0 undef 0 TODO。数字侧 PENDING 全阻塞在 Plan A 重训=拍板点+训练锁被 nca-jepa 占）",
       "home": "project/",
       "story": "project/STORY_FRAMEWORK.md",
       "log": "project/PROJECT_LOG.md"

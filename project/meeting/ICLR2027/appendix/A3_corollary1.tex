@@ -11,17 +11,23 @@ composite $\pComp$ rescales the \qvib{} logits by $T(\qbar)$.
 
 \begin{corollary}[Composite calibration ECE bound]\label{cor:composite}
 \begin{equation}
-\ECE(\pComp) \;\leq\; \min\!\big(\ECE(\pQV),\,\ECE(\pQCTS)\big) + \epsqts,
+\ECE(\pComp) \;\leq\; \ECE(\pQCTS) + \epsqts,
 \qquad
 \epsqts = O\!\Big(\tfrac{\Lt\,\|\ell\|_{\max}}{\Tmin^2}\cdot\sigma_{\qbar\mid c}\Big),
 \label{eq:cor1}
 \end{equation}
 where $\epsqts$ vanishes when $T\equiv 1$ (composite $=\pQV$) or
-$\Var[\qbar\mid\pQV]=0$ (quality-deterministic output).
+$\Var[\qbar\mid\pQV]=0$ (quality-deterministic output). We state the one-sided bound against
+$\ECE(\pQCTS)$ only: the stronger two-sided form
+$\min(\ECE(\pQV),\ECE(\pQCTS))+\epsqts$ would additionally require the $\qbar$-averaged
+conditional reliability gap to be no larger than \emph{either} marginal calibration error,
+which we do not establish here (the $\qbar$-average can exceed the better of the two marginals;
+see the remark after the proof).
 \end{corollary}
 
-\begin{proof}
-The argument proceeds in four steps.
+\begin{proof}[Derivation (under the stated Lipschitz schedule assumptions; see the main-text
+Limitations for non-watertight regimes)]
+The argument proceeds in four steps and establishes the one-sided bound \eqref{eq:cor1}.
 
 \paragraph{Step 1 (ECE as a reliability integral).}
 By the Brier/Murphy decomposition, with $c=\hat{p}(Y=1\mid X)$, calibration curve
@@ -50,23 +56,34 @@ $\qbar$, the chain rule through softmax/sigmoid gives
 Substituting Step~3 into \eqref{eq:cor1-1} and applying Jensen and Cauchy--Schwarz,
 \begin{equation}
 \ECE(\pComp)
-\leq \underbrace{\E_{\qbar}\!\int|c-\pi(c;\qbar)|\rho\,dc}_{\leq\,\min(\ECE^{(\mathrm{QV})},\ECE^{(\mathrm{QCTS})})}
+\leq \underbrace{\E_{\qbar}\!\int|c-\pi(c;\qbar)|\rho\,dc}_{\leq\,\ECE^{(\mathrm{QCTS})}}
 + \underbrace{\tfrac{\Lt\,\|\ell\|_{\max}}{\Tmin^2}}_{=:K_T}\cdot\sigma_{\qbar\mid c},
 \label{eq:cor1-4}
 \end{equation}
-where the first term is bounded by the better of the two individual calibrations (if $\pQV$
-is already well-calibrated the composite inherits it up to the residual; if $T$ alone
-calibrates, the composite is at most that plus the residual), and the second is the Lipschitz
-residual $\epsqts := K_T\,\sigma_{\qbar\mid c}$. This is \eqref{eq:cor1}.
+where the first term is bounded by the calibration error of the $\qcts$-rescaled predictive
+$\ECE^{(\mathrm{QCTS})}$ --- the temperature schedule $T(\qbar)$ is exactly the map whose
+calibration this term measures --- and the second is the Lipschitz residual
+$\epsqts := K_T\,\sigma_{\qbar\mid c}$. This gives the one-sided bound \eqref{eq:cor1}.
 \end{proof}
+
+\begin{remark}[Why the bound is one-sided]\label{rem:cor1-onesided}
+We do not bound the first term of \eqref{eq:cor1-4} by $\ECE^{(\mathrm{QV})}$. The
+$\qbar$-averaged conditional reliability gap $\E_{\qbar}\!\int|c-\pi(c;\qbar)|\rho\,dc$ need
+not be smaller than the $\pQV$ marginal calibration error: averaging conditional absolute
+deviations can exceed the absolute deviation of the marginal calibration curve (a
+Jensen-type inequality runs in the unfavourable direction here). We therefore anchor the bound
+on $\ECE^{(\mathrm{QCTS})}$, the calibration that the composite directly inherits through the
+temperature map, and report the one-sided guarantee. % VERIFIED (会话35 theory reviewer): one-sided direction holds (q-bar-averaged conditional ECE <= ECE(QCTS), the calibration QCTS directly inherits); min(QV,QCTS) was unprovable as QV side runs Jensen the wrong way. Bound value 0.079+0.037=0.116 unchanged since min(0.098,0.079)=0.079.
+\end{remark}
 
 \paragraph{Tight constants.}
 With $\alpha=0.955$ the schedule has $\Lt\approx 0.239$ and $\Tmin\approx 1.44$; the \qvib{}
 logit range is $\|\ell\|_{\max}\approx 4$, giving $K_T=\Lt\|\ell\|_{\max}/\Tmin^2\approx 0.461$.
 The quality spread at fixed composite confidence is $\sigma_{\qbar\mid c}\approx 0.08$, so
-$\epsqts\approx 0.037$. With $\ECE(\pQV)=0.098$ and $\ECE(\pQCTS)=0.079$, the bound predicts
-$\ECE(\pComp)\leq\min(0.098,0.079)+0.037 = 0.116$; the residual is bounded away from vacuity for
-any $\Lt\leq 5$ (the schedule enforces $\alpha\leq 1$).
+$\epsqts\approx 0.037$. With $\ECE(\pQCTS)=0.079$, the one-sided bound \eqref{eq:cor1} predicts
+$\ECE(\pComp)\leq 0.079+0.037 = 0.116$ (for reference, the $\pQV$ marginal is
+$\ECE(\pQV)=0.098$); the residual is bounded away from vacuity for any $\Lt\leq 5$ (the schedule
+enforces $\alpha\leq 1$).
 
 \paragraph{Role in the narrative.}
 Corollary~\ref{cor:composite} shows the composite \emph{cannot} reach $\ECE^{(\mathrm{QCTS})}$

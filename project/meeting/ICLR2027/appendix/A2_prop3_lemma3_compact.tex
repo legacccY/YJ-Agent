@@ -1,18 +1,26 @@
 % Compact statements of Prop 3 + Lemma 3 for the main body (§4.4).
 % Full proofs: Appendix A2.1 / A2.2 (appendix/A2_prop3_lemma3.tex).
 
-\begin{proposition}[Enhancement Entropy Reduction]\label{prop:entropy}
+\begin{proposition}[Variance-Driven Entropy Term, Directional]\label{prop:entropy}
 Under Assumptions A1--A4 (quality improvement, calibrated scoring, monotone prior,
-diagnostic preservation), for $x$ in the salvage band and $q'=f_\eta(\Tw(x,q))$,
+diagnostic preservation), for $x$ in the salvage band and $q'=f_\eta(\Tw(x,q))$, the
+variance-driven component of the expected predictive entropy obeys the directional bound
 \begin{equation}
 \E_{x}\!\big[\Hent(\hat{p}_{\Tw(x,q)})\big] \;\leq\;
 \E_{x}\!\big[\Hent(\hat{p}_x)\big]
 - \tfrac{d}{2}\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')} + 2\beta\sqrt{\epsilon},
 \label{eq:prop3}
 \end{equation}
-where the first negative term is the \qvib{} entropy gap (Lemma~1, strictly positive
-since $\qbar'>\qbar \Rightarrow \sigma^2$ shrinks) and the residual $2\beta\sqrt{\epsilon}$
-is the diagnostic-preservation slack (Lemma~\ref{lem:dp}).
+\emph{provided} the unmodelled mean-drift term is non-positive in expectation. The first
+negative term is the \qvib{} variance gap (Lemma~1, since $\qbar'>\qbar \Rightarrow \sigma^2$
+shrinks) and $2\beta\sqrt{\epsilon}$ bounds the magnitude of the diagnostic-preservation slack
+(Lemma~\ref{lem:dp}). We emphasise that the proviso is \textbf{not} empirically supported (a
+quality-conditioned probe finds the net predictive entropy \emph{increases} after enhancement);
+\eqref{eq:prop3} should therefore be read as characterising the sign of the $\sigma^2$-driven
+term, not as a net entropy reduction. The information-preservation role of this result in the
+paper is carried instead by Lemma~\ref{lem:dp} (validated by experiment E7) and the Stage-1
+PSNR$\,\geq 30$\,dB non-emptiness condition; see Appendix~\ref{app:a2-prop3} and the main-text
+Limitations.
 \end{proposition}
 
 \begin{lemma}[Diagnosis-Preserving Mutual-Information Bound]\label{lem:dp}
@@ -23,7 +31,8 @@ I(\Zenh; Y) \;\geq\; I(\Zref; Y) - \beta\sqrt{\epsilon},
 \qquad \beta = \frac{M\,\Lq}{\sqrt{2}}.
 \label{eq:lemma3}
 \end{equation}
-The $\sqrt{\epsilon}$ rate is Pinsker-optimal; a linear-$\epsilon$ bound would require a
-stronger $\chi^2$-divergence assumption (Appendix~A2.2.5). The proof combines Pinsker's
-inequality with a Lipschitz coupling argument (Appendix~A2.2).
+The $\sqrt{\epsilon}$ rate is the standard Pinsker scaling for a KL budget; a linear-$\epsilon$
+rate would require a stronger $\chi^2$-divergence budget (Appendix~A2.2.5). The derivation
+combines Pinsker's inequality with a Lipschitz coupling argument (Appendix~A2.2); we state it
+as a derivation under the listed assumptions rather than a fully watertight proof.
 \end{lemma}
