@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-06-16",
+  "updated": "2026-06-16T19",
   "note": "跨论文协调单一真源。多终端窗口共享此文件 + locks/。规避 context 压缩断链，仿 run-experiment state.json 模式。",
   "projects": {
     "iclr": {

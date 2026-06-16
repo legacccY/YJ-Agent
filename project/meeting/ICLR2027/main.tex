@@ -247,8 +247,8 @@ high-quality strata, and the entropy--quality correlation $\rho(\Hent,\qbar)$. A
 \qvib{} Full attains the best QCDI ($+0.006$, CI $\pm0.059$) and a strongly negative $\rho=-0.19$ ---
 the behaviour predicted by \Cref{prop:entmono} (predictive entropy monotone in quality). On aggregate
 ECE it ties Std VIB ($0.149$ vs $0.146$ on \itb-LQ), but unlike Std VIB its calibration is conditioned
-on quality (QCDI $+0.006$ vs $+0.016$, $\rho$ $-0.19$ vs $-0.15$). \qcts{}, our prior post-hoc method,
-is the strongest \emph{post-hoc} calibrator (\itb-LQ ECE $0.079$) and is included as a calibration
+on quality (QCDI $+0.006$ vs $+0.016$, $\rho$ $-0.19$ vs $-0.15$). \qcts{}, a prior post-hoc
+quality-conditional method, is the strongest \emph{post-hoc} calibrator (\itb-LQ ECE $0.079$) and is included as a calibration
 ablation. The \itb{} pool is intentionally harder (adversarial low-quality strata) than the held-out
 set on which the \qvib{} core attains AUC $0.707$ / ECE $0.098$ ($\rho=-0.165$, $p<10^{-24}$,
 $n=19{,}878$).
@@ -475,8 +475,8 @@ out-of-distribution clinical photographs as an open OOD-calibration problem (Sec
 \section{Discussion and Limitations}\label{sec:discussion}
 
 \paragraph{Relation to prior post-hoc scaling.}
-Our earlier quality-conditional temperature scaling (\qcts) operates on a \emph{frozen} model as a
-post-hoc step. The present system is end-to-end trainable with active intervention: enhancement and
+Quality-conditional temperature scaling (\qcts), a prior post-hoc approach, operates on a \emph{frozen}
+model as a post-hoc step. The present system is end-to-end trainable with active intervention: enhancement and
 routing change the input and the decision, not merely the confidence. Corollary~\ref{cor:composite-compact}
 formalises how the two compose.
 
