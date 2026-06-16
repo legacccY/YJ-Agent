@@ -88,7 +88,9 @@
 | 评估工具 eval_anytime（Q(k)+L_f+图） | ✅ 本地 smoke |
 | 参数实测核对 | ✅ |
 | **真数据全链路 smoke** | ✅ 本地 GPU + **✅ HPC login CPU**（`smoke_train_a0plus.py`，两侧 loss 初值均 0.4796≈A0；HPC import 链 + 7 文件已上传，rc=0） |
-| **A0/A0+/A1/A2 训练** | ❌ 待用户拍（串行红线，代码已就绪可 sbatch） |
+| **A0+ seed42 训练** | ✅ job 1450845 COMPLETED 50ep，loss 0.088，HEALTHY；eval Q(k)=0.975→1.000 单调，gain 0.994（`results/anytime_a0plus_s42.csv`） |
+| **A1/A2 训练** | ❌ 待用户拍（NCA 臂，出 trade-off 对比需要） |
+| **战略发现** | A0+ Q(1)=0.975 → ViT early-exit 几乎无损、动态范围窄；②牌须靠稳定性/省参差异化，非「anytime 更准」 |
 | **SN 强度可调旋钮**（扫不同 L_f） | ❌ 设计问题未解，见 §7 |
 | **trade-off 真图（训练后）** | ❌ 依赖训练 |
 

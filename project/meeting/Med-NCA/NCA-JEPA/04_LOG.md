@@ -22,7 +22,10 @@
 - **诚实缺口（见 06 §7）**：① 真数据 smoke + 训练未跑（待拍，串行红线）；② **SN 强度旋钮设计问题**——PyTorch spectral_norm 固定 σ→1 不能设目标 L_f，§9.1「扫 L_f」改用 nca_steps S∈{4,8,16,32} 当主旋钮 + L_f 实测，真扫 L_f 需另加约束机制（Phase1 开放项，不臆想）；③ hpc sbatch 加 a0plus 映射 + 多 S 配置待补。
 - **本地真数据全链路 smoke 通过**（`_scratch/smoke_train_a0plus.py`，GPU）：真 MBMaskCollator + encoder + EMA + a0plus + loss list 等权 + backward + EMA，1 step 全过；A0+ 6 exit shape 全 == target；**等权 loss 初值 0.4796 ≈ A0 baseline 0.476**（job 1450052）→ 集成正确、真训练会健康。`hpc/sbatch_pilot.sh` 加 a0plus 映射。
 - **✅ HPC 真数据 smoke 通过**（用户选项落地）：VPN 通 → 推 7 文件（earlyexit/nca/helper/train/config/sbatch/eval_anytime）→ HPC import 链 OK → login CPU 真 NIH 全链路 smoke `loss=0.4796`（与本地一致，≈A0 baseline 0.476），rc=0。`_scratch/_hpc_push_a0plus.py` 一键推+smoke。
-- **下一步**：拍正式训练（A0+/A1/A2，待用户「跑」，串行红线持 training.lock）→ eval_anytime → trade-off 图 → Gate。代码已就绪可直接 sbatch。
+- **✅ A0+ seed42 首训健康完成**（job 1450845，持 training.lock→完删）：sacct COMPLETED ExitCode 0:0，跑满 50ep，avg loss 0.088（6-exit 等权均值，浅层拉高，正常），VERDICT HEALTHY，无报错。31min（比 A0 16min 慢=6 exit 多反传）。
+- **✅ A0+ anytime 真信号**（eval_anytime on jepa-ep50，ckpt 载入 missing=0）：Q(k)=0.975/0.986/0.992/0.994/0.997/1.000（k=1..6），**单调上升=anytime 有效**（合 Jazbec conditional monotonicity）；anytime-gain Q(4)/Q(6)=0.994。csv `results/anytime_a0plus_s42.csv`（已核）。
+- **⚠️ 战略洞察（诚实）**：A0+ **Q(1)=0.975 已极高 → ViT early-exit 几乎无损、anytime 动态范围窄**。即「ViT 也能 early-exit 且本任务几乎完美」——②牌压力实锤。NCA 要赢不能靠「anytime 更准」，得差异化（稳定性维度 / 更激进早退 / 省参下的 anytime）。这正是 §9.1 trade-off 要诚实呈现的，须 A1/A2 的 Q(k) 同台才完整。
+- **下一步**：拍 A1/A2 训练（NCA 臂，待用户「跑」）→ 各自 eval_anytime Q(k) → aggregate 出 trade-off 图（A0+ 基准线已就位）→ 看 NCA 动态范围 vs A0+ → Gate1/3。
 
 
 - **5 路并行探路**（4 researcher sonnet + 1 reviewer opus，组合台系统首次实战）→ 报告 `05_探路_2026-06-16.md`。

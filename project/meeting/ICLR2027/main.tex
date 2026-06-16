@@ -122,7 +122,7 @@ Reader studies place expert dermatologist accuracy on dermoscopic melanoma recog
 roughly $74$--$89\%$ sensitivity and $60$--$79\%$ specificity, with substantial inter-reader variance
 that depends on experience and on the availability of clinical context
 \citep{haenssle2018man,brinker2019deep,marchetti2020computer,tschandl2019comparison}; meta-analyses
-report pooled expert sensitivity and specificity near $84\%$ and $74\%$ \citep{kim2024systematic}, and
+report pooled expert dermatologist sensitivity and specificity near $84\%$ and $74\%$ \citep{salinas2024systematic}, and
 convolutional networks have matched or exceeded readers on curated benchmarks
 \citep{esteva2017dermatologist,tschandl2020human}. These comparisons are dataset- and
 operating-point-specific and presuppose curated, high-quality imagery. Our contribution is orthogonal:
@@ -385,7 +385,7 @@ ConvNeXt-Tiny, Swin-Tiny); \Cref{tab:universality} reports the entropy--quality 
 the calibration gap QCDI before scaling, under uniform temperature scaling, and under
 quality-conditional scaling. Uniform temperature scaling is a rank-preserving transform and therefore
 leaves $\rho$ unchanged by construction, so it cannot address the entropy--quality coupling;
-quality-conditional scaling instead drives $\rho$ more negative in all four backbones, most visibly on
+quality-conditional scaling instead drives $\rho$ more negative in each of the four backbones, most visibly on
 the weakly quality-aware ViT-Tiny ($\rho$: $+0.028 \to -0.056$). Its effect on the calibration gap
 QCDI is concentrated where it is needed: on the weakly quality-aware ViT-Tiny ($+0.023 \to -0.017$)
 and ConvNeXt-Tiny ($+0.136 \to -0.020$) it pulls QCDI substantially toward zero, whereas on the

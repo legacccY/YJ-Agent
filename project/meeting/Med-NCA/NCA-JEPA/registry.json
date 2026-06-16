@@ -25,11 +25,11 @@
   },
   "seeds": [42, 123, 2024],
   "current": {
-    "phase": "Phase 0 待用户放行",
-    "last_job": "1450052 (A0 baseline 健康跑通, loss 0.476→0.056@ep10)",
+    "phase": "Phase 0 — A0 + A0+ 首训健康完成; A1/A2 待拍",
+    "last_job": "1450845 (A0+ seed42 COMPLETED 50ep, avg loss 0.088, anytime Q(k) 0.975→1.000 单调有效, gain 0.994)",
     "sentinels": "7/8 PASS (s4 边界非 bug)",
     "provenance": "configs/PROVENANCE.md (红线10 官方超参联网复核完成)",
-    "next": "HPC 真数据 smoke A0+ → A0/A0+/A1/A2 训练（待拍）→ eval_anytime → trade-off 图 → Gate",
+    "next": "拍 A1/A2 训练（NCA 臂，待用户「跑」）→ eval_anytime Q(k) → aggregate trade-off 图（A0+ 基准线已就位: Q1=0.975 动态范围窄）→ Gate1/3",
     "tools": "eval_anytime.py (§9.1 Q(k)/L_f/trade-off 图, eval+aggregate 双模式); eval_linear_probe.py (Gate0 probe); smoke_integration.py",
     "report": "06_A0+_anytime_trade-off_落地_2026-06-16.md (A0+ 交付 + 完成度审计 + 继续命令)",
     "known_gap": "SN 强度旋钮: PyTorch spectral_norm 固定 σ→1 不能设目标 L_f; §9.1 扫 L_f 改用 nca_steps S∈{4,8,16,32} 主旋钮 + L_f 实测; 真扫 L_f 需另加约束机制(Phase1 开放项,不臆想)"
