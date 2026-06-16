@@ -15,6 +15,13 @@ process.stdin.on('end', () => {
   const p = String(data.prompt || '');
   let out = '';
 
+  // 泛指令（无关键词的"开始工作/继续/干活"）→ 提醒主线按项目状态自动路由流水线，别串行单干
+  const vagueStart = /^(\s*)(开始(工作|干活|吧)?|继续|接着(干|做)|干活(吧)?|推进(一下)?|开工|往下走|往前推|go|start|继续推进|接着来)(\s|$|，|。|！|\.|!)/i.test(p)
+    || /(开始工作|继续干|接着干|干活吧|推进一下|往下推进)/i.test(p);
+  if (vagueStart && p.length < 40) {
+    out += '[自动路由] 泛指令 → 别主线埋头串行。先读 registry.phase + 项目 LOG 最新 entry + log/experiment_state.json 定位流水线当前棒 → 主动派对应 agent/skill（researcher/planner/coder/analyst/writer/reviewer 或 /paper-scout、/design-experiment、/experiment-cycle、/analyze-results、/stage-gate）→ 拍板点停。默认动作=派编队不是自己干。\n';
+  }
+
   // 设计实验类 → planner
   if (/(设计.*实验|实验.*设计|消融|ablation|实验矩阵|跑哪些实验|该跑什么|怎么验证|验证.*claim|baseline 选|对照组|实验方案)/i.test(p)) {
     out += '[派 planner] 设计实验别主线串行拍脑袋 → 派 planner(opus) 出实验矩阵（对齐 ACCEPTANCE 判据），或一键 /design-experiment <project>。\n';

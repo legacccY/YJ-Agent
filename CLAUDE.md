@@ -73,6 +73,12 @@
 
 > 八角色覆盖科研全闭环：调研(researcher)→设计(planner)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析三条腿**——派对应 agent。
 
+**⚡ 泛指令自动路由（铁律）**：用户实际只会说「开始工作 / 继续 / 接着干 / 干活吧 / 推进一下」这种**不带关键词的泛指令**，不会点名「设计实验/写码/分析」。主线必须**按项目状态自动定位流水线当前棒、主动派对应 agent/skill，绝不退回主线串行单干、绝不等用户给关键词**：
+> 1. 读 `registry.phase` + 项目 LOG 最新 entry + `log/experiment_state.json` → 判当前卡在哪一棒。
+> 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；要设计实验→`planner`/`/design-experiment`；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。
+> 3. 到拍板点（训练/投稿/立项…）停下报，其余自主推进。
+> 判据：能并行扇出就扇出，能一键 skill 就用 skill——**默认动作是「派编队」不是「自己埋头干」**。
+
 **自动多 sonnet 并行**（无须每次征求同意）：任务含多个彼此独立、无文件冲突的子任务时，主动同时派多个 sonnet，每个给完整冷启动上下文（路径/目标/禁止项）。
 **例外——主线亲自串行，绝不外包**：训练启停、HPC 提交/上传、危险删除（Remove-Item / kill 进程）等关键路径/实时操作。
 
