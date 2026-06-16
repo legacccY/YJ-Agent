@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "project": "nca-jepa",
+  "updated": "2026-06-16",
+  "venue": "TBD (arXiv pilot → NeurIPS/ICLR)",
+  "status": "pilot-ready",
+  "standard_schema_map": {
+    "00_README": "README.md",
+    "01_STORY": "01_创新计划.md + 02_理论框架.md",
+    "02_ACCEPTANCE": "Gate0-3 决策门（见 03_pilot §决策门 + 本文件 gates）",
+    "03_DATA": "03_pilot_NIH_ChestXray14.md",
+    "04_LOG": "04_LOG.md（指回 ../PROJECT_LOG.md 全史）"
+  },
+  "gates": {
+    "Gate0": {"when": "D2", "test": "A0 从头学? A1 单 batch 过拟合? z-shuffle 下游掉≥3 AUROC?", "fail": "管线有 bug，先修"},
+    "Gate1": {"when": "D2", "test": "A2 3/3 seed 收敛 + canary 健康 + σ_final<0.1 + 无双盆地?", "fail": "🔴 RED 路线 B 稳定性理论论文"},
+    "Gate2": {"when": "D16", "test": "ΔAUROC(A2 vs A0) > −3?", "fail": "<−5 → 🔵 路线 C 诊断工具论文"},
+    "Gate3": {"when": "D21", "test": "稳定/anytime/可解释/不确定 ≥2 项 ✅?", "fail": "1 项→聚焦; 0→路线 B"}
+  },
+  "arms": {
+    "a0": {"desc": "ViT predictor baseline (I-JEPA 原版)", "config": "configs/a0*.yaml"},
+    "a1": {"desc": "vanilla NCA predictor", "config": "configs/a1*.yaml"},
+    "a2": {"desc": "SCP-JEPA = NCA + SN+EMA+Det 稳定化三件套（主臂）", "config": "configs/a2*.yaml"}
+  },
+  "seeds": [42, 123, 2024],
+  "current": {
+    "phase": "Phase 0 待用户放行",
+    "last_job": "1450052 (A0 baseline 健康跑通, loss 0.476→0.056@ep10)",
+    "sentinels": "7/8 PASS (s4 边界非 bug)",
+    "provenance": "configs/PROVENANCE.md (红线10 官方超参联网复核完成)",
+    "next": "A0 训完 → Gate0 → A1/A2 多 seed（待用户拍）"
+  },
+  "hpc": {
+    "root": "/gpfs/work/bio/jiayu2403/nca-jepa/",
+    "env": "/gpfs/work/bio/jiayu2403/.conda/envs/yjcu124py310/bin/python",
+    "account": "shuihuawang", "partition": "gpu4090", "qos": "4gpus"
+  }
+}

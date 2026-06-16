@@ -69,3 +69,21 @@ project/meeting/Med-NCA/code/*_done.txt
 project/meeting/Med-NCA/code/*.log
 
 _mednca_repo/
+
+# 个人课业（视频/PDF/zip，666M，与论文组合台无关，不进 git）
+homework/
+
+# NCA-JEPA 子项目
+# 官方 I-JEPA 仓（嵌套 git，可重 clone）
+project/meeting/Med-NCA/NCA-JEPA/ijepa/
+# 草稿/临时探针脚本
+project/meeting/Med-NCA/NCA-JEPA/_scratch/
+
+# 逐图预测 dump（可由模型重跑数据集重生成，见 DATA_INVENTORY）
+project/results/external_*_predictions.csv
+project/results/itb_predictions*.csv
+project/results/_bmvc_archive/
+
+# 运行时窗口认领锁（每机各异，不进 git；保留 registry.json/README/.gitkeep）
+.portfolio/locks/*.claim
+.portfolio/locks/training.lock

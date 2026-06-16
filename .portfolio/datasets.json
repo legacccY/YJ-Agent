@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "updated": "2026-06-16",
+  "note": "跨论文共享数据集地址单一真源。本地 + HPC 路径、下载源、用途、状态都在此。任何脚本/config 引用数据集前先查此表，不重复硬编码、不臆想路径。新增数据集或换路径只改这里 + 在引用处指向。状态: ready=就位可用 / partial=部分就位 / todo=待下载。",
+  "hosts": {
+    "local": "D:/YJ-Agent",
+    "hpc": "XJTLU HPC (gpu4090, 4 卡 qos) — 见 project/HPC_WORKFLOW.md / memory project_hpc_xjtlu"
+  },
+  "datasets": {
+    "isic2020": {
+      "name": "ISIC 2020",
+      "n": 33126,
+      "local": "project/data/raw/isic2020/train-image/image/",
+      "hpc": "TODO 未确认 HPC 路径",
+      "source": "https://challenge2020.isic-archive.com/",
+      "split": "project/data/isic_split.csv (70/10/20)",
+      "used_by": ["iclr"],
+      "purpose": "主训练集；ITB-LQ/HQ/Edge 降质子集源 (results/itb_subsets.csv)",
+      "status": "ready"
+    },
+    "fitzpatrick17k": {
+      "name": "FitzPatrick17k",
+      "n": 16577,
+      "local": "project/data/raw/fitzpatrick17k/images/",
+      "hpc": "TODO",
+      "source": "https://github.com/mattgroh/fitzpatrick17k",
+      "used_by": ["iclr"],
+      "purpose": "肤型公平性 (I-VI) + 训练补充；ITB-Diverse 1500 源；L10 全量 fairness (n=16012 带肤型)",
+      "status": "ready"
+    },
+    "ham10000": {
+      "name": "HAM10000",
+      "n": 10015,
+      "local": "project/data/external/ham10000/",
+      "hpc": "TODO",
+      "source": "https://doi.org/10.7910/DVN/DBW86T",
+      "used_by": ["iclr"],
+      "purpose": "zero-shot 跨数据集 (results/external_ham10000_predictions.csv)",
+      "status": "ready"
+    },
+    "pad_ufes": {
+      "name": "PAD-UFES-20",
+      "n": 2298,
+      "local": "project/data/external/pad_ufes/",
+      "hpc": "TODO",
+      "source": "https://data.mendeley.com/datasets/zr7vgbcyr2/1",
+      "used_by": ["iclr"],
+      "purpose": "zero-shot 跨数据集 (smartphone)",
+      "status": "ready"
+    },
+    "dermnet": {
+      "name": "DermNet",
+      "n": 23000,
+      "local": "project/data/external/dermnet/",
+      "hpc": "TODO",
+      "source": "已爬 (web scrape)",
+      "used_by": ["iclr"],
+      "purpose": "训练补充 / 跨域",
+      "status": "ready"
+    },
+    "chexpert": {
+      "name": "CheXpert",
+      "n": null,
+      "local": "project/data/external/chexpert/",
+      "hpc": "TODO",
+      "source": "https://stanfordmlgroup.github.io/competitions/chexpert/",
+      "used_by": ["iclr"],
+      "purpose": "cross-modality 跨域 (chest X-ray); 脚本 scripts/eval_chexray_crossdomain.py 就位待跑",
+      "status": "todo"
+    },
+    "aptos2019": {
+      "name": "APTOS 2019 Blindness (fundus)",
+      "n": null,
+      "local": "project/data/external/aptos2019/",
+      "hpc": "TODO",
+      "source": "https://www.kaggle.com/c/aptos2019-blindness-detection",
+      "used_by": ["iclr"],
+      "purpose": "cross-modality 跨域 (diabetic retinopathy); 脚本 scripts/eval_fundus_crossdomain.py",
+      "status": "todo"
+    },
+    "kvasir": {
+      "name": "Kvasir-endoscopy",
+      "n": null,
+      "local": "project/data/external/kvasir/",
+      "hpc": "TODO",
+      "source": "https://datasets.simula.no/kvasir/",
+      "used_by": ["iclr"],
+      "purpose": "cross-modality 跨域 (endoscopy); M2 待下载",
+      "status": "todo"
+    },
+    "isic2024": {
+      "name": "ISIC 2024 SLICE-3D",
+      "n": 400000,
+      "local": "project/data/external/isic2024/",
+      "hpc": "TODO",
+      "source": "https://www.kaggle.com/competitions/isic-2024-challenge",
+      "used_by": ["iclr"],
+      "purpose": "L24 real LQ smartphone-style 子集挖掘; M2 待下载",
+      "status": "todo"
+    },
+    "nih_cxr14": {
+      "name": "NIH ChestX-ray14 (224² resized)",
+      "n": 112120,
+      "local": "project/meeting/Med-NCA/NCA-JEPA/data/nih_cxr14/ (build_splits.py DATA_ROOT)",
+      "hpc": "TODO 待 Phase 0 放行后确认 HPC scratch 路径",
+      "source": "Kaggle khanfashee/nih-chest-x-ray-14-224x224-resized (PNG, 224²); 原图 NIH Box 1024² ~45GB",
+      "split": "DATA_ROOT/splits/ (build_splits.py 生成; pilot 子集 ~10k)",
+      "used_by": ["nca-jepa"],
+      "purpose": "NCA-JEPA pilot 预训练 + linear probe; 对齐 CheXWorld 224² 输入",
+      "status": "todo"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "updated": "2026-06-16",
+  "note": "跨论文协调单一真源。多终端窗口共享此文件 + locks/。规避 context 压缩断链，仿 run-experiment state.json 模式。",
+  "projects": {
+    "iclr": {
+      "name": "VisiSkin-Agent",
+      "venue": "ICLR 2027",
+      "deadline": "2026-09-22 (abstract) / 2026-09-29 (full)",
+      "status": "active",
+      "priority": 1,
+      "phase": "M2 实验收官 → M3 写作",
+      "home": "project/",
+      "story": "project/STORY_FRAMEWORK.md",
+      "log": "project/PROJECT_LOG.md"
+    },
+    "bmvc": {
+      "name": "QCTS",
+      "venue": "BMVC 2026",
+      "deadline": "2026-05-24 (已投)",
+      "status": "sealed",
+      "priority": 9,
+      "phase": "封印，仅 rebuttal",
+      "home": "project/meeting/BMVC/",
+      "story": "project/meeting/BMVC/STORY_FRAMEWORK.md",
+      "log": "project/meeting/BMVC/SUBMITTED.md"
+    },
+    "nca-jepa": {
+      "name": "NCA-JEPA",
+      "venue": "TBD (arXiv pilot → NeurIPS/ICLR)",
+      "deadline": "pilot Gate0 ~D2",
+      "status": "pilot-ready",
+      "priority": 2,
+      "phase": "Phase 0 待用户放行（HPC）",
+      "home": "project/meeting/Med-NCA/NCA-JEPA/",
+      "story": "project/meeting/Med-NCA/NCA-JEPA/01_创新计划.md",
+      "log": "project/meeting/Med-NCA/NCA-JEPA/04_LOG.md"
+    }
+  },
+  "training_lock": {
+    "held": false,
+    "by_window": null,
+    "project": null,
+    "host": null,
+    "pid": null,
+    "start_ts": null,
+    "comment": "全局训练互斥。任何本地 Start-Process 训练 / HPC sbatch 前必须先持锁。落实串行红线。实际锁文件 = locks/training.lock；此字段为可读镜像，以锁文件为准。"
+  }
+}

@@ -1,8 +1,4 @@
 {
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "MAX_THINKING_TOKENS": "31999"
-  },
   "permissions": {
     "allow": [
       "Bash(*)",
@@ -45,23 +41,6 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_pre_edit.js\"",
             "timeout": 3,
             "statusMessage": "BMVC seal check..."
-          },
-          {
-            "type": "command",
-            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\writing_caveman_off.js\"",
-            "timeout": 3,
-            "statusMessage": "writing caveman-off check..."
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\training_lock.js\"",
-            "timeout": 3,
-            "statusMessage": "training lock check..."
           }
         ]
       }

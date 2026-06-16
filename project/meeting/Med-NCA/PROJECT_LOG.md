@@ -2,6 +2,61 @@
 
 ---
 
+## 2026-06-16 — NCA-JEPA pilot 探路：数据落地 + predictor 集成接通 + 集成 smoke 全过
+
+**背景**：archive.zip（NIH ChestX-ray14 224² resized 版）下好。开门盘点发现上个会话只建了「半成品」——`nca_predictor.py`/3 config/8 哨兵/ijepa clone 都在，但**集成没接通**：`helper.init_model:79` 还硬编码 `vit_predictor`，没 NIH dataset loader，config 新字段 train 侧没消费。本会话把脊柱焊上 + 端到端验通。**分工**：opus 主线做集成接线（关键路径），简单独立件全交 sonnet。
+
+**做的事**：
+- **数据落地**（后台解压）：112,120 张 PNG（`data/nih_cxr14/images-224/images-224/`）+ Data_Entry_2017.csv + 官方 train_val/test list 全解压。
+- **集成接线（opus 主线）**：
+  - `ijepa/src/helper.py::init_model` 加 `predictor_type` 分支 + NCA 超参（nca_steps/nca_hidden/fire_rate/stabilize/deterministic_fire/fire_seed），`scp_nca`/`vanilla_nca` 走 `nca_predictor` 工厂、`vit` 回退官方原版不破；NCA 跳过外部 trunc init（护 fc1 零初始化语义）。
+  - `ijepa/src/train.py`：读 `meta` 的 predictor_type/nca_* 字段传 init_model；`deterministic=True` 时全局开 `cudnn.deterministic`+`use_deterministic_algorithms`（Det 件套，理论 §3.2）；dataset 默认切 NIH（`dataset:'imagenet1k'` 可回退官方），传 `subset_file`。
+- **sonnet A — NIH loader + 切分**：`ijepa/src/datasets/nih_cxr14.py`（`make_nih_cxr14` 逐参对齐 `make_imagenet1k`、灰度→RGB、subset_file 控子集）+ `build_splits.py`（**patient-level 严切**）。跑出 `splits/`：`pretrain_10k`=10000 图/3257 患者、probe 1%/10%/100%、probe_test=25596（官方 test）；**三组患者重叠全 0**（ChestX-ray14 泄漏陷阱守住）。
+- **sonnet B — 8 哨兵审计**：全部 import 通过 + 自测 PASS。s1/s3/s6/s7 即用；s2/s5 待集成喂 encoder/eval_fn；**s4/s8 含作者主动留的 `NotImplementedError` TODO 占位**（`build_ijepa_nca_batch`/`build_nca_pure_predict_case`），待主线接真 batch 才能用。nca_predictor 接口无需改。
+- **sonnet C — 3 config 补路径**：a0/a1/a2 的 data 段补 `dataset/root_path/image_folder/subset_file` 对齐真实路径，yaml parse 全过。
+- **集成 smoke**（`smoke_integration.py`，CPU，不启训练）：① init_model scp_nca→NCAPredictor 构造 ✅ ② predictor forward shape 对 ✅ ③ vit 回退=VisionTransformerPredictor(11M) ✅ ④ NIH dataset 载 10000 图、3×224×224 ✅。`py_compile` train/helper/nca_predictor/nih loader 全过。
+
+**状态**：**集成脊柱接通、端到端 smoke PASS、数据+子集就绪**。
+
+**续（同会话）— s4/s8 哨兵填实 + 关键发现 + seed plumbing + HPC 全量部署**：
+
+- **s4/s8 哨兵 TODO 填实**（2 sonnet 并行，ECONNRESET 但实活已落盘）：
+  - **关键发现①（度量缺陷）**：s8 框架收敛判据 `l2=(pred-target).norm()` 是全 numel 欧氏范数（平方和开根），随张量元素数缩放——NCA target=36864 元素时即使 MSE→1e-6 欧氏范数仍≈0.19，tol=0.01 须 MSE<2.7e-12 **不可达**。改判据为**逐元素 RMSE<0.01**（合 §7#8「L2<0.01」本意），s8 转 **3 passed**（Test3 RMSE epoch4 触底，但 euclid 轨迹震荡 36→2.4→1.87→5.86→1.22，单 fire NCA 纯预测能触底不稳，呼应 PC-2）。
+  - **关键发现②（全链 floor）**：s4 全链 batch-8 overfit（encoder 训 + target 冻结 + 16 步 NCA）实测（diag_s4_fullchain，4070×3000 步）**lr3e-3 floor 在 ~0.042**（0.45→0.042=91% drop），lr1e-2 反卡 0.20，**到不了绝对 <0.01**——真发现（全递归链优化慢、有 ~0.04 floor，呼应 NCA 递归不稳），非接线 bug。s4 判据本就是「>90% drop=管线对」（抓 flat/NaN，非追零），步数 1500→3000 过线。
+  - **NCA 架构本身健康**：diag 证 deterministic_fire 逐元素固定、纯 predictor 单样本 MSE→1e-6 可收敛、SN 不拖累。
+- **seed plumbing 修复**：`main.py` 原无 `--seed`（sbatch 骨架的 --seed 收不到）→ 加 `--seed` argparse + 注入 `meta.seed` + train.py 读 `run_seed` 覆盖全局 seed + 喂 fire_seed；另加 config `$ENV` 递归展开（`os.path.expandvars`，处理 $EXP_LOG_ROOT）。
+- **🚀 HPC 全量部署完成**（`/gpfs/work/bio/jiayu2403/nca-jepa/`，env=`yjcu124py310` torch2.6/cu124+einops/timm/pandas/cv2 全在，只缺 submitit 但用 main.py 本地启动不需要）：
+  - code(ijepa+configs+sentinels+脚本) tar 上传解压；**archive.zip 2.47GB SFTP 传输中途 EOF 断（2.15GB）→ 写断点续传脚本**（append+seek+keepalive）补满、校验 ZIPOK、解压 112120 png 到 `data/nih_cxr14/`。
+  - HPC 上 build_splits（pretrain_10k 10000/3257 患者，重叠全 0）+ smoke_integration **ALL PASS**。
+  - sbatch 模板 `hpc/{run_sentinels,sbatch_pilot}.sh`（account shuihuawang/gpu4090/qos 4gpus/rtx4090:1）。
+  - **§7 哨兵门 job 1450035 提交**（RUNNING gpu4090n9，8 哨兵串行）。
+
+- **哨兵门结果**（job 1450035，HPC rtx4090）：**7/8 PASS**（s1 归一/s2 EMA/s3 塌缩/s5 z-shuffle 掉50/s6 det/s7 发散/s8 纯预测 RMSE 触底全过）+ **s4 边界 FAIL**（全链 overfit 0.45→0.0506=88.8% drop，差 90% 一线；4070 本地是 91% 过、rtx4090 是 88.8%，floor ~0.05 跨硬件翻转）。**判定 s4 非 bug**（单调降无 NaN + s8 证 NCA 能拟合 + 余 7 全过），是全递归链优化慢的真属性=pilot PC-1/PC-2 要测的信号；不再调阈值凑绿（已调过 s4 步数+s8 度量各一次）。
+- **🚀 A0 baseline 开跑（用户拍板）→ 连过 2 个琐碎崩溃修复 → 训练健康跑通**：
+  - 提交 1450048 → 崩①`FileNotFoundError` 日志目录没建 → train.py 加 `os.makedirs(folder)`。
+  - 重提 1450049 → 崩②I-JEPA 官方 `transforms.py::GaussianBlur` 的 `radius=torch.rand(1)` 是张量、新版 PIL 不收 → 转 `.item()` float（版本兼容 bugfix 非超参改）。
+  - 重提 **1450052 训练完成**：loss 0.476(ep1)→**avg 0.059(ep50)** 平滑收敛，ckpt `logs/a0_vit_vits_nih10k/jepa-ep50.pth.tar`(478MB)+`jepa-latest`，~16min，**全链端到端验通**（数据→mask→encoder→predictor→smooth_l1→AdamW）。**第一个完整 pilot 训练跑通。****注**：smoke 当时用简化 transform 没测 make_transforms 组合，故这 2 崩首次真实触发；已确认 DDP/seed/expandvars 全工作。
+  - **✅ 红线 10 官方超参联网复核完成**（核 CheXWorld `opts.py`+`PRETRAIN.md`+I-JEPA）→ 写 `configs/PROVENANCE.md`（可审计单一真源，每值标 🟢官方/🟡pilot自定/🔴自创方法/⚠️偏差）。**结论：config ~90% 真是 CheXWorld 官方值**（lr2e-4/wd0.05/ema0.996/mask_scale/pred_depth/min_keep/nenc/npred 全核对上，enc_mask_scale 0.85=opts.py 默认我之前误判）。**真偏差（全有意/已澄清）**：① batch64（我们单卡，CheXWorld 256）② blur 实跑 I-JEPA p=0.5 非注释的 0.2 ③ **clip_grad 故意不加**（三件套=SN+EMA+Det 不含 grad clip，加了会掩盖 NCA 不稳定=PC-1 要观察的，pilot 设计选择非遗漏）④ vit_small/50ep/warmup5 pilot 缩水。**A0 不需重训**（pilot 比同设置下相对差，三臂同 config 受控）。
+
+**下一步（接续）**：① 盯 A0 1450052 训完（50ep，~16min）→ Gate0 判定（A0 probe 显著>scratch + s4 overfit + s5 z-shuffle 掉）。② A0 过 → **A1/A2 各 3 seed**（qos 4 卡并行）→ PC-1/PC-2/Gate1；官方超参已核（PROVENANCE.md），**仍待用户拍**。③ PC-3（10×推理方差）+ PC-4（1% probe）→ Gate2/3 → GREEN/AMBER/RED 三态。本会话产出未 commit（待收工）。HPC 临时脚本 `_hpc_*.py`/`diag_*.py` 待清。
+
+---
+
+## 2026-06-15 — NCA-JEPA 创新线归档 + 规范命名 + NIH pilot 计划落定
+
+**背景**：Med-NCA 复现已封印，子项目转新投稿方向 NCA-JEPA（NCA 替 I-JEPA 的 ViT 预测器，主打稳定/随时推理/可解释三能力）。3 份方向文档散落根目录、SCP-JEPA 与 NCA-JEPA 命名漂移。
+
+**做的事**：
+- 建独立子文件夹 `Med-NCA/NCA-JEPA/`，归入 3 文档：`01_创新计划.md`（原 NCA-JEPA_创新计划）/ `02_理论框架.md`（原 理论框架.md）/ `_archive/pilot实验设计_v1.md`（原 pilot 实验设计，已被新 pilot 计划取代）。Med-NCA 复现侧（报告/Plan/REPRO_PLAN/report/results/code/checkpoints）全留原位不动。
+- **规范命名止漂**：**NCA-JEPA = 项目/架构家族名**（arXiv 占坑，实测未被占用）；**SCP-JEPA = 加稳定化三件套的具体方法 = A2 臂**。命名横幅写入 01/02/README 三处单一真源。
+- **写主交付物 `03_pilot_NIH_ChestXray14.md`**：唯一权威 pilot 执行计划。NIH ChestX-ray14（112,120 全 frontal，224² resized 版）~10k 子集，I-JEPA 官方库只换 predictor，4 臂（A0 ViT/A1 vanilla NCA/A2 SCP-JEPA/A3 能力）+ 8 哨兵 + PC-1~4 + 3 Pillar 指标 + 理论锚验证 + Gate0-3 三态判定 + 退路 B/C/D + HPC（gpu4090/`/gpfs/work/bio/jiayu2403/nca-jepa/`）sbatch 骨架。约 48 GPU·小时 / 2 天。
+- 写 `README.md` 入口（命名规范 + 读档顺序 + 判向逻辑图 + 状态）。
+- 已上网核实：NIH 数据规模/全 frontal/224² Kaggle 版、I-JEPA 官方库、CheXWorld 官方库、「NCA-JEPA」名未被占用。
+
+**状态**：计划已定，pilot 待用户拍板开跑（训练启停归用户，串行红线）。本次纯文档，不下数据/不写代码/不启训练。
+
+---
+
 ## 2026-06-05 — 会话 11：1436470 第三次发散 → 逐行核实零偏离官方 → 转「多 seed 脆弱性扫描」并行 5 job
 
 ### 背景：连续两次 1000ep 全发散，回头质疑「是否真按官方」

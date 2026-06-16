@@ -1,0 +1,67 @@
+# ============================================================
+# A1 — 反例臂（vanilla NCA predictor，无稳定化）
+# 验什么（引 03_pilot_NIH_ChestXray14.md §5 / PC-1）：
+#   无约束 NCA 直接搬入是否塌缩/发散（故事需要的反例）。
+#   PC-1 绿灯：3 seed × 50 ep 中 3/3 无发散、canary 健康；
+#   0/3 → NCA 连纯预测都稳不住，直接转路线 B。
+# ============================================================
+data:
+  batch_size: 64
+  color_jitter_strength: 0.2  # CheXWorld
+  crop_scale:
+  - 0.3
+  - 1.0
+  crop_size: 224
+  dataset: nih_cxr14
+  image_folder: images-224/images-224/
+  num_workers: 8
+  pin_mem: true
+  root_path: data/nih_cxr14
+  subset_file: data/nih_cxr14/splits/pretrain_10k.txt
+  use_color_distortion: true  # CheXWorld color_jitter 0.2
+  use_gaussian_blur: true  # CheXWorld iwm_blur_prob 0.2
+  use_horizontal_flip: true  # CheXWorld flip_prob 0.5（注意：CXR 水平翻转破坏左右侧别，留作 ablation 候选）
+logging:
+  folder: $EXP_LOG_ROOT/a1_vanilla_nca_vits_nih10k/
+  write_tag: jepa
+mask:
+  allow_overlap: false
+  aspect_ratio:
+  - 0.75
+  - 1.5
+  enc_mask_scale:  # CheXWorld
+  - 0.85
+  - 1.0
+  min_keep: 10
+  num_enc_masks: 1  # pilot mask-only 单 context（NCA predictor 当前仅支持 1）
+  num_pred_masks: 4
+  patch_size: 16
+  pred_mask_scale:  # CheXWorld
+  - 0.15
+  - 0.2
+meta:
+  copy_data: false
+  load_checkpoint: false
+  model_name: vit_small  # pilot 加速选择；CheXWorld 原用 vit_base，主攻阶段再升
+  pred_depth: 6  # CheXWorld pred_depth 6
+  pred_emb_dim: 384  # CheXWorld
+  read_checkpoint: null
+  use_bfloat16: true
+  # --- NCA-JEPA 自定义字段（NCA predictor，无稳定化三件套） ---
+  predictor_type: vanilla_nca
+  nca_steps: 16
+  fire_rate: 0.5
+  nca_hidden: 128
+  stabilize: false
+optimization:
+  ema:  # CheXWorld ema 0.996 -> ema_end 1.0
+  - 0.996
+  - 1.0
+  epochs: 50  # pilot 短跑（CheXWorld 原 300ep，此处缩水看趋势）
+  final_lr: 1.0e-06  # CheXWorld min_lr 1e-6
+  final_weight_decay: 0.05  # CheXWorld weight_decay_end 0.05 恒定（不是 ramp 到 0.4）
+  ipe_scale: 1.25  # CheXWorld
+  lr: 2.0e-4  # CheXWorld PRETRAIN 实际 --lr 2e-4
+  start_lr: 4.0e-5  # warmup 起点，按 I-JEPA 样例 start/ref≈0.2 比例推算（框架适配，非 CheXWorld 明确值）
+  warmup: 5  # pilot 50ep 按 CheXWorld warmup40/300ep≈13% 比例缩放
+  weight_decay: 0.05  # CheXWorld（不是 I-JEPA 的 0.04）
