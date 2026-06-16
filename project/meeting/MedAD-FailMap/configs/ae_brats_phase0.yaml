@@ -1,0 +1,26 @@
+# MedAD-FailMap A0-train-AE config
+# 服务: MedAD-FailMap Pillar① Phase0 / run A0-train-AE
+# 超参来源: github.com/caiyu6666/MedIAnomaly (复现零偏离，禁私改核心超参)
+#
+# 核心超参在 train_ae_phase0.py OFFICIAL_HPARAMS 中锁定，
+# 此 config 只配置运行环境参数（路径/gpu/seed 等）。
+
+# 数据集标识（固定 brats，不改）
+dataset: brats
+
+# TODO: 数据未下载，见 .portfolio/datasets.json medianomaly_bench (status=todo)
+# 下载后将此路径改为实际解压目录，需包含 brats/train/ 子目录
+# Zenodo: https://zenodo.org/records/12677223
+data_root: D:/YJ-Agent/project/meeting/MedAD-FailMap/data
+
+# 输出目录（checkpoints + score csv）
+out_dir: D:/YJ-Agent/project/meeting/MedAD-FailMap/results
+
+# GPU 索引
+gpu: 0
+
+# DataLoader workers (Windows spawn 规范)
+num_workers: 4
+
+# 随机种子
+seed: 42

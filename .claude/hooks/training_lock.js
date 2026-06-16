@@ -18,12 +18,16 @@ process.stdin.on('end', () => {
   if ((data.tool_name || '') !== 'Bash') process.exit(0);
 
   const cmd = (data.tool_input && data.tool_input.command) || '';
+  // 非执行命令豁免：py_compile / pytest / lint / 版本帮助 —— 是验语法/测试不是跑训练，绝不拦
+  // （否则 `python -m py_compile train_xxx.py` 因含 python+train*.py 被误判为训练，coder 自测被卡）
+  const isCompileOrTest = /py_compile|pyflakes|flake8|\bpytest\b|-m\s+pytest|--version|--help/i.test(cmd);
   // 训练命令识别（保守）：Start-Process+train / sbatch / python+train.py / run-experiment
-  const isTraining =
+  const isTraining = !isCompileOrTest && (
     (/Start-Process/i.test(cmd) && /train/i.test(cmd)) ||
     /\bsbatch\b/i.test(cmd) ||
     (/python/i.test(cmd) && /train[\w-]*\.py/i.test(cmd)) ||
-    /run[_-]experiment/i.test(cmd);
+    /run[_-]experiment/i.test(cmd)
+  );
   if (!isTraining) process.exit(0);
 
   const cwd = (data.cwd || process.cwd()).replace(/\\/g, '/');
