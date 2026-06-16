@@ -3,6 +3,7 @@
 // exit 2 + stderr = warn. Silent on pass.
 
 const fs = require('fs');
+const { log } = require('./_friction.js');
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -49,6 +50,7 @@ process.stdin.on('end', () => {
   });
 
   if (hits.length > 0) {
+    log('redline', path.replace(/\\/g, '/').split('YJ-Agent/').pop());
     process.stderr.write(`REDLINE HIT in ${path} (R1/R2/R4/R8):\n`);
     hits.slice(0, 5).forEach(h => process.stderr.write(`${h}\n`));
     process.stderr.write('Fix before continuing. See project/STORY_FRAMEWORK.md R1-R10.\n');

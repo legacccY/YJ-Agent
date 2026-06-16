@@ -15,6 +15,8 @@
 
 未来槽位：HuimaiMed/脉枢（命名见 memory）。新论文 → `/spin-off-paper` 自动登记 registry + 建标准 schema。
 
+> **项目规范真源**：新项目立项 / 新阶段开启 / 自主运行边界 / 拍板点清单全在 [`project/PROJECT_LIFECYCLE.md`](project/PROJECT_LIFECYCLE.md)。默认自主一直跑，只在拍板点停。
+
 ---
 
 ## 🚦 多窗口规则（多终端各跑一篇时）

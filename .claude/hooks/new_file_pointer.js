@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { log } = require('./_friction.js');
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -57,6 +58,7 @@ process.stdin.on('end', () => {
   }
   if (referenced) process.exit(0);
 
+  log('no-pointer', rel);
   process.stderr.write(
     `[新文件无指针] ${rel}\n` +
     `刚建的重要文件没在任何索引文档登记。补一条指针到对应项目的 README / PROJECT_LOG / 04_LOG（或 registry / PORTFOLIO），免得下次会话找不到、散落跑偏。\n` +

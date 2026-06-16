@@ -98,6 +98,16 @@ papers/sub_{topic}/
 [ ] 匿名化处理（代码链接、自引、致谢）
 ```
 
+### Step 7：登记组合台真源（强制，对齐 PROJECT_LIFECYCLE）
+
+子论文也是组合台一员，必须登记，否则 session_start / 多窗口协调看不到：
+1. 写入 `.portfolio/registry.json` 的 `projects`：`{name, venue, deadline, status:"planning", priority, home, story, log}`。
+2. 用到的数据集进 `.portfolio/datasets.json`（本地+HPC+source+状态）；脚本只引此真源，不硬编码。
+3. 写 `.portfolio/locks/<project>.claim` 认领本窗。
+4. 立项决策（方向/会议/RQ/边界）记入该项目 LOG 首条 entry。
+
+> 立项点（方向/会议/核心 RQ）是**拍板点**：先问用户定，不自作主张。详见 `project/PROJECT_LIFECYCLE.md`。
+
 ## 警告规则
 
 - 如果目标会议与主论文目标会议同期（< 2 个月）：提示 GPU 时间冲突风险

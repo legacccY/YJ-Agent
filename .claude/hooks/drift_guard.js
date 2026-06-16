@@ -35,6 +35,11 @@ process.stdin.on('end', () => {
     out += '[阶段 gate] 半天级大阶段完成 → 跑 /stage-gate <project> 让 opus reviewer 严格对 ACCEPTANCE 判 PASS/FAIL（不存在"基本完成"）。\n';
   }
 
+  // 3b) 新项目立项类 → SOP + 拍板提醒
+  if (/(新项目|新论文|新开一篇|立项|开一篇|拆一篇|spin.?off|新方向|换个题|新课题)/i.test(prompt)) {
+    out += '[新项目] 立项（方向/会议/RQ）是拍板点：先定再动。定后跑 /spin-off-paper 建标准 schema + 登 .portfolio/registry.json + 关联 datasets.json + claim。SOP 见 project/PROJECT_LIFECYCLE.md。\n';
+  }
+
   // 4) 当前窗口认领提示（有 claim 但 prompt 没提项目时轻提）
   try {
     const claims = fs.readdirSync(path.join(root, '.portfolio', 'locks')).filter(f => f.endsWith('.claim'));

@@ -88,3 +88,5 @@ project/results/_bmvc_archive/
 .portfolio/locks/*.claim
 .portfolio/locks/training.lock
 .portfolio/.stage_state.json
+.portfolio/friction.jsonl
+.portfolio/friction.archive.jsonl

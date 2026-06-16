@@ -39,6 +39,21 @@ process.stdin.on('end', () => {
   lines.push('Caveman 仅内部沟通/对话；写 tex/正文/rebuttal 一律 OFF（hook 会提醒）。');
   lines.push('多窗口：写项目前认领 .portfolio/locks/<proj>.claim；训练前持 training.lock。');
 
+  // 自主运行 + 拍板点（默认一直跑；规范见 PROJECT_LIFECYCLE）
+  lines.push('🤖 默认自主一直跑，只在拍板点停（训练/HPC启动·新项目立项·投稿/force push·偏离STORY/改阈值·gate FAIL放行·危险删除·大额花费）。SOP+细则见 project/PROJECT_LIFECYCLE.md。');
+
+  // 自优化：friction 待处理 → 提示 /optimize
+  try {
+    const fric = fs.readFileSync(path.join(root, '.portfolio', 'friction.jsonl'), 'utf8')
+      .split('\n').filter(Boolean);
+    if (fric.length) {
+      const types = {};
+      fric.forEach(l => { try { const t = JSON.parse(l).type; types[t] = (types[t] || 0) + 1; } catch (e) {} });
+      const brief = Object.keys(types).map(k => `${k}×${types[k]}`).join(' ');
+      lines.push(`🔧 摩擦信号待处理 ${fric.length} 条（${brief}）→ 跑 /optimize 聚类自优化（反复出现的才动）。`);
+    }
+  } catch (e) {}
+
   process.stdout.write(lines.join('\n') + '\n');
   process.exit(0);
 });

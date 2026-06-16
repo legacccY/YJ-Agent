@@ -35,6 +35,25 @@
 
 ---
 
+## 🤖 自主运行 + 拍板点（默认一直跑）
+
+**默认自主**：不达拍板点不停下空等——完一个子任务自动推进下一个明确子任务，做完记 LOG，继续。反复征求同意 = 反模式。
+**自主区**（直接做+落档+继续）：写改 tex/bib、核数字、对抗审稿、补实验代码、调研、出图、补指针、写 LOG/`/checkpoint`、修小 bug、跑测试、派 sonnet 并行、stage-gate PASS 后自动开下阶段（预填 criteria 待你确认）。
+
+**🛑 拍板点（停下报、等放行）**：
+1. **启动训练 / HPC 提交 / 上传** — config 验通+持锁就绪后停,报「就绪,说『跑』即启」
+2. **新项目立项**（方向/会议/RQ）— 可先调研,立项点等拍
+3. **投稿 / 对外发布 / force push 改写远端历史**
+4. **偏离 STORY / 改 ACCEPTANCE 阈值 / 命中率回退方向**
+5. **stage-gate FAIL 后是否放行**（默认不放行,写诚实回退）
+6. **危险删除 / 覆写封印**（hook 也拦）
+7. **大笔 API/算力花费** / **真实歧义无合理默认**
+
+判定法：动作**不可逆 / 花真金资源 / 改战略根基 / 对外** → 拍板;否则跑。拿不准 → 先把可逆部分做完,到不可逆处停下报。
+**完整 SOP（新项目 / 新阶段开启 + 拍板点细则）见 `project/PROJECT_LIFECYCLE.md`。**
+
+---
+
 ## 🧑‍🤝‍🧑 Agent 团队 + 模型路由（强制）
 
 **编排模型 = orchestrator-worker**：主线 = Opus（决策/写作/训练管控），工人 = Sonnet（read-heavy/检索/核源），**工人卡住 / 低置信 → 升级 Opus 重派同任务**。主线在工人跑时不空等，继续推关键路径。
@@ -47,6 +66,7 @@
 | `writer` | opus | **OFF** | 写改 tex 章节（先读 STORY+ACCEPTANCE，数字先过 verifier） |
 | `verifier` | sonnet | ON | 核数字：Bash/Grep 核 csv，**禁 Read 看数据**，三方对账 |
 | `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计 |
+| `optimizer` | sonnet | ON | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
 
 **自动多 sonnet 并行**（无须每次征求同意）：任务含多个彼此独立、无文件冲突的子任务时，主动同时派多个 sonnet，每个给完整冷启动上下文（路径/目标/禁止项）。
 **例外——主线亲自串行，绝不外包**：训练启停、HPC 提交/上传、危险删除（Remove-Item / kill 进程）等关键路径/实时操作。
@@ -147,7 +167,8 @@
 ## 🔌 已启用 MCP
 - **Filesystem**：读写桌面/文档/下载 + `D:\YJ-Agent`
 - **Playwright**：控制真实 Chrome（点击/填表/截图/抓登录页）
-- **Firecrawl**：网页转干净文本（免费 500 次/月），优先于内置搜索
+- **Firecrawl**：网页转干净文本（免费 500 次/月），优先于内置搜索；**额度爆时报 402**，此时改用 ddg-search / 内置 WebSearch
+- **ddg-search**（`@oevortex/ddg_search@1.2.2`，npx，无 key 免费）：DuckDuckGo + iask/monica AI 搜索，firecrawl 额度紧时的备用搜索源
 - 每次新增/配置 MCP 后必须同步更新本节
 
 ---
@@ -155,4 +176,5 @@
 ## 🏁 收工流程（用户说「收工」「关了」「拜拜」「结束」「下班」）
 1. 列本次完成内容（2-3 条）
 2. 更新对应项目 `PROJECT_LOG`/`04_LOG` + 必要时 `PORTFOLIO.md`（持 portfolio 写锁的窗口）+ `.portfolio/registry.json` 状态
-3. 执行：`cd D:/YJ-Agent && git add -A && git commit -m "收工：[摘要]" && git push`（git 失败让用户自己跑）
+3. **自优化自检**：若 `.portfolio/friction.jsonl` 非空 → 跑 `/optimize`（optimizer 聚类本次摩擦、小修直接改、大的列提案）；空则跳过。
+4. 执行：`cd D:/YJ-Agent && git add -A && git commit -m "收工：[摘要]" && git push`（git 失败让用户自己跑）

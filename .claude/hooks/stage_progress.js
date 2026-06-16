@@ -47,6 +47,12 @@ process.stdin.on('end', () => {
   else msg += '。';
   msg += '\n半天级大阶段若已收口 → 跑 /stage-gate <project> 让 opus 严审是否达 ACCEPTANCE 标准。';
 
+  // 摩擦累积 → 提示自优化
+  try {
+    const fric = fs.readFileSync(path.join(root, '.portfolio', 'friction.jsonl'), 'utf8').split('\n').filter(Boolean);
+    if (fric.length >= 3) msg += `\n🔧 摩擦已累积 ${fric.length} 条 → 跑 /optimize 自优化协作流程。`;
+  } catch (e) {}
+
   process.stderr.write(msg + '\n');
   process.exit(2);
 });

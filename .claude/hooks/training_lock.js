@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { log } = require('./_friction.js');
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -46,6 +47,7 @@ process.stdin.on('end', () => {
   }
 
   if (lock.status === 'running') {
+    log('training-lock-block', `${lock.project || '?'}@${lock.window_id || '?'}`);
     process.stderr.write(
       `🔒 训练锁被持有：window=${lock.window_id || '?'} project=${lock.project || '?'} ` +
       `host=${lock.host || '?'} since=${lock.running_since || lock.start_ts || '?'}。\n` +
