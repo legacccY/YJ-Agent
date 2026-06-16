@@ -6,6 +6,47 @@
 
 ---
 
+## 2026-06-16（会话 34，大编队第二轮投稿前体检 → 2 幽灵证据诚信项收口 + L13 cost-benefit 入文 + 0.707 溯源澄清）
+
+### 起因
+用户「读档，大编队开始 ICLR 工作」。认领 iclr.claim（他窗 nca-jepa.claim 18:44 残留，未动）。承会话 33 待续：L13 cost-benefit、L14 LLM-judge、未 commit 项（已 commit 于 a0d9554）。3 路并行（researcher L13 + reviewer 主稿对抗审 + verifier 会话33 新数字核源）→ 主线分诊 → writer×2 收口。
+
+### 🟢 大编队体检结果
+- **researcher（L13）**：4 cost 常数全联网坐实带 DOI/cite——活检 $58.40(li2023skinbiopsy, 2020 Medicare 加权平均非单一 CPT)、Stage I→IV £204,289(mistry2026, UK NHS)、漏诊 $7.65B(maul2024，**COVID 延误情景非年常态**)+ 年常态 €2.7B/yr(krensel2019)、teledm £52.85–59.93(loane2001, 2001 GBP)/省£45(hoogenboom2026)。6 bibtex + 期望成本不等式雏形。
+- **reviewer（主稿对抗审）**：挑出 1 CRITICAL（A21 引用不存在的 SLICE-3D 实验=诚信红旗）+ MAJOR（universality QCDI overclaim / §7.7 DCA 正面只靠非主模型 TokFT / E1 +10.1dB 基线无锚）+ MINOR（Ethics 把 LLM-judge 当已做 / dflip 三口径 / n=1320 出处）。规避会话33 已修项。
+- **verifier（会话33 新数字）**：Table 1 ρ 列 CI + Table 2 universality 20 数 + E5 分母（4/77、85/274、2392 全 OK）+ Abstract 数字三方对账。报 Abstract AUC 0.707「MISSING-SOURCE」——后经主线澄清为虚惊（见下）。
+
+### ✅ 落地修复（writer×2，全编译过）
+- **修1 CRITICAL（A21_rebuttal.tex §A21.3）**：删 OOD response 里「evaluates on ISIC 2024 SLICE-3D smartphone subset」——正文 §7.6 根本无此实验（L24=❌）。改引真实存在证据（controlled-degradation taxonomy + §exp-cross 4 外部 derm 集 PAD/Fitz17k 的 quality-stratified erosion），SLICE-3D 降 future work 不挂 cref。
+- **修2 MAJOR（main.tex Ethics + A21.5）**：LLM-judge（A19/L14）无任何 csv = 未做 → Ethics 去掉「LLM-judge audit」作已做手段，改 protocol/deferred to camera-ready；A21.5「rates reported」→「not yet run, deferred」。A19_llm_judge.tex 本已 protocol-only 无需改。同幽灵证据与 SLICE-3D。
+- **修3 MAJOR（main.tex §7.6 universality + table2 caption）**：删「QCDI closer to zero in four of four」overclaim。实数据 ResNet-50 +0.014→+0.014（没动）、Swin +0.020→+0.016（可忽略）、仅 ViT-Tiny(+0.023→−0.017)/ConvNeXt(+0.136→−0.020)明显更近 0 → 诚实写「改善集中在弱质量感知 backbone，对本就质量感知的 ResNet-50/Swin 基本不变」（更贴 R1 防御）。ρ 4/4 更负属实保留。
+- **修4 未照改（writer 正确叫停）**：任务说 ρ −0.1925→应改 −0.193，但实测 csv 真值 **−0.19245802**（rho_bootstrap_iclr.csv），4 位是 4，舍 3 位 = **−0.192 当前已对**。verifier 的「−0.1925→−0.193」记错，writer 抓到拒改（避免反引入错误，红线 3）。Adaptive Prior −0.191 同样已对。
+- **L13 cost 入 A20**：cost 常数作 sensitivity sweep 参数表（带 cite + 口径 caveat）+ break-even 不等式（4-action notation）写进 A20；**simulated operating curves / net-benefit 点估计仍 PENDING（守红线 4，无编造 sim 输出）**；§7.7 加一句指向 A20。references.bib +6 bibtex（Grep 查重）。$7.65B 明标 COVID 情景防误导。
+
+### 🔍 0.707 溯源澄清（虚惊，非红线）
+verifier 报 Abstract AUC 0.707/ECE 0.098/ρ-0.165（n=19878 held-out）「MISSING-SOURCE，eval_report_all.csv 不存在」。主线深查：真 source-of-truth = **`results/eval_report_ablation.md` L9**（frozen，Q-VIB Full 0.707/0.098/0.556/0.850/0.225/−0.165 p=8.13e-121），check_numbers_consistency.py L160-208 已指此源。verifier 因「禁 Read 看数据」只搜 per-sample csv 才误判。**0.707 有源、非编造**。唯一债：per-sample n=19878 csv 从未导出（无法对这几个数重算 bootstrap CI），re-export 已文档化推迟 Plan A re-eval；abstract 未对 0.707 声称 CI → 无问题。
+
+### 命中率
+第二轮投稿前体检主动拆幽灵证据（SLICE-3D + LLM-judge）—— rebuttal/Ethics 承诺正文不存在的实验是比「没做」更致命的诚信红旗，投稿前删。universality 从 overclaim 退成诚实分拆反更强（弱 backbone 受益、强 backbone 不变 = 不 claim universal）。writer 抓 verifier 舍入误记 = 工人交叉纠错防红线 3。L13 cost 只入文献常数不入模拟数 = 守红线 4。0.707 虚惊澄清 = csv-only 核源的盲区（frozen md 报告也是合法源）。编译 **47 页 0 undefined**。
+
+### ✅ 续批（同会话，§7.7 DCA + E1 两 MAJOR 收口）
+- **§7.7 DCA 分工（杀 cherry-pick）**：verifier 核实 Q-VIB Full (F) **根本没跑 triage simulation**（triage_results.csv/dca_summary.json 无 F 条目），无可引 triage 数。→ 不补数（要重跑=拍板），改**讲清分工**：triage sim 评 deployment-time 配置（direct A + 判别耦合更强的 TokFT G，闭环 gate 用 TokFT），Q-VIB Full 是 calibration-demonstration 主配置（headline 在 QCDI/ρ，见 Table 1/§7.2）未纳入 sim；顺带给 F 诊断侧 AUC≈0.585(ITB-LQ，标明非 triage 口径)。诚实不藏、不 claim 增益（R3 保留）。
+- **E1 数字保真**：verifier 查出真 DRIFT——enhanced PSNR e1_v7.json(n=19878)=32.786 应舍 **32.8**，tex 写 32.7 是截断错 → 改 L272/273 + salvage 段 L335 同步 32.8；E8(L306 32.7)/E9(L317 32.79/32.74)不同协议正确不动。+10.1 gain「无锚」解决：补退化输入基线 **22.7 dB**(e1_v7.json psnr_input=22.665)→「from 22.7 to 32.8 (+10.1)」让读者自对。
+- **Std VIB 0.137 口径**：实际 referral=16.3% 非 20% budget → 改「collapse at their natural operating thresholds」解粘连。
+- 编译 **47 页 0 undefined**。
+
+### ✅ 续批（同会话，注释去匿名清理）
+- 清 table1_e10_sota.tex + drafts/s7_e10_sota.tex 注释里字面「VisiEnhance」→「QP-Enhance」（全在 % 行，不影响 PDF）。扫过其余 .tex 无 VisiScore/VisiSkin 字面泄露；QCTS 为已匿名 baseline 标签（会话 33 框定）不动。
+- **遗留（需拍）**：宏名 `\visienhance`/`\visiscore` 本身仍是真名（preamble 定义渲染为 QP-Enhance/5-head IQA，PDF 已匿名，但 .tex 源里宏名泄名）。重命名跨 10 文件机械重构，**仅在 camera-ready 上传源码包时才暴露**（初投 PDF-only 不暴露）→ 建议 deferred 到 camera-ready，不在 deadline 数月前大改。
+
+### 待续（会话 35）
+1. **camera-ready 前**：宏名 `\visienhance`/`\visiscore` → 中性名（如 `\qpenhance`/`\iqa`）跨 10 .tex 重命名（仅上传源码时需要）。
+2. L14 LLM-judge（M3 D15-21，高风险，现为 protocol-only 已诚实标 deferred）。
+3. 本会话改动未 commit（A21_rebuttal/main.tex/table2_universality/A20_cost_benefit/references.bib +6/table1_e10_sota/drafts/s7_e10_sota/PROJECT_LOG/registry）。
+4. push 远端历史分叉待用户拍（force-with-lease）。
+
+---
+
 ## 2026-06-16（会话 33，大编队投稿前体检 → reviewer 致命项收口：去匿名 + ρ 列 CI/p + Table 2 universality）
 
 ### 起因

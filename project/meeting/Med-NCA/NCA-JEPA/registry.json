@@ -19,7 +19,7 @@
   },
   "arms": {
     "a0": {"desc": "ViT predictor baseline (I-JEPA 原版, 单次前向)", "config": "configs/a0*.yaml"},
-    "a0plus": {"desc": "early-exit ViT predictor (每层 L2 head + 等权聚合, MSDNet 式; ②牌 anytime 正面对照)", "config": "configs/a0plus*.yaml (TODO 待建)", "provenance": "MSDNet ICLR'18 1703.09844 等权聚合; MeViT 2106.15183 regression 可行; TODO 待查: stop-grad / loss-weight 变体"},
+    "a0plus": {"desc": "early-exit ViT predictor (每层 norm+Linear 早退头 + 等权聚合, MSDNet 式; ②牌 anytime 正面对照)", "config": "configs/a0plus_earlyexit_vit_vits_nih10k.yaml", "module": "ijepa/src/models/earlyexit_vit_predictor.py", "provenance": "等权 w=1 (MSDNet 1703.09844 正文+源码硬编码, 无变体) / head=MeViT MLP-EE 退化版 (2106.15183) / stop-grad=全回传 (I-JEPA+MSDNet+MeViT 三源一致, predictor 内无 detach), stop-grad 变体留 Phase1 实测"},
     "a1": {"desc": "vanilla NCA predictor", "config": "configs/a1*.yaml"},
     "a2": {"desc": "SCP-JEPA = NCA + SN+EMA+Det 稳定化三件套（主臂）", "config": "configs/a2*.yaml"}
   },
@@ -29,7 +29,10 @@
     "last_job": "1450052 (A0 baseline 健康跑通, loss 0.476→0.056@ep10)",
     "sentinels": "7/8 PASS (s4 边界非 bug)",
     "provenance": "configs/PROVENANCE.md (红线10 官方超参联网复核完成)",
-    "next": "建 A0+ config + early-exit predictor 模块 → A0/A0+ → Gate0 → A1/A2 多 seed（训练待用户拍）"
+    "next": "HPC 真数据 smoke A0+ → A0/A0+/A1/A2 训练（待拍）→ eval_anytime → trade-off 图 → Gate",
+    "tools": "eval_anytime.py (§9.1 Q(k)/L_f/trade-off 图, eval+aggregate 双模式); eval_linear_probe.py (Gate0 probe); smoke_integration.py",
+    "report": "06_A0+_anytime_trade-off_落地_2026-06-16.md (A0+ 交付 + 完成度审计 + 继续命令)",
+    "known_gap": "SN 强度旋钮: PyTorch spectral_norm 固定 σ→1 不能设目标 L_f; §9.1 扫 L_f 改用 nca_steps S∈{4,8,16,32} 主旋钮 + L_f 实测; 真扫 L_f 需另加约束机制(Phase1 开放项,不臆想)"
   },
   "hpc": {
     "root": "/gpfs/work/bio/jiayu2403/nca-jepa/",

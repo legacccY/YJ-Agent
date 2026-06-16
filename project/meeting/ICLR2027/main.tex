@@ -269,8 +269,9 @@ $n=19{,}878$).
 \input{table1_main}
 
 \subsection{Enhancement Fidelity and Speed}\label{sec:exp-fidelity}
-The deterministic enhancer raises per-image PSNR to $32.7$~dB --- a $+10.1$~dB gain over the degraded
-input (SSIM $0.91$) over $n=19{,}878$ held-out images under mixed degradation severity (E1) --- clearing
+The deterministic enhancer raises per-image PSNR from a degraded-input baseline of $22.7$~dB to
+$32.8$~dB --- a $+10.1$~dB gain (SSIM $0.91$) over $n=19{,}878$ held-out images under mixed degradation
+severity (E1) --- clearing
 the $30$~dB restoration gate that also guards the non-vacuity condition of
 Proposition~\ref{prop:entropy}. End-to-end inference (quality scoring $+$ enhancement) runs at
 $16$~ms/image ($p_{95}=17$~ms) on a single GPU (E12), comfortably within the $50$~ms real-time budget.
@@ -385,9 +386,13 @@ the calibration gap QCDI before scaling, under uniform temperature scaling, and 
 quality-conditional scaling. Uniform temperature scaling is a rank-preserving transform and therefore
 leaves $\rho$ unchanged by construction, so it cannot address the entropy--quality coupling;
 quality-conditional scaling instead drives $\rho$ more negative in all four backbones, most visibly on
-the weakly quality-aware ViT-Tiny ($\rho$: $+0.028 \to -0.056$), and brings QCDI closer to zero in
-four of four. The effect is thus consistent across these architectures and is most pronounced where the
-raw backbone is least quality-aware; we do not claim it to be universal.
+the weakly quality-aware ViT-Tiny ($\rho$: $+0.028 \to -0.056$). Its effect on the calibration gap
+QCDI is concentrated where it is needed: on the weakly quality-aware ViT-Tiny ($+0.023 \to -0.017$)
+and ConvNeXt-Tiny ($+0.136 \to -0.020$) it pulls QCDI substantially toward zero, whereas on the
+ResNet-50 and Swin-Tiny backbones --- already quality-aware in the raw model (QCDI $+0.014$ and
+$+0.020$) --- it leaves QCDI essentially unchanged ($+0.014$ and $+0.016$). The $\rho$ effect is thus
+consistent across these architectures and the QCDI improvement is most pronounced where the raw
+backbone is least quality-aware; we do not claim either to be universal.
 \input{table2_universality}
 
 \subsection{Cross-Domain Generalisation}\label{sec:exp-cross}
@@ -451,18 +456,31 @@ Std VIB $0.186$ $[0.142,0.233]$, and Std VIB${}+{}$QCTS $0.192$ $[0.148,0.236]$
 that enhancement raises net benefit over direct diagnosis.
 
 The clinical value instead surfaces under \emph{confidence-gated triage}, where
-low-confidence cases are referred to a human reader. At a $20\%$ referral budget,
+low-confidence cases are referred to a human reader. The triage simulation evaluates the
+configurations that are actually deployed at the gate: direct diagnosis, against which the
+agent's auto-handled path must be non-inferior, and the discriminative-coupled \qvib{}+TokFT
+variant, whose stronger entropy--quality coupling (Table~\ref{tab:main}) is the configuration
+the closed-loop gate relies on for confidence-ordered abstention. The calibration-demonstration
+configuration, \qvib{} Full, is not run through this deployment-time simulation: its headline
+contribution is quality-aware calibration (best QCDI and $\rho$ in Table~\ref{tab:main},
+\S\ref{sec:exp-main}), and on the discriminative axis it deliberately trades AUC for calibration
+(diagnostic AUC $\approx 0.585$ on \itb{}-LQ, a discrimination-side figure that is \emph{not} a
+triage-simulation result). At a $20\%$ referral budget,
 the well-calibrated \qvib{}+TokFT \emph{matches} direct diagnosis on
 auto-handled sensitivity ($0.788$ vs.\ $0.818$, missed-positive rate $0.183$ vs.\
 $0.167$), whereas the under-confident Std VIB and Std VIB${}+{}$QCTS variants
-collapse ($0.137$/$0.143$ sensitivity, missing $70$--$73\%$ of positives) because
+collapse at their natural operating thresholds ($0.137$/$0.143$ sensitivity, missing
+$70$--$73\%$ of positives) because
 their compressed posteriors rarely cross the referral threshold. The operative
 finding is thus one of \emph{calibration-driven reliable abstention}: the value of
 the bottleneck is not a raw-discrimination gain --- which direct diagnosis already
 attains on this subset --- but a posterior whose confidence can safely gate the
 agent's out-of-distribution query-for-retake path (\S\ref{sec:exp-cross}). The
 decision-analytic model (cost structure, net-benefit definition, and triage
-simulation) is specified in Appendix~\ref{app:a20}.
+simulation) is specified in Appendix~\ref{app:a20}, where the cost constants are
+anchored to peer-reviewed health-economic literature and treated as a sensitivity
+range rather than a single point estimate; the corresponding simulated operating
+curves are deferred to that appendix and are not asserted here.
 
 \subsection{Fairness}\label{sec:exp-fair}
 We stratify calibration on the ISIC-derived \itb{} subsets ($n=1{,}320$ with demographic metadata)
@@ -552,9 +570,10 @@ clearance, and prospective trials (\cref{sec:discussion}). To mitigate dual-use 
 the agent includes an explicit refuse channel, enhancement is deterministic and diagnosis-preserving
 rather than generative (avoiding hallucinated structure; \cref{sec:discussion}), and we report
 subgroup-stratified performance across skin tones (\cref{sec:exp-fair}) to surface --- not assert away
---- fairness gaps. Clinical value is assessed only through decision-curve analysis, triage simulation,
-and an LLM-judge audit, each with stated limits (Appendices~\ref{app:a19}, \ref{app:a20},
-\ref{app:a23}).
+--- fairness gaps. Clinical value is assessed only through decision-curve analysis and triage simulation, each with
+stated limits (Appendix~\ref{app:a20}); an LLM-as-judge audit is specified as a protocol
+(Appendix~\ref{app:a19}) but its ratings are not yet collected and are deferred to the
+camera-ready, under the disclaimer in Appendix~\ref{app:a23}.
 
 \section*{Reproducibility Statement}\label{sec:repro}
 All theoretical claims are stated with explicit assumptions and full proofs in

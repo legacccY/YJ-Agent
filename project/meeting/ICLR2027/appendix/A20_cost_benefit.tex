@@ -1,7 +1,10 @@
 % Appendix A20 — cost-benefit deployment analysis (methodology).
 % Source: ACCEPTANCE_CRITERIA.md L13 (cost-benefit: missed-melanoma / retake / referral cost,
-% DALY/QALY framing) + STORY_FRAMEWORK A20. METHODOLOGY ONLY; dollar/DALY figures and the
-% simulated operating curves are PENDING (M3) and not reported here (red line 4).
+% DALY/QALY framing) + STORY_FRAMEWORK A20. Cost CONSTANTS are literature-anchored sensitivity-sweep
+% parameters with citations (li2023skinbiopsy / mistry2026melanomacost / loane2001teledermatology /
+% hoogenboom2026teledermatology + krensel2019/maul2024 for motivation context). The SIMULATED outputs
+% (expected-cost vs referral-rate operating curves, net-benefit point estimates) are PENDING (M3) and
+% NOT reported here (red line 4: no fabricated simulation outputs without a real sim csv).
 % Anonymized; clinical framing per R3 (simulation/decision-curve language, no reader claims).
 
 \section{Cost--Benefit Deployment Analysis}\label{app:a20}
@@ -9,8 +12,17 @@
 \subsection{Motivation}\label{app:a20-motiv}
 A quality-triage system trades one cost (retakes and specialist referrals) against another (missed or
 mis-staged lesions). Whether this trade is favourable cannot be read off accuracy alone; it depends on
-the relative costs of each error and action. This appendix specifies the decision-analytic model used
-to assess that trade; the numerical instantiation is reported in \cref{sec:exp-dca}.
+the relative costs of each error and action. The stakes on the error side are large: the annual
+cost-of-illness of melanoma in Europe has been estimated at approximately EUR~2.7 billion per year
+\citep{krensel2019melanomacost}, and the dominant driver of per-patient lifetime cost is late staging
+rather than the diagnostic procedure itself. The delay-amplification effect is illustrated by the
+estimated \$7.65 billion (95\% CI \$6.89--8.44 billion) of additional costs attributed to
+\emph{COVID-19-related} delays in melanoma diagnosis across 31 European countries
+\citep{maul2024melanomacovid}; we cite this figure only as evidence that diagnostic delay magnifies cost
+and emphasise that it is a pandemic-scenario cumulative excess, not a steady-state annual burden. This
+appendix specifies the decision-analytic model used to assess the quality-triage trade; the numerical
+instantiation (simulated operating curves and net-benefit point estimates) is reported in
+\cref{sec:exp-dca}.
 
 \subsection{Cost Model}\label{app:a20-model}
 For a case routed to action $a\in\{\actd,\acte,\actq,\actr\}$ with true label $y$ and prediction
@@ -24,6 +36,78 @@ dominates, reflecting downstream morbidity, optionally expressed in DALY/QALY un
 $c_{\mathrm{act}}$ is the operational cost of the action (negligible for $\actd$; a capture cost for
 $\actq$; a specialist-time cost for $\actr$; an inference/enhancement cost for $\acte$). All cost
 constants are exposed as parameters and swept rather than fixed to a single jurisdiction.
+
+\paragraph{Literature-anchored cost constants.}
+Rather than fixing a single point estimate, we anchor each constant to a value reported in the
+peer-reviewed health-economic literature and treat that value as the centre of a sensitivity range; the
+constants are summarised in \cref{tab:a20-costs}. Several caveats on calibre apply and are reproduced
+in the table so that no figure is read out of context: the biopsy cost is the 2020 cross-CPT weighted
+average paid amount for dermatologist-performed skin biopsies in the US Medicare Part~B
+fee-for-service population, not a single current CPT rate \citep{li2023skinbiopsy}; the missed-diagnosis
+cost difference is a UK NHS per-patient \emph{cumulative lifetime} estimate contrasting Stage~I with
+Stage~IV melanoma \citep{mistry2026melanomacost}; and the realtime-teledermatology marginal cost is
+expressed in 2001 GBP \citep{loane2001teledermatology}, complemented by a more recent estimate that
+community teledermatology saves on average \pounds45 per case (95\% CI \pounds22--60, 2022--23 prices)
+relative to conventional pathways \citep{hoogenboom2026teledermatology}. Because these values span
+different jurisdictions, currencies, and base years, we never combine them into a single absolute
+monetary verdict; instead each enters \cref{eq:a20-breakeven} as a swept parameter, and the reported
+analysis is a sensitivity study over the resulting ranges.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Literature-anchored cost constants used as \emph{sensitivity-sweep} parameters in the
+\cref{app:a20} cost model. Each value is the centre of a swept range; figures are reported with their
+original calibre (jurisdiction, currency, base year) and are not converted to a common unit, since the
+analysis is a sensitivity study rather than a single-jurisdiction point estimate.}
+\label{tab:a20-costs}
+\begin{tabular}{@{}p{3.0cm}p{2.4cm}p{5.3cm}c@{}}
+\toprule
+Constant & Anchor value & Calibre / definition & Source \\
+\midrule
+$c_{\mathrm{biopsy}}$ (skin biopsy) & \$58.40 &
+2020 cross-CPT weighted-average paid amount, dermatologist, US Medicare Part~B FFS (not a single
+current CPT rate) & \citep{li2023skinbiopsy} \\
+$c_{\mathrm{miss}}$ (Stage~I$\to$IV cost difference) & \pounds204{,}289 &
+UK NHS per-patient cumulative lifetime cost, Stage~I (\pounds9{,}512) vs.\ Stage~IV
+(\pounds213{,}801), 2023 & \citep{mistry2026melanomacost} \\
+$c_{\mathrm{refer}}$ (teledermatology referral, marginal) & \pounds52.85 (urban) -- \pounds59.93 (rural) &
+Realtime teledermatology marginal cost per case, 2001 GBP & \citep{loane2001teledermatology} \\
+$\Delta c_{\mathrm{tele}}$ (teledermatology saving) & \pounds45 (95\% CI \pounds22--60) &
+Average saving per case vs.\ conventional pathway, community teledermatology, 2022--23 prices &
+\citep{hoogenboom2026teledermatology} \\
+Burden context (motivation only) & EUR~2.7\,B/yr &
+Steady-state annual cost-of-illness of melanoma in Europe & \citep{krensel2019melanomacost} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Break-even condition.}
+Combining the error and action terms, quality-triage is economically favourable precisely when the
+savings from reduced missed diagnoses and from avoided unnecessary biopsies exceed the marginal
+operating cost of the triage system. Writing $\pi$ for the disease prevalence, $\Delta\mathrm{sens}$ for
+the sensitivity gain attributable to triage, $\Delta r_{\mathrm{avoid}}$ for the change in the rate of
+avoided unnecessary biopsies, and $c_{\mathrm{sys}}$ for the marginal system operating cost, the
+condition is
+\begin{equation}
+\pi\,c_{\mathrm{miss}}\,\Delta\mathrm{sens}
+\;+\;
+(1-\pi)\,(c_{\mathrm{biopsy}}-c_{\mathrm{refer}})\,\Delta r_{\mathrm{avoid}}
+\;>\;
+c_{\mathrm{sys}},
+\label{eq:a20-breakeven}
+\end{equation}
+where $c_{\mathrm{miss}}$ is the downstream cost difference of a missed malignant lesion (the
+Stage~I$\to$IV gap of \pounds204{,}289 above), $c_{\mathrm{biopsy}}$ the biopsy cost, $c_{\mathrm{refer}}$
+the teledermatology referral marginal cost, and the four-action notation
+$\{\actd,\acte,\actq,\actr\}$ maps the routing decisions of the closed-loop policy onto these terms: a
+correct $\actr$ (query-for-retake or referral) on a degraded malignant case realises the
+$c_{\mathrm{miss}}$ saving, whereas an unnecessary $\actr$ on a benign case incurs only the
+comparatively small $(c_{\mathrm{refer}})$ term in place of $c_{\mathrm{biopsy}}$.
+Inequality~\eqref{eq:a20-breakeven} is an analytic condition, not an empirical result; it identifies
+\emph{which} regions of the cost--prevalence space favour triage, and the corresponding numerical
+operating curves remain pending and unreported here (\cref{sec:exp-dca}, deferred to M3), since they
+require a real simulation run rather than the literature-anchored constants tabulated above.
 
 \subsection{Net Benefit and Decision Curves}\label{app:a20-netbenefit}
 We report \emph{net benefit} as a function of the decision threshold $p_t$,

@@ -1,16 +1,16 @@
 % =====================================================================
-% E10 --- VisiEnhance vs 6 generic non-diffusion restoration SOTA (zero-shot)
+% E10 --- QP-Enhance vs 6 generic non-diffusion restoration SOTA (zero-shot)
 % DRAFT SKELETON (会话 28). 数字留占位, 待 job 1448952 (stored-mixed 对齐 E1 口径)
 % 跑完后从 results/e10_<method>.csv 一键填. 填完 \input 进 main.tex E9 段之后,
 % "Residual dangerous flips" 段之前.
 %
 % 口径 (红线 4): job 1448952 = stored-mixed 降质 (light+melanoma+heavy 全 3 档) +
 %   melanoma 平衡子集 (n=10881, 117 melanoma 图 x3 档). 与 E1 (run_e1_ablation_hpc,
-%   EnhanceDataset severity='mixed') 同降质算子 -> VisiEnhance PSNR 与 E1 32.74dB 同
+%   EnhanceDataset severity='mixed') 同降质算子 -> QP-Enhance PSNR 与 E1 32.74dB 同
 %   caliber (残差仅来自 melanoma 富集 vs E1 全 test split). 注意: 此口径 != E3/E9 的
 %   on-the-fly moderate 单档探针, caption 已声明, 勿与 E3/E9 绝对值交叉引用.
 %
-% csv -> cell 映射 (每个 e10_<m>.csv 第 2 行 = baseline; 第 1 行 = VisiEnhance, 6 文件应一致):
+% csv -> cell 映射 (每个 e10_<m>.csv 第 2 行 = baseline; 第 1 行 = QP-Enhance, 6 文件应一致):
 %   psnr_perimg -> PSNR ; ssim -> SSIM ; dAUC -> $\Delta$AUC ; kl -> KL ; dangerous_flip -> dflip
 %   PAIRED 行: dAUC/dAUC_ci_lo/dAUC_ci_hi -> 配对 $\Delta$AUC(baseline-VE) + CI ; mcnemar_p
 % =====================================================================

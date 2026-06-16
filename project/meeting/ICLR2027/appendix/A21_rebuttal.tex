@@ -32,9 +32,9 @@ deployment-ready medical device, which would require regulatory evaluation the p
 (i) The abstract and \cref{sec:intro} describe a research system for quality-aware diagnosis, not
 decision support. (ii) \cref{sec:discussion} states explicitly that production use requires
 IRB/regulatory pathways and prospective trials, out of scope here. (iii) Clinical value is assessed
-only through decision-curve analysis and triage simulation (\cref{sec:exp-dca}) and an
-LLM-as-judge protocol, with the disclaimer in Appendix~\ref{app:a23}; we make no claim of real-time
-reader comparison. (iv) Salvage behaviour is bounded by Theorem~\ref{thm:agent} with thresholds
+only through decision-curve analysis and triage simulation (\cref{sec:exp-dca}); an LLM-as-judge
+audit is specified as a protocol (Appendix~\ref{app:a19}) but not yet run, under the disclaimer in
+Appendix~\ref{app:a23}, and we make no claim of real-time reader comparison. (iv) Salvage behaviour is bounded by Theorem~\ref{thm:agent} with thresholds
 $\tauenh\approx 0.35$, $\tauhigh\approx 0.55$ derived from validation data, not aspirational targets.
 
 \subsection{Real-world degradation versus the synthetic benchmark}\label{app:a21-ood}
@@ -42,9 +42,15 @@ $\tauenh\approx 0.35$, $\tauhigh\approx 0.55$ derived from validation data, not 
 artefacts, and compression that are not i.i.d.\ with the benchmark, and cross-modality transfer may
 be weak.
 
-\textbf{Response.} We treat both points as first-class. (i) \cref{sec:exp-cross} evaluates the system
-on a real smartphone-style subset (ISIC~2024 SLICE-3D) carrying in-the-wild artefacts; we report the
-quality-stratified gap to \itb-LQ explicitly rather than pooling it away. (ii) Cross-modality
+\textbf{Response.} We treat both points as first-class. (i) The benchmark itself spans a
+controlled degradation taxonomy whose quality-stratified gap to \itb-LQ is reported explicitly
+rather than pooled away, and \cref{sec:exp-cross} additionally evaluates zero-shot transfer to four
+external dermatology datasets that progressively depart from the training distribution --- including
+PAD-UFES-20 clinical smartphone macro photography and Fitzpatrick17k in-the-wild clinical photographs
+carrying real shadows, lens artefacts, and compression --- and we report the resulting calibration
+and discrimination erosion with domain distance rather than averaging it away. (Evaluation on a
+dedicated in-the-wild smartphone subset, e.g.\ ISIC~2024 SLICE-3D, is left to future work and is
+not claimed here.) (ii) Cross-modality
 transfer is \emph{foregrounded, not hidden}: weakly-transferring modalities are flagged in
 \cref{sec:exp-cross} and analysed as a distinct \emph{cross-modality quality mismatch} mode in
 \cref{sec:discussion}, with modality-specific re-training named as the principled (out-of-scope)
@@ -96,8 +102,9 @@ structure not implied by the input, which is why we reject generative enhancemen
 $I(\Zenh;Y)\geq I(\Zref;Y)-\beta\sqrt{\epsilon}$ with $\beta=M\Lq/\sqrt{2}\approx 0.74$ and target
 $\epsilon=0.05$, so the mutual-information drop is at most $\approx 0.16$ nats --- well within the
 $\qvib$ inductive gap ($I(Z;Y)\approx 0.5$--$0.6$ nats). (iii) \emph{Audit}: an LLM-as-judge protocol
-plus ABCD-rule proxy detectors quantify any newly-introduced structure on a held-out enhanced set
-(protocol in Appendix~\ref{app:a19}; rates reported with the released audit). (iv) \emph{Decision}
+plus ABCD-rule proxy detectors are specified to quantify any newly-introduced structure on a
+held-out enhanced set (protocol in Appendix~\ref{app:a19}); the audit has not yet been run, and its
+rates are deferred to the camera-ready rather than reported here. (iv) \emph{Decision}
 (Theorem~\ref{thm:agent}): the agent's \emph{refuse} action $\actr$ triggers below $\taulow$, and the
 refuse-rate versus missed-diagnosis trade-off is bounded by the theorem's $\Delta$ function. Residual
 failures are catalogued per mode in Appendix~\ref{app:a18}; we stress that production use requires

@@ -14,7 +14,15 @@
 - **诚实预案**：测出「稳定区 anytime 无意义」也是可发表负结果（best-compromise S），不藏。阈值（gain≥0.85/<0.7）标工程 go/no-go 非论文 claim。
 - **口径修正**：01 §四②行「ViT 结构上做不到」→「默认全或无，加早退头可 anytime 但需额外 head+loss 且 SSL predictor 位无先例」；Q(k)=cosine（latent regression）非分割 Dice。
 - 落档：03_pilot §5/§9.1/§14 + 01 §七/§八/§十三/§十五 + 02 §4.1/§7/§8 + registry(a0plus 臂/Gate3)。
-- **TODO 红线10**：① MSDNet 递增 loss-weight 变体；② MeViT exit-head 结构细节；③ A0+ 各层 head stop-grad（官方无现成，Phase1 实测）。**A0+ config + early-exit predictor 模块待建**（训练待用户拍）。
+- **3 TODO 已查清（红线10，researcher 第 3 派）**：① loss-weight 全程等权 w=1（MSDNet 正文+源码硬编码，无变体）；② exit-head=LayerNorm+Linear（MeViT MLP-EE 退化版 + I-JEPA predictor_proj）；③ stop-grad 全回传（I-JEPA/MSDNet/MeViT 三源一致，predictor 内无 detach），stop-grad 变体留 Phase1 实测。**官方默认与代码骨架完全吻合，零返工**。
+- **A0+ 代码已落地**：`ijepa/src/models/earlyexit_vit_predictor.py`（`EarlyExitViTPredictor`：训练返回各 exit list、推理 `exit_layer=k` 单点）+ `helper.py` 分支 + `train.py` loss_fn list 等权 + config `a0plus_earlyexit_vit_vits_nih10k.yaml`。
+- **评估工具链已落地（§9.1 一等指标产出）**：`nca_predictor.py` forward 加 `exit_step`（NCA 早退）+ **`eval_anytime.py`**（eval 模式出 Q(k) csv+曲线+L_f power iteration；aggregate 模式出 trade-off 主图曲线族+副图散点）。本地 CPU smoke 全通（`_scratch/smoke_a0plus.py` 6 项 + eval_anytime 双臂 + aggregate 图）。
+- **参数实测核对**：A0=11.0M / A0+=11.76M(+6.7%) / NCA=3.22M；改了 4 处「A0+ 与 NCA 同量级」错述（NCA 实际省参 3.4×）。
+- **工作报告**：`06_A0+_anytime_trade-off_落地_2026-06-16.md`（交付 + 完成度审计 + 继续命令）。
+- **诚实缺口（见 06 §7）**：① 真数据 smoke + 训练未跑（待拍，串行红线）；② **SN 强度旋钮设计问题**——PyTorch spectral_norm 固定 σ→1 不能设目标 L_f，§9.1「扫 L_f」改用 nca_steps S∈{4,8,16,32} 当主旋钮 + L_f 实测，真扫 L_f 需另加约束机制（Phase1 开放项，不臆想）；③ hpc sbatch 加 a0plus 映射 + 多 S 配置待补。
+- **本地真数据全链路 smoke 通过**（`_scratch/smoke_train_a0plus.py`，GPU）：真 MBMaskCollator + encoder + EMA + a0plus + loss list 等权 + backward + EMA，1 step 全过；A0+ 6 exit shape 全 == target；**等权 loss 初值 0.4796 ≈ A0 baseline 0.476**（job 1450052）→ 集成正确、真训练会健康。`hpc/sbatch_pilot.sh` 加 a0plus 映射。
+- **✅ HPC 真数据 smoke 通过**（用户选项落地）：VPN 通 → 推 7 文件（earlyexit/nca/helper/train/config/sbatch/eval_anytime）→ HPC import 链 OK → login CPU 真 NIH 全链路 smoke `loss=0.4796`（与本地一致，≈A0 baseline 0.476），rc=0。`_scratch/_hpc_push_a0plus.py` 一键推+smoke。
+- **下一步**：拍正式训练（A0+/A1/A2，待用户「跑」，串行红线持 training.lock）→ eval_anytime → trade-off 图 → Gate。代码已就绪可直接 sbatch。
 
 
 - **5 路并行探路**（4 researcher sonnet + 1 reviewer opus，组合台系统首次实战）→ 报告 `05_探路_2026-06-16.md`。

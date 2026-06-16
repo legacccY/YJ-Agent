@@ -14,6 +14,7 @@
 | **BMVC** QCTS | BMVC 2026 | 已投 05-24 | 🔒 sealed：仅 rebuttal | P9 | `project/meeting/BMVC/` |
 
 未来槽位：HuimaiMed/脉枢（命名见 memory）。新论文 → `/spin-off-paper` 自动登记 registry + 建标准 schema。
+- **MedSeg-UQ（医学分割+不确定性，pre-立项调研中）**：选题/文献/理论矩阵见 `project/meeting/MedSeg-UQ/00_选题调研_2026-06-16.md`。主推方向 ★1 Calibration–Dice trade-off 下界（纯顶会向）。待拍板立项。
 
 > **项目规范真源**：新项目立项 / 新阶段开启 / 自主运行边界 / 拍板点清单全在 [`project/PROJECT_LIFECYCLE.md`](project/PROJECT_LIFECYCLE.md)。默认自主一直跑，只在拍板点停。
 
@@ -66,6 +67,8 @@
 | 对抗审稿 | 派 `reviewer`(opus) |
 | 阶段切换 | `/phase-transition` |
 | 投稿前 | `/pre-submit-check`（三方对账） |
+
+> GitHub 日常协同（branch/PR/gh CLI）+ 仓库地图 + 公开主页脱敏红线：见 [`project/HOWTO_GITHUB.md`](project/HOWTO_GITHUB.md)。
 
 ---
 

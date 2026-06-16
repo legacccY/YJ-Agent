@@ -1,0 +1,74 @@
+# ============================================================
+# A0+ — early-exit ViT predictor 臂（②牌 anytime 的「努力过的 ViT」对照）
+# 验什么（引 03_pilot_NIH_ChestXray14.md §5 / §9.1）：
+#   NCA 逐步 anytime 是否真比「努力过的 ViT」early-exit 更优。
+#   打死 reviewer「ViT 也能 early-exit，②牌打稻草人」攻击（reject 级）。
+#   评估：stability-vs-anytime trade-off 图里 A0+ 早退曲线与 NCA 第 k 步同台（§9.1）。
+#
+# 设计依据（红线 10，官方源已查清，researcher 2026-06-16）：
+#   - 结构：N 层 ViT predictor（同 A0），每层接独立早退头 (LayerNorm + Linear(pred_emb->enc_emb))。
+#     head 结构 = MeViT MLP-EE 退化版 + I-JEPA predictor_proj（arXiv:2106.15183 / facebookresearch/ijepa）。
+#   - loss 聚合：各 exit 等权 w=1（MSDNet 正文+源码硬编码，arXiv:1703.09844 / gaohuang/MSDNet，
+#     无递增/递减变体）。在 train.py::loss_fn 实现（list → mean smooth_l1）。
+#   - stop-grad：exit_stop_grad=false 全回传（I-JEPA/MSDNet/MeViT 三源一致，predictor 内无 detach）。
+#     stop-grad 变体留 Phase1 实测对比，非默认。
+#   - 参数（实测）：A0=11.0M / A0+=11.76M(+6.7%, 6 早退头) / NCA(A2)=3.22M。A0+≈A0 同 ViT 量级
+#     → anytime 公平对照；NCA 省参 3.4x 仍 anytime = 加分（NCA 更省，非 A0+ 偷加参）。
+# ============================================================
+data:
+  batch_size: 64
+  color_jitter_strength: 0.2  # CheXWorld
+  crop_scale:
+  - 0.3
+  - 1.0
+  crop_size: 224
+  dataset: nih_cxr14
+  image_folder: images-224/images-224/
+  num_workers: 8
+  pin_mem: true
+  root_path: data/nih_cxr14
+  subset_file: data/nih_cxr14/splits/pretrain_10k.txt
+  use_color_distortion: true  # CheXWorld color_jitter 0.2
+  use_gaussian_blur: true  # CheXWorld iwm_blur_prob 0.2
+  use_horizontal_flip: true  # CheXWorld flip_prob 0.5（CXR 翻转破坏左右侧别，留 ablation 候选）
+logging:
+  folder: $EXP_LOG_ROOT/a0plus_earlyexit_vit_vits_nih10k/
+  write_tag: jepa
+mask:
+  allow_overlap: false
+  aspect_ratio:
+  - 0.75
+  - 1.5
+  enc_mask_scale:  # CheXWorld
+  - 0.85
+  - 1.0
+  min_keep: 10
+  num_enc_masks: 1  # pilot mask-only 单 context（对齐 A0/NCA 臂）
+  num_pred_masks: 4
+  patch_size: 16
+  pred_mask_scale:  # CheXWorld
+  - 0.15
+  - 0.2
+meta:
+  copy_data: false
+  load_checkpoint: false
+  model_name: vit_small  # pilot 加速；与 A0 一致
+  pred_depth: 6  # CheXWorld pred_depth 6 → A0+ 有 6 个早退点 (k=1..6)
+  pred_emb_dim: 384  # CheXWorld
+  read_checkpoint: null
+  use_bfloat16: true
+  # --- NCA-JEPA 自定义字段 ---
+  predictor_type: earlyexit_vit
+  exit_stop_grad: false  # 全回传（官方三源一致）；True 留 Phase1 实测
+optimization:
+  ema:  # CheXWorld ema 0.996 -> ema_end 1.0
+  - 0.996
+  - 1.0
+  epochs: 50  # pilot 短跑（与 A0 一致）
+  final_lr: 1.0e-06  # CheXWorld min_lr 1e-6
+  final_weight_decay: 0.05  # CheXWorld weight_decay_end 0.05 恒定
+  ipe_scale: 1.25  # CheXWorld
+  lr: 2.0e-4  # CheXWorld PRETRAIN 实际 --lr 2e-4
+  start_lr: 4.0e-5  # warmup 起点，按 I-JEPA 样例比例推算（框架适配）
+  warmup: 5  # pilot 50ep，按 CheXWorld warmup40/300ep 比例缩放
+  weight_decay: 0.05  # CheXWorld（不是 I-JEPA 的 0.04）

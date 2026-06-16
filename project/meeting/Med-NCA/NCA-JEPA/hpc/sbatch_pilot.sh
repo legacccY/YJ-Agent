@@ -20,6 +20,7 @@ SEED=${SEED:-42}
 # ARM -> config 文件名映射
 case "$ARM" in
   a0) CFG=configs/a0_vit_vits_nih10k.yaml ;;
+  a0plus) CFG=configs/a0plus_earlyexit_vit_vits_nih10k.yaml ;;
   a1) CFG=configs/a1_vanilla_nca_vits_nih10k.yaml ;;
   a2) CFG=configs/a2_scp_nca_vits_nih10k.yaml ;;
   *)  echo "未知 ARM=$ARM"; exit 1 ;;
