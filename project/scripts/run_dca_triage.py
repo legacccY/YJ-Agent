@@ -292,6 +292,8 @@ def main():
 
     with open(OUT_DATA / "dca_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
+    with open(OUT_DATA / "dca_summary.json", "w") as f:
+        json.dump(summary, f, indent=2)
     print(f"Summary: {OUT_DATA}/dca_summary.json")
 
     print("\n=== DCA Summary ===")
@@ -300,6 +302,162 @@ def main():
     print("\n=== Triage @20% referral ===")
     for name, v in summary["triage_at_20pct_referral"].items():
         print(f"  {name}: sens={v['sens_auto']:.3f} missed={v['missed_positive_rate']:.3f}")
+
+    # ── Cost-aware triage sweep (A20 extension) ───────────────────────────────
+    # Literature-anchored cost constants from A20_cost_benefit.tex (sensitivity sweep)
+    # Units: USD-equivalent (biopsy in USD; miss cost converted at ~1.27 GBP/USD).
+    # ALL values are swept, not point-estimated. See A20 §tab:a20-costs + citations.
+    run_cost_sweep(lq, methods, thresholds)
+
+
+def run_cost_sweep(lq: pd.DataFrame, methods: dict, thresholds: np.ndarray) -> None:
+    """Cost-aware triage sweep producing break-even curve CSV + figure.
+
+    Literature-anchored cost constants (A20_cost_benefit.tex, sensitivity sweep):
+        c_biopsy   = $58.40   (li2023skinbiopsy, US Medicare 2020 weighted avg)
+        c_miss_gbp = £204,289 (mistry2026melanomacost, UK NHS Stage I→IV lifetime delta)
+        c_refer_lo = £52.85   (loane2001teledermatology, realtime tele, 2001 GBP)
+        c_refer_hi = £59.93   (loane2001teledermatology, rural)
+        c_tele_save = £45     (hoogenboom2026teledermatology, centre of CI £22-60)
+
+    All GBP values converted to approx USD at 1.27 (2023 average, NOT locked—the
+    point of the sweep is to show conclusions are robust across cost ratios).
+    Because these span different jurisdictions / base years we sweep RATIOS rather than
+    absolute numbers: the key parameter is r = c_miss / c_biopsy.
+    Break-even: r >= (FP_rate / TP_rate) * (1-prevalence) / prevalence
+    (derived from eq:a20-breakeven with c_sys treated as negligible).
+
+    Outputs:
+        results/dca/cost_sweep_breakeven.csv   — per-threshold, per-method, per-cost-ratio
+        report/figures/fig_cost_sweep.{pdf,svg,png}
+    """
+    GBP_TO_USD = 1.27  # 2023 avg; swept implicitly via cost ratio range
+
+    # Anchor values and sweep range
+    C_BIOPSY_USD = 58.40                        # li2023skinbiopsy
+    C_MISS_GBP_ANCHOR = 204_289.0               # mistry2026melanomacost
+    C_REFER_GBP_LO = 52.85                      # loane2001teledermatology urban
+    C_REFER_GBP_HI = 59.93                      # loane2001teledermatology rural
+    # teledm saving (hoogenboom2026) used to bound referral net cost below
+    C_TELE_SAVE_GBP = 45.0                      # hoogenboom2026teledermatology, CI centre
+
+    # Convert to USD for ratio computation
+    C_MISS_USD_ANCHOR = C_MISS_GBP_ANCHOR * GBP_TO_USD   # ~$259,447
+    C_REFER_USD_MID = (C_REFER_GBP_LO + C_REFER_GBP_HI) / 2 * GBP_TO_USD  # ~$71.75
+
+    # Sweep: cost ratio r = c_miss / c_biopsy (vary ±1 order around anchor)
+    # Anchor ratio ~4440; vary from 50 to 10,000 (log-spaced, covers all plausible
+    # miss-vs-biopsy tradeoffs regardless of jurisdiction/currency)
+    r_values = np.logspace(np.log10(50), np.log10(10_000), 30)
+
+    print("\n=== Cost-aware triage sweep (A20) ===")
+    print(f"  c_biopsy anchor: ${C_BIOPSY_USD:.2f} (li2023skinbiopsy)")
+    print(f"  c_miss anchor:   ${C_MISS_USD_ANCHOR:,.0f} (mistry2026, GBP*{GBP_TO_USD})")
+    print(f"  c_refer anchor:  ${C_REFER_USD_MID:.2f} (loane2001, GBP*{GBP_TO_USD})")
+    print(f"  Sweep: r=c_miss/c_biopsy over [{r_values.min():.0f}, {r_values.max():.0f}] ({len(r_values)} points)")
+
+    # For each method, compute expected cost at each (threshold, cost-ratio) point:
+    #   ExpCost(pt, r) = FP_rate * c_biopsy * r_refer_norm
+    #                  + FN_rate * c_miss_normalized
+    #   where we normalize by c_biopsy so only the ratio r matters.
+    # Break-even condition (from eq:a20-breakeven, c_sys ≈ 0):
+    #   r * prevalence * delta_sens > (1-prevalence) * delta_refer_avoid
+    # Equivalently: at each threshold, method is break-even-favourable if
+    #   NB(method) > 0  AND  expected_cost(method) < expected_cost(direct)
+    rows = []
+    for bl, name in methods.items():
+        sub = lq[lq["baseline"] == bl]
+        if len(sub) < 10:
+            continue
+        p = sub["prob_pos"].clip(1e-7, 1 - 1e-7).values
+        t = sub["target"].values
+        n = len(p)
+        prevalence = t.mean()
+
+        for r in r_values:
+            for pt in thresholds:
+                pred = (p >= pt).astype(int)
+                tp = float(((pred == 1) & (t == 1)).sum())
+                fp = float(((pred == 1) & (t == 0)).sum())
+                fn = float(((pred == 0) & (t == 1)).sum())
+                # Expected cost per case (normalized by c_biopsy, units: cost ratios)
+                # FP → unnecessary biopsy (cost = 1 unit = c_biopsy)
+                # FN → missed melanoma (cost = r units = c_miss)
+                # TP → necessary biopsy (cost = 1 unit)
+                # TN → no action (cost = 0)
+                exp_cost = (fp + tp) / n + fn / n * r
+                # Direct baseline (treat-all-positive = pt=0.5 threshold on original prob)
+                # Use prevalence as FPR=FNR=0 approximation for treat-none reference
+                treat_all_cost = 1.0 + prevalence * 0  # all biopsied, no FN
+                treat_none_cost = prevalence * r        # all missed positives
+
+                rows.append({
+                    "baseline": bl,
+                    "method": name,
+                    "threshold": round(float(pt), 4),
+                    "cost_ratio_r": round(float(r), 2),
+                    "c_biopsy_anchor": C_BIOPSY_USD,
+                    "c_miss_anchor_usd": round(C_MISS_USD_ANCHOR, 0),
+                    "exp_cost_normalized": round(float(exp_cost), 6),
+                    "treat_all_cost": round(float(treat_all_cost), 6),
+                    "treat_none_cost": round(float(treat_none_cost), 6),
+                    "net_benefit": round(tp / n - fp / n * (float(pt) / (1 - float(pt))), 6),
+                    "prevalence": round(float(prevalence), 4),
+                })
+
+    df_cost = pd.DataFrame(rows)
+    df_cost.to_csv(OUT_DATA / "cost_sweep_breakeven.csv", index=False)
+    print(f"  Cost sweep CSV: {OUT_DATA}/cost_sweep_breakeven.csv  ({len(df_cost)} rows)")
+
+    # ── Break-even plot: for each method, at anchor ratio, trace expected-cost vs threshold
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.8))
+    COLORS = {"A": "#636363", "G": "#d62728", "D": "#1f77b4", "D+QCTS": "#2ca02c"}
+
+    ax = axes[0]
+    anchor_r = round(float(C_MISS_USD_ANCHOR / C_BIOPSY_USD), 2)
+    for bl, name in methods.items():
+        sub_c = df_cost[(df_cost["baseline"] == bl) &
+                        (df_cost["cost_ratio_r"] == df_cost["cost_ratio_r"].unique()[
+                            int(len(df_cost["cost_ratio_r"].unique()) // 2)])]
+        if len(sub_c) == 0:
+            continue
+        ax.plot(sub_c["threshold"], sub_c["exp_cost_normalized"],
+                color=COLORS.get(bl, "gray"), lw=1.5, label=name)
+    ax.set_xlabel("Decision threshold", fontsize=9)
+    ax.set_ylabel("Expected cost (normalized, c_miss/c_biopsy at mid sweep)", fontsize=7)
+    ax.set_title("(a) Cost-threshold curve (mid-sweep ratio)", fontsize=9, fontweight="bold")
+    ax.legend(fontsize=7)
+    ax.tick_params(labelsize=8)
+
+    # Right: break-even plot — for a fixed threshold (pt=0.3), expected cost vs r
+    ax = axes[1]
+    pt_fixed = 0.30
+    for bl, name in methods.items():
+        sub_c = df_cost[(df_cost["baseline"] == bl) &
+                        (np.abs(df_cost["threshold"] - pt_fixed) < 0.01)]
+        if len(sub_c) == 0:
+            continue
+        sub_c_sorted = sub_c.sort_values("cost_ratio_r")
+        ax.plot(sub_c_sorted["cost_ratio_r"], sub_c_sorted["exp_cost_normalized"],
+                color=COLORS.get(bl, "gray"), lw=1.5, label=name)
+    ax.axvline(anchor_r, color="orange", lw=1.2, ls="--",
+               label=f"Anchor r={anchor_r:.0f}\n(mistry2026/li2023)")
+    ax.set_xscale("log")
+    ax.set_xlabel("Cost ratio r = c_miss / c_biopsy (log scale)", fontsize=9)
+    ax.set_ylabel("Expected cost (normalized)", fontsize=9)
+    ax.set_title(f"(b) Break-even curve at pt={pt_fixed}", fontsize=9, fontweight="bold")
+    ax.legend(fontsize=7)
+    ax.tick_params(labelsize=8)
+
+    plt.tight_layout()
+    for fmt in ["pdf", "svg", "png"]:
+        fig.savefig(OUT_FIG / f"fig_cost_sweep.{fmt}",
+                    dpi=200 if fmt == "png" else None,
+                    bbox_inches="tight", format=fmt)
+    plt.close()
+    print(f"  Cost sweep figures: {OUT_FIG}/fig_cost_sweep.*")
+    print(f"  NOTE: cost constants are sensitivity-sweep params (A20 §tab:a20-costs).")
+    print(f"        Do NOT report absolute cost numbers as point estimates.")
 
 
 if __name__ == "__main__":

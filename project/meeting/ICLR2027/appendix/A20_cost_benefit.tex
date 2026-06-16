@@ -3,8 +3,12 @@
 % DALY/QALY framing) + STORY_FRAMEWORK A20. Cost CONSTANTS are literature-anchored sensitivity-sweep
 % parameters with citations (li2023skinbiopsy / mistry2026melanomacost / loane2001teledermatology /
 % hoogenboom2026teledermatology + krensel2019/maul2024 for motivation context). The SIMULATED outputs
-% (expected-cost vs referral-rate operating curves, net-benefit point estimates) are PENDING (M3) and
-% NOT reported here (red line 4: no fabricated simulation outputs without a real sim csv).
+% (net-benefit point estimates, triage operating points, cost-ratio sensitivity sweep) are now backed by
+% real csv: results/dca/{dca_summary.json,cost_sweep_breakeven.csv} (会话32+任务A). NO fabricated outputs.
+% CAVEATS (verifier-confirmed, hard red lines): (i) the four DCA max-NB CIs all overlap -> we make NO
+% claim that quality-conditional enhancement raises net benefit; (ii) cost constants stay sensitivity-sweep
+% parameters, never point estimates; (iii) the only positive statements are NB>0 across a wide cost ratio
+% (not inferior to treat-all) and TokFT triage sens 0.788 ~ direct 0.818 while bare Std VIB misses 73%.
 % Anonymized; clinical framing per R3 (simulation/decision-curve language, no reader claims).
 
 \section{Cost--Benefit Deployment Analysis}\label{app:a20}
@@ -104,10 +108,11 @@ $\{\actd,\acte,\actq,\actr\}$ maps the routing decisions of the closed-loop poli
 correct $\actr$ (query-for-retake or referral) on a degraded malignant case realises the
 $c_{\mathrm{miss}}$ saving, whereas an unnecessary $\actr$ on a benign case incurs only the
 comparatively small $(c_{\mathrm{refer}})$ term in place of $c_{\mathrm{biopsy}}$.
-Inequality~\eqref{eq:a20-breakeven} is an analytic condition, not an empirical result; it identifies
-\emph{which} regions of the cost--prevalence space favour triage, and the corresponding numerical
-operating curves remain pending and unreported here (\cref{sec:exp-dca}, deferred to M3), since they
-require a real simulation run rather than the literature-anchored constants tabulated above.
+Inequality~\eqref{eq:a20-breakeven} is an analytic condition, not an empirical result: it identifies
+\emph{which} regions of the cost--prevalence space favour triage. We instantiate the corresponding
+numerical analysis as a sensitivity study in \cref{app:a20-netbenefit,app:a20-sweep}, computed entirely
+from held-out \itb{}-LQ predictions ($n=300$) rather than asserted from the literature-anchored
+constants tabulated above; the constants enter only as the swept centres of the cost-ratio range.
 
 \subsection{Net Benefit and Decision Curves}\label{app:a20-netbenefit}
 We report \emph{net benefit} as a function of the decision threshold $p_t$,
@@ -115,21 +120,79 @@ We report \emph{net benefit} as a function of the decision threshold $p_t$,
 \mathrm{NB}(p_t) = \frac{\mathrm{TP}}{N} - \frac{\mathrm{FP}}{N}\cdot\frac{p_t}{1-p_t},
 \label{eq:a20-nb}
 \end{equation}
-and compare the closed-loop agent against (i) treat-all, (ii) treat-none, and (iii) direct diagnosis
-without triage. Decision-curve dominance over a clinically relevant $p_t$ range is the headline
-deployment claim; it requires no human readers and is computed entirely from held-out predictions.
+and compare the information-bottleneck variants against (i) treat-all, (ii) treat-none, and (iii)
+direct diagnosis without triage. The decision curves and the confidence-gated triage operating points
+are summarised in the main text (\cref{sec:exp-dca}, Fig.~\ref{fig:dca}); here we record the supporting
+point estimates with their $2{,}000$-sample bootstrap $95\%$ confidence intervals, computed entirely
+from held-out \itb{}-LQ predictions ($n=300$) and requiring no human readers.
 
-\subsection{Triage Simulation}\label{app:a20-sim}
-On top of the static cost model we simulate the closed loop: degraded inputs are routed by the policy
-of Theorem~\ref{thm:agent}, retakes draw a higher-quality re-capture from the paired data,
-enhancement applies $\Tw$, and referrals remove the case from automated decision. Sweeping the
-quality thresholds $(\tauenh,\tauhigh)$ traces an operating curve of expected cost versus referral
-rate, identifying the band where triage is economically favourable. The simulation inherits the
-safety boundary of \cref{sec:exp-salvage} (low salvage rate on severely degraded inputs is intended,
-not a failure).
+\paragraph{Maximum net benefit.}
+Over the clinically relevant threshold range the maximum net benefit is \emph{statistically
+indistinguishable} across direct diagnosis and all information-bottleneck variants: EfficientNet-B3
+(direct) $0.186$ ($95\%$ CI $[0.143,0.233]$), \qvib{}$+$TokFT $0.179$ $[0.139,0.223]$, Std VIB $0.186$
+$[0.142,0.233]$, and Std VIB${}+{}$QCTS $0.192$ $[0.148,0.236]$. All four confidence intervals overlap,
+so the decision curves do not separate the methods and \textbf{we make no claim that
+quality-conditional enhancement raises net benefit over direct diagnosis}. The single positive
+statement the analysis supports is that every method attains net benefit above zero --- i.e.\ each is no
+worse than the treat-all reference --- across the threshold range examined.
+
+\paragraph{Confidence-gated triage.}
+The clinical value surfaces instead under confidence-gated triage, where low-confidence cases are
+referred to a human reader. At a $20\%$ referral budget the well-calibrated \qvib{}$+$TokFT
+\emph{matches} direct diagnosis on auto-handled sensitivity ($0.788$ versus $0.818$; missed-positive
+rate $0.183$ versus $0.167$), whereas the under-confident Std VIB and Std VIB${}+{}$QCTS variants
+collapse at their natural operating thresholds (auto-handled sensitivity $0.137$ and $0.143$, missing
+$73\%$ and $70\%$ of positives respectively) because their compressed posteriors rarely cross the
+referral threshold. The operative finding is therefore calibration-driven reliable abstention rather
+than a raw-discrimination gain.
+
+\subsection{Cost-Ratio Sensitivity Sweep}\label{app:a20-sweep}
+On top of the static cost model we sweep the single dimensionless quantity that drives the trade-off,
+the miss-to-biopsy cost ratio $r = c_{\mathrm{miss}}/c_{\mathrm{biopsy}}$, over the range spanned by the
+literature-anchored constants of \cref{tab:a20-costs}, and report two complementary quantities computed
+from the held-out \itb{}-LQ predictions ($n=300$).
+
+\paragraph{Expected cost is the cost-sensitive axis.}
+The normalised expected cost of a decision rule,
+\begin{equation}
+\widehat{C}(r) \;=\; \frac{\mathrm{FP}+\mathrm{TP}}{n} \;+\; \frac{\mathrm{FN}}{n}\cdot r,
+\label{eq:a20-expcost}
+\end{equation}
+charges every positive decision a unit biopsy cost and every false negative the relative miss cost $r$.
+By construction $\widehat{C}(r)$ is monotonically increasing in $r$ (verifier-confirmed on the swept
+grid), so it is the quantity on which the break-even of \cref{eq:a20-breakeven} actually plays out: as
+the miss cost rises relative to the biopsy cost, rules that abstain on uncertain malignant cases (and
+thus avoid the heavily-weighted $\mathrm{FN}$ term) become progressively favoured. The break-even
+between any two rules is therefore located on the expected-cost axis, not the net-benefit axis.
+
+\paragraph{Net benefit is, by definition, invariant to $r$.}
+The net benefit of \cref{eq:a20-nb} is parametrised by the decision threshold $p_t$ alone and does not
+contain $r$; consequently the maximum net benefit reported in \cref{app:a20-netbenefit} is invariant
+under the cost-ratio sweep (this is a property of the standard DCA definition, not an empirical finding,
+and we state it explicitly to avoid the misreading that the overlapping net-benefit intervals are
+themselves cost-insensitive results). The two analyses are complementary: net benefit fixes the
+threshold-implied cost ratio internally, whereas \eqref{eq:a20-expcost} exposes $r$ as an explicit
+swept parameter.
+
+\paragraph{What the sweep does and does not establish.}
+Across the swept cost-ratio range every method retains positive net benefit (no worse than treat-all),
+and the four maximum-net-benefit intervals remain mutually overlapping throughout; we therefore again
+make \textbf{no} claim that enhancement raises net benefit. The defensible positive reading is the
+triage one: a well-calibrated posterior (\qvib{}$+$TokFT) supports confidence-ordered abstention whose
+auto-handled sensitivity ($0.788$) tracks direct diagnosis ($0.818$), whereas the under-confident bare
+Std VIB misses $73\%$ of positives at its natural operating point and so cannot be gated for safe
+abstention at all. The sweep inherits the safety boundary of \cref{sec:exp-salvage} (a low salvage rate
+on severely degraded inputs is intended, not a failure) and is presented as a deployment-feasibility
+sensitivity study rather than a health-economic verdict.
 
 \subsection{Reporting and Limitations}\label{app:a20-limits}
-We report the cost model as a \emph{sensitivity analysis} over the cost constants rather than a single
-point estimate, since real costs vary by health system. The analysis is a deployment-feasibility
-argument, not a health-economic evaluation; a formal cost-effectiveness study with jurisdiction-specific
-inputs is out of scope and listed as future work in \cref{sec:discussion}.
+We report the cost model as a \emph{sensitivity analysis} over the cost constants and the
+miss-to-biopsy cost ratio rather than as a single point estimate, since real costs vary by health
+system. Three caveats bound the reading. First, the four maximum-net-benefit confidence intervals
+overlap, so we make no claim that quality-conditional enhancement raises net benefit over direct
+diagnosis; the only net-benefit statements we assert are that each method is no worse than treat-all and
+that calibration enables reliable abstention. Second, the cost constants of \cref{tab:a20-costs} are
+swept parameters anchored to peer-reviewed estimates, never point estimates, and are not converted to a
+common unit. Third, the analysis is a deployment-feasibility argument, not a health-economic evaluation;
+a formal cost-effectiveness study with jurisdiction-specific inputs is out of scope and listed as future
+work in \cref{sec:discussion}.

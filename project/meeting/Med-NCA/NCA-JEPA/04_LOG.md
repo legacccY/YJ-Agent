@@ -6,6 +6,13 @@
 
 ---
 
+## 2026-06-16 — AMBER 阻断①④清: estimate_lf 口径 bug 已修 + registry 同步（待 HPC 重测 L_f 拍板）
+- **① estimate_lf 口径修复（coder）**：`eval_anytime.estimate_lf` 重写——(a) **bug#1 修**：废 `torch.randn` 随机点，改 `NCAPredictor.get_hidden_at_step()` 跑真实 forward 半程拿轨迹状态 h（含 scatter context + anchor 锚定），在 S/4·S/2·3S/4 三点各 power-iteration 取 σ_max 当谱半径上界；(b) **fire 算子固定**：每 power-iter 步 `gen.manual_seed(fire_seed)` 重置使 `cell(h_,generator=gen)` 看同一 fire mask（power iteration 需固定算子）= 与 A2 `deterministic_fire=True` 推理同路径，口径自洽。(c) **bug#2 经核不成立**：`NCAStep.forward` line67 已返 `h+fire*delta`（残差全映射），cell Jacobian 已是 `I+diag(fire)·J_δ`，不需改；reviewer 诊断的「测 δ 非 I+J_δ」与现码不符。
+- **smoke 通过**：py_compile OK；`eval_anytime eval --smoke` 端到端通；随机权重 L_f=1.000（fc1 零初始化 δ≈0→J=I→σ=1，预期值）。`results/_scratch/smoke_lf_fix.csv`。
+- **④ registry 同步**：Gate3 措辞从「anytime 一等」改为反映实测——核心轴=可测稳定性(L_f)+3.4× 省参，anytime 已被 A0+(Q1=0.975)打平降辅项，追上 01/03 已改 framing（消阻断⑥脱节）；current.phase/blockers/next 全更新到 AMBER 现状。
+- **⑤ 留重测后**：02 全文 L_f 数值预言(0.2-0.5/0.35/(1+L_f)^S)返修依赖真 ckpt 重测值，现改只能标待验会返工，等重测一次到位。
+- **🛑 拐点（待拍）**：估计器已修但 ckpt 全在 HPC（本地无 .pth.tar）→ 重测 L_f 需连 HPC 推 fixed `eval_anytime.py`+`nca_predictor.py` 跑各真 ckpt。结果定命中：L_f<1 → 回 Gate1 PASS 走 GREEN（稳定性核心成立）；真 >1 → 退路 B（独家负结果）。剩余②A1 补 seed123/2024(训练拍板)、③A2 三 seed canary 轨迹(eval) 待重测后续推。
+
 ## 2026-06-16 — pilot 全 7 job 训完 + eval + /stage-gate 严判 = 🟡 AMBER（不放行）
 - **训练全完**：7 job 全 COMPLETED 50ep。eval_anytime 出全部 Q(k)+L_f csv（results/anytime_*.csv），aggregate 出 trade-off 图（results/tradeoff.png）。
 - **verifier(V-gate) 核绿**：8 csv 数字零 drift、Q 全单调；a2 S16 三 seed L_f mean=1.0263 std=0.0031；final-loss 0.095/0.100/0.098(std≈0.002)。三 seed eval 数差异（L_f/Q 各不同）反证 ckpt 未被并发覆盖（不同文件）。

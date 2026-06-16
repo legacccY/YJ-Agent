@@ -53,3 +53,45 @@ MedSeg-UQ「医学分割 UQ 纯理论下界」三轮 reviewer 全塌缩后，用
 **3. Phase 0 设计（planner）** → `03_phase0_plan.md`：三道证伪闸 PC-A（地基：协变量系统失败+交互）/ PC-C（防循环论证：conspicuity 增量信息三件套，纯 CPU）/ PC-B（可外推雏形+strong baseline）。最小数据=BraTS2021（有 mask 可分层）+ 本地 HAM-NV（跨模态零下载），AE/VAE 照官方超参。**GPU 仅两次训练 6-9 GPU·h，其余纯 CPU 软活**。Gate 0 决策表全绿进 Phase 1、任一红修/退。
 
 **GPU-free 进度小结（本窗 HPC 没空时推的纯软活）**：conspicuity 核 ✅ + ACCEPTANCE 收紧 ✅ + Phase 0 设计 ✅。**剩余 GPU-free 前置**：① researcher 锁 MedIAnomaly 官方超参 ② coder 实现 5 个脚本（含 CPU 软活 C/B 系列）③ 下 MedIAnomaly Zenodo 数据。**需 GPU（拍板点+训练锁）**：A0/B0 两次 AE 训练。
+
+---
+
+## 2026-06-16 续 — Phase 0 全套脚本实现（coder）
+
+**官方超参来源**：`github.com/caiyu6666/MedIAnomaly`，复现零偏离，见 `03_phase0_plan.md` 附录。
+
+### code/ 目录文件指针
+
+| 文件 | 功能 | 对应实验 |
+|---|---|---|
+| `code/train_recon_ae.py` | AE/VAE 训练 + anomaly score csv；官方超参（Adam lr=1e-3/bs=64/epochs=250/latent=16/64×64/L2/β=0.005）；`-d brats/isic -m ae/vae` | A0-train-AE, B0-train-HAM |
+| `code/stratify_eval.py` | PC-A 分层评估；mask 连通域 size + 3px 环带 contrast；≥3 桶 + 3×3 交互网格；输出检出率 csv | A1/A2/A3 |
+| `code/conspicuity_proxy.py` | PC-C C1 无 mask 代理特征（σ/GLCM/FFT 熵/Otsu CNR_proxy）；纯 CPU scikit-image；输出 per-image 特征 csv | C1 |
+| `code/incremental_stats.py` | PC-C C2/C3/C4 增量统计；嵌套 LR 检验 + 残差偏相关 + risk-coverage；内置 Holm/FDR 校正 | C2/C3/C4 |
+| `code/failure_boundary.py` | PC-B 失败边界拟合+跨集外推+strong baseline；逻辑回归/GBM；extrapolation 到未见 size 区域 | B1/B2/B3/B4 |
+| `code/download_medianomaly.py` | Zenodo records/12677223 下载 + 目录结构校验（写好不执行，主线跑） | 数据前置 |
+| `code/tests/test_cpu_scripts.py` | pytest 冒烟测试（合成数据，验 stratify/conspicuity/incremental/boundary 不报错） | CI |
+
+**就绪状态**：脚本全部写好，未启训练。GPU 训练 (A0/B0) 是拍板点，主线 `/loop /run-experiment` 跑。
+
+### 2026-06-16 续 — 数据下载 + CPU 管线真数据验通（主线，GPU-free）
+
+**1. BraTS2021 下载就位**：核 Zenodo API 发现是**分集 tar.gz 非单 zip**（coder 脚本 URL 写错，已重写 `download_medianomaly.py` 为分集版）。直接 curl `BraTS2021.tar.gz`(70MB) 解压到 `data/BraTS2021/`，**计数对齐官方✅**：train 4211 / test normal 828 / tumor 1948 / annotation 1948。datasets.json 标 partial(BraTS ready)。
+- **数据路径=`data/BraTS2021/`**（非脚本默认的 `data/brats/`，训练/eval 调用时用 `--data-dir` 指对）。
+
+**2. conspicuity_proxy.py 真数据验通**（PC-C C1，纯 CPU 不需训练）：1948 张真 BraTS tumor 图跑通 → `results/conspicuity_features_tumor.csv`。Bash 核分布：**0 NaN**，5 特征全非退化有方差（sigma 0.025-0.29 / cluster_prom 181-3.6e6 / contrast 0.5-66 / fft_ent 3.1-5.4 / cnr 2.6-12）。**CPU 软活管线真数据端到端通，特征有方差=③ 判据能有信号的前置成立**。⚠️ cluster_prom 量级跨 4 个数量级，analyst 跑增量统计前考虑 log 变换。
+
+**GPU 墙到此**：余下 Phase 0（stratify 检出率 / incremental 增量统计 / failure_boundary 外推）全需 AE 的 anomaly score = A0 训练 = **拍板点 + 训练锁**。GPU-free 能推的已推完。
+
+### 2026-06-17 — HPC 上传准备完成（用户拍走 HPC，主线亲跑，未提交训练）
+
+**HPC 状态**：gpu4090 全分区 12 张空闲卡，导师配额 shuihuawang 0 占用（QOS 4gpus=最多 4 卡），Phase 0 只需 1 卡，能马上排上。
+**上传就位**（`/gpfs/work/bio/jiayu2403/medad-failmap/`）：
+- 数据：BraTS2021 整包 tar 传后 HPC 解压，计数对齐 4211/828/1948/1948 ✅。
+- 代码：6 个 py + `submit_a0.sh`（SBATCH 头照 nca-jepa 同款：account=shuihuawang/partition=gpu4090/qos=4gpus/gres=gpu:rtx4090:1/time=2h）。
+- 环境：复用 nca-jepa 的 `yjcu124py310`（torch 2.6.0+cu124 + skimage 0.25.2 + sklearn 1.7.1，零搭建）。
+- **修 bug**：coder 的 train 脚本写死 `data/brats/`（小写），实际 Zenodo 目录是 `BraTS2021/`，已修两处对齐官方目录名（复现零偏离）。
+- **HPC smoke 验通**（登录节点，不训练不占 GPU）：BraTSTrainDataset 数到 4211 文件，shape (1,64,64)，range [-1,0.09]（Normalize 正确）。
+**清陈旧训练锁**：撞到 nca-jepa 训练锁（win-1844），核 7 个 job（1450889-901）全 COMPLETED（22:21-23:00 结束）、我方 0 活动 job = 确认陈旧，按 CLAUDE.md「确认陈旧再人工清」改名存档 `training.lock.stale-nca-jepa-20260617`（PowerShell 删被权限拒→用 filesystem move）。
+
+**就绪待拍板**：A0 提交 = `sbatch code/submit_a0.sh`（HPC 上），是拍板点。提交前主线写 MedAD 的 `training.lock`（串行红线）。**等用户「跑」。**

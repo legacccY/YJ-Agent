@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-06-17（会话 37，GPU 空档 → Plan A 前提纠偏 + 矩阵 A 零训练解阻塞 A20/Thm2）
+
+### 起因
+用户「GPU 空了，全力继续，多线程」。nca-jepa 窗刚把 registry 更新为 pilot-amber（Phase0 全 7 job 训完转 AMBER）+ training_lock.held=false（已逻辑释放，但锁文件 stale 没删）+ 本地 GPU 0/8188 空。派 planner（设计 Plan A 矩阵）+ coder（验 config 就绪）并行。
+
+### 🔴 重大前提纠偏（planner + verifier 双确认）
+冷启动/registry 长期记的「数字侧 PENDING 全阻塞在 Plan A 重训」**前提不成立**。verifier 核实：Stage 1 / Stage 2 v5 ckpt（176MB 实体在）/ 6 路 SOTA（e10_* 6/6 csv 齐全显著）/ cross-domain（chexray+fundus csv 在）/ E1-E12（11/12 在）**早在会话 21-28 就训完 frozen**。**ICLR 主线根本不需要那个 24h 大重训。** 真正缺口只 5 件，4 件不需训练：
+- P-2 n=19878 per-sample csv（纯推理）｜P-3 A19 LLM-judge（API，拍板点）｜P-4 A20 cost 曲线（纯分析）｜P-5 Thm2 triage 实证（纯分析）｜P-1 Stage 3 hinge（唯一需 GPU，但 config 架构串台 + 历史结论 null）
+
+### ✅ 矩阵 A 落地（零训练 GPU·h，本地推理/分析）
+- **P-4 A20 cost 曲线 ✅**：coder 扩 run_dca_triage.py 加 cost-weight sweep → cost_sweep_breakeven.csv + fig_cost_sweep。analyst 误报「NB 对 r 平坦=bug」→ 主线读 code + verifier 实证否决：NB 是标准 DCA 定义本就 r-无关，cost 敏感性在 exp_cost_normalized 列（=(FP+TP)/n+FN/n·r，随 r 单调增，verifier 举 r 50→124 exp_cost 1.227→1.724 坐实）。**非 bug，deliverable 有效。**
+- **P-5 Thm2 实证 ✅**：coder 写 agent_risk_band_test.py → agent_vs_direct_risk.csv。retake channel 严格单调 severe 0.889[0.800,0.978]>moderate 0.651[0.600,0.705]>high 0.055[0.031,0.083]，各 band risk_delta CI 排除 0 = Thm2 P1/P3 实证。⚠️ enhancement severe aggregate salvage 0.898 是 **benign 主导聚合值**，脚本+verifier+writer 三层确认不误判为 E5 severe PASS（真故事=§7.4 per-class melanoma 5.2%/净损81）。
+- **verifier 核两 deliverable 待入文值 0 drift** → **writer 落进 paper**：A20+§7.7 cost 从「deferred」转实（4法 maxNB+CI全重叠+triage@20%+exp_cost break-even 机制，强制 caveat：make no claim NB 增益/cost 常数非点估计/仅 NB>0 不劣 treat-all）；§7.4 加 Thm2 retake 单调性实证段（severe 0.898 加粗标 benign-dominated→正确结论 route-to-retake）。编译 **52 页 0 undef 0 重复 label**。
+
+### 🛑 拍板点处置
+- **Stage 3 quality hinge：用户拍板「缓跑」**（会话21-27 结论 hinge 泛化不动+E5 melanoma null，大概率重复 null；config 架构串台需先重建；paper 三阶段叙事已靠 §7.4 负结果+query-gate 闭环站住不缺 S3 产物）。→ ICLR 本轮 0 GPU 训练。
+- **per-sample P-2：用户拍板「现在跑」但撞真阻塞**——Q-VIB Full eval 依赖 3 文件本地缺失（quality_labels_all.csv[q̄关键] + abcd_cache.csv + efficientnet_index.csv，git 瘦身随 data/ 清掉，efnet_features.npy 729M/isic_split/metadata 在）。换 nocrop 凑会致 q̄ 与 frozen 0.707/−0.165 不符=踩复现红线，**不硬干**。P-2 暂记债（0.707 有源 eval_report_ablation.md、仅缺 CI），要补需从 HPC 精确取回那 3 文件。
+
+### 命中率
+GPU 空档没盲目烧 24h 跑大概率 null 的 Stage 3——planner drift 契约抓出「重训前提不成立」，转零训练矩阵 A 用 ~3min 本地分析填掉 A20+Thm2 两块真 PENDING。analyst 的 cost-sweep「bug」虚警被 code-read+verifier 双否（避免误删有效 deliverable）。severe salvage 0.898 benign-dominated 陷阱三层拦截不进 headline。per-sample 撞缺数据诚实记债不凑数（守红线4）。
+
+### 待续（会话 38）
+1. （需拍/需 HPC）P-2 per-sample CI：从 HPC 取回 quality_labels_all/abcd_cache/efnet_index 三文件后本地重 dump，聚合须回 0.707/0.098/−0.165。
+2. （拍板点7）P-3 A19 LLM-judge 全量 200 case（烧 API）：现 protocol-only deferred。
+3. nca-jepa 窗的 stale training.lock 文件未删（registry held=false 但锁文件还在）——非本窗职责，提示那边清。
+4. 本会话改动未 commit（main.tex/A20_cost_benefit.tex/eval_ablation.py/run_dca_triage.py/agent_risk_band_test.py 新建/3 结果 csv/PROJECT_LOG/registry）。
+
+---
+
 ## 2026-06-16（会话 36，大编队第四轮投稿前体检 → 没深审过的角度收口：claim-evidence 对齐 + selective-prediction Related 缺口 + Limitations 补强）
 
 ### 起因

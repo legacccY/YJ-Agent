@@ -135,27 +135,64 @@ def compute_qk(predictor, x, masks_x, masks, ks, full_k, is_nca):
 # L_f：NCA cell Jacobian 谱半径（power iteration via JVP），命题 1.1 / §10 理论锚
 # ----------------------------------------------------------------------------
 def estimate_lf(predictor, x, masks_x, masks, n_iter=20):
-    """对 NCA cell 在一个真实迭代点 h 上估 ‖J_f‖_2（谱半径上界）。非 NCA 返回 NaN。"""
+    """对 NCA cell 在真实迭代轨迹多点上估 ‖J_f‖_2（谱半径上界），取最大值。
+
+    口径说明（§10/命题1.1）：
+    - 估计点：在 (x, masks_x, masks) 的真实 forward 轨迹上取 S/4、S/2、3S/4 三步
+      拿到真实网格状态 h，分别用 power iteration 估 sigma，取 max。
+      （Bug#1 修复：原实现在 torch.randn 随机点估，与轨迹无关；现改为真实点。）
+    - 算子固定：cell 内含随机 fire mask，power iteration 要求算子不变才能收敛。
+      修复方式：每次 cell(h_, generator=gen) 调用前 gen.manual_seed(FIXED_SEED)
+      重置，使每步看到相同 fire mask（确定性 fire 路径，与 scp_nca 训练时
+      deterministic_fire 语义一致）。
+    - Bug#2 结论：NCAStep.forward 返回 h + fire*delta（残差全映射），cell(h_) 的
+      Jacobian 已是 d(h+fire·delta)/dh = I + diag(fire)·J_delta，口径正确，
+      不需修正。
+    - 锚定：get_hidden_at_step 含锚定步骤（context 位置强制，是迭代映射的一部分）；
+      cell(h_) 用于估 Jacobian 时不含锚定（锚定对 h 是仿射投影，不改变 cell 本身
+      的谱半径；若含锚定则 sigma 会被人为压低，偏保守但口径不清晰）。
+    - 非 NCA predictor（无 cell 属性）返回 NaN。
+    """
     cell = getattr(predictor, 'cell', None)
     if cell is None:
         return float('nan')
-    # 取一个迭代点 h：跑半程拿当前网格状态
+    if not hasattr(predictor, 'get_hidden_at_step'):
+        return float('nan')
+
     predictor.eval()
-    grid = predictor.grid
-    D = predictor.predictor_pos_embed.size(-1)
-    B = masks_x[0].shape[0]
-    h = torch.randn(B, D, grid, grid, device=x.device, requires_grad=False)
-    v = torch.randn_like(h)
-    v = v / (v.norm() + 1e-12)
-    sigma = 0.0
-    for _ in range(n_iter):
-        h_ = h.detach().requires_grad_(True)
-        f = cell(h_)                              # f(h)
-        # JVP: J v  via double backward
-        (jv,) = torch.autograd.grad(f, h_, grad_outputs=v, create_graph=False, retain_graph=False)
-        sigma = jv.norm().item() / (v.norm().item() + 1e-12)
-        v = (jv / (jv.norm() + 1e-12)).detach()
-    return float(sigma)
+    S = predictor.nca_steps
+    fire_seed = getattr(predictor, 'fire_seed', 0)
+
+    # 轨迹采样点：S/4, S/2, 3S/4（各取整，去重，保证 >=1）
+    sample_steps = sorted(set(max(1, s) for s in [S // 4, S // 2, (3 * S) // 4]))
+
+    # 固定 fire 用的 generator（每次 power iteration 步前 reset seed，保算子不变）
+    gen = torch.Generator(device=x.device)
+
+    sigma_max = 0.0
+    with torch.no_grad():
+        hidden_states = [predictor.get_hidden_at_step(x, masks_x, masks, s)
+                         for s in sample_steps]
+
+    for h_pt in hidden_states:
+        # 初始随机方向向量
+        v = torch.randn_like(h_pt)
+        v = v / (v.norm() + 1e-12)
+        sigma = 0.0
+        for _ in range(n_iter):
+            h_ = h_pt.detach().requires_grad_(True)
+            # 每次 reset seed，保证 power iteration 每步算子相同（固定 fire mask）
+            gen.manual_seed(fire_seed)
+            f = cell(h_, generator=gen)
+            # JVP: J·v via autograd（‖Jv‖/‖v‖ 即当前估计的最大奇异值）
+            (jv,) = torch.autograd.grad(
+                f, h_, grad_outputs=v, create_graph=False, retain_graph=False)
+            sigma = jv.norm().item() / (v.norm().item() + 1e-12)
+            v = (jv / (jv.norm() + 1e-12)).detach()
+        if sigma > sigma_max:
+            sigma_max = sigma
+
+    return float(sigma_max)
 
 
 # ----------------------------------------------------------------------------

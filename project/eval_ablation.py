@@ -54,6 +54,17 @@ def parse_args():
     p.add_argument("--out", default="results/eval_report_ablation.md")
     p.add_argument("--n_mc", type=int, default=20)
     p.add_argument("--batch_size", type=int, default=512)
+    p.add_argument(
+        "--save-persample",
+        default=None,
+        metavar="PATH",
+        help=(
+            "If set, dump a per-sample CSV for the 'Ours: Q-VIB Full' variant only "
+            "(cols: logit_pos, prob_pos, conf, correct, entropy_H, qbar).  "
+            "Used to compute bootstrap CI for AUC/ECE/rho without altering any "
+            "aggregated metric or model weights."
+        ),
+    )
     return p.parse_args()
 
 
@@ -126,6 +137,8 @@ def eval_model(variant: dict, args, device: torch.device) -> dict:
     classifier.eval()
 
     all_probs, all_entropy, all_targets, all_qbar = [], [], [], []
+    # also collect per-MC logits for per-sample dump (only if requested)
+    all_logits_pos = []
 
     with torch.no_grad():
         for batch in tqdm(loader, desc=variant["name"], leave=False):
@@ -137,23 +150,29 @@ def eval_model(variant: dict, args, device: torch.device) -> dict:
             mu, log_sigma_sq = encoder(abcd, q, efnet_feat=efnet_feat)
 
             probs_list = []
+            logits_list = []
             for _ in range(args.n_mc):
                 z = encoder.reparameterize(mu, log_sigma_sq)
-                logits = classifier(z)
-                probs_list.append(F.softmax(logits, dim=-1))
+                lgts = classifier(z)
+                logits_list.append(lgts)
+                probs_list.append(F.softmax(lgts, dim=-1))
 
             mean_probs = torch.stack(probs_list).mean(0)
             entropy = -(mean_probs * mean_probs.log().clamp(-20)).sum(-1)
+            # mean logit of positive class across MC samples (for per-sample dump)
+            mean_logits = torch.stack(logits_list).mean(0)
 
             all_probs.append(mean_probs.cpu().numpy())
             all_entropy.append(entropy.cpu().numpy())
             all_targets.append(targets.numpy())
             all_qbar.append(q.mean(-1).cpu().numpy())
+            all_logits_pos.append(mean_logits[:, 1].cpu().numpy())
 
-    probs   = np.concatenate(all_probs)
-    entropy = np.concatenate(all_entropy)
-    targets = np.concatenate(all_targets)
-    qbar    = np.concatenate(all_qbar)
+    probs       = np.concatenate(all_probs)
+    entropy     = np.concatenate(all_entropy)
+    targets     = np.concatenate(all_targets)
+    qbar        = np.concatenate(all_qbar)
+    logits_pos  = np.concatenate(all_logits_pos)
 
     auc  = float(roc_auc_score(targets, probs[:, 1]))
     ece  = compute_ece(probs, targets)
@@ -187,6 +206,12 @@ def eval_model(variant: dict, args, device: torch.device) -> dict:
         "mean_entropy": float(entropy.mean()),
         "entropy_rho": float(rho), "entropy_pval": float(pval),
         "segments": segments,
+        # carry arrays for optional per-sample dump (not written into report)
+        "_probs": probs,
+        "_entropy": entropy,
+        "_targets": targets,
+        "_qbar": qbar,
+        "_logits_pos": logits_pos,
     }
     print(
         f"  AUC={auc:.3f}  ECE={ece:.3f}  "
@@ -234,6 +259,54 @@ def write_report(results: list[dict], out_path: str):
     print(f"\nReport -> {out_path}")
 
 
+def dump_persample(result: dict, out_path: str) -> None:
+    """Write per-sample CSV for bootstrap CI computation.
+
+    Columns:
+        logit_pos   – mean MC logit of class 1 (used in AUC ranking)
+        prob_pos    – mean MC probability of class 1  (P(melanoma))
+        conf        – max(prob_pos, 1-prob_pos) = confidence (used in ECE bins)
+        correct     – 1 if argmax(probs) == target, else 0
+        entropy_H   – predictive entropy H = -sum(p * log p)
+        qbar        – mean quality scalar over the 5-channel quality vector
+
+    Aggregates computed from this file must reproduce the eval_report_ablation.md
+    values to within floating-point precision.
+    NOTE: Only dumps the Q-VIB Full variant; other variants are skipped.
+    """
+    import pandas as pd
+
+    probs      = result["_probs"]       # (N, 2)
+    entropy    = result["_entropy"]     # (N,)
+    targets    = result["_targets"]     # (N,)
+    qbar       = result["_qbar"]        # (N,)
+    logits_pos = result["_logits_pos"]  # (N,)
+
+    conf    = np.maximum(probs[:, 0], probs[:, 1])
+    correct = (probs.argmax(-1) == targets).astype(np.int8)
+
+    df = pd.DataFrame({
+        "logit_pos":  logits_pos.astype(np.float32),
+        "prob_pos":   probs[:, 1].astype(np.float32),
+        "conf":       conf.astype(np.float32),
+        "correct":    correct,
+        "entropy_H":  entropy.astype(np.float32),
+        "qbar":       qbar.astype(np.float32),
+        "target":     targets.astype(np.int8),
+    })
+
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out, index=False)
+    print(f"Per-sample dump ({len(df)} rows) -> {out}")
+    # Sanity-check: reproduced AUC/ECE must match report values to 1e-3
+    from sklearn.metrics import roc_auc_score
+    auc_check = float(roc_auc_score(targets, probs[:, 1]))
+    ece_check = compute_ece(probs, targets)
+    print(f"  Sanity AUC={auc_check:.3f}  ECE={ece_check:.3f}  "
+          f"(must match eval_report_ablation.md Q-VIB Full row)")
+
+
 def main():
     args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -250,6 +323,13 @@ def main():
 
     if results:
         write_report(results, args.out)
+        # Optional per-sample dump (Q-VIB Full only, for bootstrap CI)
+        if args.save_persample:
+            full_results = [r for r in results if "Q-VIB Full" in r["name"]]
+            if full_results:
+                dump_persample(full_results[0], args.save_persample)
+            else:
+                print("[WARN] --save-persample requested but Q-VIB Full variant not found/skipped.")
 
 
 if __name__ == "__main__":

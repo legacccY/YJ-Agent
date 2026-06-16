@@ -114,12 +114,12 @@
       "name": "MedIAnomaly benchmark (7 集)",
       "n": null,
       "subsets": "RSNA(胸片) / VinDr-CXR(胸片) / BrainTumor(脑MRI) / LAG(眼底) / Camelyon16(病理,有像素mask) / BraTS2021(脑MRI FLAIR,有像素mask) / ISIC2018-Task3(皮镜,nevus=正常)",
-      "local": "TODO 待下载到 project/meeting/MedAD-FailMap/data/",
+      "local": "BraTS2021 已下: project/meeting/MedAD-FailMap/data/BraTS2021/ (train 4211 / test normal 828 / tumor 1948 / annotation 1948，计数对齐官方✅)；其余 6 集待按需下",
       "hpc": "TODO",
-      "source": "Zenodo 统一预处理打包 2.4GB: https://zenodo.org/records/12677223 ; codebase: https://github.com/caiyu6666/MedIAnomaly (注: VinDr 需 PhysioNet credentialed, LAG 需联系作者; 无则 RSNA 替代)",
+      "source": "Zenodo 分集 tar.gz: https://zenodo.org/api/records/12677223/files/<NAME>.tar.gz/content (BraTS2021 70MB / BrainTumor 42MB / LAG 202MB / RSNA 568MB / VinCXR 620MB / Camelyon16 891MB；注意是分集非单 zip)；codebase github.com/caiyu6666/MedIAnomaly。ISIC2018 不在此 Zenodo→本地 HAM10000 NV(6705图)零下载对接",
       "used_by": ["medad-failmap"],
-      "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估; ISIC2018-Task3 可用本地 HAM10000 NV 子集(6705图)零下载对接",
-      "status": "todo"
+      "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估(协变量分层用 BraTS test/annotation mask); Phase 0 只用 BraTS2021",
+      "status": "partial (BraTS2021 ready, 余 todo)"
     }
   }
 }

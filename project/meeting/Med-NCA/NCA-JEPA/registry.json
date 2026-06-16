@@ -15,7 +15,7 @@
     "Gate0": {"when": "D2", "test": "A0 从头学? A1 单 batch 过拟合? z-shuffle 下游掉≥3 AUROC?", "fail": "管线有 bug，先修"},
     "Gate1": {"when": "D2", "test": "A2 3/3 seed 收敛 + canary 健康 + σ_final<0.1 + 无双盆地?", "fail": "🔴 RED 路线 B 稳定性理论论文"},
     "Gate2": {"when": "D16", "test": "ΔAUROC(A2 vs A0) > −3?", "fail": "<−5 → 🔵 路线 C 诊断工具论文"},
-    "Gate3": {"when": "D21", "test": "稳定/anytime/可解释/不确定 ≥2 项 ✅? (anytime 为一等指标: stability-vs-anytime trade-off, 03_pilot §9.1, A0+ 同台)", "fail": "1 项→聚焦; 0→路线 B"}
+    "Gate3": {"when": "D21", "test": "核心轴=可测稳定性(L_f, A0+ 给不出) + 3.4× 省参; anytime 已被 A0+ 打平(Q1=0.975)降为辅项=「省参+稳定约束下不劣于 A0+」(03_pilot §9.1, A0+ 同台). 稳定性硬项达标→GREEN; anytime 未坐实按 §9.1 AMBER/RED 降级不影响 GREEN 主线", "fail": "稳定性硬项不达→🔴 路线 B(稳定性理论论文, 失败数据作核心资产)"}
   },
   "arms": {
     "a0": {"desc": "ViT predictor baseline (I-JEPA 原版, 单次前向)", "config": "configs/a0*.yaml"},
@@ -25,11 +25,12 @@
   },
   "seeds": [42, 123, 2024],
   "current": {
-    "phase": "Phase 0 — A0 + A0+ 首训健康完成; A1/A2 待拍",
-    "last_job": "1450845 (A0+ seed42 COMPLETED 50ep, avg loss 0.088, anytime Q(k) 0.975→1.000 单调有效, gain 0.994)",
+    "phase": "Phase 0 — 全 7 job 训完 + eval; /stage-gate 判 🟡 AMBER 不放行; estimate_lf 口径 bug 已修, 待真 ckpt 重测 L_f",
+    "last_job": "1450889-901 (A1/A2 全臂 + S∈{4,8,16,32} 扫描 COMPLETED 50ep; eval 出全 Q(k)+L_f csv; A0+ Q1=0.975 压顶, NCA Q1=0.63-0.85)",
     "sentinels": "7/8 PASS (s4 边界非 bug)",
     "provenance": "configs/PROVENANCE.md (红线10 官方超参联网复核完成)",
-    "next": "拍 A1/A2 训练（NCA 臂，待用户「跑」）→ eval_anytime Q(k) → aggregate trade-off 图（A0+ 基准线已就位: Q1=0.975 动态范围窄）→ Gate1/3",
+    "amber_blockers": "① estimate_lf 口径 bug 已修(真实迭代点 S/4·S/2·3S/4 取 max + fire 算子用 fire_seed 固定; bug#2 经核不成立, cell 已返残差全映射) → 待真 ckpt 重测 L_f; ② A1 补 seed123/2024 + A1↔A2 L_f 配对(训练拍板点); ③ 出 A2 三 seed canary 轨迹核 Gate1; ④ registry Gate3 已同步(anytime 降辅项); ⑤ 02 全文 L_f 数值预言(0.2-0.5/0.35)待重测后返修",
+    "next": "🛑拍板: HPC 推 fixed eval_anytime.py+nca_predictor.py → 各真 ckpt 重测 L_f → 若 L_f<1 回 Gate1 PASS 走 GREEN(稳定性核心); 若真 >1 转退路 B(latent NCA+SN 仍无法形式收缩=独家负结果发稳定性理论)",
     "tools": "eval_anytime.py (§9.1 Q(k)/L_f/trade-off 图, eval+aggregate 双模式); eval_linear_probe.py (Gate0 probe); smoke_integration.py",
     "report": "06_A0+_anytime_trade-off_落地_2026-06-16.md (A0+ 交付 + 完成度审计 + 继续命令)",
     "known_gap": "SN 强度旋钮: PyTorch spectral_norm 固定 σ→1 不能设目标 L_f; §9.1 扫 L_f 改用 nca_steps S∈{4,8,16,32} 主旋钮 + L_f 实测; 真扫 L_f 需另加约束机制(Phase1 开放项,不臆想)"

@@ -414,6 +414,27 @@ induces a $0.46$ dangerous-flip rate. Enhancement is the wrong action in this re
 severe inputs to query-for-retake rather than enhance-then-diagnose (\cref{sec:agent}), which is
 exactly the safety behaviour the salvage boundary is meant to enforce.
 
+\paragraph{Theorem~\ref{thm:agent-compact} P1/P3 --- the retake channel fires monotonically with
+degradation.}
+The complement of the salvage boundary is the retake channel, and its empirical behaviour matches the
+threshold-window structure of Theorem~\ref{thm:agent-compact}. As quality drops, the fraction of cases
+the agent routes to query-for-retake increases strictly and monotonically across the three quality
+bands: $0.055$ on the high band ($95\%$ CI $[0.031,0.083]$), $0.651$ on the moderate band
+($[0.600,0.705]$), and $0.889$ on the severe band ($[0.800,0.978]$; bootstrap CIs, all non-overlapping).
+This is the realised counterpart of the policy: the retake action is essentially dormant where direct
+diagnosis suffices (P3) and dominates exactly where enhancement is unsafe (P1), so the channel that the
+severe-band boundary above calls for is precisely the channel the policy activates. We emphasise that
+this is a statement about \emph{routing}, not about enhancement efficacy: the aggregate salvage rate on
+the severe band ($0.898$) is benign-dominated in the same way as the moderate band quantified above and
+is \textbf{not} evidence that enhancement helps severe malignant cases --- the correct action on the
+severe band is to route to retake ($0.889$), not to enhance, which is exactly what
+Theorem~\ref{thm:agent-compact} P3 prescribes. Within the enhance band the same per-quality routing
+yields risk reductions relative to direct diagnosis whose CIs exclude zero in every band (severe
+$-0.305$, CI $[-0.390,-0.214]$; moderate $-0.189$, $[-0.204,-0.174]$; high $-0.127$,
+$[-0.136,-0.119]$), and the moderate-band enhancement salvage of $0.778$ clears the $55\%$ efficiency
+target (E5), so the gains the bound predicts on the salvage band are realised while the unsafe severe
+cases are diverted to retake rather than enhanced.
+
 \subsection{Universality}\label{sec:exp-universal}
 % R1: NOT "TS reversal is universal". Phrase as "most pronounced on weakly quality-aware backbones".
 We apply the quality-conditional treatment to four further backbones (ResNet-50, ViT-Tiny,
@@ -512,11 +533,14 @@ finding is thus one of \emph{calibration-driven reliable abstention}: the value 
 the bottleneck is not a raw-discrimination gain --- which direct diagnosis already
 attains on this subset --- but a posterior whose confidence can safely gate the
 agent's out-of-distribution query-for-retake path (\S\ref{sec:exp-cross}). The
-decision-analytic model (cost structure, net-benefit definition, and triage
-simulation) is specified in Appendix~\ref{app:a20}, where the cost constants are
-anchored to peer-reviewed health-economic literature and treated as a sensitivity
-range rather than a single point estimate; the corresponding simulated operating
-curves are deferred to that appendix and are not asserted here.
+decision-analytic model (cost structure, net-benefit definition, and the
+cost-ratio sensitivity sweep) is specified in Appendix~\ref{app:a20}, where the cost
+constants are anchored to peer-reviewed health-economic literature and treated as a
+sensitivity range rather than a single point estimate. That sweep confirms the same
+reading along the cost-sensitive axis: the normalised expected cost rises
+monotonically with the miss-to-biopsy cost ratio while the maximum net benefit is
+invariant to it by the standard DCA definition, so the overlapping net-benefit
+intervals are not an artefact of a single cost assumption.
 
 \subsection{Fairness}\label{sec:exp-fair}
 We stratify calibration on the ISIC-derived \itb{} subsets ($n=1{,}320$, the subset of the \itb{}

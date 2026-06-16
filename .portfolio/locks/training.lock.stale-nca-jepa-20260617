@@ -1,0 +1,9 @@
+{
+  "window_id": "win-2026-06-16-1844",
+  "project": "nca-jepa",
+  "host": "xjtlu-hpc-gpu4090",
+  "status": "running",
+  "pid": "slurm-1450889,1450891,1450893,1450898,1450899,1450900,1450901",
+  "start_ts": "2026-06-16T21:42+08:00",
+  "comment": "NCA-JEPA pilot 7 活 job：a2_s42(889) a1_s42(891) a2s8_s42(893) 运行中(老码) + a2s4(898) a2s32(899) a2_s123(900) a2_s2024(901) resubmit(新码：唯一MASTER_PORT+每seed独立目录, 修 DDP端口冲突 1450892/4/5/6 崩)。用户拍板 canary→4卡并行。全局互斥。全 COMPLETED 后删锁。"
+}
