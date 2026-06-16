@@ -121,7 +121,7 @@
 ---
 
 ## 🛠️ 工具调用纪律（强制，防级联取消 / 写入错误）
-- **删临时文件用 PowerShell `Remove-Item`，绝不用 `rm`**：`rm` 不在白名单会被拒；被拒的调用与其他工具同批并行会**级联取消整批**（满屏 Cancelled，看似写入错误实为没执行）
+- **删/改名文件优先用 Filesystem MCP（`mcp__filesystem__move_file` 等），不用 `rm`、也别经 Bash 调 PowerShell**：`rm` 不在白名单会被拒；**PowerShell 经 Bash 调用（如 `powershell -Command Remove-Item`）会被权限分类器 deny**（用户有 PowerShell-via-Bash deny 规则）——删/改名走 Filesystem MCP（如清陈旧锁=`move_file` 改名存档），或让用户自己 `! del`。被拒的调用与其他工具同批并行会**级联取消整批**（满屏 Cancelled，看似写入错误实为没执行）
 - **高风险调用单独串行**：可能被权限拒、可能失败、有先后依赖的调用，不与其他混在同一并行批次
 - **PowerShell 经 Bash 调用时单引号包 `-Command`**，避免 Bash 吃掉 `$var`
 - **并行克制**：一批最多 3-5 个且完全独立；反复 echo / 重复读同一文件的探针禁止
