@@ -114,8 +114,12 @@
 | 出图 | `/validate-figures` + `academic-figure-prompt` skill |
 | 阶段切换 | `/phase-transition` |
 | 投稿前 | `/pre-submit-check`（数字三方对账 + 脱敏 + 图验证） |
+| 进度落档 | `/checkpoint <project>`（把本轮做的写进 LOG，防 context 断链；改文件多没写 LOG 时 hook 会提醒） |
+| 大阶段验收 | `/stage-gate <project>`（**半天级大阶段收口必跑**：verifier 核数字 → opus reviewer 对 ACCEPTANCE 严判 PASS/FAIL，不存在「基本完成」，不达标不放行） |
 
 项目骨架模板：`project/templates/`（新项目复制）。
+
+**数据集地址**：跨论文共享真源 = `.portfolio/datasets.json`（本地+HPC+source+状态）。引用数据集前查它，别硬编码别臆想；换路径/新增只改那里。
 
 ---
 
@@ -125,6 +129,12 @@
 - **超参禁臆想**：backbone/lr/增强/架构联网查官方源，查不到标 TODO，绝不照搬别库
 - **BMVC 已封印**：`meeting/BMVC/` 不再改（pre_edit hook 守）；违反走 ICLR 分支
 - 信心低 / 有更好方案 → 上网研究后直接提，无须护主；可主动提问
+
+**自动防护 hook（已挂 `.claude/settings.json`，会自己提醒，别忽略其 stderr）**：
+- `drift_guard.js`（UserPromptSubmit）：动手类指令注入「服务哪 §/lever + 四红线 + 数据集真源」；阶段收口提示 `/stage-gate`。
+- `new_file_pointer.js`（PostToolUse Write）：新建重要源文件没在任何索引文档登指针 → 提醒补（临时探针放 `_scratch/` 免登）。
+- `stage_progress.js`（Stop）：本轮改 ≥6 个项目文件却没写 LOG → 提醒 `/checkpoint`，大阶段提醒 `/stage-gate`。
+- 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（训练互斥）、`writing_caveman_off`（写作关 caveman）。
 
 ## 技术解释风格
 - legacccy 非工程师专业，尽量白话 + 比喻，减少不必要技术术语

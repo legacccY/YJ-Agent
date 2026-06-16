@@ -87,3 +87,4 @@ project/results/_bmvc_archive/
 # 运行时窗口认领锁（每机各异，不进 git；保留 registry.json/README/.gitkeep）
 .portfolio/locks/*.claim
 .portfolio/locks/training.lock
+.portfolio/.stage_state.json

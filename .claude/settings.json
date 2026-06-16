@@ -81,6 +81,24 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_post_edit.js\"",
             "timeout": 5,
             "statusMessage": "ICLR redline scan..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\new_file_pointer.js\"",
+            "timeout": 4,
+            "statusMessage": "new-file pointer check..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\stage_progress.js\"",
+            "timeout": 6,
+            "statusMessage": "stage progress check..."
           }
         ]
       }
