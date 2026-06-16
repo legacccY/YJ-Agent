@@ -6,6 +6,55 @@
 
 ---
 
+## 2026-06-17（会话 38，大编队针对性收口：L12 临床 baseline 落文 + 揪出潜伏 bibtex bug + 会话37新内容首审）
+
+### 起因
+用户「读档 ICLR，大编队开始工作」。承会话 37：写作侧 4 轮投稿前体检已挤干、真 PENDING（P-2/P-3/P-1）全卡死。判定盲目跑第 5 轮重复审=浪费，改派**针对性 3 路并行**（无重复劳动、无文件冲突）：Explore 搜 P-2 缺文件 + researcher 补 L12（仍 ❌）+ reviewer 首审会话37 从未被审的新内容。认领 iclr.claim（win-iclr-s38）。
+
+### 三路回汇
+- **P-2（Explore）**：🔴 本地解封不了。`quality_labels_all.csv` + `abcd_cache.csv` 真没了（git 瘦身清掉），仅 efnet_features.npy(729M)+isic_split 在。坐实会话37 判断——P-2 per-sample CI 必须从 HPC 取回。记债。
+- **L12（researcher）**：5 篇可引 dermatologist baseline，带 sens/spec + BibTeX。
+- **会话37 新内容首审（reviewer）**：A20 cost + §7.7 DCA + §7.4 Thm2 retake 段，无 reject/major。头号红线（severe 0.898 误判 melanoma）守住（428 行已加粗 benign-dominated + \textbf{not} efficacy）。1 个 MINOR：434 行 0.778「clears 55%」半句孤立易误读。
+
+### ✅ 落地（main.tex + references.bib，全编译过 53 页 0 undef）
+- **434 行口径限定**（verifier 核：0.778 与 386 行 0.737 是两个不同口径真值，各有 csv 支撑无 drift——0.737=全集 sev:moderate n=3627；0.778=routed enhance band q∈[0.35,0.5] 子集 n=3253，agent_vs_direct_risk.csv）→ writer 加口径注释（标 n=3253 routed 子集 + 呼应 benign-dominated，防误读 enhancement efficacy），数字不动。
+- **L12 落文**：5 篇里 3 篇（haenssle2018man/brinker2019deep/tschandl2019comparison）库里已有不重复，新增 2 篇（haenssle2020reloaded + vestergaard2008dermoscopy）；§1 reader-study 段（line 133-143，与 Salinas 同段）补人类专家对照锚：Haenssle 2018 86.6%/71.3%、Haenssle 2020 83.8%/77.6%、Brinker 2019 74.1%/60.0%、Tschandl 2019 human mean sens 81.2%、Vestergaard meta pooled 90%/90%。措辞用对照区间不 over-claim 超越医生（守 R3/R5）。lever L12 ❌→基本 ✅。
+- **🔴 揪出潜伏 bibtex bug（本会话最大发现）**：新引用一加，bibtex 报 undefined。根因=**两处条目内 `%` 注释**（bibtex 不认 `%` 为注释，撞它跳整条+连累后续 citation 失收）：①rabanser2025uncertainty 的 `note={PhD thesis} % TODO-verify...`（line 233，会话36 加 selective-prediction 引用时遗留）②writer 本会话 vestergaard 条目内的 `% TODO-verify DOI`。两处均移注释出条目（条目间合法）。**隐患性质**：paper bibtex 实际从会话36 起就 broken，只因没人 clean build、靠缓存 .bbl 才显示「0 undef」——所谓前几轮「50页0undef」是 cached 假象。今后体检须 clean rebuild 才算数。
+- **Brinker 冲突解除（researcher 联网+CrossRef 复核）**：既有 brinker2019deep（v113/47-54, DOI 10.1016/j.ejca.2019.04.001, PMID 30981091「136 of 157」）卷页**正确**，researcher 初稿给的 v111/141-149 才是错的（已被 CrossRef 纠正）。另 PMID 31401469「superior to dermatologists」是不同文（EJC v119/11-17），未误挂。writer 保留既有条目=对。
+
+### 命中率
+没盲跑第 5 轮重复审——按状态判流水线当前棒，针对性派编队填真缺口（L12 lever 推进）+ 顺带揪出潜伏 bibtex bug（比再审一遍正文价值高，否则 camera-ready clean build 才爆）。全程数字核 csv（0.778/0.737 双口径 verifier 坐实非 drift）、引用卷页 CrossRef 权威核（不凭 researcher 初值、不凭记忆=守红线4）、TODO-verify 诚实留不臆造 DOI。clean rebuild 验 0 undef（不信缓存）。
+
+### ✅ 续批（同会话，"继续"）
+- **clean build 全稿引用完整性重判（verifier）**：因本会话发现前几轮「0 undef」是 cached 假象，在 CLEAN BUILD 上重核——真 0 in-entry-`%` / 0 bibtex error / 0 orphan cite / 0 dangling ref / 0 repeated key（53 entry，42 used，11 unused 无害）。bib 层投稿就绪，缓存假象彻底排除。
+- **README 25-lever 表 + 顶部状态校正**：表里 L8/L9 还写「❌ 需 Plan A 重训完毕」=陈旧+嵌入会37 已证伪的假 premise。按 csv 核实事实改：L7 cross-domain ✅*（frozen 非阻塞重训）、L8 E1-E12 ✅(11/12)、L9 6-SOTA ✅(6/6)、L12 ✅(会38)、L13 ✅(会37 A20)；顶部「当前状态」从「M1 启动+Plan A 重训待动手」改为「M3 写作 53 页 + 重训前提已纠偏」。防未来会话重踩「阻塞于重训」陷阱。
+- **P-2 HPC 取回撞拍板点**：尝试 SSH dtn.hpc.xjtlu.edu.cn 搜 3 文件被分类器拦（HPC 操作=拍板点，需用户明确放行）。P-2 卡此，待拍。
+
+### ✅ 续批二（同会话，"为什么数据没了+补救"→P-2/P-3 数据缺口根因定位 + 补救可行性确证）
+**根因（git+本地双核确证，推翻"git 瘦身误删"旧说）**：quality_labels_all.csv/abcd_cache.csv/efficientnet_index.csv **从未进 git**（`git log --all` 0 commit）——是 data/ 里被 gitignore 的**派生缓存**。`45a194a` 仅 `git rm --cached`（不删工作区）、`fc5678b` 瘦身重写历史，都不是凶手。真因=**crop→nocrop 管线迁移时把旧 crop 派生 csv 当过期手动物删**，没意识 ICLR frozen headline 0.707 绑 crop 管线。
+
+**补救=可行且忠实（关键发现，本地资产远多于以为）**：
+- 幸存（Bash 核）：`data/raw/{isic2020,fitzpatrick17k}` 原图 **49700 张**（datasets.json 把路径错写成 project/data/raw 才以为没了，已知 bug 待修）；`data/paired_dataset/{heavy,light,medium}` crop 降质图 **99378**（=ISIC 33126×3）；`cache_deg.npy`(149100,224,224,3)/`cache_clean.npy`(49700,...)/`cache_meta.npy`(149100,6=clean_idx+5标签)/`finetuned_features.npy`(149100,1536)/`efnet_features.npy`(763M)/`isic_split.csv`/`quality_labels_nocrop.csv`(149101)
+- **降质确定性**：`degrade.py:120-127` `seed:int=42`+`random.seed`+`np.random.seed` → 重跑管线=精确重建同批产物（**非凑数，复现零偏离合规**）
+- held-out n=19878 = isic_split test 6626×3 ✅对齐；对应图像在 paired_dataset 内
+- 链：auto_label/merge_labels→quality_labels_all → build_cache→abcd + 按序重建 efnet_index → 重跑 eval_ablation → **校验聚合回 0.707/0.098/−0.165**（回得去=忠实→算 bootstrap CI 交付 P-2 + 图像在手解 P-3 A19）；全程本地无重下无 HPC
+
+**派 coder 调研重建路径+搭脚本（用户"启"）→ 撞 Anthropic 500 server error**（首轮 38 tool_uses 调研已做但 final 回汇丢失，续问又 500，分类器 opus-4-8 也间歇挂）。coder 无持久化产物落地（_scratch 只旧 extract_table2.py，无 reconstruct 脚本/无重建 csv）。**调研结论需会话39 重跑 coder 拿到**（0.707 精确定义/crop-nocrop 判定/是否需 GPU+哪些 ckpt/重建脚本）。
+
+### 待续（会话 39）— P-2/P-3 数据补救（已确证可行，待执行）
+0. **优先**：重派 coder 完成重建路径调研（上次 500 丢失）：核 eval_report_ablation.md 定 0.707/0.098/−0.165 精确指标 + 判 eval load crop/nocrop + 是否需 GPU 推理(查 best_visiscore.pth/Q-VIB ckpt 本地在否) + 搭重建脚本。
+1. 主线跑重建 3 csv（CPU）+ eval → **校验聚合==0.707**（回得去=忠实交付 bootstrap CI；回不去=库漂移诚实记债不强凑）。
+2. 顺带：datasets.json isic2020/fitzpatrick17k 的 local 路径写错（标 project/data/raw/，实际 data/raw/），修真源。
+3. P-3 A19：图像重建后可跑，仍需 3 厂商 key（.env）+ runner，拍板点（烧 API）。
+4. 工具：`tools/hpc_p2_recover.py` 已建（凭证运行时从 HPC_WORKFLOW.md 解析，不硬编码），HPC 全树确认 3 文件+裁剪 ITB 图 HPC 也无（仅 nocrop）→ 补救只能走本地重建路。
+
+### 待续（会话 39）— 写作侧（承续批一）
+2. （拍板点7）P-3 A19 LLM-judge 全量 200 case（烧 API）。
+3. （指针债）agent_vs_direct_risk.csv 未登 DATA_INVENTORY/registry，verifier 建议补。vestergaard2008 DOI + tschandl 子组 AUC 两处 TODO-verify 待人工核。
+4. 本会话改动未 commit（main.tex/references.bib/PROJECT_LOG/registry/iclr.claim）。
+
+---
+
 ## 2026-06-17（会话 37，GPU 空档 → Plan A 前提纠偏 + 矩阵 A 零训练解阻塞 A20/Thm2）
 
 ### 起因

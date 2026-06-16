@@ -74,13 +74,17 @@ class ConvBlock(nn.Module):
 
 
 class DeconvBlock(nn.Module):
-    """ConvTranspose2d -> BN -> ReLU (last block uses Tanh, 无 BN)"""
+    """ConvTranspose2d -> BN -> ReLU; last block: 仅 ConvTranspose2d(bias=False), 无 BN/ReLU/Tanh.
+    官方 BasicBlock last_layer=True: layers = layers[:-2] 去掉 BN+ReLU, 线性输出.
+    官方 up_conv 统一 bias=False.
+    [偏离2 已对齐] 原: bias=True + Tanh; 现: bias=False, 无任何激活.
+    """
     def __init__(self, in_c, out_c, last=False):
         super().__init__()
         if last:
+            # 官方: 仅 ConvTranspose2d(bias=False), 无后接层 (线性输出)
             self.block = nn.Sequential(
-                nn.ConvTranspose2d(in_c, out_c, kernel_size=4, stride=2, padding=1, bias=True),
-                nn.Tanh(),
+                nn.ConvTranspose2d(in_c, out_c, kernel_size=4, stride=2, padding=1, bias=False),
             )
         else:
             self.block = nn.Sequential(
@@ -97,8 +101,14 @@ class AEEncoder(nn.Module):
     """
     64x64 -> 4x4 (16x downsampling)
     channels: in_c(1) -> 16 -> 32 -> 64 -> 64
-    官方 MedIAnomaly ae.py Encoder
+    官方 MedIAnomaly ae.py Encoder + BottleNeck encoder 侧.
+
+    [偏离1+3 已对齐] 原: 单层 Linear(1024->16).
+    现: Linear(1024->2048) -> BN1d(2048) -> ReLU -> Linear(2048->16).
+    官方 blocks.py BottleNeck: mid_num=2048, latent_size=16, fm=4, 64 channel.
     """
+    _MID_NUM = 2048  # 官方 BottleNeck mid_num 常量
+
     def __init__(self, in_c=1, base_c=16, latent=16):
         super().__init__()
         self.enc = nn.Sequential(
@@ -107,7 +117,14 @@ class AEEncoder(nn.Module):
             ConvBlock(base_c*2, base_c*4),   # 16->8
             ConvBlock(base_c*4, base_c*4),   # 8->4
         )
-        self.fc = nn.Linear(base_c*4 * 4 * 4, latent)
+        feat_dim = base_c * 4 * 4 * 4  # 64*4*4 = 1024
+        # 官方 encoder 侧两层 MLP
+        self.fc = nn.Sequential(
+            nn.Linear(feat_dim, self._MID_NUM),
+            nn.BatchNorm1d(self._MID_NUM),
+            nn.ReLU(inplace=True),
+            nn.Linear(self._MID_NUM, latent),
+        )
 
     def forward(self, x):
         h = self.enc(x)
@@ -116,15 +133,30 @@ class AEEncoder(nn.Module):
 
 
 class AEDecoder(nn.Module):
-    """latent -> 64x64"""
+    """latent -> 64x64.
+
+    [偏离4+5 已对齐] 原: 单层 Linear(16->1024).
+    现: Linear(16->2048) -> BN1d(2048) -> ReLU -> Linear(2048->1024).
+    官方 BottleNeck decoder 侧: 对称两层 MLP.
+    输出层 last=True: 无激活/BN (偏离2 连同 DeconvBlock 一起对齐).
+    """
+    _MID_NUM = 2048  # 官方 BottleNeck mid_num 常量
+
     def __init__(self, in_c=1, base_c=16, latent=16):
         super().__init__()
-        self.fc = nn.Linear(latent, base_c*4 * 4 * 4)
+        feat_dim = base_c * 4 * 4 * 4  # 64*4*4 = 1024
+        # 官方 decoder 侧两层 MLP
+        self.fc = nn.Sequential(
+            nn.Linear(latent, self._MID_NUM),
+            nn.BatchNorm1d(self._MID_NUM),
+            nn.ReLU(inplace=True),
+            nn.Linear(self._MID_NUM, feat_dim),
+        )
         self.dec = nn.Sequential(
-            DeconvBlock(base_c*4, base_c*4),   # 4->8
-            DeconvBlock(base_c*4, base_c*2),   # 8->16
-            DeconvBlock(base_c*2, base_c),     # 16->32
-            DeconvBlock(base_c,  in_c, last=True),  # 32->64, Tanh
+            DeconvBlock(base_c*4, base_c*4),         # 4->8
+            DeconvBlock(base_c*4, base_c*2),         # 8->16
+            DeconvBlock(base_c*2, base_c),           # 16->32
+            DeconvBlock(base_c,  in_c, last=True),   # 32->64, 线性输出无激活
         )
 
     def forward(self, z):
@@ -145,12 +177,31 @@ class AENet(nn.Module):
 
 
 class VAEBottleNeck(nn.Module):
-    """官方 vae.py VaeBottleNeck: linear -> mu + log_var -> reparam"""
+    """官方 MedIAnomaly blocks.py VaeBottleNeck (继承 BottleNeck):
+
+    enc 侧: Linear(1024->2048) -> BN1d(2048) -> ReLU -> Linear(2048->2*latent_size)
+            然后 chunk(2, dim=1) 分出 mu / log_var。
+    dec 侧: Linear(latent_size->2048) -> BN1d(2048) -> ReLU -> Linear(2048->1024)。
+    与 AE BottleNeck 同款两层 MLP，mid_num=2048。
+    """
+    _MID_NUM = 2048  # 官方 BottleNeck mid_num 常量
+
     def __init__(self, feat_dim, latent=16):
         super().__init__()
-        self.fc_mu  = nn.Linear(feat_dim, latent)
-        self.fc_var = nn.Linear(feat_dim, latent)
-        self.fc_dec = nn.Linear(latent, feat_dim)
+        # enc 侧: 两层 MLP 出 2*latent，chunk 分 mu/log_var
+        self.fc_enc = nn.Sequential(
+            nn.Linear(feat_dim, self._MID_NUM),
+            nn.BatchNorm1d(self._MID_NUM),
+            nn.ReLU(inplace=True),
+            nn.Linear(self._MID_NUM, 2 * latent),
+        )
+        # dec 侧: 两层 MLP，latent -> feat_dim
+        self.fc_dec = nn.Sequential(
+            nn.Linear(latent, self._MID_NUM),
+            nn.BatchNorm1d(self._MID_NUM),
+            nn.ReLU(inplace=True),
+            nn.Linear(self._MID_NUM, feat_dim),
+        )
 
     def reparameterize(self, mu, log_var):
         std = torch.exp(0.5 * log_var)
@@ -158,9 +209,9 @@ class VAEBottleNeck(nn.Module):
         return mu + eps * std
 
     def forward(self, h):
-        mu  = self.fc_mu(h)
-        lv  = self.fc_var(h)
-        z   = self.reparameterize(mu, lv)
+        z_params = self.fc_enc(h)                    # (B, 2*latent)
+        mu, lv = z_params.chunk(2, dim=1)            # 各 (B, latent)
+        z = self.reparameterize(mu, lv)              # (B, latent)
         return self.fc_dec(z), mu, lv
 
 
@@ -411,7 +462,7 @@ def train(args):
         "input_size": input_size,
         "vae_beta": VAE_BETA if args.model == "vae" else None,
         "seed": args.seed,
-        "source": "MedIAnomaly github.com/caiyu6666/MedIAnomaly (복현零偏离)",
+        "source": "MedIAnomaly github.com/caiyu6666/MedIAnomaly (复现零偏离)",
     }
     with open(out_dir / f"config_{args.dataset}_{args.model}.json", "w") as f:
         json.dump(cfg, f, indent=2)

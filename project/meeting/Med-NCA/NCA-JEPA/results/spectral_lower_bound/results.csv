@@ -1,0 +1,19 @@
+run_id,g_type,mode,sn_scale,dim,seed,rho,sigma_max,lambda_g_max_mod,lambda_g_real,lambda_g_imag,rho_method,sigma_method,notes
+F1-Conv-res-fixed,conv,residual,1.0,64,42,1.340638,1.596721,0.34064,0.34064,0.0,exact-eig,exact-svd,ConvNCAg C=4 H=4 W=4
+F2-Conv-pure-fixed,conv,pure,1.0,64,42,0.34064,0.763332,0.34064,0.34064,0.0,exact-eig,exact-svd,ConvNCAg C=4 H=4 W=4
+F3-AntiSym-res-sn1.0,antisym,residual,1.0,64,42,1.414214,1.414214,1.0,-0.0,1.0,exact-eig,exact-svd,AntiSymLinearG d=64 W=A-Aᵀ(纯虚特征值) sn_scale=1.0 actual_sn=1.0000 [证伪专项a: 复特征值反对称]
+F4-AntiSym-res-sn0.5,antisym,residual,0.5,64,42,1.118035,1.118034,0.5,-0.0,0.5,exact-eig,exact-svd,AntiSymLinearG d=64 W=A-Aᵀ(纯虚特征值) sn_scale=0.5 actual_sn=0.5000 [证伪专项a: 复特征值反对称]
+F5-AntiSym-pure-sn1.0,antisym,pure,1.0,64,42,1.0,1.0,1.0,-0.0,1.0,exact-eig,exact-svd,AntiSymLinearG d=64 W=A-Aᵀ(纯虚特征值) sn_scale=1.0 actual_sn=1.0000 [证伪专项a: 复特征值反对称]
+F6-NegReal-res-sn0.9,neg_real,residual,0.9,64,42,1.094739,1.094737,0.900002,-0.900002,0.0,exact-eig,exact-svd,"NegRealLinearG d=64 λ_g∈{-0.80~-0.95,+0.10} sn_scale=0.9 actual_sn=0.9000 理论最负λ_g≈-0.9000 理论ρ(I+W)≈0.1000 [证伪专项b: 负实特征值接近-1，claim最危险反例候选]"
+F7-NegReal-res-sn1.0,neg_real,residual,1.0,64,42,1.105266,1.105264,1.000001,-1.000001,0.0,exact-eig,exact-svd,"NegRealLinearG d=64 λ_g∈{-0.80~-0.95,+0.10} sn_scale=1.0 actual_sn=1.0000 理论最负λ_g≈-1.0000 理论ρ(I+W)≈0.0000 [证伪专项b: 负实特征值接近-1，claim最危险反例候选]"
+F8-NegReal-res-sn1.5,neg_real,residual,1.5,64,42,1.157897,1.157895,1.500002,-1.500002,0.0,exact-eig,exact-svd,"NegRealLinearG d=64 λ_g∈{-0.80~-0.95,+0.10} sn_scale=1.5 actual_sn=1.5000 理论最负λ_g≈-1.5000 理论ρ(I+W)≈0.0000 [证伪专项b: 负实特征值接近-1，claim最危险反例候选]"
+F9-NegReal-pure-sn1.0,neg_real,pure,1.0,64,42,1.000001,1.0,1.000001,-1.000001,0.0,exact-eig,exact-svd,"NegRealLinearG d=64 λ_g∈{-0.80~-0.95,+0.10} sn_scale=1.0 actual_sn=1.0000 理论最负λ_g≈-1.0000 理论ρ(I+W)≈0.0000 [证伪专项b: 负实特征值接近-1，claim最危险反例候选]"
+MS-mlp-res-s0,mlp,residual,1.0,64,0,1.194321,1.303106,0.19432,0.19432,0.0,exact-eig,exact-svd,MLPg d=64 hidden=64
+MS-mlp-res-s1,mlp,residual,1.0,64,1,1.143655,1.318235,0.179633,0.100502,0.148887,exact-eig,exact-svd,MLPg d=64 hidden=64
+MS-mlp-res-s2,mlp,residual,1.0,64,2,1.165772,1.317368,0.17982,-0.128008,0.12629,exact-eig,exact-svd,MLPg d=64 hidden=64
+MS-attn-res-s0,attn,residual,1.0,64,0,1.351923,1.58242,0.435025,-0.41662,0.125197,exact-eig,exact-svd,AttnResidualg S=4 D=16
+MS-attn-res-s1,attn,residual,1.0,64,1,1.439763,1.565478,0.439763,0.439763,0.0,exact-eig,exact-svd,AttnResidualg S=4 D=16
+MS-attn-res-s2,attn,residual,1.0,64,2,1.28123,1.68106,0.361912,-0.351188,0.087451,exact-eig,exact-svd,AttnResidualg S=4 D=16
+MS-nca-res-s0,nca,residual,1.0,64,0,1.291794,1.457708,0.29428,0.291065,0.043383,exact-eig,exact-svd,NCAStep C=4 H=4 W=4 actual_dim=64 fire_rate=0(确定性) sn_scale=1.0
+MS-nca-res-s1,nca,residual,1.0,64,1,1.144736,1.286973,0.434763,-0.434763,0.0,exact-eig,exact-svd,NCAStep C=4 H=4 W=4 actual_dim=64 fire_rate=0(确定性) sn_scale=1.0
+MS-nca-res-s2,nca,residual,1.0,64,2,1.253675,1.443178,0.258932,-0.258932,0.0,exact-eig,exact-svd,NCAStep C=4 H=4 W=4 actual_dim=64 fire_rate=0(确定性) sn_scale=1.0

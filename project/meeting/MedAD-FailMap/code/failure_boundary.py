@@ -114,7 +114,12 @@ def _erfc(x):
 
 
 def bootstrap_auroc_ci(y_true, scores, n_boot=500, seed=42, alpha=0.05):
-    """Bootstrap AUROC 置信区间（95%），纯 numpy + sklearn"""
+    """
+    Bootstrap AUROC 置信区间（双侧 1-alpha CI），纯 numpy + sklearn。
+    alpha=0.05 → 95% CI（默认，B3 T8.x 用）
+    alpha=0.0125 → 98.75% CI（T6/T7 Bonferroni 4 并入 F-B family，
+                   来源: 05_preregistration C 节 α=0.05/4 Bonferroni）
+    """
     rng  = np.random.default_rng(seed)
     n    = len(y_true)
     boot = []
@@ -161,6 +166,11 @@ def run_b1(brats_data, out_dir, threshold_pct=90):
     scores   = brats_data["anomaly_score"]
     y_detect = (scores >= np.percentile(scores, threshold_pct)).astype(int)
     y_fail   = 1 - y_detect   # 失败=未检出
+    # 注: y_fail 由 anomaly_score 派生（score < top-10% threshold）。
+    # B3 strong baseline 对比时须报告为「score 自洽性」非独立 GT。
+    # 即 B3 衡量的是 size/contrast 能否预测 score 排序，而非 score 之外独立失败标准。
+    # ACCEPTANCE ③ 的循环论证风险：若 size/contrast 与 score 本身强相关，
+    # 则 B1 分类器直接捕获了 score 的协变量而非"真正的预测失败能力"。
 
     # 特征: size_proxy + contrast_proxy (GT mask 有则用 size_px/contrast, 否则代理)
     size_col     = "size_px"     if "size_px"     in brats_data else "size_proxy"
@@ -255,16 +265,19 @@ def run_b2(brats_data, ham_data, out_dir):
         else:
             proba = clf.predict_proba(ham_X)[:, 1]
             auroc = float(roc_auc_score(ham_y_fail, proba))
-            ci_lo, ci_hi = bootstrap_auroc_ci(ham_y_fail, proba)
+            # T6 (B2 跨集外推): α=0.05/4 Bonferroni 并入 F-B family → 98.75% CI
+            # 来源: 05_preregistration C 节冻结 (选项 a)
+            ci_lo, ci_hi = bootstrap_auroc_ci(ham_y_fail, proba, alpha=0.0125)
 
         rows.append({
             "model":             feat_name,
             "cross_domain_auroc": round(auroc, 4) if not np.isnan(auroc) else "nan",
-            "ci_lo_95":          round(ci_lo, 4)  if not np.isnan(ci_lo) else "nan",
-            "ci_hi_95":          round(ci_hi, 4)  if not np.isnan(ci_hi) else "nan",
+            "ci_lo_9875":        round(ci_lo, 4)  if not np.isnan(ci_lo) else "nan",   # 98.75% CI lower (α=0.05/4 Bonf)
+            "ci_hi_9875":        round(ci_hi, 4)  if not np.isnan(ci_hi) else "nan",   # 98.75% CI upper
+            "ci_alpha":          0.0125,
             "n_ham":             len(ham_y_fail),
             "n_fail_ham":        int(ham_y_fail.sum()),
-            "note": "BraTS->HAM zero-shot; size/contrast proxied by sigma/cnr_otsu (no GT mask)",
+            "note": "T6 BraTS->HAM zero-shot; CI 98.75% (α=0.0125 Bonf/4 F-B family); size/contrast proxied by sigma/cnr_otsu",
         })
 
     _write_csv(out_dir / "boundary_B2_extrapolation.csv", rows)
@@ -416,7 +429,9 @@ def run_b4(brats_data, out_dir):
             clf   = fit_boundary(X_mid, y_mid, "lr")
             proba = clf.predict_proba(X_small)[:, 1]
             auroc = float(roc_auc_score(y_small, proba))
-            ci_lo, ci_hi = bootstrap_auroc_ci(y_small, proba)
+            # T7 (B4 extrapolation): α=0.05/4 Bonferroni 并入 F-B family → 98.75% CI
+            # 来源: 05_preregistration C 节冻结 (选项 a)
+            ci_lo, ci_hi = bootstrap_auroc_ci(y_small, proba, alpha=0.0125)
 
         rows.append({
             "model":          feat_name,
@@ -425,10 +440,12 @@ def run_b4(brats_data, out_dir):
             "n_train":        int(mid_mask.sum()),
             "n_test":         int(small_mask.sum()),
             "extrapolation_auroc": round(auroc, 4) if not np.isnan(auroc) else "nan",
-            "ci_lo_95":       round(ci_lo, 4)  if not np.isnan(ci_lo)  else "nan",
-            "ci_hi_95":       round(ci_hi, 4)  if not np.isnan(ci_hi)  else "nan",
+            "ci_lo_9875":     round(ci_lo, 4)  if not np.isnan(ci_lo)  else "nan",   # 98.75% CI lower (α=0.0125 Bonf/4 F-B)
+            "ci_hi_9875":     round(ci_hi, 4)  if not np.isnan(ci_hi)  else "nan",   # 98.75% CI upper
+            "ci_alpha":       0.0125,
             "size_threshold_p33": round(float(p33), 2),
             "size_threshold_p66": round(float(p66), 2),
+            "note": "T7 extrapolation; CI 98.75% (α=0.0125 Bonf/4 F-B family; 05_preregistration C 节)",
         })
 
     _write_csv(out_dir / "boundary_B4_extrapolation.csv", rows)
@@ -465,23 +482,32 @@ if __name__ == "__main__":
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # ---- 加载 BraTS 数据 ----
-    brats_cols_needed = ["anomaly_score", "label"]
-    brats_data = load_csv_cols(args.brats_score_csv, brats_cols_needed)
-    print(f"[boundary] brats rows: {len(brats_data['anomaly_score'])}")
+    # ---- 加载 BraTS 数据 (只取 tumor 行，normal 无 size 定义) ----
+    # Bug fix: load_csv_cols 读全行 (normal+tumor)，normal 无 size 定义导致索引错配。
+    # 改为按 filename 显式 join: 先读 score csv 只取 split=="tumor" 行，
+    # 保留 filename 作 join key；strat 按 filename dict 匹配，不按行序截断。
+    brats_data = {}
+    tumor_score_rows = []   # list of {filename, anomaly_score, label}
+    with open(args.brats_score_csv, newline="") as f:
+        for row in csv.DictReader(f):
+            if row.get("split", row.get("label", "")) in ("tumor", "1"):
+                # split=="tumor" 优先；若无 split 列则 label==1
+                s = _safe_float(row.get("anomaly_score", "nan"))
+                l = _safe_float(row.get("label", "1"))
+                if not np.isnan(s):
+                    tumor_score_rows.append({
+                        "filename":     row.get("filename", ""),
+                        "anomaly_score": s,
+                        "label":         l,
+                    })
+    if not tumor_score_rows:
+        raise RuntimeError(f"[boundary] brats score csv 中无 split==tumor 行: {args.brats_score_csv}")
+    brats_data["_filenames"]   = [r["filename"] for r in tumor_score_rows]
+    brats_data["anomaly_score"] = np.array([r["anomaly_score"] for r in tumor_score_rows])
+    brats_data["label"]         = np.array([r["label"]         for r in tumor_score_rows])
+    print(f"[boundary] brats tumor rows: {len(brats_data['anomaly_score'])}")
 
-    # 合并 size/contrast 列 (优先 strat csv，其次 conspicuity proxy)
-    def _merge_col(data, src_csv, col_name, alias):
-        if not src_csv or not Path(src_csv).exists():
-            return
-        try:
-            extra = load_csv_cols(src_csv, [col_name])
-            if len(extra.get(col_name, [])) == len(data["anomaly_score"]):
-                data[alias] = extra[col_name]
-        except Exception as e:
-            print(f"[warn] merge {col_name} from {src_csv}: {e}")
-
-    # 尝试从 stratify csv 读 size_px/contrast
+    # 尝试从 stratify csv 按 filename join 读 size_px/contrast
     if Path(args.brats_strat_csv).exists():
         strat = {}
         with open(args.brats_strat_csv, newline="") as f:
@@ -489,30 +515,39 @@ if __name__ == "__main__":
                 fn = row.get("filename", "")
                 strat[fn] = (_safe_float(row.get("size_px", "nan")),
                              _safe_float(row.get("contrast", "nan")))
-        # 按 brats_score_csv 行顺序对齐
-        with open(args.brats_score_csv, newline="") as f:
-            fnames = [r["filename"] for r in csv.DictReader(f)
-                      if r.get("split") == "tumor"]
+        # 按 tumor filename list 显式 join（不按行序截断）
+        fnames = brats_data["_filenames"]
         sizes_aligned     = np.array([strat.get(fn, (float("nan"), float("nan")))[0]
                                        for fn in fnames])
         contrasts_aligned = np.array([strat.get(fn, (float("nan"), float("nan")))[1]
                                        for fn in fnames])
-        # 过滤对应行
         valid = ~np.isnan(sizes_aligned) & ~np.isnan(contrasts_aligned)
         if valid.sum() > 10:
-            brats_data["size_px"]  = sizes_aligned[valid]
-            brats_data["contrast"] = contrasts_aligned[valid]
-            brats_data["anomaly_score"] = brats_data["anomaly_score"][:valid.sum()]
-            brats_data["label"]         = brats_data["label"][:valid.sum()]
+            # 只保留成功 join 的行（filename 在 strat 中存在且值非 nan）
+            brats_data["size_px"]       = sizes_aligned[valid]
+            brats_data["contrast"]      = contrasts_aligned[valid]
+            brats_data["anomaly_score"] = brats_data["anomaly_score"][valid]
+            brats_data["label"]         = brats_data["label"][valid]
+            brats_data["_filenames"]    = [fn for fn, v in zip(fnames, valid) if v]
+            print(f"[boundary] after strat join: {valid.sum()} tumor rows with size/contrast")
 
     # fallback: conspicuity proxy 作 size/contrast 代理
     if "size_px" not in brats_data:
         if Path(args.brats_conspicuity_csv).exists():
-            consp = load_csv_cols(args.brats_conspicuity_csv,
-                                  ["sigma_global", "cnr_proxy_otsu"])
-            n = len(brats_data["anomaly_score"])
-            brats_data["size_proxy"]     = consp["sigma_global"][:n]
-            brats_data["contrast_proxy"] = consp["cnr_proxy_otsu"][:n]
+            # conspicuity csv 只含 tumor 图，按 filename join
+            consp_map = {}
+            with open(args.brats_conspicuity_csv, newline="") as f:
+                for row in csv.DictReader(f):
+                    fn = row.get("filename", "")
+                    consp_map[fn] = (
+                        _safe_float(row.get("sigma_global", "nan")),
+                        _safe_float(row.get("cnr_proxy_otsu", "nan")),
+                    )
+            fnames = brats_data["_filenames"]
+            sg  = np.array([consp_map.get(fn, (float("nan"), float("nan")))[0] for fn in fnames])
+            cnr = np.array([consp_map.get(fn, (float("nan"), float("nan")))[1] for fn in fnames])
+            brats_data["size_proxy"]     = sg
+            brats_data["contrast_proxy"] = cnr
         else:
             # 无协变量时用 anomaly_score 作 proxy（退化对比用）
             brats_data["size_proxy"]     = brats_data["anomaly_score"]

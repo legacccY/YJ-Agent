@@ -219,7 +219,7 @@ def run_conspicuity(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PC-C C1: 无 mask conspicuity 代理特征提取")
     _root = Path(__file__).resolve().parent.parent
-    _data = _root / "data" / "brats" / "test" / "tumor"
+    _data = _root / "data" / "BraTS2021" / "test" / "tumor"  # 真实数据目录名
     _res  = _root / "results"
 
     parser.add_argument("--img-dir",   default=str(_data),

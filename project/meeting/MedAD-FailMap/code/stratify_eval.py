@@ -201,6 +201,24 @@ def run_stratify(args):
                         sizes, size_bins, contrasts, contrast_bins,
                         detected, scores)
 
+    # ---- per-image 明细 csv (供 stratify_significance.py T1/T2/T3 使用) ----
+    # 列: filename / size_px / contrast / anomaly_score / detected
+    # detected 口径与上方一致: tumor-only P90 阈值
+    per_image_path = out_dir / f"stratify_per_image_{model_tag}.csv"
+    with open(per_image_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["filename", "size_px", "contrast",
+                                               "anomaly_score", "detected"])
+        writer.writeheader()
+        for idx, row in enumerate(valid_rows):
+            writer.writerow({
+                "filename":     row["filename"],
+                "size_px":      round(float(sizes[idx]), 4),
+                "contrast":     round(float(contrasts[idx]), 6),
+                "anomaly_score": round(float(scores[idx]), 6),
+                "detected":     int(detected[idx]),
+            })
+    print(f"  -> {per_image_path.name}: {len(valid_rows)} rows (per-image detail)")
+
     print(f"[stratify] done. outputs in {out_dir}")
 
 
@@ -275,7 +293,7 @@ def _write_interact_csv(out_path, sizes, size_bins, contrasts, contrast_bins,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PC-A 分层评估: size/contrast 分桶 + 3x3 交互")
     _root = Path(__file__).resolve().parent.parent
-    _data = _root / "data" / "brats"
+    _data = _root / "data" / "BraTS2021"  # 真实数据目录名
     _res  = _root / "results"
 
     parser.add_argument("--score-csv",    default=str(_res / "anomaly_scores_brats_ae.csv"),

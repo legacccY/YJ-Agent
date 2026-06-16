@@ -14,9 +14,9 @@ C3: 控制 size + contrast 后残差偏相关
     然后测 conspicuity 与 detected (binary) 的偏相关 (Pearson, 纯 numpy)
     p 值 Holm/FDR 校正
 
-C4: risk-coverage / selective AUROC 曲线
-    按 conspicuity 排序，丢 bottom-k% 后，剩余子集 AUROC 单调性
-    输出 coverage 0.1~1.0 每步 0.05 的 AUROC
+C4: risk-coverage / selective AUROC 曲线 (normal+tumor 混合集)
+    按 conspicuity 排序，丢 bottom-k% 后，剩余子集 AD AUROC (normal=0 vs tumor=1)
+    输出列: coverage, retained_n, ad_auroc (0.1~1.0 每步 0.05)
 
 依赖: numpy, scikit-learn (LogisticRegression, roc_auc_score)
 不用 scipy.stats（OMP#15 风险）
@@ -178,11 +178,22 @@ def fdr_bh_correction(pvals):
 
 def run_c2_lr_test(df, conspicuity_cols, out_path):
     """
+    C2: 嵌套 LR 检验 (ACCEPTANCE ③ 防循环论证核心)
+    y = detected (tumor 是否被检出), 非 label
+    理由: conspicuity_features.csv 来自 tumor-only 图像目录，label 全为 1 (常数)，
+          无区分度; ACCEPTANCE ③ 要测「given anomaly_score 后 conspicuity 是否额外预测
+          检出成败 detected」——y 必须是 detected 而非 label。
+          tumor-only 集内: detected = (anomaly_score >= top-10% threshold)
     base  = [anomaly_score]
     full_i = [anomaly_score, conspicuity_col_i]
     stat_i = 2*(loglik_full_i - loglik_base)  chi2(1)
     """
-    y = df["label"].astype(int).to_numpy()
+    # y = detected: tumor 样本中 anomaly_score >= 90th percentile → 检出
+    # 阈值 top-10% (预登记口径, 与 failure_boundary.py threshold_pct=90 一致)
+    scores = df["anomaly_score"].to_numpy()
+    threshold = float(np.percentile(scores, 90))
+    y = (scores >= threshold).astype(int)
+    # 注: y=detected 非 label; tumor-only 集内做 LR 检验 (ACCEPTANCE ③ 防循环论证)
     X_base = df[["anomaly_score"]].to_numpy()
     loglik_base, _ = logistic_loglik(X_base, y)
 
@@ -208,10 +219,11 @@ def run_c2_lr_test(df, conspicuity_cols, out_path):
             "feature":    col,
             "chi2_stat":  round(stats[i], 4),
             "p_raw":      round(float(raw_ps[i]), 6),
-            "p_holm":     round(float(holm_ps[i]), 6),
-            "p_fdr_bh":   round(float(fdr_ps[i]), 6),
+            "p_holm":     round(float(holm_ps[i]), 6),     # 注: family 内 5 个校正，非确证判定用，确证看 incremental_FC_family_holm.csv
+            "p_fdr_bh":   round(float(fdr_ps[i]), 6),     # 同上
             "sig_holm05": int(holm_ps[i] < 0.05),
             "sig_fdr05":  int(fdr_ps[i] < 0.05),
+            "note":       "C2 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)",
         })
     _write_csv(out_path, rows)
     print(f"[C2] LR test -> {out_path}")
@@ -223,12 +235,21 @@ def run_c2_lr_test(df, conspicuity_cols, out_path):
 
 def run_c3_partial_corr(df, conspicuity_cols, covariate_cols, out_path):
     """
+    C3: 残差偏相关 (ACCEPTANCE ③ 防循环论证核心)
+    y = detected (tumor 是否被检出), 非 label
+    理由同 run_c2_lr_test: tumor-only 集, label 为常数 (全 1), 无区分度;
+    ACCEPTANCE ③ 要控制 size+contrast 后测 conspicuity 与「检出成败」的独立相关。
+    y = detected: anomaly_score >= 90th percentile (tumor-only, top-10% 预登记口径)
+    注: y=detected 非 label; tumor-only 集内做偏相关 (ACCEPTANCE ③ 防循环论证)
     1. 线性回归 anomaly_score ~ size + contrast -> 残差
-    2. 对每个 conspicuity 特征计算与 label 的偏相关 (控制 size+contrast 后)
-       实现: residualize conspicuity ~ size+contrast, residualize label ~ size+contrast,
-             然后 Pearson(resid_consp, resid_label)
+    2. 对每个 conspicuity 特征计算与 detected 的偏相关 (控制 size+contrast 后)
+       实现: residualize conspicuity ~ size+contrast, residualize detected ~ size+contrast,
+             然后 Pearson(resid_consp, resid_detected)
     """
-    y_bin  = df["label"].astype(float).to_numpy()
+    # y = detected: tumor 样本中 anomaly_score >= 90th percentile → 检出
+    scores = df["anomaly_score"].to_numpy()
+    threshold = float(np.percentile(scores, 90))
+    y_bin  = (scores >= threshold).astype(float)
 
     # residualize label ~ covariates
     if len(covariate_cols) > 0:
@@ -260,10 +281,11 @@ def run_c3_partial_corr(df, conspicuity_cols, covariate_cols, out_path):
             "controlled_for": "+".join(covariate_cols),
             "partial_r":    round(rs[i], 4),
             "p_raw":        round(float(raw_ps[i]), 6),
-            "p_holm":       round(float(holm_ps[i]), 6),
-            "p_fdr_bh":     round(float(fdr_ps[i]), 6),
+            "p_holm":       round(float(holm_ps[i]), 6),     # 注: family 内 5 个校正，非确证判定用，确证看 incremental_FC_family_holm.csv
+            "p_fdr_bh":     round(float(fdr_ps[i]), 6),     # 同上
             "sig_holm05":   int(holm_ps[i] < 0.05),
             "sig_fdr05":    int(fdr_ps[i] < 0.05),
+            "note":         "C3 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)",
         })
     _write_csv(out_path, rows)
     print(f"[C3] partial corr -> {out_path}")
@@ -273,21 +295,68 @@ def run_c3_partial_corr(df, conspicuity_cols, covariate_cols, out_path):
 # C4: risk-coverage / selective AUROC 曲线
 # ============================================================
 
-def run_c4_risk_coverage(df, conspicuity_col, out_path, coverage_steps=None):
+def load_mixed_df(tumor_conspicuity_csv, normal_conspicuity_csv, score_csv):
     """
-    按 conspicuity_col 降序排列 (high conspicuity = more reliable)
-    coverage = k/N: 保留 top-k 高 conspicuity 样本
-    计算该子集的 AUROC
-    期望: coverage 越高 AUROC 越低 (保留难样本 AUROC 降)
-          coverage 越低 (只保留 easy 高 consp) AUROC 升
+    合并 normal + tumor 的 conspicuity csv，并从 score_csv join anomaly_score。
+    label: normal=0 / tumor=1 (真实 AD label，不依赖 conspicuity csv 里的 label 列)
 
-    🔴 TODO: 「conspicuity 高 = 更可靠」方向假设需实验验证;
-             若方向相反应翻转排序，需主线/researcher 确认。
+    参数:
+        tumor_conspicuity_csv  -- conspicuity_proxy.py 对 tumor 目录产出的 csv
+        normal_conspicuity_csv -- conspicuity_proxy.py 对 normal 目录产出的 csv
+        score_csv              -- anomaly_scores_brats_ae.csv (含 filename + anomaly_score)
+    返回 SimpleDF，列: filename, label(0/1), anomaly_score, <conspicuity feats>
+    注: 若 score_csv 不存在，anomaly_score 保留 nan（仅特征列可用）
+    """
+    def _read_csv(path):
+        with open(path, newline="") as f:
+            return list(csv.DictReader(f))
+
+    tumor_rows  = _read_csv(tumor_conspicuity_csv)
+    normal_rows = _read_csv(normal_conspicuity_csv)
+
+    # 打真实 AD label：tumor=1, normal=0
+    for r in tumor_rows:
+        r["label"] = "1"
+    for r in normal_rows:
+        r["label"] = "0"
+
+    all_rows = tumor_rows + normal_rows
+
+    # join anomaly_score from score_csv (by filename)
+    score_map = {}  # filename -> anomaly_score str
+    if score_csv and Path(score_csv).exists():
+        with open(score_csv, newline="") as f:
+            for row in csv.DictReader(f):
+                score_map[row["filename"]] = row["anomaly_score"]
+    else:
+        print(f"  [warn] score_csv not found: {score_csv}, anomaly_score will be nan")
+
+    for r in all_rows:
+        r["anomaly_score"] = score_map.get(r["filename"], str(float("nan")))
+
+    return _rows_to_df(all_rows)
+
+
+def run_c4_risk_coverage(df_mixed, conspicuity_col, out_path, coverage_steps=None):
+    """
+    C4: risk-coverage / selective AUROC 曲线 (ACCEPTANCE ③ per-image 可靠性判据)
+
+    正确语义: AD AUROC = normal(0) vs tumor(1) 区分度
+    必须在 normal+tumor 混合集上算——否则 label 全 1，roc_auc_score crash。
+
+    输入 df_mixed: load_mixed_df() 产出，含 normal+tumor 两类，label∈{0,1}
+    排序键 = conspicuity_col（high = 更显著 = 暂代 reliability 代理）
+    coverage c: 保留 top-c 比例（按 conspicuity 降序）→ 子集 AUROC
+    期望: low coverage（只留高 conspicuity 肿瘤/低 conspicuity 正常）→ AUROC ↑
+
+    # TODO: 「conspicuity 高 = 更可靠」方向假设需实验验证;
+    #       若方向相反应翻转排序，需主线/researcher 确认。
+    #       conspicuity 作为 reliability 代理权重尚未确定，此处单特征占位。
     """
     if coverage_steps is None:
         coverage_steps = [round(0.1 + 0.05*i, 2) for i in range(19)]  # 0.10~1.00
 
-    df_sorted = df.sort_values(conspicuity_col, ascending=False).reset_index(drop=True)
+    df_sorted = df_mixed.sort_values(conspicuity_col, ascending=False).reset_index(drop=True)
     n_total   = len(df_sorted)
     y_all     = df_sorted["label"].astype(int).to_numpy()
     score_all = df_sorted["anomaly_score"].astype(float).to_numpy()
@@ -296,17 +365,23 @@ def run_c4_risk_coverage(df, conspicuity_col, out_path, coverage_steps=None):
     for cov in coverage_steps:
         k = max(int(np.ceil(n_total * cov)), 2)
         k = min(k, n_total)
-        y_sub   = y_all[:k]
-        sc_sub  = score_all[:k]
-        if len(np.unique(y_sub)) < 2:
+        y_sub  = y_all[:k]
+        sc_sub = score_all[:k]
+
+        n_classes = len(np.unique(y_sub[~np.isnan(sc_sub)]))
+        if n_classes < 2 or np.all(np.isnan(sc_sub[:k])):
+            # 子集仍单类（低 coverage 时可能发生），跳过不 crash
             auroc = float("nan")
+            print(f"  [C4 warn] coverage={cov:.2f}: only {n_classes} class(es) in subset, skip")
         else:
-            auroc = float(roc_auc_score(y_sub, sc_sub))
+            valid = ~np.isnan(sc_sub)
+            auroc = float(roc_auc_score(y_sub[valid], sc_sub[valid]))
+
         rows.append({
             "conspicuity_col": conspicuity_col,
             "coverage":        cov,
-            "n_kept":          k,
-            "auroc":           round(auroc, 4) if not np.isnan(auroc) else "nan",
+            "retained_n":      k,
+            "ad_auroc":        round(auroc, 4) if not np.isnan(auroc) else "nan",
         })
     _write_csv(out_path, rows)
     print(f"[C4] risk-coverage ({conspicuity_col}) -> {out_path}")
@@ -412,50 +487,163 @@ CONSPICUITY_COLS = [
     "cnr_proxy_otsu",
 ]
 
+
+# ============================================================
+# F-C 合并 family：C2(5) + C3(5) = 10 统一 Holm + FDR
+# ============================================================
+
+def run_fc_family_holm(c2_csv_path, c3_csv_path, out_path):
+    """
+    缺口 2 (05_preregistration C 节): F-C family 合并 C2+C3 共 10 个检验统一 Holm/FDR。
+
+    背景: C2/C3 各自内部 Holm (5 个) 是描述性输出，非确证判定用。
+          Gate0 F-C 确证判定须用本函数输出 incremental_FC_family_holm.csv (10 个统一校正)。
+
+    输入:
+        c2_csv_path: incremental_C2_lr_test.csv (run_c2_lr_test 产出)
+        c3_csv_path: incremental_C3_partial_corr.csv (run_c3_partial_corr 产出)
+    输出:
+        incremental_FC_family_holm.csv，10 行：
+          test_id(T4.1-4.5/T5.1-5.5) / feature / source(C2/C3) / p_raw /
+          p_holm_family10 / p_fdr_family10 / sig / note
+    """
+    # 读 C2 子 csv（5 行 per CONSPICUITY_COLS 顺序）
+    c2_rows, c3_rows = [], []
+    test_id_map_c2 = {
+        "sigma_global":         "T4.1",
+        "glcm_cluster_prom":    "T4.2",
+        "glcm_contrast":        "T4.3",
+        "fft_spectral_entropy": "T4.4",
+        "cnr_proxy_otsu":       "T4.5",
+    }
+    test_id_map_c3 = {
+        "sigma_global":         "T5.1",
+        "glcm_cluster_prom":    "T5.2",
+        "glcm_contrast":        "T5.3",
+        "fft_spectral_entropy": "T5.4",
+        "cnr_proxy_otsu":       "T5.5",
+    }
+
+    def _read(path, id_map, source):
+        rows_out = []
+        with open(path, newline="") as f:
+            for row in csv.DictReader(f):
+                feat  = row["feature"]
+                p_raw = float(row["p_raw"])
+                rows_out.append({
+                    "test_id":  id_map.get(feat, feat),
+                    "feature":  feat,
+                    "source":   source,
+                    "p_raw":    p_raw,
+                    # 保留子 csv 内的 chi2 或 partial_r 方便溯源
+                    "stat":     row.get("chi2_stat", row.get("partial_r", "n/a")),
+                    "stat_type": "chi2" if "chi2_stat" in row else "partial_r",
+                })
+        return rows_out
+
+    c2_rows = _read(c2_csv_path, test_id_map_c2, "C2")
+    c3_rows = _read(c3_csv_path, test_id_map_c3, "C3")
+
+    all_rows = c2_rows + c3_rows   # 10 个，顺序: T4.1-T4.5 / T5.1-T5.5
+    if len(all_rows) != 10:
+        print(f"  [FC warn] 期望 10 行，实际 {len(all_rows)} 行（C2={len(c2_rows)}, C3={len(c3_rows)}）")
+
+    raw_ps  = np.array([r["p_raw"] for r in all_rows])
+    holm_ps = holm_correction(raw_ps)
+    fdr_ps  = fdr_bh_correction(raw_ps)
+
+    rows_out = []
+    for i, r in enumerate(all_rows):
+        rows_out.append({
+            "test_id":         r["test_id"],
+            "feature":         r["feature"],
+            "source":          r["source"],
+            "stat":            r["stat"],
+            "stat_type":       r["stat_type"],
+            "p_raw":           round(r["p_raw"],        6),
+            "p_holm_family10": round(float(holm_ps[i]), 6),   # 10 个统一 Holm
+            "p_fdr_family10":  round(float(fdr_ps[i]),  6),   # 10 个统一 BH-FDR
+            "sig":             int(holm_ps[i] < 0.05),        # Gate0 F-C 判定用此列
+            "family":          "F-C",
+            "n_family":        10,
+            "note": "FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准",
+        })
+
+    _write_csv(out_path, rows_out)
+    print(f"[FC family] -> {out_path}  ({len(rows_out)} tests, Holm over 10)")
+    return rows_out
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PC-C C2/C3/C4 增量统计 (Holm/FDR 校正)")
     _root = Path(__file__).resolve().parent.parent
     _res  = _root / "results"
 
+    # C2/C3 用 tumor-only conspicuity csv（label 全1，detected 做 y）
     parser.add_argument("--conspicuity-csv",
-                        default=str(_res / "conspicuity_features.csv"),
-                        help="conspicuity_proxy.py 产出 csv")
+                        default=str(_res / "conspicuity_features_tumor.csv"),
+                        help="tumor-only conspicuity_proxy.py 产出 csv (C2/C3 用)")
     parser.add_argument("--stratify-csv",
-                        default=str(_res / "stratify_size_ae.csv"),
+                        default=str(_res / "stratify_interact_ae.csv"),
                         help="(可选) stratify_eval.py 产出 csv，用于提取 size/contrast 列")
+    # C4 用 normal+tumor 混合集
+    parser.add_argument("--normal-conspicuity-csv",
+                        default=str(_res / "conspicuity_features_normal.csv"),
+                        help="normal 图像 conspicuity_proxy.py 产出 csv (C4 用)")
+    parser.add_argument("--score-csv",
+                        default=str(_res / "anomaly_scores_brats_ae.csv"),
+                        help="AE 产出 anomaly score csv (C4 join 用，含 normal+tumor 全行)")
     parser.add_argument("--out-dir",
                         default=str(_res),
                         help="输出目录")
-    parser.add_argument("--risk-coverage-col",
-                        default="cnr_proxy_otsu",
-                        help="C4 risk-coverage 用的 conspicuity 列名")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    df = load_merged_csv(args.conspicuity_csv, args.stratify_csv)
-    print(f"[incremental] loaded {len(df)} rows")
+    # ---- C2/C3: tumor-only df ----
+    df_tumor = load_merged_csv(args.conspicuity_csv, args.stratify_csv)
+    print(f"[incremental] tumor df loaded {len(df_tumor)} rows")
 
-    # 过滤掉 label=-1 (未知) 行
-    valid_mask = [_safe_float(r.get("label", -1)) >= 0 for r in df._rows]
-    df._rows = [r for r, m in zip(df._rows, valid_mask) if m]
-    print(f"[incremental] valid (label>=0): {len(df)} rows")
+    # 过滤掉 label=-1 (未知) 行（tumor csv 里默认 label 可能为 -1）
+    df_tumor._rows = [r for r in df_tumor._rows
+                      if _safe_float(r.get("label", -1)) != -1
+                      or True]  # tumor-only: 保留全部，C2/C3 用 detected 不用 label
+    print(f"[incremental] tumor df after filter: {len(df_tumor)} rows")
 
     # C2
-    run_c2_lr_test(df, CONSPICUITY_COLS,
+    run_c2_lr_test(df_tumor, CONSPICUITY_COLS,
                    out_dir / "incremental_C2_lr_test.csv")
 
     # C3 (需 size + contrast 列)
     covariate_cols = []
-    if "size_px" in (df._rows[0] if df._rows else {}):
+    if df_tumor._rows and "size_px" in df_tumor._rows[0]:
         covariate_cols = ["size_px", "contrast"]
-    run_c3_partial_corr(df, CONSPICUITY_COLS, covariate_cols,
+    run_c3_partial_corr(df_tumor, CONSPICUITY_COLS, covariate_cols,
                         out_dir / "incremental_C3_partial_corr.csv")
+
+    # ---- C4: normal+tumor 混合集 ----
+    print(f"[incremental] loading mixed df for C4 ...")
+    df_mixed = load_mixed_df(
+        tumor_conspicuity_csv  = args.conspicuity_csv,
+        normal_conspicuity_csv = args.normal_conspicuity_csv,
+        score_csv              = args.score_csv,
+    )
+    print(f"[incremental] mixed df: {len(df_mixed)} rows (normal+tumor)")
 
     # C4 (对每个 conspicuity 列各出一个 csv)
     for col in CONSPICUITY_COLS:
-        run_c4_risk_coverage(df, col,
+        run_c4_risk_coverage(df_mixed, col,
                              out_dir / f"incremental_C4_risk_coverage_{col}.csv")
+
+    # ---- F-C family 合并: C2(5) + C3(5) = 10 统一 Holm/FDR ----
+    # 注: 须在 C2/C3 csv 已产出后调用
+    c2_csv = out_dir / "incremental_C2_lr_test.csv"
+    c3_csv = out_dir / "incremental_C3_partial_corr.csv"
+    if c2_csv.exists() and c3_csv.exists():
+        run_fc_family_holm(c2_csv, c3_csv,
+                           out_dir / "incremental_FC_family_holm.csv")
+    else:
+        print("[incremental] warn: C2 or C3 csv missing, skip FC family merge")
 
     print("[incremental] all done.")

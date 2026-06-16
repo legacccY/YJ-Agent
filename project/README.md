@@ -2,7 +2,7 @@
 
 **Deadline**：2026-09-22（ICLR 2027 abstract）/ 2026-09-29（full paper）
 **目标命中率**：**78-80%**（25 lever stack，详见 [`ACCEPTANCE_CRITERIA.md`](ACCEPTANCE_CRITERIA.md)）
-**当前状态**：M1 启动（2026-05-24），VisiEnhance Plan A 重训 + Theory 三定理 待动手
+**当前状态**：M3 写作（会38）。paper 53 页 clean build 0 undef / 0 dangling / 0 bibtex error；5 定理证明 + E1-E12(11/12) + 6-SOTA + cross-domain + A20 cost + L12 临床 baseline 全落。**Plan A 大重训前提已纠偏（会37）：数字侧不阻塞于重训**，真缺口仅 P-2 per-sample CI（须 HPC 取回 quality_labels_all/abcd_cache）+ P-3 A19 LLM-judge（API 拍板点）+ P-1 Stage3 hinge（用户已拍缓跑）
 **BMVC 2026**：已封印（[`meeting/BMVC/SUBMITTED.md`](meeting/BMVC/SUBMITTED.md)），不再修改
 **代码库 README**：[`CODEBASE_README.md`](CODEBASE_README.md)（reproduce 步骤、目录结构、baseline 列表）
 
@@ -102,13 +102,13 @@ project/
 | | L4 Agent Thm 2 (risk bound) | ✅ 推导 | plans/Theorem2_agent_risk_bound.md（4-action + Cor 2.1/2.2）|
 | | L5 Q-VIB+QCTS Cor 1 ECE bound | ✅ 推导 | plans/Corollary1_qvib_qcts_ece_bound.md（ε_qts≈0.037）|
 | **B 实验** | L6 5 backbone universality | ✅ | BMVC 复用 |
-| | L7 8 dataset cross-domain | 🚧 | 4 已 done，4 待跑（M1-M2）|
-| | L8 E1-E12 full | ❌ | M2，需 Plan A 重训完毕 |
-| | L9 6 SOTA enhancement compare | ❌ | M2 D8-D14 |
+| | L7 8 dataset cross-domain | ✅* | chexray+fundus csv frozen（会21-28训完，会37 verifier 核在）；**非阻塞于 Plan A 重训**（会37 纠偏：重训前提不成立）|
+| | L8 E1-E12 full | ✅ | 11/12 csv frozen（会21-28，会37 verifier 核在）；早已训完非阻塞于重训 |
+| | L9 6 SOTA enhancement compare | ✅ | e10_* 6/6 csv 齐全显著（会37 verifier 核）|
 | | L10 Fitz I-VI + sex + age fairness | 🚧 | M2 D15-D21 |
 | **C 临床** | L11 DCA + Net Benefit + Triage | ✅ | BMVC 已 done，扩展 |
-| | L12 5+ dermatologist baseline cite | ❌ | M3 D1-D7 文献整理 |
-| | L13 Cost-benefit analysis | ❌ | M3 D8-D14 |
+| | L12 5+ dermatologist baseline cite | ✅ | 会38 落文：Haenssle 2018/2020、Brinker 2019、Tschandl 2019、Vestergaard 2008 meta + Salinas，§1 reader 段对照锚（vestergaard DOI/tschandl 子组 AUC 2 处 TODO-verify）|
+| | L13 Cost-benefit analysis | ✅ | 会37 A20 cost-benefit 入文（4法 maxNB+CI+triage@20%+exp_cost break-even）+ 会34 researcher 6 常数带 DOI |
 | | L14 LLM-as-clinical-judge | ❌ | M3 D15-D21 风险高 |
 | **D 复现** | L15 Anonymous GitHub 8 周 commit | 🚧 | release/ skeleton 在 BMVC，迁移过来 |
 | | L16 Docker + reproduce.sh | ❌ | M3 D22-D28 |

@@ -252,9 +252,10 @@ class TestIncrementalStats:
 
     def test_c4_risk_coverage_runs(self, tmp_path):
         from incremental_stats import run_c4_risk_coverage
-        df  = self._make_df(n=100)
+        # df_mixed 需含 normal(label=0) + tumor(label=1) 两类；_make_df 已混合
+        df_mixed = self._make_df(n=100)
         out = tmp_path / "c4.csv"
-        run_c4_risk_coverage(df, "cnr_proxy_otsu", out)
+        run_c4_risk_coverage(df_mixed, "cnr_proxy_otsu", out)
         assert out.exists()
         rows = list(csv.DictReader(open(out)))
         # 0.10 ~ 1.00 step 0.05 = 19 行
@@ -262,6 +263,9 @@ class TestIncrementalStats:
         coverages = [float(r["coverage"]) for r in rows]
         assert min(coverages) == pytest.approx(0.10, abs=0.01)
         assert max(coverages) == pytest.approx(1.00, abs=0.01)
+        # 检查新输出列名（retained_n / ad_auroc）
+        assert "retained_n" in rows[0], "expected 'retained_n' column (not n_kept)"
+        assert "ad_auroc"   in rows[0], "expected 'ad_auroc' column (not auroc)"
 
 
 # ============================================================
@@ -366,3 +370,227 @@ class TestFailureBoundary:
         assert len(adj) == 3
         assert np.all(adj >= pvals - 1e-10)
         assert np.all(adj <= 1.0 + 1e-10)
+
+    def test_bootstrap_auroc_ci_alpha_9875(self):
+        """缺口3: bootstrap_auroc_ci 支持 alpha=0.0125 (98.75% CI，T6/T7 Bonf/4)"""
+        from failure_boundary import bootstrap_auroc_ci
+        rng    = np.random.default_rng(0)
+        y_true = np.array([0]*50 + [1]*50)
+        scores = np.concatenate([rng.random(50), rng.random(50) + 0.5])
+        lo_95, hi_95 = bootstrap_auroc_ci(y_true, scores, n_boot=100, alpha=0.05)
+        lo_9875, hi_9875 = bootstrap_auroc_ci(y_true, scores, n_boot=100, alpha=0.0125)
+        # 98.75% CI 应比 95% CI 更宽（lo 更低，hi 更高）
+        assert lo_9875 <= lo_95 + 1e-6
+        assert hi_9875 >= hi_95 - 1e-6
+
+    def test_run_b2_ci_columns_9875(self, tmp_path):
+        """缺口3: run_b2 输出列名改为 ci_lo_9875/ci_hi_9875"""
+        from failure_boundary import run_b1, run_b2
+        brats = self._make_brats_data()
+        brats = run_b1(brats, tmp_path)
+        ham   = self._make_ham_data()
+        run_b2(brats, ham, tmp_path)
+        out = tmp_path / "boundary_B2_extrapolation.csv"
+        assert out.exists()
+        rows = list(csv.DictReader(open(out)))
+        assert len(rows) > 0
+        # 检查列名含 9875 而非 95
+        assert "ci_lo_9875" in rows[0], "T6 B2 应输出 ci_lo_9875 (98.75% CI)"
+        assert "ci_hi_9875" in rows[0], "T6 B2 应输出 ci_hi_9875 (98.75% CI)"
+        assert "ci_lo_95" not in rows[0], "旧列名 ci_lo_95 不应存在"
+
+    def test_run_b4_ci_columns_9875(self, tmp_path):
+        """缺口3: run_b4 输出列名改为 ci_lo_9875/ci_hi_9875"""
+        from failure_boundary import run_b1, run_b4
+        brats = self._make_brats_data(n=300)
+        brats = run_b1(brats, tmp_path)
+        run_b4(brats, tmp_path)
+        out = tmp_path / "boundary_B4_extrapolation.csv"
+        assert out.exists()
+        rows = list(csv.DictReader(open(out)))
+        if rows:   # 样本量足够才有输出
+            assert "ci_lo_9875" in rows[0], "T7 B4 应输出 ci_lo_9875 (98.75% CI)"
+            assert "ci_hi_9875" in rows[0], "T7 B4 应输出 ci_hi_9875 (98.75% CI)"
+
+
+# ============================================================
+# 缺口 1: stratify_significance.py — F-A T1/T2/T3 显著性检验
+# ============================================================
+
+class TestStratifySignificance:
+    def _write_score_csv(self, tmp_path, n_tumor=200, seed=42):
+        """合成 anomaly_scores csv (split=tumor)"""
+        rng = np.random.default_rng(seed)
+        rows = []
+        for i in range(n_tumor):
+            rows.append({
+                "filename":     f"tumor_{i:04d}.png",
+                "split":        "tumor",
+                "anomaly_score": str(round(rng.random(), 6)),
+                "label":        "1",
+            })
+        p = tmp_path / "scores.csv"
+        with open(p, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["filename","split","anomaly_score","label"])
+            w.writeheader()
+            w.writerows(rows)
+        return p, [r["filename"] for r in rows]
+
+    def _write_strat_csv(self, tmp_path, filenames, seed=42):
+        """合成 per-image strat csv (含 filename/size_px/contrast)"""
+        rng = np.random.default_rng(seed)
+        rows = []
+        for fn in filenames:
+            rows.append({
+                "filename": fn,
+                "size_px":  str(round(float(rng.integers(10, 500)), 2)),
+                "contrast": str(round(float(rng.random()), 6)),
+            })
+        p = tmp_path / "strat.csv"
+        with open(p, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["filename","size_px","contrast"])
+            w.writeheader()
+            w.writerows(rows)
+        return p
+
+    def test_fa_significance_runs(self, tmp_path):
+        """缺口1: run_fa_significance 不报错 + 输出 csv 含正确列"""
+        from stratify_significance import run_fa_significance
+        score_csv, filenames = self._write_score_csv(tmp_path)
+        strat_csv = self._write_strat_csv(tmp_path, filenames)
+        out_csv   = tmp_path / "FA.csv"
+        run_fa_significance(str(score_csv), str(strat_csv), str(out_csv))
+        assert out_csv.exists()
+        rows = list(csv.DictReader(open(out_csv)))
+        assert len(rows) == 3, "F-A family 应有 3 行 (T1/T2/T3)"
+        test_ids = [r["test_id"] for r in rows]
+        assert test_ids == ["T1", "T2", "T3"]
+        for r in rows:
+            assert "stat_chi2" in r
+            assert "p_raw" in r
+            assert "p_holm" in r
+            assert "p_fdr_bh" in r
+            assert "sig_holm" in r
+
+    def test_fa_holm_covers_3(self, tmp_path):
+        """缺口1: Holm 校正在 3 个检验上，p_holm >= p_raw"""
+        from stratify_significance import run_fa_significance
+        score_csv, filenames = self._write_score_csv(tmp_path)
+        strat_csv = self._write_strat_csv(tmp_path, filenames)
+        out_csv   = tmp_path / "FA_holm.csv"
+        run_fa_significance(str(score_csv), str(strat_csv), str(out_csv))
+        rows = list(csv.DictReader(open(out_csv)))
+        for r in rows:
+            p_raw  = float(r["p_raw"])
+            p_holm = float(r["p_holm"])
+            assert p_holm >= p_raw - 1e-10, f"Holm p 应 >= raw p, got {p_holm} < {p_raw}"
+            assert 0.0 <= p_holm <= 1.0 + 1e-10
+
+
+# ============================================================
+# 缺口 2: incremental_stats.run_fc_family_holm — F-C 合并 10 检验
+# ============================================================
+
+class TestFCFamilyHolm:
+    def _make_c2_csv(self, tmp_path, seed=0):
+        """合成 C2 lr_test csv (5 行)"""
+        from incremental_stats import CONSPICUITY_COLS
+        rng  = np.random.default_rng(seed)
+        rows = []
+        for col in CONSPICUITY_COLS:
+            p = float(rng.random())
+            rows.append({
+                "feature":    col,
+                "chi2_stat":  str(round(rng.random() * 5, 4)),
+                "p_raw":      str(round(p, 6)),
+                "p_holm":     str(round(p, 6)),
+                "p_fdr_bh":  str(round(p, 6)),
+                "sig_holm05": "0",
+                "sig_fdr05":  "0",
+                "note":       "test",
+            })
+        p_out = tmp_path / "c2.csv"
+        with open(p_out, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(rows)
+        return p_out
+
+    def _make_c3_csv(self, tmp_path, seed=1):
+        """合成 C3 partial_corr csv (5 行)"""
+        from incremental_stats import CONSPICUITY_COLS
+        rng  = np.random.default_rng(seed)
+        rows = []
+        for col in CONSPICUITY_COLS:
+            p = float(rng.random())
+            rows.append({
+                "feature":      col,
+                "controlled_for": "size_px+contrast",
+                "partial_r":    str(round(rng.random() * 0.5, 4)),
+                "p_raw":        str(round(p, 6)),
+                "p_holm":       str(round(p, 6)),
+                "p_fdr_bh":    str(round(p, 6)),
+                "sig_holm05":   "0",
+                "sig_fdr05":    "0",
+                "note":         "test",
+            })
+        p_out = tmp_path / "c3.csv"
+        with open(p_out, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(rows)
+        return p_out
+
+    def test_fc_family_holm_runs(self, tmp_path):
+        """缺口2: run_fc_family_holm 不报错 + 输出 10 行 + 列名正确"""
+        from incremental_stats import run_fc_family_holm
+        c2 = self._make_c2_csv(tmp_path)
+        c3 = self._make_c3_csv(tmp_path)
+        out = tmp_path / "fc_family.csv"
+        run_fc_family_holm(c2, c3, out)
+        assert out.exists()
+        rows = list(csv.DictReader(open(out)))
+        assert len(rows) == 10, f"F-C family 应有 10 行，得 {len(rows)}"
+        # 检查列名
+        for col in ["test_id", "feature", "source", "p_raw",
+                    "p_holm_family10", "p_fdr_family10", "sig"]:
+            assert col in rows[0], f"缺少列 {col}"
+
+    def test_fc_test_ids(self, tmp_path):
+        """缺口2: test_id 应为 T4.1-T4.5 / T5.1-T5.5"""
+        from incremental_stats import run_fc_family_holm
+        c2 = self._make_c2_csv(tmp_path)
+        c3 = self._make_c3_csv(tmp_path)
+        out = tmp_path / "fc_ids.csv"
+        run_fc_family_holm(c2, c3, out)
+        rows = list(csv.DictReader(open(out)))
+        ids = [r["test_id"] for r in rows]
+        expected = [f"T4.{i}" for i in range(1, 6)] + [f"T5.{i}" for i in range(1, 6)]
+        assert ids == expected, f"test_id 顺序不对: {ids}"
+
+    def test_fc_holm_monotone(self, tmp_path):
+        """缺口2: Holm 校正后 p >= raw p"""
+        from incremental_stats import run_fc_family_holm
+        c2 = self._make_c2_csv(tmp_path)
+        c3 = self._make_c3_csv(tmp_path)
+        out = tmp_path / "fc_mono.csv"
+        run_fc_family_holm(c2, c3, out)
+        rows = list(csv.DictReader(open(out)))
+        for r in rows:
+            p_raw  = float(r["p_raw"])
+            p_holm = float(r["p_holm_family10"])
+            assert p_holm >= p_raw - 1e-10
+
+    def test_fc_source_labels(self, tmp_path):
+        """缺口2: source 列 T4.x=C2, T5.x=C3"""
+        from incremental_stats import run_fc_family_holm
+        c2 = self._make_c2_csv(tmp_path)
+        c3 = self._make_c3_csv(tmp_path)
+        out = tmp_path / "fc_src.csv"
+        run_fc_family_holm(c2, c3, out)
+        rows = list(csv.DictReader(open(out)))
+        for r in rows:
+            if r["test_id"].startswith("T4"):
+                assert r["source"] == "C2"
+            elif r["test_id"].startswith("T5"):
+                assert r["source"] == "C3"

@@ -134,8 +134,15 @@ enhancement is unsafe (\Cref{sec:exp-preserve}) --- are sent for recapture inste
 Reader studies place expert dermatologist accuracy on dermoscopic melanoma recognition in the range of
 roughly $74$--$89\%$ sensitivity and $60$--$79\%$ specificity, with substantial inter-reader variance
 that depends on experience and on the availability of clinical context
-\citep{haenssle2018man,brinker2019deep,marchetti2020computer,tschandl2019comparison}; meta-analyses
-report pooled expert dermatologist sensitivity and specificity near $84\%$ and $74\%$ \citep{salinas2024systematic}, and
+\citep{haenssle2018man,haenssle2020reloaded,brinker2019deep,marchetti2020computer,tschandl2019comparison};
+for orientation, individual reader studies report mean sensitivity/specificity of
+$86.6\%/71.3\%$ ($58$ dermatologists, dermoscopy only \citep{haenssle2018man}),
+$83.8\%/77.6\%$ ($96$ dermatologists on a broader lesion spectrum \citep{haenssle2020reloaded}),
+$74.1\%/60.0\%$ ($157$ dermatologists \citep{brinker2019deep}), and a human mean sensitivity of
+$81.2\%$ ($511$ readers \citep{tschandl2019comparison}). Meta-analyses report pooled expert
+dermatologist sensitivity and specificity near $84\%$ and $74\%$ for AI--clinician comparisons
+\citep{salinas2024systematic} and pooled dermoscopy sensitivity and specificity near $90\%$ and
+$90\%$ relative to naked-eye examination in clinical settings \citep{vestergaard2008dermoscopy}, and
 convolutional networks have matched or exceeded readers on curated benchmarks
 \citep{esteva2017dermatologist,tschandl2020human}. These comparisons are dataset- and
 operating-point-specific and presuppose curated, high-quality imagery. Our contribution is orthogonal:
@@ -432,8 +439,14 @@ Theorem~\ref{thm:agent-compact} P3 prescribes. Within the enhance band the same 
 yields risk reductions relative to direct diagnosis whose CIs exclude zero in every band (severe
 $-0.305$, CI $[-0.390,-0.214]$; moderate $-0.189$, $[-0.204,-0.174]$; high $-0.127$,
 $[-0.136,-0.119]$), and the moderate-band enhancement salvage of $0.778$ clears the $55\%$ efficiency
-target (E5), so the gains the bound predicts on the salvage band are realised while the unsafe severe
-cases are diverted to retake rather than enhanced.
+target (E5). This $0.778$ is measured on a different, narrower population than the $0.737$ aggregate of
+\cref{sec:exp-salvage}: it is computed only on the cases the policy actually routes to the enhance
+channel (the moderate quality sub-band $\bar{q}\in[0.35,0.5]$, $n=3253$), whereas the $0.737$ is taken
+over the full moderate-severity split ($n=3627$). It is therefore subject to exactly the same
+benign-dominated caveat as the rest of this section: it reflects predominantly benign false-positive
+correction on a benign-prevalent cohort and is \textbf{not} evidence that enhancement improves
+diagnosis of severe or malignant lesions. With that caveat, the gains the bound predicts on the salvage
+band are realised while the unsafe severe cases are diverted to retake rather than enhanced.
 
 \subsection{Universality}\label{sec:exp-universal}
 % R1: NOT "TS reversal is universal". Phrase as "most pronounced on weakly quality-aware backbones".

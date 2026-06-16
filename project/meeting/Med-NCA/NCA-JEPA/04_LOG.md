@@ -6,12 +6,32 @@
 
 ---
 
-## 2026-06-16 — AMBER 阻断①④清: estimate_lf 口径 bug 已修 + registry 同步（待 HPC 重测 L_f 拍板）
+## 2026-06-17 — 拯救路线 A：谱半径下界验证探针落地
+- **新文件**：`eval/spectral_lower_bound.py` — 残差 ρ vs σ_max 系统性验证脚本（claim: ρ(I+J_g)≥1 结构性下界，跨 MLP/Conv/Attn/NCA 族）。
+- **口径修正桥接**：eval_anytime.estimate_lf 算的是 σ_max（奇异值）不是 ρ（谱半径）；本脚本同时输出两列分列对比，小维度用显式 `torch.linalg.eigvals` 金标准，大维度幂迭代。
+- **4 run 最小验证集**：R0(NCAStep真实残差) / R1(MLP-residual) / R4(MLP-pure DEQ对照) / R5(SN sweep c∈{0.3..2.0})。
+- 输出 CSV：`results/spectral_lower_bound/results.csv`。
+- **三轮跑完（minimal→full→falsify，纯 CPU 零训练，主线直接 python 跑非 /run-experiment）**：
+  - **核心 claim 主体成立（真 ρ 显式 eig，非 σ_max）**：残差组 ρ≥1 跨 4 族 + 多 seed 稳健——MLP 1.168±0.021 / Attn 1.358±0.065 / NCA 1.230±0.062（3 seed）/ Conv 修复退化后 1.341；pure 对照（无 I 项）全 ρ<1（MLP 0.193-0.199, Attn 0.406, Conv 0.341）。SN 强度 c=0.3→2.0 扫描 ρ=1.016→1.578，**怎么压都跨不过 1**（最低 1.016）。恒等式 ρ(I+J_g)≈max|1+λ(J_g)| 数值验证。
+  - **证伪测试暴露真实边界（对创新点负责的关键）**：① claim **不是无条件定理**——理论可构造纯负反馈 g（全负实特征值 `g(h)≈−c·h`），SN 顶到 1 时 `I+J_g` 特征值全 ∈(0,1)→ρ<1 反例。coder 的 NegReal 构造混了正特征值没撞到（F7 λ_g=−1.0 仍 ρ=1.105，因正特征值拉高），但数学上反例存在。② 核心恒等式 `λ(I+g)=1+λ(g)` 是已知（i-ResNet Behrmann 2019），非首创。
+  - **诚实定位判定**：路线 A = **扎实（理论+实证混合，文献确无人系统做 SN 约束下残差 ρ→1⁺ 实证）但非"惊天大胆定律"**（核心数学已知 + 有人工反例可打穿）。精确 claim 须挂「SN 约束 + 非负反馈 g」条件，不能裸宣称「残差就 ρ≥1」。
+  - **图**：`results/spectral_lower_bound/rho_residual_vs_pure.png`（残差 vs pure 跨族 + ρ=1 临界线）、`rho_vs_sn_sweep.png`（SN 怎么压跨不过）。
+- **战略待拍（下窗口）**：用户连续表达「创新点平平/要非常大胆」。路线 A 验到头=扎实非惊艳。三选项：① 接受扎实定位走 capability paper（中等会议稳）；② 押路线 B（NCA predictor 抗遗忘，NCAdapt 证 NCA 跨域遗忘比 Transformer 小 100×，JEPA predictor 位无人做，可能更"新"，**待同等严谨度探路验证**）；③ 诚实承认天花板有限考虑换更激进方向（合 memory「挖蓝海别跟现有重合」）。**主线建议：下一步用实验验路线 B 够不够大胆，别再在 A 上打磨。**
+- **本窗口给博士生评估交付**：`07_项目评估_给博士生_2026-06-17.md`（大白话版，含真实数字+图+文献，判"能不能做/有没有潜力"）。
+- 拯救探路 4 researcher 情报（赛道仍空/竞品/痛点场景/NCA 独特能力）见本 entry 关联调研，关键：NCA-as-SSL-predictor 2026-06 仍全网空白（2604.24990 综述点名 gap），路线 B 抗遗忘=R1 最强候选。
+
+## 2026-06-16 — AMBER 阻断①③④⑤清 + 重测 L_f + GREEN 理论返修 + Gate1 PASS（仅剩②A1补seed训练拍板）
 - **① estimate_lf 口径修复（coder）**：`eval_anytime.estimate_lf` 重写——(a) **bug#1 修**：废 `torch.randn` 随机点，改 `NCAPredictor.get_hidden_at_step()` 跑真实 forward 半程拿轨迹状态 h（含 scatter context + anchor 锚定），在 S/4·S/2·3S/4 三点各 power-iteration 取 σ_max 当谱半径上界；(b) **fire 算子固定**：每 power-iter 步 `gen.manual_seed(fire_seed)` 重置使 `cell(h_,generator=gen)` 看同一 fire mask（power iteration 需固定算子）= 与 A2 `deterministic_fire=True` 推理同路径，口径自洽。(c) **bug#2 经核不成立**：`NCAStep.forward` line67 已返 `h+fire*delta`（残差全映射），cell Jacobian 已是 `I+diag(fire)·J_δ`，不需改；reviewer 诊断的「测 δ 非 I+J_δ」与现码不符。
-- **smoke 通过**：py_compile OK；`eval_anytime eval --smoke` 端到端通；随机权重 L_f=1.000（fc1 零初始化 δ≈0→J=I→σ=1，预期值）。`results/_scratch/smoke_lf_fix.csv`。
-- **④ registry 同步**：Gate3 措辞从「anytime 一等」改为反映实测——核心轴=可测稳定性(L_f)+3.4× 省参，anytime 已被 A0+(Q1=0.975)打平降辅项，追上 01/03 已改 framing（消阻断⑥脱节）；current.phase/blockers/next 全更新到 AMBER 现状。
-- **⑤ 留重测后**：02 全文 L_f 数值预言(0.2-0.5/0.35/(1+L_f)^S)返修依赖真 ckpt 重测值，现改只能标待验会返工，等重测一次到位。
-- **🛑 拐点（待拍）**：估计器已修但 ckpt 全在 HPC（本地无 .pth.tar）→ 重测 L_f 需连 HPC 推 fixed `eval_anytime.py`+`nca_predictor.py` 跑各真 ckpt。结果定命中：L_f<1 → 回 Gate1 PASS 走 GREEN（稳定性核心成立）；真 >1 → 退路 B（独家负结果）。剩余②A1 补 seed123/2024(训练拍板)、③A2 三 seed canary 轨迹(eval) 待重测后续推。
+- **✅ 真 ckpt 重测 L_f（全 7 NCA 臂, ep50, missing=0, login CPU, fixed 代码已推 HPC）**：
+  - **A1 vanilla(无 SN)=1.366** | **A2 SCP(SN) S16 三 seed=1.0080/1.0076/1.0050(mean 1.0069, population std 0.0013, n=3)** | S 扫描 **S4=1.6103/S8=1.4362/S16=1.0080/S32=1.0032**（单调降逼近 1⁺）。
+  - **三硬结论**：① **全 >1 无一形式收缩**（最低 S32=1.003）；② **SN 显著有效**：A1→A2 压 26%（旧口径 bug 报"仅 1.5%"是假象）→ PC-2 坐实；③ **理论预言 0.2–0.5 本身错**（漏算残差更新 `h+fire·δ` 的 Jacobian `I+diag(fire)·J_δ`，I 项使谱半径天然下界≈1，SN 只压 J_δ 跨不过 1；S↑→1⁺ 即 J_δ 被越压越小趋恒等映射）。
+- **🛑 用户拍定方向 = 融合 GREEN**：主 claim「SN 显著压缩谱半径 1.366→1.007(−26%)、逼近收缩临界 1⁺」（定量稳定性结果）；讨论节「残差 I 项使形式收缩 L_f<1 结构性不可达」当独家理论洞察。02 §10/§11 的 L_f<1 绿灯 → 有界膨胀 + 逼近 1⁺。
+- **⑤ 理论返修（writer，opus，caveman OFF）**：02/01/03 全部 L_f claim 按实测返修——02 主叙事(有界膨胀)本已对，改遗留数值预言(0.2-0.5/0.35→实测)、红灯口径(L_f<1 绿灯/>1→bug → SN 压缩判据+不可达非bug)、上界 √2→√3(含两路 Conv，解释 S4=1.610 超 √2)、补 SN 实测段 + 残差极限洞察 + worst-case (1+L_f)^S 上界过松口径(L_f>1 上界爆炸但实测健康收敛=真稳定靠 SN 压缩+动力学非 Lipschitz 收缩)；01 行108/114 残留旧「Lipschitz<1→Banach 唯一不动点收敛」错 claim 改掉；03 行221 红灯口径同步。
+- **✅ verifier 三方核账**：L_f 单值/降幅−26%/两个 A2 的 (1+L_f)^S 全对入论文；抓 3 处 writer 已修：(1+1.366)^16 ~6e5.4→~9.6e5、§2.1证(c)残留 √2→√3、std=0.0013 标 population std(n=3) 口径。
+- **④ registry 同步**：Gate3「anytime 一等」→ 稳定性(L_f)+省参核心、anytime 降辅项；current 全更新。
+- **③ ✅ Gate1 PASS（A2 三 seed S16 canary 轨迹, HPC .out 提取）**：final loss s42=0.095/s123=0.100/s2024=0.098（std≈0.002≪0.1），全程单调降(0.21→0.10) 无双峰/无发散/无 NaN、grad_stats 末值正常 → 3/3 收敛 + canary 健康 + σ_final<0.1 + 无双盆地 全满足。
+- **AMBER→GREEN（稳定性核心成立）**：阻断①③④⑤全清 + Gate1 PASS + L_f claim 诚实返修。**仅剩 ② A1 补 seed123/2024**（vanilla 配对 A2 三 seed 坐实 SN −26% 统计）=训练拍板点，待用户「跑」。
+- 本轮文件：eval_anytime.py+nca_predictor.py(coder 修)、02/01/03(writer 返修)、registry(Gate3+current)、results/anytime_*_lffix.csv×7（重测）。HPC 推 fixed 代码（eval 推理非训练，未占训练锁）。
 
 ## 2026-06-16 — pilot 全 7 job 训完 + eval + /stage-gate 严判 = 🟡 AMBER（不放行）
 - **训练全完**：7 job 全 COMPLETED 50ep。eval_anytime 出全部 Q(k)+L_f csv（results/anytime_*.csv），aggregate 出 trade-off 图（results/tradeoff.png）。
