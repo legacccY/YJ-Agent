@@ -32,6 +32,12 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_prompt_submit.js\"",
             "timeout": 3,
             "statusMessage": "ICLR keyword scan..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\drift_guard.js\"",
+            "timeout": 3,
+            "statusMessage": "drift guard..."
           }
         ]
       }

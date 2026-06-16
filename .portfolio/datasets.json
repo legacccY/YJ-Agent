@@ -101,13 +101,14 @@
     "nih_cxr14": {
       "name": "NIH ChestX-ray14 (224² resized)",
       "n": 112120,
-      "local": "project/meeting/Med-NCA/NCA-JEPA/data/nih_cxr14/ (build_splits.py DATA_ROOT)",
-      "hpc": "TODO 待 Phase 0 放行后确认 HPC scratch 路径",
+      "local": "project/meeting/Med-NCA/NCA-JEPA/data/nih_cxr14/images-224/images-224/ (build_splits.py DATA_ROOT)",
+      "hpc": "/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/ (absolute; 112120 png 已解压验通)",
+      "splits_hpc": "/gpfs/work/bio/jiayu2403/nca-jepa/splits/ (pretrain_10k=10000图/3257患者, probe 1%/10%/100%, test=25596, 患者重叠0)",
       "source": "Kaggle khanfashee/nih-chest-x-ray-14-224x224-resized (PNG, 224²); 原图 NIH Box 1024² ~45GB",
-      "split": "DATA_ROOT/splits/ (build_splits.py 生成; pilot 子集 ~10k)",
+      "split": "DATA_ROOT/splits/ (build_splits.py 生成; pilot 子集 10k)",
       "used_by": ["nca-jepa"],
       "purpose": "NCA-JEPA pilot 预训练 + linear probe; 对齐 CheXWorld 224² 输入",
-      "status": "todo"
+      "status": "ready(本地+HPC 均部署验通)"
     }
   }
 }
