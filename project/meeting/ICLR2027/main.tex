@@ -29,8 +29,10 @@ inputs without generative hallucination. We give an end-to-end theoretical closu
 (Propositions~1--3, Lemmas~1--3, Theorems~1--2, Corollary~1), including a Lipschitz attention-drift
 bound, a quality--entropy monotonicity guarantee, a mutual-information bound for enhancement, and an
 expected-risk bound for the agent's routing decision. On a quality-stratified benchmark (\itb), the
-quality scorer attains PLCC $0.924$ / SRCC $0.895$, and \qvib produces predictive entropy that
-decreases monotonically with quality ($\rho=-0.165$, $p<10^{-24}$) at AUC $0.707$ / ECE $0.098$.
+quality scorer attains PLCC $0.924$ / SRCC $0.895$. On a held-out evaluation set, \qvib produces
+predictive entropy that decreases monotonically with quality ($\rho=-0.165$, $p<10^{-24}$) at AUC
+$0.707$ / ECE $0.098$; on the deliberately harder, adversarially quality-stratified \itb{} pool it
+trades discriminative AUC for quality-conditional calibration (\Cref{tab:main}).
 Code and benchmark will be released.
 \end{abstract}
 
@@ -114,6 +116,18 @@ objective and analyse the generative failure mode explicitly in \cref{sec:discus
 No-reference IQA \citep{mittal2012brisque,wang2023clipiqa} and dermatology challenges (ISIC) motivate quality-aware
 evaluation. \itb adds an explicitly quality-stratified protocol with paired low-/high-quality
 subsets, enabling the quality-conditional analysis our claims require.
+
+\paragraph{Human reader studies and AI--clinician comparison.}
+Reader studies place expert dermatologist accuracy on dermoscopic melanoma recognition in the range of
+roughly $74$--$89\%$ sensitivity and $60$--$79\%$ specificity, with substantial inter-reader variance
+that depends on experience and on the availability of clinical context
+\citep{haenssle2018man,brinker2019deep,marchetti2020computer,tschandl2019comparison}; meta-analyses
+report pooled expert sensitivity and specificity near $84\%$ and $74\%$ \citep{kim2024systematic}, and
+convolutional networks have matched or exceeded readers on curated benchmarks
+\citep{esteva2017dermatologist,tschandl2020human}. These comparisons are dataset- and
+operating-point-specific and presuppose curated, high-quality imagery. Our contribution is orthogonal:
+we do not claim a new discriminative ceiling over clinicians, but reliable, quality-conditioned
+uncertainty and routing on the degraded consumer imagery that such studies exclude by design.
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Quality Assessment and the Quality-Conditional Bottleneck}\label{sec:qvib}
@@ -305,8 +319,10 @@ $-0.012$, $0.958$, $0.091$). A paired bootstrap of the difference (cross-attenti
 straddles zero on every axis --- $\Delta\mathrm{AUC}=+0.002$ (95\% CI $[-0.006,+0.009]$),
 $\Delta\mathrm{KL}=+0.003$ ($[-0.005,+0.011]$), McNemar $p=0.68$ --- so the extra capacity buys no
 measurable gain, while cross-attention's residual dangerous-flip rate is in fact higher
-($0.19$ versus $0.14$). We therefore keep FiLM on parsimony grounds: it matches cross-attention on
-both fidelity and diagnostic preservation at $1.8$M fewer parameters.
+($0.19$ versus FiLM's $0.14$; both on the moderate-severity paired protocol of this ablation, distinct
+from the mixed-severity dflip $0.194$ reported for \visienhance{} in \cref{tab:e10}). We therefore keep
+FiLM on parsimony grounds: it matches cross-attention on both fidelity and diagnostic preservation at
+$1.8$M fewer parameters.
 
 \paragraph{E10 --- generic restoration SOTA degrades diagnosis.}
 We test whether a strong off-the-shelf restorer could replace our diagnosis-preserving training. Six
@@ -333,9 +349,11 @@ On the moderate band the aggregate salvage rate --- the fraction of degraded-the
 images that enhancement restores to a correct prediction --- is $0.737$, nominally clearing the
 $>55\%$ target. This aggregate is misleading, and we deliberately do \emph{not} report it as a
 headline capability: a per-class split (independent EfficientNet-B3 probe, $n=3627$ per severity)
-shows it is almost entirely benign false-positive correction. On benign lesions enhancement salvages
-$75.6\%$ ($1809/2392$) while damaging only $0.6\%$ ($50/8138$ correctly-classified); on melanoma it
-salvages just $5.2\%$ ($4/77$) while damaging $31.0\%$ ($85/274$ correctly-classified) --- a net loss
+shows it is almost entirely benign false-positive correction. The salvage and damage denominators are
+distinct subsets: salvage is taken over the degraded-then-misclassified images, damage over those the
+probe originally classified correctly. On benign lesions enhancement salvages $75.6\%$ ($1809/2392$
+misclassified) while damaging only $0.6\%$ ($50/8138$ correctly-classified); on melanoma it
+salvages just $5.2\%$ ($4/77$ misclassified) while damaging $31.0\%$ ($85/274$ correctly-classified) --- a net loss
 of $81$ malignant cases. Enhancement thus helps the benign-leaning errors that least need help and
 harms the malignant cases that matter most, mirroring the residual dangerous flips above
 (\cref{fig:dflip}) and the severe-band degradation below. We tested whether this gap is an
@@ -361,10 +379,16 @@ exactly the safety behaviour the salvage boundary is meant to enforce.
 
 \subsection{Universality}\label{sec:exp-universal}
 % R1: NOT "TS reversal is universal". Phrase as "most pronounced on weakly quality-aware backbones".
-We evaluate across five backbones (standard VIB, ResNet-50, ViT-Tiny, ConvNeXt-Tiny, Swin-Tiny). The
-quality-conditional treatment improves the entropy--quality relationship across architectures, with
-the temperature-scaling failure most pronounced on weakly quality-aware backbones rather than
-universal. \emph{[Table~2 from \texttt{section54\_summary.csv}; consolidated for camera-ready.]}
+We apply the quality-conditional treatment to four further backbones (ResNet-50, ViT-Tiny,
+ConvNeXt-Tiny, Swin-Tiny); \Cref{tab:universality} reports the entropy--quality correlation $\rho$ and
+the calibration gap QCDI before scaling, under uniform temperature scaling, and under
+quality-conditional scaling. Uniform temperature scaling is a rank-preserving transform and therefore
+leaves $\rho$ unchanged by construction, so it cannot address the entropy--quality coupling;
+quality-conditional scaling instead drives $\rho$ more negative in all four backbones, most visibly on
+the weakly quality-aware ViT-Tiny ($\rho$: $+0.028 \to -0.056$), and brings QCDI closer to zero in
+four of four. The effect is thus consistent across these architectures and is most pronounced where the
+raw backbone is least quality-aware; we do not claim it to be universal.
+\input{table2_universality}
 
 \subsection{Cross-Domain Generalisation}\label{sec:exp-cross}
 We test zero-shot transfer of the \emph{quality-awareness} property to four external dermatology
@@ -459,7 +483,8 @@ subpopulation and the smallest sex gap, but the high-prevalence elderly band rem
 calibration limitation --- precisely the operating point where the agent's defer / query-for-retake
 path (Sec.~\ref{sec:agent}) is intended to fire, and a motivation for demographic-aware calibration
 in future work. We additionally stratify by Fitzpatrick skin type I--VI on the (out-of-distribution)
-Fitzpatrick17k clinical photographs ($n=16{,}012$ with skin-type labels): here per-type calibration
+Fitzpatrick17k clinical photographs ($n=16{,}012$, the skin-type-labelled subset of the
+$16{,}574$-image cross-domain set in \S\ref{sec:exp-cross}): here per-type calibration
 degrades \emph{uniformly} --- \qvib{} Full's max--min ECE gap across types I--VI is $0.30$ (worst on
 type VI, ECE $0.80$, $n_{\text{pos}}=14$), and AUC equivalence between deep (V--VI) and light (I--IV)
 types is not established (TOST $p=0.27$, AUC difference $-0.023$, $95\%$ CI $[-0.108, +0.065]$). This

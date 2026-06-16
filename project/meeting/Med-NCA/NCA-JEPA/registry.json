@@ -15,10 +15,11 @@
     "Gate0": {"when": "D2", "test": "A0 从头学? A1 单 batch 过拟合? z-shuffle 下游掉≥3 AUROC?", "fail": "管线有 bug，先修"},
     "Gate1": {"when": "D2", "test": "A2 3/3 seed 收敛 + canary 健康 + σ_final<0.1 + 无双盆地?", "fail": "🔴 RED 路线 B 稳定性理论论文"},
     "Gate2": {"when": "D16", "test": "ΔAUROC(A2 vs A0) > −3?", "fail": "<−5 → 🔵 路线 C 诊断工具论文"},
-    "Gate3": {"when": "D21", "test": "稳定/anytime/可解释/不确定 ≥2 项 ✅?", "fail": "1 项→聚焦; 0→路线 B"}
+    "Gate3": {"when": "D21", "test": "稳定/anytime/可解释/不确定 ≥2 项 ✅? (anytime 为一等指标: stability-vs-anytime trade-off, 03_pilot §9.1, A0+ 同台)", "fail": "1 项→聚焦; 0→路线 B"}
   },
   "arms": {
-    "a0": {"desc": "ViT predictor baseline (I-JEPA 原版)", "config": "configs/a0*.yaml"},
+    "a0": {"desc": "ViT predictor baseline (I-JEPA 原版, 单次前向)", "config": "configs/a0*.yaml"},
+    "a0plus": {"desc": "early-exit ViT predictor (每层 L2 head + 等权聚合, MSDNet 式; ②牌 anytime 正面对照)", "config": "configs/a0plus*.yaml (TODO 待建)", "provenance": "MSDNet ICLR'18 1703.09844 等权聚合; MeViT 2106.15183 regression 可行; TODO 待查: stop-grad / loss-weight 变体"},
     "a1": {"desc": "vanilla NCA predictor", "config": "configs/a1*.yaml"},
     "a2": {"desc": "SCP-JEPA = NCA + SN+EMA+Det 稳定化三件套（主臂）", "config": "configs/a2*.yaml"}
   },
@@ -28,7 +29,7 @@
     "last_job": "1450052 (A0 baseline 健康跑通, loss 0.476→0.056@ep10)",
     "sentinels": "7/8 PASS (s4 边界非 bug)",
     "provenance": "configs/PROVENANCE.md (红线10 官方超参联网复核完成)",
-    "next": "A0 训完 → Gate0 → A1/A2 多 seed（待用户拍）"
+    "next": "建 A0+ config + early-exit predictor 模块 → A0/A0+ → Gate0 → A1/A2 多 seed（训练待用户拍）"
   },
   "hpc": {
     "root": "/gpfs/work/bio/jiayu2403/nca-jepa/",

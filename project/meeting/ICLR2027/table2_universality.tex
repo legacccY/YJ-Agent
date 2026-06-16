@@ -1,0 +1,30 @@
+\begin{table}[t]
+\centering
+\caption{
+\textbf{Quality-conditional scaling across backbones.}
+Entropy--quality correlation $\rho(H,\bar q)$ and the calibration gap QCDI (closer to $0$ = more
+quality-aware) for four further backbones, before scaling (raw), under uniform temperature scaling
+(TS), and under quality-conditional scaling (QC-TS). Uniform TS is a rank-preserving transform and
+therefore leaves $\rho$ unchanged by construction; only quality-conditional scaling alters $\rho$.
+Values are point estimates from a single calibrated configuration per backbone
+(\texttt{backbones/section54\_summary.csv}); they support the qualitative trend rather than a
+significance claim.
+}
+\label{tab:universality}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{l ccc cc}
+\toprule
+& \multicolumn{3}{c}{$\rho(H,\bar q)\,\downarrow$} & \multicolumn{2}{c}{QCDI$\,\downarrow$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-6}
+Backbone & raw & TS & QC-TS & raw & QC-TS \\
+\midrule
+ResNet-50      & $-0.368$ & $-0.368$ & $\mathbf{-0.380}$ & $+0.014$ & $+0.014$ \\
+ViT-Tiny       & $+0.028$ & $+0.028$ & $\mathbf{-0.056}$ & $+0.023$ & $-0.017$ \\
+ConvNeXt-Tiny  & $-0.241$ & $-0.241$ & $\mathbf{-0.270}$ & $+0.136$ & $-0.020$ \\
+Swin-Tiny      & $-0.237$ & $-0.237$ & $\mathbf{-0.259}$ & $+0.020$ & $+0.016$ \\
+\bottomrule
+\end{tabular}
+\vspace{-4pt}
+\end{table}

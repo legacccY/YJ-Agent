@@ -6,6 +6,43 @@
 
 ---
 
+## 2026-06-16（会话 33，大编队投稿前体检 → reviewer 致命项收口：去匿名 + ρ 列 CI/p + Table 2 universality）
+
+### 起因
+用户「读档，开始 ICLR 工作，大编队」。M3 写作推进。4 路并行（researcher×2 + reviewer + verifier）投稿前体检。
+
+### 🟢 大编队体检结果
+- **A researcher（L12）**：皮科医生黑色素瘤 baseline 8 篇齐（Haenssle/Brinker×2/Marchetti/Tschandl×2/Esteva/Kim meta），sens-spec + bibtex 草稿现成，待入 §7/Related。
+- **B researcher（L13）**：成本参数齐（活检 Medicare $58.40、Stage I→IV 差 £204K、欧洲漏诊 $7.65B、teledm 边际 £52-60），bibtex + 期望成本不等式雏形，待入 §7.7/A20。
+- **C reviewer**：40 页 main.tex 对抗审，挑出 2 致命（去匿名自指 + ρ 列无 CI/p）+ 数字 set/n 标注 + Table 2 占位 + s8 bib。诚实负结果认负措辞判前后一致、防守到位。
+- **D verifier**：§7.7 DCA + fairness **38 数字 0 drift**；另算 Table 1 ρ 列 10 baseline bootstrap CI/p（源 itb_predictions.csv n=2820）。
+
+### ✅ 落地修复（main.tex / preamble.tex / table1_main.tex / table2_universality.tex）
+- **去匿名（红线 7）**：4 处 `our earlier/our prior QC-TS` 第一人称自指 → 中性 `a prior post-hoc method`；preamble 注释 `(prior submission)` → `(post-hoc baseline)`。防 reviewer 借自指搜出 BMVC 作者身份。
+- **R6 ρ 列补 CI/p**：Table 1 ρ 列 10 个 baseline 加 bootstrap 95% CI 半宽下标 + caption「全 ρ 显著 p<0.01」+ **诚实声明 Q-VIB Full(−0.192) vs Adaptive Prior(−0.191) 的 ρ 差落 CI 内不可区分**，卖点归到 Prop 2 保证 + QCDI 而非可分 ρ。
+- **Abstract set 归位**：AUC 0.707/ECE 0.098 从「On ITB」误挂 → 归 held-out set，并写「ITB pool 上换质量条件校准（见 Table 1）」让 reviewer 自对（防挑高分指控）。
+- **Table 2 universality（§7.5 占位 → 实表）**：源 `backbones/section54_summary.csv` 查出 ViT-Tiny vs DeiT 近重复行（BMVC 期，红线 10），用户拍「4 backbone 建表+注明」→ 丢 DeiT，用 ResNet-50/ViT-Tiny/ConvNeXt-Tiny/Swin-Tiny 建表。故事：**TS 秩保序改不动 ρ（4/4 raw==TS）；QC-TS 让 ρ 在 4/4 更负**（ViT-Tiny +0.028→−0.056 最显），QCDI 4/4 更近 0。R1-safe 措辞「不claim universal」。
+- s8 三 bib key（blau/cohen/geifman）核 references.bib **全在**，reviewer 那条不成立。
+- hook 误报：`Bayesian/ensemble` 类别标签撞 `\bBayesian\b` → `Sampling-based/ensemble`。
+
+### 命中率
+投稿前体检主动找拆点而非等审稿拆：去匿名是硬红线（自指=泄身份），ρ 列 CI 是 R6 自违；都在投稿前补。Table 2 没在存疑 BMVC csv 上硬建（承会话 28-29 provenance 教训），查出重复行→用户拍 4-backbone 干净子集。诚实声明 Q-VIB Full≈Adaptive Prior 不可区分 = 不吹细差。编译 43 页 0 undefined。
+
+### ✅ 续批（同会话，reviewer 余中等项 + L12 入文）
+- **E5 分母歧义**：melanoma `4/77`/`85/274` 补「misclassified vs correctly-classified」标签 + 一句说明两分母是不同子集（salvage 取误分子集、damage 取原本正确子集），杀 reviewer「同类两分母像算错」误读。benign `2392` 同补 misclassified。
+- **FiLM dflip set 差**：E9 的 `0.19 vs 0.14` 标明是 moderate-severity paired 协议，并指明 E10 表 \visienhance dflip `0.194` 是 mixed-severity，两者不同集。
+- **Fitz n**：§7.8 `16,012` 标明是 §7.6 `16,574` 跨域集里带肤型标签的子集。
+- **TokFT 定义**（code-grounded，查 `finetune_tokenizer.py`）：Table 1 caption 加 `$^\ast$` 脚注——TokFT = 对 Q-VIB tokenizer 加辅助质量回归损失 `γ·MSE(sigmoid(δ/3),q̄)` γ=0.5 微调，supplementary discriminative 变体，拿校准换 ρ，非主模型。
+- **L12 皮科医生对照入 §2 Related Work**：新段「Human reader studies and AI–clinician comparison」，引 Haenssle/Brinker/Marchetti/Tschandl×2/Esteva/Kim-meta 7 篇（references.bib 加 7 bibtex），给专家区间 sens 74–89%/spec 60–79%、pooled 84%/74%。**防 R3**：明写 orthogonal、不 claim 判别天花板（本文 VIB 故意拿 AUC 换校准，绝不 head-to-head）。
+- 编译 **44 页 0 undefined cite/ref，7 新引用全进 bbl**。
+
+### 待续（会话 34）
+1. L13 cost-benefit researcher 料入 §7.7/A20（活检 $58 / Stage I→IV £204K / 漏诊欧洲 $7.65B / teledm £52-60 + 期望成本不等式）。
+2. L14 LLM-judge（M3 D15-21，高风险）。
+3. 本会话未 commit（main.tex/preamble.tex/table1_main.tex/table2_universality.tex 新增/references.bib +7/PROJECT_LOG）。
+
+---
+
 ## 2026-06-15（会话 32，§7.7 DCA/triage 诚实负结果落定 + Read 幻觉叫停 + BMVC 封印误覆写修复）
 
 ### 起因

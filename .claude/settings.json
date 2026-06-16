@@ -9,7 +9,7 @@
       "Edit(*)",
       "Write(*)",
       "Monitor(*)",
-      "Bash(git push:*\\))"
+      "Bash(git push:*)"
     ]
   },
   "hooks": {
