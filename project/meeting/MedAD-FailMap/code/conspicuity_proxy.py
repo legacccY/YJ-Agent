@@ -159,9 +159,14 @@ def extract_features(img_path, size=64):
 
 
 def run_conspicuity(args):
-    img_dir   = Path(args.img_dir)
     out_csv   = Path(args.out_csv)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    # 解析图像目录列表：--img-dirs 优先，否则退回 --img-dir
+    if getattr(args, "img_dirs", None):
+        img_dirs = [Path(d) for d in args.img_dirs]
+    else:
+        img_dirs = [Path(args.img_dir)]
 
     # 读 anomaly scores (若提供)
     score_map = {}    # filename -> (anomaly_score, label)
@@ -174,11 +179,29 @@ def run_conspicuity(args):
                     int(row.get("label", -1)),
                 )
 
-    # 枚举图像
+    # 读 filter-csv（若提供）：只处理 filename 出现在该 csv 的 filename 列里的图
+    filter_set = None   # None = 不过滤
+    if getattr(args, "filter_csv", None) and Path(args.filter_csv).exists():
+        filter_set = set()
+        with open(args.filter_csv, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                filter_set.add(row["filename"])
+
+    # 枚举所有目录图像并合并
     exts = {".png", ".jpg", ".jpeg", ".PNG", ".JPG", ".JPEG"}
-    img_files = sorted([p for p in img_dir.iterdir() if p.suffix in exts])
+    img_files = []
+    for d in img_dirs:
+        img_files.extend([p for p in d.iterdir() if p.suffix in exts])
+    img_files = sorted(img_files)
+
+    # 按 filter-csv 过滤（若有）
+    if filter_set is not None:
+        img_files = [p for p in img_files if p.name in filter_set]
+
     if len(img_files) == 0:
-        raise RuntimeError(f"No images found in {img_dir}")
+        dirs_str = ", ".join(str(d) for d in img_dirs)
+        raise RuntimeError(f"No images found in {dirs_str}")
 
     print(f"[conspicuity] extracting features from {len(img_files)} images ...")
 
@@ -223,9 +246,17 @@ if __name__ == "__main__":
     _res  = _root / "results"
 
     parser.add_argument("--img-dir",   default=str(_data),
-                        help="图像目录 (BraTS test/tumor/ 或任意)")
+                        help="图像目录 (BraTS test/tumor/ 或任意)；与 --img-dirs 二选一，"
+                             "传了 --img-dirs 则此参数被忽略")
+    parser.add_argument("--img-dirs",  nargs="+", default=None,
+                        help="多图像目录（可传多个路径，空格分隔）；用于 HAM10000 part_1+part_2 等"
+                             "多目录场景。传了此参数则 --img-dir 被忽略。")
     parser.add_argument("--score-csv", default=str(_res / "anomaly_scores_brats_ae.csv"),
                         help="anomaly score csv (可选，用于合并输出)")
+    parser.add_argument("--filter-csv", default=None,
+                        help="过滤 csv (可选)：只处理 filename 列出现在该 csv 的图。"
+                             "T6 场景传 anomaly_scores_isic_ae.csv 把 10015 张限到 6705 NV。"
+                             "可与 --score-csv 是同一个文件（既做 join 又做过滤）。")
     parser.add_argument("--out-csv",   default=str(_res / "conspicuity_features.csv"),
                         help="输出 per-image 特征 csv")
     args = parser.parse_args()

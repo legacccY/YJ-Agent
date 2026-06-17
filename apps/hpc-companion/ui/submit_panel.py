@@ -42,7 +42,7 @@ class SubmitPanel(QWidget):
         self.in_workdir = QLineEdit()
         self.in_workdir.setPlaceholderText("远端工作目录（cd 到此）")
         self.in_env = QLineEdit()
-        self.in_env.setPlaceholderText("环境准备，例 source activate yjcu124py310")
+        self.in_env.setPlaceholderText("环境准备，例 source activate myenv")
         self.in_cmd = QPlainTextEdit()
         self.in_cmd.setPlaceholderText(
             "真正执行的命令，例：\npython train.py --config configs/exp.yaml")

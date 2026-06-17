@@ -320,23 +320,44 @@ class HAMNVTrainDataset(Dataset):
         else:
             # fallback: 从 metadata 过滤 NV
             meta_csv = self.root / "HAM10000_metadata.csv"
-            img_dir  = self.root / "images"
-            if not meta_csv.exists() or not img_dir.exists():
+            if not meta_csv.exists():
                 raise FileNotFoundError(
-                    f"HAM10000: need either {train_nv_dir} or "
-                    f"{meta_csv} + {img_dir}"
+                    f"HAM10000: need either {train_nv_dir} or {meta_csv}"
                 )
             import csv as _csv
             with open(meta_csv, newline="") as f:
                 reader = _csv.DictReader(f)
                 nv_ids = [row["image_id"] for row in reader if row["dx"].strip().lower() == "nv"]
             self.files = []
-            for iid in nv_ids:
-                for ext in (".jpg", ".png", ".jpeg"):
-                    p = img_dir / (iid + ext)
-                    if p.exists():
-                        self.files.append(p)
+            # 优先在 HAM10000_images_part_1 / part_2 里找（原始解压结构）
+            part_dirs = [
+                self.root / "HAM10000_images_part_1",
+                self.root / "HAM10000_images_part_2",
+            ]
+            if any(d.exists() for d in part_dirs):
+                for iid in nv_ids:
+                    for d in part_dirs:
+                        for ext in (".jpg", ".png", ".jpeg"):
+                            p = d / (iid + ext)
+                            if p.exists():
+                                self.files.append(p)
+                                break
+                        else:
+                            continue
                         break
+            else:
+                # 向后兼容：HPC 预分结构 <root>/images/
+                img_dir = self.root / "images"
+                if not img_dir.exists():
+                    raise FileNotFoundError(
+                        f"HAM10000: no part dirs nor {img_dir} found under {self.root}"
+                    )
+                for iid in nv_ids:
+                    for ext in (".jpg", ".png", ".jpeg"):
+                        p = img_dir / (iid + ext)
+                        if p.exists():
+                            self.files.append(p)
+                            break
         if len(self.files) == 0:
             raise RuntimeError(f"No HAM10000 NV images found under {self.root}")
         self.transform = transform
@@ -615,7 +636,7 @@ if __name__ == "__main__":
         if args.dataset == "brats":
             args.data_root = str(_repo_root / "data")
         else:
-            args.data_root = str(Path(__file__).resolve().parents[3] / "data" / "external" / "ham10000")
+            args.data_root = str(Path(__file__).resolve().parents[4] / "data" / "external" / "ham10000")
     if args.out_dir is None:
         args.out_dir = str(_repo_root / "results")
 

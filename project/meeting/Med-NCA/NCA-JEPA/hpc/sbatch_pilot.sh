@@ -29,6 +29,11 @@ case "$ARM" in
   a2_s4)  CFG=configs/a2_scp_nca_vits_nih10k_S4.yaml ;;   # trade-off 扫描点
   a2_s8)  CFG=configs/a2_scp_nca_vits_nih10k_S8.yaml ;;
   a2_s32) CFG=configs/a2_scp_nca_vits_nih10k_S32.yaml ;;
+  # --- 路线 B：等容量遗忘探针 ---
+  b_smallvit)     CFG=configs/b_smallvit_pred_vits_nih10k.yaml ;;    # 等参小 ViT 预训练（NIH ep50）
+  b_cont_nca)     CFG=configs/b_continual_nca.yaml ;;                # NCA A2 域 A→B 续训
+  b_cont_smallvit) CFG=configs/b_continual_smallvit.yaml ;;          # 小 ViT 域 A→B 续训（等容量对照）
+  b_cont_a0plus)  CFG=configs/b_continual_a0plus.yaml ;;             # A0+ 域 A→B 续训（大容量参照）
   *)  echo "未知 ARM=$ARM"; exit 1 ;;
 esac
 

@@ -1,0 +1,6 @@
+model_a,model_b,auroc_a,auroc_b,delta_auroc,p_raw_boot,p_holm,sig_holm05
+boundary_gbm,SB1_size_lr,0.9639,0.8434,0.1205,0.0,0.0,1
+boundary_gbm,SB2_size+contrast_lr,0.9639,0.9124,0.0515,0.0,0.0,1
+SB1_size_lr,self,0.8434,n/a,n/a,n/a,n/a,n/a
+SB2_size+contrast_lr,self,0.9124,n/a,n/a,n/a,n/a,n/a
+boundary_gbm,self,0.9639,n/a,n/a,n/a,n/a,n/a

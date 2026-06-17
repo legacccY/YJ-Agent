@@ -1,0 +1,12 @@
+{
+  "window_id": "win-1672",
+  "project": "medad-failmap",
+  "host": "xjtlu-hpc-gpu4090",
+  "job_id": "1451047",
+  "node": "gpu4090n9",
+  "pid": null,
+  "status": "running",
+  "start_ts": "2026-06-17T01:13:16+0800",
+  "running_since": "2026-06-17T01:16:06+0800",
+  "comment": "MedAD-FailMap Phase0 A0 (BraTS AE) HPC job 1451047。完成后删此锁。"
+}

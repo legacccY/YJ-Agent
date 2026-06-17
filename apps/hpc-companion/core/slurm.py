@@ -1,7 +1,6 @@
 """SLURM 命令构造与输出解析。纯函数 + 薄封装，便于测试。"""
 from __future__ import annotations
 
-import json
 import shlex
 from dataclasses import dataclass, field
 from typing import Optional
@@ -142,15 +141,6 @@ def parse_gpu_dmon(raw: str) -> GpuSnapshot:
         mem_bw_peak=max(bw) if bw else 0,
         fb_used_mb=fb, samples=len(sm), raw=raw[:400],
     )
-
-
-# ---- experiment_state.json 心跳 ----
-def read_experiment_state(ssh: SSHClient, state_path: str) -> Optional[dict]:
-    try:
-        txt = ssh.read_text(state_path, max_bytes=64_000)
-        return json.loads(txt)
-    except Exception:
-        return None
 
 
 # ---- sbatch 脚本生成 ----

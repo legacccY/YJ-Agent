@@ -1,0 +1,6 @@
+feature,chi2_stat,p_raw,p_holm,p_fdr_bh,sig_holm05,sig_fdr05,note
+sigma_global,4.751,0.027666,0.046801,0.027666,1,1,C2 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+glcm_cluster_prom,5.6126,0.017004,0.046801,0.021255,1,1,C2 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+glcm_contrast,7.9757,0.004821,0.024104,0.016581,1,1,C2 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+fft_spectral_entropy,7.3608,0.006633,0.02653,0.016581,1,1,C2 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+cnr_proxy_otsu,5.7683,0.0156,0.046801,0.021255,1,1,C2 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)

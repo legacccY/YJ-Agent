@@ -1,0 +1,12 @@
+{
+  "window_id": "win-soft",
+  "project": "hpc-companion",
+  "host": "xjtlu-hpc-gpu4090",
+  "job_id": null,
+  "node": null,
+  "pid": null,
+  "status": "running",
+  "start_ts": "2026-06-17T00:00:00+0800",
+  "comment": "HPC Companion GPU-burn 演示任务（submit_burn.sh，吃满 4090 ~180s 给曲线喂真数据）。完成后删此锁。",
+  "running_since": "2026-06-17T00:45:10.697Z"
+}

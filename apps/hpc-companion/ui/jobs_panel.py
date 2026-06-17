@@ -1,7 +1,7 @@
 """任务监控面板。
 
 上：squeue 任务表（自动刷新、状态着色、取消）。
-下：选中 job 的详情 / 日志 tail / GPU 利用率曲线 / 训练心跳曲线。
+下：选中 job 的详情 / 日志 tail / GPU 利用率曲线。
 日志路径自动从 scontrol 的 StdOut/StdErr 取，无需手填。
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+    QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel,
     QMessageBox, QPlainTextEdit, QPushButton, QSplitter, QTabWidget,
     QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )  # noqa
@@ -23,22 +23,27 @@ from . import theme
 
 pg.setConfigOption("background", theme.palette()["BG_ALT"])
 pg.setConfigOption("foreground", theme.palette()["TEXT"])
+pg.setConfigOptions(antialias=True)  # 曲线抗锯齿，平滑不生硬
 
 FAIL_STATES = {"FAILED", "TIMEOUT", "OUT_OF_MEMORY", "CANCELLED", "NODE_FAIL", "BOOT_FAIL"}
 
 
 class JobsPanel(QWidget):
+    GPU_WIN = 60      # GPU 曲线可见点数（固定时间窗，滚动）
+    BUF_MAX = 600     # 曲线缓冲硬上限，防 1s 刷新内存堆积
+
     def __init__(self, ctx: AppContext) -> None:
         super().__init__()
         self.ctx = ctx
         self._jobs: list[slurm.Job] = []
         self._n_active: int = 0
         self._sel_job: str | None = None
-        # 心跳曲线缓存：epoch -> metric
-        self._hb_x: list[float] = []
-        self._hb_y: list[float] = []
         self._gpu_t: list[float] = []
         self._gpu_sm: list[float] = []
+        self._gpu_mem: list[float] = []
+        self._gpu_n = 0   # 单调采样计数，作 X（缓冲裁剪后仍递增→滚动正确）
+        self._detail_busy = False   # 详情/日志在途标记，防快档刷新堆积
+        self._gpu_busy = False      # GPU dmon 在途标记（dmon 慢，最易堆）
         self._logpath_cache: dict = {}   # (jid,ext) -> 已定位日志路径，find 只跑一次
         self._tick = 0
 
@@ -69,7 +74,7 @@ class JobsPanel(QWidget):
         self.chk_auto.setChecked(True)
         self.chk_auto.toggled.connect(self._toggle_auto)
         self.cmb_interval = QComboBox()
-        for s in ("5 秒", "10 秒", "15 秒", "30 秒", "60 秒", "5 分钟"):
+        for s in ("1 秒", "5 秒", "10 秒", "15 秒", "30 秒", "60 秒", "5 分钟"):
             self.cmb_interval.addItem(s)
         self.cmb_interval.setCurrentText("10 秒")
         self.cmb_interval.currentTextChanged.connect(self._toggle_auto)
@@ -95,6 +100,24 @@ class JobsPanel(QWidget):
         self.btn_cancel.clicked.connect(self._cancel_job)
         lay.addWidget(self.btn_cancel)
         return lay
+
+    def _make_util_plot(self, title: str, color_key: str):
+        """0-100% 锁死、禁缩放、半透明填充的滚动利用率图（任务管理器式）。"""
+        plot = pg.PlotWidget()
+        plot.setTitle(title)
+        plot.setLabel("left", "%")
+        plot.setLabel("bottom", "采样次")
+        plot.showGrid(x=True, y=True, alpha=0.2)
+        vb = plot.getViewBox()
+        vb.setMouseEnabled(x=False, y=False)
+        vb.setYRange(0, 100, padding=0)
+        vb.setLimits(yMin=0, yMax=100)
+        plot.setMenuEnabled(False)
+        col = QColor(theme.palette()[color_key])
+        fill = QColor(col); fill.setAlpha(60)
+        curve = plot.plot(pen=pg.mkPen(col, width=2), fillLevel=0, brush=pg.mkBrush(fill))
+        plot.setXRange(0, self.GPU_WIN, padding=0)
+        return plot, curve
 
     def _build_table(self) -> QWidget:
         w = QWidget()
@@ -137,64 +160,26 @@ class JobsPanel(QWidget):
         lv.addWidget(self.log_view)
         self.tabs.addTab(log_w, "日志")
 
-        # GPU 曲线
+        # GPU / 显存 曲线（下方坐标拆左右两栏：左 GPU 利用率 / 右 显存利用率）
         gpu_w = QWidget()
         gv = QVBoxLayout(gpu_w)
         self.lbl_gpu = QLabel("GPU：选中运行中的任务后显示")
         self.lbl_gpu.setObjectName("hint")
         gv.addWidget(self.lbl_gpu)
-        self.gpu_plot = pg.PlotWidget()
-        self.gpu_plot.setLabel("left", "SM 利用率 %")
-        self.gpu_plot.setLabel("bottom", "采样次")
-        self.gpu_plot.setYRange(0, 100)
-        self.gpu_plot.showGrid(x=True, y=True, alpha=0.2)
-        # Y 锁死 0-100，禁缩放/拖动，X 自动跟随
-        vb = self.gpu_plot.getViewBox()
-        vb.setMouseEnabled(x=False, y=False)
-        vb.setYRange(0, 100, padding=0)
-        vb.setLimits(yMin=0, yMax=100)
-        self.gpu_plot.setMenuEnabled(False)
-        self.gpu_curve = self.gpu_plot.plot(pen=pg.mkPen(theme.palette()["ACCENT"], width=2))
-        gv.addWidget(self.gpu_plot)
-        self.tabs.addTab(gpu_w, "GPU 利用率")
-
-        # 心跳曲线
-        hb_w = QWidget()
-        hv = QVBoxLayout(hb_w)
-        cfg = QHBoxLayout()
-        cfg.addWidget(QLabel("心跳文件"))
-        self.in_state = QLineEdit()
-        self.in_state.setPlaceholderText(
-            "experiment_state.json 远端路径（空=从 WorkDir/logs 自动找）")
-        cfg.addWidget(self.in_state, 1)
-        cfg.addWidget(QLabel("指标键"))
-        self.in_metric = QLineEdit("val_psnr")
-        self.in_metric.setFixedWidth(120)
-        cfg.addWidget(self.in_metric)
-        hv.addLayout(cfg)
-        self.lbl_hb = QLabel("训练脚本写入的实时状态（status/epoch/loss…）")
-        self.lbl_hb.setObjectName("hint")
-        hv.addWidget(self.lbl_hb)
-        self.hb_plot = pg.PlotWidget()
-        self.hb_plot.setLabel("bottom", "epoch")
-        self.hb_plot.showGrid(x=True, y=True, alpha=0.2)
-        _w = theme.palette()["WARN"]
-        self.hb_curve = self.hb_plot.plot(
-            pen=pg.mkPen(_w, width=2), symbol="o", symbolSize=5, symbolBrush=_w)
-        hv.addWidget(self.hb_plot)
-        hrow = QHBoxLayout()
-        btn_hb_reset = QPushButton("复位视图")
-        btn_hb_reset.clicked.connect(lambda: self.hb_plot.getPlotItem().enableAutoRange())
-        btn_hb_clear = QPushButton("清空曲线")
-        btn_hb_clear.clicked.connect(self._clear_hb)
-        hrow.addStretch(1); hrow.addWidget(btn_hb_clear); hrow.addWidget(btn_hb_reset)
-        hv.addLayout(hrow)
-        self.tabs.addTab(hb_w, "训练心跳")
+        plots = QHBoxLayout()
+        self.gpu_plot, self.gpu_curve = self._make_util_plot("GPU 利用率 (SM %)", "ACCENT")
+        self.mem_plot, self.mem_curve = self._make_util_plot("显存利用率 (Mem %)", "WARN")
+        plots.addWidget(self.gpu_plot)
+        plots.addWidget(self.mem_plot)
+        gv.addLayout(plots)
+        self.gpu_tab = gpu_w            # 句柄：仅此页可见时才采 GPU（省 srun dmon）
+        self.tabs.addTab(gpu_w, "GPU / 显存")
 
         # 详情
         self.detail_view = QPlainTextEdit()
         self.detail_view.setReadOnly(True)
         self.tabs.addTab(self.detail_view, "scontrol 详情")
+        self.tabs.currentChanged.connect(self._on_subtab_changed)
 
         # 容器：顶部错误横幅（失败任务变红显错）+ 标签页
         cont = QWidget()
@@ -228,8 +213,9 @@ class JobsPanel(QWidget):
         self.table.setRowCount(0)
 
     def _interval_ms(self) -> int:
-        return {"5 秒": 5000, "10 秒": 10000, "15 秒": 15000, "30 秒": 30000,
-                "60 秒": 60000, "5 分钟": 300000}[self.cmb_interval.currentText()]
+        return {"1 秒": 1000, "5 秒": 5000, "10 秒": 10000, "15 秒": 15000,
+                "30 秒": 30000, "60 秒": 60000,
+                "5 分钟": 300000}[self.cmb_interval.currentText()]
 
     def _toggle_auto(self, *_) -> None:
         if self.chk_auto.isChecked() and self.ctx.is_connected:
@@ -300,8 +286,8 @@ class JobsPanel(QWidget):
             new = self._jobs[r].job_id
             if new != self._sel_job:
                 self._sel_job = new
-                self._hb_x.clear(); self._hb_y.clear()
                 self._gpu_t.clear(); self._gpu_sm.clear()
+                self._gpu_mem.clear(); self._gpu_n = 0
             self._refresh_detail()
 
     def _cur_state(self) -> str:
@@ -313,11 +299,12 @@ class JobsPanel(QWidget):
     def _refresh_detail(self, *_) -> None:
         if not self._sel_job or not self.ctx.is_connected:
             return
+        if self._detail_busy:        # 上一轮详情还没回来，跳过本次（防快档堆积）
+            return
         jid = self._sel_job
-        metric = self.in_metric.text().strip() or "val_psnr"
-        state_override = self.in_state.text().strip()
         cur_state = self._cur_state()
-        want_gpu = cur_state == "RUNNING"
+        # GPU 采样只在「GPU / 显存」子页可见时做，省每 tick 一次慢 srun dmon
+        want_gpu = cur_state == "RUNNING" and self.tabs.currentWidget() is self.gpu_tab
         want_err = self.cmb_logsrc.currentIndex() == 1
         ext = "err" if want_err else "out"
 
@@ -378,37 +365,71 @@ class JobsPanel(QWidget):
                 err_summary = self._build_err_summary(
                     cur_state, exitcode, d.get("Reason", ""), err_tail)
 
-            # 心跳（快，文件读取）
-            state_path = state_override
-            if not state_path and workdir:
-                state_path = workdir.rstrip("/") + "/logs/experiment_state.json"
-            hb = slurm.read_experiment_state(ssh, state_path) if state_path else None
             detail_txt = self._fmt_detail(d) if d else ""
             return dict(detail=detail_txt, log=log_tail, log_path=log_path,
-                        hb=hb, metric=metric, state=cur_state, err=err_summary)
+                        state=cur_state, err=err_summary)
 
-        run_async(self, do, on_ok=self._apply_detail, on_err=self._err)
+        self._detail_busy = True
+
+        def _done(d):
+            self._detail_busy = False
+            self._apply_detail(d)
+
+        def _fail(m):
+            self._detail_busy = False
+            self._err(m)
+
+        run_async(self, do, on_ok=_done, on_err=_fail)
         # GPU 采样慢（srun dmon ~数秒），单独异步，不拖累日志/详情秒出
         if want_gpu:
             self._refresh_gpu(jid)
 
+    def _on_subtab_changed(self, *_) -> None:
+        # 切到 GPU 子页且任务在跑 → 立刻采一次，不等下个 tick
+        if (self._sel_job and self._cur_state() == "RUNNING"
+                and self.tabs.currentWidget() is self.gpu_tab):
+            self._refresh_gpu(self._sel_job)
+
     def _refresh_gpu(self, jid: str) -> None:
+        if self._gpu_busy:           # dmon 慢，上一轮没回别再发（防堆积）
+            return
+        self._gpu_busy = True
+
         def do():
             graw = self.ctx.ssh.exec(slurm.gpu_dmon_cmd(jid, 3), timeout=20).out
             return slurm.parse_gpu_dmon(graw)
-        run_async(self, do, on_ok=lambda g: self._apply_gpu(g, jid),
-                  on_err=lambda _m: None)
+
+        def _done(g):
+            self._gpu_busy = False
+            self._apply_gpu(g, jid)
+
+        def _fail(_m):
+            self._gpu_busy = False
+
+        run_async(self, do, on_ok=_done, on_err=_fail)
 
     def _apply_gpu(self, gpu, jid: str) -> None:
         if jid != self._sel_job:   # 已切走，丢弃过期结果
             return
         if gpu and gpu.samples:
-            self._gpu_t.append(len(self._gpu_t) + 1)
+            self._gpu_n += 1
+            self._gpu_t.append(self._gpu_n)
             self._gpu_sm.append(gpu.sm_peak)
-            self.gpu_curve.setData(self._gpu_t, self._gpu_sm)
+            self._gpu_mem.append(gpu.mem_bw_peak)
+            if len(self._gpu_t) > self.BUF_MAX:   # 硬上限，丢最旧
+                del self._gpu_t[:-self.BUF_MAX]
+                del self._gpu_sm[:-self.BUF_MAX]
+                del self._gpu_mem[:-self.BUF_MAX]
+            xs, ys = self._smooth_tail(self._gpu_t, self._gpu_sm)
+            _, ym = self._smooth_tail(self._gpu_t, self._gpu_mem)
+            self.gpu_curve.setData(xs, ys)
+            self.mem_curve.setData(xs, ym)
+            # 固定时间窗滚动：新点从右进、旧点左移出窗（两栏同步）
+            for p in (self.gpu_plot, self.mem_plot):
+                p.setXRange(self._gpu_n - self.GPU_WIN, self._gpu_n, padding=0)
             self.lbl_gpu.setText(
                 f"SM 峰值 {gpu.sm_peak}% · 均值 {gpu.sm_avg}% · "
-                f"显存带宽峰值 {gpu.mem_bw_peak}% · 显存 {gpu.fb_used_mb} MB")
+                f"显存利用率峰值 {gpu.mem_bw_peak}% · 显存占用 {gpu.fb_used_mb} MB")
 
     @staticmethod
     def _build_err_summary(state: str, exitcode: str, reason: str, err_tail: str) -> str:
@@ -435,13 +456,17 @@ class JobsPanel(QWidget):
         lines = [f"{k:14}= {d[k]}" for k in keys if k in d]
         return "\n".join(lines) if lines else "（无详情，任务可能已结束）"
 
-    def _clear_gpu(self) -> None:
-        self._gpu_t.clear(); self._gpu_sm.clear()
-        self.gpu_curve.setData([], [])
-
-    def _clear_hb(self) -> None:
-        self._hb_x.clear(); self._hb_y.clear()
-        self.hb_curve.setData([], [])
+    @staticmethod
+    def _smooth_tail(xs, ys, k: int = 3):
+        """尾部移动平均，抹采样抖动；不引入未来值（无前瞻泄漏）。"""
+        n = len(ys)
+        if n < k:
+            return xs, ys
+        sm = []
+        for i in range(n):
+            lo = max(0, i - k + 1)
+            sm.append(sum(ys[lo:i + 1]) / (i - lo + 1))
+        return xs, sm
 
     def _apply_detail(self, data: dict) -> None:
         # 错误横幅
@@ -467,25 +492,6 @@ class JobsPanel(QWidget):
         self.lbl_logpath.setText(data["log_path"] or "")
         if data.get("state") != "RUNNING":
             self.lbl_gpu.setText("GPU：仅运行中的 GPU 任务有利用率数据")
-        # 心跳
-        hb = data["hb"]
-        if hb:
-            ep = hb.get("epoch")
-            mval = hb.get(data["metric"])
-            status = hb.get("status", "?")
-            txt = f"status={status} · epoch={ep}"
-            for k in ("train_loss", "val_loss", data["metric"]):
-                if k in hb:
-                    txt += f" · {k}={hb[k]}"
-            self.lbl_hb.setText(txt)
-            if isinstance(ep, (int, float)) and isinstance(mval, (int, float)):
-                if not self._hb_x or ep != self._hb_x[-1]:
-                    self._hb_x.append(ep)
-                    self._hb_y.append(mval)
-                    self.hb_plot.setLabel("left", data["metric"])
-                    self.hb_curve.setData(self._hb_x, self._hb_y)
-        else:
-            self.lbl_hb.setText("未读到 experiment_state.json（路径不对或训练脚本未写）")
 
     # ---- 取消 ----
     def _cancel_job(self) -> None:
@@ -506,15 +512,14 @@ class JobsPanel(QWidget):
     # ---- 主题 ----
     def apply_theme(self) -> None:
         p = theme.palette()
-        for plot in (self.gpu_plot, self.hb_plot):
+        for plot in (self.gpu_plot, self.mem_plot):
             plot.setBackground(p["BG_ALT"])
             for axn in ("left", "bottom"):
                 ax = plot.getAxis(axn)
                 ax.setTextPen(p["TEXT"])
                 ax.setPen(p["TEXT_DIM"])
         self.gpu_curve.setPen(pg.mkPen(p["ACCENT"], width=2))
-        self.hb_curve.setPen(pg.mkPen(p["WARN"], width=2))
-        self.hb_curve.setSymbolBrush(p["WARN"])
+        self.mem_curve.setPen(pg.mkPen(p["WARN"], width=2))
         # 表格状态列重新着色
         sc = theme.state_colors()
         for r, j in enumerate(self._jobs):

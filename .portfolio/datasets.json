@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-06-16T22",
+  "updated": "2026-06-17T09:12",
   "note": "跨论文共享数据集地址单一真源。本地 + HPC 路径、下载源、用途、状态都在此。任何脚本/config 引用数据集前先查此表，不重复硬编码、不臆想路径。新增数据集或换路径只改这里 + 在引用处指向。状态: ready=就位可用 / partial=部分就位 / todo=待下载。",
   "hosts": {
     "local": "D:/YJ-Agent",
@@ -10,32 +10,39 @@
     "isic2020": {
       "name": "ISIC 2020",
       "n": 33126,
-      "local": "project/data/raw/isic2020/train-image/image/",
+      "local": "data/raw/isic2020/train-image/image/",
       "hpc": "TODO 未确认 HPC 路径",
       "source": "https://challenge2020.isic-archive.com/",
-      "split": "project/data/isic_split.csv (70/10/20)",
-      "used_by": ["iclr"],
+      "split": "data/isic_split.csv (70/10/20)",
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "主训练集；ITB-LQ/HQ/Edge 降质子集源 (results/itb_subsets.csv)",
       "status": "ready"
     },
     "fitzpatrick17k": {
       "name": "FitzPatrick17k",
       "n": 16577,
-      "local": "project/data/raw/fitzpatrick17k/images/",
+      "local": "data/raw/fitzpatrick17k/images/",
       "hpc": "TODO",
       "source": "https://github.com/mattgroh/fitzpatrick17k",
-      "used_by": ["iclr"],
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "肤型公平性 (I-VI) + 训练补充；ITB-Diverse 1500 源；L10 全量 fairness (n=16012 带肤型)",
       "status": "ready"
     },
     "ham10000": {
       "name": "HAM10000",
       "n": 10015,
-      "local": "project/data/external/ham10000/",
+      "local": "data/external/ham10000/",
       "hpc": "TODO",
       "source": "https://doi.org/10.7910/DVN/DBW86T",
-      "used_by": ["iclr"],
-      "purpose": "zero-shot 跨数据集 (results/external_ham10000_predictions.csv)",
+      "used_by": [
+        "iclr",
+        "medad-failmap"
+      ],
+      "purpose": "zero-shot 跨数据集 (iclr: results/external_ham10000_predictions.csv) + medad-failmap T6 跨集外推 B0 训 AE on NV(6705 图) (anomaly_scores_isic_ae.csv); 图分 HAM10000_images_part_1/part_2 两目录, dx==nv 过滤",
       "status": "ready"
     },
     "pad_ufes": {
@@ -44,7 +51,9 @@
       "local": "project/data/external/pad_ufes/",
       "hpc": "TODO",
       "source": "https://data.mendeley.com/datasets/zr7vgbcyr2/1",
-      "used_by": ["iclr"],
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "zero-shot 跨数据集 (smartphone)",
       "status": "ready"
     },
@@ -54,7 +63,9 @@
       "local": "project/data/external/dermnet/",
       "hpc": "TODO",
       "source": "已爬 (web scrape)",
-      "used_by": ["iclr"],
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "训练补充 / 跨域",
       "status": "ready"
     },
@@ -64,7 +75,9 @@
       "local": "project/data/external/chexpert/",
       "hpc": "TODO",
       "source": "https://stanfordmlgroup.github.io/competitions/chexpert/",
-      "used_by": ["iclr"],
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "cross-modality 跨域 (chest X-ray); 脚本 scripts/eval_chexray_crossdomain.py 就位待跑",
       "status": "todo"
     },
@@ -74,7 +87,9 @@
       "local": "project/data/external/aptos2019/",
       "hpc": "TODO",
       "source": "https://www.kaggle.com/c/aptos2019-blindness-detection",
-      "used_by": ["iclr"],
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "cross-modality 跨域 (diabetic retinopathy); 脚本 scripts/eval_fundus_crossdomain.py",
       "status": "todo"
     },
@@ -84,7 +99,9 @@
       "local": "project/data/external/kvasir/",
       "hpc": "TODO",
       "source": "https://datasets.simula.no/kvasir/",
-      "used_by": ["iclr"],
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "cross-modality 跨域 (endoscopy); M2 待下载",
       "status": "todo"
     },
@@ -94,7 +111,9 @@
       "local": "project/data/external/isic2024/",
       "hpc": "TODO",
       "source": "https://www.kaggle.com/competitions/isic-2024-challenge",
-      "used_by": ["iclr"],
+      "used_by": [
+        "iclr"
+      ],
       "purpose": "L24 real LQ smartphone-style 子集挖掘; M2 待下载",
       "status": "todo"
     },
@@ -106,7 +125,9 @@
       "splits_hpc": "/gpfs/work/bio/jiayu2403/nca-jepa/splits/ (pretrain_10k=10000图/3257患者, probe 1%/10%/100%, test=25596, 患者重叠0)",
       "source": "Kaggle khanfashee/nih-chest-x-ray-14-224x224-resized (PNG, 224²); 原图 NIH Box 1024² ~45GB",
       "split": "DATA_ROOT/splits/ (build_splits.py 生成; pilot 子集 10k)",
-      "used_by": ["nca-jepa"],
+      "used_by": [
+        "nca-jepa"
+      ],
       "purpose": "NCA-JEPA pilot 预训练 + linear probe; 对齐 CheXWorld 224² 输入",
       "status": "ready(本地+HPC 均部署验通)"
     },
@@ -117,9 +138,28 @@
       "local": "BraTS2021 已下: project/meeting/MedAD-FailMap/data/BraTS2021/ (train 4211 / test normal 828 / tumor 1948 / annotation 1948，计数对齐官方✅)；其余 6 集待按需下",
       "hpc": "TODO",
       "source": "Zenodo 分集 tar.gz: https://zenodo.org/api/records/12677223/files/<NAME>.tar.gz/content (BraTS2021 70MB / BrainTumor 42MB / LAG 202MB / RSNA 568MB / VinCXR 620MB / Camelyon16 891MB；注意是分集非单 zip)；codebase github.com/caiyu6666/MedIAnomaly。ISIC2018 不在此 Zenodo→本地 HAM10000 NV(6705图)零下载对接",
-      "used_by": ["medad-failmap"],
+      "used_by": [
+        "medad-failmap"
+      ],
       "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估(协变量分层用 BraTS test/annotation mask); Phase 0 只用 BraTS2021",
       "status": "partial (BraTS2021 ready, 余 todo)"
+    },
+    "vindrcxr_domainB": {
+      "name": "Domain-B CXR (vindrcxr)",
+      "n": 18000,
+      "n_subset": 10000,
+      "local": "D:/YJ-Agent/data/external/vindr_cxr",
+      "hpc": "TODO: 填 HPC 部署路径",
+      "source": "Kaggle xhlulu/vinbigdata (VinBigData=VinDr-CXR 官方比赛数据, 512x512 PNG 镜像). 原始: physionet.org/content/vindr-cxr/1.0.0 (DICOM, 需凭证)",
+      "split": "D:/YJ-Agent/data/external/vindr_cxr/splits/domainB_10k.txt",
+      "used_by": [
+        "nca-jepa"
+      ],
+      "purpose": "NCA-JEPA 路线 B — 遗忘探针域 B 续训集（对齐域 A NIH 10k 规模）",
+      "status": "ready(local)",
+      "format": "PNG 512x512",
+      "structure": "train/<id>.png (15000) + test/<id>.png (3000); split 路径相对 local 根, 正斜杠",
+      "note": "NCA-JEPA 路线B遗忘探针域B. 纯SSL无标签(train_meta.csv未用). n_subset=10000采样=9000train+1000val"
     }
   }
 }

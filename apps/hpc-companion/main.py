@@ -1,6 +1,11 @@
 """HPC Companion 入口。"""
 from __future__ import annotations
 
+import os
+# 必须在 cryptography（paramiko 依赖）导入前设置：打包后 OpenSSL 3.0 legacy
+# provider 加载失败会 fatal 崩溃，关掉 legacy 算法即可（握手不需要它）。
+os.environ.setdefault("CRYPTOGRAPHY_OPENSSL_NO_LEGACY", "1")
+
 import sys
 
 from PyQt6.QtWidgets import QApplication

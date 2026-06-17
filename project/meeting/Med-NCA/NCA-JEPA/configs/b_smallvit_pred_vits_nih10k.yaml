@@ -1,0 +1,84 @@
+# ============================================================
+# B — small-ViT predictor（等容量对照臂，堵 R1：「NCA 抗遗忘只因容量小」）
+#
+# 核心设计目标：
+#   参数量 ≈ NCA-A2 predictor 3.22M，使「遗忘探针」实验的容量控制公平：
+#   NCA(3.22M) vs small-ViT(本臂) vs A0+(11.76M)  三臂对比。
+#   结论若 NCA 仍抗遗忘 → 不是容量便宜买来的，是结构性质（reply R1 证据）。
+#
+# 等参计算（predictor 只算 predictor 部分，encoder 三臂完全相同）：
+#   VisionTransformerPredictor(embed_dim=E, predictor_embed_dim=P, depth=D, mlp_ratio=4)
+#   参数 ≈ 12D·P² + (13D + 968)·P + 384
+#   其中 E=384(vit_small embed_dim), 968 = E+1+1+196+2+E (embed/mask/pos/norm/proj 线性项)
+#   （num_heads=6 来自 vit_small，整除性检查：P=288/6=48 ✓）
+#
+#   D=3, P=288:
+#     12×3×288² + (13×3+968)×288 + 384
+#     = 36×82944 + (39+968)×288 + 384
+#     = 2,985,984 + 1007×288 + 384
+#     = 2,985,984 + 290,016 + 384
+#     = 3,276,384 ≈ 3.28M
+#
+#   偏差 = (3.28 - 3.22) / 3.22 = 1.8%，在 ±15% 目标内。
+#   ✅ capacity-matched baseline for R1: predictor params = 3.28M ≈ NCA 3.22M
+#
+# 与 A0+ config 完全一致的超参（复现零偏离）：
+#   encoder=vit_small, batch=64, lr=2e-4, epochs=50, optimizer=AdamW, mask 配置全同。
+# ============================================================
+data:
+  batch_size: 64
+  color_jitter_strength: 0.2  # CheXWorld
+  crop_scale:
+  - 0.3
+  - 1.0
+  crop_size: 224
+  dataset: nih_cxr14
+  image_folder: images-224/images-224/
+  num_workers: 8
+  pin_mem: true
+  root_path: data/nih_cxr14
+  subset_file: data/nih_cxr14/splits/pretrain_10k.txt
+  use_color_distortion: true  # CheXWorld color_jitter 0.2
+  use_gaussian_blur: true  # CheXWorld iwm_blur_prob 0.2
+  use_horizontal_flip: true  # CheXWorld flip_prob 0.5（CXR 翻转破坏左右侧别，留 ablation 候选）
+logging:
+  folder: $EXP_LOG_ROOT/b_smallvit_pred_vits_nih10k/
+  write_tag: jepa
+mask:
+  allow_overlap: false
+  aspect_ratio:
+  - 0.75
+  - 1.5
+  enc_mask_scale:  # CheXWorld
+  - 0.85
+  - 1.0
+  min_keep: 10
+  num_enc_masks: 1  # pilot mask-only 单 context（与所有臂对齐）
+  num_pred_masks: 4
+  patch_size: 16
+  pred_mask_scale:  # CheXWorld
+  - 0.15
+  - 0.2
+meta:
+  copy_data: false
+  load_checkpoint: false
+  model_name: vit_small  # 与所有臂一致
+  pred_depth: 3           # ← 缩减深度（原 A0+ 为 6，此处缩到 3）
+  pred_emb_dim: 288       # ← 缩减宽度（原 A0+ 为 384，此处缩到 288）
+  # 等参结论：depth=3, emb=288 → predictor 参数 ≈ 3.28M（详见顶部注释）
+  read_checkpoint: null
+  use_bfloat16: true
+  # --- predictor 类型：标准 ViT predictor（非 NCA，非 early-exit）---
+  predictor_type: vit     # 走 vision_transformer.vit_predictor 路径（helper.py line~116）
+optimization:
+  ema:  # CheXWorld ema 0.996 -> ema_end 1.0（与所有臂一致）
+  - 0.996
+  - 1.0
+  epochs: 50              # pilot 短跑，与 A0+ 一致
+  final_lr: 1.0e-06       # CheXWorld min_lr 1e-6
+  final_weight_decay: 0.05  # CheXWorld weight_decay_end 0.05
+  ipe_scale: 1.25         # CheXWorld
+  lr: 2.0e-4              # CheXWorld PRETRAIN --lr 2e-4
+  start_lr: 4.0e-5        # warmup 起点，与 A0+ 一致
+  warmup: 5               # pilot 50ep，与所有臂一致
+  weight_decay: 0.05      # CheXWorld

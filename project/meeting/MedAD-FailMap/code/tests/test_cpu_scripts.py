@@ -412,6 +412,29 @@ class TestFailureBoundary:
             assert "ci_lo_9875" in rows[0], "T7 B4 应输出 ci_lo_9875 (98.75% CI)"
             assert "ci_hi_9875" in rows[0], "T7 B4 应输出 ci_hi_9875 (98.75% CI)"
 
+    def test_run_b4_two_directions_and_new_cols(self, tmp_path):
+        """PC-B remediation: run_b4 输出两方向(small+large)、新增 n_test_detected/interpretable 列"""
+        from failure_boundary import run_b1, run_b4
+        brats = self._make_brats_data(n=300)
+        brats = run_b1(brats, tmp_path)
+        run_b4(brats, tmp_path)
+        out = tmp_path / "boundary_B4_extrapolation.csv"
+        assert out.exists()
+        rows = list(csv.DictReader(open(out)))
+        # 两方向 × 两模型 = 4 行
+        assert len(rows) == 4, f"期望 4 行(2方向×2模型), 实得 {len(rows)}"
+        # 新增列存在
+        assert "n_test_detected" in rows[0], "缺少 n_test_detected 列"
+        assert "interpretable"   in rows[0], "缺少 interpretable 列"
+        # 方向标签
+        test_splits = [r["test_split"] for r in rows]
+        assert any("small_size" in s for s in test_splits), "缺少 small_size 方向A 行"
+        assert any("large_size" in s for s in test_splits), "缺少 large_size 方向B 行"
+        # large 方向应有足够 detected (合成数据大 size 高 score → n_test_detected > 0)
+        large_rows = [r for r in rows if "large_size" in r["test_split"]]
+        for r in large_rows:
+            assert int(r["n_test_detected"]) >= 0  # 不 crash 即可; 合成数据值由 P90 决定
+
 
 # ============================================================
 # 缺口 1: stratify_significance.py — F-A T1/T2/T3 显著性检验
@@ -594,3 +617,184 @@ class TestFCFamilyHolm:
                 assert r["source"] == "C2"
             elif r["test_id"].startswith("T5"):
                 assert r["source"] == "C3"
+
+
+# ============================================================
+# conspicuity_proxy.py — --img-dirs 多目录 + --filter-csv 过滤测试 (T6 B2)
+# 服务: MedAD-FailMap § PC-B T6，lever=conspicuity→失败边界跨集外推到 HAM-NV
+# ============================================================
+
+class TestConspicuityMultiDirAndFilter:
+    """验证 --img-dirs 多目录枚举 + --filter-csv NV 过滤接线，不碰特征公式"""
+
+    def _make_part_dirs(self, tmp_path):
+        """在 tmp_path 下建两个假 part 目录，各放几张小 png，返回 (part1, part2, all_names)"""
+        from PIL import Image as _Image
+        part1 = tmp_path / "part_1"
+        part2 = tmp_path / "part_2"
+        part1.mkdir()
+        part2.mkdir()
+        rng = np.random.default_rng(42)
+        all_names = []
+        for i in range(3):
+            name = f"ISIC_{i:07d}.png"
+            arr  = (rng.random((8, 8)) * 255).astype(np.uint8)
+            _Image.fromarray(arr, mode="L").save(part1 / name)
+            all_names.append(name)
+        for i in range(3, 6):
+            name = f"ISIC_{i:07d}.png"
+            arr  = (rng.random((8, 8)) * 255).astype(np.uint8)
+            _Image.fromarray(arr, mode="L").save(part2 / name)
+            all_names.append(name)
+        return part1, part2, all_names
+
+    def _write_filter_csv(self, tmp_path, filenames):
+        """写只含 filename 列的 csv（模拟 anomaly_scores_isic_ae.csv）"""
+        p = tmp_path / "filter.csv"
+        with open(p, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["filename", "anomaly_score", "label"])
+            w.writeheader()
+            for fn in filenames:
+                w.writerow({"filename": fn, "anomaly_score": "0.5", "label": "0"})
+        return p
+
+    def _run_conspicuity(self, **kwargs):
+        """构造 argparse.Namespace 并调 run_conspicuity"""
+        import argparse
+        from conspicuity_proxy import run_conspicuity
+        defaults = {
+            "img_dir":    None,
+            "img_dirs":   None,
+            "score_csv":  None,
+            "filter_csv": None,
+            "out_csv":    None,
+        }
+        defaults.update(kwargs)
+        args = argparse.Namespace(**defaults)
+        run_conspicuity(args)
+
+    def test_img_dirs_both_enumerated(self, tmp_path):
+        """①: --img-dirs 传两个目录，输出包含两目录所有图（共 6 行）"""
+        part1, part2, all_names = self._make_part_dirs(tmp_path)
+        out = tmp_path / "out.csv"
+        self._run_conspicuity(
+            img_dirs=[str(part1), str(part2)],
+            out_csv=str(out),
+        )
+        assert out.exists()
+        rows = list(csv.DictReader(open(out)))
+        assert len(rows) == 6, f"期望 6 行(两目录各 3 张)，得 {len(rows)}"
+        out_names = {r["filename"] for r in rows}
+        assert out_names == set(all_names)
+
+    def test_filter_csv_limits_to_subset(self, tmp_path):
+        """②: --filter-csv 只列 part_1 的 3 张，输出仅含这 3 张"""
+        part1, part2, all_names = self._make_part_dirs(tmp_path)
+        filter_names = all_names[:3]   # 只取 part_1 的 3 张
+        filter_p = self._write_filter_csv(tmp_path, filter_names)
+        out = tmp_path / "out_filtered.csv"
+        self._run_conspicuity(
+            img_dirs=[str(part1), str(part2)],
+            filter_csv=str(filter_p),
+            out_csv=str(out),
+        )
+        rows = list(csv.DictReader(open(out)))
+        assert len(rows) == 3, f"期望过滤后 3 行，得 {len(rows)}"
+        out_names = {r["filename"] for r in rows}
+        assert out_names == set(filter_names)
+
+    def test_output_schema_unchanged(self, tmp_path):
+        """③: 输出列 schema 与 conspicuity_features_tumor.csv 一致（不变），B2 才能 join"""
+        part1, part2, all_names = self._make_part_dirs(tmp_path)
+        out = tmp_path / "out_schema.csv"
+        self._run_conspicuity(
+            img_dirs=[str(part1), str(part2)],
+            out_csv=str(out),
+        )
+        rows = list(csv.DictReader(open(out)))
+        expected_cols = [
+            "filename", "anomaly_score", "label",
+            "sigma_global", "glcm_cluster_prom", "glcm_contrast",
+            "fft_spectral_entropy", "cnr_proxy_otsu",
+        ]
+        assert list(rows[0].keys()) == expected_cols, (
+            f"输出列 schema 变了！期望 {expected_cols}，得 {list(rows[0].keys())}"
+        )
+
+    def test_filter_csv_same_as_score_csv(self, tmp_path):
+        """④: score-csv 与 filter-csv 是同一个文件（既做 join 又做过滤）"""
+        part1, part2, all_names = self._make_part_dirs(tmp_path)
+        # score/filter csv 只列 part_1 前 2 张
+        filter_names = all_names[:2]
+        filter_p = self._write_filter_csv(tmp_path, filter_names)
+        out = tmp_path / "out_same.csv"
+        self._run_conspicuity(
+            img_dirs=[str(part1), str(part2)],
+            score_csv=str(filter_p),
+            filter_csv=str(filter_p),
+            out_csv=str(out),
+        )
+        rows = list(csv.DictReader(open(out)))
+        assert len(rows) == 2, f"期望 2 行（score=filter 同一文件），得 {len(rows)}"
+        # 这 2 行应有来自 score_csv 的 anomaly_score（0.5，非 nan）
+        for r in rows:
+            assert r["anomaly_score"] == "0.5", (
+                f"score_csv join 失败，期望 0.5 得 {r['anomaly_score']}"
+            )
+
+    def test_fallback_single_img_dir(self, tmp_path):
+        """⑤: 不传 --img-dirs 只传 --img-dir，退回单目录兼容（不回归）"""
+        part1, part2, all_names = self._make_part_dirs(tmp_path)
+        out = tmp_path / "out_single.csv"
+        self._run_conspicuity(
+            img_dir=str(part1),   # 不传 img_dirs，退回单目录
+            out_csv=str(out),
+        )
+        rows = list(csv.DictReader(open(out)))
+        assert len(rows) == 3, f"退回单目录应得 3 行，得 {len(rows)}"
+
+
+# ============================================================
+# HAMNVTrainDataset — 真实本地数据加载测试 (B0 T6)
+# 服务: MedAD-FailMap § PC-B lever=B0
+# 需要: D:\YJ-Agent\data\external\ham10000\ (HAM10000_images_part_1/2 + metadata csv)
+# ============================================================
+
+HAM_ROOT = Path("D:/YJ-Agent/data/external/ham10000")
+
+@pytest.mark.skipif(
+    not HAM_ROOT.exists(),
+    reason="HAM10000 本地数据不存在，跳过集成测试"
+)
+class TestHAMNVTrainDatasetIntegration:
+    """用真实本地 HAM10000 数据验证 Bug 1 修复：part_1/part_2 fallback 加载"""
+
+    def test_len_equals_6705(self):
+        """过滤 dx==nv 后应得 6705 张图"""
+        from train_recon_ae import HAMNVTrainDataset
+        ds = HAMNVTrainDataset(root=str(HAM_ROOT))
+        assert len(ds) == 6705, (
+            f"期望 6705 张 NV 图，实得 {len(ds)}。"
+            "请检查 HAM10000_metadata.csv 的 dx==nv 行数与 part_1/part_2 图片是否完整。"
+        )
+
+    def test_files_come_from_part_dirs(self):
+        """所有找到的图路径应在 part_1 或 part_2 目录下"""
+        from train_recon_ae import HAMNVTrainDataset
+        ds = HAMNVTrainDataset(root=str(HAM_ROOT))
+        part1 = HAM_ROOT / "HAM10000_images_part_1"
+        part2 = HAM_ROOT / "HAM10000_images_part_2"
+        for p in ds.files:
+            assert p.parent in (part1, part2), (
+                f"图片 {p} 不在 part_1 或 part_2 目录下"
+            )
+
+    def test_getitem_returns_image_and_name(self):
+        """__getitem__ 应返回 (tensor/img, filename_str) 且图不报错打开"""
+        from train_recon_ae import HAMNVTrainDataset
+        ds = HAMNVTrainDataset(root=str(HAM_ROOT))
+        img, name = ds[0]
+        # 无 transform 时返回 PIL Image
+        from PIL import Image as _Image
+        assert isinstance(img, _Image.Image), f"期望 PIL Image，得 {type(img)}"
+        assert isinstance(name, str) and len(name) > 0

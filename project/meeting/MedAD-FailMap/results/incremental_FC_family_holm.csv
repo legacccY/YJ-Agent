@@ -1,0 +1,11 @@
+test_id,feature,source,stat,stat_type,p_raw,p_holm_family10,p_fdr_family10,sig,family,n_family,note
+T4.1,sigma_global,C2,18.7456,chi2,3.4e-05,0.00016,4.1e-05,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T4.2,glcm_cluster_prom,C2,0.0,chi2,1.0,1.0,1.0,0,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T4.3,glcm_contrast,C2,18.809,chi2,3.3e-05,0.00016,4.1e-05,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T4.4,fft_spectral_entropy,C2,18.8692,chi2,3.2e-05,0.00016,4.1e-05,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T4.5,cnr_proxy_otsu,C2,18.5411,chi2,3.7e-05,0.00016,4.1e-05,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T5.1,sigma_global,C3,0.3037,partial_r,0.0,0.0,0.0,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T5.2,glcm_cluster_prom,C3,0.5044,partial_r,0.0,0.0,0.0,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T5.3,glcm_contrast,C3,0.2668,partial_r,0.0,0.0,0.0,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T5.4,fft_spectral_entropy,C3,-0.125,partial_r,0.0,0.0,0.0,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准
+T5.5,cnr_proxy_otsu,C3,-0.3402,partial_r,0.0,0.0,0.0,1,F-C,10,FC 10-test unified Holm (05_preregistration C 节冻结); Gate0 F-C 判定以此表为准

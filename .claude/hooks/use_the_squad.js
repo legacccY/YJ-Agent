@@ -38,6 +38,10 @@ process.stdin.on('end', () => {
   if (/(跑一轮|完整.*实验|一整套实验|推进.*阶段.*实验|设计并.*实现|从设计到)/i.test(p)) {
     out += '[编排 /experiment-cycle] 完整一轮实验 → 一键 /experiment-cycle <project> 自动 planner→coder→🛑拍板→跑→analyst→verifier，人只在跑训练拍板点介入。\n';
   }
+  // GitHub 发布/拉取/维护 → gh-flow（提 github/开源/推仓库/拉 repo/issue 即软触发）
+  if (/(github|开源|推(送|上|到).*(仓库|repo|远端)|发布.*(仓库|repo|项目)|准备开源|建.*(仓库|repo)|克隆|clone|拉.*(repo|仓库|代码进来)|pull request|提.*pr|按.*(issue|review).*修|维护.*(repo|仓库)|隐私.*(扫|审|检查)|repo)/i.test(p)) {
+    out += '[编排 /gh-flow] GitHub 活别主线手撸 → 一键 /gh-flow publish <路径> | pull <repo-url> | maintain <owner/repo>，派 gh-publisher(sonnet) 跑隐私扫描+顶级开源骨架+许可证合规+按 review 修 bug。对外 push/repo create/回 issue 仍主线串行拍板，公开 repo 与 private YJ-Agent 隔离。\n';
+  }
 
   if (out) {
     out += '（八角色全闭环见 CLAUDE.md / PROJECT_LIFECYCLE.md。训练启停仍主线串行红线，agent 不碰。）\n';

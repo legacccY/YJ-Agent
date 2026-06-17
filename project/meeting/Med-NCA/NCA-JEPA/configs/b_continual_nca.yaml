@@ -1,0 +1,80 @@
+# ============================================================
+# B 路线续训臂 1 — NCA A2 SCP 域 A→B 续训（遗忘探针「before/after」对）
+#
+# 目的：载 A2 NIH ep50 ckpt（域 A），在域 B(VinDr-CXR/CheXpert 等胸片)
+#   续训 20ep，测续训后 Q_after 与 Q_before 的差（RF = Q_after - Q_before）。
+#   与 b_continual_smallvit 等容量对比，验 NCA 是否结构性抗遗忘。
+#
+# 复现零偏离：除 load_checkpoint/read_checkpoint/data.root_path/data.subset_file
+#   / logging.folder / epochs 外，所有超参与 a2_scp_nca_vits_nih10k.yaml 完全一致。
+#
+# TODO（主线填）：
+#   - meta.read_checkpoint: 填 HPC 上 A2 NIH ep50 ckpt 实际路径
+#     HPC 路径模板：/gpfs/work/bio/jiayu2403/nca-jepa/logs/a2_scp_nca_vits_nih10k/jepa-ep50.pth.tar
+#     （或含 seed 后缀：.../a2_scp_nca_vits_nih10k_seed42/jepa-ep50.pth.tar，确认实际命名）
+#   - data.root_path: 填域 B 数据集 HPC 路径（待 VinDr-CXR/CheXpert 就位）
+#   - data.subset_file: 填域 B 10k 子集 split txt（由 tools/prep_domainB_cxr.py 生成）
+# ============================================================
+data:
+  batch_size: 64
+  color_jitter_strength: 0.2  # 与 a2 一致
+  crop_scale:
+  - 0.3
+  - 1.0
+  crop_size: 224
+  dataset: nih_cxr14          # 沿用同 dataset class（NIHChestXray14 通用：root+image_folder+subset_line）
+  image_folder: ""            # 空：split 行已含 train/<id>.png 相对路径（VinDr xhlulu 512px PNG）
+  num_workers: 8
+  pin_mem: true
+  root_path: data/vindr_cxr   # 域 B = VinDr-CXR（Kaggle xhlulu 镜像）；HPC 相对路径，待上传
+  subset_file: data/vindr_cxr/splits/domainB_10k.txt  # prep_domainB_cxr.py 生成（9000 train）
+  use_color_distortion: true  # 与 a2 一致
+  use_gaussian_blur: true     # 与 a2 一致
+  use_horizontal_flip: true   # 与 a2 一致
+logging:
+  folder: $EXP_LOG_ROOT/b_continual_nca/
+  write_tag: jepa
+mask:
+  allow_overlap: false
+  aspect_ratio:
+  - 0.75
+  - 1.5
+  enc_mask_scale:  # 与 a2 一致
+  - 0.85
+  - 1.0
+  min_keep: 10
+  num_enc_masks: 1
+  num_pred_masks: 4
+  patch_size: 16
+  pred_mask_scale:  # 与 a2 一致
+  - 0.15
+  - 0.2
+meta:
+  copy_data: false
+  load_checkpoint: true       # 关键：续训载入域 A ckpt
+  reset_epoch: true           # 续训重置 epoch 0（否则 ckpt['epoch']=50 → range(50,20) 空跑不训练）
+  model_name: vit_small       # 与 a2 一致
+  pred_depth: 6               # 与 a2 一致
+  pred_emb_dim: 384           # 与 a2 一致
+  read_checkpoint: /gpfs/work/bio/jiayu2403/nca-jepa/logs/a2_scp_nca_vits_nih10k/jepa-ep50.pth.tar  # A2 NCA seed42 域A ckpt（绝对路径,os.path.join 遇绝对直接用）
+  use_bfloat16: true
+  # --- NCA-JEPA 字段（与 a2 完全一致）---
+  predictor_type: scp_nca
+  nca_steps: 16
+  fire_rate: 0.5
+  nca_hidden: 128
+  stabilize: true
+  spectral_norm: true
+  deterministic: true
+optimization:
+  ema:
+  - 0.996
+  - 1.0
+  epochs: 20              # 短续训（探针只需趋势，不需充分收敛）
+  final_lr: 1.0e-06       # 与 a2 一致
+  final_weight_decay: 0.05
+  ipe_scale: 1.25
+  lr: 2.0e-4              # 与 a2 一致（复现零偏离：不私改 lr）
+  start_lr: 4.0e-5        # 与 a2 一致
+  warmup: 2               # 20ep 按 a2 warmup5/50ep 比例缩放（5/50*20=2ep）
+  weight_decay: 0.05

@@ -1,0 +1,4 @@
+model,in_domain_auroc,coefs,intercept,n,n_fail
+size_only,0.8434,-0.0096,4.4021,1948,1753
+size+contrast,0.9124,-0.0085;-8.2120,6.352,1948,1753
+size+contrast_gbm,0.9639,n/a (GBM),nan,1948,1753

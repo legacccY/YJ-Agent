@@ -82,18 +82,23 @@ def compute_contrast(img_arr, mask_arr, dilation_px=3):
 # 读 mask 目录
 # ============================================================
 def load_mask(mask_dir, filename):
-    """尝试 filename 及不带/带 suffix 变体，返回 (H,W) uint8 array 或 None"""
+    """尝试 filename 及不带/带 suffix 变体，返回 (H,W) uint8 array 或 None
+
+    BraTS2021 官方命名：测试原图 `BraTS2021_XXXXX_flair_YY.png`，
+    对应 mask 在 annotation/ 下叫 `BraTS2021_XXXXX_seg_YY.png`（_flair_→_seg_）。
+    anomaly_scores csv 记的是原图名，故 mask 查找需做 _flair_→_seg_ 映射。
+    """
     mask_dir = Path(mask_dir)
-    # 直接匹配
-    p = mask_dir / filename
-    if p.exists():
-        return np.array(Image.open(p).convert("L"))
-    # 换 .png
     stem = Path(filename).stem
-    for ext in (".png", ".PNG", ".jpg", ".JPG"):
-        p = mask_dir / (stem + ext)
-        if p.exists():
-            return np.array(Image.open(p).convert("L"))
+    # 候选 stem：原名 + BraTS _flair_→_seg_ 映射
+    cand_stems = [stem]
+    if "_flair_" in stem:
+        cand_stems.append(stem.replace("_flair_", "_seg_"))
+    for s in cand_stems:
+        for ext in (".png", ".PNG", ".jpg", ".JPG"):
+            p = mask_dir / (s + ext)
+            if p.exists():
+                return np.array(Image.open(p).convert("L"))
     return None
 
 

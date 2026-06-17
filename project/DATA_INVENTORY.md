@@ -137,6 +137,10 @@
 - `project/results/qnorm_compare.csv` — visiscore 喂法对照（job 1442379）：raw-q vs NORM-q，证现有结果有效
 - `project/results/dflip_persample.csv` + `project/results/dflip_panels/*.npz` — fig_dflip v5（job 1442284）：flip 10/74
 
+### 矩阵 A 零训练 deliverable（会话 37，本地分析）
+- `project/results/agent_vs_direct_risk.csv` — P-5 Thm2 triage 实证（`agent_risk_band_test.py`）：retake channel 单调 severe 0.889>moderate 0.651>high 0.055，各 band risk_delta CI 排零；severe enhance aggregate 0.898 为 benign 主导聚合值（非 E5 PASS，§7.4 per-class melanoma 真故事）
+- `project/results/dca/cost_sweep_breakeven.csv` — P-4 A20 cost 曲线（`run_dca_triage.py` cost-weight sweep）：NB 标准定义对 r 无关，cost 敏感性在 exp_cost_normalized 列随 r 单调；fig 在 `report/figures/fig_cost_sweep.{pdf,png,svg}`
+
 ---
 
 ## 🛠️ 关键脚本（按类别）

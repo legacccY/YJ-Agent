@@ -1,7 +1,7 @@
 """连接 / Profile 管理面板。
 
 左：已存集群列表 + 新建/删除。右：编辑表单 + 连接按钮。
-密码经 keyring 加密存储；切预设可一键套用 XJTLU 字段。
+密码经 keyring 加密存储；切预设可一键套用常用集群字段。
 """
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ class ConnectionPanel(QWidget):
         self.in_partition = QLineEdit()
         self.in_qos = QLineEdit()
         self.in_remote = QLineEdit()
-        self.in_remote.setPlaceholderText("默认远端工作目录，例 /gpfs/work/bio/<user>/")
+        self.in_remote.setPlaceholderText("默认远端工作目录，例 /home/<user>/work")
         self.in_python = QLineEdit()
         self.in_python.setPlaceholderText("远端 python 绝对路径（提交脚本用，可空）")
 

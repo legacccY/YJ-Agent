@@ -6,6 +6,46 @@
 
 ---
 
+## 2026-06-17 — 路线 B 决死探针出结果 = 🔴 NO-GO（假说证伪且反转，回路线 A）
+- **决死探针全链路跑通**（用户「自动跑」授权，主线编排）：VinDr-CXR 域 B 数据下载（Kaggle xhlulu 512px PNG 绕 PhysioNet 凭证墙）→ 等参小 ViT NIH 预训练 seed42/123（COMPLETED，loss 0.078/0.085）→ 三臂域 B 续训 20ep（全 COMPLETED）→ 域 A(NIH 10k) 上 eval_forget。
+- **🔴 跑前逮+修两个致命 bug**：① **reset_epoch bug**——续训载 ep50 ckpt 后 `load_checkpoint` 把 start_epoch 设 50，epochs=20 → `range(50,20)` 空循环=完全不训练（遗忘探针变 no-op 假阴）。修：train.py 加 `reset_epoch` flag（续训载权重但 epoch 归 0，域 B 全新 warmup+cosine）。**验证生效**：三臂续训后 ckpt epoch=20（真训了 20ep 非 0）。② **eval 数据源 bug**——eval_forget 原用续训 config 的 data(=域 B)，但遗忘须在**域 A(NIH)** 上测；修为 eval 传域 A config（NIH 数据 + 对应 predictor）。
+- **结果（seed42，RF=域A NIH 表示漂移，越负越忘；载入 missing=0）**：
+
+  | 臂 | predictor 参数 | RF | Lf_before→after |
+  |---|---|---|---|
+  | **NCA (A2 SCP)** | 3.22M | **−0.2763** | 1.011→1.009 (dLf −0.0022) |
+  | **等参小 ViT** | 3.28M | **−0.1512** | NaN |
+  | A0+ 大 ViT | 11.76M | −0.2177 | NaN |
+
+- **判定 = NO-GO（预登记判据触发）**：等容量下 **NCA 遗忘比小 ViT 多 83%**（|RF| 0.2763 vs 0.1512，diff 0.125 ≫ 0.02 噪声阈），连 11.76M 大 ViT 都比 NCA 抗遗忘。**「NCA 结构性抗遗忘」假说不仅未成立、且方向反转**——坐实探路预判（NCAdapt 抗遗忘靠冻骨干工程，在线训 NCA predictor 反而忘得更狠；R1「只因容量小」被等参对照彻底排除，是 NCA 结构本身更易遗忘）。
+- **副发现（理论上有意思）**：NCA dLf≈0（谱半径 1.011→1.009 几乎不动）= **路线 A 稳定性真，但「稳定 ≠ 抗遗忘」两者解耦**——SN 约束的动力学稳定性不蕴含表示抗遗忘。
+- **指标口径备注**：RF=跨-ckpt 特征漂移（非预测质量退化，researcher D 原案的更 faithful 指标待补，但漂移信号已 decisive 且三臂方向一致，质量退化极不可能反转 0.125 的大 gap）。seed123 续训未跑（NO-GO 无需硬化负结果；如要 publication 级负结果再补 @2seed）。
+- **🛑 战略拍板（回到路线 A 岔路）**：路线 B 死。岔路 = ① 接受路线 A 扎实定位走 capability paper；② 把「NCA 不抗遗忘 + 稳定≠抗遗忘」当负结果并入路线 A；③ 换更激进新方向。待用户拍。
+- 本轮文件：train.py(reset_epoch 修)、3 b_continual config(reset_epoch+绝对 ckpt 路径+域B 数据路径)、b_smallvit config、eval_forget.py、prep_domainB_cxr.py、results/forget/{nca,smallvit,a0plus}_seed42.csv(HPC)、datasets.json[vindrcxr_domainB]、多个 _scratch HPC 编排脚本。
+
+## 2026-06-17 — 拯救路线 B：探路核验（立身 claim 被打穿）+ 等容量决死探针 prep 落地
+- **4 researcher 并行探路路线 B（NCA-as-JEPA-predictor 抗灾难性遗忘），与 A 同等严谨度**：
+  - **🔴 立身 claim「NCAdapt 证 NCA 遗忘比 Transformer 小 100×」核实为假**（researcher A）：NCAdapt（arXiv:2410.23368）真实数字 BWT −0.43 vs **EWC nnU-Net** −46.77，**论文无任何 Transformer 对照**、无「100×」（原文写「46% improvement」）。更致命：抗遗忘**主因是「冻骨干」工程策略，非 NCA 内在结构**——Table 4 自证不冻骨干的 NCA 遗忘比 nnU-Net 还惨（−79%）。迁移到「NCA 当 JEPA predictor」位=**弱**（predictor 训练须全程在线更新，没法冻，NCAdapt 协议套不上）。
+  - **🟢 赛道空白坐实**（researcher B）：NCA × JEPA × continual SSL 三者交叉 2026-06 全网零论文；JEPA predictor 部件遗忘分析无人做；竞品（CaSSLe/CroMo/Branch-Tuning/V-JEPA）全正交，唯一威胁 Meta FAIR 可随时入场。**纠错**：笔记「综述 arXiv:2604.24990 点名 SSL/JEPA gap」核实不实，该综述未提此 gap（已不再引用）。
+  - **大胆门槛**（researcher C）：路线 B 比 A 大一档（framing「lifelong world model」理论上惊艳），但**无理论解释 NCA 为何抗遗忘**（R5），实证距门槛远。**🛑 致命风险 R1**：审稿人必问「NCA 抗遗忘只因容量小（3.22M vs ViT 11M）=学得少忘得少」→ **必须等容量对照**否则必死。天花板：pivot 值不值取决于「等容量下 NCA 是否仍显著抗遗忘」，1-2 周可验。
+  - **实证可行**（researcher D）：现有 infra 复用 ~80%，续训（`load_checkpoint`）+ eval_forget + 域 B 数据，3-4h 出第一信号。推荐域 B=VinDr-CXR（域偏移强）优于 CheXpert（协议慢）。
+- **🛑 用户拍板**：备好「等容量决死探针」码+数据脚本，**等训练锁空+放行就跑**。GO（NCA 等参仍显著抗遗忘）才 pivot 路线 B，NO-GO 立即回路线 A。
+- **决死探针 prep 落地（coder，纯软不启训练；中途 529 断，主线接力补 smoke + 验通）**：
+  - **R1 容量对照堵死**：`configs/b_smallvit_pred_vits_nih10k.yaml`（VisionTransformerPredictor depth=3, predictor_emb=288, num_heads=6→288/6=48✓）→ **smoke 实测 3,276,384 params = 3.28M ≈ NCA 3.22M（偏 1.8%）**。三臂：NCA(3.22M)/small-ViT(3.28M 等参)/A0+(11.76M 自然容量参照)。
+  - **`ijepa/src/eval_forget.py`**：遗忘评估。复用 eval_anytime 的 build_model/load_ckpt/make_inputs/estimate_lf；**Q=自定义跨-ckpt cosine**（Q_after=cos(z_after_域B, z_before_域A)，**未复用 compute_qk**），RF=Q_after−1（<0=遗忘越负越忘）；NCA 臂附 dLf（谱半径变化），ViT 臂 NaN。csv 列 arm/seed/Q_before/Q_after/RF/Lf_before/Lf_after/dLf。
+  - **续训 config ×3**：`b_continual_{nca,smallvit,a0plus}.yaml`（`load_checkpoint=true`+读域A ckpt，域B数据，epochs20，余照抄各臂原 config 复现零偏离）。
+  - **`tools/prep_domainB_cxr.py`**：域 B 胸片建 10k split（对齐域 A 规模），下载不硬编码（需用户凭证）。
+  - `hpc/sbatch_pilot.sh` 加 4 ARM：`b_smallvit`(小ViT NIH预训练) + `b_cont_{nca,smallvit,a0plus}`(三臂续训)。
+  - **`_scratch/smoke_forget.py` 全 PASS**（主线修 2 处 coder 未对账的断言：误判 compute_qk 存在 + 误当 `_eval_one_ckpt` 返 float 实返 (z_flat,lf)）：import 链通、参数量验通、三臂 smoke 前向不崩、csv 列对。
+- **✅ 域 B 数据就位（2026-06-17 续）**：用户授权下 VinDr-CXR。**绕开 PhysioNet 凭证墙**（CITI+DUA 审批几天 + DICOM 70GB）→ 改用 **Kaggle `xhlulu/vinbigdata`（=VinDr 官方比赛 512×512 PNG 镜像，本地 kaggle 凭证现成）**，2GB 下完解压=train/ 15000 + test/ 3000 PNG。跑 prep_domainB_cxr.py 建 split（9000 train + 1000 val + 18000 full，**修了 Windows 反斜杠→正斜杠**否则 HPC Linux 崩）+ 登记 `datasets.json [vindrcxr_domainB]`（source 改标 Kaggle 镜像非 PhysioNet）。3 个 b_continual config 数据路径全接好（`image_folder:""` + `root_path:data/vindr_cxr` + subset_file）。**本地 dataloader 验通**（NIHChestXray14 通用 loader 读 9000 图 OK，3ch RGB 224²）。存 `D:\YJ-Agent\data\external\vindr_cxr\`。
+- **🚧 待跑 TODO（剩余，run 前清）**：
+  1. ~~域 B 数据~~ ✅ 已就位（见上）。
+  2. **小 ViT 域 A 缺 ckpt**：等参小 ViT 还没在 NIH 训过（A2 NCA/A0+ 已有），decisive run 前须先 `b_smallvit` NIH 预训练 50ep（新训练，待拍）。
+  3. **ckpt 路径占位**：3 个 b_continual config 的 `read_checkpoint` 是 TODO 占位，待填 HPC 实际路径（A2 老码无 seed 后缀/新码有 `_seed{N}`）。
+  4. **指标精度待定**：eval_forget 现用「跨-ckpt 特征漂移」当 Q，researcher D 原案是「域 A 预测质量退化」(compute_qk before/after)。run 前定稿，建议两者都报（漂移=辅，质量退化=GO/NO-GO 主判据）。
+- **训练锁**：medad-failmap job 1451047 已训完（锁归档），但现被第三窗 hpc-companion（GPU-burn 演示）占——续训照样得等。
+- **Go/No-Go**（researcher D + R1）：NCA RF > ViT(等参) RF × 0.5 @2seed → GO；差异<0.02 或 NCA 更差 → NO-GO 回路线 A。
+
 ## 2026-06-17 — 拯救路线 A：谱半径下界验证探针落地
 - **新文件**：`eval/spectral_lower_bound.py` — 残差 ρ vs σ_max 系统性验证脚本（claim: ρ(I+J_g)≥1 结构性下界，跨 MLP/Conv/Attn/NCA 族）。
 - **口径修正桥接**：eval_anytime.estimate_lf 算的是 σ_max（奇异值）不是 ρ（谱半径）；本脚本同时输出两列分列对比，小维度用显式 `torch.linalg.eigvals` 金标准，大维度幂迭代。

@@ -84,6 +84,7 @@
 | `verifier` | sonnet | ON | 核数字：Bash/Grep 核 csv，**禁 Read 看数据**，三方对账 |
 | `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计 |
 | `optimizer` | sonnet | ON | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
+| `gh-publisher` | sonnet | ON | GitHub 发布/拉取/维护：本地子项目规范化成可开源 repo（README/LICENSE/CI/.gitignore 全套对齐顶级开源骨架）+ 隐私泄露扫描列风险 + 拉 repo 许可证合规 + 按 issue/PR review 定位修 bug。**不执行对外 push/repo create**（主线拍板后串行做）。提 github/开源/推仓库即软触发（`/gh-flow`） |
 
 > 八角色覆盖科研全闭环：调研(researcher)→设计(planner)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析三条腿**——派对应 agent。
 
@@ -167,6 +168,7 @@
 | 投稿前 | `/pre-submit-check`（数字三方对账 + 脱敏 + 图验证） |
 | 进度落档 | `/checkpoint <project>`（把本轮做的写进 LOG，防 context 断链；改文件多没写 LOG 时 hook 会提醒） |
 | 大阶段验收 | `/stage-gate <project>`（**半天级大阶段收口必跑**：verifier 核数字 → opus reviewer 对 ACCEPTANCE 严判 PASS/FAIL，不存在「基本完成」，不达标不放行） |
+| GitHub 发布/拉取/维护 | `/gh-flow publish <路径>` 发新公开 repo / `pull <repo-url>` 拉好东西进来 / `maintain <owner/repo>` 按 review 修 bug（gh-publisher 跑隐私扫+开源骨架+许可证合规；对外 push 主线拍板；公开 repo 与 private 组合台隔离）。提 github/开源/推仓库自动软触发 |
 
 项目骨架模板：`project/templates/`（新项目复制）。
 

@@ -382,15 +382,24 @@ def run_b3(brats_data, out_dir):
 
 
 # ============================================================
-# B4: Extrapolation (训中等 size -> 测未见极小 size)
+# B4: Extrapolation (训中等 size -> 测未见 size 区域，两方向)
 # ============================================================
 
 def run_b4(brats_data, out_dir):
     """
-    B4: extrapolation AUROC
-    训练集: 中等 size (33~66 percentile)
-    测试集: 极小 size (< 33 percentile) — 训练集未见区域
-    拟合 LR on 中等, predict 极小, 报 AUROC
+    B4: extrapolation AUROC — 两个外推方向（reviewer 授权 split 重设计，2026-06-17）
+    训练集: 中等 size (33~66 percentile，两方向共用)
+    方向A: test = small (<P33, unseen) — 保留作透明，原设计；已知退化（test 近全 fail）
+    方向B: test = large (>P66, unseen) — 新·信息性主读数；大病灶检出率高，有 detected variance
+
+    判断准则（reviewer 前置定，非事后调）:
+      test split 须 n_test_detected >= 20 且 y_fail 含两类 → interpretable=1
+
+    冻结量（不得改动）:
+      - y_fail 派生口径: anomaly_score < P90 threshold（同 run_b1 threshold_pct=90）
+      - size 三等分切点: P33/P66（同 stratify_eval.py）
+      - CI alpha: 0.0125（98.75% Bonferroni α=0.05/4 F-B family; 05_preregistration C 节）
+      - fit_boundary lr（逻辑回归 C=1.0）
 
     🔴 TODO: size 分位数切点 (33/66) 是 03_phase0_plan.md 说明的三等分，
              与 stratify_eval.py 一致，但如需调整需 researcher/主线确认。
@@ -410,43 +419,88 @@ def run_b4(brats_data, out_dir):
 
     mid_mask   = (size_arr >= p33) & (size_arr <= p66)
     small_mask = size_arr < p33
+    large_mask = size_arr > p66   # 方向B: 新增大 size 测试集
 
-    if mid_mask.sum() < 10 or small_mask.sum() < 5:
-        print(f"[B4] insufficient samples: mid={mid_mask.sum()}, small={small_mask.sum()}, skip")
+    if mid_mask.sum() < 10:
+        print(f"[B4] insufficient mid samples: mid={mid_mask.sum()}, skip")
         return
 
+    # 两外推方向定义
+    # (test_label_str, mask, direction_note)
+    directions = [
+        (
+            "small_size (<33 pct, unseen, DEGENERATE)",
+            small_mask,
+            "方向A 原设计·透明保留: test 近全 fail 无 outcome variance, AUROC 不可解释, 仅透明保留",
+        ),
+        (
+            "large_size (>66 pct, unseen)",
+            large_mask,
+            "方向B 信息性 within-domain 外推: test 有 detected variance, 大病灶检出率高",
+        ),
+    ]
+
     rows = []
-    for feat_name, X in [("size+contrast_lr", X2), ("size_only_lr", X1)]:
-        X_mid   = X[mid_mask]
-        y_mid   = y_fail[mid_mask]
-        X_small = X[small_mask]
-        y_small = y_fail[small_mask]
+    for test_split_str, test_mask, direction_note in directions:
+        # 方向样本不足则 skip 标 note
+        if test_mask.sum() < 5:
+            for feat_name in ("size+contrast_lr", "size_only_lr"):
+                rows.append({
+                    "model":          feat_name,
+                    "train_split":    "mid_size (33~66 pct)",
+                    "test_split":     test_split_str,
+                    "n_train":        int(mid_mask.sum()),
+                    "n_test":         int(test_mask.sum()),
+                    "n_test_detected":  0,
+                    "interpretable":    0,
+                    "extrapolation_auroc": "nan",
+                    "ci_lo_9875":     "nan",
+                    "ci_hi_9875":     "nan",
+                    "ci_alpha":       0.0125,
+                    "size_threshold_p33": round(float(p33), 2),
+                    "size_threshold_p66": round(float(p66), 2),
+                    "note": f"SKIP: test 样本不足 (<5); {direction_note}",
+                })
+            continue
 
-        if len(np.unique(y_mid)) < 2 or len(np.unique(y_small)) < 2:
-            auroc = float("nan")
-            ci_lo = ci_hi = float("nan")
-        else:
-            clf   = fit_boundary(X_mid, y_mid, "lr")
-            proba = clf.predict_proba(X_small)[:, 1]
-            auroc = float(roc_auc_score(y_small, proba))
-            # T7 (B4 extrapolation): α=0.05/4 Bonferroni 并入 F-B family → 98.75% CI
-            # 来源: 05_preregistration C 节冻结 (选项 a)
-            ci_lo, ci_hi = bootstrap_auroc_ci(y_small, proba, alpha=0.0125)
+        for feat_name, X in [("size+contrast_lr", X2), ("size_only_lr", X1)]:
+            X_mid    = X[mid_mask]
+            y_mid    = y_fail[mid_mask]
+            X_test   = X[test_mask]
+            y_test   = y_fail[test_mask]
 
-        rows.append({
-            "model":          feat_name,
-            "train_split":    "mid_size (33~66 pct)",
-            "test_split":     "small_size (<33 pct, unseen)",
-            "n_train":        int(mid_mask.sum()),
-            "n_test":         int(small_mask.sum()),
-            "extrapolation_auroc": round(auroc, 4) if not np.isnan(auroc) else "nan",
-            "ci_lo_9875":     round(ci_lo, 4)  if not np.isnan(ci_lo)  else "nan",   # 98.75% CI lower (α=0.0125 Bonf/4 F-B)
-            "ci_hi_9875":     round(ci_hi, 4)  if not np.isnan(ci_hi)  else "nan",   # 98.75% CI upper
-            "ci_alpha":       0.0125,
-            "size_threshold_p33": round(float(p33), 2),
-            "size_threshold_p66": round(float(p66), 2),
-            "note": "T7 extrapolation; CI 98.75% (α=0.0125 Bonf/4 F-B family; 05_preregistration C 节)",
-        })
+            # n_test_detected: detected==1 即 y_fail==0
+            n_test_detected = int((y_test == 0).sum())
+            # interpretable: ≥20 detected 且 test 集含两类
+            interpretable = int(n_test_detected >= 20 and len(np.unique(y_test)) >= 2)
+
+            if len(np.unique(y_mid)) < 2 or len(np.unique(y_test)) < 2:
+                auroc = float("nan")
+                ci_lo = ci_hi = float("nan")
+            else:
+                clf   = fit_boundary(X_mid, y_mid, "lr")
+                proba = clf.predict_proba(X_test)[:, 1]
+                auroc = float(roc_auc_score(y_test, proba))
+                # T7 (B4 extrapolation): α=0.05/4 Bonferroni 并入 F-B family → 98.75% CI
+                # 来源: 05_preregistration C 节冻结 (选项 a)
+                ci_lo, ci_hi = bootstrap_auroc_ci(y_test, proba, alpha=0.0125)
+
+            rows.append({
+                "model":          feat_name,
+                "train_split":    "mid_size (33~66 pct)",
+                "test_split":     test_split_str,
+                "n_train":        int(mid_mask.sum()),
+                "n_test":         int(test_mask.sum()),
+                "n_test_detected":  n_test_detected,
+                "interpretable":    interpretable,
+                "extrapolation_auroc": round(auroc, 4) if not np.isnan(auroc) else "nan",
+                "ci_lo_9875":     round(ci_lo, 4)  if not np.isnan(ci_lo)  else "nan",   # 98.75% CI lower (α=0.0125 Bonf/4 F-B)
+                "ci_hi_9875":     round(ci_hi, 4)  if not np.isnan(ci_hi)  else "nan",   # 98.75% CI upper
+                "ci_alpha":       0.0125,
+                "size_threshold_p33": round(float(p33), 2),
+                "size_threshold_p66": round(float(p66), 2),
+                "note": f"T7 extrapolation; CI 98.75% (α=0.0125 Bonf/4 F-B family; 05_preregistration C 节); {direction_note}",
+            })
 
     _write_csv(out_dir / "boundary_B4_extrapolation.csv", rows)
 
@@ -464,10 +518,11 @@ if __name__ == "__main__":
                         default=str(_res / "anomaly_scores_brats_ae.csv"),
                         help="BraTS anomaly score csv (train_recon_ae.py 产出)")
     parser.add_argument("--brats-strat-csv",
-                        default=str(_res / "stratify_interact_ae.csv"),
-                        help="(可选) BraTS 分层 csv (size_px, contrast 列)")
+                        default=str(_res / "stratify_per_image_ae.csv"),
+                        help="BraTS per-image 分层 csv (filename, size_px, contrast 列;"
+                             " 必须 per-image 而非 interact 聚合表,否则无 filename 无法 join)")
     parser.add_argument("--brats-conspicuity-csv",
-                        default=str(_res / "conspicuity_features.csv"),
+                        default=str(_res / "conspicuity_features_tumor.csv"),
                         help="(可选) BraTS conspicuity proxy csv (size_proxy/contrast_proxy)")
     parser.add_argument("--ham-score-csv",
                         default=str(_res / "anomaly_scores_isic_ae.csv"),
@@ -477,6 +532,9 @@ if __name__ == "__main__":
                         help="(可选) HAM conspicuity proxy csv")
     parser.add_argument("--out-dir",
                         default=str(_res))
+    parser.add_argument("--threshold-pct",
+                        type=float, default=90.0,
+                        help="检出阈值百分位，默认 90=05 预登记冻结值；三档敏感性扫描用 95/85")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
@@ -554,7 +612,7 @@ if __name__ == "__main__":
             brats_data["contrast_proxy"] = brats_data["anomaly_score"]
 
     # ---- B1 ----
-    brats_data = run_b1(brats_data, out_dir)
+    brats_data = run_b1(brats_data, out_dir, threshold_pct=args.threshold_pct)
 
     # ---- 加载 HAM 数据 ----
     ham_data = None

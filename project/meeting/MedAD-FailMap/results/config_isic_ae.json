@@ -1,0 +1,13 @@
+{
+  "dataset": "isic",
+  "model": "ae",
+  "epochs": 250,
+  "bs": 64,
+  "lr": 0.001,
+  "wd": 0,
+  "latent": 16,
+  "input_size": 64,
+  "vae_beta": null,
+  "seed": 42,
+  "source": "MedIAnomaly github.com/caiyu6666/MedIAnomaly (\u590d\u73b0\u96f6\u504f\u79bb)"
+}

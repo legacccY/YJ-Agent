@@ -176,33 +176,39 @@ def fdr_bh_correction(pvals):
 # C2: 嵌套逻辑回归 LR 检验
 # ============================================================
 
-def run_c2_lr_test(df, conspicuity_cols, out_path):
+def run_c2_lr_test(df, conspicuity_cols, out_path, threshold_pct=90.0):
     """
     C2: 嵌套 LR 检验 (ACCEPTANCE ③ 防循环论证核心)
     y = detected (tumor 是否被检出), 非 label
     理由: conspicuity_features.csv 来自 tumor-only 图像目录，label 全为 1 (常数)，
           无区分度; ACCEPTANCE ③ 要测「given anomaly_score 后 conspicuity 是否额外预测
           检出成败 detected」——y 必须是 detected 而非 label。
-          tumor-only 集内: detected = (anomaly_score >= top-10% threshold)
+          tumor-only 集内: detected = (anomaly_score >= top-threshold_pct% threshold)
     base  = [anomaly_score]
     full_i = [anomaly_score, conspicuity_col_i]
     stat_i = 2*(loglik_full_i - loglik_base)  chi2(1)
+    threshold_pct: 检出阈值百分位，默认 90=05 预登记冻结值；三档敏感性扫描用 95/85
     """
-    # y = detected: tumor 样本中 anomaly_score >= 90th percentile → 检出
-    # 阈值 top-10% (预登记口径, 与 failure_boundary.py threshold_pct=90 一致)
+    # y = detected: tumor 样本中 anomaly_score >= threshold_pct 百分位 → 检出
+    # 默认 top-10% (预登记口径, 与 failure_boundary.py threshold_pct=90 一致)
     scores = df["anomaly_score"].to_numpy()
-    threshold = float(np.percentile(scores, 90))
+    threshold = float(np.percentile(scores, threshold_pct))  # 任务1: 硬编码90->参数化
     y = (scores >= threshold).astype(int)
     # 注: y=detected 非 label; tumor-only 集内做 LR 检验 (ACCEPTANCE ③ 防循环论证)
     X_base = df[["anomaly_score"]].to_numpy()
-    loglik_base, _ = logistic_loglik(X_base, y)
+    # 任务3 fix: C2 LR 在送 logistic_loglik 前对特征做 z-score 标准化，
+    # 防止 glcm_cluster_prom 等量级跨越特征 (181~3.6e6) 导致 lbfgs 不收敛 chi2=0。
+    # 线性变换不改变 loglik，LR test 统计量不受影响。
+    X_base_s = _col_zscore(X_base)
+    loglik_base, _ = logistic_loglik(X_base_s, y)
 
     raw_ps = []
     stats  = []
     for col in conspicuity_cols:
         feat = df[col].to_numpy().reshape(-1, 1)
         X_full = np.hstack([X_base, feat])
-        loglik_full, _ = logistic_loglik(X_full, y)
+        X_full_s = _col_zscore(X_full)  # 任务3 fix: 同款 zscore 标准化
+        loglik_full, _ = logistic_loglik(X_full_s, y)
         chi2_stat = 2.0 * (loglik_full - loglik_base)
         chi2_stat = max(chi2_stat, 0.0)
         p_raw = chi2_sf_approx(chi2_stat, df=1)
@@ -233,22 +239,23 @@ def run_c2_lr_test(df, conspicuity_cols, out_path):
 # C3: 残差偏相关
 # ============================================================
 
-def run_c3_partial_corr(df, conspicuity_cols, covariate_cols, out_path):
+def run_c3_partial_corr(df, conspicuity_cols, covariate_cols, out_path, threshold_pct=90.0):
     """
     C3: 残差偏相关 (ACCEPTANCE ③ 防循环论证核心)
     y = detected (tumor 是否被检出), 非 label
     理由同 run_c2_lr_test: tumor-only 集, label 为常数 (全 1), 无区分度;
     ACCEPTANCE ③ 要控制 size+contrast 后测 conspicuity 与「检出成败」的独立相关。
-    y = detected: anomaly_score >= 90th percentile (tumor-only, top-10% 预登记口径)
+    y = detected: anomaly_score >= threshold_pct 百分位 (tumor-only, 默认 90=预登记口径)
     注: y=detected 非 label; tumor-only 集内做偏相关 (ACCEPTANCE ③ 防循环论证)
+    threshold_pct: 检出阈值百分位，默认 90=05 预登记冻结值；三档敏感性扫描用 95/85
     1. 线性回归 anomaly_score ~ size + contrast -> 残差
     2. 对每个 conspicuity 特征计算与 detected 的偏相关 (控制 size+contrast 后)
        实现: residualize conspicuity ~ size+contrast, residualize detected ~ size+contrast,
              然后 Pearson(resid_consp, resid_detected)
     """
-    # y = detected: tumor 样本中 anomaly_score >= 90th percentile → 检出
+    # y = detected: tumor 样本中 anomaly_score >= threshold_pct 百分位 → 检出
     scores = df["anomaly_score"].to_numpy()
-    threshold = float(np.percentile(scores, 90))
+    threshold = float(np.percentile(scores, threshold_pct))  # 任务1: 硬编码90->参数化
     y_bin  = (scores >= threshold).astype(float)
 
     # residualize label ~ covariates
@@ -574,6 +581,19 @@ def run_fc_family_holm(c2_csv_path, c3_csv_path, out_path):
     return rows_out
 
 
+def _col_zscore(X):
+    """
+    逐列 z-score 标准化 (纯 numpy)。
+    std < 1e-10 的列保持 0 (常数列不 scale)。
+    用于 C2 LR 检验前对特征做数值预处理，防止量级跨越导致 lbfgs 不收敛。
+    注: 线性变换不改变逻辑回归 loglik，LR test 统计量不受影响。
+    """
+    mu  = X.mean(axis=0)
+    std = X.std(axis=0)
+    std = np.where(std < 1e-10, 1.0, std)
+    return (X - mu) / std
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PC-C C2/C3/C4 增量统计 (Holm/FDR 校正)")
     _root = Path(__file__).resolve().parent.parent
@@ -596,6 +616,9 @@ if __name__ == "__main__":
     parser.add_argument("--out-dir",
                         default=str(_res),
                         help="输出目录")
+    parser.add_argument("--threshold-pct",
+                        type=float, default=90.0,
+                        help="检出阈值百分位，默认 90=05 预登记冻结值；三档敏感性扫描用 95/85")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
@@ -613,14 +636,16 @@ if __name__ == "__main__":
 
     # C2
     run_c2_lr_test(df_tumor, CONSPICUITY_COLS,
-                   out_dir / "incremental_C2_lr_test.csv")
+                   out_dir / "incremental_C2_lr_test.csv",
+                   threshold_pct=args.threshold_pct)
 
     # C3 (需 size + contrast 列)
     covariate_cols = []
     if df_tumor._rows and "size_px" in df_tumor._rows[0]:
         covariate_cols = ["size_px", "contrast"]
     run_c3_partial_corr(df_tumor, CONSPICUITY_COLS, covariate_cols,
-                        out_dir / "incremental_C3_partial_corr.csv")
+                        out_dir / "incremental_C3_partial_corr.csv",
+                        threshold_pct=args.threshold_pct)
 
     # ---- C4: normal+tumor 混合集 ----
     print(f"[incremental] loading mixed df for C4 ...")

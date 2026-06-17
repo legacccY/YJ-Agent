@@ -1,0 +1,4 @@
+test_id,description,stat_chi2,df,p_raw,p_holm,p_fdr_bh,sig_holm,family,n_family,note
+T1,detected~size LR Wald,190.9087,1,0.0,0.0,0.0,1,F-A,3,FA family Holm α=0.05/4=0.0125 per step; Gate0 用 p_holm<0.05 判显著
+T2,detected~contrast LR Wald,245.2487,1,0.0,0.0,0.0,1,F-A,3,FA family Holm α=0.05/4=0.0125 per step; Gate0 用 p_holm<0.05 判显著
+T3,interact LLR full vs base (size+contrast+size:contrast vs size+contrast),16.0936,1,0.000105,0.000105,0.000105,1,F-A,3,FA family Holm α=0.05/4=0.0125 per step; Gate0 用 p_holm<0.05 判显著
