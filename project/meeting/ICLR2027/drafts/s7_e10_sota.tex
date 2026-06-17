@@ -21,7 +21,7 @@
 \visienhance.} Six non-diffusion restoration/enhancement models are applied off-the-shelf with their
 official pretrained weights (pretraining domain in parentheses); none sees dermoscopy or any
 diagnosis-preserving objective. All methods restore the \emph{identical} mixed-severity degraded
-inputs (stored degradation suite, $n{=}\TODO$ paired, $117$ melanomas) and are scored with one
+inputs (stored degradation suite, $n{=}10881$ paired, $117$ melanomas) and are scored with one
 protocol; $\Delta$AUC is enhanced$-$reference (closer to $0$ is better), KL and dangerous-flip
 (dflip) lower is better. \visienhance{} is the only method that both restores fidelity (PSNR/SSIM)
 \emph{and} preserves diagnosis; every generic model significantly degrades diagnostic AUC
@@ -34,14 +34,14 @@ for E3/E9, so absolute cells are not cross-comparable across those experiments.}
 \toprule
 Method & Pretraining & PSNR$\uparrow$ & SSIM$\uparrow$ & $\Delta$AUC$\to 0$ & KL$\downarrow$ & dflip$\downarrow$ \\
 \midrule
-\textbf{\visienhance{} (FiLM+DP)} & dermoscopy & \textbf{\TODO} & \textbf{\TODO} & \textbf{\TODO} & \textbf{\TODO} & \TODO \\
+\textbf{\visienhance{} (FiLM+DP)} & dermoscopy & \textbf{32.79} & \textbf{0.9072} & \textbf{$-$0.0172} & \textbf{0.1005} & 0.1937 \\
 \midrule
-Restormer \citep{zamir2022restormer}     & real denoising  & \TODO & \TODO & \TODO & \TODO & \TODO \\
-NAFNet \citep{chen2022simple}            & SIDD denoising  & \TODO & \TODO & \TODO & \TODO & \TODO \\
-MIRNet-v2 \citep{zamir2022mirnetv2}      & LOL enhancement & \TODO & \TODO & \TODO & \TODO & \TODO \\
-SwinIR \citep{liang2021swinir}           & color denoising & \TODO & \TODO & \TODO & \TODO & \TODO \\
-Uformer-B \citep{wang2022uformer}        & SIDD denoising  & \TODO & \TODO & \TODO & \TODO & \TODO \\
-Real-ESRGAN \citep{wang2021realesrgan}   & $\times2$ SR    & \TODO & \TODO & \TODO & \TODO & \TODO \\
+Restormer \citep{zamir2022restormer}     & real denoising  & 22.30 & 0.8361 & $-$0.0964 & 0.8179 & 0.0586 \\
+NAFNet \citep{chen2022simple}            & SIDD denoising  & 22.04 & 0.8251 & $-$0.1148 & 0.8767 & 0.0766 \\
+MIRNet-v2 \citep{zamir2022mirnetv2}      & LOL enhancement & 13.48 & 0.7750 & $-$0.0872 & 0.4979 & 0.1577 \\
+SwinIR \citep{liang2021swinir}           & color denoising & 21.69 & 0.7864 & $-$0.1335 & 0.3632 & 0.4775 \\
+Uformer-B \citep{wang2022uformer}        & SIDD denoising  & 22.28 & 0.8358 & $-$0.0939 & 0.8274 & 0.0541 \\
+Real-ESRGAN \citep{wang2021realesrgan}   & $\times2$ SR    & 21.61 & 0.8175 & $-$0.0832 & 0.3455 & 0.2342 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -53,10 +53,15 @@ training. We run six non-diffusion restoration/enhancement models
 (Restormer, NAFNet, MIRNet-v2, SwinIR, Uformer-B, Real-ESRGAN) zero-shot with official weights on the
 same mixed-severity paired inputs (\cref{tab:e10}). All six are worse diagnostic preservers than
 \visienhance{} by a wide margin: paired bootstraps give $\Delta\mathrm{AUC}_{\text{baseline}-\text{VE}}
-\in[\TODO,\TODO]$ (every $95\%$ CI excluding zero, every McNemar $p<\TODO$). Tellingly,
+\in[-0.116,-0.066]$ (every $95\%$ confidence interval excluding zero, every McNemar $p<10^{-150}$).
+% SOURCE: paired dAUC from e10_{restormer,nafnet,mirnetv2,swinir,uformer,realesrgan}.csv PAIRED rows;
+%   range [-0.1160 (SwinIR) to -0.0661 (Real-ESRGAN)]. STORY_FRAMEWORK.md previously stated [-0.12,-0.07]
+%   but Real-ESRGAN pair_dAUC=-0.0661 falls outside that lower bound; prose updated to true csv range.
+%   STORY/ACCEPTANCE range description needs updating by writer/main-line: recommend [-0.12,-0.066].
+Tellingly,
 \emph{lower fidelity does not mean safer}: the lowest-dflip baselines barely change the image (PSNR
-$\approx\TODO$~dB) yet incur the largest diagnostic KL ($\approx\TODO$), so dflip must be read jointly
-with KL --- a method that leaves the image nearly untouched trivially avoids flips while still
-distorting the posterior. \visienhance{} clears PSNR$\,\ge\,30$ even on this harder mixed-severity
-melanoma-enriched subset. Generic restoration optimises pixels, not diagnosis; the
+$\approx22$~dB, Uformer-B dflip $0.054$) yet incur the largest diagnostic KL ($\approx0.83$), so
+dflip must be read jointly with KL --- a method that leaves the image nearly untouched trivially avoids
+flips while still distorting the posterior. \visienhance{} clears PSNR$\,\ge\,30$ even on this harder
+mixed-severity melanoma-enriched subset. Generic restoration optimises pixels, not diagnosis; the
 diagnosis-preserving objective (Lemma~\ref{lem:dp}, E7) is what closes the gap.

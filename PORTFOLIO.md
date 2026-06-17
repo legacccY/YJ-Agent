@@ -1,7 +1,7 @@
 # YJ-Agent 科研组合台 — PORTFOLIO（跨论文唯一入口）
 
 > 任何会话开门第一读。多篇顶会顶刊并行的协调根。状态真源 = `.portfolio/registry.json` + `.portfolio/locks/`。
-> 最后更新：2026-06-16
+> 最后更新：2026-06-17
 
 ---
 
@@ -10,7 +10,9 @@
 | 项目 | 会场 | Deadline | 状态 | 优先级 | home |
 |---|---|---|---|---|---|
 | **ICLR** VisiSkin-Agent | ICLR 2027 | 09-22 abs / 09-29 full | 🟢 active：M2 收官→M3 写作 | P1 | `project/` |
-| **NCA-JEPA / Med-NCA** | — | — | 🗄️ 已封印（2026-06-17）：NCA 全线收口（JEPA 主线弃 + NCA-AB 换路 A 判死/B Gate3 证伪），资源转 P1/P3 | P8 | `project/meeting/Med-NCA/`（PROJECT_LOG 封印标记） |
+| **NCA-JEPA / Med-NCA** | — | — | 🗄️ 已封印（2026-06-17）：仅 nca-jepa/Med-NCA-AB 各自实证死路 + NCA×世界模型交叉封存；**NCA 本身未否决**（见 registry scope 校正） | P8 | `project/meeting/Med-NCA/`（PROJECT_LOG 封印标记） |
+| **NCA-PhaseMap** | MICCAI2026/NeurIPS D&B→TMLR/MIDL | TBD | 🆕 planning：2026-06-17 立项（ideation run-003 G6 旗舰 C044）。NCA update 稀疏度功能塌缩临界相边界(STABLE_SHARP)。诚实中等会议起步，standout 需机制升级 | P6 | `project/meeting/NCA-PhaseMap/` |
+| **FMReg** | MICCAI2027/CVPR2027→MedIA/TMLR | TBD | 🆕 planning：2026-06-17 立项（ideation run-002 G6）。Diffeomorphic FM in SVF space 医学配准 | P4 | `project/meeting/FMReg/` |
 | **BMVC** QCTS | BMVC 2026 | 已投 05-24 | 🔒 sealed：仅 rebuttal | P9 | `project/meeting/BMVC/` |
 | **MedAD-FailMap** | ICLR/NeurIPS→MICCAI/MedIA | TBD | 🟡 planning：立项当天→Phase0 预检 | P3 | `project/meeting/MedAD-FailMap/` |
 

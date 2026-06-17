@@ -41,10 +41,10 @@
 **自主区**（直接做+落档+继续）：写改 tex/bib、核数字、对抗审稿、补实验代码、调研、出图、补指针、写 LOG/`/checkpoint`、修小 bug、跑测试、派 sonnet 并行、stage-gate PASS 后自动开下阶段（预填 criteria 待你确认）、**启动训练（经卡槽调度器确认有空卡后自启，见下）**。
 
 **🟢 训练改自主（不再卡拍板）**：config 验通后**主线自己起训练**，不停下空等放行。铁律=经卡槽调度器 `tools/gpu_slot.py` 把关，**绝不挤正在跑的**：
-> 1. 启训前 `python tools/gpu_slot.py request <project> <host> <gpus> [note]`（host=local|hpc；容量 local=1 卡 / hpc=4 卡）。
+> 1. **【强制前置，不可跳过】** 启训前先 `python tools/gpu_slot.py request <project> <host> <gpus> [note]`（host=local|hpc；容量 local=1 卡 / hpc=4 卡）。**HPC `<gpus>` 默认填 1**（见第 4 条）。跳过此步 → `training_lock.js` 阻断并记 friction。
 > 2. 打印 `GO <id>` = 有空卡 → 立即启（hook 自动翻 running）。启后**一行回报**「已起 <project> 占 N 卡@host，job/pid=X，剩 M 卡空」。
-> 3. 打印 `QUEUED <id>` = 卡满 → **已排队、绝不裸启**；主线挂 `/loop` 轮询，跑完的任务 `gpu_slot.py release <id>` 会吐 `NEXT ...` 自动取出排队任务起（一行回报同上）。
-> 4. 4 卡可拼多组合（如 1+1+2 / 2+2），调度器按卡记账。完成必 `release` 清账。
+> 3. 打印 `QUEUED <id>` = 卡满 → **已排队、绝不裸启**；主线挂 `/loop` 轮询，跑完的任务 `gpu_slot.py release <id>` 会吐 `NEXT ...` 自动取出排队任务起（一行回报同上）。**如果排队后改道（改用其他 host / 放弃该任务）→ 必须立即 `gpu_slot.py dequeue <id>` 撤回，否则后续 release 会错误提升该幽灵条目占卡。**
+> 4. **HPC 默认单卡（`<gpus>=1`）**：多窗口并行各跑一篇，4 卡 = 4 个不同任务各占 1 卡，吞吐最大。除非单任务**显存放不下单卡**才申请 >1，且需在 note 写明理由（如 model+batch 超单卡 24GB）。调度器按卡记账，4 卡可拼任意组合（1+1+1+1 默认 / 1+1+2 / 2+2）。完成必 `release` 清账。
 > 仍拍板：**HPC 上传新数据/新代码**（对外传输，先报）、**真实歧义无合理默认**。
 
 **🛑 拍板点（停下报、等放行）**：

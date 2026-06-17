@@ -1,0 +1,2 @@
+dice_vxmdiff,dice_fm,neg_jac_pct_vxmdiff,neg_jac_pct_fm,fm_uncertainty_corr,fm_uncert_p,fm_steps_N1,fm_steps_N2,fm_steps_N4,fm_steps_N8,n_train_steps,n_eval_pairs,k_samples,ss_int_steps,euler_steps_eval,smoke,verdict
+0.8685,0.8642,0.0000,0.0000,-0.0165,0.9773,0.8645,0.8643,0.8642,0.8643,10,5,3,7,4,True,YELLOW: FM Dice ok but posterior uncertainty not significant (p>=0.05) ¡ú partial evidence; posterior may need more training steps or larger eval

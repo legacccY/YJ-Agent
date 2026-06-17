@@ -4,6 +4,44 @@
 
 ---
 
+## Entry 3 — 真实实力复核 + Gate1 探路启动（2026-06-17）
+
+**真实实力评估**（`ideation/runs/2026-06-17_run-002_medimg-method/07_report/真实实力评估_FMReg_S4-05.md`）：逐行读 killshot 代码 + 联网核撞车 → **FMReg 黄牌，G6 GREEN 被高估**：
+- killshot 三处水分：① `dice_affine` 实为恒等基线（代码 313 行注释自承 `identity (no warp)`），「胜仿射」失真；② `neg_jac=0%` 因 out_conv std=1e-4 + 200 步 + 微量级 target → φ≈恒等，小位移构造上不可能折叠，真实大形变折叠率没测；③ Dice 是脑前景轮廓重叠非解剖对应；④ 用的不是真 FM（手搭强度梯度代理）→ skeptic 的 🔴 FM≠形变场范畴塌**被绕过非被反驳**。
+- **数据源订正**：killshot 实际用 **BraTS2021 flair**（`MedAD-FailMap/data/BraTS2021/train`），非 Entry 1/G6 卡所写「OASIS」——又一处留痕失真，待订正 STORY/Entry1。
+- **K3 撞车实质已触发**：FlowReg（arXiv:2603.01073，2026-03，UCL/Imperial）已用 FM 做 2 步心脏配准超 SOTA。残余新颖「中等偏窄」=速度场 FM + diffeomorphic + 通用 benchmark。
+
+**Gate1 探路计划**：见 `03_探路计划_Gate1.md`。两命门——A 理论（velocity→diffeomorphism 能否构造性保证）/ B 差异化（vs FlowReg + baseline + 数据就绪）。4 researcher 并行扇出（R1 diffeomorphism 理论 / R2 FlowReg 读透+对手全景 / R3 baseline 官方超参+Learn2Reg 指标 / R4 数据就绪度）→ 主线综合判 headline 改写 + 决策分叉。
+
+**探路完成（同日回汇，4 researcher 并行）** — 结论全文见 `03_探路计划_Gate1.md` 末「探路结果」节 + 附录 baseline 超参。要点：
+- **命门 A（理论）**：FM 连续域可保 diffeomorphism（Lipschitz 速度场 Picard-Lindelöf），但数值离散不自动（IJCV 2024 证 SVF+S&S 仍可负 Jacobian）。写「保证」需三件套=Lipschitz 网络约束+充分积分步数(RK4≥7)+Sobolev 正则；否则只能「empirically fold-free」。**内在张力**：少步↔保拓扑表面冲突，**解法=SVF 空间做 FM（少步采样 SVF）+ scaling-squaring 积分（确定性指数映射保 diffeomorphism，与采样步数解耦）**。
+- **命门 B（差异化）**：FlowReg(2603.01073) 在 **DDF 空间**做 FM、**无 diffeomorphic 保证**、**只 cardiac 2D**、单步弱于 CorrMLP baseline 需多步才超且折叠率升。真空地缝=① SVF 空间 FM+diffeomorphic 保证 ② 通用脑/肺 benchmark ③ 跨模态 MR-CT。对手全员 cardiac+无保证。
+- **🎯 两命门合流**：命门 A「必须加 SVF+S&S 构造」恰好 = 命门 B「区别 FlowReg」的卖点。**建议 headline 强化为「Diffeomorphic Flow Matching in SVF space + 通用 benchmark」**（三支柱：SVF vs DDF / 通用 vs 只 cardiac / 少步×保拓扑两不误）。
+- **数据 Gate1 就绪**：脑 IXI 预处理版(GDrive 1.44GB 免注册 pilot)+OASIS(L2R 416/35标签正式)；跨模态 AbdomenMRCT(L4 首选)；肺 Dir-Lab(300 landmark)。baseline 官方超参全查（见附录，少数 config 行 TODO）。datasets.json 已补 ixi/abdomenmrct 指针。
+- **决策分叉命中「进 design-experiment」**：命门 A✅(条件可保证)+命门 B✅(真空地)。
+- **🛑 拍板点**：headline 从「FM-as-deformation-field」强化为「Diffeomorphic FM in SVF space」= STORY 战略根基改写（CLAUDE.md 拍板点 4），探路支持，**待用户拍板后再动 STORY/ACCEPTANCE**，然后 `/design-experiment fmreg` + 重做诚实 killshot。
+- **残余风险（待 skeptic 红队）**：SVF 空间做 FM 是否真新真 work（无人发表=缝也=未证）；少步压到几步还保 Dice（K2）；diffeomorphic 离散仍可能漏，写作措辞诚实（continuous-limit guarantee + 实测低折叠率）。
+
+---
+
+## Entry 4 — skeptic 红队 headline + 诚实措辞订正 + K0 killshot 启动（2026-06-17）
+
+**skeptic 红队**（headline 定稿前闸口）出 **1 致命（攻击点 1）**：原拟 headline「Diffeomorphic FM in SVF space」把 diffeomorphic/少步功劳归错给 FM——实为 SVF+S&S 老构造（DARTEL 2007/VoxelMorph-diff 2019）送的；SVF stationary vs FM time-dependent，FM-in-SVF 可能退化成「VoxelMorph-diff 换采样器」（JMIV 2026 坐实 SVF≠time-dependent velocity 积分）。非死刑，配可证伪 killshot。🟠：topology-guaranteed 是站不住强 claim（IJCV 2024 证 S&S 离散仍折叠），重蹈原 headline 覆辙。
+
+**用户拍板**：先改诚实措辞，killshot 后再定 headline（最保守）。
+
+**已改（诚实措辞订正）**：
+- `01_STORY`：headline 暂不锁主轴，列两候选（①生成式 SVF 后验[skeptic 推荐，FM 不可替换] / ②diffeomorphic-centric 带债）；证据链诚实订正旧 killshot 作废（恒等假基线+near-identity 构造性 neg_jac=0%+非真 FM+用 BraTS 非 OASIS）；卖点改诚实（少步对照系=diffusion 非回归 / 禁 guaranteed / 通用 benchmark 定位广度证据）；K3 撞车订正 FlowReg 直撞。
+- `02_ACCEPTANCE`：加 §A0 **K0 立项闸 killshot**（VoxelMorph-diff vs FM-in-SVF 增益对照，GREEN 走候选①/RED 降级省 80 GPU·h）；K1 禁 guaranteed 改 continuous-limit+实测低折叠率；K2 对照系钉死 diffusion；§C R1 标已复核+加 R1' 范畴矛盾；§D 加 Gate0=K0。
+
+**下一步**：派 coder 写 K0 killshot 脚本（VoxelMorph-diff 单次出 SVF+S&S vs FM-in-SVF 多步采样 SVF+同 S&S，同数据[BraTS2021 本地 ready]同 backbone，比 Dice/neg_jac/后验不确定性）→ 主线跑（gpu_slot 申请）→ 结果定 headline。
+
+**K0 脚本已就绪**：`project/meeting/FMReg/killshots/killshot_K0_fm_vs_vxmdiff.py`（smoke --cpu 跑通，全流程无报错）。输出 csv → `killshots/results/killshot_K0_fm_vs_vxmdiff.csv`。主线 `/loop /run-experiment` 触发正式跑（2000 steps）。
+
+**🏁 收工状态（2026-06-17 晚）**：K0 卡槽 **QUEUED 360c8b43**（local 满，ideation-run002-g5 占着，排在 medad-failmap 后），**未 release**，留着卡空自动取出跑。脚本超参 3 处 TODO（VoxelMorph 官方 lr/λ/NCC win，中训复现 baseline 时查实，killshot 内部对照可用占位）。**下次开窗第一件事**：查 `gpu_slot.py status`，360c8b43 轮到→主线跑 K0→analyst 判 GREEN(走候选①生成式后验 headline)/RED(降级报拍板)。headline 在 K0 出结果前不锁主轴、不写正文。
+
+---
+
 ## Entry 2 — 立项证据归档 + 收工（2026-06-17）
 
 立项材料完整归到本项目文件夹（自包含，不依赖 ideation run-002 目录）：`00_provenance/` 存

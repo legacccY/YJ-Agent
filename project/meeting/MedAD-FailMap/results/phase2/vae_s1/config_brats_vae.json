@@ -1,0 +1,16 @@
+{
+  "dataset": "brats",
+  "model": "vae",
+  "epochs": 250,
+  "bs": 64,
+  "lr": 0.001,
+  "wd": 0,
+  "latent": 16,
+  "input_size": 64,
+  "vae_beta": 0.005,
+  "memae_mem_size": null,
+  "memae_shrink_thres": null,
+  "memae_entropy_weight": null,
+  "seed": 1,
+  "source": "MedIAnomaly github.com/caiyu6666/MedIAnomaly (\u590d\u73b0\u96f6\u504f\u79bb)"
+}

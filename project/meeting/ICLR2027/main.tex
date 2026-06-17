@@ -16,25 +16,31 @@ on Quality-Varying Consumer Imagery}
 \maketitle
 
 \begin{abstract}
-% LOCKED hook (anti-drift rule 1): first sentence MUST stay on the closed-loop
-% quality-triage agent. Do not reduce to a calibration-only story (rule 7).
-We present a closed-loop quality-triage system for skin-lesion diagnosis on consumer imagery,
-where image quality varies far more than in curated clinical datasets and passive confidence
-calibration alone is insufficient. The system (i) scores perceptual quality with a five-head
-assessor (\visiscore), (ii) routes each input to one of four actions --- direct diagnosis,
-cautioned diagnosis, enhance-then-diagnose, or query-for-retake --- and (iii) diagnoses under a
-quality-conditional information bottleneck (\qvib) whose predictive uncertainty is provably tied to
-quality. A deterministic, diagnosis-preserving enhancement module (\visienhance) restores moderately degraded
-inputs without generative hallucination, while its bounded failure on severely degraded malignant
-cases is precisely what the query-for-retake channel is designed to catch. We give an end-to-end theoretical closure
-(Propositions~1--3, Lemmas~1--3, Theorems~1--2, Corollary~1), including a Lipschitz attention-drift
-bound, a quality--entropy monotonicity guarantee, a mutual-information bound for enhancement, and an
-expected-risk bound for the agent's routing decision. On a quality-stratified benchmark (\itb), the
-quality scorer attains PLCC $0.924$ / SRCC $0.895$. On a held-out evaluation set, \qvib produces
-predictive entropy that decreases monotonically with quality ($\rho=-0.165$, $p<10^{-24}$) at AUC
-$0.707$ / ECE $0.098$; on the deliberately harder, adversarially quality-stratified \itb{} pool it
-trades discriminative AUC for quality-conditional calibration (\Cref{tab:main}).
-Code and benchmark will be released.
+% LOCKED hook (anti-drift rule 1 / R14): first sentence MUST stay on the closed-loop
+% quality-triage agent and remain CONSTRUCTIVE (how to enhance safely + when to retake).
+% Do NOT reintroduce the retired headline number or any global-superiority triage claim.
+We present a closed-loop quality-triage system for skin-lesion diagnosis on degraded consumer
+imagery, which decides, per input, whether to diagnose directly, to apply diagnosis-preserving
+enhancement, or to query for a retake, instead of passively enhancing every image or blindly
+deferring. The decision is driven by a per-input quality estimate; in our instantiation a five-head
+assessor (\visiscore) scores perceptual quality with PLCC $0.924$ / SRCC $0.895$, though any
+no-reference quality scalar can take its place. Our first contribution is a recipe for enhancing
+\emph{safely}: a feature-level diagnosis-preserving objective (DP-Loss) whose information loss we bound
+by a Pinsker-optimal mutual-information lower bound (Lemma~\ref{lem:dp}). Empirically, within a
+moderate-degradation window enhancement leaves diagnosis essentially unchanged ($\Delta\mathrm{AUC}=
+-0.012$, $95.8\%$ enhanced-versus-reference agreement, McNemar $p=0.57$), and the DP-Loss ablation
+confirms its effect ($\Delta\mathrm{AUC}_{\text{enh}}$ improves by $+0.021$, $95\%$ CI
+$[+0.005,+0.035]$; McNemar $p=2.3\times10^{-45}$). To map \emph{when} enhancement is licensed we chart
+a reliability~$\times$~recoverability decision surface (per-dimension~$\times$~per-severity, AUC-led),
+on which blur is the most fragile dimension ($\Delta\mathrm{AUC}=-0.091$ at the most severe setting)
+and extreme contrast loss is the one regime where enhancement is significantly harmful
+($-0.036$, $95\%$ CI excluding zero). Outside the safe window the system requests a retake --- to our
+knowledge the first re-acquisition channel in this setting, rather than mere abstention --- governed by
+a local, per-band conditional risk guarantee (Theorem~\ref{thm:agent-compact}). We also report,
+rather than hide, an honest negative: under a fixed-threshold policy, global triage does not yet beat
+direct diagnosis on confidence-gated sensitivity ($0.818$ for direct diagnosis versus $0.788$ for the
+strongest variant at a $20\%$ referral budget), which we read as motivation for learned routing
+thresholds. Code and benchmark will be released.
 \end{abstract}
 
 % ═══════════════════════════════════════════════════════════════════════════════
@@ -64,596 +70,96 @@ inventing structures (pigment networks, vessels) that are clinically unacceptabl
 \paragraph{Closed-loop quality-triage.}
 We argue that quality must be a first-class signal threaded through the whole pipeline. Our system
 forms a closed loop: \visiscore assesses quality; the agent decides whether to diagnose directly,
-diagnose with caution, enhance-then-diagnose (\visienhance), or query for a retake; and \qvib
-performs the diagnosis with uncertainty that is, by construction, calibrated to quality. Crucially,
+diagnose with caution, enhance-then-diagnose (\visienhance), or query for a retake; and the final
+diagnosis is produced by a frozen classifier whose posterior confidence is the signal the gate routes
+on (a standard bottleneck posterior suffices for this confidence, \S\ref{sec:exp-dca}). Crucially,
 the quality scalar that drives this loop need not come from \visiscore alone --- it can be any
 per-input quality estimate (a learned scorer, a no-reference IQA metric, or a known corruption
 severity), which keeps the framework general.
 
 \paragraph{Contributions.}
+To motivate quality-aware triage, we first chart a reliability~$\times$~recoverability decision
+surface (per-dimension~$\times$~per-severity, AUC-led, with a recoverability axis derived from
+enhancement) that quantifies where degradation breaks diagnosis and where enhancement can recover it;
+this observation, which complements rather than reuses prior per-dimension calibration views, frames
+the three contributions that follow.
 \begin{itemize}
-\item \textbf{C1 --- \qvib:} the first quality-conditional information bottleneck. We condition the
-variational marginal prior on perceptual quality and establish a quality-conditional ELBO
-(Proposition~\ref{prop:elbo}), a monotone prior (Lemma~\ref{lem:mono}), a Lipschitz attention-drift
-bound (Theorem~\ref{thm:drift}), and a quality--entropy monotonicity guarantee
-(Proposition~\ref{prop:entmono}).
-\item \textbf{C2 --- \visienhance{} + DP-Loss:} diagnosis-preserving enhancement with a
-mutual-information guarantee. We derive an entropy-reduction result
-(Proposition~\ref{prop:entropy}) and a Pinsker-optimal mutual-information lower bound
-(Lemma~\ref{lem:dp}) under a KL diagnostic-preservation budget.
-\item \textbf{C3 --- closed-loop agent:} a four-channel routing policy with an expected-risk bound
-(Theorem~\ref{thm:agent}) and a composite calibration bound (Corollary~\ref{cor:composite-compact}) that links to
-prior post-hoc quality-conditional scaling.
-\item \textbf{C4 --- \itb{} benchmark:} a quality-stratified skin-lesion benchmark and a 25-lever
-evaluation protocol spanning calibration, diagnostic preservation, salvage rate, universality,
-cross-domain transfer, cost--benefit, and fairness.
+\item \textbf{C1 --- Diagnosis-preserving enhancement with a mutual-information lower bound.} We
+introduce a feature-level diagnosis-preserving objective (DP-Loss) under which, within a
+moderate-degradation window, enhancement does not erode diagnostic content. We derive a
+Pinsker-optimal mutual-information lower bound, $I(\Zenh;Y)\geq I(\Zref;Y)-\beta\sqrt{\epsilon}$ under
+a KL budget $\Ldp\leq\epsilon$ (Lemma~\ref{lem:dp}), together with a directional entropy result
+(Proposition~\ref{prop:entropy}), and confirm them empirically via the DP-Loss ablation
+($\Delta\mathrm{AUC}_{\text{enh}}$ improves by $+0.021$, $95\%$ CI $[+0.005,+0.035]$; McNemar
+$p=2.3\times10^{-45}$).
+\item \textbf{C2 --- A query-for-retake agent.} Our routing policy selects among four channels ---
+direct diagnosis, cautioned diagnosis, enhance-then-diagnose, and query-for-retake --- where, to our
+knowledge, the query-for-retake channel is the first to request \emph{re-acquisition} rather than
+merely abstaining or deferring to a clinician. Its licence to enhance is backed by a local, per-band
+conditional risk guarantee (Theorem~\ref{thm:agent-compact}): the enhancement benefit is positive only
+inside a quality band $[\tauenh,\tauhigh]$, and the policy routes outside it to a retake.
+\item \textbf{C3 --- An honest reliability boundary.} We show, and do not hide, where enhancement turns
+net-negative: severely degraded malignant cases, where reweighting the reconstruction loss does not
+close the salvage gap (a melanoma salvage of $5.2\%$ against a $31\%$ damage rate), and extreme
+contrast loss at the per-dimension level. These boundaries are the hardest motivation for the
+query-for-retake gate; correspondingly, under a fixed-threshold policy global triage does not yet beat
+direct diagnosis (confidence-gated sensitivity $0.818$ versus $0.788$), which we report as motivation
+for learned routing thresholds rather than a result to suppress.
 \end{itemize}
 
 % ═══════════════════════════════════════════════════════════════════════════════
-\section{Related Work}\label{sec:related}
-
-\paragraph{Confidence calibration.}
-Temperature scaling \citep{guo2017calibration}, Platt scaling, isotonic regression, evidential deep
-learning \citep{sensoy2018evidential}, and focal/label-smoothing losses improve calibration but act
-either post-hoc or globally, without
-conditioning on per-input quality. Our \qvib instead makes calibration a structural property of
-training (Proposition~\ref{prop:entmono}).
-
-\paragraph{Information bottleneck.}
-The information bottleneck \citep{tishby2000information} and its variational form
-\citep[VIB;][]{alemi2017deep}, together with $\beta$-VAE \citep{higgins2017beta}, use a fixed
-marginal prior. \qvib strictly
-generalises VIB by conditioning the prior on quality (Proposition~\ref{prop:elbo},
-Remark~\ref{rem:a1-vib}), yielding input-dependent compression without per-sample $\beta$ tuning.
-
-\paragraph{Medical image enhancement.}
-Restoration models such as Real-ESRGAN \citep{wang2021realesrgan}, Restormer
-\citep{zamir2022restormer}, SwinIR \citep{liang2021swinir}, and NAFNet \citep{chen2022simple} target
-perceptual fidelity. Generative restoration (e.g.\ diffusion-based) can hallucinate diagnostically
-salient structure; we therefore use deterministic restoration with a diagnostic-preservation
-objective and analyse the generative failure mode explicitly in \cref{sec:discussion}.
-The observation that perceptually better restoration can \emph{lower} downstream diagnostic
-accuracy is not new: on the same ISIC skin-lesion setting, GradProm \citep{gradprom2025} reports
-that enhancement which improves restoration metrics degrades classification, and addresses it by
-aligning the enhancement and recognition gradients during training (gradient promotion). Our
-treatment differs in both guarantee and scope. Rather than repairing gradients, we (i) impose a
-diagnosis-preserving objective with a mutual-information lower bound (Lemma~\ref{lem:dp}, DP-Loss),
-so that information loss is bounded by construction rather than corrected empirically, and (ii)
-embed enhancement inside a routing policy that decides among direct diagnosis, cautioned diagnosis,
-enhance-then-diagnose, and query-for-retake (\cref{sec:agent}) --- including a recapture channel
-absent from prior selective-prediction and gradient-correction work. We cite GradProm as prior
-evidence of the phenomenon and distinguish on mechanism; we do not run a head-to-head comparison
-and make no superiority claim against it.
-
-\paragraph{IQA and medical AI benchmarks.}
-No-reference IQA \citep{mittal2012brisque,wang2023clipiqa} and dermatology challenges (ISIC) motivate quality-aware
-evaluation. \itb adds an explicitly quality-stratified protocol with paired low-/high-quality
-subsets, enabling the quality-conditional analysis our claims require.
-
-\paragraph{Selective prediction and learning-to-defer.}
-Selective classification and reject-option models abstain when confidence is low
-\citep{geifman2017selective,geifman2019selectivenet}, and recent analyses argue that calibration and
-selective reliability are distinct objectives: a well-calibrated model can still order inputs poorly,
-so abstention must be governed separately from confidence alone \citep{rabanser2025uncertainty}.
-Conformal alternatives provide coverage guarantees but degrade under the input and label shift typical
-of dermatology, where distributional change voids their assumptions \citep{mehrtens2025pitfalls}. Our
-query-for-retake channel is a \emph{quality-conditioned} instance of this family: rather than deferring
-on confidence alone, it routes on a perceptual-quality estimate that the bottleneck
-(\Cref{prop:entmono}) ties to predictive uncertainty, so that severely degraded inputs --- on which
-enhancement is unsafe (\Cref{sec:exp-preserve}) --- are sent for recapture instead of diagnosed.
-
-\paragraph{Human reader studies and AI--clinician comparison.}
-Reader studies place expert dermatologist accuracy on dermoscopic melanoma recognition in the range of
-roughly $74$--$89\%$ sensitivity and $60$--$79\%$ specificity, with substantial inter-reader variance
-that depends on experience and on the availability of clinical context
-\citep{haenssle2018man,haenssle2020reloaded,brinker2019deep,marchetti2020computer,tschandl2019comparison};
-for orientation, individual reader studies report mean sensitivity/specificity of
-$86.6\%/71.3\%$ ($58$ dermatologists, dermoscopy only \citep{haenssle2018man}),
-$83.8\%/77.6\%$ ($96$ dermatologists on a broader lesion spectrum \citep{haenssle2020reloaded}),
-$74.1\%/60.0\%$ ($157$ dermatologists \citep{brinker2019deep}), and a human mean sensitivity of
-$81.2\%$ ($511$ readers \citep{tschandl2019comparison}). Meta-analyses report pooled expert
-dermatologist sensitivity and specificity near $84\%$ and $74\%$ for AI--clinician comparisons
-\citep{salinas2024systematic} and pooled dermoscopy sensitivity and specificity near $90\%$ and
-$90\%$ relative to naked-eye examination in clinical settings \citep{vestergaard2008dermoscopy}, and
-convolutional networks have matched or exceeded readers on curated benchmarks
-\citep{esteva2017dermatologist,tschandl2020human}. These comparisons are dataset- and
-operating-point-specific and presuppose curated, high-quality imagery. Our contribution is orthogonal:
-we do not claim a new discriminative ceiling over clinicians, but reliable, quality-conditioned
-uncertainty and routing on the degraded consumer imagery that such studies exclude by design.
+\input{drafts/s2_related}
 
 % ═══════════════════════════════════════════════════════════════════════════════
-\section{Quality Assessment and the Quality-Conditional Bottleneck}\label{sec:qvib}
-
-\paragraph{Quality scoring.}
-\visiscore is a five-head assessor producing $q\in[0,1]^5$ (sharpness, brightness, completeness,
-colour temperature, contrast); its mean $\qbar$ is the quality scalar used downstream. On paired
-data it attains PLCC $0.924$ / SRCC $0.895$ averaged over the five dimensions. We stress (anti-drift
-rule 7) that $\qbar$ is interchangeable with any per-input quality scalar; \visiscore is one
-instantiation.
-
-\paragraph{Quality-conditional bottleneck.}
-We condition the variational marginal prior on $\qbar$, so that low-quality inputs are compressed
-toward an uninformative prior and high-quality inputs retain diagnostic information. The compact
-statements below are proved in Appendix~\ref{app:a1}.
-
-\input{appendix/A1_qvib_compact}
-
-\paragraph{Reading the results.}
-Proposition~\ref{prop:elbo} establishes \qvib as a principled variational objective;
-Lemma~\ref{lem:mono} makes the prior behave as designed (wider for worse quality);
-Theorem~\ref{thm:drift} bounds how much quality modulation can perturb self-attention; and
-Proposition~\ref{prop:entmono} certifies that predictive entropy rises as quality falls --- the
-formal sense in which the model ``knows when it does not know.''
+\input{drafts/s3_decision_surface}
 
 % ═══════════════════════════════════════════════════════════════════════════════
-\section{Diagnosis-Preserving Enhancement}\label{sec:enhance}
-
-\paragraph{Degradation taxonomy.}
-Of the five quality dimensions, four (sharpness, brightness, colour temperature, contrast) are
-recoverable by deterministic restoration, whereas completeness ($q_3$, missing field of view) is
-\emph{not} recoverable --- one cannot restore unseen tissue. The agent therefore treats low
-completeness as a query-for-retake signal rather than an enhancement target.
-
-\paragraph{Architecture.}
-\visienhance is a NAFNet backbone \citep{chen2022simple} with FiLM modulation \citep{perez2018film}
-conditioned on the quality vector, so restoration strength adapts per input. The map $\Tw(x,q)$ is
-deterministic; we deliberately avoid generative restoration to preclude hallucinated diagnostic
-structure (anti-drift rules 8--9).
-
-\paragraph{DP-Loss.}
-Training minimises $\mathcal{L}=\mathcal{L}_1+\lambda_{\mathrm{LPIPS}}\mathcal{L}_{\mathrm{LPIPS}}
-+\lambda_{\mathrm{DP}}\Ldp+\lambda_{\mathrm{q}}\mathcal{L}_{\mathrm{hinge}}$, where the
-diagnosis-preserving term $\Ldp=\KL(p_\phi^{\mathrm{enh}}\,\|\,p_\phi^{\mathrm{ref}})$ keeps the
-enhanced latent close to the reference latent, the LPIPS term controls perceptual fidelity, and the
-quality hinge encourages $\qbar(\Tw(x,q))>\qbar(x)$ within the salvage band.
-
-\subsection{Entropy Reduction and Mutual-Information Preservation}\label{sec:prop3lemma3}
-% Compact statements; full proofs in Appendix A2.1 / A2.2. R2: use derive/sketch wording here.
-We derive two results connecting enhancement to diagnosis. Under quality improvement and a KL budget
-$\Ldp\leq\epsilon$, enhancement reduces expected predictive entropy
-(Proposition~\ref{prop:entropy}) while the mutual information $I(\Zenh;Y)$ stays within
-$\beta\sqrt{\epsilon}$ of the reference (Lemma~\ref{lem:dp}); the $\sqrt{\epsilon}$ rate is
-Pinsker-optimal. Full proofs are in Appendix~\ref{app:a2}.
-
-\input{appendix/A2_prop3_lemma3_compact}
-
-\paragraph{Three-stage training.}
-We train in three stages: (1) pixel restoration ($\mathcal{L}_1$ + LPIPS) to a PSNR gate; (2)
-DP-Loss fine-tuning to tighten $\Ldp$; (3) a quality-hinge stage that calibrates $\qbar$ improvement
-inside the salvage band. The PSNR gate also guards the non-vacuity condition of
-Proposition~\ref{prop:entropy} (Appendix~\ref{app:a2-prop3}).
+\input{drafts/s4_c1_enhance}
 
 % ═══════════════════════════════════════════════════════════════════════════════
-\section{Closed-Loop Agent}\label{sec:agent}
-
-\paragraph{Four-channel routing.}
-Given $\qbar$, the agent selects one of four actions: \emph{direct diagnosis}
-($\qbar\geq\tauhigh$), \emph{cautioned diagnosis} (high $\qbar$ but high predictive entropy),
-\emph{enhance-then-diagnose} ($\qbar\in[\tauenh,\tauhigh]$, the salvage band), or
-\emph{query-for-retake} ($\qbar<\tauenh$ or low completeness). The agent never produces a diagnosis
-itself; it \emph{decides} when and how diagnosis happens.
-
-\subsection{Expected-Risk Bound}\label{sec:thm2}
-% §5.2 — compact statement; full proof Appendix A2.3.
-\input{appendix/A2_3_theorem2_compact}
-
-\subsection{Composite Calibration Bound}\label{sec:cor1}
-% §5.3 — link to prior post-hoc temperature scaling; full proof Appendix A3.
-\input{appendix/A3_corollary1_compact}
-
-\paragraph{Implementation.}
-The routing policy is realised as a lightweight ReAct-style controller backed by a small language
-model with a deterministic rule fallback, so that the four-channel decision is auditable and the
-thresholds $\tauenh,\tauhigh$ are explicit rather than implicit.
+\input{drafts/s5_c2_agent}
 
 % ═══════════════════════════════════════════════════════════════════════════════
-\section{The \itb{} Benchmark}\label{sec:benchmark}
-
-\paragraph{Subsets.}
-\itb comprises four quality-stratified subsets --- low-quality (LQ), high-quality (HQ), edge cases,
-and a diverse-source split --- with paired LQ/HQ items enabling matched quality-conditional
-comparison. Degradations are applied with controlled severity so that quality is a measured,
-not merely assumed, variable.
-
-\paragraph{Protocol.}
-Evaluation is reported per quality stratum rather than pooled, exposing the quality--reliability
-relationship that pooled metrics hide. Primary metrics are AUC, ECE, the quality-conditional
-diagnostic index (QCDI), and the entropy--quality correlation $\rho(\Hent,\qbar)$.
-
-\paragraph{Baselines.}
-We compare against nine baselines spanning the three method families above (direct classifier, MC
-dropout, deep ensemble, evidential, focal/label-smoothing, standard VIB, VIB$+$temperature scaling,
-and a prior post-hoc quality-conditional scaling method \qcts as one ablation), ensuring each design
-choice in our system is isolated. The full construction protocol --- source pools, quality scoring,
-degradation tiers, subset definitions, and the v1.0 composition ($2820$ images across the four
-subsets) --- is given in Appendix~\ref{app:a4}.
+\input{drafts/s6_setup}
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Experiments}\label{sec:exp}
-% RED LINE 4: no number enters here until its source csv is frozen.
-% FROZEN (v5 feature-DP, 会话21 2026-06-09, run_ids in ACCEPTANCE_CRITERIA E1-E12 block):
-%   E1 fidelity 32.7dB/SSIM0.91 (1442290) | E2 per-dim (1441320) | E3 dAUC-0.012/agree0.958 +
-%   E7 DP-ablation +0.021/p2.3e-45 (1441301) | E8 FiLM-ablation (1442290+1442337) |
-%   E6 severe dAUC-0.056 (1441321) | E12 16ms (1441322); dflip fig (1442284).
-% STILL PENDING (do NOT write from memory): Table 1 (9-baseline x ITB), E5 salvage rate,
-%   cross-domain (HAM/PAD re-audit + cross-modality), fairness. Frozen elsewhere: scorer
-%   0.924/0.895; core config (n=19878) AUC 0.707/ECE 0.098/rho -0.165; 5-backbone universality.
+% §7 parent shell. Setup is covered by \input{drafts/s6_setup} (§6); per-stratum
+% bootstrap 95% CIs (2000 resamples) and per-correlation p-values are reported there.
+% Subsections below: C0 surface (s71), C1 preservation/DP-Loss/SOTA/ablations (s7_c1),
+% C3 honest boundary (s7_c3), DCA + global triage negative (s77).
 
-\paragraph{Setup.}
-We train on quality-stratified skin-lesion data with held-out evaluation on \itb, reporting metrics
-per quality stratum with bootstrap $95\%$ confidence intervals ($2000$ resamples) and, for every
-correlation, an accompanying $p$-value. Full reproduction details --- environment, data splits, seeds,
-compute budget, and released artefacts --- are in Appendix~\ref{app:a26}.
-
-\subsection{Main Results}\label{sec:exp-main}
-\Cref{tab:main} reports nine baselines against \qvib{} on the quality-stratified \itb{} benchmark
-($n=2{,}820$). The headline is not raw discriminative AUC --- VIB-family models deliberately trade AUC
-for calibration --- but \emph{quality-aware} calibration: the calibration gap QCDI between low- and
-high-quality strata, and the entropy--quality correlation $\rho(\Hent,\qbar)$. Among trainable models,
-\qvib{} Full attains the best QCDI ($+0.006$, CI $\pm0.059$) and a strongly negative $\rho=-0.19$ ---
-the behaviour predicted by \Cref{prop:entmono} (predictive entropy monotone in quality). On aggregate
-ECE it ties Std VIB ($0.149$ vs $0.146$ on \itb-LQ), but unlike Std VIB its calibration is conditioned
-on quality (QCDI $+0.006$ vs $+0.016$, $\rho$ $-0.19$ vs $-0.15$). \qcts{}, a prior post-hoc
-quality-conditional method, is the strongest \emph{post-hoc} calibrator (\itb-LQ ECE $0.079$) and is included as a calibration
-ablation. The \itb{} pool is intentionally harder (adversarial low-quality strata) than the held-out
-set on which the \qvib{} core attains AUC $0.707$ / ECE $0.098$ ($\rho=-0.165$, $p<10^{-24}$,
-$n=19{,}878$).
-\input{table1_main}
-
-\subsection{Enhancement Fidelity and Speed}\label{sec:exp-fidelity}
-The deterministic enhancer raises per-image PSNR from a degraded-input baseline of $22.7$~dB to
-$32.8$~dB --- a $+10.1$~dB gain (SSIM $0.91$) over $n=19{,}878$ held-out images under mixed degradation
-severity (E1) --- clearing
-the $30$~dB restoration gate that also guards the non-vacuity condition of
-Proposition~\ref{prop:entropy}. End-to-end inference (quality scoring $+$ enhancement) runs at
-$16$~ms/image ($p_{95}=17$~ms) on a single GPU (E12), comfortably within the $50$~ms real-time budget.
-A per-degradation
-breakdown (E2) shows the enhancer is strongest on brightness ($37.7$~dB) and blur ($35.8$~dB), weaker
-on colour-shift ($33.8$~dB), and --- notably --- \emph{harmful} on contrast degradation ($29.1$~dB,
-below the $32.3$~dB of the degraded input itself), a limitation we return to in \cref{sec:discussion}.
-
-\subsection{Diagnostic Preservation and Ablations}\label{sec:exp-preserve}
-We assess whether enhancement preserves diagnostic content using a frozen EfficientNet-B3 lesion
-classifier as an \emph{independent} diagnostic probe --- decoupled from \qvib to avoid circularity ---
-on the ISIC-2020 held-out split ($n=3627$, $117$ malignant). Each image is degraded at moderate
-severity, enhanced, and compared against its clean reference; we report the change in AUC
-($\Delta\mathrm{AUC}=\mathrm{AUC}_{\text{enh}}-\mathrm{AUC}_{\text{ref}}$), the prediction agreement
-between enhanced and reference, the diagnostic KL, and McNemar tests, with bootstrap $95\%$ CIs
-($2000$ resamples).
-
-\paragraph{E3 --- enhancement preserves diagnosis.}
-The feature-level DP model attains $\Delta\mathrm{AUC}=-0.012$ (within the $1.5\%$ target) and
-$95.8\%$ enhanced-versus-reference agreement (above the $95\%$ target); a McNemar test finds no
-significant difference between enhanced and reference predictions ($b{=}81$, $c{=}73$, $p=0.57$),
-i.e.\ the enhanced inputs are diagnostically interchangeable with their clean references.
-
-\paragraph{E7 --- DP-Loss ablation (Lemma~\ref{lem:dp}).}
-Against a no-DP enhancement baseline, the diagnosis-preserving objective significantly improves
-preservation on matched bootstrap resamples: $\Delta\mathrm{AUC}_{\text{enh}}$ improves by $+0.021$
-(CI $[+0.005,+0.035]$, excluding zero) and the diagnostic KL drops by $-0.148$
-(CI $[-0.173,-0.124]$), with McNemar $p=2.3\times10^{-45}$. This is the empirical counterpart of the
-mutual-information bound in Lemma~\ref{lem:dp}.
-
-\paragraph{E8 --- quality-conditional FiLM ablation.}
-Removing FiLM leaves pixel fidelity essentially unchanged (per-image PSNR within $0.4$~dB: $32.7$ with
-FiLM versus $33.1$ without; FiLM is \emph{not} a fidelity mechanism), yet it degrades diagnostic
-preservation across every metric --- with FiLM $\Delta\mathrm{AUC}=-0.033$, agreement $0.90$, KL
-$0.24$, versus $-0.042$, $0.87$, $0.35$ without, even at the no-DP stage. FiLM's contribution is thus
-quality-conditional \emph{diagnostic} fidelity, not perceptual sharpening.
-
-\paragraph{E9 --- FiLM versus cross-attention conditioning.}
-We ask whether a heavier conditioning mechanism would do better. We retrain the identical
-DP-Loss Stage-2 recipe with FiLM replaced by cross-attention conditioning ($4$ learned quality
-tokens as keys/values, the feature map as query; $+1.8$M parameters), changing only the
-conditioning module. On the same paired protocol ($n=3627$, $117$ melanomas) the two are
-statistically indistinguishable: per-image fidelity is tied ($32.79$ versus $32.74$~dB), and both
-clear E3 (cross-attention $\Delta\mathrm{AUC}=-0.010$, agreement $0.955$, KL $0.094$; FiLM
-$-0.012$, $0.958$, $0.091$). A paired bootstrap of the difference (cross-attention $-$ FiLM)
-straddles zero on every axis --- $\Delta\mathrm{AUC}=+0.002$ (95\% CI $[-0.006,+0.009]$),
-$\Delta\mathrm{KL}=+0.003$ ($[-0.005,+0.011]$), McNemar $p=0.68$ --- so the extra capacity buys no
-measurable gain, while cross-attention's residual dangerous-flip rate is in fact higher
-($0.19$ versus FiLM's $0.14$; both on the moderate-severity paired protocol of this ablation, distinct
-from the mixed-severity dflip $0.194$ reported for \visienhance{} in \cref{tab:e10}). We therefore keep
-FiLM on parsimony grounds: it matches cross-attention on both fidelity and diagnostic preservation at
-$1.8$M fewer parameters.
-
-\paragraph{E10 --- generic restoration SOTA degrades diagnosis.}
-We test whether a strong off-the-shelf restorer could replace our diagnosis-preserving training. Six
-non-diffusion restoration/enhancement models (Restormer, NAFNet, MIRNet-v2, SwinIR, Uformer-B,
-Real-ESRGAN) are run zero-shot with official weights on the same mixed-severity paired inputs
-(\cref{tab:e10}). All six are significantly worse diagnostic preservers than \visienhance: paired
-bootstraps give $\Delta\mathrm{AUC}_{\text{baseline}-\text{VE}}\in[-0.12,-0.07]$ (every $95\%$ CI
-excluding zero; every McNemar $p<10^{-150}$), and none restores fidelity (PSNR $13$--$22$~dB versus
-\visienhance{}'s $32.8$). Tellingly, \emph{lower fidelity does not mean safer}: the lowest-dflip
-baselines (Restormer, Uformer-B; dflip $\approx0.05$) barely alter the image and so trivially avoid
-flips, yet incur the largest diagnostic KL ($\approx0.8$), distorting the posterior far more than
-\visienhance{} (KL $0.10$). Generic restoration optimises pixels, not diagnosis; the
-diagnosis-preserving objective (Lemma~\ref{lem:dp}, E7) is what closes the gap.
-\input{table1_e10_sota}
-
-\paragraph{Residual dangerous flips.}
-Preservation is not perfect: $10$ of $74$ correctly-flagged melanomas are pushed below the decision
-threshold by enhancement (\cref{fig:dflip}). We treat this residual as motivation for the
-query-for-retake channel (\cref{sec:discussion}), not as a defect to suppress.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{../../report/figures/fig_dflip.pdf}
-  \caption{\textbf{Enhancement can suppress malignant cues (dangerous flips).}
-  \textbf{(a)} Slopegraph of the B3 classifier's melanoma probability for the
-  $74$ reference melanomas that are correctly called positive on clean input,
-  tracked across the three states reference (clean) $\rightarrow$ degraded
-  $\rightarrow$ enhanced. The mean melanoma probability drifts from $0.93$ on
-  reference to $0.82$ after enhancement, and for $10/74$ ($13.5\%$) lesions
-  enhancement pushes the probability below the $0.5$ decision line --- a
-  \emph{dangerous flip} from a correct malignant call to a benign one.
-  \textbf{(b)} Four enhance-caused flips shown as triplets
-  (reference\,$\vert$\,degraded\,$\vert$\,enhanced). Malignant signs ---
-  asymmetry, irregular borders, mottled colouration --- are smoothed away as if
-  they were low-quality noise; the enhanced row collapses to melanoma
-  probabilities $0.05/0.03/0.16/0.43$, all flipped to benign. These are
-  \emph{residual} failures of feature-DP \visienhance{} v5, our strongest
-  enhancement model: even when aggregate diagnostic performance stays within
-  tolerance ($|\Delta\mathrm{AUC}|<1.5\%$), a small set of lesions is harmed.
-  This is the empirical case for \emph{not} enhancing every low-quality image.}
-  \label{fig:dflip}
-\end{figure}
-
-\subsection{Salvage Rate and the Severe-Degradation Safety Boundary}\label{sec:exp-salvage}
-\paragraph{E5 --- salvage rate is benign-dominated, and mask-weighted reconstruction does not close the gap.}
-On the moderate band the aggregate salvage rate --- the fraction of degraded-then-misclassified
-images that enhancement restores to a correct prediction --- is $0.737$, nominally clearing the
-$>55\%$ target. This aggregate is misleading, and we deliberately do \emph{not} report it as a
-headline capability: a per-class split (independent EfficientNet-B3 probe, $n=3627$ per severity)
-shows it is almost entirely benign false-positive correction. The salvage and damage denominators are
-distinct subsets: salvage is taken over the degraded-then-misclassified images, damage over those the
-probe originally classified correctly. On benign lesions enhancement salvages $75.6\%$ ($1809/2392$
-misclassified) while damaging only $0.6\%$ ($50/8138$ correctly-classified); on melanoma it
-salvages just $5.2\%$ ($4/77$ misclassified) while damaging $31.0\%$ ($85/274$ correctly-classified) --- a net loss
-of $81$ malignant cases. Enhancement thus helps the benign-leaning errors that least need help and
-harms the malignant cases that matter most, mirroring the residual dangerous flips above
-(\cref{fig:dflip}) and the severe-band degradation below. We tested whether this gap is an
-artefact of the reconstruction loss: a mask-weighted variant ($\lambda_{\text{mask}}=3.0$,
-$4\times$ lesion-region weight, forbidding the enhancer from smoothing over the lesion) yields
-melanoma salvage of $5.2\%$ ($4/77$) and damage of $30.3\%$ ($83/274$), a net of $-79$ malignant
-cases --- statistically indistinguishable from the feature-DP result. Reweighting the
-reconstruction loss toward the lesion is therefore \emph{not sufficient} to close the malignant
-salvage gap: the failure mode is not ``the enhancer smooths away the lesion'' but something the
-per-pixel reconstruction objective cannot reach (the diagnostic decision boundary depends on
-texture statistics that mask-weighted L1 does not target). We read E5 as the strongest evidence
-that \emph{blanket} enhancement is unsafe and that a query-for-retake gate is required --- not as a
-salvage benchmark to maximise. We report this negative result rather than omit it; closing the
-malignant salvage gap by other means (e.g.\ diagnosis-aware or adversarial objectives) is left to
-future work (\cref{sec:discussion}).
-
-\paragraph{E6 --- the severe-degradation safety boundary.}
-On the severe band we observe the boundary directly: enhancing severely degraded images significantly
-\emph{lowers} diagnostic AUC ($\Delta\mathrm{AUC}=-0.056$, CI $[-0.085,-0.028]$, excluding zero) and
-induces a $0.46$ dangerous-flip rate. Enhancement is the wrong action in this regime; the agent routes
-severe inputs to query-for-retake rather than enhance-then-diagnose (\cref{sec:agent}), which is
-exactly the safety behaviour the salvage boundary is meant to enforce.
-
-\paragraph{Theorem~\ref{thm:agent-compact} P1/P3 --- the retake channel fires monotonically with
-degradation.}
-The complement of the salvage boundary is the retake channel, and its empirical behaviour matches the
-threshold-window structure of Theorem~\ref{thm:agent-compact}. As quality drops, the fraction of cases
-the agent routes to query-for-retake increases strictly and monotonically across the three quality
-bands: $0.055$ on the high band ($95\%$ CI $[0.031,0.083]$), $0.651$ on the moderate band
-($[0.600,0.705]$), and $0.889$ on the severe band ($[0.800,0.978]$; bootstrap CIs, all non-overlapping).
-This is the realised counterpart of the policy: the retake action is essentially dormant where direct
-diagnosis suffices (P3) and dominates exactly where enhancement is unsafe (P1), so the channel that the
-severe-band boundary above calls for is precisely the channel the policy activates. We emphasise that
-this is a statement about \emph{routing}, not about enhancement efficacy: the aggregate salvage rate on
-the severe band ($0.898$) is benign-dominated in the same way as the moderate band quantified above and
-is \textbf{not} evidence that enhancement helps severe malignant cases --- the correct action on the
-severe band is to route to retake ($0.889$), not to enhance, which is exactly what
-Theorem~\ref{thm:agent-compact} P3 prescribes. Within the enhance band the same per-quality routing
-yields risk reductions relative to direct diagnosis whose CIs exclude zero in every band (severe
-$-0.305$, CI $[-0.390,-0.214]$; moderate $-0.189$, $[-0.204,-0.174]$; high $-0.127$,
-$[-0.136,-0.119]$), and the moderate-band enhancement salvage of $0.778$ clears the $55\%$ efficiency
-target (E5). This $0.778$ is measured on a different, narrower population than the $0.737$ aggregate of
-\cref{sec:exp-salvage}: it is computed only on the cases the policy actually routes to the enhance
-channel (the moderate quality sub-band $\bar{q}\in[0.35,0.5]$, $n=3253$), whereas the $0.737$ is taken
-over the full moderate-severity split ($n=3627$). It is therefore subject to exactly the same
-benign-dominated caveat as the rest of this section: it reflects predominantly benign false-positive
-correction on a benign-prevalent cohort and is \textbf{not} evidence that enhancement improves
-diagnosis of severe or malignant lesions. With that caveat, the gains the bound predicts on the salvage
-band are realised while the unsafe severe cases are diverted to retake rather than enhanced.
-
-\subsection{Universality}\label{sec:exp-universal}
-% R1: NOT "TS reversal is universal". Phrase as "most pronounced on weakly quality-aware backbones".
-We apply the quality-conditional treatment to four further backbones (ResNet-50, ViT-Tiny,
-ConvNeXt-Tiny, Swin-Tiny); \Cref{tab:universality} reports the entropy--quality correlation $\rho$ and
-the calibration gap QCDI before scaling, under uniform temperature scaling, and under
-quality-conditional scaling. Uniform temperature scaling is a rank-preserving transform and therefore
-leaves $\rho$ unchanged by construction, so it cannot address the entropy--quality coupling;
-quality-conditional scaling instead drives $\rho$ more negative in each of the four backbones, most visibly on
-the weakly quality-aware ViT-Tiny ($\rho$: $+0.028 \to -0.056$). Its effect on the calibration gap
-QCDI is concentrated where it is needed: on the weakly quality-aware ViT-Tiny ($+0.023 \to -0.017$)
-and ConvNeXt-Tiny ($+0.136 \to -0.020$) it pulls QCDI substantially toward zero, whereas on the
-ResNet-50 and Swin-Tiny backbones --- already quality-aware in the raw model (QCDI $+0.014$ and
-$+0.020$) --- it leaves QCDI essentially unchanged ($+0.014$ and $+0.016$). The $\rho$ effect is thus
-consistent across these architectures and the QCDI improvement is most pronounced where the raw
-backbone is least quality-aware; we do not claim either to be universal.
-\input{table2_universality}
-
-\subsection{Cross-Domain Generalisation}\label{sec:exp-cross}
-We test zero-shot transfer of the \emph{quality-awareness} property to four external dermatology
-datasets unseen in training: HAM10000 ($n=10{,}015$, dermoscopy), PAD-UFES-20 ($n=2{,}298$,
-clinical smartphone macro photography), Fitzpatrick17k ($n=16{,}574$, in-the-wild clinical
-photographs spanning all six skin types), and DermNet ($n=3{,}151$, a clinical-atlas
-malignant-vs-benign neoplasm proxy --- AK/BCC versus seborrhoeic-keratosis classes). The headline is
-not raw discriminative AUC but whether the quality-conditional uncertainty coupling survives the
-shift. The \emph{coupling itself transfers on all four sets}: \qvib{} Full retains a significantly
-negative entropy--quality correlation ($\rho=-0.16$, $p<10^{-60}$ on HAM; $\rho=-0.24$,
-$p<10^{-29}$ on PAD-UFES; $\rho=-0.20$, $p<10^{-145}$ on Fitzpatrick17k; $\rho=-0.22$,
-$p<10^{-36}$ on DermNet), and its $|\rho|$ exceeds that of Std VIB (e.g.\ $-0.13$ on Fitz, $+0.03$
-n.s.\ on DermNet) on every set, whereas the discriminative EfficientNet-B3 stays near zero or
-positive ($+0.25$ on HAM; $-0.06$ on Fitz; $-0.02$ n.s.\ on DermNet --- it does \emph{not} grow
-appropriately uncertain as quality drops). Absolute calibration, by contrast, transfers only as far
-as the domain is close: \qvib{} Full ECE is $0.098$ (HAM, dermoscopy) and $0.130$ (PAD-UFES),
-beating EfficientNet-B3 ($0.162$, $0.266$); but on the farthest dermatology domains --- Fitzpatrick17k
-clinical photos at $3\%$ melanoma prevalence, and DermNet's cross-label neoplasm proxy --- the VIB
-family is badly miscalibrated in absolute terms (ECE $0.59$ and $0.41$) and discrimination collapses
-toward chance (Fitz AUC $0.58$--$0.62$; DermNet AUC $\sim0.54$), even though uncertainty still tracks
-quality. Raw AUC likewise degrades under the larger shifts (PAD-UFES: VIB $\sim0.49$ vs B3 $0.67$).
-The property does \emph{not}, however, survive a change of imaging modality: on retinal fundus
-photographs (APTOS~2019, a diabetic-retinopathy ViT with clean-image AUC $0.99$) the entropy--quality
-correlation flips sign ($\rho=+0.14$, $p=0.03$) and quality-conditional temperature scaling collapses
-onto plain temperature scaling --- a clean boundary on the claim (Sec.~\ref{sec:discussion}). We read
-the dermatology split cleanly: the quality--uncertainty \emph{property} (Prop.~\ref{prop:entmono}) is
-what generalises zero-shot within the modality, while absolute discrimination and calibration erode
-with domain distance --- exactly the regime in which the agent's out-of-distribution
-query-for-retake path is meant to fire, rather than a property to claim away. (Four dermatology and
-one cross-modality of eight planned cross-domain sets are reported here; the remaining endoscopy and
-chest-radiograph sets are deferred.)
-
-\subsection{Cost--Benefit and Decision-Curve Analysis}\label{sec:exp-dca}
-% R3: phrase clinical evidence as decision-curve / triage-simulation language only.
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{../../report/figures/fig_dca_triage.pdf}
-  \caption{\textbf{Decision-curve and triage analysis on \itb{}-LQ ($n=300$).}
-  \textbf{(a)} Net-benefit decision curves across decision thresholds (treat-all and
-  treat-none references shown). Maximum net benefit is statistically indistinguishable
-  among direct diagnosis and all information-bottleneck variants ($0.179$--$0.192$;
-  overlapping $95\%$ bootstrap CIs). \textbf{(b)} Confidence-gated triage: auto-handled
-  sensitivity versus referral budget. The well-calibrated \qvib{}+TokFT tracks direct
-  diagnosis ($0.788$ vs.\ $0.818$ at a $20\%$ budget), while under-confident Std VIB and
-  Std VIB${}+{}$QCTS collapse, missing $70$--$73\%$ of positives. The bottleneck's value
-  is calibration-driven reliable abstention, not a raw-discrimination gain.}
-  \label{fig:dca}
-\end{figure}
-
-We evaluate clinical utility on \itb{}-LQ ($n=300$, the worst-case low-quality
-deployment subset) through net-benefit decision-curve analysis (DCA) and a
-confidence-gated triage simulation, rather than discrimination metrics alone
-(Fig.~\ref{fig:dca}).
-Across the clinically relevant threshold range, the maximum net benefit is
-\emph{statistically indistinguishable} among direct diagnosis and the
-information-bottleneck variants: EfficientNet-B3 (Direct) $0.186$
-($95\%$ CI $[0.143,0.233]$), \qvib{}+TokFT $0.179$ $[0.139,0.223]$,
-Std VIB $0.186$ $[0.142,0.233]$, and Std VIB${}+{}$QCTS $0.192$ $[0.148,0.236]$
-($2{,}000$-sample bootstrap; all CIs overlap). We therefore make \emph{no} claim
-that enhancement raises net benefit over direct diagnosis.
-
-The clinical value instead surfaces under \emph{confidence-gated triage}, where
-low-confidence cases are referred to a human reader. The triage simulation evaluates the
-configurations that are actually deployed at the gate: direct diagnosis, against which the
-agent's auto-handled path must be non-inferior, and the discriminative-coupled \qvib{}+TokFT
-variant, whose stronger entropy--quality coupling (Table~\ref{tab:main}) is the configuration
-the closed-loop gate relies on for confidence-ordered abstention. The calibration-demonstration
-configuration, \qvib{} Full, is not run through this deployment-time simulation: its headline
-contribution is quality-aware calibration (best QCDI and $\rho$ in Table~\ref{tab:main},
-\S\ref{sec:exp-main}), and on the discriminative axis it deliberately trades AUC for calibration
-(diagnostic AUC $\approx 0.585$ on \itb{}-LQ, a discrimination-side figure that is \emph{not} a
-triage-simulation result). At a $20\%$ referral budget,
-the well-calibrated \qvib{}+TokFT \emph{matches} direct diagnosis on
-auto-handled sensitivity ($0.788$ vs.\ $0.818$, missed-positive rate $0.183$ vs.\
-$0.167$), whereas the under-confident Std VIB and Std VIB${}+{}$QCTS variants
-collapse at their natural operating thresholds ($0.137$/$0.143$ sensitivity, missing
-$70$--$73\%$ of positives) because
-their compressed posteriors rarely cross the referral threshold. The operative
-finding is thus one of \emph{calibration-driven reliable abstention}: the value of
-the bottleneck is not a raw-discrimination gain --- which direct diagnosis already
-attains on this subset --- but a posterior whose confidence can safely gate the
-agent's out-of-distribution query-for-retake path (\S\ref{sec:exp-cross}). The
-decision-analytic model (cost structure, net-benefit definition, and the
-cost-ratio sensitivity sweep) is specified in Appendix~\ref{app:a20}, where the cost
-constants are anchored to peer-reviewed health-economic literature and treated as a
-sensitivity range rather than a single point estimate. That sweep confirms the same
-reading along the cost-sensitive axis: the normalised expected cost rises
-monotonically with the miss-to-biopsy cost ratio while the maximum net benefit is
-invariant to it by the standard DCA definition, so the overlapping net-benefit
-intervals are not an artefact of a single cost assumption.
-
-\subsection{Fairness}\label{sec:exp-fair}
-We stratify calibration on the ISIC-derived \itb{} subsets ($n=1{,}320$, the subset of the \itb{}
-pool carrying sex and age metadata)
-by sex (male/female) and by age band ($<\!40$, $40$--$60$, $>\!60$), reporting per-subpopulation
-$15$-bin ECE with $1{,}000$-sample bootstrap $95\%$ CIs and the max--min ECE gap (fairness
-threshold $0.05$). \qvib{} Full is the best-calibrated model within every slice that is not
-elderly: ECE $0.113$ (female) and $0.151$ (male) --- a sex gap of $\mathbf{0.038}$, below threshold
---- and ECE $0.102$ ($<\!40$) and $0.059$ ($40$--$60$). Calibration degrades sharply only on the
-$>\!60$ band (ECE $0.319$, $95\%$ CI $[0.269,0.372]$), where melanoma prevalence is highest
-($144/336\approx 43\%$), inflating the age gap to $0.260$ (fail). This elderly gap is not specific
-to our model: every well-calibrated method shares it (Std VIB $0.248$, Std VIB$+$TS $0.280$,
-Adaptive-Prior $0.262$). The only models whose age gap falls below threshold --- EfficientNet-B3
-Direct ($0.006$) and \qvib{}$+$TokFT ($0.009$) --- achieve it by being \emph{uniformly}
-miscalibrated across all bands (per-band ECE $\approx 0.18$ and $\approx 0.25$ respectively), i.e.\
-parity through uniform failure rather than genuine fairness. We therefore read the result honestly:
-quality-conditioning yields the lowest absolute calibration error in every non-elderly
-subpopulation and the smallest sex gap, but the high-prevalence elderly band remains a genuine
-calibration limitation --- precisely the operating point where the agent's defer / query-for-retake
-path (Sec.~\ref{sec:agent}) is intended to fire, and a motivation for demographic-aware calibration
-in future work. We additionally stratify by Fitzpatrick skin type I--VI on the (out-of-distribution)
-Fitzpatrick17k clinical photographs ($n=16{,}012$, the skin-type-labelled subset of the
-$16{,}574$-image cross-domain set in \S\ref{sec:exp-cross}): here per-type calibration
-degrades \emph{uniformly} --- \qvib{} Full's max--min ECE gap across types I--VI is $0.30$ (worst on
-type VI, ECE $0.80$, $n_{\text{pos}}=14$; this smallest deep-skin cell is too sparse for a reliable
-per-type point estimate and we do not over-interpret it), and AUC equivalence between deep (V--VI) and light (I--IV)
-types is not established (TOST $p=0.27$, AUC difference $-0.023$, $95\%$ CI $[-0.108, +0.065]$). This
-degradation is shared by \emph{every} calibration method on this far domain (Std VIB gap $0.29$,
-Adaptive-Prior $0.30$, Std VIB$+$TS $0.30$) and tracks the domain-distance calibration erosion of
-Sec.~\ref{sec:exp-cross} rather than a model-specific skin-type bias; the only methods with a small
-skin-type gap are again the uniformly-miscalibrated EfficientNet-B3 ($0.04$) and Focal$+$LS ($0.03$).
-We therefore restrict our skin-type fairness claim to the qualitative finding that quality-conditioning
-does not introduce skin-type bias relative to its peers, and treat absolute per-type calibration on
-out-of-distribution clinical photographs as an open OOD-calibration problem (Sec.~\ref{sec:discussion}).
+\input{drafts/s71_c0_results}
+\input{drafts/s7_c1_results}
+\input{drafts/s7_c3_boundary}
+\input{drafts/s77_dca_triage}
 
 % ═══════════════════════════════════════════════════════════════════════════════
-\section{Discussion and Limitations}\label{sec:discussion}
-
-\paragraph{Relation to prior post-hoc scaling.}
-Quality-conditional temperature scaling (\qcts), a prior post-hoc approach, operates on a \emph{frozen}
-model as a post-hoc step. The present system is end-to-end trainable with active intervention: enhancement and
-routing change the input and the decision, not merely the confidence. Corollary~\ref{cor:composite-compact}
-formalises how the two compose.
-
-\paragraph{Why generative enhancement fails here.}
-Generative restoration optimises perceptual realism, which in dermoscopy can mean synthesising
-plausible-but-absent pigment networks or vessels --- artefacts that are diagnostically misleading.
-Deterministic restoration with a diagnosis-preserving objective trades some perceptual sharpness for
-the guarantee analysed in \cref{sec:prop3lemma3}; this trade-off is the point, not a limitation.
-
-\input{s8_enhancement_failure}
-
-\paragraph{Failure-mode taxonomy.}
-A three-cluster analysis of residual failures (Appendix~\ref{app:a18}) separates heavy-blur
-($\approx 49\%$), colour-distorted ($\approx 32\%$), and ambiguous ($\approx 19\%$) cases. The
-ambiguous cluster sits inside the salvage band yet does not benefit from enhancement, which is why
-the routing policy adds a secondary entropy gate (cautioned diagnosis) on top of the quality
-threshold.
-
-\paragraph{Limitations.}
-(1) The theoretical results are derived under stated assumptions and are sketches of why the bounds
-hold, not fully watertight proofs in every regime (anti-drift rule 2). (2) \itb applies controlled
-synthetic degradations; real consumer-capture statistics may differ. (3) Learning a reliable quality
-scalar adds annotation and training cost. (4) We report no real-world clinical deployment validation;
-clinical claims rest on decision-curve analysis and simulation, not on reader confirmation
-(anti-drift rule 3; methodology in Appendix~\ref{app:a23}). (5) The quality--uncertainty coupling is
-\emph{modality-bounded}: it transfers zero-shot across four dermatology domains
-(Sec.~\ref{sec:exp-cross}) but not to retinal fundus imaging, where the entropy--quality correlation
-reverses sign ($\rho=+0.14$) --- the scorer encodes dermoscopic, not universal, quality cues, and
-re-deployment to another modality requires re-fitting the quality channel. (6) On the adversarial
-\itb-LQ pool the diagnostic AUC of the calibration-first VIB family is low in absolute terms
-($0.55$--$0.59$): \qvib{}
-deliberately trades discriminative accuracy for quality-conditional calibration, so it should not be
-read as a competitive standalone classifier on hard pools, and its value lies in routing and
-abstention rather than raw discrimination. (7) Diagnosis-preservation (\Cref{sec:exp-preserve}) is
-measured against a single frozen \mbox{EfficientNet-B3} probe; the preservation conclusions are
-therefore probe-dependent and a second independent diagnostic backbone would strengthen them. We
-pre-emptively address five anticipated
-reviewer concerns --- multiple-comparison statistics, research-versus-deployment framing, real-world
-degradation, differentiation from prior work, and enhancement safety --- in Appendix~\ref{app:a21}.
+\input{drafts/s8_discussion}
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section{Conclusion}\label{sec:conclusion}
-We presented a closed-loop quality-triage system that threads perceptual quality through diagnosis,
-enhancement, and routing, backed by an end-to-end theoretical closure and a quality-stratified
-benchmark. By making quality a first-class signal --- and by deciding when \emph{not} to diagnose
-directly --- the system targets reliability under exactly the conditions where consumer-device
-medical AI is most likely to fail.
+We presented a closed-loop quality-triage system for skin-lesion diagnosis on degraded consumer
+imagery --- one that decides, per input, when to diagnose directly, when to apply
+diagnosis-preserving enhancement, and when to request a retake rather than enhance blindly. The
+constructive core is a recipe for enhancing \emph{safely}: a feature-level diagnosis-preserving
+objective whose information loss is bounded by a mutual-information lower bound (Lemma~\ref{lem:dp},
+realised empirically by the DP-Loss ablation), so that within a moderate-degradation window
+enhancement does not erode diagnostic content. Around this recipe we build a query-for-retake
+agent whose four-channel routing is governed by a local, per-band conditional risk guarantee
+(Theorem~\ref{thm:agent-compact}): enhancement is licensed only inside the band where it provably
+helps, and re-acquisition is requested outside it.
+
+We also chart, rather than hide, where this system reaches its limits. Enhancement turns net-negative
+on the hardest cases --- extreme contrast loss at the per-dimension level
+(\cref{sec:exp-surface}) and malignant lesions under severe degradation, where reweighting the
+reconstruction loss fails to close the salvage gap (\cref{sec:exp-boundary}) --- which is exactly
+the regime the retake channel is designed to divert. And under a fixed-threshold policy, global
+triage does not yet beat direct diagnosis on net benefit (\cref{sec:exp-triage}); we make no claim
+to the contrary, and we read this honest negative as the motivation for learned routing thresholds
+rather than a result to suppress. Mapping where degradation-aware enhancement helps and where it
+must yield to re-acquisition is, we believe, the more useful contribution for deploying
+medical imaging on the quality-varying inputs that curated benchmarks exclude by design.
 
 % ═══════════════════════════════════════════════════════════════════════════════
 \section*{Ethics Statement}\label{sec:ethics}
@@ -663,9 +169,10 @@ clinical protocol. We make \emph{no} claim of clinician validation: the system i
 framework, not a medical device, and production use would require institutional review, regulatory
 clearance, and prospective trials (\cref{sec:discussion}). To mitigate dual-use and over-trust risks,
 the agent includes an explicit refuse channel, enhancement is deterministic and diagnosis-preserving
-rather than generative (avoiding hallucinated structure; \cref{sec:discussion}), and we report
-subgroup-stratified performance across skin tones (\cref{sec:exp-fair}) to surface --- not assert away
---- fairness gaps. Clinical value is assessed only through decision-curve analysis and triage simulation, each with
+rather than generative (avoiding hallucinated structure; \cref{sec:discussion}). Subgroup fairness
+across sex, age, and skin tone is a recognised concern for deployment; a per-subgroup calibration
+analysis is reported in companion work and is not claimed here. Clinical value is assessed only
+through decision-curve analysis and triage simulation, each with
 stated limits (Appendix~\ref{app:a20}); an LLM-as-judge audit is specified as a protocol
 (Appendix~\ref{app:a19}) but its ratings are not yet collected and are deferred to the
 camera-ready, under the disclaimer in Appendix~\ref{app:a23}.
@@ -685,6 +192,8 @@ one-command \texttt{reproduce.sh} regenerates the reported figures and statistic
 \input{appendix/A2_3_theorem2}
 \input{appendix/A3_corollary1}
 \input{appendix/A4_itb_construction}
+\input{appendix/A5_agent_impl}        % §5.3 cross-ref \cref{app:a5} — agent four-channel impl + ReAct trace (W8)
+\input{appendix/A5_2_c0_surface_ci}   % full 5x5 C0 surface AUC/recoverability grid with bootstrap CIs (coder, W8)
 \input{appendix/A18_failure_modes}
 \input{appendix/A19_llm_judge}
 \input{appendix/A20_cost_benefit}

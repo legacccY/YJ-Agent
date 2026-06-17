@@ -1,7 +1,7 @@
 # 唯一论文验收标准 — C0-C3 论点判据
 
 **论文**：D+A 系统论文 —— Safe diagnosis-preserving enhancement of degraded dermoscopy, and when to defer instead
-**会场**：MICCAI 2027（~2027-02）首选 / TMLR（滚动、明文不要 SOTA、容诚实负结果）备
+**会场**：**ICLR 2027 主投**（2026-09-22 abstract / 09-29 full；analysis/系统方向，非 SOTA 竞速）/ MICCAI 2027 / TMLR 退路。〔会话43 用户拍板锁回 ICLR，会话41 危机退守撤销。验收仍按论文质量门槛（非命中率百分比、不冲 SOTA），但定位打成 ICLR 级系统+方法创新，正腿 C1/C2 立承重。〕
 **最后更新**：2026-06-17（会话 41，随 STORY 重构整篇重写）
 **适用范围**：每个论点 / 实验 / milestone 完成判定的唯一标准
 **配套**：与 `STORY_FRAMEWORK.md`（同日重写）C0-C3 框架一一对应；最高准绳 = `project/ICLR_重构计划_拆两篇_2026-06-17.md` §2。
@@ -84,7 +84,7 @@
 ### C1.4 — E10 vs 6 SOTA enhancement ✅ PASS（6/6）
 - **内容**：vs Restormer / NAFNet / MIRNet-v2 / SwinIR / Uformer-B / Real-ESRGAN（**禁扩散红线**，无 DiffBIR）。
 - **验收**：在 ΔAUC（诊断保持）上 VisiEnhance 显著优于所有 6 个（paired，CI 排除 0 / McNemar p<0.05）。
-- **实测**：✅ **6/6 PASS** —— paired ΔAUC(baseline−VE)∈[−0.12,−0.07] 全 CI 排除 0、McNemar p 全 <1e-150、PSNR 32.79 vs 13-22（job 1448952，main.tex tab:e10）。
+- **实测**：✅ **6/6 PASS** —— paired ΔAUC(baseline−VE)∈[−0.116,−0.066] 全 CI 排除 0、McNemar p 全 <1e-150、PSNR 32.79 vs 13-22（job 1448952，main.tex tab:e10；会话43 coder 逐 csv 填表订正：旧 [−0.12,−0.07] 约值→真值，源 results/e10_*.csv）。
 - **写入位置**：§7.5 主文。
 
 ### C1.5 — 增强质量 + 架构辅助证据
@@ -176,7 +176,7 @@
 | **E7** | ΔAUC +0.0205 CI[+0.005,+0.035]、ΔKL −0.148 CI[−0.173,−0.124]、McNemar p=2.3e-45 | ✅ PASS（C1 Lemma 3 实证）| 1441301 / 同 E3 |
 | **E8** | FiLM 对 PSNR 中性；诊断保持正贡献 dAUC −0.033 vs −0.042 / 一致率 0.90 vs 0.87 / KL 0.24 vs 0.35 | ⚠️ 卖点定位诊断保真 | 1442290+1442337 / `results/filmabl_diag.json` |
 | **E9** | paired ΔAUC +0.0016 CI[−0.0057,+0.0086] 含 0、ΔKL 含 0、McNemar p=0.679 → 无法区分；FiLM parsimony 胜 | ✅ 保留 FiLM | 1444849/1448254 / `results/stage2_diag_paired_e9.csv` |
-| **E10** | 6/6 显著优：paired ΔAUC∈[−0.12,−0.07] 全 CI 排除 0、McNemar p<1e-150、PSNR 32.79 vs 13-22 | ✅ 6/6 PASS | 1448952 / main.tex tab:e10 |
+| **E10** | 6/6 显著优：paired ΔAUC∈[−0.116,−0.066] 全 CI 排除 0、McNemar p<1e-150、PSNR 32.79 vs 13-22 | ✅ 6/6 PASS | 1448952 / main.tex tab:e10 |
 | **E12** | 16.08 ms/img（p95 17.0）| ✅ PASS（<50）| 1441322 / `results/e12_speed.csv` |
 
 > **E4 不入 paper**：E4/E4Q 实证 FAIL（增强后熵不降，方向与 Prop3 相反）→ Prop3 改由 E7 + PSNR≥30 非空性承载。

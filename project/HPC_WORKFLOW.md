@@ -110,6 +110,27 @@ c.close()
 
 已缓存权重（2026-06-01）：EfficientNet-B0 (21MB) + AlexNet (234MB) + LPIPS v0.1/alex.pth（包内）
 
+## ⚠️ 本地 ckpt 搬 HPC 前置检查（每次上传前过一遍）
+
+本地训练产物直接 sftp 到 HPC 跑前，以下三类坑必查，否则必崩：
+
+| # | 检查项 | 典型坑 | 解法 |
+|---|--------|--------|------|
+| 1 | **同目录附属文件全带** | 只传 `models/` 忘传根目录的 `data_split.dt`/`config.dt`/`state.json` → `Experiment.reload()` FileNotFound | 传 ckpt 同目录的所有文件（`ls` 列一遍对照） |
+| 2 | **config 内嵌绝对路径** | `config.dt`（pickle）内含 `D:\...` Windows 路径，`Experiment.reload()` 覆盖脚本设的 HPC 路径 → 文件找不到 | 上传后在 HPC 登录节点跑 patch 脚本替换路径；或用 `--override` 参数启动 |
+| 3 | **torch API 无 device 参数** | `torch.rand/zeros/ones(shape)` 无 `device=` → 每步 CPU tensor 再 `.to(device)` 搬运 → 伪 hang（GPU 饿死等传输） | grep 训练码找 `torch\.rand\|torch\.zeros\|torch\.ones` 确认都带 `device=device` |
+
+快速 grep 命令：
+```bash
+# 检查 Windows 绝对路径
+grep -r "D:\\\\" /path/to/ckpt/
+
+# 检查无 device 参数的 torch 创建
+grep -n "torch\.\(rand\|zeros\|ones\|full\|empty\)(" code/*.py | grep -v "device="
+```
+
+---
+
 ## 提交训练
 
 ```bash

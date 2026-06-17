@@ -58,7 +58,7 @@ GradProm treats the symptom by repairing gradients; we bound the information
 loss and decide when enhancement is unsafe.
 \end{quote}
 Concretely, our diagnosis-preserving objective bounds the information loss
-\emph{by construction} (the feature-level DP-Loss of \S\ref{sec:enhancement},
+\emph{by construction} (the feature-level DP-Loss of \S\ref{sec:enhance},
 under Lemma~\ref{lem:dp}) rather than correcting it empirically, and our
 enhancement is embedded inside a routing policy
 (\S\ref{sec:agent}) that can decline to enhance and instead request
@@ -96,14 +96,21 @@ clinician rather than predicting on them. These mechanisms govern \emph{whether}
 to predict, but they treat the input as fixed --- they either withhold a
 prediction or pass it on, and in both cases the degraded image is taken as given.
 
-A complementary line of work in teledermatology image-quality assessment
-\citep{vodrahalli2021teledermatology} flags low-quality submissions and prompts
-the user to re-photograph the lesion, recognising that the right action under
-poor capture is sometimes to acquire a better image rather than to diagnose the
-existing one. That work supplies the clinical motivation for recapture but stops
-short of a \emph{risk-bounded} closed loop: it does not tie the recapture
-decision to a quality-conditioned diagnostic-risk estimate, nor does it sit
-inside a policy that also decides when enhancement is safe.
+A complementary line of work in medical image-quality assessment flags or
+instructs re-capture from an image-quality classifier. In teledermatology,
+TrueImage~\citep{vodrahalli2021teledermatology} flags low-quality submissions and
+prompts the user to re-photograph the lesion, and explainable IQA for
+teledermatological photography~\citep{jalaboi2023explainable} similarly scores
+capture quality to drive re-photography; in point-of-care ultrasound, a
+closed-loop lung-ultrasound IQA system~\citep{zhao2020lungus} guides the operator
+to re-acquire frames of sufficient quality. These systems recognise that the right
+action under poor capture is sometimes to acquire a better image rather than to
+diagnose the existing one, and so supply the clinical motivation for recapture.
+In every case, however, the re-capture decision is made by an image-quality
+classifier and is \emph{decoupled} from the diagnostic objective: the retake
+decision is not tied to a quality-conditioned diagnostic-risk estimate, carries no
+accompanying risk analysis, and does not sit inside a policy that also decides when
+enhancement is safe.
 
 Our query-for-retake channel closes this gap. Rather than abstaining on
 confidence alone or deferring to a clinician, the agent (\S\ref{sec:agent})

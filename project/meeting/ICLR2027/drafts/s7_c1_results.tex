@@ -81,7 +81,7 @@ the motivation for the query-for-retake channel (\cref{sec:agent}).
 \subsection{Conditioning, Fidelity, and Speed Ablations}\label{sec:exp-ablations}
 \paragraph{E8 --- quality-conditional FiLM ablation (diagnostic, not perceptual).}
 Removing FiLM leaves pixel fidelity essentially unchanged --- per-image PSNR moves within $0.4$\,dB
-($32.74$ with FiLM versus $33.06$ without\todo{VERIFY: no-FiLM 33.06 源文件 e1\_film\_ablation.json 丢失（verifier 会话42 无源）；找 HPC .out 或重跑 e1 ablation 确认后方可入稿}), so FiLM is \emph{not} a fidelity mechanism --- yet it
+($32.74$ with FiLM versus $33.06$ without\todo{HPC 恢复项（会话43 收窄）：no-FiLM 33.06 与 with-FiLM 32.74 配对源 e1\_film\_ablation.json 丢失，本地无 no-FiLM ckpt（在 HPC stage1\_planA\_256\_noFiLM）。恢复二选一：①拉 HPC job 1442290/1442337 .out 取打印值 ②重跑 noFiLM eval。入 main.tex 前必恢复，否则 E8「PSNR 中性」改为软化措辞不引精确 33.06。注：n/SSIM 口径已旁证非问题，仅此配对精确值待恢复}), so FiLM is \emph{not} a fidelity mechanism --- yet it
 degrades diagnostic preservation on every axis: with FiLM $\Delta\mathrm{AUC}=-0.033$, agreement
 $0.90$, KL $0.24$, versus $-0.042$, $0.87$, $0.35$ without, measured even at the no-DP stage. FiLM's
 contribution is therefore quality-conditional \emph{diagnostic} fidelity, not perceptual sharpening:
@@ -99,12 +99,12 @@ keep FiLM on parsimony grounds: it matches cross-attention on both fidelity and 
 at $1.8$M fewer parameters.
 
 \paragraph{E1 / E12 --- fidelity and speed.}
-The deterministic enhancer attains per-image PSNR $32.74$\,dB with FiLM (SSIM $0.91$\todo{VERIFY: 现存 visienhance\_nocrop\_e1.json 报 SSIM 0.946 而非 0.91，口径差异待核}, $n=19878$\todo{VERIFY: 现存 json 报 n=6626（test split）而非 19878，确认是否三档 severity 合并口径} held-out
+The deterministic enhancer attains per-image PSNR $32.74$\,dB with FiLM (SSIM $0.91$, $n=19878$\todo{口径已旁证（会话43）：n=19878 / SSIM~0.91 = e1\_film\_ablation harness，由 e1\_v6.json(n=19878,ssim 0.9094)+e1\_v7.json(n=19878,ssim 0.907) 同口径坐实；W3 早标的「nocrop n=6626/SSIM 0.946 mismatch」为假警报——nocrop\_e1.json 是另一套 test-split harness，非本表口径。with-FiLM 32.74 精确值仍随 e1\_film\_ablation.json 丢失，待 HPC job 1442290 .out 复核} held-out
 images under mixed degradation severity), clearing the $30$\,dB restoration gate that also guards the
 non-vacuity condition of Lemma~\ref{lem:dp} / Proposition~\ref{prop:entropy}. End-to-end inference
 (quality scoring plus enhancement) runs at $16.08$\,ms/image ($p_{95}=17.0$\,ms) on a single GPU,
 comfortably within the $50$\,ms real-time budget. We report PSNR as a per-image mean throughout
-(\cref{sec:exp-setup}), the caliber used for both the fidelity gate and the E10 comparison.
+(\cref{sec:setup}), the caliber used for both the fidelity gate and the E10 comparison.
 
 \paragraph{E2 --- per-degradation breakdown and a limitation.}
 A per-degradation analysis shows the enhancer is strongest on brightness ($37.68$\,dB) and blur

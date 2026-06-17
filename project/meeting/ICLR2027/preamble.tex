@@ -11,6 +11,13 @@
 \usepackage[round]{natbib}
 \usepackage{hyperref}
 \usepackage{cleveref}
+\usepackage{xspace}
+
+% ── Latin abbreviation shorthands (used across the W1-W7 draft sections) ─────────
+\newcommand{\eg}{e.g.,\xspace}
+\newcommand{\ie}{i.e.,\xspace}
+\newcommand{\etc}{etc.\xspace}
+\newcommand{\aka}{a.k.a.\xspace}
 
 % ── Theorem environments ───────────────────────────────────────────────────────
 \theoremstyle{plain}
@@ -65,3 +72,9 @@
 \newcommand{\pQV}{\hat{p}^{(\mathrm{QV})}}
 \newcommand{\pQCTS}{\hat{p}^{(\mathrm{QCTS})}}
 \newcommand{\pComp}{\hat{p}^{(\mathrm{comp})}}
+
+% ── Draft-stage TODO marker (visible red; strip for camera-ready) ────────────────
+% Swallows its argument WITHOUT typesetting it: the note text (often CJK / math)
+% stays in the .tex source for humans but never reaches pdflatex, so a TODO never
+% breaks the build. Renders only a red [TODO] flag at the call site.
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO]}}}

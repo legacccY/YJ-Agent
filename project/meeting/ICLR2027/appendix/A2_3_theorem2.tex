@@ -84,8 +84,15 @@ $\qbar(x)\in(\tauenh,\tauhigh)$, and $\Gen(x)\leq c_e+M\delta_{\TV}$ outside.
 As $\qbar\to 1$ the predictor approaches a one-hot, $\Hent\to 0$ and $\Gen\to 0$, giving an
 upper threshold $\tauhigh$ by continuity. For $\qbar<\tauenh$ (severe degradation, e.g.\ loss
 of completeness $q_3$), $\Tw$ cannot raise quality, so $\E[\Hent_{\mathrm{enh}}]\approx\E[\Hent_{\mathrm{direct}}]$
-and $\Gen\approx 0$. Inside the band, Proposition~\ref{prop:entropy-full} gives a significant
-entropy drop, hence $\Gen>c_e$. The thresholds are
+and $\Gen\approx 0$. Inside the band, $\Gen$ is positive by the same mechanism that
+Lemma~\ref{lem:enh-risk} uses: $\Gen$ is defined directly from the post-enhancement entropy, and
+its positivity on the band is carried by the DP-loss mutual-information lower bound
+(Lemma~\ref{lem:dp-full}, validated by experiment E7), so $\E[\Gen]>c_e+M\delta_{\TV}$ there. We
+do \emph{not} invoke a net predictive-entropy reduction from
+Proposition~\ref{prop:entropy-full} (which is not empirically supported); consistently with
+Lemma~\ref{lem:enh-risk}, the band is the empirically identified region on which the
+information-preservation premise holds rather than a region certified by a net-entropy drop. The
+thresholds are
 $\tauenh=\inf\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$ and
 $\tauhigh=\sup\{\qbar:\E[\Gen]>c_e+M\delta_{\TV}\}$; under
 Assumption~\ref{as:unimodal} ($\E[\Gen]$ unimodal in $\qbar$), the super-level set
@@ -174,15 +181,20 @@ If $\pisalv := \mathbb{P}[\qbar(X)\in[\tauenh,\tauhigh]] > 0$, then \emph{restri
 salvage-band subpopulation} the enhance action reduces expected risk by
 $\pisalv\cdot\Delta_{\mathrm{avg}}$ with $\Delta_{\mathrm{avg}}>0$. This quantifies the local
 benefit only; it does \emph{not} certify a net reduction in the deployed risk of the full routed
-policy, which (Remark~\ref{rem:no-global}) is not observed empirically. Realising the band-local
-gain as a global utility improvement would require learning the routing thresholds rather than
-fixing them by grid search, which we leave to future work.
+policy, which (Remark~\ref{rem:no-global}) is not observed empirically. We re-emphasise that this
+is \emph{not} a statement of deployment benefit: at the operating points we test the globally
+routed policy is empirically non-superior to direct diagnosis (\Cref{sec:exp-dca}), and the
+band-local population gain here must not be read as a global utility claim. Realising the
+band-local gain as a global utility improvement would require learning the routing thresholds
+rather than fixing them by grid search, which we leave to future work.
 \end{corollary}
 
 \paragraph{Tight constants.}
-With the \qvib{} predictor the calibration proxy is $\delta_{\TV}\approx\ECE=0.098$; the
-normalised enhancement cost is $c_e=0.02$; a validation grid yields
-$\tauenh\approx 0.35$, $\tauhigh\approx 0.55$. Corollary~\ref{cor:population} maps directly to
+With a calibrated posterior predictor the calibration proxy is taken as the empirical expected
+calibration error, $\delta_{\TV}\approx\ECE$;%
+\todo{verifier: insert the numeric ECE value for the routing predictor from its calibration csv once frozen; do not print a value from memory.}
+the normalised enhancement cost is $c_e=0.02$; a validation grid yields
+$\tauenh\approx 0.35$, $\tauhigh\approx 0.5$. Corollary~\ref{cor:population} maps directly to
 the empirical salvage-rate ($\pisalv$) and $|\Delta\mathrm{AUC}|$ metrics.
 
 \paragraph{Threats to validity.}

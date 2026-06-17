@@ -1,7 +1,7 @@
 # 唯一论文故事框架（反跑偏主文档）
 
 **论文**：D+A 系统论文 —— Safe diagnosis-preserving enhancement of degraded dermoscopy, and when to defer instead
-**会场**：MICCAI 2027（~2027-02）首选 / TMLR（滚动、无 deadline、明文不要 SOTA）备
+**会场**：**ICLR 2027 主投**（2026-09-22 abstract / 09-29 full；analysis/系统方向，非 SOTA 竞速）/ MICCAI 2027 / TMLR 退路。〔会话43 用户拍板锁回 ICLR：会话41 危机退守 MICCAI/TMLR 撤销。建设式诊断保持增强系统(C1) + query-for-retake 方法创新(C2) + 诚实边界(C3) + 理论闭环走 ICLR analysis/系统轨立得住，**不复活 Q-VIB SOTA**。承重点 = C1 硬实证(E7 p=2.3e-45/E10 6/6 显著) + C2 独家机制；C3 诚实负服务 C2 闸门动机，非当 headline。〕
 **最后更新**：2026-06-17（会话 41，立项级重构后重写）
 **适用范围**：任何 Claude / Sonnet / Opus 会话写本论文内容前必读
 **权威来源**：本文件以 `project/ICLR_重构计划_拆两篇_2026-06-17.md`（下称「计划文档」）为最高准绳；冲突处以计划文档 §2 为准。
@@ -241,7 +241,7 @@ Appendix（supp）
 | **E7** ★DP-Loss（Lemma 3）| ΔAUC_enh(S2−S1) **+0.0205 CI[+0.005,+0.035]** 显著>0；ΔKL **−0.148 CI[−0.173,−0.124]** 显著<0；McNemar **p=2.3e-45** | ✅ PASS（C1 最硬）| 1441301 / 同 E3 |
 | **E8** FiLM 消融 | FiLM 对 PSNR **中性**（33.06 ≥ 32.74）；对诊断保持正贡献：dAUC −0.033 vs −0.042、一致率 0.90 vs 0.87、KL 0.24 vs 0.35 | ⚠️ 卖点定位诊断保真 | 1442290+1442337 / `results/filmabl_diag.json` |
 | **E9** FiLM vs cross-attn | paired bootstrap ΔAUC +0.0016 CI[−0.0057,+0.0086] 含 0、ΔKL CI 含 0、McNemar p=0.679 → 统计无法区分；FiLM parsimony 胜（−1.8M 参数）| ✅ 保留 FiLM | job 1444849/1448254 / `results/stage2_diag_paired_e9.csv` |
-| **E10** vs 6 SOTA | **6/6 显著优**：paired ΔAUC(baseline−VE)∈[−0.12,−0.07] 全 CI 排除 0、McNemar p 全 <1e-150、PSNR 32.79 vs 13-22 | ✅ 6/6 PASS | job 1448952 / main.tex tab:e10 |
+| **E10** vs 6 SOTA | **6/6 显著优**：paired ΔAUC(baseline−VE)∈[−0.116,−0.066] 全 CI 排除 0、McNemar p 全 <1e-150、PSNR 32.79 vs 13-22 | ✅ 6/6 PASS | job 1448952 / main.tex tab:e10（会话43 coder 逐 csv 填表订正：旧 [−0.12,−0.07] 约值→真值 SwinIR −0.116 最负 / Real-ESRGAN −0.066 最浅，源 results/e10_*.csv）|
 | **E12** 速度 | 16.08 ms/img（p95 17.0）| ✅ PASS（<50）| 1441322 / `results/e12_speed.csv` |
 
 > **E4 不入 paper**：E4/E4Q 实证 FAIL（增强后熵不降，方向与 Prop3 相反）。Prop3 改由 E7（Lemma 3 实证）+ PSNR≥30 非空性承载。

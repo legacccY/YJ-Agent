@@ -1,0 +1,78 @@
+% Auto-generated from project/results/c0_decision_surface.csv
+% DO NOT EDIT MANUALLY — regenerate via project/scripts/gen_surface_table.py
+
+\section{Full Reliability \texttimes{} Recoverability Surface}
+\label{app:surface}
+
+Tables~\ref{tab:surface-auc} and~\ref{tab:surface-delta} report the complete
+$5 \times 5$ grid underlying the surface visualised in \cref{fig:c0-surface}
+(see \cref{sec:exp-surface} for experimental setup).
+Each cell aggregates $n = 360$ C0-score predictions.
+Confidence intervals are 2\,000-sample percentile bootstrap (95\,\%).
+Significance markers in Table~\ref{tab:surface-delta}:
+$\bigstar$~=~CI entirely above zero (enhancement reliably helps);
+$\dagger$~=~CI entirely below zero (enhancement hurts);
+\text{n.s.}~=~CI crosses zero.
+Source: \texttt{project/results/c0\_decision\_surface.csv}.
+
+\begin{table}[htbp]
+\centering
+\caption{Reliability AUC for degraded images ($\mathrm{AUC_{deg}}$, with 95\,\% bootstrap CI) and enhanced images ($\mathrm{AUC_{enh}}$) across all degradation axes and severity levels ($n=360$ per cell).}
+\label{tab:surface-auc}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrrrrrrrrrrrrrrr}
+\toprule
+Axis & \multicolumn{4}{c}{S1} & \multicolumn{4}{c}{S2} & \multicolumn{4}{c}{S3} & \multicolumn{4}{c}{S4} & \multicolumn{4}{c}{S5} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}\cmidrule(lr){14-17}\cmidrule(lr){18-21}
+ & $\mathrm{AUC_{deg}}$ & \multicolumn{2}{c}{95\,\%\,CI} & $\mathrm{AUC_{enh}}$ & $\mathrm{AUC_{deg}}$ & \multicolumn{2}{c}{95\,\%\,CI} & $\mathrm{AUC_{enh}}$ & $\mathrm{AUC_{deg}}$ & \multicolumn{2}{c}{95\,\%\,CI} & $\mathrm{AUC_{enh}}$ & $\mathrm{AUC_{deg}}$ & \multicolumn{2}{c}{95\,\%\,CI} & $\mathrm{AUC_{enh}}$ & $\mathrm{AUC_{deg}}$ & \multicolumn{2}{c}{95\,\%\,CI} & $\mathrm{AUC_{enh}}$ \\
+\midrule
+\textbf{Blur} & $0.922$ & $0.891$ & $0.949$ & $0.924$ & $0.912$ & $0.878$ & $0.943$ & $0.925$ & $0.877$ & $0.837$ & $0.915$ & $0.928$ & $0.855$ & $0.810$ & $0.896$ & $0.915$ & $0.831$ & $0.781$ & $0.876$ & $0.894$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 0.5} & \multicolumn{4}{c}{\footnotesize 0.8} & \multicolumn{4}{c}{\footnotesize 1.5} & \multicolumn{4}{c}{\footnotesize 2.5} & \multicolumn{4}{c}{\footnotesize 3.5} \\
+\addlinespace[2pt]
+\textbf{Brightness} & $0.924$ & $0.893$ & $0.951$ & $0.924$ & $0.924$ & $0.891$ & $0.952$ & $0.925$ & $0.918$ & $0.885$ & $0.948$ & $0.924$ & $0.904$ & $0.866$ & $0.939$ & $0.923$ & $0.906$ & $0.868$ & $0.940$ & $0.920$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 1} & \multicolumn{4}{c}{\footnotesize 0.925} & \multicolumn{4}{c}{\footnotesize 0.75} & \multicolumn{4}{c}{\footnotesize 0.52} & \multicolumn{4}{c}{\footnotesize 0.345} \\
+\addlinespace[2pt]
+\textbf{Contrast} & $0.924$ & $0.893$ & $0.951$ & $0.924$ & $0.924$ & $0.892$ & $0.952$ & $0.925$ & $0.923$ & $0.891$ & $0.951$ & $0.920$ & $0.922$ & $0.891$ & $0.951$ & $0.921$ & $0.908$ & $0.871$ & $0.941$ & $0.873$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 1} & \multicolumn{4}{c}{\footnotesize 0.925} & \multicolumn{4}{c}{\footnotesize 0.695} & \multicolumn{4}{c}{\footnotesize 0.42} & \multicolumn{4}{c}{\footnotesize 0.19} \\
+\addlinespace[2pt]
+\textbf{Colour Shift} & $0.924$ & $0.893$ & $0.951$ & $0.925$ & $0.923$ & $0.891$ & $0.952$ & $0.926$ & $0.913$ & $0.879$ & $0.943$ & $0.925$ & $0.897$ & $0.860$ & $0.931$ & $0.925$ & $0.887$ & $0.845$ & $0.924$ & $0.923$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 0.02} & \multicolumn{4}{c}{\footnotesize 0.05} & \multicolumn{4}{c}{\footnotesize 0.12} & \multicolumn{4}{c}{\footnotesize 0.22} & \multicolumn{4}{c}{\footnotesize 0.34} \\
+\addlinespace[2pt]
+\textbf{Completeness} & $0.924$ & $0.893$ & $0.951$ & $0.924$ & $0.928$ & $0.897$ & $0.955$ & $0.928$ & $0.929$ & $0.901$ & $0.955$ & $0.929$ & $0.913$ & $0.879$ & $0.941$ & $0.924$ & $0.872$ & $0.827$ & $0.912$ & $0.896$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 1} & \multicolumn{4}{c}{\footnotesize 0.95} & \multicolumn{4}{c}{\footnotesize 0.82} & \multicolumn{4}{c}{\footnotesize 0.645} & \multicolumn{4}{c}{\footnotesize 0.515} \\
+\addlinespace[2pt]
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Recoverability $\Delta = \mathrm{AUC_{enh}} - \mathrm{AUC_{deg}}$ with 95\,\% bootstrap CI and significance markers ($\bigstar$~CI$>0$; $\dagger$~CI$<0$; \text{n.s.}~CI crosses zero). $n=360$ per cell; 2\,000-sample percentile bootstrap.}
+\label{tab:surface-delta}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrrrrrrrrrrrrrrr}
+\toprule
+Axis & \multicolumn{4}{c}{S1} & \multicolumn{4}{c}{S2} & \multicolumn{4}{c}{S3} & \multicolumn{4}{c}{S4} & \multicolumn{4}{c}{S5} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}\cmidrule(lr){14-17}\cmidrule(lr){18-21}
+ & $\Delta$ & $\mathrm{CI_{lo}}$ & $\mathrm{CI_{hi}}$ & sig. & $\Delta$ & $\mathrm{CI_{lo}}$ & $\mathrm{CI_{hi}}$ & sig. & $\Delta$ & $\mathrm{CI_{lo}}$ & $\mathrm{CI_{hi}}$ & sig. & $\Delta$ & $\mathrm{CI_{lo}}$ & $\mathrm{CI_{hi}}$ & sig. & $\Delta$ & $\mathrm{CI_{lo}}$ & $\mathrm{CI_{hi}}$ & sig. \\
+\midrule
+\textbf{Blur} & $+0.0020$ & $-0.0067$ & $0.0107$ & \text{n.s.} & $+0.0125$ & $-0.0026$ & $0.0279$ & \text{n.s.} & $+0.0500$ & $0.0240$ & $0.0777$ & $\bigstar$ & $+0.0598$ & $0.0283$ & $0.0943$ & $\bigstar$ & $+0.0634$ & $0.0274$ & $0.1005$ & $\bigstar$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 0.5} & \multicolumn{4}{c}{\footnotesize 0.8} & \multicolumn{4}{c}{\footnotesize 1.5} & \multicolumn{4}{c}{\footnotesize 2.5} & \multicolumn{4}{c}{\footnotesize 3.5} \\
+\addlinespace[2pt]
+\textbf{Brightness} & $+0.0005$ & $-0.0053$ & $0.0068$ & \text{n.s.} & $+0.0010$ & $-0.0055$ & $0.0077$ & \text{n.s.} & $+0.0054$ & $-0.0029$ & $0.0144$ & \text{n.s.} & $+0.0186$ & $0.0030$ & $0.0367$ & $\bigstar$ & $+0.0140$ & $-0.0078$ & $0.0365$ & \text{n.s.} \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 1} & \multicolumn{4}{c}{\footnotesize 0.925} & \multicolumn{4}{c}{\footnotesize 0.75} & \multicolumn{4}{c}{\footnotesize 0.52} & \multicolumn{4}{c}{\footnotesize 0.345} \\
+\addlinespace[2pt]
+\textbf{Contrast} & $+0.0005$ & $-0.0053$ & $0.0068$ & \text{n.s.} & $+0.0005$ & $-0.0054$ & $0.0063$ & \text{n.s.} & $-0.0028$ & $-0.0095$ & $0.0040$ & \text{n.s.} & $-0.0011$ & $-0.0126$ & $0.0105$ & \text{n.s.} & $-0.0355$ & $-0.0783$ & $-0.0013$ & $\dagger$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 1} & \multicolumn{4}{c}{\footnotesize 0.925} & \multicolumn{4}{c}{\footnotesize 0.695} & \multicolumn{4}{c}{\footnotesize 0.42} & \multicolumn{4}{c}{\footnotesize 0.19} \\
+\addlinespace[2pt]
+\textbf{Colour Shift} & $+0.0007$ & $-0.0048$ & $0.0065$ & \text{n.s.} & $+0.0028$ & $-0.0033$ & $0.0094$ & \text{n.s.} & $+0.0124$ & $0.0027$ & $0.0225$ & $\bigstar$ & $+0.0275$ & $0.0123$ & $0.0453$ & $\bigstar$ & $+0.0361$ & $0.0144$ & $0.0583$ & $\bigstar$ \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 0.02} & \multicolumn{4}{c}{\footnotesize 0.05} & \multicolumn{4}{c}{\footnotesize 0.12} & \multicolumn{4}{c}{\footnotesize 0.22} & \multicolumn{4}{c}{\footnotesize 0.34} \\
+\addlinespace[2pt]
+\textbf{Completeness} & $+0.0005$ & $-0.0053$ & $0.0068$ & \text{n.s.} & $+0.0005$ & $-0.0138$ & $0.0121$ & \text{n.s.} & $-0.0001$ & $-0.0117$ & $0.0118$ & \text{n.s.} & $+0.0116$ & $-0.0086$ & $0.0319$ & \text{n.s.} & $+0.0236$ & $-0.0079$ & $0.0572$ & \text{n.s.} \\
+\multicolumn{1}{r}{\footnotesize sev.\,} & \multicolumn{4}{c}{\footnotesize 1} & \multicolumn{4}{c}{\footnotesize 0.95} & \multicolumn{4}{c}{\footnotesize 0.82} & \multicolumn{4}{c}{\footnotesize 0.645} & \multicolumn{4}{c}{\footnotesize 0.515} \\
+\addlinespace[2pt]
+\bottomrule
+\end{tabular}
+\end{table}

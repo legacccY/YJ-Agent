@@ -14,7 +14,7 @@
 
 | API | key | 限速 | 能力 | 用在哪 |
 |---|---|---|---|---|
-| **Semantic Scholar** | 免费申请（无 key 走共享池）| 有 key 1 req/s | search / batch / **recommendations**(相似论文,最多500) | G2 撞车检索 |
+| **Semantic Scholar** | 免费申请（无 key 走共享池）| 有 key 1 req/s；**无 key 共享池极易 429 限速，corpus 拉取常失败** | search / batch / **recommendations**(相似论文,最多500) | G2 撞车检索 |
 | **OpenAlex** | 2026-02 起需免费 key | $1/day credit（单 work 查询免费）| `/find/works` **语义相似搜索**(贴 abstract) + `related_works` | G2 撞车 / gap |
 | **arXiv** | 无 | 1 req/3s | search + **OAI-PMH 批量**拉 category 近 N 年 | S1 gap 挖掘原料 |
 | **Crossref** | 无（带 mailto polite pool）| 10 req/interval | 元数据/引用 | 补 venue/引用 |
@@ -80,6 +80,8 @@ def embed(papers):  # papers=[{title, abstract}]
 gap挖掘(2h): arXiv OAI-PMH → grobid → regex future-work → BERTopic 聚类
 反驳检验(可选,scite付费): 查 baseline 论文 citing context 有无人已声称做了
 ```
+
+> **S2 429 兜底（跨 run 复发问题）**：S2 无 key 共享池反复 429 导致 `corpus=0`，G2 撞车无法跑。**默认兜底路径**：corpus=0 时直接转 researcher 扇出（3 个 researcher 并行，各查一批关键词 via firecrawl/WebSearch/S2 网页），汇总后手动喂 collision 或人工比对 top 候选。不要死等 S2 拉语料。若有 S2 API key，可 `--s2-key <key>` 启用 1 req/s 专属配额。
 
 ---
 

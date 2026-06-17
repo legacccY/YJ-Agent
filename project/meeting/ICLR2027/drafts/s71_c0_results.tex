@@ -37,7 +37,22 @@ deliberately distinct from, the per-dimension expected-calibration-error /
 QCTS analysis of \citet{ANON-BMVC} (Tab.~\texttt{perdeg} there, cited but not
 reproduced), which neither sweeps severity nor includes completeness, and which
 carries no recoverability axis. The full grid is plotted as a heatmap in
-\todo{fig:c0-surface}; we summarise the two axes below.
+\cref{fig:c0-surface}; we summarise the two axes below.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{figures/c0_recoverability_heatmap.pdf}
+  \caption{\textbf{Reliability\,$\times$\,recoverability decision surface.} Per-cell
+  recoverability $\Delta\mathrm{AUC}=\mathrm{AUC}_{\text{enh}}-\mathrm{AUC}_{\text{deg}}$
+  across five degradation dimensions (rows) and five severity levels S1--S5 (columns),
+  $n=360$/cell. Blue cells (positive) are where enhancement recovers diagnosis; red cells
+  (negative) are where it hurts. Significant cells (bootstrap $95\%$ CI excluding zero) are
+  starred ($\star$ recovers) or marked $\dagger$HURT (harms); the single harmful cell is
+  contrast at S5 ($\Delta=-0.0355$, CI $[-0.0783,-0.0013]$). Blur and colour-shift recover
+  significantly from S3 onward, whereas completeness stays statistically indistinguishable
+  from zero throughout.}
+  \label{fig:c0-surface}
+\end{figure}
 
 \paragraph{Reliability axis.}
 Diagnostic AUC degrades monotonically, or near-monotonically, with severity
@@ -82,7 +97,7 @@ $0.8734$ after enhancement.
 \paragraph{Reading the surface.}
 The surface motivates quality-aware triage directly: most corruptions are both
 costly and recoverable (the moderate window that the diagnosis-preserving
-enhancer of \cref{sec:method-enhance} is designed to exploit), but at least one
+enhancer of \cref{sec:enhance} is designed to exploit), but at least one
 extreme corruption is recoverable \emph{in name only}, and there enhancement
 should be withheld. Concretely, severe contrast loss ($\alpha=0.19$) drives a
 significant $-0.0355$ ($95\%$ CI excludes zero) drop in diagnostic AUC after
@@ -94,7 +109,7 @@ and colour shift ($+0.0361$) remain significantly beneficial, so severity alone
 is not a safe gate --- the gate must be dimension-aware. This contrast-S5 cell
 is a supplementary, per-dimension trigger; it does not replace, and should not
 be conflated with, the per-class severe-degradation and melanoma-rescue evidence
-that drives the safety boundary in \cref{sec:exp-salvage} (E5/E6, reported by
+that drives the safety boundary in \cref{sec:exp-boundary} (E5/E6, reported by
 class rather than by dimension). Together the two readings --- a per-dimension
 contrast trigger here and a per-class melanoma/severe trigger there --- give the
 query-for-retake gate two independent sources of motivation.

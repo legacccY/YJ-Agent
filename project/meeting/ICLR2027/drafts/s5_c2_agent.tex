@@ -13,7 +13,7 @@
 %     uncertainty (the standard variant suffices) — R13.
 % Macros (preamble.tex): \visiscore \qbar \Tw \Ragent \Rdirect \Renh \tauenh \tauhigh \taulow
 %   \Gen \Gret \hhigh \actd \acte \actq \actr \Hent \itb \visienhance \E ; labels sec:exp-dca
-%   sec:exp-salvage app:a2-thm2 ; cite keys gradprom2025 geifman2017selective
+%   sec:exp-boundary app:a2-thm2 ; cite keys gradprom2025 geifman2017selective
 %   jalaboi2023explainable ; atcxr2025 is a TODO bib entry (see \todo below).
 % NUMBERS: only ACCEPTANCE-locked values are written inline; TAU band edges are \todo until the
 %   csv is re-confirmed by verifier (no printed-from-memory thresholds).
@@ -23,7 +23,7 @@
 
 A diagnosis-preserving restorer (\cref{sec:enhance}) is only safe to apply \emph{within} the
 salvage band; outside it, enhancement either does nothing useful or, as our honest boundary
-evidence shows (\cref{sec:exp-salvage}), actively harms the diagnosis. The role of the agent is
+evidence shows (\cref{sec:exp-boundary}), actively harms the diagnosis. The role of the agent is
 therefore not to diagnose, but to \emph{decide} --- per input, from a quality reading --- whether
 to diagnose directly, to enhance and then diagnose, or to \emph{ask for a better image}. We make
 the last channel explicit because it is, to our knowledge, what existing agentic and
@@ -36,7 +36,7 @@ when it is known a priori) --- and uses it as a gate that opens onto two qualita
 pathways:
 \begin{itemize}
 \item an \textbf{enhancement pathway}, taken when the image is degraded but \emph{recoverable}: the
-quality-preserving restorer \Tw{} is applied and diagnosis proceeds on the enhanced image, with the
+quality-preserving restorer $\Tw$ is applied and diagnosis proceeds on the enhanced image, with the
 local risk reduction certified (within the band) by \cref{thm:agent-compact};
 \item a \textbf{query-for-retake pathway}, taken when the image is \emph{not} good enough to enhance
 safely: rather than abstaining or deferring the case to a clinician, the agent issues a
@@ -47,12 +47,15 @@ The second pathway is the exclusive hook of this work. Existing deferral systems
 \emph{to a human} (defer-to-clinician) or simply withhold a prediction (abstain); the closest
 agentic medical system we are aware of, AT-CXR \citep{atcxr2025}, routes chest-radiograph cases by
 uncertainty but contains no quality gate and no re-acquisition channel, and selective prediction
-\citep{geifman2017selective} only abstains. Teledermatology IQA work
-\citep{jalaboi2023explainable} does flag low-quality photographs for re-photography, giving the
-clinical motivation, but stops at a quality flag and offers no risk-bounded routing that ties the
-re-acquisition decision to the diagnostic objective. Our contribution is to make re-acquisition a
-\emph{first-class action of the routing policy itself}, gated by the same quality scalar that drives
-enhancement, and to back it with a local conditional risk analysis (\cref{sec:agent-thm2}).
+\citep{geifman2017selective} only abstains. Teledermatology and ultrasound image-quality work does
+flag or instruct re-capture from an image-quality classifier
+\citep{vodrahalli2021teledermatology,jalaboi2023explainable,zhao2020lungus}, giving the clinical
+motivation, but in each case the re-capture decision is decoupled from the diagnostic objective and
+carries no accompanying risk analysis. We are therefore careful to scope our claim precisely: to
+our knowledge this is the first acquisition closed loop that embeds re-acquisition \emph{inside a
+risk-bounded routing policy}, gated by the same quality scalar that drives enhancement, coupled to
+the diagnostic objective, and equipped with a local conditional risk guarantee
+(\cref{sec:agent-thm2}) --- rather than a stand-alone quality flag that prompts re-photography.
 % R8/rule-8: re-acquisition (collection loop) is the hook, NOT abstain/defer.
 % atcxr2025: cite-and-distinguish (CXR, no quality gate). TODO bib entry below.
 
@@ -88,14 +91,16 @@ only on off-the-shelf uncertainty.}
 
 \paragraph{Threshold selection.}
 The thresholds $(\taulow,\tauenh,\tauhigh)$ are fixed by a validation grid search rather than
-learned; the band $[\tauenh,\tauhigh]$ is the salvage band over which enhancement is credited
-(\cref{sec:enhance}), and the empirical band edges are reported alongside the routing analysis in
+learned. The grid search yields three quality tiers, $\taulow=0.25$, $\tauenh=0.35$ and
+$\tauhigh=0.50$: a \emph{severe} tier $\qbar<0.25$ on which re-acquisition is requested, a
+\emph{moderate} (salvage) band $\qbar\in[0.35,0.50]$ over which enhancement is credited
+(\cref{sec:enhance}), and a \emph{high}-quality tier $\qbar\geq0.50$ routed to direct diagnosis;
+the intermediate stratum $\qbar\in[0.25,0.35)$ is the enhance-then-diagnose region. These tier
+edges are the empirical band boundaries reported alongside the routing analysis in
 \cref{sec:exp-dca}.
-% TODO(verifier): fill the concrete grid-search TAU band edges (the 0.25/0.35/0.50 three-tier
-% values discussed in the task) from results/.../agent_vs_direct_risk.csv before this draft is
-% merged into main.tex; do NOT print thresholds from memory. Until confirmed, the body refers to
-% them only by symbol (\taulow<\tauenh<\tauhigh).
-\todo{verifier: confirm TAU band edges ($\taulow,\tauenh,\tauhigh$) from \texttt{agent\_vs\_direct\_risk.csv}; insert numeric tier table here once frozen.}
+% TAU tiers (verifier-confirmed from results/.../agent_vs_direct_risk.csv band boundaries):
+% severe q̄<0.25 (taulow), moderate band q̄∈[0.35,0.50] (tauenh=0.35, tauhigh=0.50).
+% Values frozen by verifier; written inline (no \todo). Matches orchestrator.py TAU_SEVERE/MODERATE/HIGH.
 
 \subsection{A local, per-band risk guarantee (Theorem~\ref{thm:agent-compact})}\label{sec:agent-thm2}
 % R11/R2: LOCAL per-band only; explicitly deny global dominance; point honest negative to §7.7.
@@ -110,7 +115,7 @@ conditional expected risk than direct diagnosis,
 \label{eq:thm2-band}
 \end{equation}
 with the per-band reductions $\Delta(\qbar,\Tw)$ realised empirically, their bootstrap $95\%$
-confidence intervals excluding zero in every band (\cref{sec:exp-salvage}). The compact statement
+confidence intervals excluding zero in every band (\cref{sec:exp-boundary}). The compact statement
 below records this guarantee; the full decision-theoretic setup, the four auxiliary lemmas, and the
 finite-sample companion are deferred to Appendix~\ref{app:a2-thm2}.
 
@@ -131,7 +136,12 @@ bootstrap confidence intervals; \cref{sec:exp-dca}). We therefore present
 Theorem~\ref{thm:agent-compact} as a local, conditional guarantee and treat the global utility of
 the routed policy as an open, empirically negative question at present. Closing the gap between the
 band-local gain and global utility --- by \emph{learning} the routing thresholds rather than fixing
-them by grid search --- is left to future work.
+them by grid search --- is left to future work. We further stress the scope of the guarantee with
+respect to class: the band-local statement is a population (expected-risk) result over the
+salvage-band subpopulation; it does \emph{not} certify a per-class risk reduction, and in
+particular the malignant subgroup --- whose net-negative salvage is the hardest boundary evidence
+(\cref{sec:exp-boundary}) --- remains within the query-for-retake regime rather than the enhance
+regime (\cref{sec:agent-routing}, \cref{sec:exp-boundary}).
 % Numbers 0.818 / 0.788 / overlapping 95% CIs: ACCEPTANCE §C2.4 + STORY §7.7 (results/dca/*),
 % identical to the values焊死 in A2_3_theorem2_compact.tex. No new numbers introduced here.
 
@@ -151,10 +161,8 @@ rule-fallback specification, and a worked ReAct trace --- are given in Appendix~
 
 The query-for-retake channel fires exactly where it should: on the lowest-quality stratum the
 fraction of cases the policy routes to re-acquisition is highest, rising monotonically as quality
-falls (\cref{sec:exp-salvage}), which is the behaviour the gate is designed to produce rather than a
+falls (\cref{sec:exp-boundary}), which is the behaviour the gate is designed to produce rather than a
 property to claim away.
 % Number: ACCEPTANCE §C2.2 — P1 cluster q<0.35 retake_rate=100% (verified, session L19).
 % Written as "highest / rises monotonically" here; the exact rate is reported in §7.8.
 \todo{verifier: §7.8 cross-ref — confirm retake-rate=100\% at $\qbar<0.35$ (P1 cluster, ACCEPTANCE C2.2) is the value cited from this section.}
-
-\todo{researcher/verifier: add the AT-CXR bib entry (\texttt{atcxr2025}, arXiv 2508.x) — confirm exact arXiv id, authors, title, venue; it is cited-and-distinguished in \cref{sec:agent-pathways} as the closest agentic CXR system without a quality gate.}

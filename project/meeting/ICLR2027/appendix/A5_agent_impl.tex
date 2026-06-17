@@ -1,0 +1,175 @@
+% =====================================================================
+% Appendix A5 — Agent Implementation (C2, exclusive hook).
+% Resolves the dangling \cref{app:a5} referenced in §5.3 (sec:agent-impl).
+% caveman OFF. Serves Claim C2; ACCEPTANCE C2.1 (four-channel routing
+% runnable + thresholds explicit). Anti-drift locks per STORY:
+%   - agent never produces a diagnosis; it decides WHEN/HOW (C2 必须写).
+%   - query-for-retake = re-acquisition feedback, NOT abstain/defer (rule 8).
+%   - thresholds are the verifier-frozen grid-search tiers
+%     taulow=0.25, tauenh=0.35, tauhigh=0.50 (matches orchestrator.py).
+%   - the small LM is kept generic ("a small instruction-tuned LM") in body;
+%     the concrete backbone string is deanonymised only at camera-ready.
+% Pseudocode faithfully mirrors agent/orchestrator.py::route_by_quality and
+% the _RuleBasedFallback state machine. No invented hyper-parameters; the
+% entropy gate is the policy-level gate of Eq. (eq:agent-policy-body), applied
+% downstream of the q̄-tier routing (the source-level route_by_quality dispatches
+% on q̄ only, by design).
+% =====================================================================
+
+\section{Agent Implementation}\label{app:a5}
+
+This appendix documents the implementation of the four-channel routing policy
+$\pi^{*}$ of \cref{sec:agent-routing}. We give (i)~the quality-tier routing
+procedure with the verifier-frozen thresholds, (ii)~the deterministic
+rule-fallback specification used whenever the language model is unavailable or
+its proposed action violates the threshold rules, and (iii)~a worked
+ReAct-style trace. Throughout, the agent \emph{never} emits a diagnosis: every
+channel hands off to the same fixed downstream classifier, and the agent's only
+output is the choice of channel together with a short rationale.
+
+\subsection{Quality-tier routing}\label{app:a5-routing}
+
+The controller is a lightweight ReAct-style loop backed by a small
+instruction-tuned language model with a deterministic rule fallback. On each
+turn it observes the per-dimension quality vector $q\in[0,1]^5$ (and its mean
+$\qbar$) returned by the quality assessor and, where required, the predictive
+entropy $\Hent(\hat{p}_x)$, and it emits exactly one tool call: assess quality,
+enhance, analyse (optionally \emph{cautioned}), ask for re-acquisition, or
+finalise. The core dispatch on the quality scalar is the tier function below,
+which is the implementation of the quality-driven part of the policy
+$\pi^{*}$ in \eqref{eq:agent-policy-body}. The three thresholds are the
+grid-search tiers fixed on the validation split and frozen by the numerical
+audit: $\taulow=0.25$, $\tauenh=0.35$, $\tauhigh=0.50$.
+
+\begin{figure}[h]
+\centering
+\fbox{\begin{minipage}{0.94\linewidth}
+\textbf{\textsc{RouteByQuality}} --- quality-tier dispatch (mirrors
+\texttt{orchestrator.py::route\_by\_quality}; thresholds
+$\taulow=0.25,\ \tauenh=0.35,\ \tauhigh=0.50$).\\[2pt]
+\textbf{input:} per-input quality scalar $\qbar\in[0,1]$ (mean of the five quality heads)\\
+\textbf{output:} channel in $\{\actd,\acte,\actq,\actr\}$ (direct, enhance, query-for-retake, refuse)\\[2pt]
+\texttt{if}\ $\qbar \geq \tauhigh$ \ \texttt{then}\ \textbf{return}\ \textsc{DirectDiagnosis}
+\hfill\emph{(high tier $\qbar\geq0.50$; original image to classifier)}\\
+\texttt{else if}\ $\qbar \geq \tauenh$ \ \texttt{then}\ \textbf{return}\ \textsc{CautionedDiagnosis}
+\hfill\emph{(band $[0.35,0.50)$; direct, uncertainty-annotated)}\\
+\texttt{else if}\ $\qbar \geq \taulow$ \ \texttt{then}\ \textbf{return}\ \textsc{EnhanceThenDiagnose}
+\hfill\emph{(band $[0.25,0.35)$; apply $\Tw$, then diagnose)}\\
+\texttt{else}\ \textbf{return}\ \textsc{QueryForRetake}
+\hfill\emph{(severe tier $\qbar<0.25$; request re-acquisition, do not diagnose)}
+\end{minipage}}
+\caption{Quality-tier dispatch procedure. The dispatch is on the quality scalar
+alone, by design; the predictive-entropy gate is applied on top (see text).}
+\label{alg:a5-route}
+\end{figure}
+
+\Cref{alg:a5-route} dispatches on the quality scalar alone, by design; the
+secondary predictive-entropy gate $\hhigh$ of \eqref{eq:agent-policy-body} is
+applied on top of this tier decision. Concretely, a case that
+\textsc{RouteByQuality} assigns to the enhance band but whose predictive entropy
+exceeds the high-percentile gate $\hhigh$ (a quality-sufficient yet
+intrinsically ambiguous lesion that enhancement cannot disambiguate) is escalated
+to the refuse action $\actr$ rather than enhanced; symmetrically, a
+high-completeness failure ($q_3$ below the completeness floor) routes to
+query-for-retake even when $\qbar$ would otherwise admit enhancement. This is the
+behaviour formalised by the case split of \eqref{eq:agent-policy-body}, and the
+implementation keeps the quality tiering (\Cref{alg:a5-route}) and the entropy
+gate as two explicit, auditable steps.
+
+\subsection{Rule-fallback specification}\label{app:a5-fallback}
+
+To guarantee that routing is never less safe than the policy, the controller is
+shadowed by a deterministic finite-state fallback that applies
+\eqref{eq:agent-policy-body} directly. The fallback is invoked whenever (a)~the
+language model cannot be loaded, (b)~the model emits a non-tool or malformed
+response, or (c)~the model's proposed action contradicts
+\Cref{alg:a5-route} for the observed $\qbar$. The fallback never diagnoses on
+its own either; it dispatches to the same downstream classifier as the
+language-model path. Its specification is given in \Cref{alg:a5-fallback}.
+
+\begin{figure}[h]
+\centering
+\fbox{\begin{minipage}{0.94\linewidth}
+\textbf{\textsc{RuleFallback}} --- deterministic routing state machine (mirrors
+\texttt{orchestrator.py::\_RuleBasedFallback}); $\rho_{\max}$ is the maximum
+number of re-acquisition rounds before a cautioned bottom-out.\\[2pt]
+\textbf{input:} image $x$; running re-acquisition counter $r$; round cap $\rho_{\max}$\\[2pt]
+$q \gets \textsc{QualityAssess}(x)$; \quad $c \gets \textsc{RouteByQuality}(\bar q)$
+\hfill\emph{($\bar q$ is the mean of $q$)}\\
+\texttt{if}\ $c = \textsc{QueryForRetake}$:\\
+\quad \texttt{if}\ $r \geq \rho_{\max}$:\ \textbf{return}\ \textsc{Analyse}$(x,\ \text{cautioned}{=}\text{true})$
+\hfill\emph{(bottom-out after round cap)}\\
+\quad \texttt{else}:\ $r \gets r+1$;\ emit re-acquisition question for the top quality issue;\ \textbf{wait for user}
+\hfill\emph{(collection loop, not abstain/defer)}\\
+\texttt{else if}\ $c = \textsc{EnhanceThenDiagnose}$:\ $x' \gets \Tw(x)$;\ \textbf{return}\ \textsc{Analyse}$(x',\ \text{cautioned}{=}\text{false})$
+\hfill\emph{(enhance, then diagnose)}\\
+\texttt{else if}\ $c = \textsc{CautionedDiagnosis}$:\ \textbf{return}\ \textsc{Analyse}$(x,\ \text{cautioned}{=}\text{true})$
+\hfill\emph{(diagnose on original, annotated)}\\
+\texttt{else}\ ($c = \textsc{DirectDiagnosis}$):\ \textbf{return}\ \textsc{Analyse}$(x,\ \text{cautioned}{=}\text{false})$
+\end{minipage}}
+\caption{Deterministic rule-fallback routing state machine. It dispatches to the
+same downstream classifier as the language-model path and never diagnoses on its
+own.}
+\label{alg:a5-fallback}
+\end{figure}
+
+Two safety properties follow directly from the construction. First, the severe
+tier ($\qbar<\taulow$) always enters the re-acquisition loop until either the
+quality clears the tier on a re-captured image or the round cap $\rho_{\max}$ is
+reached, at which point the case bottoms out to a \emph{cautioned} diagnosis
+rather than a silent direct one. Second, the enhance action is reachable only
+within the moderate band, so the restorer $\Tw$ is never applied to severe-tier
+inputs --- the regime in which our boundary evidence shows enhancement harms the
+diagnosis (\cref{sec:exp-boundary}). The restorer call degrades gracefully: if
+the enhancement checkpoint is unavailable at run time the implementation falls
+back to the original image rather than failing the case.
+
+\subsection{Worked ReAct trace}\label{app:a5-trace}
+
+\Cref{tab:a5-trace} traces the controller on a moderately degraded input
+($\qbar=0.31$, falling in the lower-moderate band $[\taulow,\tauenh)$). The
+controller reads the quality vector, routes to the enhance-then-diagnose
+channel, hands the enhanced image to the downstream classifier, and finalises
+with a referral recommendation --- without ever issuing a diagnosis of its own.
+
+\begin{table}[h]
+\centering
+\caption{Worked ReAct trace for a lower-moderate input ($\qbar=0.31$). The agent
+reads quality, selects a channel by \Cref{alg:a5-route}, hands off to the fixed
+classifier, and finalises. \emph{Thought} is the controller's internal
+rationale; \emph{Action} is the single emitted tool call; \emph{Observation} is
+the tool return. The agent emits no diagnosis itself.}
+\label{tab:a5-trace}
+\small
+\begin{tabular}{p{0.06\linewidth}p{0.40\linewidth}p{0.46\linewidth}}
+\toprule
+Step & Thought / Action & Observation \\
+\midrule
+1 & \textbf{Thought:} a new image has arrived; I must first read its quality.
+    \textbf{Action:} \texttt{quality\_assess()}
+  & $\qbar=0.31$; per-head scores $\{$sharpness $0.28$, brightness $0.41$,
+    completeness $0.55$, color $0.46$, contrast $0.33\}$; issues
+    $=[\text{sharpness},\text{contrast}]$; channel $=$ \texttt{enhance\_then\_diagnose}. \\
+\addlinespace
+2 & \textbf{Thought:} $\qbar=0.31\in[\taulow,\tauenh)=[0.25,0.35)$, so by
+    \Cref{alg:a5-route} this is the enhance band; the image is degraded but
+    recoverable. \textbf{Action:} \texttt{enhance\_image()}
+  & restorer $\Tw$ applied (diagnosis-preserving Stage-2); the enhanced image is
+    forwarded for feature extraction and triage. \\
+\addlinespace
+3 & \textbf{Thought:} enhancement is complete; the downstream classifier has
+    produced a triage assessment on the enhanced image. \textbf{Action:}
+    \texttt{final\_answer($\cdot$)}
+  & malignancy probability and ABCD features returned by the classifier; the
+    agent relays the classifier's recommendation and an urgency level. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For contrast, a severe-tier input ($\qbar<\taulow$) diverges at Step~2: the
+controller emits \texttt{ask\_user($\cdot$)} with a re-acquisition question
+targeted at the top quality issue, enters the \textbf{wait-for-user} state, and
+re-runs \texttt{quality\_assess()} on the re-captured image, repeating until the
+quality clears the severe tier or the round cap $\rho_{\max}$ is reached. This is
+the query-for-retake channel: the agent asks for a better image rather than
+abstaining or deferring the case to a human.

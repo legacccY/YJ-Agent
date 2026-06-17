@@ -128,7 +128,9 @@ r_\psi(z\mid q) = \mathcal{N}\!\big(z;\,0,\,\sigma^2(\qbar)\,I_d\big),\qquad
 \end{equation}
 with baseline variance $\sigma_0^2\in(0,1]$, threshold $\tau\in[0,1]$, and sharpness $\alpha>0$.
 
-\begin{lemma}[restated, monotonicity of $\sigma^2$]\label{lem:mono-full}
+\begin{lemma}[restated, monotonicity of $\sigma^2$]\label{lem:mono-full}\label{lem:mono}
+% lem:mono alias: A0_notation / A21 reference the compact label lem:mono; the compact
+% file (A1_qvib_compact) is not \input in main.tex, so this is the live anchor.
 $\sigma^2(\qbar)$ is strictly decreasing in $\qbar$ on $(0,1)$.
 \end{lemma}
 
@@ -207,7 +209,9 @@ $v(q)=\tilde{v}(\mathbf{1}-q)$ with $\tilde{u}(0)=\tilde{v}(0)=0$, so that perfe
 ($q=\mathbf{1}$) recovers standard attention. The modulated logits are
 $\tilde{s}_{ij}=x_i^\top x_j/\sqrt{d}+\delta_{ij}$, $\delta_{ij}=u(q_i)^\top v(q_j)$.
 
-\begin{theorem}[restated, attention drift bound]\label{thm:drift-full}
+\begin{theorem}[restated, attention drift bound]\label{thm:drift-full}\label{thm:drift}
+% thm:drift alias: A0_notation / A21 reference the compact label thm:drift (compact file
+% not \input in main.tex); this full-version anchor carries the alias.
 Let $\tilde{u},\tilde{v}$ be $L_{\tilde{u}}$- and $L_{\tilde{v}}$-Lipschitz in $\ell_2$ with
 $\tilde{u}(0)=\tilde{v}(0)=0$, and let $\varepsilon=\max_i\|\mathbf{1}-q_i\|_\infty$ be the
 worst-case quality deviation. With $a_i,a'_i$ the attention rows before/after modulation,
@@ -269,7 +273,9 @@ Lemma~\ref{lem:softmax}.
 Let $\hat{p}_q(y\mid x)=\E_{z\sim p_\phi(z\mid x,q)}[q_\theta(y\mid z)]$ be the predictive
 distribution and $\Hent(\hat{p}_q)=-\sum_y \hat{p}_q\log\hat{p}_q$ its entropy.
 
-\begin{proposition}[restated, entropy monotonicity at the optimiser's fixed point]\label{prop:entmono-full}
+\begin{proposition}[restated, entropy monotonicity at the optimiser's fixed point]\label{prop:entmono-full}\label{prop:entmono}
+% prop:entmono alias: A0_notation / A21 reference the compact label prop:entmono (compact file
+% not \input in main.tex); this full-version anchor carries the alias.
 Consider the $\qvib$ objective \eqref{eq:a1-loss} with $\beta>0$, evaluated at a training
 equilibrium (fixed point of \eqref{eq:a1-loss}) at which (C1)~the classifier $q_\theta$ has
 bounded gradient and is well fit, and (C2)~the predictive entropy is governed by the

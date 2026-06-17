@@ -44,18 +44,14 @@ be weak.
 
 \textbf{Response.} We treat both points as first-class. (i) The benchmark itself spans a
 controlled degradation taxonomy whose quality-stratified gap to \itb-LQ is reported explicitly
-rather than pooled away, and \cref{sec:exp-cross} additionally evaluates zero-shot transfer to four
-external dermatology datasets that progressively depart from the training distribution --- including
-PAD-UFES-20 clinical smartphone macro photography and Fitzpatrick17k in-the-wild clinical photographs
-carrying real shadows, lens artefacts, and compression --- and we report the resulting calibration
-and discrimination erosion with domain distance rather than averaging it away. (Evaluation on a
-dedicated in-the-wild smartphone subset, e.g.\ ISIC~2024 SLICE-3D, is left to future work and is
-not claimed here.) (ii) Cross-modality
-transfer is \emph{foregrounded, not hidden}: weakly-transferring modalities are flagged in
-\cref{sec:exp-cross} and analysed as a distinct \emph{cross-modality quality mismatch} mode in
-\cref{sec:discussion}, with modality-specific re-training named as the principled (out-of-scope)
-remedy. (iii) The abstract and \cref{sec:intro} scope our claims to dermoscopy quality-awareness and
-to cross-modality \emph{generalisation properties}, not universal quality awareness.
+rather than pooled away, and the reliability~$\times$~recoverability decision surface
+(\cref{sec:exp-surface}) quantifies, per dimension and per severity, exactly where real-world
+degradation breaks diagnosis. (Evaluation on a dedicated in-the-wild smartphone subset, e.g.\
+ISIC~2024 SLICE-3D, and cross-dataset transfer are left to future work and are not claimed here.)
+(ii) Out-of-distribution inputs are \emph{foregrounded, not hidden}: severely degraded cases on
+which enhancement is unsafe are routed to query-for-retake rather than diagnosed, the safety
+boundary we analyse in \cref{sec:discussion}. (iii) The abstract and \cref{sec:intro} scope our
+claims to dermoscopy quality-awareness, not universal quality awareness.
 
 \subsection{Differentiation from prior work}\label{app:a21-scope}
 \textbf{Concern.} A prior anonymous submission by the authors addresses post-hoc quality-conditional
@@ -82,12 +78,12 @@ Guarantee  & calibration only         & decision-theoretic risk (Theorem~\ref{th
 \end{tabular}
 \end{table}
 
-Concretely: the quality-conditional bottleneck (\cref{sec:qvib}) contributes an attention-drift bound
+Concretely: the quality-conditional bottleneck (\cref{app:a1}) contributes an attention-drift bound
 (Theorem~\ref{thm:drift}) and an entropy-monotonicity guarantee (Proposition~\ref{prop:entmono})
 absent from the prior work; diagnosis-preserving enhancement (\cref{sec:enhance}) contributes a
 mutual-information lower bound (Lemma~\ref{lem:dp}) orthogonal to calibration; the agent risk bound
 (Theorem~\ref{thm:agent}) is a decision-theoretic guarantee outside any post-hoc framework; and
-Corollary~\ref{cor:composite-compact} recovers the prior post-hoc method as a degenerate case with an
+Corollary~\ref{cor:composite} recovers the prior post-hoc method as a degenerate case with an
 explicit residual $\epsilon_{\mathrm{qts}}\approx 0.037$. No prior-work numbers are reused: all table
 entries are re-evaluated under this pipeline, with prior-work rows marked for cite-upon-acceptance.
 

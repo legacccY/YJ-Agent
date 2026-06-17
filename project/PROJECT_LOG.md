@@ -6,6 +6,65 @@
 
 ---
 
+## 2026-06-17（会话 43，九章重排第二批 W6/W7 落地 + verifier 全 PASS + E1 溯源收窄 + C0 heatmap 出图）
+
+### 完成（W6/W7 = 九章剩两章，七章→九章 draft 全到）
+1. **两 writer 并行真写 W6+W7**（opus，caveman OFF），主线 **ls 核盘**确认真落盘（writer 自报行数仍不准：159/91/162 vs 实测 160/146/169，文件内容真在）：
+   - **W6 `drafts/s5_c2_agent.tex`**（160 行，§5 C2 闭环 agent 主章）：§5.1 双通道（enhance vs query-for-retake 采集闭环=独家钩子，cite-distinguish AT-CXR）/§5.2 route_by_quality 4 通道 + τ 阈值结构 /§5.3 Thm2 局部条件界 `\input{A2_3_theorem2_compact}` + **显式否认全局优**指 §7.7 /§5.4 ReAct+rule fallback。
+   - **W7 `drafts/s77_dca_triage.tex`**（146 行）+ **`drafts/s8_discussion.tex`**（169 行）：§7.7 DCA/Net Benefit（4 法 maxNB+CI+triage@20%+break-even）+ **agent triage 全局诚实负**（Direct 0.818>agent 0.788，明写「global triage does not outperform direct」「risk not guaranteed ≤ direct」，承接 A2_3 Remark[No global dominance]）；§8 Discussion（限制/边界/诚实定位 capability 非 SOTA/未来）。
+   - 至此九章 draft 全到：s2_related/s3_decision_surface/s4_c1_enhance/**s5_c2_agent**/s6_setup/s71_c0_results/s7_c1_results/s7_c3_boundary/**s77_dca_triage**/**s8_discussion**。
+2. **verifier 核 W6/W7 数字全 PASS，0 drift**（Bash/Grep 核 csv 禁 Read）：triage@20% Direct 0.818/+TokFT 0.788/Std VIB 0.137/QCTS 0.143（`dca/dca_summary.json`+`triage_results.csv`）+ DCA 4 法 maxNB 0.186/0.179/0.186/0.192 全 CI（`dca/dca_summary.json`）+ C0 五轴 S5 delta + E2/E5/E6 + retake band high 0.055/mod 0.651/sev 0.889（`agent_vs_direct_risk.csv`）逐位核对。
+   - **E5 v6 null 主线直接核**（verifier 留的 TODO）：`e5_salvage_v6_persample.csv` melanoma salvage 4/77=5.2%（与 v5 同纹丝不动）、damage 83、net −79。PASS。
+   - ⚠️ **一处内部源差异**（非 paper 错，W8 注明）：+TokFT maxNB `dca_results.csv`=0.1793 vs `dca_summary.json`=0.1798，tex 写 0.179 对齐 dca_results.csv。W8 合稿统一以 dca_results.csv 为准。
+3. **🔴→🟡 E1 溯源收窄**（会话42 标的三处无源，本会话查清两处）：
+   - **n=19878 + SSIM 0.91 = 假警报，已旁证消解**：W3 writer 拿 `visienhance_nocrop_e1.json`(n=6626/SSIM 0.946，另一套 test-split harness) 误比。真口径 = e1_film_ablation harness，由 `e1_v6.json`(n=19878,ssim 0.9094)+`e1_v7.json`(n=19878,ssim 0.907) 同口径坐实。s7_c1 line 102 \todo 改为「口径已旁证非问题」。
+   - **no-FiLM 33.06 仍真无源**：源 `e1_film_ablation.json`(job 1442290) 丢，本地无 no-FiLM ckpt（在 HPC `stage1_planA_256_noFiLM`），grep 33.06 无匹配。s7_c1 line 84 \todo 收窄为「HPC 恢复项」：拉 HPC job 1442290/1442337 .out 或重跑 noFiLM eval；入 main.tex 前必恢复，否则 E8「PSNR 中性」改软化措辞不引精确 33.06。**= 🛑 待用户授权 HPC 操作**（本地 GPU 被 medad 占 + HPC 需 auth）。
+4. **C0 5×5 heatmap 出图**（coder，`scripts/plot_c0_heatmap.py` 271 行）→ `meeting/ICLR2027/figures/c0_recoverability_heatmap.{pdf,png}`+`c0_reliability_curves.{pdf,png}`。RdBu 发散 + contrast S5 †HURT 红框 + CI 跨零淡灰。self-check contrast S5 −0.0355 对得上。**⚠️ 首版 colormap 方向反了**（正值救回渲染成红、负值帮倒忙渲染成蓝，与图例矛盾）→ 已派回同 coder 修（正=蓝 helps/负=红 hurts 自洽），**主线待复核新图**。
+
+### ✅ W8 收口完成（会话43 续，用户拍「启 W8」→ planner build map → 多 agent 并行 → 主线编译收口）
+1. **planner 出 W8 build map 落盘** `meeting/ICLR2027/W8_build_map.md`（234 行：删除清单 D1-D17/保留 K1-K5 + 新九章 \input 骨架 + abstract/§1.4/§9 brief + label crosswalk 6c + 风险 R1-R10）。主线拍两结构决策：R-1 留 s7_e10_sota（删 table1_e10_sota 引用）/ R-9 A3 corollary 保 appendix supp。
+2. **四 agent 并行前置**：① coder 填 s7_e10_sota tab:e10 全 35 cell 真值（results/e10_*.csv 逐源，VE PSNR 32.79/6 baseline p<1e-150）+ 核定 fig:dca=ICLR 重跑版 n=300 非 BMVC（mtime/脚本/csv 四证，不重画）；② verifier 核 TAU 0.25/0.35/0.50 可坐实 + retake/risk-reduction 6 数全 PASS + setup（ISIC2020/B3=EfficientNet-B3/n=3627/degrade.py moderate 参数）大半 PASS；③ researcher 查 AT-CXR bib（arXiv:2508.19322 全作者，已入 references.bib）；④ writer 按 build map 重排 main.tex。
+3. **🔧 coder 抓 STORY 口径 bug**：E10 paired ΔAUC csv 真值 Real-ESRGAN −0.066 越旧 [−0.12,−0.07] 下界 → 主线订正 STORY/ACCEPTANCE 三处为 **[−0.116,−0.066]**（主 claim 6/6 显著优不变）。
+4. **writer 重排 main.tex 698→204 行**（回执 garbled 但主线核盘证实）：九章 \input 骨架（§1 壳→s2→s3→s4→s5→s6→[§7 父壳 sec:exp 含 s71/s7_c1/s7_c3/s77]→s8→§9 壳）+ 新 abstract（焊 closed-loop，删 0.707）+ §1.4 contributions C0-C3 + §9 建设式。**body 禁项零残留**（0.707/table1_main/table2_universality/generalises VIB/BMVC 三 label 全 0 命中）。
+5. **主线编译收口（关键路径，亲做）**：writer 漏 crosswalk → 主线 sed 补完全部 dangling（sec:exp-salvage/severe→sec:exp-boundary、sec:exp-c0→sec:exp-surface、sec:method-enhance/sec:enhancement→sec:enhance、sec:benchmark→sec:setup、sec:exp-setup→sec:setup、sec:exp-baselines→subsec:setup-baselines、sec:thm2→sec:agent-thm2、prop:enh→prop:entropy、cor:composite-compact→cor:composite）。修 4 个编译致命：preamble 加 \todo（不渲染 arg 避中文崩）+ \eg/\ie/\etc/\aka（xspace）+ s5 `\Tw`→`$\Tw$`（数学宏入文本）+ 加 ANON-BMVC 匿名占位 bib。**最终 pdflatex×bibtex×pdflatex = 60 页 PDF / 0 致命 / 0 undefined citation**。
+6. **C0 heatmap 接入** s71（\includegraphics figures/c0_recoverability_heatmap.pdf + fig:c0-surface）+ s3 caption ref。
+
+### 残余（W8 后清理，非 body 错）
+- **5 个 supp/forward undefined ref**（全在附录页 13/29/53/54，body 干净）：app:a5（s5 引未写的 agent 实现附录）/ app:surface（s71 引未写的 surface CI 附录）/ lem:mono·thm:drift·prop:entmono（Q-VIB 理论 supp label，compact 文件不再 \input 致 A0_notation/A21 孤儿；全版 A1_qvib 无 theorem 环境无法 alias，留 camera-ready）。
+- **🛑 E1 no-FiLM 33.06**：仍 \todo 待用户授权 HPC 拉 job 1442290/1442337 .out 或重跑 noFiLM eval。
+- 小 \todo：s5 TAU 三档可填（verifier 已坐实 0.25/0.35/0.50）/ s6 setup 几处（E10 ckpt 来源/isic_split 真源）/ s3 §3.5 多方法 UQ 空壳去留。
+
+### 下一步（会话 43 续2 / 下窗）
+1. **reviewer L19 + skeptic 审整稿**（build map 7c 末步，九章已合稿编译通）。
+2. **🛑 E1 HPC 恢复**（待授权）。
+3. 清 5 supp undefined ref（写 A5 agent 实现附录 + surface CI 附录，或软化 forward-ref）。
+4. 填 s5 TAU 三档（verifier 已坐实）+ 决 §3.5 UQ 空壳。
+
+### ✅ reviewer + skeptic 审整稿 + 修订轮（会话43 续2，用户「继续」）
+- **reviewer L19 十角色 + 反跑偏审计**：反跑偏基本通过（10 跑偏定义仅 1 处实质命中）。**2 致命**：① main.tex L73-74 Q-VIB 卖点复活「by construction calibrated to quality」（踩红线7+与§7.7 0.788不超Direct内部矛盾）② A2_3 lem:window proof 用本文自己否定的 prop:entropy-full 净熵下降撑 salvage band 非空=Thm2 内部矛盾。+重伤（A2_3 ECE=0.098未锁数/band 0.55vs0.5/cor:population no-global指针）+小（会场ICLR定位/§3.5空壳/dflip多口径）。
+- **skeptic claim 逻辑红队**：**0 致命放行可投**。4 条🟡补强（全措辞收窄/重接线无需补实验）：①C2 novelty「首个采集闭环」会被 ImageQX/TrueImage 举证撞车→收窄「首个 risk-bounded routing 耦合诊断的采集闭环」+补 cite ②C0→retake 动机接线（severe-retake 真弹药=per-class melanoma+E6混合非C0单轴）③Thm2 加 population-层 disclaimer ④s77 负结果补正向锚点。
+- **修订（主线修致命1 + writer 一轮过余下）**：① 主线改 main.tex §1.3 Q-VIB 残留→frozen classifier posterior（口径统一§7.7）② writer 6 文件：A2_3 lem:window 换论据（Gen 由后增强熵+DP MI 下界/E7 承载，删 prop:entropy-full 净熵下降依赖，5 处全改否定式声明）+ ECE 删改\todo+band 统一0.5+cor no-global 指针；s5 C2 收窄+Thm2 disclaimer；s2 补 cite TrueImage(vodrahalli2021,arXiv2010.02086)/ImageQX(jalaboi2023已存)/lung-US(zhao2020,arXiv2008.08840，作者查无标\todo)；s7_c3 C0 接线；s77 正向锚点。
+- **重编译验证**：致命1（grep 0 残留）+致命2（lem:window 不再正引 prop:entropy-full）真消，**pdflatex×bibtex×pdflatex = 61 页 / 0 致命 / 0 undefined citation / 5 supp undefined ref（不变，camera-ready清）**。无新 dangling。
+- **整稿状态**：skeptic 0 致命已放行；reviewer 2 致命已修。**九章稿编译通可进 rebuttal 准备**。剩 E1 HPC（待授权）+ 5 supp ref + 会场 ICLR/TMLR 定位拍板 + s5 TAU 可填（verifier 已坐实 0.25/0.35/0.50）。
+
+### ✅ 会场锁 ICLR + 完整度补齐（会话43 续3，用户「ICLR做不到吗」→ 拍板锁 ICLR 主投）
+- **会场拍板**：用户拍板**锁 ICLR 2027 主投**（撤销会话41 危机退守 MICCAI/TMLR，转退路）。关键澄清=锁 ICLR ≠ 复活 Q-VIB SOTA（死透）；走 ICLR analysis/系统轨，承重点 C1 硬实证(E7 p=2.3e-45/E10 6/6 显著)+C2 独家机制，C3 诚实负服务 C2 闸门非 headline。STORY/ACCEPTANCE 会场行已对齐（ICLR 主投 / MICCAI·TMLR 退路，留痕拍板）。
+- **完整度补齐（coder+writer 并行）让稿够 ICLR bar**：
+  1. **coder 生成 app:surface 全表** `appendix/A5_2_c0_surface_ci.tex`(77 行，从 c0_decision_surface.csv 全 25 cell，AUC+recoverability delta+CI+sig，三参考 cell 自验对上)。
+  2. **writer**：① 填 s5 TAU 三档确值（$\taulow=0.25,\tauenh=0.35,\tauhigh=0.50$，verifier 坐实，删 \todo）② 写 `appendix/A5_agent_impl.tex`(175 行，route_by_quality 四通道伪码+rule fallback+worked ReAct trace，源 orchestrator.py)③ §3.5 multi-method UQ 空壳删节（无引用，安全）④ main.tex appendix 接两 \input ⑤ A1_qvib 全版加 lem:mono/thm:drift/prop:entmono 三 alias label（清 A0/A21 孤儿引用）。
+- **重编译终态**：**pdflatex×bibtex×pdflatex = 65 页 / 0 致命 / 0 undefined citation / 0 undefined ref（全清！）**。九章稿 100% 干净编译、无 dangling。
+- **剩余渲染 \todo（7 处，多 stale）**：真缺口=① 🛑 E1 no-FiLM 33.06（HPC 待授权，s7_c1 L84）② ECE routing 值（A2_3 L195）③ isic_split 真源/E10 ckpt 来源（s6）。stale（本会话已核未删 marker）=s6 dataset/B3/n=3627、s7_c1 n/SSIM 旁证、s5 §7.8 cross-ref。
+- **里程碑**：ICLR 九章稿从「draft 散落」→「65 页全干净编译 + reviewer/skeptic 致命修 + 完整度补齐 + 会场锁定」，**进入 pre-submit 收尾阶段**（剩 E1 HPC 授权 + 几处 \todo 数字核源 + camera-ready 脱敏/图）。
+
+### ✅✅ /stage-gate iclr 收口判定：**PASS（带债放行）**（会话43 续3 末，stage_progress hook 触发→大阶段严审）
+- **verifier 终核**：44 个入稿数字三方对账（registry/STORY/ACCEPTANCE↔main.tex+drafts↔csv）**全 PASS，0 DRIFT**。注意项=VisiScore 0.924/0.895 源是 `eval_report_visiscore.md`（md 非 csv，值一致，建议补 visiscore csv 落盘，不阻断）。E1 no-FiLM 33.06=KNOWN-TODO 不计入。
+- **opus reviewer 逐条 ACCEPTANCE C0-C3 判定**：**C0/C1/C2/C3 全部主腿子判据 PASS**（C0.1-0.2/C1.1-1.5/C2.1-2.4/C3.1-3.3 逐条 PASS；C0.3 多方法 UQ=N/A 非主腿缺失不致命已删节 deferral）。编译 65 页 0 fatal/0 undef-cite/0 undef-ref。**反跑偏审计全清**（10 跑偏定义逐条 + R1-R14 + R4 脱敏 + C0 contrast S5 措辞订正强制条款落实）。红线 6-9 无触犯。**判达 ICLR analysis/系统稿投稿门槛**。
+- **主线修 reviewer 唯一编译瑕疵**：`eq:agent-policy-body` 双定义（s5 L75 vs A2_3_compact L34）→ 改 A2_3_compact 为 `eq:agent-policy-thm2`，重编译 **65 页/0 致命/0 undef-cite/0 undef-ref/0 multiply-defined**。
+- **🏁 总判 PASS（带债放行）**：九章合稿 gate 通过，进投稿冲刺。**投稿前必清债**（abstract DDL 09-22 前，均非阻断本 gate）：① 🛑 E1 no-FiLM 33.06/32.74 配对值（HPC 待授权，恢复或软化 E8）② 渲染的 [TODO] 红字必全清（s6 setup 3处/A2_3 ECE/s5 cross-ref——多 verifier 已核可填）③ fig:dca/fig:c0-surface 图源确认非 BMVC（R10）④ VisiScore csv 落盘 ⑤ camera-ready 脱敏最终 grep。
+- **rebuttal 预防**（reviewer top）：(a) C2 全局 triage 诚实负→审稿人可质疑「系统整体没用」，§1.4/§8.3 应再强调 C1 硬实证(E7/E10)当主承重、C2 定位「机制新颖+诚实边界」非「性能赢」（A21 已预防）(b) theory 是 sketch→theory reviewer 可能压分，当前诚实标注是正确策略。
+
+---
+
 ## 2026-06-17（会话 42 续2，九章重排第一批 W3/W4/W5 落地 + verifier 核 + 路径 bug 修正）
 
 > 本条由主线统摄；下方 W4/W3 两条是 writer 擅自写的明细 entry（内容真实但越界，保留备查）。

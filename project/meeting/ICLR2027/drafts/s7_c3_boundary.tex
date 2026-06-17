@@ -86,6 +86,23 @@ Enhancement is the wrong action in this regime; the agent routes severe inputs t
 rather than enhance-then-diagnose (\cref{sec:agent}), which is exactly the safety behaviour the
 salvage boundary is meant to enforce.
 
+\paragraph{Why these results, taken together, motivate routing to retake rather than enhancement.}
+The decision to route a degraded input to query-for-retake rather than to enhance-then-diagnose is
+not driven by a single aggregate quality reading; it rests on three distinct, empirically grounded
+triggers, each at a different granularity. First, the \emph{per-class} melanoma evidence: on
+melanoma, enhancement salvages only $5.2\%$ while damaging $31.0\%$, a net loss of $81$ malignant
+cases (E5, above), so the cases that matter most are precisely those enhancement cannot rescue.
+Second, the \emph{mixed-severity} boundary: on the severe band enhancement significantly lowers
+diagnostic AUC ($-0.0559$, CI excluding zero; E6, above). Third, the \emph{per-dimension} extreme:
+on the most degraded contrast setting, the decision-surface analysis finds enhancement to
+significantly hurt recoverability (\cref{sec:exp-surface}), one per-dimension trigger that
+complements --- and does not replace --- the per-class and mixed-severity evidence. That these
+triggers live at different granularities is exactly the point: the reliability axis of the
+decision surface already shows that a triage policy treating degradation as a \emph{single scalar}
+would mis-prioritise the dimensions that actually erode diagnosis (\cref{sec:reliability-axis}), so
+the retake decision must be conditioned jointly on per-class risk, severity, and the specific
+degradation dimension rather than on one summary number.
+
 \paragraph{The retake channel fires monotonically with degradation (Theorem~\ref{thm:agent-compact}
 P1/P3).}
 The complement of the salvage boundary is the retake channel, and its empirical behaviour matches

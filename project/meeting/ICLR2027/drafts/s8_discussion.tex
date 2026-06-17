@@ -1,0 +1,169 @@
+% =============================================================================
+% s8_discussion.tex --- §8 Discussion and Limitations (NEW draft, W7 reorder).
+%
+% SERVES: the whole paper's honest positioning under the C0-C3 framework ---
+%   an analytical / capability paper that charts a reliability x recoverability
+%   decision surface and reports honest deployment boundaries, NOT a SOTA chase
+%   (STORY 会场 MICCAI 2027 / TMLR, 容诚实负结果).
+%
+% STORY §8 STRUCTURE (锁定章节顺序 §8.1-§8.4):
+%   §8.1 GradProm differentiation (MI lower bound + routing vs gradient repair)
+%   §8.2 Why diffusion / generative enhancement fails here (safety, R8)
+%   §8.3 the deployable-boundary honest reading (triage global non-superiority)
+%   §8.4 Limitations (理论 sketch / 退化 semi-synthetic / q-bar 信号成本 /
+%        无真实部署 / E2 contrast 弱 / melanoma 救援缺口未解 / 单中心数据)
+%
+% SOURCE / MIGRATION:
+%   - GradProm段: STORY §"GradProm 对比" weld-shut differentiation (R12).
+%   - diffusion段: STORY §8.2 + R8 + main.tex L613-617 (Why generative fails).
+%   - boundary段: drafts/s77_dca_triage.tex (sec:exp-triage) global negative +
+%     drafts/s71_c0_results.tex / s3_decision_surface.tex C0 three-way verdict.
+%   - limitations: STORY §8.4 必含项 + ACCEPTANCE C0/E2/C3.
+%
+% LOCKED NUMBERS (STORY_FRAMEWORK.md locked table; DO NOT invent / DO NOT alter):
+%   C0 decision surface (c0_decision_surface.csv, n=360/cell, verifier PASS):
+%     contrast S5 (alpha=0.19) recoverability_delta -0.0355 CI[-0.0783,-0.0013]
+%       = the ONLY of 25 cells with significant HURT (enhancement backfires);
+%     blur S5 +0.0634 / color_shift S5 +0.0361 = enhancement still HELPs (救得回);
+%     completeness all 5 bands cross zero (S5 +0.0236 [-0.0079,+0.0572])
+%       = "partially recoverable" trend, statistically NOT significant.
+%   E2 per-dim: contrast PSNR 29.11 < degraded 32.29 (enhancement backfires on
+%     contrast), color_shift 33.77 < 35 target; brightness/blur PASS.
+%   E5 melanoma salvage 5.2% (4/77), net -81 malignant; v6 mask-L1 null 5.2%->5.2%.
+%   E6 severe dAUC -0.0559 CI[-0.085,-0.028]. Triage @20%: Direct 0.818 > best
+%     variant 0.788 (global honest negative, sec:exp-triage).
+%
+% RED LINES OBSERVED (STORY R1/R2/R3/R8/R10/R11/R12/R14, drift def. #1,#3,#10):
+%   - positioning is CONSTRUCTIVE, never "passive enhancement is unsafe" headline
+%     (R14): the contribution is HOW to enhance safely + when to query-for-retake.
+%   - NO claim triage globally beats Direct (R3/R11); honest negative stated.
+%   - GradProm welded as治标-修梯度 vs our MI-lower-bound + routing (R12), NOT
+%     "也修梯度的同类工作".
+%   - diffusion ONLY as a rejected cautionary contrast (R8), never our method.
+%   - derivation language ("we derive / under assumptions") for the theory, with
+%     the R2 forbidden verb avoided; no
+%     "universal / always" absolutes (R1); completeness = "partially recoverable"
+%     NOT "irreversible".
+%   - single-centre / synthetic-degradation framing kept honest; NO BMVC
+%     cross-domain rho / ImageNet-C / 5-backbone numbers imported (R10) --- those
+%     are BMVC-occupied and only cited (post-notification) elsewhere.
+% =============================================================================
+
+\section{Discussion and Limitations}\label{sec:discussion}
+
+% --- §8.1 GradProm differentiation (R12 weld) ----------------------------------
+\paragraph{Relation to gradient-repair approaches (GradProm).}
+The closest prior observation that enhancement can harm diagnosis is GradProm
+\citep{gradprom2025}, which operates in the same ISIC skin-lesion domain. GradProm
+treats the symptom by repairing gradients during training (gradient projection /
+gradient promotion). Our contribution is orthogonal in both mechanism and scope. We
+provide, first, a \emph{diagnosis-preserving information lower bound}: under the stated
+assumptions of Lemma~\ref{lem:dp} the feature-level diagnosis-preserving objective
+guarantees that the mutual information $I(Z_{\mathrm{enh}};Y)$ retained after
+enhancement stays within $\beta\sqrt{\epsilon}$ of the reference (we derive the bound
+rather than claim a watertight proof). Second, we provide a \emph{routing decision}
+that includes a query-for-retake channel, so that the system can decline to enhance
+when enhancement is unsafe rather than always attempting a correction. In short, where
+GradProm repairs gradients to mitigate the symptom, we bound the information loss that
+enhancement may incur \emph{and} decide when enhancement should not be applied at all.
+The two views are complementary rather than competing.
+
+% --- §8.2 Why generative enhancement fails here (R8) ---------------------------
+\paragraph{Why generative enhancement is rejected here.}
+We deliberately avoid generative restoration (diffusion- or GAN-based) for dermoscopic
+enhancement. Generative models optimise perceptual realism, which in dermoscopy can
+amount to synthesising plausible-but-absent structure --- pigment networks, vessels, or
+globules that the original capture does not contain. Such hallucinated structure is
+diagnostically misleading and constitutes a medical-safety hazard, since the
+downstream reader or classifier cannot distinguish invented detail from real
+morphology. We therefore use deterministic restoration with a quality-conditional
+modulation and a diagnosis-preserving objective, trading some perceptual sharpness for
+the information-preservation property analysed in \cref{sec:prop3lemma3}. This
+trade-off is the design intent, not a shortcoming: a system that is permitted to
+invent lesion structure cannot offer the diagnosis-preservation guarantee that
+motivates the present work. Diffusion-based restoration thus enters our discussion
+only as a rejected cautionary contrast, never as a component of the method.
+
+% --- §8.3 the deployable-boundary honest reading -------------------------------
+\paragraph{The honest reading of the deployable boundary.}
+Our decision-curve and triage analysis (\cref{sec:exp-triage}) supports a deliberately
+narrow positive claim and an explicit negative one. The negative claim is that, at a
+fixed referral threshold, globally applied quality-aware triage \emph{does not}
+outperform direct diagnosis: on the worst-case low-quality subset direct diagnosis
+attains the highest auto-handled sensitivity ($0.818$), the strongest tested bottleneck
+variant only matches it ($0.788$), and the maximum-net-benefit confidence intervals of
+all methods overlap ($0.179$--$0.192$). We make no claim that triage raises net benefit
+globally, and we do not assert that the agent's global risk is at most that of direct
+diagnosis. The positive claim is correspondingly local: \emph{within} the
+moderate-degradation window, the diagnosis-preserving enhancer does not lose
+discriminative information (\cref{sec:exp-preserve,sec:exp-dploss}), and the
+reliability $\times$ recoverability decision surface (\cref{sec:exp-surface}) shows that
+recoverability is dimension- and severity-dependent rather than uniform. Reading that
+surface honestly yields a three-way verdict: some degradations remain recoverable even
+at the most severe level tested (blur and colour-shift enhancement still improve
+diagnostic AUC at the strongest setting, with recoverability deltas whose CIs exclude
+zero); one degradation backfires (the most extreme contrast reduction, $\alpha=0.19$,
+is the single cell of twenty-five where enhancement significantly lowers AUC,
+recoverability delta $-0.0355$, $95\%$ CI $[-0.0783,-0.0013]$); and one degradation is
+only \emph{partially recoverable} with a trend that does not reach significance
+(field-of-view truncation / completeness, where every severity band's recoverability
+CI crosses zero). This partitioning --- recover, refuse-and-retake, or proceed with
+caution --- is precisely the decision the query-for-retake gate is built to make, and
+it is why the contribution is framed as charting and bounding that decision rather than
+claiming a universal enhancement win.
+
+% --- §8.4 Limitations ----------------------------------------------------------
+\paragraph{Limitations.}
+We state the limitations of this work plainly, as several of them are also the
+motivation for the query-for-retake gate.
+(1)~\textbf{Theory as sketches under assumptions.} The theoretical results
+(Lemma~\ref{lem:dp}, Proposition~\ref{prop:entropy}, Theorem~\ref{thm:agent-compact}) are
+derived under explicitly stated assumptions and are arguments for why the bounds hold
+rather than fully watertight proofs in every regime; in particular,
+Theorem~\ref{thm:agent-compact} is a band-local conditional bound, and its
+within-band guarantee does not aggregate into a global ordering
+(Remark~\ref{rem:no-global}).
+(2)~\textbf{Semi-synthetic degradation.} The benchmark applies controlled synthetic
+degradations along five physical axes; real consumer-capture statistics may differ
+from this protocol, and prospective validation on genuinely degraded clinical captures
+remains open.
+(3)~\textbf{Quality-signal cost.} The routing policy depends on a per-input quality
+scalar; learning a reliable quality channel adds annotation and training cost, and
+re-deployment within dermatology to a markedly different capture distribution would
+require re-fitting that channel (we restrict our quality-signal claims to the
+dermatology modality and do not assert cross-modality universality).
+(4)~\textbf{No real-world deployment validation.} We report no prospective clinical
+deployment and no clinician confirmation; all clinical statements rest on
+decision-curve analysis and triage simulation
+(\cref{sec:exp-triage}, Appendix~\ref{app:a20}), with their stated limits. The system
+is a research framework, not a medical device.
+(5)~\textbf{Single-centre, public data only.} Evaluation uses publicly available
+de-identified dermatology datasets; the diagnosis-preservation conclusions are
+additionally measured against a single frozen diagnostic probe, so they are
+probe-dependent, and a second independent diagnostic backbone and multi-centre data
+would strengthen them.
+(6)~\textbf{Per-dimension enhancement is uneven.} Enhancement does not improve every
+degradation axis: on the contrast axis it backfires (enhanced PSNR $29.11$~dB falls
+below the degraded input's $32.29$~dB), and colour-shift restoration does not reach our
+quality target ($33.77$~dB $<35$~dB), so these axes are honest failure modes that
+trigger the retake / caution channels rather than enhancement.
+(7)~\textbf{The malignant salvage gap is unresolved.} Enhancement salvages only
+$5.2\%$ ($4/77$) of misclassified melanomas while damaging $31.0\%$ of correctly
+classified ones (a net loss of $81$ malignant cases), and a mask-weighted
+reconstruction retrain leaves this unchanged ($5.2\%\to5.2\%$, an honest null). Closing
+this malignant-rescue gap --- for instance through diagnosis-aware or adversarial
+reconstruction objectives, or through learned rather than fixed routing thresholds ---
+is the central item of future work. We report these negative results rather than omit
+them, because they are the genuine evidence that a query-for-retake gate is a necessary
+safety mechanism and not a project shortcoming.
+
+\paragraph{Future work.}
+Two directions follow directly from the honest boundary. First, replacing the
+fixed routing thresholds with \emph{learned} thresholds is the most promising route to
+turning the band-local guarantee (\cref{sec:exp-triage}, Remark~\ref{rem:no-global})
+into a global utility improvement, since the global triage negative result is obtained
+under fixed thresholds. Second, closing the malignant salvage gap calls for
+reconstruction objectives that reach the diagnostic decision boundary rather than
+per-pixel fidelity alone. A formal cost-effectiveness study with jurisdiction-specific
+inputs (Appendix~\ref{app:a20}) and prospective clinical validation are necessary
+before any deployment claim.

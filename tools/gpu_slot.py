@@ -6,6 +6,8 @@
   - local = 1 卡（RTX 4070 Laptop 8GB），实际单槽
   - hpc   = 4 卡（gpu4090 分区 / QOS 4gpus）
 多任务可共存，只要某 host 空闲卡 >= 申请卡数；**绝不挤正在跑的**。
+策略：**HPC 默认单卡**（request <gpus>=1）——多窗口并行各跑一篇，4 卡跑 4 个不同任务，吞吐最大。
+仅单任务**显存放不下单卡**才申请 >1，note 写明理由。
 卡满 -> 排队（queue）；有卡 release 后，按 FIFO 取出第一个放得下的排队任务交主线起。
 
 真源 = .portfolio/locks/training.lock（schema v2）。training_lock.js hook 读同一文件放行/阻断。
@@ -21,6 +23,8 @@
       原始 JSON
   python tools/gpu_slot.py reap
       清理 active 中 pid 已死的 local 条目（陈旧锁），打印清掉了哪些
+  python tools/gpu_slot.py dequeue <id>
+      撤回排队请求（仅限 queue 中的条目；已在 active 的用 release）
 
 host 取值：local | hpc
 """
@@ -152,6 +156,21 @@ def cmd_status():
     return 0
 
 
+def cmd_dequeue(key):
+    """撤回 queue 中的排队请求（未启动）。已在 active 的用 release。"""
+    d = load()
+    before = len(d["queue"])
+    removed = [q for q in d["queue"] if q.get("id") == key or q.get("project") == key]
+    d["queue"] = [q for q in d["queue"] if q.get("id") != key and q.get("project") != key]
+    save(d)
+    if removed:
+        for r in removed:
+            print(f"DEQUEUED {r.get('id')} {r.get('project')} @{r.get('host')} {r.get('gpus')} 卡")
+    else:
+        print(f"未找到 queue 中 id/project='{key}' 的条目（共 {before} 个排队）")
+    return 0
+
+
 def cmd_reap():
     """清 local active 中 pid 已死的陈旧条目（hpc 不在本机无法验 pid，跳过）。"""
     d = load()
@@ -201,6 +220,11 @@ def main(argv):
         return 0
     if c == "reap":
         return cmd_reap()
+    if c == "dequeue":
+        if len(argv) < 3:
+            print("用法: gpu_slot.py dequeue <id|project>")
+            return 1
+        return cmd_dequeue(argv[2])
     print(f"未知子命令 '{c}'")
     print(__doc__)
     return 1
