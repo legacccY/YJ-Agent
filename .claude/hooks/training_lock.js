@@ -22,7 +22,10 @@ process.stdin.on('end', () => {
 
   const cmd = (data.tool_input && data.tool_input.command) || '';
   // 非执行命令豁免：py_compile / pytest / lint / 版本帮助 + 调度器自身命令
-  const isCompileOrTest = /py_compile|pyflakes|flake8|\bpytest\b|-m\s+pytest|--version|--help|gpu_slot\.py/i.test(cmd);
+  // + HPC 上传/验证类命令（SFTP put/get、scp、grep/wc/printf/cat 含训练脚本名但不是真启训）
+  const isCompileOrTest = /py_compile|pyflakes|flake8|\bpytest\b|-m\s+pytest|--version|--help|gpu_slot\.py/i.test(cmd)
+    || /\bsftp\b|\bscp\b/i.test(cmd)
+    || (/\b(grep|wc|printf|cat|ls|stat|md5sum|sha256sum|diff|head|tail)\b/i.test(cmd) && !/\bsbatch\b/i.test(cmd) && !/Start-Process/i.test(cmd));
   // 训练命令识别（保守）
   const isTraining = !isCompileOrTest && (
     (/Start-Process/i.test(cmd) && /train/i.test(cmd)) ||

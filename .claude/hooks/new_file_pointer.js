@@ -32,8 +32,8 @@ process.stdin.on('end', () => {
   if (/(README|_LOG|PROJECT_LOG|04_LOG|registry|MEMORY|PORTFOLIO|SUBMITTED)/i.test(base)) process.exit(0);
   if (/\/(\_scratch|\_archive|archive|sentinels|node_modules)\//.test('/' + rel)) process.exit(0);
 
-  // 深层代码/config 子树（src/ configs/ utils/ scripts/ code/ 下的文件）→ 整个目录已被项目索引覆盖，单文件不逐一登
-  if (/\/(src|configs?|utils?|scripts?|code)\//.test('/' + rel)) process.exit(0);
+  // 深层代码/config 子树（src/ configs/ utils/ scripts/ code/ eval/ tools/ 下的文件）→ 整个目录已被项目索引覆盖，单文件不逐一登
+  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?)\//.test('/' + rel)) process.exit(0);
 
   // 带日期戳的调研/日志 md（文件名含 \d{4}-\d{2}-\d{2}）→ 日记性质，不要求上层索引
   if (/\d{4}-\d{2}-\d{2}/.test(base)) process.exit(0);
