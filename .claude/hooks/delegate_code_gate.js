@@ -33,6 +33,8 @@ process.stdin.on('end', () => {
   if (!/\/project\//.test(norm)) process.exit(0);
   if (!/\.py$/i.test(norm)) process.exit(0);
   if (/\/(_scratch|_archive|node_modules|\.git)\//.test(norm)) process.exit(0);
+  // ideation/runs/ 下是流水线辅助脚本（dedup/killshot plan 等），非模型训练码 → 放行
+  if (/\/ideation\/runs\//.test(norm)) process.exit(0);
   if (/\/tests?\//.test(norm) || /(^|\/)(test_|conftest)/i.test(norm)) process.exit(0);
 
   // 定位 state 文件

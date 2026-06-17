@@ -1,0 +1,48 @@
+# probe_trajectory_hpc.yaml -- Gate3 Nodule 轨迹探针 HPC 版（rtx4090）
+# 与 probe_trajectory.yaml 唯一差异 = 路径指向 HPC nca-jepa 部署
+mode: trajectory
+
+data:
+  img_dir: "/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/images-224/images-224"
+  csv_path: "/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/Data_Entry_2017.csv"
+  val_split: 0.1
+  resolution: 64
+  seed: 42
+
+trajectory:
+  finding: "Nodule"
+  require_same_view: true
+  max_pairs: null
+  traj_eval_steps: [16, 32, 48, 64]
+  roi_smooth_sigma: 2.0
+  roi_threshold: 0.10
+  front_changed_thresh: 0.05
+  roi_frac_margin: 0.05
+  unet_base_ch: 16
+
+model:
+  channel_n: 16
+  hidden_size: 128
+  fire_rate: 0.5
+  input_channels: 1
+
+train:
+  steps_min: 48
+  steps_max: 64
+  batch: 4
+  lr: 2.0e-3  # TODO: 沿用 texture-NCA，无 trajectory NCA 官方源
+  lr_gamma: 0.9999
+  epochs: 150
+  pool_size: 256
+  pool_replace: 1
+
+diverge:
+  loss_flat_tol: 1.0e-6
+  loss_flat_steps: 20
+  psnr_min: 10.0
+  psnr_converge: 28.0
+
+output:
+  out_dir: "/gpfs/work/bio/jiayu2403/nca-jepa/med_nca_probe/results/probe_trajectory"
+  save_img_every: 25
+  state_json: "state.json"

@@ -1,5 +1,11 @@
 # Med-NCA 项目日志（时间倒序）
 
+> 🗄️ **已封印（2026-06-17 用户拍板「封存」）**。Med-NCA 伞下全部 NCA 探索收口、不再投入：
+> - **复现线**（Med-NCA/M3D-NCA 最小复现）：实测 M3D-NCA 训练发散，封存。
+> - **NCA-JEPA 创新线**：今早已封存（弃 NCA 主线，资源转 P1 ICLR / P3 MedAD-FailMap，详见 registry nca-jepa phase + NCA-JEPA/04_LOG）。
+> - **NCA-AB 换路探路**（方向 A 3D 全分辨率分割 / 方向 B 连续疾病轨迹）：A Gate 前判死（prior art + 显存账），B Gate0-2 过、**Gate3 轨迹证伪**（见下「Gate3 终判」）。
+> 资产可复用（NCA 码 / NIH 纵向对抽取 / 探针框架 / Gate1 胸片 persistence 能力发现 26.5dB），但无干净顶会方向。后续如续 NCA 医学轨迹须换叙事重走 Gate0。
+
 ---
 
 ## 2026-06-17 — 换路探路：审核 NCA-AB 两方向 + 文献证伪 + 立项前证伪闸门
@@ -68,6 +74,57 @@
 
 **当前总进度**：Gate0 ✅(新颖性留白) + Gate1 ✅(persistence 两 mode 收敛不崩) + Gate2 ✅(纵向对充足)。
 **下一步**：Gate3 = 单病灶轨迹探针（最简病种如肺结节，小样本跑 Phase2 轨迹训练 mode，停 16/32/48 步看中间态是否渐进合理）。需 coder 写轨迹训练 mode + 一轮训练。Gate3 过 → 进正式立项红队（攻轨迹收敛 + 临床盲评设计）。
+
+### 续：Gate3 设计 → skeptic 红队判 3🔴 → 重设计（kill-criterion 对齐局部性卖点）
+
+**coder 首版实现**（`code/probe_persistence.py` 加 `NIHPairDataset` + mode=trajectory + 中间态评估，pytest 22 passed）：seed=t0、target=t1、NCA 跑 T∈[48,64] 步学 t0→t1，停 16/32/48/64 测 dist_to_t1/dist_from_t0 单调性 + baseline_psnr_t0_to_t1。自动选对数最多 finding = Infiltration(1976 对)。
+
+**🛑 skeptic 红队判 3🔴 致命（先修再跑）**——病根：现判据测「NCA 能否平滑插值到 t1」，但 Direction B 卖点是「NCA **局部**生长出病变」，两者不是一回事：
+- 🔴-1 三判据（PSNR>平凡 + 单调 + 非退化）被**全局线性插值退化解通吃**：学成 out_T≈(1−T/64)t0+(T/64)t1 三条全过，但这正是 diffusion/latent 插值在做的全局同步渐变=Direction B 要超越的反面。测的是「能插值」非「局部生长」=NCA-JEPA 路线③(轨迹=h16+插值无独特信息)已死同款坑。
+- 🔴-2 缺强基线 → 假 PASS 几乎必然：唯一基线是「啥都不做」PSNR(t0,t1)，最弱。须加全局线性插值 + 小 U-Net 一跳，否则排除不掉「NCA 迭代性纯属累赘」。
+- 🔴-3 「选对数最多类」选到 Infiltration（弥漫+标注噪），与局部叙事自相矛盾。须按叙事选局灶病。
+
+**finding 粒度纵向对实测**（Bash 核 CSV，No Finding 最早→单 finding 同患者去 multi-label）：Nodule 943(同VP 646)/Mass 626(397)/Atelectasis 1644(904)/Pneumonia 199(116)/Infiltration 2904(1924)。→ **🔴-3 可修**：选 **Nodule**（结节 5mm→20mm 局部外扩=材料叙事范例病，646 同VP对足）。
+
+**重设计（已发回 coder 修，4 改）**：① 换 Nodule + 只留同 View Position 对（顺带挡 🟠-5 nuisance）② 加**局部性判据** change_in_roi_frac=相邻步变化能量落在 (|t1−t0|) diff ROI 内占比（局部生长高/全局插值低，最关键判据）③ 加强基线 linear_interp + U-Net 一跳，PASS 改写为「NCA change_in_roi_frac 明显 > 线性插值」非「终态多准」④ 加 Laplacian 方差抗糊代理。新 PASS 需 5 条全满足（见发回 coder 的 message）。
+**残差(🟢，写进裁定)**：Gate3 PASS=机制可行性探针，非疗效/临床可解释证明；晚期发散(承 Gate1 caveat)、128²+、临床盲评全留正式立项阶段。
+
+### 续：Gate3 重设计实现完毕 + HPC 起训（job 1452901）
+
+**coder 改完 4 处**（`code/probe_persistence.py`，pytest 主线亲跑 **29/29 过**）：换 Nodule 固定 + `require_same_view=True`（同 VP 过滤 nuisance）；加 `compute_roi_mask`/`compute_change_in_roi_frac`（核心局部性判据）/`compute_front_expansion_violation_rate`；加 `SmallUNet`(3层) + `compute_linear_interp_metrics` 双强基线；加 `compute_laplacian_variance` 抗糊代理。state.json 写齐 5 条 PASS 字段。Nodule 同 VP **400 对**（train~360/val~40，够 PoC）。lr=2e-3 仍 TODO(无 trajectory NCA 官方源)。
+
+**HPC 部署（用户放行「全自动」）**：local 唯一卡被他窗 ideation-run002 G5 killshot 占（后 ideation 也挪 HPC），改走 HPC。NIH 数据已在 `/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/`（CSV+112120png 同结构），env `yjcu124py310` torch2.6/numpy2.1.2/PIL+yaml 齐。上传 probe_persistence.py + `probe_trajectory_hpc.yaml`（路径改 HPC）+ `sbatch_gate3.sh` 到 `med_nca_probe/`，远程 py_compile 过 → **sbatch job 1452901 RUNNING**（gpu4090n7，1×rtx4090，~30min，卡槽 97e0648f）。
+**下一步**：轮询 1452901 → done 则 sftp 拉 `med_nca_probe/results/probe_trajectory/trajectory/state.json` + 轨迹图 → analyst 判 Gate3 5 判据（重点 change_in_roi_frac 明显>linear_interp 才算真局部性）→ release 卡槽。Gate3 PASS→进正式立项红队；FAIL→Direction B 死或大改。
+
+### 续：Gate3 终判 = **FAIL（明确）** → Direction B 叙事证伪
+
+**job 1452901 COMPLETED**（150ep 跑满，exit 0，20min，未发散，Status=PARTIAL/未收敛）。analyst 判读（数字 + 轨迹图视觉）：
+
+**终值（state.json 核实）**：
+| 判据 | 值 | 判 |
+|---|---|---|
+| P1 映射 final_psnr_to_t1 | 16.49 vs baseline(输出t0)=15.41 | +1.08dB，PASS 但有保留 |
+| 强基线 unet 一跳 | **15.40（低于 baseline）** | 同规模强监督也学不会 |
+| P2 mono_to_t1 违反率 | 0.594 | ❌ FAIL（半数中间帧不单调趋 t1） |
+| P3 front_expansion 违反率 | 0.0052 | 数字好看但 trivial（输出几乎没动） |
+| P3 change_in_roi_frac | 0.49 < linear 0.72 | ❌ 连均匀渐变都不如 |
+| dist_from_t0@step64 | 0.0145 | 输出离 t0 仅 1.5%（near-identity） |
+| step64 路程进度 | 36.8% | 64 步只走到 t0→t1 的 37% |
+| final_psnr_to_t0 | 18.95 >to_t1 16.49 | 输出更像 t0 不像 t1 |
+| P4 laplacian ratio | 0.79 | PASS（轻度糊，勉强） |
+| **综合** | pass_summary=False | **FAIL** |
+
+**核心结论（双重）**：
+1. **NCA 学的是「停在 t0 附近的微漂移」非「疾病进展」**——轨迹图 ep1 vs ep150 肉眼几乎无差，中间 4 列(snap16/32/48/64)就是 t0 副本，无结节从无到有的局部萌生。front_expansion 好看是 near-identity 的 trivial artifact（输出没动，微扰自然满足单调扩张），非真局部生长。
+2. **不是 NCA 特有失败，是 64²/~580 对下 Nodule 的 t0→t1 信号本就在分辨率/噪声底以下**——U-Net 一跳强基线 15.40 连「复制 t0」的 15.41 都没过。几像素的结节差异被重采样+患者间个体差异淹没。材料 §5 命门「纯 NCA+L2 中间态不可解释」在此尺度完全成立。
+
+**判据校准如实标**：change_in_roi_frac 这条门槛位错（线性插值变化正比 t1−t0 天然 ROI 集中、构造≈0.72，非「全局均匀」退化解）；已用 front_expansion 当主局部性判据补正。但即便用补正判据，结论不变（输出近恒等使局部性判据失去意义）。
+
+**裁定：Gate3 FAIL，Direction B 此尺度死、叙事证伪**。analyst 建议不在当前 Direction B 上补丁赌大尺度——上 128²/256²+配准对+改损失=独立新 hypothesis，须重走 Gate0。
+
+**Med-NCA 换路探路总结**：方向 A（3D 全分辨率分割）Gate 前判死（prior art 全占 + 显存账自相矛盾）；方向 B（连续疾病轨迹）Gate0✅新颖性→Gate1✅persistence→Gate2✅纵向对→**Gate3❌轨迹证伪**。两方向均不立项。换路探路收口。
+**待用户拍板**：Direction B 关闭（叙事证伪）确认 / 是否换叙事重立项（走 /ideate 或 Gate0）/ Med-NCA 子项目去向。
+HPC 卡槽 97e0648f 已 release。临时脚本 `_scratch/hpc_gate3_*.py` 待清。
 
 ---
 

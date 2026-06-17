@@ -10,7 +10,7 @@
 | 项目 | 会场 | Deadline | 状态 | 优先级 | home |
 |---|---|---|---|---|---|
 | **ICLR** VisiSkin-Agent | ICLR 2027 | 09-22 abs / 09-29 full | 🟢 active：M2 收官→M3 写作 | P1 | `project/` |
-| **NCA-JEPA** | TBD→NeurIPS/ICLR | pilot Gate0 ~D2 | 🟡 pilot-AMBER：Phase0 训完+stage-gate 不放行（L_f 红灯，待修估计器重测定 GREEN/退路B） | P2 | `project/meeting/Med-NCA/NCA-JEPA/` |
+| **NCA-JEPA / Med-NCA** | — | — | 🗄️ 已封印（2026-06-17）：NCA 全线收口（JEPA 主线弃 + NCA-AB 换路 A 判死/B Gate3 证伪），资源转 P1/P3 | P8 | `project/meeting/Med-NCA/`（PROJECT_LOG 封印标记） |
 | **BMVC** QCTS | BMVC 2026 | 已投 05-24 | 🔒 sealed：仅 rebuttal | P9 | `project/meeting/BMVC/` |
 | **MedAD-FailMap** | ICLR/NeurIPS→MICCAI/MedIA | TBD | 🟡 planning：立项当天→Phase0 预检 | P3 | `project/meeting/MedAD-FailMap/` |
 
@@ -79,7 +79,7 @@
 ## 各项目下一步
 
 - **ICLR**：M3 写作起步。读 `project/README.md` → STORY_FRAMEWORK → ACCEPTANCE_CRITERIA → DATA_INVENTORY → PROJECT_LOG。
-- **NCA-JEPA**：Phase0 全 7 job 训完 + eval + /stage-gate=AMBER。下一步=修 `eval_anytime.estimate_lf` 口径（真实迭代状态 + I+J_δ+fire）→ 现有 ckpt 重测全臂 L_f → L_f<1 则 Gate1 PASS 走 GREEN / 真>1 转退路 B。阻断 5 项见 `04_LOG` 最新 entry。
+- **NCA-JEPA / Med-NCA**：🗄️ 已封印（2026-06-17）。NCA 全线收口，无干净顶会方向，资源转 P1 ICLR / P3 MedAD-FailMap。封印细节见 `project/meeting/Med-NCA/PROJECT_LOG.md` 头部标记。
 - **BMVC**：被动等审稿，到则 rebuttal（`meeting/BMVC/rebuttal/`）。
 
 > 详细历史日志各项目 `04_LOG.md` / `PROJECT_LOG.md`。旧根级 WORKLOG 已归档 `project/archive/2026-06_portfolio_reorg/`。

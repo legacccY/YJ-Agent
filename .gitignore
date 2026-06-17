@@ -77,6 +77,7 @@ homework/
 # 官方 I-JEPA 仓（嵌套 git，可重 clone）
 project/meeting/Med-NCA/NCA-JEPA/ijepa/
 # 草稿/临时探针脚本
+_scratch/
 project/meeting/Med-NCA/NCA-JEPA/_scratch/
 
 # 逐图预测 dump（可由模型重跑数据集重生成，见 DATA_INVENTORY）
