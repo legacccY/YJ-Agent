@@ -1,376 +1,230 @@
-# ICLR 2027 验收标准 — 78-80% 命中率
+# 唯一论文验收标准 — C0-C3 论点判据
 
-**目标**：78-80% 投稿命中率
-**最后更新**：2026-05-24
-**适用范围**：每个 lever / 实验 / milestone 完成判定的唯一标准
+**论文**：D+A 系统论文 —— Safe diagnosis-preserving enhancement of degraded dermoscopy, and when to defer instead
+**会场**：MICCAI 2027（~2027-02）首选 / TMLR（滚动、明文不要 SOTA、容诚实负结果）备
+**最后更新**：2026-06-17（会话 41，随 STORY 重构整篇重写）
+**适用范围**：每个论点 / 实验 / milestone 完成判定的唯一标准
+**配套**：与 `STORY_FRAMEWORK.md`（同日重写）C0-C3 框架一一对应；最高准绳 = `project/ICLR_重构计划_拆两篇_2026-06-17.md` §2。
 
-> ⚠️ **不存在"基本完成"**。每条验收阈值要么 PASS 要么 FAIL。FAIL 必须降低对应 lever 命中率贡献预估，并在 `PROJECT_LOG.md` 写下 "命中率回退 N%" 的诚实记录。
+> ⚠️ **本文件已整篇重写**。旧版「78-80% 命中率 / 25-lever（L1-L25）」框架**已全部作废**：含 Q-VIB SOTA 的 L1、含 Q-VIB-supremacy 的 L6/L7/L8、命中率分解表、含 0.707 的 Table、M1-M4 Q-VIB milestone 全删。会场不再冲 ICLR SOTA，改 MICCAI 2027 / TMLR，验收按论文质量门槛而非命中率百分比。
 
----
-
-## 🎯 命中率分解（25 lever，总 78-80%）
-
-### 基线：ICLR 2027 平均接受率 ~30%
-### 大项目额外提升：+50% （25 lever 累加）
-
-| 类 | 命中率贡献 | Lever 数 |
-|---|---|---|
-| A 理论深度 | +5% | 5 |
-| B 实验规模 | +3% | 5 |
-| C 临床可信度 | +4% | 4 |
-| D 复现性 | +2% | 4 |
-| E 防御性写作 | +3% | 3 |
-| F 附加 | +2% | 4 |
-| **合计基线 + lever** | **30% + 19% = 49%** | 25 |
-
-**但 lever 间有非线性协同**（理论深 + 实验规模 + 防御性写作 互相放大），实际预估贡献为 **+48-50%**，命中率 **~78-80%**。
-
-**Lever 间扣分规则**：若任一 A 类 lever FAIL，所有 A 类协同效应 -50%（B/C/D/E/F 同理）。例如 L4 Theorem 2 写不出 → A 类总贡献从 +5% 降到 +2.5%。
+> ⚠️ **不存在「基本完成」**。每条验收阈值要么 PASS 要么 FAIL。FAIL 必须在 `PROJECT_LOG.md` 写诚实记录，按需降级 framing（不藏失败）。
 
 ---
 
-## A 类：理论深度（+5%）
+## 🎯 论点验收总览（C0-C3，对应 STORY 四论点）
 
-### L1 — Q-VIB 4 定理体系 ✅
-- **内容**：Proposition 1 (ELBO) + Lemma 1 (σ² monotonicity) + Theorem 1 (attention drift bound) + Proposition 2 (entropy monotonicity) + Cor 1 (recovers VIB) + Cor 2 (practical implication)
-- **状态**：✅ 已完成（`archive/2026-05_pre_iclr_reorg/创新点/创新点数学推导.md`）
-- **验收**：4 个定理 + 完整证明 + 实证验证（Q-VIB ρ=-0.165 vs Std VIB -0.024）
-- **写入论文位置**：§3.2-§3.5 主文（compact statement）+ Appendix A1 完整证明（5-7 页）
-- **若 FAIL**：命中率 -2%（论文失去理论灵魂）
+| 论点 | 角色 | 不可缺性 | 实证状态 |
+|---|---|---|---|
+| **C0** 可靠性 × 可恢复性决策面 | 动机章（BMVC-free 刻画）| 论文动机基石 | 🚧 待出逐维 × severity AUC 网格 + 可恢复性叠层（数据已有）|
+| **C1** DP-Loss + MI 下界 | 最硬主腿 | **不可缺**（论文核心贡献）| ✅ E7/E3/E10 PASS + Lemma3 toy PASS |
+| **C2** query-for-retake agent | 独家钩子 | **不可缺**（文献首次采集闭环）| 🚧 4 通道实现收尾 + Thm2 降格落 tex |
+| **C3** 诚实边界 | 闸门动机 + 可信度 | **不可缺**（诚实墙）| ✅ E6/E5 per-class/v6 null 全 done |
 
-### L2 — VisiEnhance Proposition 3 ✅ (推导完成 2026-05-24)
-- **内容**：$\bar{q}(T_\omega(x,q)) > \bar{q}(x) \implies \mathbb{E}[H(\hat{p}_{T_\omega(x,q)})] \leq \mathbb{E}[H(\hat{p}_x)]$
-- **状态**：✅ 推导 done — `plans/Prop3_Lemma3_visienhance_theory.md` §1, 显式 (A1)-(A4) + 5-step 严密 proof，含 Q-VIB ELBO + Lemma 1 monotonicity 链路
-- **实证**：⏳ 待 Plan A Stage 1+2 完成 (M2 D8-D14, E4 paired t-test)
-- **toy 验证**：✅ `tests/test_theorems_numerical.py::test_proposition3_*` PASS
-- **写入论文位置**：§4.4 主文 + Appendix A2.1
-- **若 FAIL（实证）**：命中率 -1%
-
-### L3 — DP-Loss Lemma 3 ✅ (推导完成 2026-05-24)
-- **内容**：$\mathcal{L}_{\text{DP}} \leq \epsilon \implies I(Z_{\text{enh}};Y) \geq I(Z_{\text{ref}};Y) - \beta\sqrt{\epsilon}$，$\beta = M L_{q_\theta}/\sqrt{2}$
-- **状态**：✅ 推导 done — `plans/Prop3_Lemma3_visienhance_theory.md` §2，**关键修正**：$\sqrt{\epsilon}$ scaling (Pinsker-optimal)，非 $\epsilon$ linear；显式常数 $\beta\approx 0.74$ (binary)
-- **实证**：⏳ M2 D8-D14 (E7 ablation, DP 组 ΔAUC 更小)
-- **toy 验证**：✅ `tests/test_theorems_numerical.py::test_lemma3_pinsker_*` PASS
-- **写入论文位置**：§4.4 主文 + Appendix A2.2
-- **若 FAIL（实证）**：命中率 -1%
-
-### L4 — Closed-loop Agent Theorem 2 (risk bound) ✅ (推导完成 2026-05-24)
-- **内容**：$\mathcal{R}_{\text{agent}}(x) \leq \mathcal{R}_{\text{direct}}(x) - \Delta(\bar{q}, T_\omega)$，$\Delta > 0$ iff $\bar{q} \in [\tau_{\text{enh}}, \tau_{\text{high}}]$
-- **状态**：✅ 推导 done — `plans/Theorem2_agent_risk_bound.md`，含 decision-theoretic 4-action space + 4 lemmas (entropy-risk coupling / enhancement gain / threshold window / query-refuse safety) + main theorem 4-case proof + Corollary 2.1/2.2
-- **实证 (P1/P2/P3)**：⏳ Plan A Stage 3 完成后, `results/agent_vs_direct_risk.csv` 跑 SalvageRate band test
-- **toy 验证**：✅ `tests/test_theorems_numerical.py::test_thm2_P1/P2/P3` PASS + bootstrap CI excludes 0
-- **写入论文位置**：§5.2 主文 + Appendix A2.3
-- **若 FAIL（实证）**：命中率 -1%
-
-### L5 — Corollary 1 (Q-VIB + QCTS 复合 ECE bound) ✅ (推导完成 2026-05-24)
-- **内容**：$\text{ECE}(\hat{p}_{\text{comp}}) \leq \min(\text{ECE}_{\text{QV}}, \text{ECE}_{\text{QCTS}}) + \epsilon_{\text{qts}}$, $\epsilon_{\text{qts}} = O(L_T \|\ell\|_{\max}/T_{\min}^2 \cdot \sigma_{\bar{q}|c})$
-- **状态**：✅ 推导 done — `plans/Corollary1_qvib_qcts_ece_bound.md`，4-step proof + Murphy 分解 + Lipschitz chain rule，显式数字预测 $\epsilon_{\text{qts}}\approx 0.037$
-- **实证**：⏳ M2 D1-D7 universality 表 + composite ECE
-- **战略价值**：把 BMVC 的 QCTS work cite 自己之前的 paper（防 R10），论文 closure 完整
-- **写入论文位置**：§5.3 主文 + Appendix A3
-- **若 FAIL（实证）**：命中率 -0.5%
+**主腿不可缺原则**（取代旧「5-theorem-closure 缺一 -2%」）：**Prop3 / Lemma3 / Thm2 是增强+决策这条主腿的理论支撑，三者缺任一则论文理论骨架塌**。Q-VIB 相关定理（Prop1/Lemma1/Thm1/Prop2）退 supp 当框架，缺失不致命。
 
 ---
 
-## B 类：实验规模（+3%）
+## C0 — 可靠性 × 可恢复性决策面（动机章，BMVC-free，会话 41 reframe）
 
-### L6 — 5 backbone universality ✅
-- **内容**：Std VIB / ResNet-50 / ViT-Tiny / ConvNeXt-Tiny / Swin-Tiny × {raw, +TS, +QCTS, +Q-VIB}
-- **状态**：✅ 已 done（前 3 backbone × 3 method 是 BMVC 复用，需补 +Q-VIB 列）
-- **验收**：Table 2 主文 8 行 × 4 列 + bootstrap CI + Q-VIB 列必须重跑
-- **完成路径**：M1 D22-D28 补 Q-VIB 列推理
-- **若 FAIL**：命中率 -0.5%
+> **reframe 缘由**：原 C0「纯退化曲面」撞 BMVC supp 的 `table_perdeg_qcts`（逐维 **ECE** × Std VIB±QCTS，4 维无 completeness，无 severity 扫描，`itb_supp.tex` L615 确有 \input）。计划文档 §3 拍板 A：C0 改走 BMVC 没碰的角度 —— **主轴诊断 AUC（非 ECE）+ 逐维 × severity 二维网格 + completeness 第 5 维 + 可恢复性轴**。C0 仍是**动机章不当 contribution**。
 
-### L7 — 8 dataset cross-domain 🚧
-- **内容**：ISIC 2020 + HAM10000 + PAD-UFES + Fitz17k + DermNet + CheXpert + APTOS-fundus + Kvasir-endoscopy
-- **状态**：🚧 **4 skin done + fundus 跨模态边界（会话28+30）**：Q-VIB Full ρ −0.16(HAM)/−0.24(PAD)/−0.198(Fitz17k, n=16574, p<1e-145)/**−0.223(DermNet, n=3151, p<1e-36)** quality-aware 转移 **4/4 skin 确认**，F |ρ|>D>B3 每集成立。**关键诚实拆分**：ρ（质量-不确定性耦合）4 连转移；但绝对 ECE/AUC 只近域保（HAM 0.098/PAD 0.130 胜 B3），远域失守（Fitz F ECE 0.587 / DermNet AUC~0.54 近随机=黑色素瘤头跨 BCC/AK-vs-SK 临床照域+标签双偏移）。**fundus(APTOS 官方 n=3662) = 跨模态失败边界：ρ=+0.135(p=0.03) 方向反、QCTS 塌成 TS、clean AUC 0.994** → 写进 §7.6 + §8 Limitations(5)。写进 main.tex §7.6（**4 skin + 1 cross-modal / 8**，编译 **40 页 0 undef**）。产物 `results/external_dermnet_predictions.csv`+`crossdomain/fundus_crossdomain.json`。DermNet 管线：`scripts/build_dermnet_metadata.py` + precompute/run/analyze_external 加 dermnet config。其余：Kvasir(endoscopy 下好待脚本)/CheXpert(有 6/5 结果+脚本)
-- **验收**：8 个 ρ(H, q̄) 数字 + p-value，至少 6/8 显著 ρ<0（quality-aware）
-- **完成路径**：M1 D29 ~ M2 D14
-- **风险**：endoscopy / fundus 跨模态不 quality-aware（**fundus 官方实测 ρ=+0.135 确认失败**）— 已 reframe 为「property 是 modality-bounded」：4/4 skin 转移 = 强证据，跨模态失败 = 诚实边界（§8 Limitations(5)），非掩盖。"6/8 ρ<0" 旧阈值改读「dermatology 域内全过 + 跨模态边界明确」
-- **若 FAIL（<6 个 quality-aware）**：命中率 -0.8%，论文降级为 dermoscopy-specific story
+### C0.1 — 可靠性轴：逐维 × severity 诊断 AUC 网格 🚧
+- **内容**：模糊 / 亮度 / 完整度 / 色温 / 对比 5 维，每维 × severity 多档，画出**主轴诊断 AUC**（不用 ECE 当主轴 —— 逐维 ECE 是 BMVC `tab:perdeg` 占的角度）的二维网格。
+- **severity 档位**：5 档锚 ImageNet-C severity 1-5 惯例 + 每维物理量纲连续轴（blur=σ / brightness=乘子 / contrast=α / color=偏移 / completeness=crop_ratio）；档位 = 量纲等距采样，从现有 `data/degrade.py` light/medium/heavy 三档物理外插（**禁凭印象拍档位**，确切数值 `\todo{核 degrade.py}`，§3.1 列数值表）。
+- **completeness（q3）第 5 维**：定义为「视野截断比例」连续轴，severity=crop_ratio；措辞写 **"partially recoverable" 不写 "irreversible"**（与 R1 防绝对化一致）。
+- **验收**：
+  - (a) 5 维 × severity 诊断 AUC 网格图出齐（每维一条曲线，severity 物理量纲单调轴）。
+  - (b) 可读出明确趋势「质量降 → 可靠性崩」（AUC 随 severity 单调下降，至少多数维度成立；不单调的维度如实标注）。
+  - (c) 每个网格点配 bootstrap 95% CI（R6）。
+- **数据**：用现有 ImageNet-C / 退化产物重算逐维 × severity。
+- **若 FAIL**：动机章弱化，降级为「质量退化对可靠性有非平凡影响」的定性陈述。
+- **写入位置**：§3.2 主文 + Appendix A4 完整网格表。
+- **红线**：用 AUC 当主轴避撞 BMVC；引用 BMVC `tab:perdeg`（ECE+QCTS 角度）做明确区分，**不搬表**（R10）。
 
-### L8 — E1-E12 full ✅（11/12，E4 FAIL/不入 paper，Prop3 由 E7 承载）
-- **内容**：VisiEnhance 12 个核心实验（详见下方 E1-E12 表）
-- **状态**：✅ **会话28 收官**：E1/E2/E3/E5/E6/E7/E8/E9/E10/E11/E12 全 done（E10 6 SOTA + E11 cross-domain + Table 1 会话28 重 eval 入 paper）；**E4 inconclusive**（B3 熵饱和，Prop3 改靠 E7+非空性）
-- **完成路径**：M2 D1-D28
-- **若 FAIL（E3 或 E5 不达标）**：命中率 -1.5%（这是 VisiEnhance 论文核心）
+### C0.2 — 可恢复性轴：增强能否救回诊断 🚧（桥 C1+C3）
+- **内容**：在 C0.1 的每个退化点上叠加第二轴「增强能否把诊断救回」—— 用 C3 已有数据（E5 救援净负 / E6 severe 伤诊断）标注哪些退化点可恢复、哪些不可。增强 BMVC **一字没有** → 天然 BMVC-free，且把 C0 直接桥到 C1（增强）+ C3（边界）。
+- **验收**：(a) 可恢复性叠层与可靠性网格对齐成「决策面」；(b) 可读出「moderate 退化可救（C1 窗口）/ severe + melanoma 不可救（C3 闸门）」分区，与 E6（severe dAUC −0.056 排除 0）/ E5（melanoma 救 4 毁 81）一致。
+- **数据**：复用 C3 的 `results/e6_severe.csv` + `results/e5_salvage_persample.csv`，不另跑。
+- **若 FAIL**：可恢复性轴退为定性分区描述。
+- **写入位置**：§3.3 主文。
 
-### L9 — 6 SOTA enhancement compare ✅（会话28 done）
-- **内容**：vs Restormer / NAFNet / MIRNet-v2 / SwinIR / Uformer-B / Real-ESRGAN（**禁扩散红线**，故无 DiffBIR）
-- **结果**：✅ **6/6 VisiEnhance 显著优**（job1448952 stored-mixed，paired ΔAUC 全 CI 排除 0、McNemar p<1e-150、PSNR 32.8 vs 13-22）→ main.tex tab:e10
-- **验收**：在 ΔAUC、ΔECE、SalvageRate 三指标上，VisiEnhance 显著优于所有 6 个对比（paired t-test p<0.05）
-- **完成路径**：M2 D8-D14
-- **若 FAIL**：命中率 -0.5%
-
-### L10 — Fairness 全维度 🚧
-- **内容**：Fitz I-VI + sex (M/F) + age (3 bin) 共 11 sub-pop
-- **状态**：🚧 **sex/age done（会话 30）**：L10 patch 已套 `run_experiments.py`（6 runner emit `image_name`），ITB 全 4 子集重 eval，ISIC 子集 100% 匹配 ISIC2020 demographic。`scripts/fairness_sex_age_breakdown.py` 出 9 baseline × {sex, age} per-subpop 15-bin ECE + bootstrap 95% CI。**F（Q-VIB Full=Ours）**：sex gap **0.0382 PASS**（M 0.151/F 0.113，9 baseline 里 sex gap 最小、绝对 ECE 最低）；age gap **0.2604 FAIL**——**全 9 baseline age 全 FAIL**（祸首 >60 段：n=336/144 阳，高患病 + 普遍 miscalib，F >60 ECE 0.319 vs TS 0.355），共性 limitation 非 Ours 独有，Ours 每个 age 档绝对 ECE 仍最低。产物 `results/fairness_sex_age_breakdown.{csv,json}`。**诚实框法**：sex PASS + 每切片 ECE 最低卖点；age gap 写共性 limitation（motivate 质量×人群联合校准 future）。Fitz I-VI 部分已 done（BMVC supp A5，ICLR 重跑见 L7 Fitz17k）。
-- **Fitz I-VI done（会话 31）**：用**全量 fitz17k 跨域预测**（n=16012 带肤型，非 BMVC ITB-Diverse 1500）`scripts/fairness_fitzpatrick_iclr_full.py` 出 7 baseline × 6 单档+3 分组 AUC/15-bin ECE/bootstrap CI + max-min gap + **TOST 等价检验**。**F(Ours) 肤型 gap 0.304 FAIL**（VI 档 ECE 0.804/AUC 0.528 近随机）、**V-VI vs I-IV 等价不成立**（TOST p=0.273，AUC 差 -0.023 CI[-0.108,+0.065] 越 ±0.05 界）。**关键：OOD 共性**——D 0.29/E 0.30/TS 0.30 全 FAIL，唯 A(B3 0.04)/H(Focal 0.03)「达标」靠均匀失准凑（同 sex/age 招）→ **非模型独有肤型 bias，是远域 OOD 校准崩**（对齐 §7.6 域距校准侵蚀）。产物 `results/fairness_fitzpatrick_iclr_full.{csv,json}`。
-- **验收**：(a) 每个 sub-pop ECE + bootstrap CI ✅ (b) max-min ECE 差 < 0.05：sex ✅ / age ❌（全 baseline 共性）/ Fitz 肤型 ❌（OOD 全 baseline 共性）(c) Fitz V-VI 不 underperform 等价检验：❌ 等价不成立（但 OOD 共性，已诚实写 §7 + 限定声明 = quality-conditioning 不引入相对肤型 bias）✅ 落地
-- **完成路径**：sex/age 会话 30 done；**Fitz I-VI + 等价检验 + paper §7 fairness 段 会话 31 done**（编译入 paper）
-- **若 FAIL**：命中率 -0.5%（sex PASS + age/肤型 OOD 共性 limitation 诚实写，不算硬 FAIL；肤型声明降级为「不引入相对 bias」+ OOD 校准 open problem）
+### C0.3 — 多方法 UQ 不差异化（次要观察，可选）🚧
+- **内容**：多个 UQ 方法（MC Dropout / Deep Ensemble / EDL / Std VIB 等）在退化下彼此**无显著差异**（BMVC 逐维只 1 方法 Std VIB，可深化）。
+- **验收**：方法两两配对检验，差异 bootstrap 95% CI **含 0**（即不可区分）。
+- **处置**：作动机章次要观察，**或**留给负结果兜底短文（ICBINB / ML4H Findings）。非主腿，缺失不致命。
+- **红线**：BMVC 没当卖点的角度才深化；不搬 BMVC 的 LQ/HQ 表。
 
 ---
 
-## C 类：临床可信度（+4%）
+## C1 — DP-Loss + 互信息下界（最硬主腿，不可缺）
 
-### L11 — DCA + Net Benefit + Triage simulation ✅
-- **状态**：✅ BMVC 已 done（QCTS max NB=0.192 vs VIB 0.186，bootstrap CI overlap）
-- **🟢 会话 32 §7.7 ICLR 重跑落地**：`run_dca_triage.py` on ICLR `itb_predictions.csv`（红线10），ITB-LQ n=300 净收益四法 95% CI 全重叠（0.179–0.192 不可区分）、triage@20% Direct 最优（sens 0.818）、**补强最强变体 Q-VIB+TokFT 后结论未翻转**（0.788 匹配不超 Direct）→ §7.7 写成 **calibration-driven reliable abstention** 诚实负结果、主动认负「make no claim enhancement raises net benefit」防 R3。main.tex §7.7 占位→实数段+figure `fig:dca`+ref，**41 页 0 undefined 编译过**。产物 `report/figures/fig_dca_triage.*`+`results/dca/*`。
-- **ICLR 扩展（仍开口）**：(a) Q-VIB + VisiEnhance 复合 DCA ❌ (b) cost-aware triage ❌ (c) clinical decision threshold sensitivity ❌（基础 DCA/triage 已落，复合+cost 维度待 M3）
-- **完成路径**：M2 D22-D28 + M3 D1-D7
-- **若 FAIL**：命中率 -1%
+### C1.1 — E7 DP-Loss 消融（Lemma 3 实证）✅ PASS
+- **内容**：有 DP-Loss 组 vs 无 DP-Loss 组，诊断保持显著更好。
+- **验收**：ΔAUC_enh(S2−S1) 显著 > 0（p<0.01）+ ΔKL 显著 < 0 + McNemar p<0.001。
+- **实测**：✅ **PASS** —— ΔAUC **+0.0205 CI[+0.005,+0.035]**、ΔKL **−0.148 CI[−0.173,−0.124]**、McNemar **p=2.3e-45**（run_id 1441301，`results/stage2_diag_paired_v5.csv`）。
+- **写入位置**：§7.3 主文 + §4.3（Lemma 3 实证）。
+- **若 FAIL**：Lemma 3 失去实证，C1 主腿塌 → 论文核心贡献失效，不可放弃，加 buffer 重做。
 
-### L12 — 5+ dermatologist baseline cite ❌
-- **内容**：从 published papers cite 5+ dermatologist AUC（Esteva 2017 / Tschandl 2019 / Brinker 2019 / Phillips 2019 / Marchetti 2020）作为对照
-- **验收**：(a) 表格列出 5+ AUC + reader characteristics (b) 我们的 Q-VIB AUC 落在 ±5% 范围内 (c) §7.7 文献对比段
-- **完成路径**：M3 D1-D7（文献调研）
-- **若 FAIL**：命中率 -1%
+### C1.2 — E3 诊断保持 ✅ PASS（双 PASS）
+- **验收**：|ΔAUC|(C vs A) < 1.5% + 分类一致率(C vs A) > 95% + McNemar p（enh-vs-ref）报告。
+- **实测**：✅ **双 PASS** —— dAUC **−0.0120**、一致率 **0.9575**、dflip 0.135、McNemar(enh-vs-ref) p=0.573（enh≈ref）（run_id 1441301）。
+- **失败处理**：若 |ΔAUC| 1.5-3% → 论文写「<3%」+ 加强 disclaimer；>3% → C1 主腿失败，重做。
+- **写入位置**：§7.2 主文。
 
-### L13 — Cost-benefit analysis ❌
-- **内容**：deployment cost (computing / device) vs missed melanoma cost (DALY / 5-yr survival)
-- **验收**：(a) sensitivity-specificity-cost 三维分析 (b) break-even threshold 计算 (c) 与 dermatologist screening cost 对比
-- **完成路径**：M3 D8-D14
-- **若 FAIL**：命中率 -1%
+### C1.3 — Lemma 3 / Prop 3 理论 ✅（推导 + toy PASS）
+- **内容**：Lemma 3 $\mathcal{L}_{\text{DP}} \leq \epsilon \implies I(Z_{\text{enh}};Y) \geq I(Z_{\text{ref}};Y) - \beta\sqrt{\epsilon}$（$\beta\approx0.74$ binary，$\sqrt{\epsilon}$ Pinsker-optimal）；Prop 3 增强降熵充分条件。
+- **验收**：推导严密（显式假设 + step proof）+ toy 数值验证 PASS。
+- **实测**：✅ 推导 done（`plans/Prop3_Lemma3_visienhance_theory.md`）+ `tests/test_theorems_numerical.py::test_lemma3_pinsker_* / test_proposition3_*` PASS。
+- **⚠️ Prop 3 承载方式**：E4/E4Q 实证 FAIL（增强后熵不降，方向相反），**Prop3 改由 E7（Lemma 3 MI 下界实证）+ PSNR≥30 非空性条件承载**，E4 不入 paper。
+- **写入位置**：§4.3 主文 + Appendix A1 完整证明。
+- **写作红线**：用「we derive / under assumption」不用「we prove」（R2）。
 
-### L14 — LLM-as-clinical-judge ❌（高风险）
-- **内容**：Qwen3-72B + GPT-4 + Claude 4.6 模拟 3 dermatologist reviewer，对 200 case study 评分 (1-5 scale)
-- **状态**：❌ 未做
-- **验收**：(a) 200 case study 完整 (b) 3 LLM 评分 Cohen's κ > 0.5 (c) 与 Q-VIB confidence 显著相关 (d) **必须有 §A23 disclaimer 写清不可替代真人**
-- **完成路径**：M3 D15-D21
-- **若 FAIL 或 reviewer 攻击**：命中率 -1%（这条 lever 是高风险 high-reward）
-- **永久红线**：不能伪装成真人 reader study，必须明确为 LLM-judge protocol
+### C1.4 — E10 vs 6 SOTA enhancement ✅ PASS（6/6）
+- **内容**：vs Restormer / NAFNet / MIRNet-v2 / SwinIR / Uformer-B / Real-ESRGAN（**禁扩散红线**，无 DiffBIR）。
+- **验收**：在 ΔAUC（诊断保持）上 VisiEnhance 显著优于所有 6 个（paired，CI 排除 0 / McNemar p<0.05）。
+- **实测**：✅ **6/6 PASS** —— paired ΔAUC(baseline−VE)∈[−0.12,−0.07] 全 CI 排除 0、McNemar p 全 <1e-150、PSNR 32.79 vs 13-22（job 1448952，main.tex tab:e10）。
+- **写入位置**：§7.5 主文。
 
----
-
-## D 类：复现性（+2%）
-
-### L15 — Anonymous GitHub 8 周持续 commit 🚧
-- **状态**：🚧 BMVC release/ 已建 skeleton，需迁移到 ICLR 分支 + 持续 commit
-- **验收**：M2-M4 期间每周至少 5 commit，最终 60+ commits 历史
-- **完成路径**：M2 D1 启动持续 commit
-- **若 FAIL**：命中率 -0.5%
-
-### L16 — Docker + reproduce.sh ❌
-- **内容**：单容器一键 reproduce 主表
-- **验收**：(a) `docker run yj/visiskin reproduce.sh` 跑通 (b) 输出 Table 1 + Fig 1 数字 (c) 与论文数字误差 < 1%
-- **完成路径**：M3 D22-D28
-- **若 FAIL**：命中率 -0.5%
-
-### L17 — ITB v1.0 公开 + Zenodo DOI ❌
-- **内容**：ITB benchmark 数据集 + license (CC-BY-NC-SA) + Zenodo DOI
-- **完成路径**：M4 D1-D7
-- **若 FAIL**：命中率 -0.5%
-
-### L18 — HuggingFace checkpoint mirror ❌
-- **内容**：所有 7 个 checkpoint 上传 HF（匿名 user）
-- **完成路径**：M4 D8-D14
-- **若 FAIL**：命中率 -0.5%
+### C1.5 — 增强质量 + 架构辅助证据
+- **E1 增强质量** ✅ PASS：per-image PSNR **32.74** dB（>30）、SSIM 0.91（口径见专节）。
+- **E8 FiLM 消融** ⚠️ 改判据：FiLM 对 PSNR **中性**（不卖 PSNR 增益），卖点定位**诊断保真**（dAUC −0.033 vs −0.042 / 一致率 0.90 vs 0.87 / KL 0.24 vs 0.35，均 with-FiLM 更好）。
+- **E9 FiLM vs cross-attn** ✅：统计无法区分（paired bootstrap ΔAUC CI 含 0、McNemar p=0.679），FiLM 以 parsimony 胜（−1.8M 参数），保留 FiLM。
+- **E12 速度** ✅ PASS：16.08 ms/img（<50）。
+- **E2 分退化** ⚠️ 2/4 PASS：brightness/blur PASS，color_shift/contrast FAIL → 当 limitation 或触发重拍。
 
 ---
 
-## E 类：防御性写作（+3%）
+## C2 — query-for-retake agent（独家钩子，不可缺）
 
-### L19 — 10 轮 LLM adversarial review ✅ (2026-05-24, draft v1)
-- **personas 实际**（10 个，见 `plans/L19_adversarial_review_10rounds.md`）：
-  R1 Stats Hawk / R2 Bayesian Skeptic / R3 Clinical Realist / R4 Calibration Expert / R5 Reproducibility Auditor / R6 OOD Pessimist / R7 Theory Purist / R8 Fairness Activist / R9 Scope Critic / R10 Adversarial-Safety
-- **状态**：✅ 10 轮 attacks + responses + 21-项 action table 完成 — 5 个 severity-5 致命攻击 (R3/R6/R9/R10 + R1 必写) 已 surface, 进入 L20 §A21
-- **实证 deliverable**：P1 (M1 cluster q<0.35 retake_rate=100%) 已 verified
-- **写入论文位置**：21 项 action 分配到主文 §1.4 / §7 / §8 / §A21 / §A26 等
-- **若 FAIL（<8 轮完成）**：N/A，10/10 done
+### C2.1 — 4 通道决策逻辑实现 🚧
+- **内容**：direct diagnosis / cautioned diagnosis / enhance-then-diagnose / query-for-retake 四通道，质量分级阈值路由（Qwen3-4B ReAct + rule fallback）。
+- **验收**：(a) 4 通道决策逻辑可运行；(b) 阈值规则明确（基于 per-input quality scalar）。
+- **写入位置**：§5.1 + §5.3 主文 + Appendix A5（实现细节 + ReAct trace）。
+- **写作红线**：agent **不诊断**，它决策何时诊断/增强/追问（STORY C2）；retake = 反馈重新采集，**不等同 abstain/defer**。
 
-### L20 — Pre-emptive rebuttal section §A21 ✅ (2026-05-24, draft v1)
-- **内容**：Appendix §A21 LaTeX 模板，1.5-2 页，5 subsection 应对 5 致命攻击（见 `plans/L20_preemptive_rebuttal_A21.md`）
-- **状态**：✅ LaTeX 模板 + Abstract / §1.4 / §8 配套修改清单完成
-- **写作 checklist**：10 项 R-numbered alignment（"don't write X / write Y"）
-- **完成路径**：LaTeX 化 M2 D8-D14 落地
+### C2.2 — query-for-retake 通道在低质段触发率高 ✅（实证弹药）
+- **验收**：retake 通道在 severe / 低质段触发率显著高于高质段。
+- **实测**：✅ P1 cluster q<0.35 **retake_rate=100%**（已 verified，会话 L19 deliverable）。
+- **写入位置**：§5.1 + §7.8。
 
-### L21 — Failure mode taxonomy + per-mode mitigation ✅ (2026-05-24, draft v1)
-- **内容**：KMeans k=3 cluster (已 done, `results/failure_mode_clusters_v2.json`) → 3 mode + 4-action mitigation 映射（见 `plans/L21_failure_mode_taxonomy.md`）
-- **状态**：✅ §8.3 主文 + §A18 supp 模板完成
-- **关键发现**：Mode 3 (q=0.38, ambiguous) 在 salvage band 内但 enhance 无效 → **Theorem 2 policy 增加 secondary entropy gate** (已 backport 修订 Thm 2 doc §1.2)
-- **实证**：P1 (M1+M2 cluster retake_rate 100%) + P3 (M3 q_improved 仅 16.2%) 已 live verify
-- **若 FAIL**：N/A，推导 done
+### C2.3 — Theorem 2（降格判据，🔴 skeptic 致命攻击必守）
+- **内容**：agent risk bound，**降格**为局部条件界。
+- **🔴 验收（三段，缺一即 FAIL）**：
+  1. **局部条件界成立**：增强收益 $\Delta(\bar{q}, T_\omega) > 0$ **仅在区间 $\bar{q}\in[\tau_{\text{enh}}, \tau_{\text{high}}]$ 内**成立（moderate 退化窗口），区间外不成立。toy 验证：`tests/test_theorems_numerical.py::test_thm2_*` PASS + bootstrap CI（区间内）排除 0。
+  2. **全局诚实负结果如实报**：固定阈值下全局 triage **当前不优于 Direct**，主动认负。实证 = §7.7 DCA（见 C2.4）。
+  3. **threshold-learning 留 future work**。
+- **🔴 严禁**：claim「$\mathcal{R}_{\text{agent}} \leq \mathcal{R}_{\text{direct}}$ 全局成立」—— r4 实证 Direct B3 sens **0.818 > agent 0.788**，与 §7.7 自相矛盾（STORY R11）。
+- **写入位置**：§5.2 主文 + Appendix A2。
+- **若 FAIL（写成全局界）**：直接跑偏，与诚实墙冲突，必改。
 
----
-
-## F 类：附加（+2%）
-
-### L22 — Supplementary 50-80 页 ❌
-- **完成路径**：M3-M4 持续扩
-- **若 FAIL**：命中率 -0.5%
-
-### L23 — Per-mechanism ablation ❌
-- **内容**：FiLM vs Cross-attn / DP-Loss λ ∈ {0.01, 0.05, 0.1, 0.5} / KL annealing schedule / quality scalar source × 5
-- **完成路径**：M2 D22-D28
-- **若 FAIL**：命中率 -0.5%
-
-### L24 — Real LQ ISIC 2024 SLICE-3D ❌
-- **内容**：从 ISIC 2024 SLICE-3D 数据集挖低质子集（无需自采）
-- **预研要求**：先验证 SLICE-3D 是否有 q̄ 元数据 / 是否能用 VisiScore-Net 跑出 q̄
-- **完成路径**：M2 D22-D28
-- **若 FAIL（找不到合适子集）**：命中率 -0.5%，降级为「VisiScore-evaluated LQ subset on ISIC 2024」
-
-### L25 — ICLR-specific rebuttal pre-draft ✅ (2026-05-24, draft v1)
-- **内容**：15 个高概率 Q&A + 双版本（顺利/fallback）+ character count + 7 节 rebuttal framework
-- **状态**：✅ draft v1 done — 15 Q&A ≈ 18K chars，覆盖 R1-R10 × 1.5 角度，实战时 paste + edit
-- **完成路径**：M4 D22-D28 实验数字填充 [TBD]，升级为 final
-- **若 FAIL**：命中率 -0.5%
+### C2.4 — DCA + triage（诚实负结果，支撑 Thm2 降格）✅
+- **验收**：(a) 净收益四法 95% CI 报告；(b) triage@20% 各法 sens 报告；(c) 主动认负声明。
+- **实测**：✅ ITB-LQ n=300 四法净收益 95% CI **全重叠 0.179–0.192**（不可区分）、triage@20% **Direct sens 0.818 最优**、最强变体 Q-VIB+TokFT **0.788 仍不超 Direct**（`results/dca/*` + `report/figures/fig_dca_triage.*`）。
+- **写作红线**：写「we make no claim that triage raises net benefit globally」（R3）；不搬 BMVC 的 DCA 原表（R10）。
+- **写入位置**：§7.7 主文。
 
 ---
 
-## 📐 PSNR 口径定义（单一真源）
+## C3 — 诚实边界（闸门动机 + 可信度，不可缺）
+
+### C3.1 — E6 severe 段增强伤诊断 ✅ PASS
+- **验收**：severe 段 ΔAUC 显著 < 0（CI 排除 0）→ 坐实「severe 该 query-for-retake，非增强」。
+- **实测**：✅ **PASS** —— severe 段 dAUC **−0.0559 CI[−0.085,−0.028] 排除 0**、dflip 0.46（run_id 1441321，`results/e6_severe.csv`）。
+- **框法**：这是 query-for-retake 闸门的正证据，**非项目失败**（agent 设计本就不增强 severe）。
+- **写入位置**：§7.8 主文。
+
+### C3.2 — E5 per-class melanoma 救援净负（最硬证据）✅ 如实报
+- **验收**：per-class 拆案如实报告，**不得**用聚合 SalvageRate 0.737 当达标指标。
+- **实测**：聚合 moderate 0.737 **全由良性撑**（benign 75.6% 1809/2392）；**melanoma salvage 仅 5.2%（4/77）、damage 31% → 救 4 毁 81 净 −81**（`results/e5_salvage_persample.csv`，会话 22 拆案）。
+- **🔴 红线**：**禁**把 E5 聚合 0.737 写成达标（reviewer 拆 per-class 即崩 + 伦理误导）。改写为「benign 主导 + melanoma 净负 = query-for-retake 闸门最硬证据」。
+- **写入位置**：§7.4 主文 + Appendix A7。
+
+### C3.3 — v6 mask-L1 null（诚实负结果）✅ 如实报
+- **验收**：mask-weighted L1 重训对 melanoma salvage 的影响如实报。
+- **实测**：melanoma salvage **5.2%→5.2% 纹丝不动**、net −81→−79（噪声）→ 重构损失加权救不了恶性救援缺口（failure mode 是 per-pixel L1 够不着诊断决策边界）（`results/e5_salvage_v6_persample.csv`）。
+- **框法**：诚实负结果，强化 query-for-retake gate 是真安全机制。
+- **写入位置**：§7.4 主文。
+
+---
+
+## 📐 PSNR 口径定义（单一真源，保留）
 
 | 口径 | 公式 | 使用场景 | 参考值 |
 |---|---|---|---|
-| **per-image mean**（论文/验收） | `mean(10·log₁₀(1/MSEᵢ))` per image, then mean | eval_visienhance.py E1、scripts/eval_nocrop_e1.py、论文 Table | 32.74 dB (test) / 33.10 (val) |
-| **batch-aggregate**（训练监控） | `10·log₁₀(1/mean(MSE_batch))` | train_visienhance.py 训练日志 | ~28.97 dB（保守 ~4 dB 低）|
+| **per-image mean**（论文/验收）| `mean(10·log₁₀(1/MSEᵢ))` per image, then mean | 论文 Table / 验收 gate / E1 | 32.74 dB (test) / 33.10 (val) |
+| **batch-aggregate**（训练监控）| `10·log₁₀(1/mean(MSE_batch))` | 训练日志 | ~28.97 dB（保守 ~4 dB 低）|
 
-**差值来源**：log 非线性。batch 平均 MSE ≥ per-image MSE 的平均，故 log 后更小。两口径已在会话 9 实测复现。
-
-**规则**：论文、rebuttal、Table 1、验收 gate 一律报 **per-image mean**；训练日志旁注 "(aggregate MSE, conservative)" 标注即可，不用于报告。
-
----
-
-## 🔬 E1-E12 实验验收阈值
-
-| # | 实验 | 指标 | 通过阈值 | 失败处理 |
-|---|---|---|---|---|
-| **E1** | 增强质量 | PSNR (medium, **per-image**) | ≥ 30 dB | ✅ 实测 32.74 dB (test) / 33.10 (val) / SSIM 0.947 — PASS（口径定义见上方专节）|
-| **E1** | 增强质量 | SSIM (moderate) | ≥ 0.92 | 必达，Stage 1 已 0.9535 |
-| **E1** | 增强质量 | LPIPS (moderate) | ≤ 0.08 | 若 0.08-0.12：写 "comparable perceptual quality" |
-| **E2** | 分退化分析 | PSNR (光照/色温/对比) | > 35 dB | 单维度 |
-| **E2** | 分退化分析 | PSNR (模糊) | > 28 dB | 单维度 |
-| **E3** | ★ 诊断保持 | \|ΔAUC\| (C vs A) | < 1.5% | 若 1.5-3%：论文写 "<3%" + 加强 §A23 disclaimer；>3%：核心 lever 失败 -3% |
-| **E3** | ★ 诊断保持 | 分类一致率 (C vs A) | > 95% | 同上 |
-| **E3** | ★ 诊断保持 | McNemar p (C vs A vs B vs A) | < 0.001 | 必达 |
-| **E4** | Prop 3 验证 | 增强后 \|ρ\| 显著大于增强前 | paired t-test p < 0.01 | ❌ **FAIL（会话29 job1449094，E4Q Q-VIB 熵重测）**：用 Q-VIB Full 自身的 quality-conditioned predictive entropy（非 B3，非 tautological）在 v5 ckpt + mixed-severity test 上重测：ρ_deg=-0.0381(p=7.76e-08)→ρ_enh=-0.0397(p=2.23e-08)，\|ρ\| 几乎不变；H_deg=0.1487→H_enh=0.1572，**熵反而增大**（方向与 Prop3 预测相反）。会话28 的 B3 版（job1449036, inconclusive）与本次 Q-VIB 版（FAIL）两条独立 probe 一致指向同一结论：**E4 不支持增强后降熵**。**Prop 3 改由 E7（Lemma 3 MI 下界实证）+ PSNR≥30 非空性条件承载**，E4/E4Q 均不入 paper（已无 future 待办）|
-| **E5** | ★ Salvage Rate (moderate q̄∈[0.35,0.5]) | > 55% | 必达 | 若 < 55%：双通道效率论点弱化 |
-| **E5** | ★ Salvage Rate (severe q̄<0.25) | < 25% | 必达（安全边界）| 若 > 25%：增强模块边界混乱，dangerous |
-| **E6** | 安全边界 | 极低质段 ΔAUC | 无显著退化 (paired t-test p>0.05) | 必达 |
-| **E7** | DP-Loss 消融 | 有 DP-Loss 组 ΔAUC 显著更小 | p < 0.01 | 必达，否则 Lemma 3 实证失败 |
-| **E8** | Q-Cond 消融 | ~~有 FiLM 组 PSNR 显著更高~~ → **有 FiLM 组诊断保持更好**（dAUC/一致率/KL）| FiLM 三项均更优 | ⚠️ 改判据：实测 FiLM 对 PSNR 中性（见 v5 实测块），贡献在诊断保持非像素质量 |
-| **E9** | FiLM vs Cross-Attn | ~~FiLM 速度 ≥ 3× 快 + PSNR 持平~~ → **两机制统计无法区分，FiLM 以 parsimony 胜（−1.8M 参数）** | ✅ 达成（实测见会话 27 块）|
-| **E10** | vs 6 SOTA | ΔAUC 全胜（6/6 paired t-test p<0.05）| ✅ **6/6 PASS**（会话28 job1448952 stored-mixed 对齐 E1 口径，VE PSNR 32.79=E1 32.74）：paired ΔAUC(baseline−VE)∈[−0.12,−0.07] 全 CI 排除 0、McNemar p 全 <1e-150。Restormer/NAFNet/MIRNetv2/SwinIR/Uformer/Real-ESRGAN 全劣。main.tex tab:e10 |
-| **E11** | 跨数据集校准/质量感知保持 | ~~AUC>95%~~ → ρ/ECE 转移 | ⚠️ **改判据**（会话28 job HAM/PAD 重 eval）：paper 真 claim=校准+质量感知转移非 AUC。**Q-VIB Full ρ −0.16(HAM,p<1e-60)/−0.24(PAD,p<1e-29)**质量感知 zero-shot 转移、ECE 0.098/0.130 远胜 B3 0.162/0.266；**远域 PAD raw AUC 衰到 ~0.49**=诚实 limitation→motivate agent OOD 追问。main.tex §7.6（2/8 数据集）|
-| **E12** | 推理速度 | 端到端 < 50 ms / image | 必达 |
+**差值来源**：log 非线性，batch 平均 MSE ≥ per-image MSE 的平均，故 log 后更小（会话 9 实测复现）。
+**规则**：论文 / rebuttal / Table / 验收 gate 一律报 **per-image mean**；训练日志旁注「(aggregate MSE, conservative)」即可。
 
 ---
 
-## 📊 E1–E12 v5 实测结果（会话 21，2026-06-09，frozen）
+## 🔬 E1-E12 v5 实测阈值表（判据弹药，frozen 会话 21）
 
-**Stage2 = feature-DP v5**（ckpt `stage2_planA_256_v5`，best_val_PSNR 30.186 守 E1）。协议除 E1/E12 外统一 degrade(moderate)@256 → enh@256 → CenterCrop224 → B3，test split n=3627 / pos=117。run_id 见末列。
+**Stage2 = feature-DP v5**（ckpt `stage2_planA_256_v5`，best_val_PSNR 30.186 守 E1）。协议除 E1/E12 外统一 degrade(moderate)@256 → enh@256 → CenterCrop224 → B3，test split n=3627 / pos=117。
 
 | 实验 | 实测 | 判定 | run_id / 源 |
 |---|---|---|---|
-| **E1** | per-img PSNR 32.74 (with-FiLM) / 33.06 (no-FiLM)，SSIM 0.91，n=19878 | ✅ PASS（两变体均 >30） | 1442290 / `results/e1_film_ablation.json` |
-| **E2** | brightness 37.68 ✅ / blur 35.82 ✅；**color_shift 33.77 ❌**（<35）；**contrast 29.11 ❌ 且 < 降质图 32.29**（增强帮倒忙）| ⚠️ 2/4 PASS | 1441320 / `results/e2_perdim.csv` |
-| **E3** | dAUC −0.0120 ✅；一致率 0.9575 ✅；dflip 0.135；McNemar(enh-vs-ref) p=0.573（enh≈ref）| ✅ PASS（v4 borderline → v5 双 PASS）| 1441301 / `results/stage2_diag_paired_v5.csv` |
-| **E6** | severe 段 dAUC −0.0559 CI[−0.085,−0.028] 排除 0、dflip 0.46 | ❌ FAIL = **triage 弹药**（severe 该 query-for-retake，非增强）| 1441321 / `results/e6_severe.csv` |
-| **E7** | ΔAUC_enh(S2−S1) +0.0205 CI[+0.005,+0.035] 显著>0；ΔKL −0.148 CI[−0.173,−0.124] 显著<0；McNemar p=2.3e-45 | ✅ PASS（Lemma 3 实证）| 1441301 / 同 E3 |
-| **E8** | **FiLM 对 PSNR 中性**（no-FiLM 33.06 ≥ with-FiLM 32.74，且 no-FiLM 多训 49ep 混淆）；**FiLM 对诊断保持正贡献**：dAUC −0.033 vs −0.042、一致率 0.90 vs 0.87、KL 0.24 vs 0.35（均 with-FiLM 更好，连 Stage1 无 DP 时）| ⚠️ PSNR 判据不成立 → **重定向到诊断消融（成立）** | 1442290(E1) + 1442337(diag) / `results/filmabl_diag.json` |
+| **E1** | per-img PSNR 32.74(with-FiLM) / 33.06(no-FiLM)，SSIM 0.91，n=19878 | ✅ PASS（两变体 >30）| 1442290 / `results/e1_film_ablation.json` |
+| **E2** | brightness 37.68 ✅ / blur 35.82 ✅；color_shift 33.77 ❌(<35)；contrast 29.11 ❌（< 降质 32.29）| ⚠️ 2/4 PASS | 1441320 / `results/e2_perdim.csv` |
+| **E3** | dAUC −0.0120 ✅；一致率 0.9575 ✅；dflip 0.135；McNemar p=0.573 | ✅ 双 PASS | 1441301 / `results/stage2_diag_paired_v5.csv` |
+| **E5** | 聚合 moderate 0.737 不可达标；per-class benign 75.6%、melanoma 5.2%(4/77) 救 4 毁 81 | C3 诚实负 | `results/e5_salvage_persample.csv` |
+| **E5 v6** | melanoma salvage 5.2%→5.2% null、net −81→−79 | C3 诚实负 | job 1442696/1444753 / `results/e5_salvage_v6_persample.csv` |
+| **E6** | severe dAUC −0.0559 CI[−0.085,−0.028] 排除 0、dflip 0.46 | ✅ C3 弹药（query-for-retake 动机）| 1441321 / `results/e6_severe.csv` |
+| **E7** | ΔAUC +0.0205 CI[+0.005,+0.035]、ΔKL −0.148 CI[−0.173,−0.124]、McNemar p=2.3e-45 | ✅ PASS（C1 Lemma 3 实证）| 1441301 / 同 E3 |
+| **E8** | FiLM 对 PSNR 中性；诊断保持正贡献 dAUC −0.033 vs −0.042 / 一致率 0.90 vs 0.87 / KL 0.24 vs 0.35 | ⚠️ 卖点定位诊断保真 | 1442290+1442337 / `results/filmabl_diag.json` |
+| **E9** | paired ΔAUC +0.0016 CI[−0.0057,+0.0086] 含 0、ΔKL 含 0、McNemar p=0.679 → 无法区分；FiLM parsimony 胜 | ✅ 保留 FiLM | 1444849/1448254 / `results/stage2_diag_paired_e9.csv` |
+| **E10** | 6/6 显著优：paired ΔAUC∈[−0.12,−0.07] 全 CI 排除 0、McNemar p<1e-150、PSNR 32.79 vs 13-22 | ✅ 6/6 PASS | 1448952 / main.tex tab:e10 |
 | **E12** | 16.08 ms/img（p95 17.0）| ✅ PASS（<50）| 1441322 / `results/e12_speed.csv` |
 
-**两条 limitation 须在 paper 处理**：① E2 contrast/color_shift 弱 → 当 limitation 或触发重拍；② E6 severe 不安全 → 当 triage（query-for-retake）正证据，非项目失败（agent 设计本就不增强 severe）。
-**dflip 单指标陷阱**（会话 20+21 两次坐实）：no-DP / no-FiLM 的 dflip 反而略低，因其整体诊断信号更糊（KL 高、McNemar 错更多）巧合少翻特定 mel 子集 → **dflip 必配 KL/一致率一起读，不可孤立比**。
-
-**E5 SalvageRate（会话 21，norm-q 路由版，job 1442385）**：增强用 raw-q、路由/分层用 norm-q̄。按 severity：mild 0.600 / **moderate 0.737 ✅(>0.55)** / severe 0.816，DamageRate 全 <3%。⚠️ nuance：salvage 被 benign-FP 修正主导（pos 仅 117/3627），恶性安全风险另由 E6/dflip 把关；**老「severe salvage<25%」判据与此测法冲突，需重新解读**（severe salvage 高 ≠ 不安全，因 salvage 算的是整体误判修正非恶性漏诊）。
-
-**🔴 会话 22 per-class 拆案（`e5_salvage_persample.csv`，rate 有效/count×3）**：聚合 0.737「达标」**全由良性撑**——良性 salvage 75.6%(1809/2392)/damage 0.6%；**黑色素瘤 salvage 仅 5.2%(4/77)、damage 31%(85/274 correct)**（救 4 毁 85 净 −81）。**结论：E5 聚合 SalvageRate 不可当达标指标写 paper**（reviewer 拆 per-class 即崩 + 伦理误导），改写为「benign 主导 + melanoma 净负 = query-for-retake 闸门最硬证据」（Claim 3/Thm 2 利好，削 VisiEnhance 单模块卖点）。**决策（用户拍）两手**：① §7.4 现写诚实版（待会话 23 落笔，本会话收工打断）；② mask-L1 重训（病灶区不准磨平）列 M2 救 melanoma salvage，待用户拍训练。
-
-**🟢 会话 25 v6 mask-L1 实测定论（job 1442696 训完 + eval job 1444753）= NULL 干预，负结果落 §7.4**：mask-weighted L1（λ_mask=3.0，4× 病灶区权重）跑完 80ep（best ckpt ep51 val_PSNR 30.225）。per-class 对 v5 baseline（`analyze_e5_perclass.py`）：**melanoma salvage 5.2%(4/77)→5.2%(4/77) 纹丝不动**、damage 31.0%(85/274)→30.3%(83/274)、net −81→−79（+2/274 = 噪声）。脚本机械判 "HELPS"（net>base）但 salvage rate 完全没动 = **诚实读为 null**。其余 v6 vs v5 全持平或略差：E1 PSNR 32.845(v5 32.74)/SSIM 0.9094 PASS、E3 dAUC −0.0149/一致率 0.9570 双 PASS、E7 ΔAUC +0.0176/ΔKL −0.1531 PASS、**dflip flip11/B_enh9（v5 flip10/B_enh8 略差）**。**结论：重构损失加权救不了恶性救援缺口**（failure mode 非「磨平病灶」而是 per-pixel L1 够不着诊断决策边界）。§7.4 用 Branch B 负结果版落地（main.tex 295-308，编译 0 undefined 37 页）→ 强化 query-for-retake gate 是真安全机制。产物：`results/{stage2_diag_paired_v6,dflip_persample_v6,e5_salvage_v6,e5_salvage_v6_persample}.csv`+`e1_v6.json`。
-
-**🟢 会话 27 E9 实测定论（v7 crossattn 训完 job 1444849 + paired eval job 1448254）= FiLM 与 cross-attn 统计无法区分，FiLM 以 parsimony 胜**：v7 = 与 v5 同 DP-Loss recipe，唯一变量 conditioning（FiLM → CrossAttnConditioning，4 quality token，+1.8M 参数），训满 80ep（best ep47 val_PSNR 30.184）。同 paired 协议（n=3627/pos117）per-model：CrossAttn dAUC −0.0103/一致率 0.9551/KL 0.0937/dflip 0.189，FiLM(v5) dAUC −0.0120/0.9575/0.0912/dflip 0.135，**两者均 E3 双 PASS**。E1 per-image PSNR 32.79(crossattn) vs 32.74(FiLM) **持平**。paired bootstrap（crossattn−FiLM）：ΔAUC +0.0016 CI[−0.0057,+0.0086] **含 0**、ΔKL +0.0026 CI[−0.0053,+0.0111] **含 0**、McNemar p=0.679 → **三轴全不显著 = 多出的 1.8M 参数零增益，crossattn dflip 反更高（0.19 vs 0.14）**。**结论：FiLM 在保真+诊断保持上完全打平 cross-attn 且更经济 → 保留 FiLM。** 写进 main.tex E9 段（编译 0 undefined，38 页）。产物：`results/{stage2_diag_paired_e9.csv,eval_e9_1448254.out,e1_v7.json,stage2_diag_paired_v7.csv}`。**🔑 会话 26「crossattn 低 2.6dB」是口径错配**（拿训练 aggregate-PSNR 30.17 比 FiLM per-image 32.74，会话 9/10 早定论差 ~3dB），实际两口径都打平，已纠正。
-
-**🔴 visiscore 集成喂错（会话 21 根因，影响 q̄ 信号但现有结果仍有效）**：visiscore（timm backbone 约定 ImageNet-NORM224）在 `train_visienhance`+所有 eval 全被喂 raw[0,1]@256 → q̄ 恒 ~0.54 不响应退化。连贯解释 E8 FiLM 中性 / hinge 泛化不动 / E5 band 不可达。**qnorm 对照（job 1442379）证实**：喂正确 NORM-q 给 raw-q 训的模型反而变差（PSNR 30.41→29.69、dflip 0.135→0.176）→ raw-q 是训练口径自洽最优，**E1/E2/E3/E6/E7/E8/E12 数字全部站得住、不需重做**。bug 影响收窄为 ①FiLM 被 flat-q 训弱（救须重训、增益不确定）②agent/E5 路由用独立 norm-q（已做）。重训与否 = 会话 22 决策。
+> **E4 不入 paper**：E4/E4Q 实证 FAIL（增强后熵不降，方向与 Prop3 相反）→ Prop3 改由 E7 + PSNR≥30 非空性承载。
+> **dflip 单指标陷阱**：no-DP/no-FiLM 的 dflip 反而略低（整体信号更糊巧合少翻特定 mel 子集）→ dflip 必配 KL/一致率读，不可孤立比。
 
 ---
 
 ## 🔴 红线（违反任意条 = 直接弃稿）
 
 ### 永久红线（任何项目通用）
-1. **Reader Study 数据伪造** — 不存在的 dermatologist rating 不能写入论文
-2. **联系诊所 / 线下采集** — 所有数据必须公开数据集
-3. **数字凭印象写** — 每个数字必须 csv 核算 + run_id
-4. **侵犯医学安全** — 不能用扩散模型做皮肤镜增强（伪影发明病灶）
+1. **Reader Study 数据伪造** —— 不存在的 dermatologist rating 不能写入论文。
+2. **联系诊所 / 线下采集** —— 所有数据必须公开数据集。
+3. **数字凭印象写** —— 每个数字必须 Bash/Grep 核 csv + run_id（不信 Read）。
+4. **侵犯医学安全** —— 不能用扩散模型做皮肤镜增强（伪影发明病灶）。
 
-### ICLR 项目红线
-5. **BMVC 数字直接搬入 ICLR Table** — 必须重跑 / 重画 / 引用方式 = cite paper
-6. **5 theorem 缺失任意一个** — 5-theorem closure 是 ICLR 命脉，缺一个就 -2%
-7. **匿名违规** — 投稿前 grep VisiSkin / Q-VIB / VisiScore / anonymous2025 必须 0 命中
-8. **L14 LLM-judge 当真人 reader study** — 必须 §A23 明确 disclaimer
-
----
-
-## 📅 M1-M4 Milestone Gate（每月 gate 必须 PASS 才进下一阶段）
-
-### M1 Gate (2026-06-22)
-- [ ] L1 写入主文 §3.2-§3.5 (compact statement)
-- [ ] L2 + L3 + L4 + L5 全部完成证明（数学严密 + Appendix 写就）
-- [x] VisiEnhance Stage 1 (nocrop) 训练完成（PSNR 32.74 dB per-image / SSIM 0.947 ✅，2026-05-30 会话 9）
-- [ ] CheXpert + Fundus inference 完成
-- [ ] PROJECT_LOG.md M1 总结 entry
-- **若任何 ❌**：延期 1 周，但若延期超 2 周，砍 L4 或 L5 之一止损
-
-### M2 Gate (2026-07-22)
-- [ ] VisiEnhance Stage 2 + 3 完成
-- [ ] E1-E12 全跑（E3/E5 PASS）
-- [ ] L9 (6 SOTA) + L10 (fairness) + L23 (per-mechanism) 完成
-- [ ] Table 1 + Table 2 + Table 3 + 主图 fig1-4 数字全部就位（待写文字）
-- [ ] L24 ISIC 2024 SLICE-3D 子集就位 OR 降级说明
-- **若 E3 失败**：进入 Plan B（接受 ΔAUC<3%），论文重写 framing
-
-### M3 Gate (2026-08-22)
-- [ ] 主文 9 页 draft v2 完整
-- [ ] Supp 50 页骨架
-- [ ] L14 (LLM-judge) + L12 (dermatologist cite) + L13 (cost-benefit) 完成
-- [ ] L21 (failure mode) 完成
-- [ ] Anonymous GitHub 30+ commits
-- **若 supp <40 页**：M4 加压补到 50+
-
-### M4 Gate (2026-09-22 = ICLR abstract deadline)
-- [ ] L19 (10 轮 review) ≥ 8 轮完成
-- [ ] L20 (pre-emptive rebuttal) + L25 (rebuttal pre-draft) 完成
-- [ ] Anonymous GitHub 60+ commits + Docker + ITB DOI + HF mirror
-- [ ] 数字一致性 30/30 PASS
-- [ ] R1-R10 grep 全 0
-- [ ] OpenReview 上传
-- **若任何 ❌**：紧急 buffer 期 (09-23 ~ 09-29) 修
+### 本论文项目红线
+5. **从 BMVC 提交版搬表 / 搬数 / 搬图** —— 被占四维度（跨域 ρ / ImageNet-C 18 腐蚀 / 5 backbone / DCA 全表）一律只 cite（BMVC 录用公开后才能引）。
+6. **主腿理论缺失** —— **Prop3 / Lemma3 / Thm2 是增强+决策主腿，缺任一论文理论骨架塌**（取代旧「5-theorem-closure 缺一 -2%」；Q-VIB 那几个退 supp 当框架，缺失不致命）。
+7. **claim Q-VIB 有方法增益 / 是更强诊断器** —— r1/r2/r3 三个 FAIL csv 钉死，Q-VIB 仅作脚注。
+8. **Thm2 写成全局界** —— 必须降格为局部条件界 + 诚实全局负结果（r4 Direct 0.818 > agent 0.788）。
+9. **E5 聚合 SalvageRate 0.737 当达标指标** —— per-class 拆案即崩 + 伦理误导，必须诚实负结果。
+10. **匿名违规** —— 投稿前 grep VisiSkin / Q-VIB / VisiScore / anonymous2025 / VisiEnhance 必须 0 命中（脱敏）。
 
 ---
 
-## 🚨 中途反悔决策树（什么时候放弃 lever 止损）
-
-```
-当前 lever 失败 → 是否致命？
-├── 致命（A 类 L1/L4/L5）→ 不能放弃，加 buffer 重做
-├── 严重（A 类 L2/L3 / B 类 L8 / C 类 L11/L14 / E 类 L19）→
-│   ├── 距 deadline >3 月：重做
-│   └── 距 deadline <3 月：降级 + Limitation 写清 + 命中率 -1.5%
-└── 一般（D/F 类 + 其他 lever）→
-    ├── 距 deadline >2 月：重做
-    └── 距 deadline <2 月：放弃 + 命中率 -0.5%
-```
+## 🚨 诚实降级原则（保留）
 
 **关键原则**：诚实记录每次降级到 `PROJECT_LOG.md`，禁止隐藏失败。
 
+```
+当前判据 FAIL → 是否致命？
+├── 致命（C1 主腿 E7/E3 / C2 Thm2 写成全局界 / C3 诚实墙被违反）→ 不能放弃，加 buffer 重做 / 改回诚实
+├── 严重（C0 决策面 / C2 agent 实现 / C1 理论 toy）→
+│   ├── 距 deadline >3 月：重做
+│   └── 距 deadline <3 月：降级 + Limitation 写清
+└── 一般（C0.3 次要观察 / E2 分退化 / 复现性附加）→
+    ├── 距 deadline >2 月：重做
+    └── 距 deadline <2 月：放弃 + Limitation 写清
+```
+
+**会场提醒**：MICCAI 2027（8 页，5 定理压进 supp）/ TMLR（无 deadline、不要 SOTA、容诚实负结果，本科生作者无劣势）。验收按论文质量门槛判，不再用 78-80% 命中率百分比。
+
 ---
 
-## 📋 当前命中率预估（实时维护）
+## 🪦 删掉的旧判据（不复活，与 STORY 一致）
 
-| 类 | 状态 | 预估贡献 |
-|---|---|---|
-| 基线 ICLR | 30% | +30% |
-| A 理论（L1-5 ✅ 推导全闭环）| 5/5 done | +5% |
-| B 实验（L6/L8/L9 ✅ + L7/L10 🚧 诚实负结果）| 3/5 + 2 部分 | ~+2.5% |
-| C 临床（L11 ✅ 含 §7.7 ICLR + L12-14 ❌）| 1/4 done | +1% |
-| D 复现（L15 🚧 + L16-18 ❌）| 0/4 done | 0% |
-| E 防御（L19-21 ✅ draft v1，待 M4 终稿）| 3/3 draft | ~+1.5% |
-| F 附加（L25 ✅ draft + L22-24 ❌）| 1/4 draft | ~+0.5% |
-| **当前预估（会话32 重算）** | A 闭环+B 主体过 | **~40.5%** |
-| **M1 Gate 后预估** | A 类 ~80%, B 类 ~40% | ~52% |
-| **M2 Gate 后预估** | A/B 类 ~100%, C/F 类 ~50% | ~67% |
-| **M3 Gate 后预估** | 主体完成 | ~74% |
-| **M4 Gate 后预估** | 全部完成 | **~78-80%** ✅ |
-
-**实时维护承诺**：每周日更新本文件「当前命中率预估」section，诚实反映 lever 状态。
+- **L1 Q-VIB 4 定理 SOTA lever** + L6/L7/L8 含 Q-VIB-supremacy 的实验 lever。
+- **25-lever（L1-L25）命中率分解 + 78-80% 目标 + 命中率扣分规则**。
+- **含 0.707 的 Table 1**（幽灵数，弃用）。
+- **5-theorem-closure 缺一 -2%**（改为「Prop3/Lemma3/Thm2 主腿不可缺」）。
+- **M1-M4 Q-VIB milestone gate**（会场改 MICCAI/TMLR，按质量门槛验收）。
+- **E5 聚合 SalvageRate>55% 当达标**（改诚实 per-class 负结果）。

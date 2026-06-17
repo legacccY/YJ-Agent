@@ -1,0 +1,43 @@
+# probe_persistence.yaml
+# Kill-shot probe: 验证 2D NCA 能否在正常胸片上学会「保持状态不变」(persistence attractor)
+# Gate 1 / Direction B / Med-NCA
+# -------------------------------------------------------------------
+# 数据
+data:
+  img_dir: "D:/YJ-Agent/project/meeting/Med-NCA/NCA-JEPA/data/nih_cxr14/images-224/images-224"
+  csv_path: "D:/YJ-Agent/project/meeting/Med-NCA/NCA-JEPA/data/nih_cxr14/Data_Entry_2017.csv"
+  n_normal: 500          # 取 No Finding 子集数量（快速验证）
+  val_split: 0.1         # 10% 做 val
+  resolution: 64         # 先跑 64, 通过后换 128
+  seed: 42
+
+# NCA 模型
+model:
+  channel_n: 16          # 先 16，通过后试 32
+  hidden_size: 128       # 官方默认
+  fire_rate: 0.5         # 官方默认 stochastic mask rate
+  input_channels: 1      # 灰度胸片
+
+# 训练
+train:
+  steps_min: 32          # 每次 forward 随机采样步数范围 [min, max]
+  steps_max: 64
+  batch: 4               # RTX 4070 8GB, 64^2 x 16ch 轻松; 128^2 时建议降到 2
+  lr: 2.0e-3             # TODO: 未找到官方 persistence 训练 lr，参考官方 texture-NCA 2e-3，需 researcher 确认
+  lr_gamma: 0.9999       # 每 step 衰减（官方 texture NCA 做法）
+  epochs: 100            # 快速验证；正式跑建议 300
+  pool_size: 256         # sample pool 大小（防发散经典做法）
+  pool_replace: 1        # 每 batch 随机替换 1 个为新鲜 seed（官方 growing NCA 技巧）
+
+# 早停 / 发散判据
+diverge:
+  loss_flat_tol: 1.0e-6  # loss 变化小于此视为死平
+  loss_flat_steps: 20    # 连续 N epoch loss 死平 → diverged
+  psnr_min: 10.0         # val PSNR 低于此 → diverged（正常胸片应 >25 dB 才算收敛）
+  psnr_converge: 25.0    # 达到此 PSNR 视为收敛（判据）
+
+# 输出
+output:
+  out_dir: "D:/YJ-Agent/project/meeting/Med-NCA/results/probe_persistence"
+  save_img_every: 25     # 每 N epoch 存对比图
+  state_json: "state.json"  # 相对 out_dir

@@ -2,7 +2,7 @@
 area_ratio_check.py — PR-7 面积比分布重叠检查（Gate1 G1-a 子条件）
 服务: MedAD-FailMap Phase 1, PC-B Gate1 G1-a
 
-算 BraTS tumor 与目标集（HAM/METS）lesion 的「病灶/背景面积比」
+算 BraTS tumor 与目标集（HAM/METS/CBIS）lesion 的「病灶/背景面积比」
 （lesion_px / total_px），输出两端分位数 + 重叠区段统计 + flag（overlap_ok）。
 
 G1-a 子条件：BraTS 驱动稀释的低面积比区段在目标集是否有非空样本支撑。
@@ -21,15 +21,25 @@ PR-7 bug 修复（Phase 1 新代码，不动 Phase 0）：
 PR-7: 面积比分布重叠检查（06_phase1_plan §7 预登记待冻）
 # TODO: PR-7 重叠判定阈值（brats_low_ratio_pct, min_overlap_frac, min_absolute）待 reviewer 复裁 + 主线拍板冻结。
 
+CBIS G1-a 扩展（Phase 1 正臂，不动既有接口）：
+  --target-ratio-col   : 目标集 csv 中用作面积比的列名（默认 None = 沿用 size_px 路径）
+                         CBIS 传 area_ratio_breast（机制公平）或 area_ratio_full（敏感性对照）
+  --brats-brain-px-col : BraTS 脑组织像素列（可选）。若提供，BraTS 侧面积比改为
+                         size_px / brain_px（而非 size_px / img_size²），机制对称。
+                         # TODO: BraTS 脑组织 Otsu 分割待主线启动后填；目前为可选（未传则沿用旧分母）
+
 输入:
   --brats-features-csv : BraTS per-image 特征 csv（含 size_px 列，来自 stratify_eval）
-  --target-features-csv: 目标集特征 csv（含 size_px 列，来自 lesion_features.py）
+  --target-features-csv: 目标集特征 csv（含 size_px 列或自定义 ratio 列）
   --brats-img-size     : BraTS mask resize 尺寸（默认 64，用于算 total_px=size*size）
   --target-img-size    : 目标集 mask resize 尺寸（默认 None=同 brats-img-size；Phase 1 应传 64）
+  --target-ratio-col   : 直接用目标集 csv 中此列作面积比（跳过 size_px / img_size² 计算）
+                         CBIS 用 area_ratio_breast；HAM/METS 默认 None（沿用 size_px 路径）
+  --brats-brain-px-col : BraTS csv 中脑组织像素列（可选）；传入时 BraTS 面积比 = size_px / brain_px
   --min-overlap-frac   : PR-7 bug b：目标集落在低区段的最低占比门槛（默认 0.05=5%）
   --min-absolute       : PR-7 bug b：绝对样本数下限（默认 30），与占比门槛取较严
   --out-dir            : 输出目录
-  --target-name        : 目标集名称（ham/mets，用于输出文件名）
+  --target-name        : 目标集名称（ham/mets/cbis，用于输出文件名）
 
 产出:
   area_ratio_check_<target>.csv  -- 分位数 + 重叠统计 + overlap_ok flag
@@ -63,6 +73,58 @@ def _load_size_px(csv_path, size_col="size_px"):
             except (TypeError, ValueError):
                 continue
     return np.array(vals, dtype=float)
+
+
+def _load_ratio_col(csv_path, ratio_col):
+    """
+    从 csv 直接读面积比列（已预先计算，如 area_ratio_breast / area_ratio_full）。
+    跳过 nan / 负值 / 空串。
+    用于 CBIS 等目标集 csv 已有机制公平面积比时，跳过 size_px / img_size² 换算。
+
+    返回 numpy array（float）。
+    """
+    vals = []
+    with open(csv_path, newline="") as f:
+        for row in csv.DictReader(f):
+            v = row.get(ratio_col, "nan")
+            try:
+                fv = float(v)
+                if not np.isnan(fv) and fv >= 0:
+                    vals.append(fv)
+            except (TypeError, ValueError):
+                continue
+    return np.array(vals, dtype=float)
+
+
+def _load_size_and_tissue_px(csv_path, size_col="size_px", tissue_px_col=None):
+    """
+    从 csv 读 size_px 和（可选）tissue_px 列，返回 (size_px_arr, tissue_px_arr)。
+    tissue_px_col: 如 brain_px（BraTS 脑组织像素）；若为 None 则 tissue_px_arr = None。
+    用于 BraTS 侧机制对称（tumor/brain 而非 tumor/全图）。
+
+    # TODO: BraTS 脑组织 Otsu 分割待主线启动后填；目前 tissue_px_col 可选（未传则沿用旧分母）。
+    """
+    size_vals   = []
+    tissue_vals = []
+    with open(csv_path, newline="") as f:
+        for row in csv.DictReader(f):
+            sv = row.get(size_col, "nan")
+            try:
+                sfv = float(sv)
+                if not np.isnan(sfv) and sfv >= 0:
+                    size_vals.append(sfv)
+                    if tissue_px_col is not None:
+                        tv = row.get(tissue_px_col, "nan")
+                        try:
+                            tfv = float(tv)
+                            tissue_vals.append(tfv if not np.isnan(tfv) else float("nan"))
+                        except (TypeError, ValueError):
+                            tissue_vals.append(float("nan"))
+            except (TypeError, ValueError):
+                continue
+    size_arr   = np.array(size_vals, dtype=float)
+    tissue_arr = np.array(tissue_vals, dtype=float) if tissue_px_col is not None else None
+    return size_arr, tissue_arr
 
 
 def compute_area_ratio(size_px_arr, img_size):
@@ -171,6 +233,8 @@ def run_area_ratio_check(
     min_target_support=1,
     min_overlap_frac=0.05,
     min_absolute=30,
+    target_ratio_col=None,
+    brats_brain_px_col=None,
 ):
     """
     PR-7 面积比重叠检查主入口。
@@ -181,31 +245,88 @@ def run_area_ratio_check(
                      Phase 1 两端均须用 64（lesion_features --phase1-mode）。
     min_overlap_frac: PR-7 bug b：目标集落在低区段的最低占比（默认 0.05=5%）
     min_absolute:     PR-7 bug b：绝对样本数下限（默认 30），与 min_overlap_frac 取较严
+
+    CBIS G1-a 扩展（新参数，默认 None 保向后兼容）：
+    target_ratio_col: 目标集 csv 中直接读取面积比的列名（如 area_ratio_breast）。
+                      传入时跳过 size_px / img_size² 计算，直接用此列值作 target_ratios。
+                      值域断言 [0, 1] 仍生效。
+                      None = 沿用旧 size_px / img_size² 路径（HAM/METS 兼容）。
+    brats_brain_px_col: BraTS csv 中脑组织像素列（如 brain_px）。
+                        传入时 BraTS 面积比 = size_px / brain_px（tumor/brain，机制对称）。
+                        None = 沿用旧 size_px / img_size²（tumor/全图，Phase 0 定义）。
+                        # TODO: BraTS 脑组织 Otsu 待主线启动后填；目前可选，未传则沿用旧分母。
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    brats_size_px = _load_size_px(brats_features_csv)
-    target_size_px = _load_size_px(target_features_csv)
-
-    if len(brats_size_px) == 0:
-        raise ValueError(f"[area_ratio_check] brats csv 无有效 size_px: {brats_features_csv}")
-    if len(target_size_px) == 0:
-        raise ValueError(f"[area_ratio_check] target csv 无有效 size_px: {target_features_csv}")
-
-    # PR-7 bug a: 目标集 img_size 默认同 brats，若不同则警告
-    _target_img_size = target_img_size if target_img_size is not None else brats_img_size
-    if _target_img_size != brats_img_size:
-        print(
-            f"[area_ratio_check] WARNING PR-7 bug a: "
-            f"target_img_size={_target_img_size} != brats_img_size={brats_img_size}。"
-            f"两端坐标系不一致，area_ratio 不可直接比较！"
-            f"Phase 1 路径请用 --phase1-mode 强制两端 resize=64。"
+    # ---- BraTS 面积比 ----
+    if brats_brain_px_col is not None:
+        # 机制对称模式：tumor/brain（Phase 1 CBIS 对应路径）
+        brats_size_px, brats_brain_px = _load_size_and_tissue_px(
+            brats_features_csv, size_col="size_px", tissue_px_col=brats_brain_px_col
         )
+        if len(brats_size_px) == 0:
+            raise ValueError(f"[area_ratio_check] brats csv 无有效 size_px: {brats_features_csv}")
+        # 逐行算 tumor/brain ratio；过滤 brain_px=0 或 nan
+        valid = (brats_brain_px > 0) & (~np.isnan(brats_brain_px))
+        if valid.sum() == 0:
+            raise ValueError(
+                f"[area_ratio_check] brats csv 中 {brats_brain_px_col} 全为 0/nan，"
+                f"无法计算 tumor/brain ratio"
+            )
+        brats_ratios = brats_size_px[valid] / brats_brain_px[valid]
+        # 断言 [0, 1]
+        bad = (brats_ratios < 0) | (brats_ratios > 1.0 + 1e-9)
+        if bad.any():
+            raise ValueError(
+                f"[area_ratio_check] brats tumor/brain ratio 超出 [0,1]，"
+                f"max={brats_ratios.max():.4f}。请检查 {brats_brain_px_col} 列。"
+            )
+        brats_ratio_note = f"tumor/{brats_brain_px_col}"
+        _brats_img_size_for_note = None
+    else:
+        # 旧路径：tumor/全图（Phase 0 兼容）
+        brats_size_px = _load_size_px(brats_features_csv)
+        if len(brats_size_px) == 0:
+            raise ValueError(f"[area_ratio_check] brats csv 无有效 size_px: {brats_features_csv}")
+        brats_ratios = compute_area_ratio(brats_size_px, brats_img_size)
+        brats_ratio_note = f"size_px/{brats_img_size}^2"
+        _brats_img_size_for_note = brats_img_size
 
-    # compute_area_ratio 内部断言 [0,1]
-    brats_ratios = compute_area_ratio(brats_size_px, brats_img_size)
-    target_ratios = compute_area_ratio(target_size_px, _target_img_size)
+    # ---- 目标集面积比 ----
+    if target_ratio_col is not None:
+        # CBIS 模式：直接读预计算的面积比列（area_ratio_breast / area_ratio_full）
+        target_ratios = _load_ratio_col(target_features_csv, ratio_col=target_ratio_col)
+        if len(target_ratios) == 0:
+            raise ValueError(
+                f"[area_ratio_check] target csv 无有效 {target_ratio_col} 值: {target_features_csv}"
+            )
+        # 断言 [0, 1]
+        bad = (target_ratios < 0) | (target_ratios > 1.0 + 1e-9)
+        if bad.any():
+            raise ValueError(
+                f"[area_ratio_check] target {target_ratio_col} 超出 [0,1]，"
+                f"max={target_ratios.max():.4f}。请检查 CBIS csv。"
+            )
+        target_ratio_note = target_ratio_col
+        _target_img_size = None  # 不适用
+    else:
+        # 旧路径：size_px / img_size²（HAM/METS 兼容）
+        target_size_px = _load_size_px(target_features_csv)
+        if len(target_size_px) == 0:
+            raise ValueError(f"[area_ratio_check] target csv 无有效 size_px: {target_features_csv}")
+
+        # PR-7 bug a: 目标集 img_size 默认同 brats，若不同则警告
+        _target_img_size = target_img_size if target_img_size is not None else brats_img_size
+        if _target_img_size != brats_img_size:
+            print(
+                f"[area_ratio_check] WARNING PR-7 bug a: "
+                f"target_img_size={_target_img_size} != brats_img_size={brats_img_size}。"
+                f"两端坐标系不一致，area_ratio 不可直接比较！"
+                f"Phase 1 路径请用 --phase1-mode 强制两端 resize=64。"
+            )
+        target_ratios = compute_area_ratio(target_size_px, _target_img_size)
+        target_ratio_note = f"size_px/{_target_img_size}^2"
 
     overlap_result = check_overlap(
         brats_ratios, target_ratios,
@@ -222,13 +343,16 @@ def run_area_ratio_check(
     out_csv = out_dir / f"area_ratio_check_{target_name}.csv"
     summary_row = {
         "target_name":          target_name,
-        "brats_img_size":       brats_img_size,
-        "target_img_size":      _target_img_size,
+        "brats_img_size":       brats_img_size if _brats_img_size_for_note is not None else "tissue_px",
+        "target_img_size":      _target_img_size if _target_img_size is not None else target_ratio_col,
+        "brats_ratio_mode":     brats_ratio_note,
+        "target_ratio_mode":    target_ratio_note,
         **brats_stats,
         **target_stats,
         **overlap_result,
         "note": (
-            f"PR-7 G1-a: brats low zone <= P{brats_low_ratio_pct:.0f} "
+            f"PR-7 G1-a: brats ratio={brats_ratio_note}; target ratio={target_ratio_note}; "
+            f"brats low zone <= P{brats_low_ratio_pct:.0f} "
             f"= {overlap_result['brats_low_threshold']:.4f}; "
             f"target support = {overlap_result['target_n_in_low_zone']}/"
             f"{overlap_result['target_n_total']} "
@@ -248,7 +372,7 @@ def run_area_ratio_check(
 
     flag = overlap_result["overlap_ok"]
     print(f"[area_ratio_check] {target_name}: overlap_ok={flag} "
-          f"(brats low zone <= {overlap_result['brats_low_threshold']:.4f}, "
+          f"(brats ratio={brats_ratio_note}, low zone <= {overlap_result['brats_low_threshold']:.4f}, "
           f"target n_in_low={overlap_result['target_n_in_low_zone']}/"
           f"{overlap_result['target_n_total']}, "
           f"required>={overlap_result['required_support']})")
@@ -327,6 +451,20 @@ if __name__ == "__main__":
     parser.add_argument("--min-absolute", type=int, default=30,
                         help="PR-7 bug b: 绝对样本数下限，与 --min-overlap-frac 取较严（默认 30）"
                              " # TODO: PR-7 待冻结")
+    parser.add_argument("--target-ratio-col", default=None,
+                        help=(
+                            "CBIS G1-a 扩展: 目标集 csv 中直接读取面积比的列名。"
+                            "传 area_ratio_breast（机制公平）或 area_ratio_full（敏感性对照）。"
+                            "传入时跳过 size_px/img_size² 计算，直接用此列值。"
+                            "None=沿用旧 size_px 路径（HAM/METS 兼容）。"
+                        ))
+    parser.add_argument("--brats-brain-px-col", default=None,
+                        help=(
+                            "CBIS G1-a 扩展: BraTS csv 中脑组织像素列（如 brain_px）。"
+                            "传入时 BraTS 面积比 = size_px/brain_px（tumor/brain，机制对称）。"
+                            "None=沿用旧 size_px/img_size²（Phase 0 定义）。"
+                            "# TODO: BraTS 脑组织 Otsu 待主线启动后填"
+                        ))
     args = parser.parse_args()
 
     run_area_ratio_check(
@@ -340,4 +478,6 @@ if __name__ == "__main__":
         min_target_support=args.min_target_support,
         min_overlap_frac=args.min_overlap_frac,
         min_absolute=args.min_absolute,
+        target_ratio_col=args.target_ratio_col,
+        brats_brain_px_col=args.brats_brain_px_col,
     )

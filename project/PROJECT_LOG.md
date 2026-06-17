@@ -18,20 +18,47 @@
 - **第一轮**：增强-诊断-triage 撞车（GradProm 2501.01114 同 ISIC 先证增强伤诊断但解法梯度修复≠我们路由+保证，撞车=中）；selective-pred+会场（TMLR 最配，明文不要 SOTA）；skeptic 红队 = **2 致命**：🔴 triage/校准/跨域 framing BMVC 全占了（salami-slicing），headline 必须焊死增强这条 BMVC-free 腿；🔴 Thm2 不能 claim agent 风险≤Direct（r4 实证 Direct B3=0.818>agent=0.788 自相矛盾）→ 降格局部条件界。
 - **第二轮（拓宽）**：负结果论文（ICBINB/ML4H/TMLR，撞车低，EDL Mirage NeurIPS24 只攻 EDL 一族）；纯 IB 理论（CDVIB/ICLR25 data-dep prior 最近邻，**实证无增益致命** → 砍）；医学 agent 浪潮（AT-CXR 2508 最像但 CXR+无质量门控，**query-for-retake 采集闭环全文献无人做=独家钩子**，诚实负结果已成 Nature Med 2024 接受模式）；鲁棒性表征（WILDS/Wild-Time 范式，MedMNIST-C/SAM-C 最近邻但无 calibration/UQ，撞车低）。
 
-### 🔀 用户拍板：拆两篇
-- **Paper1（D+A 主投）**：安全诊断保持增强 + query-for-retake 质量分级 agent。会场 MICCAI 2027/TMLR。
-- **Paper2（E 分流）**：质量偏移可靠性图谱 benchmark。会场 NeurIPS 2027 D&B。🔴 最大风险 = E↔BMVC 重叠（BMVC 占 Table1/5backbone/HAM-PAD/ImageNetC/DCA），E 须靠 BMVC 没呈现的维度立足（5 维逐退化/UQ 不差异化+IB 欠拟合机理/增强帮倒忙），动手前必逐表核 BMVC 提交版。
-- 兜底 = 负结果短文投 ICBINB/ML4H。砍纯 IB 理论论文。
+### 🔀 用户拍板演进：拆两篇 → 并一篇
+- 初拍「拆两篇（D+A 主投 + E 可靠性图谱分流）」。随即派 sonnet **逐表核 BMVC 提交版边界**（`itb_paper.tex/pdf`+`itb_supp.tex/pdf`+所有 table*.tex）。
+- **核查结果**：E 篇原 7 维度 **4 条被 BMVC 完整占用** → 🔴 跨域 ρ（`tab:fairness_full` Fitz I-VI + `tab:transfer`/`tab:crossdomain` HAM/PAD/CheXpert/fundus）、🔴 ImageNet-C（`tab:imagenetc_full` **18 腐蚀**非 14）、🔴 5 backbone（`tab:universality`+`tab:extra_backbones`）、🔴 DCA/triage（`tab:dca`/`tab:triage` 已写 CI overlap）。🟡 #2 九方法比较（`tab:main` 实为 **7 方法**非 9，「UQ 不差异化」只 supp `fig:uncertainty_qbar` 露雏形）、🟡 #7 ITB（无 Croissant/datasheet）。**真正干净只剩 #1（5 维逐维×严重度退化曲面，BMVC 只有 LQ/HQ 两档聚合）**。
+- **事实订正**：计划早期「9 方法/14 腐蚀」错，BMVC 提交版实为 **7 方法/18 腐蚀**。
+- **用户拍板并一篇**：E 单独立太薄且贴 BMVC → 不出 E 篇。只出**一篇 D+A 系统论文**，把 #1 退化曲面 + 增强帮倒忙折进当动机章 C0。被 BMVC 占的 #3/#4/#5/#6 一律仅 cite。
+- 兜底 = 负结果短文（#1+#2 UQ 不差异化 + IB 欠拟合）投 ICBINB/ML4H。砍纯 IB 理论论文 + 砍单独 E 篇。
 
 ### 落地
-- 写 `project/ICLR_重构计划_拆两篇_2026-06-17.md`（两篇 headline/claim/复用资产/新增工作/会场/三道防火墙/诚实记录死掉的东西）。
-- 更新 `.portfolio/registry.json` iclr.phase。
+- 写 + 改 `project/ICLR_重构计划_拆两篇_2026-06-17.md`（头部加决定演进记录；§2 唯一论文 4 claim C0-C3；§3 BMVC 逐表核查实录 + E 材料处置；§4 家底归属；§5 两道防火墙；§7 死掉的东西）。
+- 更新 `.portfolio/registry.json` iclr.phase（两次：拆两篇 → 并一篇）。
 
-### 待续（会话 42）
-1. 逐表核 BMVC `itb_paper.pdf`/`itb_supp.pdf` 划 E 篇能用/必须新做边界（Paper2 前提）。
-2. `/spin-off-paper` 建 Paper2 独立 registry。
-3. 改 Paper1 STORY_FRAMEWORK（换 headline/Thm2 降格/加 GradProm 对比/triage 诚实 framing）。
-4. planner 出两篇补做实验矩阵。
+### 已完成（会话41 后段）
+1. ✅ writer 重写 `STORY_FRAMEWORK.md`（建设式 headline、四论点 C0-C3、Thm2 降格、新增 R11-R14、删 Q-VIB-headline 全假设 + 0.707 行 + BMVC 占的四维表）。
+2. ✅ writer 重写 `ACCEPTANCE_CRITERIA.md`（删 25-lever/L1-L25/78-80% 框架 → C0-C3 子判据，与新 STORY 自洽）。
+3. ✅ planner 出补做矩阵（R-C0 退化曲面 / R-C2 agent 第4通道 / Thm2 数据已在 / GradProm）。整轮 <3 GPU·h 无重训练。
+4. ✅ **GradProm 拍板 = cite-and-distinguish 不真跑**（真跑碰复现红线+数周，MICCAI/TMLR 不强制竞品训练对比；机制差异化=我们 MI 下界+路由含 retake vs 它修梯度）。
+5. ✅ skeptic 红队 C0 设计 → 抓 1 致命：C0「逐维逐严重度=BMVC唯一干净」前提错。
+6. ✅ **主线二次核实（Bash 核 tex/csv）**：提交主文 `itb_paper.tex` 只 \input 四表无逐维退化；`bmvc_final.tex`=非提交草稿（skeptic 引错文件）；**但提交 supp `itb_supp.tex` 615 行确 \input `table_perdeg_qcts`**（第一轮审计误判孤儿）= 逐退化 **ECE**（4维无completeness）× 仅 Std VIB±QCTS × 无severity。**致命降 🔴→🟡**：C0 仍有干净空间=诊断AUC（BMVC只ECE）+逐维×severity网格+completeness+多方法+可恢复性。
+7. ✅ **C0 reframe 拍板（用户验证后主线拍 A）**：C0 改「可靠性×可恢复性决策面」——领以诊断 AUC（非ECE）+逐维×severity网格+completeness+叠增强救援轴（C3 的 E5/E6，天然 BMVC-free），引 BMVC tab:perdeg 区分不搬。计划文档 §2/§3 已订正。
+
+### 会话41 执行阶段（已落地）
+1. ✅ writer 同步 STORY+ACCEPTANCE 的 C0 → 「可靠性×可恢复性决策面」（领以诊断 AUC，叠增强可恢复性轴 E5/E6，completeness 改 partially recoverable，引 BMVC `tab:perdeg` 不搬）。
+2. ✅ 两 coder 交付：`eval_c0_decision_surface.py`（C0.1+C0.2，5 维×5 档×AUC/ECE/可恢复性 delta，bootstrap 2000，27 pytest 绿；5 档 severity = degrade.py 三锚物理外插的显式常量表）+ `agent/orchestrator.py` 4 通道路由（`route_by_quality` TAU 0.25/0.35/0.50 复用 agent_vs_direct_risk.csv band，20 pytest 绿）+ 各 test 文件。
+3. ✅ 核实两 blocker：**Stage2 ckpt `checkpoints/visienhance/stage2_planA_256_v5/best_visienhance.pth` 真在盘**（DATA_INVENTORY 旧标「待训」=过时误标，已订正 31-32 行；coder 留的「Stage2 待训」TODO 作废）；ITB-HQ image_path 指向真原图 `data/raw/isic2020/`。
+4. ✅ **smoke-first 抓真 bug**（27 mock pytest 全绿但真数据真 ckpt 一跑炸=印证不信绿测）：C0.1 可靠性轴（B3）过；C0.2 增强崩 `RuntimeError: GET was unable to find an engine`（本地 RTX4070 cuDNN 对 ConvTranspose2d 选不出 engine，非尺寸/q 问题）。
+5. ✅ **bug 已修（未 re-smoke 验证）**：`enhance_forward` 套 `with torch.backends.cudnn.flags(enabled=False):` 走 ATen（慢 2-3x 数值对）。卡死 PID 29180 已自清。
+6. ✅ GradProm 定 cite-and-distinguish 不真跑（拍板）。
+
+### 🔴 续跑前置（会话 42，**C0 fix 未 re-smoke**）
+- **⚠️ 收工时卡点**：local 槽仍记账挂 `0d3087f7 mednca-probeB [starting]`，但 GPU 实占 0%/0MiB、自 14:49 一小时多无进程 = NCA 任务**从没真启动**（starting 从没翻 running）= 疑似孤儿槽。用户「可以开训练」后主线试 release 0d3087f7 被**权限分类器拦**（保护别窗口 NCA 槽，对的）。**下次续跑前**：先确认该 NCA 任务真死 → 由 NCA 窗口 / 用户授权 `python tools/gpu_slot.py release 0d3087f7` 清孤儿槽 → 再 `gpu_slot.py request iclr local 1` 起 C0。**勿主线擅自清别窗口槽。**
+- 待 local 卡空后：① re-smoke 验 fix `python eval_c0_decision_surface.py --n_max 8 --n_boot 20 --batch_size 8`（先 `gpu_slot.py request iclr local 1`，跑完 release）；② 过则全量 `python eval_c0_decision_surface.py`（n_max=360，cuDNN-off 后约 4-6 GPU·h 无训练）→ `results/c0_decision_surface.csv`。
+- C0 数据齐 → analyst 看趋势（质量降→崩单调性 + 可恢复性 ΔAUC 哪些维帮倒忙）→ verifier 核 bootstrap CI → /stage-gate 收口 C0 动机章。
+
+### 会话41 写作段（已落地）
+- ✅ writer 改 `main.tex`：Thm2 降格（`appendix/A2_3_theorem2{,_compact}.tex` 定理改「Local Risk Bound」`\Renh ≤ \Rdirect − Δ` band 内局部、删「Agent never worse」推论换 `Remark[No global dominance]` 引 §7.7、加全局诚实负 Direct 0.818>agent 0.788；grep 无残留全局界/we prove/Q-VIB）+ §2 sec:related 加 GradProm cite-and-distinguish（机制差异「它修梯度/我们 MI 下界+路由含 retake」+ 明写 no head-to-head）。
+- ✅ GradProm bib 元数据**已核实**（主线 WebFetch arXiv:2501.01114）：`gradprom2025` = Dong Zhang, Kwang-Ting Cheng,「Generalized Task-Driven Medical Image Quality Enhancement with Gradient Promotion」,**IEEE TPAMI 2025 已录用**（比预想更硬竞品，非纯 arXiv）。references.bib 占位已换真条目。
+- ⚠️ A21_rebuttal.tex L80/L89 称 Thm2「decision-theoretic risk guarantee」writer 判仍 accurate（局部界也是 decision-theoretic，未说 global），按范围未碰；投稿前可复核。
+
+### 仍待续
+1. 全文 tex 骨架按新 STORY 九章重排（C0→C1→C2→C3）——**押后到 C0 数据回来**（动机章需 c0_decision_surface.csv）。
+2. C0 跑（等 local 卡空，见上「续跑前置」）。
 
 ---
 

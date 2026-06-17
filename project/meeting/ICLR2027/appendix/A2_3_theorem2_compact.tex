@@ -1,18 +1,30 @@
 % Compact statement of Theorem 2 for the main body (§5.2). Full proof: Appendix A2.3.
+% R11 (STORY_FRAMEWORK): DOWNGRADED to a LOCAL conditional bound. The theorem now states a
+% within-band conditional result only; the global routed policy is reported as an honest
+% negative result (direct triage sensitivity exceeds the routed agent at a fixed budget;
+% net-benefit CIs overlap; see sec exp-dca), and threshold-learning is future work. Body uses
+% derive-wording under the band condition (R2), never a prove-wording or a global ordering.
 
-\begin{theorem}[Closed-Loop Agent Risk Bound, informal]\label{thm:agent-compact}
-Let $\Tw$ be a diagnosis-preserving enhancement satisfying Proposition~\ref{prop:entropy}
-with calibration error $\delta_{\TV}$. Under the threshold policy \eqref{eq:agent-policy-body},
-the agent's expected risk obeys
+\begin{theorem}[Closed-Loop Agent Local Risk Bound, informal]\label{thm:agent-compact}
+Let $\Tw$ be a diagnosis-preserving enhancement satisfying Lemma~\ref{lem:dp} with calibration
+error $\delta_{\TV}$. Under the threshold policy \eqref{eq:agent-policy-body}, we derive that
+\emph{within the salvage band} $\qbar\in[\tauenh,\tauhigh]$ enhance-then-diagnose attains a
+strictly lower conditional expected risk than direct diagnosis,
 \begin{equation}
-\Ragent(x) \;\leq\; \Rdirect(x) - \Delta(\qbar,\Tw),
+\Renh(x) \;\leq\; \Rdirect(x) - \Delta(\qbar,\Tw),
 \qquad
-\Delta(\qbar,\Tw) > 0 \iff \qbar\in[\tauenh,\tauhigh].
+\Delta(\qbar,\Tw) > 0 \;\text{ for }\; \qbar\in[\tauenh,\tauhigh],
 \label{eq:thm2-body}
 \end{equation}
-In particular the agent is never worse than direct diagnosis, and strictly better on the
-salvage band with population gain $\pisalv\cdot\Delta_{\mathrm{avg}}$. The full proof, threshold
-estimation protocol, and finite-sample concentration are deferred to Appendix~\ref{app:a2-thm2}.
+with the per-band risk reductions realised empirically (CIs excluding zero in every band,
+\Cref{sec:exp-salvage}). This is a \emph{local} statement under the band condition; we make
+\emph{no} claim that the agent's risk is globally below direct diagnosis. On the contrary, at
+a fixed referral budget our triage simulation finds the global routed policy
+\emph{does not} outperform direct diagnosis (Direct triage sensitivity $0.818$ versus the
+agent's $0.788$, and statistically indistinguishable net benefit; \Cref{sec:exp-dca}). Closing
+the gap between the local gain and global utility --- by learning the routing thresholds rather
+than fixing them by grid search --- is left to future work. The full proof, threshold
+estimation protocol, and finite-sample concentration are in Appendix~\ref{app:a2-thm2}.
 \end{theorem}
 
 % Policy reference for the body (full definition in Appendix A2.3, eq:agent-policy).

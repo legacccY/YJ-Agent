@@ -37,7 +37,9 @@ PASS → 自动：①旧阶段归档 ②从 STORY/ACCEPTANCE 预填下阶段 suc
 
 ## 🆕 新项目开启 SOP
 
-**Step 0（拍板）**：方向 / 目标会议 / 核心 RQ 由用户定。我可先派 researcher 调研可投性 + 竞品 → **再派 `skeptic` 红队前提**（核心假设可行性 / 撞车 / 理论会不会塌，防 MedSeg-UQ 式立项后才塌缩），红队裁决随立项材料一起呈用户拍板；但立项点等用户拍。
+**Step −1（强烈推荐）— 走选题工业流水线 `/ideate`**：组合台 4 个项目「最初大胆 claim 全死、被迫降格」的病根=立项靠一次性手感、没批量、没工具验证撞车、没立项前廉价证伪。**新方向不要单点拍脑袋立**，先跑 `/ideate "<种子>"`：G0 宪章定约束 → G1 批量产 ~100 候选 → G2 工具撞车硬筛 → G3 加权+Swiss 排序 → G4 skeptic 红队+pre-mortem → **G5 <1GPU·h 杀手锏立项前证伪** → G6 幸存 1-3 个带双venue+书面kill criteria 呈拍板。体系全档 `project/ideation/00_README.md`。
+
+**Step 0（拍板）**：方向 / 目标会议 / 核心 RQ 由用户定。走完 `/ideate` 的候选已带完整证据轨迹直接拍；若跳过流水线直接给方向，至少派 researcher 调研可投性 + 竞品 → **再派 `skeptic` 红队前提**（核心假设可行性 / 撞车 / 理论会不会塌，防 MedSeg-UQ 式立项后才塌缩），红队裁决随立项材料一起呈用户拍板；但立项点等用户拍。
 
 立项拍板后，全自主执行：
 
@@ -114,7 +116,8 @@ PASS → 自动：①旧阶段归档 ②从 STORY/ACCEPTANCE 预填下阶段 suc
 
 | 场景 | 动作 |
 |---|---|
-| 起新论文 | 拍板立项 → `/spin-off-paper` → 登 registry+datasets → claim |
+| 找新方向 | `/ideate "<种子>"`（G0-G6 选题流水线，立项前批量筛+证伪，全档 `project/ideation/`）|
+| 起新论文 | （流水线 G6 幸存后）拍板立项 → `/spin-off-paper` → 登 registry+datasets → claim |
 | 开新阶段 | `/stage-gate`（过上阶段）→ 自动开下阶段+预填 criteria 待确认 |
 | 阶段内推进 | 自主跑,完一块记 LOG/`/checkpoint`,遇拍板点停 |
 | 大阶段验收 | `/stage-gate <project>`（opus 严判,不达不放行） |

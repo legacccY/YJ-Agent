@@ -1,0 +1,11 @@
+{
+  "epoch": 10,
+  "train_loss": 0.0,
+  "val_psnr": 100.0,
+  "val_ssim": 1.0,
+  "diverged": false,
+  "timestamp": "2026-06-17T15:24:21",
+  "best_psnr": 100.0,
+  "lr": 0.001786291226985218,
+  "converged": true
+}

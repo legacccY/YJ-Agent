@@ -160,7 +160,8 @@
 
 | 任务 | 动作 |
 |---|---|
-| 新论文 | `/spin-off-paper`（建标准 schema + 登记 registry） |
+| 找新方向（立项前） | `/ideate "<种子>"`（选题工业流水线 G0-G6：批量产~100候选→工具撞车硬筛→加权+Swiss排序→skeptic红队+pre-mortem→<1GPU·h杀手锏立项前证伪→双venue+书面killcriteria拍板。专治「大胆claim全死」。全档 `project/ideation/00_README.md`）|
+| 新论文 | `/spin-off-paper`（建标准 schema + 登记 registry；新方向建议先走 `/ideate`） |
 | 探路调研 | `/paper-scout`（researcher×4 + reviewer 扇出） |
 | 设计实验 | `/design-experiment <project>`（planner 出实验矩阵，对齐判据） |
 | 跑一轮完整实验 | `/experiment-cycle <project>`（planner→coder→🛑拍板→跑→analyst→verifier 全自动串） |

@@ -28,8 +28,8 @@
 | ConvNeXt-Tiny | universality | `project/checkpoints/convnext_tiny/best_vit_tiny.pth` | 28M | §7.5 backbone | ✅ |
 | Swin-Tiny | universality | `project/checkpoints/swin_tiny/best_vit_tiny.pth` | 28M | §7.5 backbone | ✅ |
 | **VisiEnhance Stage 1 v0** | **增强（待重训）** | `checkpoints/visienhance/stage1/best_visienhance.pth` | 1.7M | ❌ 容量不足，M1 启动 Plan A 重训（→ ~15M）|
-| **VisiEnhance Stage 1 Plan A** | M1 目标 | `checkpoints/visienhance/stage1_planA/` | ~15M | M1 D8-D21 训练 | 🆕 待训 |
-| **VisiEnhance Stage 2** | M1 目标 | `checkpoints/visienhance/stage2/` | ~15M | M1 D22-D28 DP-Loss 微调 | 🆕 待训 |
+| **VisiEnhance Stage 2 Plan A 256 v5（实际在用）** | ✅ done | `checkpoints/visienhance/stage2_planA_256_v5/best_visienhance.pth` | ~15M | feature-DP v5，E3/E7/E10 全 PASS 真源（job 1441301）；另有 stage2_planA_256{,_v4} 历史版 | ✅（会话 21）|
+| ~~VisiEnhance Stage 2（旧占位）~~ | ~~M1 目标~~ | ~~`checkpoints/visienhance/stage2/`~~ | — | **过时占位，实际 ckpt 见上行 v5**（会话41 订正：旧标「待训」误导过 coder）| ✅ 已落地 |
 | **VisiEnhance Stage 3** | M2 目标 | `checkpoints/visienhance/stage3/` | ~15M | M2 D1-D7 质量 hinge | 🆕 待训 |
 | **VisiEnhance S1 Plan A 256 noFiLM** | E8 消融 | `checkpoints/visienhance/stage1_planA_256_noFiLM/best_visienhance.pth` | ~15M | E8 Q-Cond 消融（film_scale=0，best_val_psnr 30.434）| ✅（会话 21，job 1441338 TIMEOUT@ep99/200）|
 

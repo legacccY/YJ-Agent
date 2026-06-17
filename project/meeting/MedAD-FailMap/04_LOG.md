@@ -406,3 +406,58 @@ coder 给 lesion_features 加 `--img-dirs`（85 passed）后，跑 G1-a make-or-
 **主线结构性考量（待拍）**：IDRiD MA = 一图多个微小斑点（非单一病灶），lesion_features 取最大连通域 size 与 BraTS 单 tumor 语义对不齐，失败机制可能仍不同构；**CBIS-DDSM 一 ROI 一肿块（单病灶）结构上更贴 BraTS 单瘤**，但 163GB 大。建议优先 CBIS-DDSM（结构同构）但需评下载成本，或先下 IDRiD（快）跑 G1-a 探几何但留意多斑点语义。**下载源都开放免门控，非拍板点，确定哪个即可自主下。**
 
 **下一步**：选定跨模态集（CBIS-DDSM 结构优 / IDRiD 快）→ 下载 → 跑 G1-a 面积比 + 评单/多病灶语义 → 过则建跨模态 AE pipeline。同模态 BraTS-METS 仍待用户 Synapse。
+
+### 2026-06-17 续 — 🔄 故事/创新重思（5-agent 文献+红队收敛）→ headline 路径 A 重铸（用户拍板）→ STORY/ACCEPTANCE/Gate1 全对齐 + skeptic 二次红队放行
+
+用户要求「重思故事/创新点，大量查文献，达顶会标准」。派 4 researcher（文献版图/conspicuity 桥/顶会门槛/跨模态外推先例）+ 1 skeptic（红队当前 headline）并行扇出。**五路独立收敛同一结论**。
+
+**文献版图（三 researcher 交叉印证，全无撞车）**：
+- 协变量受控操纵→failure phase diagram = **空白**（Lagogiannis 2512.01534 只描述性 percentile 分层，无函数拟合无外推）；per-image recon-AD reliability selector = **空白**（现有 failure detection 全靠模型内部 variance，无人用图像物理量）；conspicuity→DL-AD 失败桥 = **空白**；「失败机制模态特异」显性 claim = **空白**。
+- incumbent 现状：MedIAnomaly（聚合 benchmark 无协变量）、AE4AD（mismatch 存在性定理无协变量参数，HKUST 主页 2025-26 无后续=抢发风险当前低）。
+- **须对照的 baseline 家族**（非撞车）：ATC(ICCV21)/AutoEval(CVPR21)/DISDE(ICML22) unsupervised perf estimation——全用 confidence/dataset 统计量预测 model accuracy，无人用 instance 几何当失败函数输入。AutoEval meta-regression 引作 methodology 参照。**Donoho-Jin phase diagram**（easy/hard/impossible 三区）= 几何相图高分量 framing 先例。
+- 顶会门槛（researcher3）：收的 analysis paper 共性=actionable rule + 反直觉发现 + 机制解释 + coverage 足；负结果上顶会需 ≥3 模态+≥3 方法+框成「理解鸿沟」+给出路。
+- ⚠️ **数字订正**：ACCEPTANCE 原写「Mammogram GLCM AUC=0.75」→ 实为 **0.71**（Siviengphanom 2023 CC+MLO，95%CI 0.64–0.78）。已改。
+
+**skeptic 红队逮 🔴 致命**：旧 headline「可外推函数/对任意新图像 predict」被自家 G1-a 实证（BraTS→HAM 几何不同构 1.3% 重叠）**字面证伪**——ACCEPTANCE ② 自己把「跨模态不塌」钉成必要条件 → claim 自我矛盾 = ICLR 一击穿。**但是 claim 辖域写错非科学做错**，修法纯文字零 GPU。
+
+**用户拍板 = 路径 A**：headline 重铸为「失败可预测可外推——**有条件**：当且仅当几何 regime 同构，且同构性可从无标注数据前验（area-ratio overlap）；『小病灶普遍难检』被证伪为**几何 regime 特异**」。G1-a 负诊断从「事故」翻身成**外推有效性判据**的正面证据（判据正确预言「这对该外推失败」）。**承重重排**：①conspicuity 桥 per-image 判据（真承重，G1-a 打不死，per-image 同图内）+②外推有效性判据（翻身点）；③相图=地基非 headline；多方法对比退 Phase1+ 补充章不进 headline。
+
+**落档（主线亲写框架决策档，caveman OFF）**：
+- `01_STORY.md` 全文重铸（§一新 RQ + §三承重表 + §四加 baseline 家族/Donoho-Jin + §六加 headline 辖域铁律 + §七加「自相矛盾/HARKing」对峙）。
+- `02_ACCEPTANCE.md` Pillar ② 改双臂判据（正臂同构对零调参不塌 + 负臂前验门正确预言不同构对不可外推；跨模态不同构对塌=正确预言非绿灯失败）+ 编号调和注 + Gate2 双臂 + held-out 硬条件 + 订正 0.71。
+- `06_phase1_plan.md` §2 Gate1 重写为双臂机械判定 + 续命后门铁律 1-4 + §4 Decision Gates 对齐 + §7 加 PR-7b（iso 阈值跑前冻死规则）。
+
+**skeptic 二次红队（headline A 是否重开它上轮亲手堵的续命后门）= 0 致命放行**：三道防护（跑前冻 iso 标签/iso=True 塌即 FAIL 不洗负臂/正臂强制 iso=True 跨模态真 PASS）机械层面真把 headline A 和旧偷换切开（旧=怎么塌都能叙述成发现+无正例锚+事后归因；A=可证伪结构，预言任一方向反向即 FAIL）。三条非阻断建议**已全烤入**：①PR-7b iso 阈值绝对预登记不依赖候选对（唯一真残口）②Gate2 held-out 盲测对提级硬条件（防 2 点定线=判据被图示非被验证）③负臂证据须 ≥1 个 iso=False 对「跑了实测塌」（HAM 满足，防判据自我循环）。最可能被打点=HARKing 嫌疑→STORY §七已切分「激发判据的对 vs 检验判据的对」。
+
+**对 Phase 1 执行的影响**：跨模态腿从「HAM 作废=Gate1 缺 G1-c 跨模态」松绑——headline A 下 HAM 落**负臂**（合法、已满足），正臂需 CBIS-DDSM/IDRiD 里找到 ≥1 个 iso=True 跨模态对真 PASS。CBIS-DDSM 单 ROI 单肿块结构最贴 BraTS（优先），下载源免门控非拍板点。
+
+**下一步**：① 冻 05 全部 PR（含新 PR-7b 阈值规则，reviewer 复裁→主线拍→写 05）② 选定+下载跨模态正臂候选（CBIS-DDSM 结构优/IDRiD 快）→ 跑 G1-a 验 iso ③ 同模态 BraTS-METS 仍待用户 Synapse 注册。**headline 已锁、写作辖域铁律已立，writer 启动须带 §七 HARKing 切分。**
+
+### 2026-06-17 续 — 🎯 顶会判决：跨模态正臂实证枯竭 → reframe A'（同模态正臂 + 跨模态负臂 + 负发现第二 headline，用户拍板 A + skeptic 0 致命放行）
+
+承 headline A，推 Phase 1 G1-a 找正臂。本轮把判决推到「能否顶会」的关键节点。
+
+**① PR 冻结**：reviewer 复裁 PR-1..7b = 7 可冻（收紧措辞）+ PR-6 暂搁。PR-7b 三处收紧（两段阈值都钉 P25+5%/非循环依据/连续化趋势检验作主证据）。落 05 §F。时序清白（阈值早于 HAM 实测）。
+
+**② CBIS-DDSM mass G1-a 实测（verifier 0 drift 坐实）**：下载 awsaf49（4.95GB CC-BY-SA-3.0）→ coder 写 awsaf49 join（dicom_info SeriesDescription 当真值配对 full mammo↔ROI mask，1696 mass 异常 0 skip）+ 机制公平分母（mass/乳腺区 Otsu，非 mass/全图黑边）。BraTS 侧补对称分母（tumor/脑组织，brain=非零像素非 Otsu，修 Otsu 欠割 bug area_ratio>1）。
+- **BraTS tumor/脑组织**：P25=0.0517 med=0.1053 P75=0.1629（脑组织相对，非旧全图 3.9%）
+- **CBIS mass/乳腺**：P25=0.0052 med=0.0103 P75=0.0182（小一数量级，64² 网格 ~13px 极小）
+- **双边重叠**：OVL=0.262（弱）、Bhattacharyya=0.547；CBIS≥BraTS-P25 仅 4.8%(n=82)<5% 冻结门 → **iso=False**（CBIS 从下端 disjoint，与 HAM 从上端 disjoint 相反）。verifier 逐条核 csv 0 drift。
+
+**③ IDRiD 判废（推理）**：Optic Disc 是正常解剖非异常（recon-AD 完美重建，不是可检异常）；真异常 MA/HE/EX/SE 微小多灶（<0.15%，比 CBIS 更小+多斑点）→ 跨模态几何比 CBIS 更差。本轮起 IDRiD A.Segmentation.zip 下载（584MB）拟实跑 G1-a 把推理 iso=False 升实测（skeptic 建议补第三模态强化窄 niche）。
+
+**④ 跨模态正臂判决 = 免费 pixel-mask 数据集结构性枯竭**：HAM(28% 太大)/CBIS(1% 太小)/IDRiD(微小多灶) 三模态从两端都打不进 BraTS 脑组织 ~10% 的**窄 niche**。**这是强负发现**：病灶几何天然双峰（弥漫占主体 vs 点状亚像素），稀释失败 regime 落两峰间稀疏窄带 → 解释跨模态 AD 失败迁移为何脆。
+
+**⑤ 用户拍板 A + skeptic 红队 reframe（0 致命放行）**：跨模态正臂死 → 正臂改**同模态 BraTS→METS**（几何匹配→iso=True→应 PASS）+ HAM/CBIS 跨模态负臂 + 判据划界。skeptic 严判「是否移动球门」= **诚实弱化非偷换**（硬判据：claim 收窄 + 仍可自证伪——同模态 iso=True 塌 / 前验门反预测任一即 headline 死；且被整个免费数据集宇宙的几何分布逼出，非一次失败圆场）。3 条捆绑前置 + A' 强化版：
+- **铁律3'（写作铁律，必须）**：正臂同模态可，但 **headline/正文禁 claim 任何跨模态正向外推**（手上零跨模态 iso=True 正例）。已烤进 STORY §六/§七 + ACCEPTANCE ② + 06 §2。
+- **承重压判据预言性 + Gate2 held-out 盲测**（不压「同模态 work」防打 trivial），held-out 升 ICLR 命门。已烤 ACCEPTANCE ②。
+- **实跑 IDRiD G1-a**（负臂 n=2→n=3 三模态 + 三模态面积比并排图定量论证窄 niche）。下载中。
+- **A'（第二 headline，负发现）**：病灶几何双峰 + 稀释 regime 窄 niche，**不依赖 METS PASS（抗风险）**。已烤 STORY §一末。
+
+**⑥ 独立顶会判决（skeptic 中置信）**：**borderline ICLR**，命门 = (a) METS 正臂真 PASS + (b) Gate2 held-out 盲测命中。两者兑现→站住 ICLR analysis track（actionable 判据 + 反直觉几何特异 + conspicuity 机制 + 三模态 coverage）；任一不兑现→掉 MICCAI。reframe = 从「裸卖跨模态可外推=确定 reject」换「条件可外推+前验判据=有机会活」**净改善**，但非「已是 ICLR」——入场券押在 METS + held-out 两张未开的牌。
+
+**落档**：STORY 二次收窄（§一加第二 headline、§三② 改预言性承重、§六铁律3'、§七加 trivial/窄niche/METS单点 防御）+ ACCEPTANCE ② 同模态正臂 + 06 §2 铁律3' + 05 §F PR 冻结。
+
+**🛑 拍板依赖（用户行动）**：METS = BraTS-METS 2023（Synapse syn51514107 受控，需你注册+接受 DUA），主线代不了。**这是正臂锚的唯一来源，整个 ICLR 判决押在它**。fallback=BraTS 跨中心 train/test split（退化同模态对照，06 §3 预登记备胎）。
+
+**下一步**：① IDRiD 下载完 → coder 写 fundus FOV 分母适配器 → 实跑 G1-a 补第三模态负臂 ② 出三模态面积比并排图（A' 中心证据，analyst/coder）③ METS 待用户 Synapse ④ Phase 2 多方法（VAE/MemAE/RD）coverage。

@@ -31,6 +31,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 ## 方法
 - 先 Read/Grep 摸清现有代码结构、命名、风格，**新代码贴合周围代码**（注释密度/命名/惯用法一致），不另起一套。
 - 改完用 `Bash` 自测：`python -m py_compile <file>` 过语法；有 `tests/` 跑 `python -m pytest tests/ -x -q`。
+- **GPU 算子脚本额外 smoke**：脚本含 Conv/ConvTranspose2d / CUDA kernel / DataLoader 时，单独加一个 `python <file> --smoke 1 --cpu` 或等效最小 forward 1-2 样本（可 mock ckpt）验算子不炸。纯 mock-pytest 绿但真 GPU 跑炸 = 未就绪。
 - 大改逐文件 Edit，不一次重写整文件除非主线明示。
 
 ## 输出（回执，caveman OK）

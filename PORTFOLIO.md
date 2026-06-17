@@ -61,7 +61,8 @@
 
 | 任务 | 动作 |
 |---|---|
-| 新论文 | `/spin-off-paper` |
+| 找新方向 | `/ideate "<种子>"`（选题工业流水线 G0-G6：批量产候选→撞车硬筛→排序→红队→立项前证伪→拍板。全档 `project/ideation/`）|
+| 新论文 | （流水线幸存后）`/spin-off-paper` |
 | 跑实验 | `/loop /run-experiment`（state.json + 训练锁） |
 | 查文献/超参 | 派 `researcher`(sonnet) |
 | 写章节 | 派 `writer`(opus, caveman off)，数字先 `verifier` |

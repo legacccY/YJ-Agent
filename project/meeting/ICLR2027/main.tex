@@ -112,6 +112,18 @@ Restoration models such as Real-ESRGAN \citep{wang2021realesrgan}, Restormer
 perceptual fidelity. Generative restoration (e.g.\ diffusion-based) can hallucinate diagnostically
 salient structure; we therefore use deterministic restoration with a diagnostic-preservation
 objective and analyse the generative failure mode explicitly in \cref{sec:discussion}.
+The observation that perceptually better restoration can \emph{lower} downstream diagnostic
+accuracy is not new: on the same ISIC skin-lesion setting, GradProm \citep{gradprom2025} reports
+that enhancement which improves restoration metrics degrades classification, and addresses it by
+aligning the enhancement and recognition gradients during training (gradient promotion). Our
+treatment differs in both guarantee and scope. Rather than repairing gradients, we (i) impose a
+diagnosis-preserving objective with a mutual-information lower bound (Lemma~\ref{lem:dp}, DP-Loss),
+so that information loss is bounded by construction rather than corrected empirically, and (ii)
+embed enhancement inside a routing policy that decides among direct diagnosis, cautioned diagnosis,
+enhance-then-diagnose, and query-for-retake (\cref{sec:agent}) --- including a recapture channel
+absent from prior selective-prediction and gradient-correction work. We cite GradProm as prior
+evidence of the phenomenon and distinguish on mechanism; we do not run a head-to-head comparison
+and make no superiority claim against it.
 
 \paragraph{IQA and medical AI benchmarks.}
 No-reference IQA \citep{mittal2012brisque,wang2023clipiqa} and dermatology challenges (ISIC) motivate quality-aware

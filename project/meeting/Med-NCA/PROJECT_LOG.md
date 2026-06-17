@@ -2,6 +2,41 @@
 
 ---
 
+## 2026-06-17 — 换路探路：审核 NCA-AB 两方向 + 文献证伪 + 立项前证伪闸门
+
+**背景**：用户提出把 Med-NCA 从「复现 Med-NCA/M3D-NCA」换路到两个新方向，给了两份材料（`NCA-AB理论.md` 数学分析、`NCA-AB方向.md` 调研）：
+- 方向 A：3D NCA 全分辨率体积分割（免 patch / 省显存）
+- 方向 B：NCA 连续疾病轨迹生成（中间态=可解释渐进病变）
+
+要求：找出问题、审核 AB、设计完整探路计划。编队 = researcher×2 + skeptic 红队。
+
+**核出的地基级问题（材料前提错误）**：
+- `NCA-AB方向.md` 整篇建在「NCA+医学图像零 prior art / 你是第一个」之上，**该前提被证伪**。prior art 密集，且就在本项目目录：
+  - **Med-NCA**(IPMI 2023) + **M3D-NCA**(MICCAI 2023) = `M3D-NCA-official/`，本项目正在复现它。方向 A 的「免 patch 省显存 + 多尺度信息传播」两大卖点，M3D-NCA 2023 已做。
+  - **OctreeNCA**(2025-08)：184MP 单遍分割、少 90% VRAM——方向 A 核心叙事被整篇覆盖。
+  - **GeCA**(MICCAI 2024) NCA 医学高分辨率生成；**TeNCA**(MICCAI 2025) 时序 NCA——方向 B「零 prior art」原话错。
+- 本项目复现报告已实测 **M3D-NCA 训练发散**（loss 跳 ~5.0、Dice 归零、无安全区、前列腺 0/11）——材料「训练稳定性可工程化解决」与实测打架。
+
+**审核裁定（skeptic 红队，3 致命）**：
+- **方向 A → 接近判死**：卖点全被 M3D-NCA/OctreeNCA 占；唯一缝隙「真免 patch（全分辨率单状态）」被 `理论.md` A.3 自己的显存账打死（512³ BPTT 17–68GB，4090 装不下，为甩 patch 反而更费显存，自相矛盾）。
+- **方向 B → 暂缓，须先过 <3 GPU·h 证伪闸**：「连续可解释轨迹」收窄角度可能仍留白，但 persistence training（B 唯一防乱改正常组织的闸门）在本项目实测 NCA 易炸。
+
+**探路计划（证伪闸门，非绿灯）**：Gate0 新颖性精核 → Gate1 persistence 收敛 kill-shot → Gate2 NIH 纵向对数据核查 → Gate3 单病灶轨迹探针。任一 ❌ 即终止 B。
+
+**用户拍板**：B 跑 Gate0-1 证伪。
+
+**本会话结果**：
+- ✅ **Gate0 过**（researcher 精核 GeCA/TeNCA/BrLP/AD-DAE/Causal/Nature BME/Ordinal-Diffusion）：B 的「NCA 局部迭代生长机制本身=病变形态演化机制」同构角度仍留白。最近竞品 Ordinal-Aware Diffusion(2025) 属 diffusion+序数嵌入，无 NCA 局部生长；无一篇把 NCA 迭代步与临床疾病阶段显式绑定。
+- ✅ **Gate1 脚本就绪**（coder）：`code/probe_persistence.py` + `.yaml` + `test_probe_persistence.py`（pytest 8 passed）。NIH No Finding 子集 64²→128² persistence，sample pool + 每步 loss 防发散，自写 state.json + PSNR/SSIM + 发散早停 + 25ep 对比图。~70MB 显存 / 15-30 分钟。
+  - kill-shot 判读：state.json `converged`(val_psnr≥25) / `diverged`；diverged 或 best_psnr 常驻 <10dB → 方向 B 当场死。
+  - TODO：lr=2e-3 取自 growing-NCA 印象，非严格 persistence 文献来源（探针非复现，可接受；正式立项再核）。
+
+**状态（卡争用）**：Gate1 probe 申请 local 卡槽 = QUEUED `0d3087f7`，local 1 卡被 iclr C0 re-smoke 占（`12476ec0` starting）。绝不裸启，等 release 自动取出。
+
+**下一步**：local 卡释放 → 起 probe → 读 state.json 判 Gate1 → 过则跑 Gate2（NIH Patient ID 纵向对核查）+ Gate3 探针，全过进正式立项红队；崩则方向 B 终止。
+
+---
+
 ## 2026-06-16 — NCA-JEPA pilot 探路：数据落地 + predictor 集成接通 + 集成 smoke 全过
 
 **背景**：archive.zip（NIH ChestX-ray14 224² resized 版）下好。开门盘点发现上个会话只建了「半成品」——`nca_predictor.py`/3 config/8 哨兵/ijepa clone 都在，但**集成没接通**：`helper.init_model:79` 还硬编码 `vit_predictor`，没 NIH dataset loader，config 新字段 train 侧没消费。本会话把脊柱焊上 + 端到端验通。**分工**：opus 主线做集成接线（关键路径），简单独立件全交 sonnet。

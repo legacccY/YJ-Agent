@@ -105,57 +105,78 @@ by $c_q$. The refuse branch is a constant referral cost.
 \end{proof}
 
 \subsubsection{Main result}\label{app:a2-thm2-main}
-\begin{theorem}[Closed-loop agent expected-risk bound]\label{thm:agent}
+% R11 (STORY_FRAMEWORK): this is a LOCAL, within-band conditional bound. We deliberately do
+% NOT claim a global ordering R_agent <= R_direct: our own triage simulation (sec exp-dca)
+% shows the routed policy does not beat direct diagnosis at a fixed budget. The local gain and
+% the (negative) global result are reconciled honestly, with threshold-learning as future work.
+\begin{theorem}[Closed-loop agent local risk bound]\label{thm:agent}
 Let $\Tw$ be a diagnosis-preserving enhancement satisfying Lemma~\ref{lem:dp-full} with
 calibration error $\delta_{\TV}$ (its information-preservation guarantee; we do not rely on a
 net-entropy claim from Proposition~\ref{prop:entropy-full}), let
 Assumption~\ref{as:unimodal} hold, and let $\pi^{*}$ be the threshold policy
-\eqref{eq:agent-policy}. Then for any $x$,
+\eqref{eq:agent-policy}. Then on the enhance channel, \emph{conditional on} the salvage band,
+the enhance-then-diagnose action attains a strictly lower expected risk than direct diagnosis,
 \begin{equation}
-\Ragent(x) \;\leq\; \Rdirect(x) - \Delta(\qbar(x),\Tw),
+\Renh(x) \;\leq\; \Rdirect(x) - \Delta(\qbar(x),\Tw),
 \qquad
 \Delta(\qbar,\Tw) > 0 \;\text{ if }\; \qbar\in(\tauenh,\tauhigh)
 \text{ and } \E[\Gen]>c_e+M\delta_{\TV},
 \label{eq:thm2}
 \end{equation}
-and on the enhance channel
+with
 $\Delta(\qbar,\Tw)\big|_{\qbar\in(\tauenh,\tauhigh)}
 = \E_{x:\qbar(x)=\qbar}[\Gen(x)] - c_e - M\delta_{\TV}$.
-Outside this sub-band the policy reverts to query/refuse/direct and $\Delta=0$, so the bound
-holds with equality; we state the strict improvement as a sufficient condition on the
-enhancement band rather than as an ``if and only if''.
+This is a \emph{local} guarantee tied to the band condition: it certifies that enhancement is
+the risk-reducing action exactly where the salvage band holds, and is silent elsewhere. We
+emphasise that \eqref{eq:thm2} is \emph{not} a global statement that the routed agent
+dominates direct diagnosis; the global comparison is an empirical question, addressed (with a
+negative answer at the operating points we test) in the remark below.
 \end{theorem}
 \begin{proof}
-We consider the four cases of the policy partition \eqref{eq:agent-policy}.
+We establish the within-band inequality \eqref{eq:thm2} on the enhance channel and record what
+each of the other channels guarantees, without combining them into a global ordering.
 
-\emph{Case 1 ($\qbar\geq\tauhigh$, direct).} $\Ragent(x)=\Rdirect(x)$; by Lemma~\ref{lem:window}
-$\Gen\leq c_e+M\delta_{\TV}$ so $\Delta=0$ and \eqref{eq:thm2} holds with equality.
+\emph{Enhance channel ($\qbar\in[\tauenh,\tauhigh)$ and $\Hent(\hat{p}_x)\leq\hhigh$).} Here the
+routed action is enhance, so the routed risk equals $\Renh(x)$. Taking the conditional
+expectation of Lemma~\ref{lem:enh-risk} at $\qbar(x)=\qbar$,
+$\E[\Renh]\leq\E[\Rdirect]-(\E[\Gen]-c_e-M\delta_{\TV})$, and by Lemma~\ref{lem:window} the
+parenthesised term is strictly positive, giving $\Delta>0$. This is exactly the band condition
+of \eqref{eq:thm2}.
 
-\emph{Case 2 ($\qbar\in[\tauenh,\tauhigh)$ and $\Hent(\hat{p}_x)\leq\hhigh$, enhance).}
-$\Ragent(x)=\Renh(x)$. Taking the conditional expectation of Lemma~\ref{lem:enh-risk} at
-$\qbar(x)=\qbar$,
-$\E[\Ragent]\leq\E[\Rdirect]-(\E[\Gen]-c_e-M\delta_{\TV})$, and by Lemma~\ref{lem:window} the
-parenthesised term is strictly positive, giving $\Delta>0$.
-
-\emph{Case 3 ($\qbar\in[\taulow,\tauenh)$, query).} By Lemma~\ref{lem:query-refuse}(i),
-$\Ragent(x)\leq\Rdirect(x)-(\Gret(x)-c_q)$. On this band $\Gen\leq c_e+M\delta_{\TV}$, so the
-enhance-channel gain $\Delta:=0$, consistent with \eqref{eq:thm2}.
-
-\emph{Case 4 ($\qbar<\taulow$, refuse).} By Lemma~\ref{lem:query-refuse}(ii),
-$\Ragent(x)=c_r+\ell_r\leq\Rdirect(x)$ in expectation; $\Delta=0$.
-
-The four cases establish \eqref{eq:thm2}.
+\emph{Other channels.} For reference we note the per-channel guarantees that the policy invokes
+outside the salvage band, each of which is conditional and is \emph{not} aggregated into a
+global claim. For $\qbar\geq\tauhigh$ (direct) the routed risk equals $\Rdirect(x)$ by
+construction. For $\qbar\in[\taulow,\tauenh)$ (query), Lemma~\ref{lem:query-refuse}(i) bounds the
+query risk by $\Rdirect(x)-(\Gret(x)-c_q)$ \emph{when the retake operator improves quality in
+expectation}; this premise need not hold at deployment, which is one reason the global routed
+policy carries no dominance guarantee. For $\qbar<\taulow$ (refuse) the cost is the constant
+referral cost $c_r+\ell_r$. The within-band inequality \eqref{eq:thm2} is the only statement we
+carry forward as a theorem.
 \end{proof}
 
-\begin{corollary}[Agent never worse than direct]\label{cor:never-worse}
-Under the thresholds of Lemmas~\ref{lem:window}--\ref{lem:query-refuse},
-$\Ragent(x)\leq\Rdirect(x)$ for all $x$.
-\end{corollary}
+\begin{remark}[No global dominance; the routed policy is empirically non-superior]\label{rem:no-global}
+We deliberately do \emph{not} state a corollary asserting $\Ragent(x)\leq\Rdirect(x)$ for all
+$x$. The within-band local guarantee \eqref{eq:thm2} does not aggregate to a global ordering,
+because the query-channel premise of Lemma~\ref{lem:query-refuse}(i) (a retake operator that
+improves quality in expectation) and the fixed grid-search thresholds are not guaranteed to be
+optimal at deployment. Consistently with this, our triage simulation on \itb{}-LQ
+(\Cref{sec:exp-dca}) finds that the globally routed policy \emph{does not} outperform direct
+diagnosis at the operating points we test: at a $20\%$ referral budget direct diagnosis attains
+auto-handled sensitivity $0.818$ versus the routed agent's $0.788$, and the maximum net benefit
+is statistically indistinguishable across direct diagnosis and all bottleneck variants
+(overlapping $95\%$ bootstrap confidence intervals). We therefore report Theorem~\ref{thm:agent}
+as a local, conditional result and treat the global utility of the routed policy as an open,
+empirically negative question at present.
+\end{remark}
 
-\begin{corollary}[Strict improvement on the salvage band]\label{cor:population}
-If $\pisalv := \mathbb{P}[\qbar(X)\in[\tauenh,\tauhigh]] > 0$, then
-$\E_x[\Ragent(X)] \leq \E_x[\Rdirect(X)] - \pisalv\cdot\Delta_{\mathrm{avg}}$ with
-$\Delta_{\mathrm{avg}}>0$.
+\begin{corollary}[Population gain on the salvage band, conditional]\label{cor:population}
+If $\pisalv := \mathbb{P}[\qbar(X)\in[\tauenh,\tauhigh]] > 0$, then \emph{restricted to the
+salvage-band subpopulation} the enhance action reduces expected risk by
+$\pisalv\cdot\Delta_{\mathrm{avg}}$ with $\Delta_{\mathrm{avg}}>0$. This quantifies the local
+benefit only; it does \emph{not} certify a net reduction in the deployed risk of the full routed
+policy, which (Remark~\ref{rem:no-global}) is not observed empirically. Realising the band-local
+gain as a global utility improvement would require learning the routing thresholds rather than
+fixing them by grid search, which we leave to future work.
 \end{corollary}
 
 \paragraph{Tight constants.}
