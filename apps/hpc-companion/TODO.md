@@ -13,6 +13,7 @@
 
 ## 已完成
 
+- README 下载页补「安全警告」小节：未签名 exe 触发 SmartScreen/Defender 误报的根因 + 同类通病解释 + 信任凭据（源码公开 / Actions 公开构建 / SHA256+VirusTotal）+ 四步绕过。已同步公开仓 `legacccY/hpc-companion`。**待手动**：发 Release 时填实际 SHA256 + VirusTotal 链接。
 - 核心后端：paramiko SSH/SFTP（30s 保活）+ SLURM 解析 / `sbatch` 生成 + keyring 密码 + QThreadPool 异步。
 - 四面板：连接（profile / 自动连接 / 预设）· 任务监控 · 文件传输（双栏 / 断点续传 / 速度 / ETA）· 提交向导（可编辑脚本）。
 - 任务监控：`squeue` + `sacct` 融合（结束任务不消失）· 历史范围 · 失败红横幅（退出码 + err 尾）· 日志自动定位 + 缓存 · 深 / 浅主题。
