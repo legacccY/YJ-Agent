@@ -35,6 +35,40 @@
 
 **下一步**：local 卡释放 → 起 probe → 读 state.json 判 Gate1 → 过则跑 Gate2（NIH Patient ID 纵向对核查）+ Gate3 探针，全过进正式立项红队；崩则方向 B 终止。
 
+### 续：2026-06-17 同会话 — Gate1 执行完毕（PASS）
+
+**probe 工程坑（修了 3 处，非科学结论）**：
+1. CUDA illegal memory access @ `pool.commit`：`self._pool[idx]` 用 CPU LongTensor 索引 CUDA tensor → 非法访问。修：index tensor 放 `_pool.device`。coder 两次没真修（mini smoke pool16/3batch 没触发 CUDA async 错），主线 opus 接手 1 行修好。
+2. `perceive()` 每步 numpy 重建 Sobel kernel + `.to(device)`（上万次 host→device 同步）→ 单 epoch 8min。修：Sobel kernel 预建成 `register_buffer`，单 epoch 降到 ~11s（数学等价）。
+3. **首版探针退化假 PASS**：persistence-only + 每 batch 重写可见通道为真图 + fc1 零初始化 → 恒等 NCA「什么都不做」就 loss=0/PSNR=100/converged=true。识破后重设计两个非退化 mode（pytest 加恒等 NCA loss>0 反退化断言防回归）。
+
+**Gate1 两 mode 最终数字（state.json 核实，64²/ch16/NIH No Finding 500 张）**：
+| mode | 测什么 | epoch1→best PSNR | converged | diverged |
+|---|---|---|---|---|
+| damage（损伤恢复，Mordvintsev attractor 测试） | NCA 能否学成真 attractor、修复抹除区 | 16.8 → **26.5dB** (ep21 早停) | true | false |
+| reconstruct（16²糊图→64²重建，纹理生成力） | 3×3 局部更新能否合成胸片纹理 | 21.8 → **25.56dB** (ep57 早停) | true | false |
+
+**Gate1 裁定：PASS（两 mode best_psnr 均 ≥25dB、converged、未发散）**。NCA 在胸片上既能学成可修复损伤的稳定 attractor，又能从糊图重建纹理——Direction B 的 persistence 地基不是死路（之前最大担忧「NCA 在高纹理胸片上根本不收敛/崩」被证伪）。
+
+**Caveat（如实标）**：
+- reconstruct 偏边际：best 25.56 刚过线、val 在 22-25 震荡、loss 仍缓降未完全收敛（早停在 ep57，非 100）。damage 更干净(26.5/ssim0.96)。
+- **晚期发散风险未排除**：两 mode 都在 ~ep20-57 早停（kill-shot 只答「能否做」）。本项目复现实测 M3D-NCA 晚期断崖发散（ep121 崩，见 [[reference_nca_divergence_signature]]）——Direction B 正式训练须警惕 ep60+ 晚期崩，非本探针范畴。
+- 64² 低分辨率 + 仅 500 张；正式需上 128²/256² + 全量验证纹理是否仍 hold。
+
+### 续：Gate2 — NIH 纵向对核查（PASS，数据充足）
+
+数 `Data_Entry_2017.csv`（Bash csv 核实）：
+- 总患者 30805，**有 ≥2 次拍摄 = 13302 (43.2%)**（远超方向.md 估的 15-25%）
+- 相邻随访对总数 = 81315
+- **正常→异常 转变对 = 14380**（理想轨迹监督：No Finding → 有病）
+- 异常→异常（进展）对 = 27722
+- 合计 ~42k 疾病相关转变对可用
+
+**Gate2 裁定：PASS**。成对纵向轨迹监督数据极充足（~14k 正常→异常 + ~28k 进展对），远超 PoC 所需，无须 unpaired fallback（skeptic 担忧的「unpaired 无监督信号」不触发）。
+
+**当前总进度**：Gate0 ✅(新颖性留白) + Gate1 ✅(persistence 两 mode 收敛不崩) + Gate2 ✅(纵向对充足)。
+**下一步**：Gate3 = 单病灶轨迹探针（最简病种如肺结节，小样本跑 Phase2 轨迹训练 mode，停 16/32/48 步看中间态是否渐进合理）。需 coder 写轨迹训练 mode + 一轮训练。Gate3 过 → 进正式立项红队（攻轨迹收敛 + 临床盲评设计）。
+
 ---
 
 ## 2026-06-16 — NCA-JEPA pilot 探路：数据落地 + predictor 集成接通 + 集成 smoke 全过

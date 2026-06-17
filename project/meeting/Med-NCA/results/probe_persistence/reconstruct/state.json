@@ -1,0 +1,12 @@
+{
+  "epoch": 59,
+  "train_loss": 0.029903908235441267,
+  "val_psnr": 18.050137646532704,
+  "val_ssim": 0.7906932770499749,
+  "diverged": false,
+  "timestamp": "2026-06-17T15:58:27",
+  "mode": "reconstruct",
+  "best_psnr": 25.556400007624003,
+  "lr": 0.0010267657807379329,
+  "converged": false
+}
