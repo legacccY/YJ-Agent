@@ -37,7 +37,7 @@ PASS → 自动：①旧阶段归档 ②从 STORY/ACCEPTANCE 预填下阶段 suc
 
 ## 🆕 新项目开启 SOP
 
-**Step 0（拍板）**：方向 / 目标会议 / 核心 RQ 由用户定。我可先派 researcher 调研可投性 + 竞品，给方案，但立项点等用户拍。
+**Step 0（拍板）**：方向 / 目标会议 / 核心 RQ 由用户定。我可先派 researcher 调研可投性 + 竞品 → **再派 `skeptic` 红队前提**（核心假设可行性 / 撞车 / 理论会不会塌，防 MedSeg-UQ 式立项后才塌缩），红队裁决随立项材料一起呈用户拍板；但立项点等用户拍。
 
 立项拍板后，全自主执行：
 
@@ -76,13 +76,15 @@ PASS → 自动：①旧阶段归档 ②从 STORY/ACCEPTANCE 预填下阶段 suc
 
 ## 🔬 科研闭环标准流水线（每条腿 → agent → 交接点）
 
-阶段内推进按这条流水线走，**每条腿派对应 agent，别主线串行硬扛**。八角色覆盖全闭环：
+阶段内推进按这条流水线走，**每条腿派对应 agent，别主线串行硬扛**。九角色覆盖全闭环：
 
 ```
 调研        → researcher      带引用结论（文献/官方超参/SOTA）
   ↓ 交接：结论 + 官方超参 → planner 用作设计输入
 设计实验    → planner         实验矩阵（run/变量/seed/预期/对齐 ACCEPTANCE 判据/可并行）
-  ↓ 交接：矩阵表 → coder 按表逐 run 实现
+  ↓ 交接：矩阵表 → skeptic 红队（执行前堵雷）
+🩺红队设计  → skeptic         攻混杂/baseline/claim-测不对齐/无效消融；0 致命即过，有 🔴 回 planner 修。不卡流程
+  ↓ 交接：过红队的矩阵 → coder 按表逐 run 实现
 写实验代码  → coder           训练脚本/model/loss/预处理/画图，自测 pytest，标「就绪」
   ↓ 交接：就绪代码 + config → 主线（拍板点，不外包）
 🛑 跑训练   → 主线 /loop /run-experiment   持训练锁串行，state.json 自动监控

@@ -5,7 +5,7 @@ description: 一键编排整条实验闭环——planner 设计矩阵 → coder 
 
 # /experiment-cycle — 一键编排实验闭环（设计→写码→🛑跑→分析→核数）
 
-最强编排 skill。把科研闭环中段的五棒自动串起，主线当 lead 顺序推进，**只在「跑训练」拍板点停下等放行**。
+最强编排 skill。把科研闭环中段的六棒（设计→🩺红队→写码→🛑跑→分析→核数）自动串起，主线当 lead 顺序推进，**只在「跑训练」拍板点停下等放行**。
 
 用法：`/experiment-cycle <project> [要验证的 claim/lever]`。无参 → 用本窗认领项目 + STORY 当前阶段目标。
 
@@ -13,6 +13,9 @@ description: 一键编排整条实验闭环——planner 设计矩阵 → coder 
 
 ### Stage 1 — 设计（planner）
 认窗 + **读 `.portfolio/registry.json` 取 `home/story/acceptance/log`**（各项目命名不同，以 registry 为真源不硬猜）→ 起 `planner`(opus) 出实验矩阵（run/变量/seed/预期/对齐判据/并行依赖/算力预估）。有前置 TODO（缺超参/数据）→ 先派 `researcher` 补或停报。矩阵落盘项目 LOG。
+
+### Stage 1.5 — 红队设计（skeptic）
+矩阵落盘后、写码前，派 `skeptic`(opus) 攻设计：混杂变量 / baseline 选错 / claim 与所测不对齐 / 无效消融白烧算力。**skeptic 卡不住流程**——severity-gated，**致命伤=0 → 直接进 Stage 2**；有 🔴 致命 → 回 planner 修该 run 或停报拍板（带 skeptic 给的出路）。日常小迭代/已红队过的设计可跳过本棒。
 
 ### Stage 2 — 实现（coder，可并行）
 据矩阵，派 `coder`(sonnet) 实现各 run 的脚本/config。**多个无文件冲突的 config → 一批多 coder 并行**（每个给完整冷启：项目+该 run 规格+Windows 规范+drift 契约）。coder 自测 `py_compile`/pytest，交「就绪」回执。

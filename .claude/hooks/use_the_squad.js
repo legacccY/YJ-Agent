@@ -19,7 +19,7 @@ process.stdin.on('end', () => {
   const vagueStart = /^(\s*)(开始(工作|干活|吧)?|继续|接着(干|做)|干活(吧)?|推进(一下)?|开工|往下走|往前推|go|start|继续推进|接着来)(\s|$|，|。|！|\.|!)/i.test(p)
     || /(开始工作|继续干|接着干|干活吧|推进一下|往下推进)/i.test(p);
   if (vagueStart && p.length < 40) {
-    out += '[自动路由] 泛指令 → 别主线埋头串行。先读 registry.phase + 项目 LOG 最新 entry + log/experiment_state.json 定位流水线当前棒 → 主动派对应 agent/skill（researcher/planner/coder/analyst/writer/reviewer 或 /paper-scout、/design-experiment、/experiment-cycle、/analyze-results、/stage-gate）→ 拍板点停。默认动作=派编队不是自己干。\n';
+    out += '[自动路由] 泛指令 → 别主线埋头串行。先读 registry.phase + 项目 LOG 最新 entry + log/experiment_state.json 定位流水线当前棒 → 主动派对应 agent/skill（researcher/planner/skeptic/coder/analyst/writer/reviewer 或 /paper-scout、/design-experiment、/experiment-cycle、/analyze-results、/stage-gate）→ 拍板点停。默认动作=派编队不是自己干。\n';
   }
 
   // 设计实验类 → planner
@@ -34,6 +34,10 @@ process.stdin.on('end', () => {
   if (/(分析.*(结果|实验|数据)|跑完.*看|结果.*说明|画.*(曲线|图|loss|指标)|这.*消融.*说明|解读.*结果|trend|趋势)/i.test(p)) {
     out += '[派 analyst] 解读结果别主线 Read csv 凭印象 → 派 analyst(sonnet) 算趋势/出图/找 pattern（禁 Read csv 下结论），或一键 /analyze-results <project>。\n';
   }
+  // 红队/批判/立项前提 → skeptic
+  if (/(红队|批判|devil|质疑.*(设计|前提|claim|立项)|攻一下|找致命伤|这.*(立项|方向|假设).*(行不行|靠谱|站得住|可行)|混杂|confound|baseline.*(对不对|选错)|claim.*(站得住|逻辑|成立)|定.*headline.*前)/i.test(p)) {
+    out += '[派 skeptic] 执行前红队别主线自己说服自己 → 派 skeptic(opus) 攻立项前提/实验设计/claim 逻辑（severity-gated，0 致命即放行不卡流程，每条攻击带出路）。区别 reviewer（事后审成稿）。\n';
+  }
   // 完整一轮实验 → experiment-cycle
   if (/(跑一轮|完整.*实验|一整套实验|推进.*阶段.*实验|设计并.*实现|从设计到)/i.test(p)) {
     out += '[编排 /experiment-cycle] 完整一轮实验 → 一键 /experiment-cycle <project> 自动 planner→coder→🛑拍板→跑→analyst→verifier，人只在跑训练拍板点介入。\n';
@@ -44,7 +48,7 @@ process.stdin.on('end', () => {
   }
 
   if (out) {
-    out += '（八角色全闭环见 CLAUDE.md / PROJECT_LIFECYCLE.md。训练启停仍主线串行红线，agent 不碰。）\n';
+    out += '（九角色全闭环见 CLAUDE.md / PROJECT_LIFECYCLE.md。训练启停仍主线串行红线，agent 不碰。）\n';
     process.stdout.write(out);
   }
   process.exit(0);

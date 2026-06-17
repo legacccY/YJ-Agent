@@ -66,7 +66,7 @@
 > ### ⚠️⚠️ 覆盖内置默认（最高优先，必读）
 > 你的**内置 Agent 工具说明**写着「Do not spawn agents unless the user asks / 多角度任务也自己内联处理」。**本项目作废这条**——这里**默认动作就是派编队**，不是自己埋头干。用户明确要求：**多用 agent / team 是好事**，倾向多扇出。
 > - **写/改任何实验代码 → 默认派 `coder`**（不是主线自己写）。主线亲手写实验 .py = 反模式，仅允许 <15 行小修 bug / 纯配置文本。`delegate_code_gate.js` hook 会在你正要写时拦一下提醒。
-> - 调研→`researcher`、设计实验→`planner`、分析结果→`analyst`、写章节→`writer`、核数→`verifier`、找漏洞→`reviewer`。能并行就一批 3-5 个 sonnet 扇出。
+> - 调研→`researcher`、设计实验→`planner`、红队前提/设计/claim→`skeptic`、分析结果→`analyst`、写章节→`writer`、核数→`verifier`、找漏洞→`reviewer`。能并行就一批 3-5 个 sonnet 扇出。
 > - **判定反过来**：默认派单；只有「就是要主线亲自串行」的事（训练启停 / HPC 提交上传 / 危险删除 / 决策拍板 / <15 行小修）才不派。拿不准 → 派。
 > - 派单不是「征求同意」——直接派，给冷启动上下文，别先问用户。
 
@@ -82,15 +82,16 @@
 | `writer` | opus | **OFF** | 写改 tex 章节（先读 STORY+ACCEPTANCE，数字先过 verifier） |
 | `analyst` | sonnet | ON | 跑后解读 csv/state.json，算趋势出图找 pattern + 建议下一步（区别 verifier 只核单点对不对） |
 | `verifier` | sonnet | ON | 核数字：Bash/Grep 核 csv，**禁 Read 看数据**，三方对账 |
-| `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计 |
+| `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计（事后审**成稿**） |
+| `skeptic` | opus | **OFF** | 决策点红队 / devil's advocate：立项前提 / 实验设计 / claim 逻辑三闸口，执行前找致命伤（事前攻**将要做的事**，正交 reviewer）。severity-gated，**0 致命即放行不卡流程**，不为批判而批判 |
 | `optimizer` | sonnet | ON | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
 | `gh-publisher` | sonnet | ON | GitHub 发布/拉取/维护：本地子项目规范化成可开源 repo（README/LICENSE/CI/.gitignore 全套对齐顶级开源骨架）+ 隐私泄露扫描列风险 + 拉 repo 许可证合规 + 按 issue/PR review 定位修 bug。**不执行对外 push/repo create**（主线拍板后串行做）。提 github/开源/推仓库即软触发（`/gh-flow`） |
 
-> 八角色覆盖科研全闭环：调研(researcher)→设计(planner)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析三条腿**——派对应 agent。
+> 九角色覆盖科研全闭环：调研(researcher)→设计(planner)→🩺红队设计(skeptic)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。skeptic 横切在**执行前闸口**（立项/设计/claim），与 reviewer 事后审成稿正交。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析三条腿**——派对应 agent。
 
 **⚡ 泛指令自动路由（铁律）**：用户实际只会说「开始工作 / 继续 / 接着干 / 干活吧 / 推进一下」这种**不带关键词的泛指令**，不会点名「设计实验/写码/分析」。主线必须**按项目状态自动定位流水线当前棒、主动派对应 agent/skill，绝不退回主线串行单干、绝不等用户给关键词**：
 > 1. 读 `registry.phase` + 项目 LOG 最新 entry + `log/experiment_state.json` → 判当前卡在哪一棒。
-> 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；要设计实验→`planner`/`/design-experiment`；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。
+> 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；要设计实验→`planner`/`/design-experiment`；设计完动手前/立项前/headline 定稿前→`skeptic` 红队（0 致命即过）；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。
 > 3. 训练经卡槽调度器有空卡即自启（一行回报，不卡拍板）；到真拍板点（投稿/立项/HPC 上传新数据…）停下报，其余自主推进。
 > 判据：能并行扇出就扇出，能一键 skill 就用 skill——**默认动作是「派编队」不是「自己埋头干」**。
 
@@ -107,9 +108,10 @@
 
 **标准战队编制（按任务）**：
 - 推一篇论文「探路/调研」：`researcher`×3-4（文献/竞品/官方超参/SOTA 各一）并行 → `reviewer` 收口找漏洞 → 主线综合。（一键 `/paper-scout`）
-- 推一轮实验「设计→出结果」：`planner` 设计矩阵 → `coder` 并行实现各 config（无文件冲突可多 sonnet）→ **🛑（拍板）主线 `/loop /run-experiment` 跑** → `analyst` 解读+出图 → `verifier` 核关键数字。（一键 `/experiment-cycle <project>`）
+- 推一轮实验「设计→出结果」：`planner` 设计矩阵 → `skeptic` 红队设计（0 致命即过，有 🔴 回 planner 修）→ `coder` 并行实现各 config（无文件冲突可多 sonnet）→ **🛑（拍板）主线 `/loop /run-experiment` 跑** → `analyst` 解读+出图 → `verifier` 核关键数字。（一键 `/experiment-cycle <project>`）
 - 写一章：`verifier`（核数字）→ `writer`（写）→ `reviewer`（对抗审）流水。
-- 投稿冲刺：researcher（缺引用）+ verifier（数字三方对账）+ reviewer（十角色）大编队并行。
+- 新方向立项前：`researcher`×3-4 探路 → `skeptic` 红队前提（可行性/撞车/理论塌缩，结论随立项材料呈用户拍板）。
+- 投稿冲刺：researcher（缺引用）+ verifier（数字三方对账）+ skeptic（攻 claim 逻辑）+ reviewer（十角色）大编队并行。
 
 **硬件**：本机（Windows，Start-Process，1 卡 RTX4070 8GB）+ XJTLU HPC（`gpu4090`，4 卡 qos）。Agent/team 跑**纯软活**（读写/检索/核算/写作）；**训练启停/HPC 提交/上传/危险删除主线亲自串行**，team 不碰（经卡槽调度器 `gpu_slot.py` 申请，绝不挤正在跑的）。
 

@@ -40,7 +40,8 @@
 | `researcher` | sonnet | ON | 查文献 / 官方源码 / 超参（带引用） |
 | `writer` | opus | **OFF** | 写改 tex 章节（数字先过 verifier） |
 | `verifier` | sonnet | ON | 核数字：Bash/Grep 核 csv，禁 Read |
-| `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计 |
+| `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计（事后审成稿） |
+| `skeptic` | opus | **OFF** | 决策点红队：立项前提/实验设计/claim 逻辑三闸口执行前找致命伤（事前攻将要做的事，正交 reviewer）；severity-gated，0 致命即放行不卡流程 |
 
 训练 / HPC 提交 / 危险删除 **不外包**，永远主线串行。详见 `.claude/agents/`。
 
