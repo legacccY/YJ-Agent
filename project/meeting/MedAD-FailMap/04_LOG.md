@@ -461,3 +461,29 @@ coder 给 lesion_features 加 `--img-dirs`（85 passed）后，跑 G1-a make-or-
 **🛑 拍板依赖（用户行动）**：METS = BraTS-METS 2023（Synapse syn51514107 受控，需你注册+接受 DUA），主线代不了。**这是正臂锚的唯一来源，整个 ICLR 判决押在它**。fallback=BraTS 跨中心 train/test split（退化同模态对照，06 §3 预登记备胎）。
 
 **下一步**：① IDRiD 下载完 → coder 写 fundus FOV 分母适配器 → 实跑 G1-a 补第三模态负臂 ② 出三模态面积比并排图（A' 中心证据，analyst/coder）③ METS 待用户 Synapse ④ Phase 2 多方法（VAE/MemAE/RD）coverage。
+
+### 2026-06-17 续 — IDRiD 第三模态实测 + 多灶性细化（A' 三模态窄 niche 坐实）+ Synapse 指引核准
+
+承 reframe A'，本轮把第三模态从推理升实测 + 核准 METS 下载路径。
+
+**① IDRiD 眼底 DR G1-a 实测**（coder lesion_features_idrid，54 训练图，54 passed）：FOV Otsu 分母 + MA/HE/EX/SE union 病灶（排 OD 正常解剖）。
+- area_ratio_fov：p25=0.0078 med=0.0191 p75=0.0435（~BraTS 1/5）
+- **n_components 中位 136**（p75=340）——极多灶（vs BraTS 1-3）
+- IDRiD↔BraTS：OVL=0.312、BC=0.533、IDRiD≥BraTS-P25=**14.8%(n=8)>5% 门**
+
+**🔑 重要判据细化（IDRiD 暴露）**：IDRiD union area-ratio 勉强够到 BraTS regime（14.8%>5%），**但几何是 136 微灶散布非单中等瘤**。→ **iso 判据须二维：area-ratio 重叠 AND 可比多灶性（n_components）**，单 area-ratio 会误判 IDRiD 为 iso=True。这不是 bug 是 novelty 加强：geometric isomorphism 是多维的，三模态三种不同构方式。**需把 n_components 纳入 iso 前验门**（PR-7c 待补：多灶性同构子条件，跑前冻）。
+
+**② 三模态窄 niche 定量坐实**（A' 中心证据，verifier 待核）：
+
+| modality | med area-ratio | n_comp | iso/为何不同构 |
+|---|---|---|---|
+| BraTS 脑瘤（源 niche） | 0.105 | 1-3 | — |
+| HAM 皮镜 | 0.283 | 1 | False：太大（占画面主体） |
+| CBIS X 线 | 0.0103 | 1 | False：太小（稀释 10×） |
+| IDRiD 眼底 | 0.0191 | 136 | False：太碎（136 微灶） |
+
+三模态从三个不同维度（太大/太小/太碎）都打不进 BraTS 的「少灶+中等占比」niche → 病灶几何天然多峰、稀释失败 regime 是窄孤岛。**A' 负发现三模态实证完成，不依赖 METS。**
+
+**③ Synapse METS 下载核准**（researcher）：**syn51514107 = 数据下载入口**（syn51156910 是 challenge wiki，两个都对但下载用前者）。402 studies/3076 lesions（LOG 数对），.nii.gz 含 t2f(FLAIR) 与 BraTS2021 同口径、240×240×155 1mm³ 已配准可直接切 2D。注册=open access 无审批等待，**PAT（Personal Access Token）下载最安全**。⚠️ METS 病灶小+多（7.7/study），阳性 slice 率低，正臂标注密度需 Phase 1 记账。用户已拍板去 Synapse 注册下真 METS。
+
+**下一步**：① coder 出三模态面积比 niche 图（A' 中心配图）② 用户注册 Synapse 给 PAT → 主线 synapseclient 下 METS → 切 2D → 训 AE → 同模态正臂 G1-a+外推 ③ PR-7c 多灶性同构子条件补冻 05 ④ Phase 2 多方法 coverage。**判决仍 = borderline ICLR，命门 METS 正臂 PASS + Gate2 held-out；A' 负发现腿已三模态扎实。**
