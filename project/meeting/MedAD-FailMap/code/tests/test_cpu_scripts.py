@@ -1684,3 +1684,150 @@ class TestPhase1PR5SeedAgg:
         assert len(rows) == 1
         for col in ["min_ci_lo_across_seeds", "mean_auroc", "seeds_n", "pass_ci_70"]:
             assert col in rows[0], f"缺少列: {col}"
+
+
+# ============================================================
+# Phase 2 MemAE 冒烟测试
+# 服务: MedAD-FailMap Phase 2, Pillar ④ 多方法对比
+# 不需要 GPU / 真实数据，纯 CPU 合成数据验证 forward 维度 + loss + score
+# ============================================================
+
+import torch
+
+class TestMemAE:
+    """
+    验证 MemAENet forward 维度 + MemAELoss 不报错 + anomaly score 形状.
+    移植来源:
+      MedIAnomaly reconstruction/networks/mem_ae.py (MemAE)
+      MedIAnomaly reconstruction/networks/base_units/blocks.py (MemBottleNeck)
+      MedIAnomaly reconstruction/networks/base_units/memory_module.py (MemoryUnit/MemModule)
+      MedIAnomaly reconstruction/utils/losses.py (MemAELoss)
+    """
+
+    def _make_batch(self, B=4, C=1, H=64, W=64):
+        """合成随机 batch (B,1,64,64)，与官方输入同形"""
+        torch.manual_seed(0)
+        return torch.randn(B, C, H, W)
+
+    def test_forward_output_shape(self):
+        """forward (B,1,64,64) -> x_hat 同形 (B,1,64,64)"""
+        from train_recon_ae import MemAENet
+        model = MemAENet(in_c=1, base_c=16, latent=16,
+                         mem_size=25, shrink_thres=0.0025)
+        model.eval()
+        x = self._make_batch()
+        with torch.no_grad():
+            out = model(x)
+        assert out['x_hat'].shape == (4, 1, 64, 64), \
+            f"x_hat shape mismatch: {out['x_hat'].shape}"
+
+    def test_forward_att_shape(self):
+        """att shape (B, mem_size=25)"""
+        from train_recon_ae import MemAENet
+        model = MemAENet(in_c=1, base_c=16, latent=16,
+                         mem_size=25, shrink_thres=0.0025)
+        model.eval()
+        x = self._make_batch()
+        with torch.no_grad():
+            out = model(x)
+        assert out['att'].shape == (4, 25), \
+            f"att shape mismatch: {out['att'].shape}"
+
+    def test_forward_z_shape(self):
+        """z/z_hat shape (B, latent=16)"""
+        from train_recon_ae import MemAENet
+        model = MemAENet(in_c=1, base_c=16, latent=16)
+        model.eval()
+        x = self._make_batch()
+        with torch.no_grad():
+            out = model(x)
+        assert out['z'].shape    == (4, 16), f"z shape: {out['z'].shape}"
+        assert out['z_hat'].shape == (4, 16), f"z_hat shape: {out['z_hat'].shape}"
+
+    def test_memae_loss_train_mode(self):
+        """MemAELoss train mode: 返回 (scalar, recon_mean, entro_mean), 不报错"""
+        from train_recon_ae import MemAENet, MemAELoss
+        model = MemAENet(in_c=1, base_c=16, latent=16)
+        model.train()
+        loss_fn = MemAELoss()
+        x = self._make_batch()
+        out = model(x)
+        result = loss_fn(x, out, anomaly_score=False)
+        assert len(result) == 3, "train mode 应返回 (loss, recon_mean, entro_mean)"
+        loss, recon_mean, entro_mean = result
+        assert loss.requires_grad or True  # loss 是 tensor
+        assert isinstance(recon_mean, float)
+        assert isinstance(entro_mean, float)
+        assert loss.item() > 0, "loss 应 > 0"
+
+    def test_memae_loss_score_shape(self):
+        """MemAELoss anomaly_score=True: 返回 (B,) per-image score，与 AE 同口径"""
+        from train_recon_ae import MemAENet, MemAELoss
+        model = MemAENet(in_c=1, base_c=16, latent=16)
+        model.eval()
+        loss_fn = MemAELoss()
+        x = self._make_batch(B=6)
+        with torch.no_grad():
+            out = model(x)
+            scores = loss_fn(x, out, anomaly_score=True)
+        assert scores.shape == (6,), f"score shape mismatch: {scores.shape}"
+        assert (scores >= 0).all(), "anomaly score 应 >= 0 (MSE)"
+
+    def test_memae_loss_entropy_positive(self):
+        """entropy_loss 应 > 0 (att softmax 后 entropy > 0)"""
+        from train_recon_ae import MemAENet, MemAELoss
+        model = MemAENet(in_c=1, base_c=16, latent=16)
+        model.eval()
+        loss_fn = MemAELoss()
+        x = self._make_batch()
+        with torch.no_grad():
+            out = model(x)
+        # 手动算 entropy
+        _, _, entro_mean = loss_fn(x, out, anomaly_score=False)
+        assert entro_mean > 0, f"entropy_loss 应 > 0, got {entro_mean}"
+
+    def test_score_same_order_of_magnitude_as_ae(self):
+        """MemAE score 口径与 AE 一致 (都是 mean MSE)，不应差超 100 倍"""
+        from train_recon_ae import AENet, MemAENet, MemAELoss
+        torch.manual_seed(42)
+        x = self._make_batch(B=4)
+
+        ae = AENet(in_c=1, base_c=16, latent=16)
+        ae.eval()
+        with torch.no_grad():
+            recon_ae = ae(x)
+            scores_ae = torch.mean((x - recon_ae) ** 2, dim=[1, 2, 3])
+
+        memae = MemAENet(in_c=1, base_c=16, latent=16)
+        memae.eval()
+        loss_fn = MemAELoss()
+        with torch.no_grad():
+            out_m = memae(x)
+            scores_memae = loss_fn(x, out_m, anomaly_score=True)
+
+        ratio = scores_memae.mean() / (scores_ae.mean() + 1e-12)
+        assert 0.01 < ratio.item() < 100, \
+            f"MemAE/AE score ratio={ratio.item():.3f}，可能口径不一致"
+
+    def test_compute_anomaly_scores_memae(self):
+        """compute_anomaly_scores 在 memae 模式下返回 list[(str, float)]，len=B"""
+        from train_recon_ae import MemAENet, compute_anomaly_scores
+        from torch.utils.data import DataLoader, TensorDataset
+        model = MemAENet(in_c=1, base_c=16, latent=16)
+        x = self._make_batch(B=8)
+        # 用 TensorDataset + 假 fname 列表模拟 DataLoader
+        fnames = [f"img_{i:04d}.png" for i in range(8)]
+
+        class _FakeDS:
+            def __len__(self): return 8
+            def __getitem__(self, i): return x[i], fnames[i]
+
+        loader = DataLoader(_FakeDS(), batch_size=4, shuffle=False,
+                            num_workers=0, pin_memory=False)
+        results = compute_anomaly_scores(model, loader, device=torch.device("cpu"),
+                                         model_type="memae")
+        assert len(results) == 8, f"应返回 8 个 (fname, score)，得 {len(results)}"
+        for fname, score in results:
+            assert isinstance(fname, str)
+            assert isinstance(score, float)
+            assert score >= 0

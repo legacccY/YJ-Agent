@@ -152,10 +152,17 @@ def embed(papers: list[dict], use_query_adapter: bool = False) -> np.ndarray:
     model = _specter2_query_model if use_query_adapter else _specter2_model
     tok = _specter2_tok
 
-    texts = [
-        p["title"] + tok.sep_token + (p.get("abstract") or "")
-        for p in papers
-    ]
+    def _paper_text(p: dict) -> str:
+        # corpus 端为 {title, abstract}；候选端为 {one_liner, problem, approach, why_new}
+        if "title" in p:
+            return p["title"] + tok.sep_token + (p.get("abstract") or "")
+        head = p.get("one_liner") or ""
+        body = " ".join(
+            p.get(k) or "" for k in ("problem", "approach", "why_new")
+        ).strip()
+        return head + tok.sep_token + body
+
+    texts = [_paper_text(p) for p in papers]
 
     all_vecs = []
     for i in range(0, len(texts), _BATCH_SIZE):

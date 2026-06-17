@@ -1,22 +1,28 @@
 """
-AE / VAE 重建异常检测训练脚本 — MedAD-FailMap Phase 0
+AE / VAE / MemAE 重建异常检测训练脚本 — MedAD-FailMap Phase 0/2
 服务: MedAD-FailMap Phase 0, PC-A (A0-train-AE) + PC-B (B0-train-HAM)
+      Phase 2, Pillar ④ 多方法对比 (--model memae)
 
 复现来源: github.com/caiyu6666/MedIAnomaly
-  reconstruction/networks/ae.py         — AE/VAE 结构
-  reconstruction/utils/ae_worker.py     — 训练/推理逻辑
-  reconstruction/utils/vae_worker.py    — VAE 专用
-  reconstruction/utils/base_worker.py   — Adam/无scheduler
-  reconstruction/dataload.py            — BraTSAD / ISIC2018
+  reconstruction/networks/ae.py                     — AE/VAE 结构
+  reconstruction/networks/mem_ae.py                 — MemAE 结构
+  reconstruction/networks/base_units/blocks.py      — BottleNeck / MemBottleNeck
+  reconstruction/networks/base_units/memory_module.py — MemoryUnit / MemModule
+  reconstruction/utils/ae_worker.py                 — 训练/推理逻辑
+  reconstruction/utils/vae_worker.py                — VAE 专用
+  reconstruction/utils/base_worker.py               — Adam/无scheduler
+  reconstruction/utils/losses.py                    — MemAELoss
+  reconstruction/dataload.py                        — BraTSAD / ISIC2018
 
 超参锁定（官方明确，复现零偏离，禁私改）:
-  - AE 4-block encoder/decoder, channels 16->32->64->64, latent=16
+  - AE/MemAE 4-block encoder/decoder, channels 16->32->64->64, latent=16
+  - MemAE: mem_size=25, shrink_thres=0.0025, entropy_loss_weight=0.0002
   - 输入 64x64, in_c=1(灰度), 无数据增强
   - Adam lr=1e-3, wd=0, 无 scheduler
   - bs=64, epochs=250 (BraTS) / 250 (ISIC)
-  - AE loss: L2 mean; VAE loss: L2 + 0.005*KL
+  - AE loss: L2 mean; VAE loss: L2 + 0.005*KL; MemAE loss: L2_mean + 0.0002*entropy
   - Normalize((0.5,),(0.5,)) -> [-1,1]
-  - Anomaly score: torch.mean(per-pixel L2, dim=[1,2,3])
+  - Anomaly score: torch.mean(per-pixel L2, dim=[1,2,3])  # 三方法同口径
 
 Windows 规范:
   - DataLoader: num_workers=4, multiprocessing_context='spawn', pin_memory=False
@@ -253,6 +259,260 @@ def vae_loss(x, recon, mu, lv, beta=VAE_BETA):
 
 
 # ============================================================
+# MemAE — 移植自 MedIAnomaly 官方源码 (复现零偏离)
+#
+# 移植来源:
+#   reconstruction/networks/base_units/memory_module.py
+#     -> hard_shrink_relu, MemoryUnit, MemModule
+#   reconstruction/networks/base_units/blocks.py
+#     -> BottleNeck (base), MemBottleNeck
+#   reconstruction/networks/mem_ae.py
+#     -> MemAE (继承 AE, 替换 bottle_neck)
+#   reconstruction/utils/losses.py
+#     -> MemAELoss
+#
+# 超参 (官方 options.py / mem_ae.py 构造器默认值, 禁改):
+#   mem_size=25, shrink_thres=0.0025, latent=16, mid_num=2048
+#   entropy_loss_weight=0.0002, eps=1e-12
+# ============================================================
+
+import math
+from torch.nn.parameter import Parameter
+import torch.nn.functional as F
+
+
+def _hard_shrink_relu(input, lambd=0., epsilon=1e-12):
+    """
+    官方 memory_module.py hard_shrink_relu:
+      output = (relu(input - lambd) * input) / (|input - lambd| + epsilon)
+    """
+    output = (F.relu(input - lambd) * input) / (torch.abs(input - lambd) + epsilon)
+    return output
+
+
+class MemoryUnit(nn.Module):
+    """
+    官方 memory_module.py MemoryUnit (逐字移植).
+    weight: Parameter (mem_dim, fea_dim)  # M x C
+    forward: (T, C) -> {'output': (T, C), 'att': (T, M)}
+    """
+    def __init__(self, mem_dim, fea_dim, shrink_thres=0.0025):
+        super().__init__()
+        self.mem_dim = mem_dim
+        self.fea_dim = fea_dim
+        self.weight = Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
+        self.bias = None
+        self.shrink_thres = shrink_thres
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+    def forward(self, input):
+        att_weight = F.linear(input, self.weight)   # (T,C)x(C,M) = (T,M)
+        att_weight = F.softmax(att_weight, dim=1)   # (T,M)
+        if self.shrink_thres > 0:
+            att_weight = _hard_shrink_relu(att_weight, lambd=self.shrink_thres)
+            att_weight = F.normalize(att_weight, p=1, dim=1)
+        mem_trans = self.weight.permute(1, 0)       # (C,M)
+        output = F.linear(att_weight, mem_trans)    # (T,M)x(M,C) = (T,C)
+        return {'output': output, 'att': att_weight}
+
+    def extra_repr(self):
+        return 'mem_dim={}, fea_dim={}'.format(self.mem_dim, self.fea_dim is not None)
+
+
+class MemModule(nn.Module):
+    """
+    官方 memory_module.py MemModule (逐字移植).
+    NxCxHxW -> (NxHxW)xC -> MemoryUnit -> NxCxHxW
+    对 l==2 (B,C) 直接过 MemoryUnit，att shape (B, mem_dim)。
+    """
+    def __init__(self, mem_dim, fea_dim, shrink_thres=0.0025):
+        super().__init__()
+        self.mem_dim = mem_dim
+        self.fea_dim = fea_dim
+        self.shrink_thres = shrink_thres
+        self.memory = MemoryUnit(self.mem_dim, self.fea_dim, self.shrink_thres)
+
+    def forward(self, input):
+        s = input.data.shape
+        l = len(s)
+        if l == 2:
+            x = input
+        elif l == 3:
+            x = input.permute(0, 2, 1)
+        elif l == 4:
+            x = input.permute(0, 2, 3, 1)
+        else:
+            raise ValueError(f"MemModule: unsupported input ndim={l}")
+        x = x.contiguous()
+        x = x.view(-1, s[1])
+
+        y_and = self.memory(x)
+        y = y_and['output']
+        att = y_and['att']
+
+        if l == 2:
+            pass  # y: (B, C), att: (B, mem_dim)
+        elif l == 3:
+            y = y.view(s[0], s[2], s[1]).permute(0, 2, 1)
+            att = att.view(s[0], s[2], self.mem_dim).permute(0, 2, 1)
+        elif l == 4:
+            y = y.view(s[0], s[2], s[3], s[1]).permute(0, 3, 1, 2)
+            att = att.view(s[0], s[2], s[3], self.mem_dim).permute(0, 3, 1, 2)
+        return {'output': y, 'att': att}
+
+
+class MemBottleNeck(nn.Module):
+    """
+    官方 blocks.py MemBottleNeck (继承 BottleNeck, 插入 MemModule).
+    forward: (B, in_planes, fm, fm) -> {'out': (B,in_planes,fm,fm), 'att':(B,mem_size),
+                                         'z':(B,latent), 'z_hat':(B,latent)}
+
+    完全复现官方 BottleNeck + MemBottleNeck 逻辑:
+      linear_enc: Linear(flat->mid) -> BN1d -> ReLU -> Linear(mid->latent)
+      memory_module: MemModule(mem_dim=mem_size, fea_dim=latent)
+      linear_dec: Linear(latent->mid) -> BN1d -> ReLU -> Linear(mid->flat)
+    """
+    _MID_NUM = 2048  # 官方 BottleNeck mid_num 常量
+
+    def __init__(self, in_planes, feature_size, mid_num=2048, latent_size=16,
+                 mem_size=25, shrink_thres=0.0025):
+        super().__init__()
+        self.in_planes = in_planes
+        self.feature_size = feature_size
+        flat = in_planes * feature_size * feature_size
+        # 官方 BottleNeck.linear_enc
+        self.linear_enc = nn.Sequential(
+            nn.Linear(flat, mid_num),
+            nn.BatchNorm1d(mid_num),
+            nn.ReLU(True),
+            nn.Linear(mid_num, latent_size),
+        )
+        # 官方 BottleNeck.linear_dec
+        self.linear_dec = nn.Sequential(
+            nn.Linear(latent_size, mid_num),
+            nn.BatchNorm1d(mid_num),
+            nn.ReLU(True),
+            nn.Linear(mid_num, flat),
+        )
+        # 官方 MemBottleNeck.memory_module
+        self.memory_module = MemModule(mem_dim=mem_size, fea_dim=latent_size,
+                                       shrink_thres=shrink_thres)
+
+    def forward(self, x):
+        x_flat = x.view(x.size(0), -1)         # (B, flat)
+        z = self.linear_enc(x_flat)             # (B, latent)
+        mem_out = self.memory_module(z)         # z is (B, latent) -> l==2 path
+        z_hat = mem_out['output']               # (B, latent)
+        att   = mem_out['att']                  # (B, mem_size)
+        out_flat = self.linear_dec(z_hat)       # (B, flat)
+        out = out_flat.view(x.size(0), self.in_planes,
+                            self.feature_size, self.feature_size)
+        return {'out': out, 'att': att, 'z': z, 'z_hat': z_hat}
+
+
+class MemAENet(nn.Module):
+    """
+    官方 MemAE(AE): 同 AENet encoder/decoder 卷积块 + MemBottleNeck.
+    forward 返回 dict: {'x_hat', 'att', 'z', 'z_hat'}
+
+    官方 mem_ae.py MemAE.__init__ 默认参数 (禁私改):
+      mem_size=25, shrink_thres=0.0025, in_planes=1, latent_size=16, mid_num=2048
+    """
+    # 官方默认超参 (移植自 mem_ae.py 构造器签名)
+    MEM_SIZE     = 25       # 官方 mem_size 默认值
+    SHRINK_THRES = 0.0025   # 官方 shrink_thres 默认值
+
+    def __init__(self, in_c=1, base_c=16, latent=16,
+                 mem_size=25, shrink_thres=0.0025):
+        super().__init__()
+        feat_dim = base_c * 4 * 4 * 4  # fm=4 (64/16), in_planes=64, flat=64*4*4=1024
+        # 与 AENet 同款 encoder 卷积块 (不含 MLP bottleneck)
+        self.enc = nn.Sequential(
+            ConvBlock(in_c,    base_c),       # 64->32
+            ConvBlock(base_c,  base_c * 2),   # 32->16
+            ConvBlock(base_c * 2, base_c * 4), # 16->8
+            ConvBlock(base_c * 4, base_c * 4), # 8->4
+        )
+        # MemBottleNeck 替换 AE 的 BottleNeck
+        self.bottle_neck = MemBottleNeck(
+            in_planes=base_c * 4,
+            feature_size=4,          # fm = 64//16 = 4
+            mid_num=2048,            # 官方 mid_num
+            latent_size=latent,
+            mem_size=mem_size,
+            shrink_thres=shrink_thres,
+        )
+        # 与 AENet 同款 decoder 卷积块
+        self.dec = nn.Sequential(
+            DeconvBlock(base_c * 4, base_c * 4),          # 4->8
+            DeconvBlock(base_c * 4, base_c * 2),          # 8->16
+            DeconvBlock(base_c * 2, base_c),              # 16->32
+            DeconvBlock(base_c,    in_c, last=True),      # 32->64, 线性输出
+        )
+
+    def forward(self, x):
+        # encoder: (B,1,64,64) -> (B,64,4,4)
+        en4 = self.enc(x)
+        # MemBottleNeck: (B,64,4,4) -> {'out':(B,64,4,4), 'att':(B,mem_size), ...}
+        bottle_out = self.bottle_neck(en4)
+        de4  = bottle_out['out']    # (B,64,4,4)
+        att  = bottle_out['att']    # (B, mem_size=25)
+        z    = bottle_out['z']      # (B, latent=16)
+        z_hat = bottle_out['z_hat'] # (B, latent=16)
+        # decoder: (B,64,4,4) -> (B,1,64,64)
+        x_hat = self.dec(de4)
+        return {'x_hat': x_hat, 'att': att, 'z': z, 'z_hat': z_hat}
+
+
+class MemAELoss(nn.Module):
+    """
+    官方 losses.py MemAELoss (逐字移植).
+    train: loss = recon_loss.mean() + 0.0002 * entropy_loss(att)
+    score: torch.mean(recon_loss, dim=[1,2,3])  -- 与 AE/VAE 同口径
+    """
+    def __init__(self):
+        super().__init__()
+        self.entropy_loss_weight = 0.0002  # 官方固定值
+        self.eps = 1e-12
+
+    def forward(self, net_in, net_out, anomaly_score=False):
+        """
+        net_in:  (B,1,H,W) 输入图像
+        net_out: MemAENet.forward() 返回的 dict
+        anomaly_score=False -> (scalar_loss, recon_mean, entro_mean)
+        anomaly_score=True  -> (B,) per-image score，与 AE/VAE 同口径
+        """
+        x_hat = net_out['x_hat']
+        att   = net_out['att']   # (B, mem_size)
+        recon_loss = (net_in - x_hat) ** 2  # (B,1,H,W)
+        entro_loss = self._entropy_loss(att)
+        if anomaly_score:
+            # 官方: torch.mean(recon_loss, dim=[1,2,3])，不含 entropy
+            return torch.mean(recon_loss, dim=[1, 2, 3])
+        loss = recon_loss.mean() + self.entropy_loss_weight * entro_loss
+        return loss, recon_loss.mean().item(), entro_loss.item()
+
+    def _entropy_loss(self, att):
+        """
+        官方 entropy_loss: att shape (B, mem_size) -> l==2 path.
+        feature_map_permute(l==2): x = att (不变)
+        x.view(-1, s[1]) = (B, mem_size)
+        b = -Σ_dim1 (x * log(x+eps)), mean over B
+        """
+        # att: (B, mem_size), l==2
+        x = att.contiguous().view(-1, att.size(1))   # (B, mem_size)
+        b = x * torch.log(x + self.eps)
+        b = -1. * b.sum(dim=1)   # (B,)
+        return b.mean()
+
+
+# ============================================================
 # Dataset
 # ============================================================
 def get_transform(input_size=64, mean=(0.5,), std=(0.5,)):
@@ -379,19 +639,26 @@ class HAMNVTrainDataset(Dataset):
 def compute_anomaly_scores(model, dataloader, device, model_type="ae"):
     """
     官方 ae_worker.py: score = torch.mean(per-pixel L2 map, dim=[1,2,3])
+    三方法 (ae/vae/memae) 同口径: mean MSE over spatial dims -> per-image scalar.
     返回 list of (filename, score)
     """
     model.eval()
+    loss_fn = MemAELoss() if model_type == "memae" else None
     results = []
     for batch in dataloader:
         imgs, fnames = batch
         imgs = imgs.to(device)
         if model_type == "vae":
             recon, _, _ = model(imgs)
-        else:
+            score_maps = (imgs - recon) ** 2
+            scores = torch.mean(score_maps, dim=[1, 2, 3])
+        elif model_type == "memae":
+            net_out = model(imgs)
+            scores = loss_fn(imgs, net_out, anomaly_score=True)  # (B,)
+        else:  # ae
             recon = model(imgs)
-        score_maps = (imgs - recon) ** 2          # [B,1,H,W]
-        scores = torch.mean(score_maps, dim=[1,2,3])  # [B]
+            score_maps = (imgs - recon) ** 2
+            scores = torch.mean(score_maps, dim=[1, 2, 3])
         for fname, s in zip(fnames, scores.cpu().tolist()):
             results.append((fname, s))
     return results
@@ -454,6 +721,13 @@ def train(args):
         model = AENet(in_c=in_c, base_c=16, latent=latent).to(device)
     elif args.model == "vae":
         model = VAENet(in_c=in_c, base_c=16, latent=latent).to(device)
+    elif args.model == "memae":
+        model = MemAENet(
+            in_c=in_c, base_c=16, latent=latent,
+            mem_size=MemAENet.MEM_SIZE,       # 25
+            shrink_thres=MemAENet.SHRINK_THRES,  # 0.0025
+        ).to(device)
+        memae_loss_fn = MemAELoss()
     else:
         raise ValueError(f"Unknown model: {args.model}")
 
@@ -482,6 +756,9 @@ def train(args):
         "latent": latent,
         "input_size": input_size,
         "vae_beta": VAE_BETA if args.model == "vae" else None,
+        "memae_mem_size": MemAENet.MEM_SIZE if args.model == "memae" else None,
+        "memae_shrink_thres": MemAENet.SHRINK_THRES if args.model == "memae" else None,
+        "memae_entropy_weight": 0.0002 if args.model == "memae" else None,
         "seed": args.seed,
         "source": "MedIAnomaly github.com/caiyu6666/MedIAnomaly (复现零偏离)",
     }
@@ -500,6 +777,10 @@ def train(args):
             if args.model == "vae":
                 recon, mu, lv = model(imgs)
                 loss, _, _ = vae_loss(imgs, recon, mu, lv, beta=VAE_BETA)
+            elif args.model == "memae":
+                net_out = model(imgs)
+                # 官方 MemAELoss: recon_loss.mean() + 0.0002*entropy_loss(att)
+                loss, _, _ = memae_loss_fn(imgs, net_out, anomaly_score=False)
             else:
                 recon = model(imgs)
                 loss = torch.mean((imgs - recon) ** 2)  # 官方 L2 mean
@@ -618,8 +899,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MedAD-FailMap AE/VAE 训练 (MedIAnomaly 官方超参复现)")
     parser.add_argument("-d", "--dataset", choices=["brats", "isic"], required=True,
                         help="brats=BraTS2021 (A0), isic=HAM10000-NV (B0)")
-    parser.add_argument("-m", "--model",   choices=["ae", "vae"],     required=True,
-                        help="ae=AE, vae=VAE")
+    parser.add_argument("-m", "--model",   choices=["ae", "vae", "memae"], required=True,
+                        help="ae=AE, vae=VAE, memae=MemAE (MedIAnomaly 官方 mem_size=25)")
     parser.add_argument("--data-root", default=None,
                         help="数据根目录。brats: 含 brats/train/ 的目录；"
                              "isic: project/data/external/ham10000/")

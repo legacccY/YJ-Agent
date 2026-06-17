@@ -45,7 +45,8 @@
 ### C0.2 — 可恢复性轴：增强能否救回诊断 🚧（桥 C1+C3）
 - **内容**：在 C0.1 的每个退化点上叠加第二轴「增强能否把诊断救回」—— 用 C3 已有数据（E5 救援净负 / E6 severe 伤诊断）标注哪些退化点可恢复、哪些不可。增强 BMVC **一字没有** → 天然 BMVC-free，且把 C0 直接桥到 C1（增强）+ C3（边界）。
 - **验收**：(a) 可恢复性叠层与可靠性网格对齐成「决策面」；(b) 可读出「moderate 退化可救（C1 窗口）/ severe + melanoma 不可救（C3 闸门）」分区，与 E6（severe dAUC −0.056 排除 0）/ E5（melanoma 救 4 毁 81）一致。
-- **数据**：复用 C3 的 `results/e6_severe.csv` + `results/e5_salvage_persample.csv`，不另跑。
+- **⚠️ 会话 42 C0 实测澄清（per-dimension vs per-class 两切面，互补不矛盾，必读）**：(b) 的「不可救」分区由 **per-class** 数据（E5 melanoma 净负 / E6 severe 混合段）承载，**仍成立**。但 `c0_decision_surface.csv` 的 **per-dimension** 切面（沿单轴 × severity 的 AUC 可恢复性，n=360/cell，verifier PASS）显示 **severe 不普遍不可救** —— 全 25 cell 仅 contrast S5（α=0.19）一处 recoverability_delta −0.0355 CI[−0.0783,−0.0013] 显著 HURT；blur S5 / color_shift S5 增强仍正效益（救得回）。故 §3/§7.1 **严禁泛化「severe 退化增强普遍伤诊断」**，per-dimension 层只点名 contrast 极端档为 query-for-retake 补充触发点，**不替代、不与 E5/E6 per-class 混淆**。详见 `STORY_FRAMEWORK.md` 锁定数字「C0 决策面」块的「C3 措辞订正（强制）」条款。
+- **数据**：复用 C3 的 `results/e6_severe.csv` + `results/e5_salvage_persample.csv`（per-class 分区）+ `results/c0_decision_surface.csv`（per-dimension 网格，会话 42 全量），不另跑。
 - **若 FAIL**：可恢复性轴退为定性分区描述。
 - **写入位置**：§3.3 主文。
 

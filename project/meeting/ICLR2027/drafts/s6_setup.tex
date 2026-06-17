@@ -1,0 +1,94 @@
+% ============================================================
+% §6  Experimental Setup  (§6.1 datasets + degradation protocol + metrics /
+%      §6.2 enhancement baselines)
+% Draft -- Writer, session (W5 reorder). Reframed from the old main.tex
+% "§ The ITB Benchmark" (project/meeting/ICLR2027/main.tex L250-269).
+%
+% Drift contract (STORY S6 + ACCEPTANCE C1.4 + R-rules):
+%   * The benchmark is DEMOTED from a contribution to experimental setup.
+%     We DELETE the old "25-lever / 9-baseline-as-contribution" framing
+%     (old L263-269): the stratified protocol is described here as the
+%     evaluation substrate, not sold as a deliverable.
+%   * §6.2 lists exactly SIX SOTA enhancement baselines (ACCEPTANCE C1.4):
+%     Restormer / NAFNet / MIRNet-v2 / SwinIR / Uformer-B / Real-ESRGAN.
+%     DIFFUSION IS FORBIDDEN (medical-safety red line): no DiffBIR / SD-Turbo.
+%   * Degradation protocol numbers are taken from data/degrade.py (medium tier =
+%     the "moderate" protocol used by E1-E12). Numbers not directly read from the
+%     pipeline are left as \todo{verifier} rather than guessed.
+%   * R-rules: every reported metric carries a bootstrap 2000-sample 95% CI (R6);
+%     no SOTA claims here (R5); q-bar is interchangeable (R7); BMVC cited not
+%     reused (R10); anonymise before submission (R4 -- ANON-* macros).
+% ============================================================
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\subsection{Datasets, degradation protocol, and metrics}
+\label{subsec:setup-data}
+
+\paragraph{Datasets.}
+We evaluate on dermoscopic skin-lesion imagery drawn from the public ISIC
+collection, using a fixed train/validation/test split; the held-out test split
+contains $n=3627$ images with $117$ melanoma-positive cases, and the
+diagnostic backbone is an EfficientNet-B3 classifier (denoted B3) frozen across
+all evaluations so that any change in diagnostic AUC is attributable to the
+input, not to retraining.\todo{verifier: confirm dataset source pool, split
+sizes, and B3 backbone identity against DATA\_INVENTORY / training config}
+All imagery is public; we conduct no reader study and no offline collection.
+
+\paragraph{Degradation protocol.}
+To study quality-conditioned behaviour we apply controlled, measured degradations
+rather than relying on naturally occurring low-quality images, so that quality is
+a known variable. Five physically parameterised dimensions are modelled --- blur
+(Gaussian $\sigma$), brightness (multiplicative factor), completeness (retained
+crop ratio), colour shift (per-channel offset), and contrast (scaling
+$\alpha$) --- mirroring the failure modes of consumer-device capture. Unless
+otherwise stated, the main paired-evaluation protocol applies the \emph{moderate}
+degradation tier (blur $\sigma=1.5$; brightness factor sampled in $[0.65, 0.85]$;
+crop ratio in $[0.75, 0.89]$; colour-shift offset $0.12$; JPEG quality in
+$[50, 74]$), composited at $256\times256$, followed by enhancement at $256\times256$,
+a centre crop to $224\times224$, and the B3 classifier.\todo{verifier: confirm
+moderate-tier composition (activation probabilities and JPEG range) against
+data/degrade.py; confirm whether contrast/$\alpha$ is part of the moderate
+paired protocol or only the per-dimension severity sweep} For the per-dimension
+$\times$ per-severity decision surface of \S\ref{sec:decision-surface}, each
+dimension is instead swept across five severity levels along its physical scalar
+(severity grid in Table~\ref{tab:c0-severity}).
+
+\paragraph{Metrics.}
+Restoration fidelity is reported as per-image PSNR --- computed as the mean over
+images of $10\log_{10}(1/\mathrm{MSE}_i)$, the per-image convention we use
+throughout --- together with SSIM. Diagnostic behaviour is reported as the
+diagnostic AUC of the frozen B3 classifier, the change in AUC induced by
+enhancement ($\Delta\mathrm{AUC}$), the classification-agreement rate between
+enhanced and reference predictions, and the feature-level KL divergence that the
+DP-Loss controls. Every PSNR, AUC, $\Delta\mathrm{AUC}$, and agreement figure is
+accompanied by a bootstrap $2000$-sample $95\%$ confidence interval, and paired
+comparisons additionally report a McNemar test. Inference latency is reported in
+milliseconds per image. The companion calibration study reports a complementary
+per-dimension expected-calibration-error and quality-stratified view; we cite it
+\citep{ANON-BMVC} but do not reuse its tables here.
+
+\subsection{Enhancement baselines}
+\label{subsec:setup-baselines}
+
+We compare our diagnosis-preserving enhancement against six representative,
+publicly available restoration backbones spanning convolutional and transformer
+designs: \textbf{Restormer}~\citep{zamir2022restormer},
+\textbf{NAFNet}~\citep{chen2022simple},
+\textbf{MIRNet-v2}~\citep{zamir2022mirnetv2},
+\textbf{SwinIR}~\citep{liang2021swinir},
+\textbf{Uformer-B}~\citep{wang2022uformer}, and
+\textbf{Real-ESRGAN}~\citep{wang2021realesrgan}. These cover the strongest
+deterministic restoration families in current use. We deliberately exclude
+diffusion- and other generative restoration models: on dermoscopy such models
+can hallucinate diagnostically salient structure (invented pigment networks or
+vascular patterns), which is a medical-safety hazard rather than a desirable
+prior; we analyse this failure mode explicitly in \S\ref{sec:discussion} rather
+than admit it as a baseline. Each baseline is run under the identical degradation
+protocol and the same frozen B3 classifier described above, so that the
+comparison isolates the effect of the enhancement model on diagnostic
+preservation; results appear in \S\ref{sec:exp-baselines}
+(Table~\ref{tab:e10}).\todo{verifier: confirm each baseline's checkpoint /
+training configuration source (official release vs. re-trained) against the
+experiment log for E10, job 1448952}

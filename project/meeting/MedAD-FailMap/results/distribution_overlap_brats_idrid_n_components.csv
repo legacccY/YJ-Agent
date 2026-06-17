@@ -1,0 +1,2 @@
+pair,feature,n_bins,bin_scheme,OVL,BC,n_source,n_target
+brats_idrid,n_components,50,"log50_[0.5,3000]",0.001027,0.00925,1948,54

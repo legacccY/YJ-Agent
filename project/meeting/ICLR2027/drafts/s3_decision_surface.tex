@@ -1,0 +1,92 @@
+% =====================================================================
+% Section 3 — Reliability x Recoverability Decision Surface (C0, motivation)
+% Draft. caveman OFF. Serves Claim C0 (motivation chapter), levers C0.1/C0.2.
+% Source of locked numbers: results/c0_decision_surface.csv (verifier PASS,
+% 0 drift, n=360/cell, 5 axes x 5 severity) + VisiScore 5-dim (PLCC 0.924 /
+% SRCC 0.895, STORY locked). BMVC tab:perdeg cited via \citep{ANON-BMVC},
+% NOT reused (per-dimension ECE/QCTS is BMVC's angle; we lead with AUC).
+% Full 5x5 AUC heatmap + recoverability overlay deferred to Sec. 7.1 (\todo ref).
+% =====================================================================
+
+\section{Reliability~$\times$~Recoverability Decision Surface}
+\label{sec:decision-surface}
+
+Before introducing diagnosis-preserving enhancement (Section~\ref{sec:enhancement}) and the query-for-retake agent (Section~\ref{sec:agent}), we first chart \emph{why} a quality-aware triage policy is needed at all. We describe a two-axis decision surface over degraded dermoscopy: a \emph{reliability} axis, led by diagnostic AUC across a per-dimension~$\times$~per-severity grid, and a \emph{recoverability} axis, which records, at each degradation point, whether deterministic enhancement recovers the lost diagnostic signal. This surface is purely descriptive---it is a motivation chapter, not a claimed contribution---and it spans an angle that the per-dimension ECE/QCTS analysis of prior work (\citep{ANON-BMVC}, \texttt{tab:perdeg}; cited, not reused) does not cover: we lead with diagnostic AUC rather than calibration error, we sweep severity rather than report a single operating point, and we include a completeness (field-of-view truncation) dimension absent from that view.
+
+% ---------------------------------------------------------------------
+\subsection{Five-Dimension Degradation Taxonomy and Severity Quantisation}
+\label{sec:degradation-taxonomy}
+
+We organise consumer-device image degradation into five physically interpretable dimensions: \emph{blur} (defocus / motion, parameterised by Gaussian~$\sigma$), \emph{brightness} (under-exposure, a multiplicative gain), \emph{contrast} (a linear contrast factor~$\alpha$), \emph{color shift} (a per-channel offset, modelling white-balance error), and \emph{completeness} (field-of-view truncation, a crop ratio). Each dimension is swept over five severity levels, S1 (mildest) through S5 (most severe), with S1 serving as a near-identity anchor; for the brightness, contrast and completeness axes the S1 setting is the exact identity transform, so their S1 diagnostic AUC coincides at $0.9238$. The physical settings of each level are listed in Table~\ref{tab:c0-severity}; they are quantised along each dimension's native physical scale rather than chosen by inspection.
+
+\begin{table}[t]
+\centering
+\caption{Severity quantisation for the five degradation dimensions. Each level is defined by a physical parameter on the dimension's native scale; S1 is the mildest (identity for brightness / contrast / completeness) and S5 the most severe. These settings define the per-dimension~$\times$~per-severity grid used throughout Sections~\ref{sec:reliability-axis}--\ref{sec:recoverability-axis}.}
+\label{tab:c0-severity}
+\small
+\begin{tabular}{llccccc}
+\toprule
+Dimension & Parameter & S1 & S2 & S3 & S4 & S5 \\
+\midrule
+Blur         & Gaussian $\sigma$            & $0.5$  & $0.8$   & $1.5$   & $2.5$   & $3.5$  \\
+Brightness   & multiplicative gain          & $1.0$  & $0.925$ & $0.75$  & $0.52$  & $0.345$ \\
+Contrast     & contrast factor $\alpha$     & $1.0$  & $0.925$ & $0.695$ & $0.42$  & $0.19$ \\
+Color shift  & per-channel offset           & $0.02$ & $0.05$  & $0.12$  & $0.22$  & $0.34$ \\
+Completeness & crop ratio (retained FoV)    & $1.0$  & $0.95$  & $0.82$  & $0.645$ & $0.515$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two design choices deserve emphasis. First, completeness is treated as a continuous truncation of the field of view rather than as an irrecoverable loss: we will show in Section~\ref{sec:recoverability-axis} that it is best described as \emph{partially recoverable}, not irreversible. Second, the severity levels are anchored to physical magnitudes so that the same grid can be re-instantiated under any per-input quality scalar (learned, computed, or known a~priori as corruption severity), which is what makes the surface portable to the triage policy of Section~\ref{sec:agent}.
+
+% ---------------------------------------------------------------------
+\subsection{Reliability Axis: Diagnostic AUC under Per-Dimension Degradation}
+\label{sec:reliability-axis}
+
+We first measure how diagnostic reliability degrades as a function of dimension and severity. For each of the $5\times5$ cells we evaluate the fixed diagnostic backbone on $n=360$ images per cell and report melanoma-vs-benign AUC with bootstrap (2000-sample) $95\%$ confidence intervals. We deliberately lead with AUC rather than calibration error: per-dimension ECE is the angle occupied by \citet{ANON-BMVC} (\texttt{tab:perdeg}), and using a discrimination metric both avoids overlap and directly measures the quantity a downstream clinician cares about.
+
+Reliability declines monotonically with severity along every dimension, but the rate of decline is strikingly dimension-dependent (Table~\ref{tab:c0-reliability}). Blur is by far the most fragile axis: AUC falls from $0.9219$ at S1 to $0.8307$ at S5 ($\sigma=3.5$), a drop of $-0.0911$. Completeness is next ($0.9238\!\to\!0.8722$, $-0.0516$ at crop ratio $0.515$), followed by color shift ($0.9239\!\to\!0.8870$, $-0.0369$). Brightness and contrast are the most robust on this axis, losing only $-0.0177$ and $-0.0153$ respectively even at their most severe settings. The ranking already carries a deployment message: not all quality loss is equally dangerous, and a triage policy that treats degradation as a single scalar would mis-prioritise the dimensions that actually erode diagnosis.
+
+\begin{table}[t]
+\centering
+\caption{Reliability axis: diagnostic AUC at the mildest (S1) and most severe (S5) settings of each dimension ($n=360$/cell). AUC declines monotonically with severity along every dimension; the magnitude of the drop is strongly dimension-dependent, with blur the most fragile. The full $5\times5$ grid with per-cell bootstrap $95\%$ CIs is reported in Section~\ref{sec:exp-decision-surface} (Fig.~\todo{ref fig:c0-heatmap}).}
+\label{tab:c0-reliability}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Dimension & S1 AUC & S5 AUC & S5 setting & $\Delta$AUC (S5$-$S1) & Fragility rank \\
+\midrule
+Blur         & $0.9219$ & $0.8307$ & $\sigma=3.5$       & $-0.0911$ & 1 (most fragile) \\
+Completeness & $0.9238$ & $0.8722$ & crop $=0.515$      & $-0.0516$ & 2 \\
+Color shift  & $0.9239$ & $0.8870$ & offset $=0.34$     & $-0.0369$ & 3 \\
+Brightness   & $0.9238$ & $0.9061$ & gain $=0.345$      & $-0.0177$ & 4 \\
+Contrast     & $0.9238$ & $0.9085$ & $\alpha=0.19$      & $-0.0153$ & 5 (most robust) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Recoverability Axis: When Enhancement Recovers Diagnosis}
+\label{sec:recoverability-axis}
+
+The reliability axis tells us where diagnosis is lost; it does not tell us whether that loss can be undone. We therefore overlay a second axis at every cell: the recoverability $\Delta = \mathrm{AUC}_{\mathrm{enhanced}} - \mathrm{AUC}_{\mathrm{degraded}}$, with a bootstrap (2000-sample) $95\%$ confidence interval. A cell is read as \emph{recoverable} (help) when its interval lies entirely above zero, as \emph{harmful} when it lies entirely below zero, and as \emph{inconclusive} when it straddles zero. Crossing the surface this way yields a three-way partition that is the empirical bridge from this motivation chapter to enhancement (Section~\ref{sec:enhancement}) and to the honest boundary (Section~\ref{sec:agent}).
+
+\textbf{Recoverable cells.} For the most fragile axis, blur, enhancement turns from inconclusive at mild severity to significantly beneficial from S3 onward: the recoverability $\Delta$ is $+0.0500$, $+0.0598$ and $+0.0634$ at S3/S4/S5, all with lower CI bounds above zero. Color shift follows the same pattern with a transition at S3 ($\Delta = +0.0124 / +0.0275 / +0.0361$ at S3/S4/S5, lower bounds above zero), and by S4/S5 the enhanced AUC recovers to $\approx0.924$, effectively bridging back to the clean baseline. Brightness, the most robust reliability axis, shows a single significant cell (S4, $\Delta = +0.0186$, interval excluding zero). These cells delineate the moderate-degradation window in which enhancement helps---precisely the operating region targeted in Section~\ref{sec:enhancement}.
+
+\textbf{The harmful cell.} Exactly one of the twenty-five cells shows a recoverability interval lying entirely below zero: \emph{contrast at S5} ($\alpha=0.19$), where enhancement \emph{lowers} diagnostic AUC by $\Delta = -0.0355$ with $95\%$ CI $[-0.0783, -0.0013]$ (excluding zero), driving AUC from $0.9085$ down to $0.8734$. We stress the scope of this finding precisely: it does \emph{not} generalise to a claim that severe degradation is universally unrecoverable. Blur at S5 and color shift at S5 remain significantly recoverable, as just shown. Rather, extreme contrast collapse constitutes one \emph{per-dimension} trigger condition for the query-for-retake channel of Section~\ref{sec:agent}: when contrast is this far degraded, enhancement should be withheld and re-acquisition requested instead. This per-dimension trigger is complementary to, and does not replace, the per-class melanoma boundary established later (Sections~\ref{sec:exp-salvage} and~\ref{sec:exp-severe}); the two operate on different slices of the data and must not be conflated.
+
+\textbf{Inconclusive cells.} The completeness dimension is inconclusive across all five severity levels: even at S5 the recoverability $\Delta$ is $+0.0236$ with $95\%$ CI $[-0.0079, +0.0572]$, straddling zero. We therefore describe completeness as \emph{partially recoverable}---a trend toward recovery that does not reach significance---rather than as irreversible. This is the honest reading the surface supports: field-of-view truncation is neither cleanly fixable by enhancement nor demonstrably beyond it.
+
+Read together, the two axes form a decision surface that already motivates the rest of the paper: a moderate window where enhancement demonstrably helps (Section~\ref{sec:enhancement}), and isolated trigger conditions---extreme contrast here, melanoma and severe mixed degradation later---where enhancement should yield to re-acquisition (Section~\ref{sec:agent}).
+
+% ---------------------------------------------------------------------
+\subsection{VisiScore: Five-Dimension Quality Assessment}
+\label{sec:visiscore}
+
+The decision surface presupposes a per-input estimate of degradation along each dimension. We obtain it from a five-head quality assessor (denoted VisiScore) that regresses a quality score for each of the five taxonomy dimensions---sharpness, brightness, completeness, color temperature and contrast. Against held-out physical-degradation labels it attains a mean Pearson linear correlation (PLCC) of $0.924$ and a mean Spearman rank correlation (SRCC) of $0.895$ across the five heads. The assessor is one concrete instantiation of the per-input quality scalar that drives triage; the surface itself is agnostic to how that scalar is obtained, and any per-input quality signal (learned here, computed via a no-reference IQA model, or known a~priori as corruption severity) can be substituted without changing the analysis.
+
+% ---------------------------------------------------------------------
+\subsection{Multi-Method Uncertainty (Secondary Observation)}
+\label{sec:multi-uq}
+
+\todo{Secondary observation, optional. Multi-method UQ (MC Dropout / Deep Ensemble / EDL / Std VIB) non-differentiation under degradation: data for the pairwise bootstrap comparison not yet collected; criterion C0.3 requires each pairwise 95\% CI to include zero. To be filled after the multi-method UQ run, or deferred to a negative-result venue. Not a main leg; absence is non-fatal.}

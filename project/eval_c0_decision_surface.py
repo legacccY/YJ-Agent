@@ -401,7 +401,7 @@ def eval_axis_severity(
     enh_model,
     visiscore_model,
     device,
-    batch_size: int = 16,
+    batch_size: int = 8,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """返回 (labels, scores_ref, scores_deg, scores_enh).
 
@@ -455,6 +455,13 @@ def eval_axis_severity(
         scores_deg_list.extend(p_deg.tolist())
         scores_enh_list.extend(p_enh.tolist())
 
+        # 释放本 batch GPU 中间张量，防止跨 severity 点显存碎片累积
+        del x_ref, x_deg, x_enh
+
+    # 所有 batch 跑完后统一清一次 GPU 缓存
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     return (
         np.array(labels_list),
         np.array(scores_ref_list),
@@ -467,7 +474,7 @@ def eval_axis_severity(
 # 主函数
 # ---------------------------------------------------------------------------
 
-def main(n_max: int = 360, n_boot: int = 2000, seed: int = 42, batch_size: int = 16):
+def main(n_max: int = 360, n_boot: int = 2000, seed: int = 42, batch_size: int = 8):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[C0] device={device}")
     # eval 阶段不需要 benchmark 加速; enhance_forward 内部对 ConvTranspose2d 临时
@@ -518,6 +525,10 @@ def main(n_max: int = 360, n_boot: int = 2000, seed: int = 42, batch_size: int =
             }
             records.append(rec)
 
+            # 每个 severity 点评完再清一次，防跨轴累积
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
             print(
                 f"  AUC_deg={stats['auc']:.4f} [{stats['auc_ci_lo']:.4f},{stats['auc_ci_hi']:.4f}]"
                 f"  ECE={stats['ece']:.4f}"
@@ -535,6 +546,10 @@ def main(n_max: int = 360, n_boot: int = 2000, seed: int = 42, batch_size: int =
         "auc_enhanced",
         "recoverability_delta", "recoverability_ci_lo", "recoverability_ci_hi",
     ]
+    if not records:
+        print("[C0][WARN] 无有效记录（样本太少全被跳过），跳过 CSV 写入")
+        return
+
     out_path = Path(OUT_CSV)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(records)[out_cols].to_csv(out_path, index=False)
@@ -547,7 +562,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_max",      type=int, default=360,  help="最大评估样本数 (ITB-HQ=360)")
     parser.add_argument("--n_boot",     type=int, default=2000, help="Bootstrap 次数")
     parser.add_argument("--seed",       type=int, default=42,   help="随机种子")
-    parser.add_argument("--batch_size", type=int, default=16,   help="每批处理图像数")
+    parser.add_argument("--batch_size", type=int, default=8,    help="每批处理图像数")
     args = parser.parse_args()
 
     main(n_max=args.n_max, n_boot=args.n_boot, seed=args.seed, batch_size=args.batch_size)

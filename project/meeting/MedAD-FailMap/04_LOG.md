@@ -487,3 +487,37 @@ coder 给 lesion_features 加 `--img-dirs`（85 passed）后，跑 G1-a make-or-
 **③ Synapse METS 下载核准**（researcher）：**syn51514107 = 数据下载入口**（syn51156910 是 challenge wiki，两个都对但下载用前者）。402 studies/3076 lesions（LOG 数对），.nii.gz 含 t2f(FLAIR) 与 BraTS2021 同口径、240×240×155 1mm³ 已配准可直接切 2D。注册=open access 无审批等待，**PAT（Personal Access Token）下载最安全**。⚠️ METS 病灶小+多（7.7/study），阳性 slice 率低，正臂标注密度需 Phase 1 记账。用户已拍板去 Synapse 注册下真 METS。
 
 **下一步**：① coder 出三模态面积比 niche 图（A' 中心配图）② 用户注册 Synapse 给 PAT → 主线 synapseclient 下 METS → 切 2D → 训 AE → 同模态正臂 G1-a+外推 ③ PR-7c 多灶性同构子条件补冻 05 ④ Phase 2 多方法 coverage。**判决仍 = borderline ICLR，命门 METS 正臂 PASS + Gate2 held-out；A' 负发现腿已三模态扎实。**
+
+### 2026-06-17 续 — METS 前置收口：A' 数字 verifier 核 + n_components/OVL 固化落盘 + PR-7c 双闸收敛（skeptic+reviewer）+ Phase 2 设计
+
+承 reframe A'，本轮把 METS 跑前的三件 GPU-free 前置全推到拍板口（三 agent 并行：verifier 核 A' 数字 / skeptic+reviewer 双闸 PR-7c / planner Phase 2）。
+
+**① verifier 核 A' 三模态窄 niche 数字（Bash/Grep 直核 csv，0 drift）**：21 条可核 17✅ + 1✅逻辑推定 + 2 TODO（BraTS/HAM n_components 无 csv 源）+ 3⚠️（OVL/BC 未固化、bin 敏感、无落盘）。各集 area-ratio 分位 + CBIS/IDRiD n_components 全对 csv 原值。无 ❌DRIFT。揪出缺口=n_components(BraTS/HAM) 与 OVL/BC 当时只在 LOG 文字态、不可复现。
+
+**② coder 固化 n_components + OVL/BC 落盘（165 pytest 绿，补缺口 + 让 iso 第二维可机械算）**：
+- 新建 `code/ncomp_brats.py`（flair→seg 映射，skimage label connectivity=1 与 CBIS/IDRiD 同口径）→ `results/ncomp_brats.csv`（n=1948）：**中位实测=2**（P25=1/P75=3/max=35），79.4% 落 [1,3]。**订正 LOG 旧「中位 1-3」模糊表述为 median=2**。
+- 新建 `code/ncomp_ham.py` → `results/ncomp_ham.csv`（n=3310）：**中位=1**（98.4% 单连通域）✅ 对上 LOG。
+- 新建 `code/distribution_overlap.py`（**钉死 bin 方案**：area_ratio=linear_100_[0,1] / n_components=log50_[0.5,3000]，纯 numpy 算 OVL+Bhattacharyya，csv 记 bin_scheme 保可复现）→ 6 个 `distribution_overlap_<pair>_<feature>.csv`。
+- **OVL/BC 固化值（订正 LOG 旧未固化值，以 csv 为准）**：
+
+| 对 × 特征 | OVL | BC |
+|---|---|---|
+| BraTS↔HAM area_ratio | 0.469 | 0.713 |
+| BraTS↔CBIS area_ratio | 0.264 | 0.571 |
+| BraTS↔IDRiD area_ratio | 0.328 | 0.551 |
+| BraTS↔HAM n_components | 0.498 | 0.767 |
+| BraTS↔CBIS n_components | 0.506 | 0.769 |
+| **BraTS↔IDRiD n_components** | **0.001** | **0.009** |
+
+- LOG 旧值（HAM area OVL=0.262/IDRiD 0.312）bin 未固化失真，已弃；固化值为准。
+- ⚠️ **重要洞见（A' framing 纠偏）**：area_ratio 全分布 OVL 可中等（HAM 0.469），但 iso 关键是**低尾占比门**（HAM 仅 1.3% 落 BraTS≤P25 稀释 regime，<5% 门 → iso=False）。**OVL 系数 ≠ 占比门**：全分布重叠中等 ≠ 稀释 regime 重叠。A' 写作须以**低尾占比门 + n_components 不相交**（IDRiD n_comp OVL=0.001）领证，不以全分布 OVL 领证（否则 0.469 看着像「其实挺重叠」自伤）。
+- ⚠️ HAM area_ratio 临时用 size_px/64²（`_tmp_` 文件），固化须把 area_ratio 列写进 `lesion_features.py` 输出（TODO）。
+
+**③ PR-7c 双闸收敛（skeptic 红队 → reviewer 复裁，均 CONDITIONAL，主线收敛）**：
+- **skeptic（执行前闸）**：原拟「单边上限门 n_components≤T」= 🔴 与续命铁律 2/4 冲突 + 把唯一正臂 METS（脑转移多发）暴露在「调 T 救臂/杀臂」双输循环。fix=双向分布重叠门、不引新参数 T。3 修（双向 OVL/时序留痕/激发-检验切分/铁律5）。
+- **reviewer（freeze 前复裁）**：skeptic 的「双向 OVL」字面闭合「不引 T」，但**实质循环滑进 n_components 维两隐参数**（regime 边界从哪取 + 「双向」非对称语义）；且离散计数用分布重叠系数 OVL 不稳。4 修：(1) 两常数全钉死先验、用 threshold+占比门非 OVL 系数；(2) 删「双向」改单向；(3) 时序留痕补反事实自缚句（带 FAIL 后果）；(4) 铁律5 加从属声明 + PR-7c 末加「n_comp 维 iso=False 同受铁律4 实测锚约束」。
+- **主线收敛（关键洞见）**：直接**同构复用已冻、已过双闸的 PR-7b area 维结构**搬到 n_components 维——BraTS 自身分位（P75=3）作 regime 边界（参照系-intrinsic，与 area 维用 BraTS-P25 同构，零目标集依赖）+ 5% 占比门 + 单向，METS 实测前冻死。**IDRiD（中位 136，~0% 样本 ≤3）该维 iso=False；HAM/CBIS（中位 1，~98%≤3）该维过、靠 area 维判 False；METS 待实测**。OVL 系数（固化）退为 A'/PR-7b③ 连续趋势支撑证据、非二分门。此收敛同时满足 skeptic「无自由 T」+ reviewer「占比门非 OVL 系数/单向/两常数钉死」+ 科学（IDRiD 多灶截然不同）。**🛑 冻结 PR-7c 进 05 + 铁律5 进 06 = 改预登记结构 = 拍板点，待用户拍。**
+
+**④ planner Phase 2 多方法 coverage 设计（零 METS 依赖，顶会 ≥3 方法门槛）**：AE（已有）+ VAE（脚本现成 `--model vae` 近零成本）+ RD（特征蒸馏，机制差异化，**须 researcher 先查 MedIAnomaly 官方超参/64² 适配**）。~9 GPU·h 首轮（VAE 3 seed 本地 + RD 1 seed 探）。读数=各方法 BraTS 协变量分层（稀释→漏检跨方法一致？=A'/①）+ conspicuity 桥增量信息跨方法（C2/C3）+ 跨方法相图形状差异（Pillar ④）。多方法**不碰外推臂/iso 标签**（几何属性与方法无关）。全程不阻塞 METS。
+
+**下一步**：① 🛑 **拍板：冻结收敛版 PR-7c + 铁律5**（措辞下方呈）② 🛑 **METS：用户注册 Synapse syn51514107 给 PAT**（ICLR 命门正臂唯一来源，主线代不了）③ 拍板后并行可起：researcher 查 RD 官方超参（解锁 Phase 2）+ coder 把 area_ratio 列固化进 lesion_features ④ Phase 2 VAE 经 gpu_slot 本地自主起。**判决仍 = borderline ICLR，命门 METS 正臂 PASS + Gate2 held-out；A' 负臂三模态 + 数字固化扎实。**

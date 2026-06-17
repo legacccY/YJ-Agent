@@ -1,0 +1,129 @@
+% ============================================================
+% §2  Related Work  (four blocks: enhancement+GradProm / perception-distortion /
+%      selective-prediction+deferral / information bottleneck)
+% Draft -- Writer, session (W5 reorder). Migrated and reframed from the old
+% main.tex §2 (project/meeting/ICLR2027/main.tex L93-162).
+%
+% Drift contract (STORY S2 + R-rules):
+%   * §2.1 carries the GradProm differentiation paragraph, welded to the verbatim
+%     STORY clause; we cite GradProm as prior evidence of the phenomenon and
+%     differentiate on MECHANISM (MI lower bound + routing vs. gradient repair).
+%     We state explicitly that there is NO head-to-head comparison (mechanism
+%     differentiation only).  GradProm = arXiv 2501.01114, accepted to IEEE TPAMI
+%     2025, bib key gradprom2025 (Dong Zhang & Kwang-Ting Cheng).
+%   * §2.3 establishes the query-for-retake GAP: selective prediction (Geifman &
+%     El-Yaniv, NeurIPS 2017) only abstains; deferral (AT-CXR) only defers to a
+%     clinician; teledermatology IQA (PMC10468541) motivates recapture but with no
+%     risk-bounded closed loop -> nobody in the literature closes the acquisition
+%     loop -> our exclusive hook.
+%   * §2.4 IB is LIGHTWEIGHT: Tishby / Alemi VIB in one sentence; Q-VIB appears in
+%     ONE footnote only and is NOT sold (no "Q-VIB generalises VIB").
+%   * R-rules: no "we prove" -> "we derive / under assumption" (R2); no absolutes
+%     (R1); no SOTA claims (R5); BMVC cited not reused, accepted-publication-gated
+%     (R10); anonymise method names before submission (R4 -- ANON-* macros used).
+% ============================================================
+
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Medical image enhancement and the perception--diagnosis gap}
+\label{subsec:rel-enhancement}
+
+Image restoration has matured into a family of strong, deterministic backbones:
+Real-ESRGAN~\citep{wang2021realesrgan}, Restormer~\citep{zamir2022restormer},
+NAFNet~\citep{chen2022simple}, MIRNet-v2~\citep{zamir2022mirnetv2},
+SwinIR~\citep{liang2021swinir}, and Uformer~\citep{wang2022uformer} all optimise
+perceptual or distortion fidelity (PSNR, SSIM, LPIPS) on natural and, increasingly,
+medical imagery. Generative restoration --- diffusion- and GAN-based super-resolution
+in particular --- can synthesise plausible high-frequency content that was never
+present in the input; on dermoscopy this is a safety hazard, because invented
+pigment-network or vascular structure is diagnostically misleading. We therefore
+build on deterministic restoration and analyse the generative failure mode
+explicitly (\S\ref{sec:discussion}), rather than adopting a generative backbone.
+
+Crucially, a restoration model that scores well on fidelity metrics need not
+preserve --- and can actively harm --- downstream diagnosis. This phenomenon has
+been documented in the same skin-lesion (ISIC) domain by
+\textbf{GradProm}~\citep{gradprom2025}, which shows that enhancement improving
+restoration metrics can degrade lesion classification, and which addresses it by
+\emph{repairing gradients} during training (aligning, or ``promoting,'' the
+enhancement and recognition gradients). Our treatment shares the diagnosis ---
+not GradProm's symptom --- but differs in both guarantee and scope. Following
+the differentiation we commit to throughout the paper:
+\begin{quote}
+Unlike GradProm, which corrects gradients during training, we provide (i) a
+mutual-information lower bound guarantee for diagnosis preservation
+(Lemma~\ref{lem:dp}), and (ii) a routing decision including query-for-retake.
+GradProm treats the symptom by repairing gradients; we bound the information
+loss and decide when enhancement is unsafe.
+\end{quote}
+Concretely, our diagnosis-preserving objective bounds the information loss
+\emph{by construction} (the feature-level DP-Loss of \S\ref{sec:enhancement},
+under Lemma~\ref{lem:dp}) rather than correcting it empirically, and our
+enhancement is embedded inside a routing policy
+(\S\ref{sec:agent}) that can decline to enhance and instead request
+re-acquisition --- a recapture channel absent from gradient-correction work. We
+cite GradProm as prior evidence of the perception--diagnosis gap and
+differentiate on \emph{mechanism}; we run no head-to-head comparison and make no
+superiority claim against it.
+
+\subsection{Perception--distortion trade-offs and diagnosis preservation}
+\label{subsec:rel-perception-distortion}
+
+That perceptual quality and a downstream criterion can pull in opposite
+directions is a known structural fact, not a quirk of our setting. Blau and
+Michaeli~\citep{blau2018perception} formalise the perception--distortion
+trade-off, showing that no estimator can simultaneously minimise distortion and
+maximise perceptual quality beyond a fundamental bound; pushing one degrades the
+other. In the medical domain specifically, Cohen et
+al.~\citep{cohen2018distribution} demonstrate that distribution-matching image
+translation can introduce or remove pathology-bearing features, so that
+visually convincing outputs are not diagnostically faithful. Our contribution is
+to make diagnostic fidelity --- rather than perception or distortion --- the
+quantity that is explicitly preserved, with a mutual-information lower bound
+(Lemma~\ref{lem:dp}) characterising the moderate-degradation window within which
+enhancement does not cost diagnostic information.
+
+\subsection{Selective prediction, learning-to-defer, and the recapture gap}
+\label{subsec:rel-selective}
+
+When a model is uncertain, it can decline to answer. Selective classification
+and reject-option models abstain below a confidence threshold
+\citep{geifman2017selective,geifman2019selectivenet}, and learning-to-defer
+systems hand the case to a human expert: in chest radiography, for instance,
+deferral policies route low-confidence or out-of-distribution studies to a
+clinician rather than predicting on them. These mechanisms govern \emph{whether}
+to predict, but they treat the input as fixed --- they either withhold a
+prediction or pass it on, and in both cases the degraded image is taken as given.
+
+A complementary line of work in teledermatology image-quality assessment
+\citep{vodrahalli2021teledermatology} flags low-quality submissions and prompts
+the user to re-photograph the lesion, recognising that the right action under
+poor capture is sometimes to acquire a better image rather than to diagnose the
+existing one. That work supplies the clinical motivation for recapture but stops
+short of a \emph{risk-bounded} closed loop: it does not tie the recapture
+decision to a quality-conditioned diagnostic-risk estimate, nor does it sit
+inside a policy that also decides when enhancement is safe.
+
+Our query-for-retake channel closes this gap. Rather than abstaining on
+confidence alone or deferring to a clinician, the agent (\S\ref{sec:agent})
+routes on a perceptual-quality estimate and, when the image is too degraded for
+enhancement to be safe (\S\ref{sec:exp-preserve}), requests re-acquisition ---
+an acquisition closed loop that, to our knowledge, is absent from the selective-prediction,
+deferral, and agentic-medical-AI literature. We do not claim that this routing
+raises net benefit globally; \S\ref{sec:exp-dca} reports the regime in which it
+does and does not help.
+
+\subsection{Information bottleneck}
+\label{subsec:rel-ib}
+
+The information bottleneck~\citep{tishby2000information} and its variational
+form~\citep[VIB;][]{alemi2017deep} compress an input representation while
+retaining task-relevant information, and provide the lens through which we
+reason about diagnostic information loss under enhancement (Lemma~\ref{lem:dp}).%
+\footnote{One instantiation we explore conditions the variational prior on a
+per-input quality scalar; in our experiments this variant did not yield a
+diagnostic advantage over standard VIB, so we do not rely on it, and the
+uncertainty signal used for routing is any off-the-shelf per-input uncertainty
+estimate (standard VIB suffices). Its derivation is retained in the appendix as
+framework only.}

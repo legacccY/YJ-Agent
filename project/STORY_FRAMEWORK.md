@@ -258,6 +258,32 @@ Appendix（supp）
 | Contrast | 0.961 | 0.945 |
 | **平均** | **0.924** | **0.895** |
 
+### C0 决策面（c0_decision_surface.csv，会话 42 全量 n=360/cell，verifier PASS，0 drift）
+
+> 来源 `results/c0_decision_surface.csv`（25 行 = 5 轴 × 5 severity 档；列 axis/severity_level/severity_value/auc/auc_ci_lo/auc_ci_hi/ece/.../n/auc_enhanced/recoverability_delta/recoverability_ci_lo/recoverability_ci_hi）。每 cell n=360；S1 = identity 退化锚（brightness/contrast/completeness 三轴 S1 AUC 逐位相同 0.923756）。recoverability_delta = auc_enhanced − auc，bootstrap 95% CI。**只增不删其他锁定数字。**
+
+**可靠性轴（AUC，S5 vs S1 跌幅，物理档 severity_value）**
+
+| 轴 | S1 AUC | S5 AUC | S5 sev | 跌幅 | 排序 |
+|---|---|---|---|---|---|
+| **blur** | 0.9219 | 0.8307 | σ=3.5 | **−0.0911**（最脆）| 1 |
+| completeness | 0.9238 | 0.8722 | crop=0.515 | −0.0516 | 2 |
+| color_shift | 0.9239 | 0.8870 | shift=0.34 | −0.0369 | 3 |
+| brightness | 0.9238 | 0.9061 | mult=0.345 | −0.0177 | 4（最鲁棒）|
+| contrast | 0.9238 | 0.9085 | α=0.19 | −0.0153 | 5（表面最鲁棒）|
+
+**可恢复性轴（recoverability_delta，CI 排除 0 才显著）**
+
+| cell | delta | 95% CI | 判定 |
+|---|---|---|---|
+| **contrast S5**（α=0.19）| **−0.0355** | [−0.0783, **−0.0013**] | 🔴 **HURT\***（全 25 cell 唯一显著「增强帮倒忙」；AUC 0.9085→enh 0.8734）|
+| blur S3/S4/S5 | +0.0500 / +0.0598 / +0.0634 | CI_lo 全 >0 | ✅ HELP\*（转折在 S3；S1/S2 跨零）|
+| color_shift S3/S4/S5 | +0.0124 / +0.0275 / +0.0361 | CI_lo 全 >0 | ✅ HELP\*（S4/S5 enh AUC≈0.924 桥回基线；转折 S3）|
+| brightness S4 | +0.0186 | 排除 0 | ✅ HELP\*（仅此档显著，最鲁棒轴）|
+| completeness 全 5 档 | S5 +0.0236 | [−0.0079, +0.0572] | ⚠️ 全跨零 = **partially recoverable 趋势但统计不显著**（不写 irreversible）|
+
+> **C3 措辞订正（强制）**：旧设想「severe 档增强普遍失效」**被 C0 部分推翻** —— 仅 contrast S5 一个 cell 显著 HURT；blur S5 / color_shift S5 增强仍**正效益**（救得回）。§3/§7.1 **严禁泛化「severe 退化增强普遍伤诊断」**，须精确写「对 contrast 极端退化（α=0.19）增强后 AUC 显著下降 −0.0355（95%CI 排除 0），构成 query-for-retake 的一个 per-dimension 触发条件」。C3 主弹药仍是 E5 melanoma 净负 + E6 severe（per-class，§7.4/§7.8）；C0 的 contrast S5 是 per-dimension 层**补充触发点，不替代、不与 E5/E6 混淆**。
+
 ### §7.7 DCA / triage（ICLR 重跑，诚实负结果 → Thm2 局部界）
 
 - ITB-LQ n=300，四法净收益 95% CI **全重叠 0.179–0.192**（不可区分）。
