@@ -1,0 +1,2 @@
+neg_jac_pct,dice_fm,dice_affine,n_train_steps,n_eval_pairs,smoke,verdict
+0.0000,0.9279,0.8384,200,20,False,GREEN: FM outperforms affine & topology ok

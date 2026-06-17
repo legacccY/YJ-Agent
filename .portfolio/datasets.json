@@ -140,9 +140,10 @@
       "hpc": "TODO",
       "source": "Zenodo 分集 tar.gz: https://zenodo.org/api/records/12677223/files/<NAME>.tar.gz/content (BraTS2021 70MB / BrainTumor 42MB / LAG 202MB / RSNA 568MB / VinCXR 620MB / Camelyon16 891MB；注意是分集非单 zip)；codebase github.com/caiyu6666/MedIAnomaly。ISIC2018 不在此 Zenodo→本地 HAM10000 NV(6705图)零下载对接",
       "used_by": [
-        "medad-failmap"
+        "medad-failmap",
+        "fmreg"
       ],
-      "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估(协变量分层用 BraTS test/annotation mask); Phase 0 只用 BraTS2021",
+      "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估(协变量分层用 BraTS test/annotation mask); Phase 0 只用 BraTS2021。【fmreg 复用 BraTS2021 多序列(T1/T2/FLAIR)做同模态可变形配准主战场, 已 ready 免下】",
       "status": "partial (BraTS2021 ready, 余 todo)"
     },
     "vindrcxr_domainB": {
@@ -161,6 +162,30 @@
       "format": "PNG 512x512",
       "structure": "train/<id>.png (15000) + test/<id>.png (3000); split 路径相对 local 根, 正斜杠",
       "note": "NCA-JEPA 路线B遗忘探针域B. 纯SSL无标签(train_meta.csv未用). n_subset=10000采样=9000train+1000val"
+    },
+    "oasis": {
+      "name": "OASIS (brain MRI registration)",
+      "n": null,
+      "local": "TODO 待下载",
+      "hpc": "TODO",
+      "source": "https://www.oasis-brains.org/ ; Learn2Reg 预处理版 https://learn2reg.grand-challenge.org/ (OASIS task 常用 256³ T1, 含 35 标签分割可算 Dice/TRE)",
+      "used_by": [
+        "fmreg"
+      ],
+      "purpose": "FMReg 脑 MRI 可变形配准标准 benchmark; G5 killshot 已用 2D 切片(neg_jac=0% GREEN), 中训用完整体/2D 全量 + 标签算 Dice + 雅可比",
+      "status": "todo"
+    },
+    "learn2reg": {
+      "name": "Learn2Reg benchmark",
+      "n": null,
+      "local": "TODO 待下载",
+      "hpc": "TODO",
+      "source": "https://learn2reg.grand-challenge.org/ (多任务: OASIS脑/AbdomenCT-CT/CT-MRI跨模态/肺CT; 公开 leaderboard + 官方 baseline)",
+      "used_by": [
+        "fmreg"
+      ],
+      "purpose": "FMReg 多任务配准 + 跨模态(CT-MRI) L4 lever; leaderboard 对照 VoxelMorph/TransMorph/LapIRN",
+      "status": "todo"
     }
   }
 }

@@ -1,0 +1,146 @@
+% =============================================================================
+% s77_dca_triage.tex --- §7.7 Cost-Benefit / Decision-Curve Analysis + the
+%   global triage honest-negative result (NEW draft, W7 reorder).
+%
+% SERVES: Claim C2 (query-for-retake) honest deployment boundary + the GLOBAL
+%   honest-negative half of Theorem 2 (降格). This is the "honest global
+%   comparison" that drafts/s7_c3_boundary.tex defers to via \cref{sec:exp-triage}
+%   and that appendix/A2_3_theorem2.tex Remark[No global dominance] (rem:no-global)
+%   points to via \Cref{sec:exp-dca}. Label kept as sec:exp-triage AND a same-name
+%   anchor sec:exp-dca so both upstream \cref targets resolve to this section.
+%
+% SOURCE / MIGRATION:
+%   - main.tex §511 (\subsection{Cost--Benefit and Decision-Curve Analysis},
+%     label sec:exp-dca, L511-568) --- DCA prose + four-method max-NB + triage@20%.
+%   - appendix/A20_cost_benefit.tex (app:a20) --- cost model, break-even
+%     inequality, expected-cost sweep; cited not duplicated.
+%   The migrated text is RE-FRAMED for the new C0-C3 framework: the
+%   quality-conditional bottleneck is demoted to a footnote (STORY demotion rule),
+%   so the triage signal is described as ANY off-the-shelf per-input uncertainty
+%   (Std VIB suffices, STORY R13); the "+TokFT" variant is reported only as the
+%   STRONGEST tested variant that STILL does not beat Direct --- never a method gain.
+%
+% LOCKED NUMBERS (STORY_FRAMEWORK.md §"§7.7 DCA/triage" + ACCEPTANCE C2.4,
+%   verifier-checked; DO NOT invent / DO NOT alter):
+%   Max net benefit (ITB-LQ, n=300, 2000-sample bootstrap 95% CI), all overlap:
+%     Direct (EfficientNet-B3) 0.186 [0.143,0.233]; +TokFT 0.179 [0.139,0.223];
+%     Std VIB 0.186 [0.142,0.233]; Std VIB+QCTS 0.192 [0.148,0.236].
+%     (Range stated in STORY as 0.179--0.192; source results/dca/dca_summary.json.)
+%   Triage @ 20% referral budget, auto-handled sensitivity:
+%     Direct 0.818 (missed-positive 0.167) = BEST; +TokFT 0.788 (missed 0.183);
+%     Std VIB 0.137 / Std VIB+QCTS 0.143 (miss 73% / 70% of positives).
+%   Source: results/dca/* + report/figures/fig_dca_triage.* (ICLR re-run, NOT BMVC).
+%
+% RED LINES OBSERVED (STORY R3 / R10 / R11 / R13, drift def. #3):
+%   - "we make NO claim that triage raises net benefit globally" stated explicitly.
+%   - Direct 0.818 > best agent variant 0.788 reported as the HONEST NEGATIVE; the
+%     agent's global risk is NOT claimed <= Direct.
+%   - per-band / local rescue NOT re-asserted here; pointed back to §7.4/§7.8
+%     (sec:exp-boundary / sec:agent) for the local statements only.
+%   - the quality-conditional bottleneck carries NO method-gain claim (footnote
+%     demotion); no ghost headline number; no BMVC DCA table reused (only the
+%     ICLR re-run n=300 numbers + cite app:a20).
+%   - fig:dca: \todo to confirm fig_dca_triage.pdf is the ICLR re-run figure (not
+%     a BMVC-version import) and is redrawn paper-specific before merge.
+% =============================================================================
+
+\subsection{Cost--Benefit, Decision Curves, and the Global Triage Negative
+Result}\label{sec:exp-triage}
+\label{sec:exp-dca}% upstream \cref{sec:exp-dca} (A2_3 rem:no-global) resolves here
+% R3: clinical evidence is phrased as decision-curve / triage-simulation language only.
+
+\begin{figure}[t]
+  \centering
+  % \todo{verifier+figures: confirm fig_dca_triage.pdf is the ICLR re-run figure
+  %   (ITB-LQ n=300), NOT a BMVC-version import, and redraw paper-specific before
+  %   merge. If it is the BMVC DCA figure, it must NOT be reused (R10) --- replace.}
+  \includegraphics[width=\linewidth]{../../report/figures/fig_dca_triage.pdf}
+  \caption{\textbf{Decision-curve and triage analysis on \itb{}-LQ ($n=300$, the
+  worst-case low-quality deployment subset).}
+  \textbf{(a)} Net-benefit decision curves across decision thresholds (treat-all and
+  treat-none references shown). The maximum net benefit is statistically
+  indistinguishable among direct diagnosis and every information-bottleneck variant
+  ($0.179$--$0.192$; all $95\%$ bootstrap CIs overlap), so the curves do not separate
+  the methods. \textbf{(b)} Confidence-gated triage: auto-handled sensitivity versus
+  referral budget. At a $20\%$ budget \emph{direct diagnosis attains the highest
+  auto-handled sensitivity} ($0.818$); the strongest tested bottleneck variant tracks
+  but does not exceed it ($0.788$), while under-confident variants collapse. The
+  honest reading is calibration-driven reliable abstention, \emph{not} a triage gain
+  over direct diagnosis.}
+  \label{fig:dca}
+\end{figure}
+
+\paragraph{Setup.}
+We assess clinical utility on \itb{}-LQ ($n=300$, the worst-case low-quality
+deployment subset) through net-benefit decision-curve analysis (DCA) and a
+confidence-gated triage simulation, rather than through discrimination metrics alone
+(Fig.~\ref{fig:dca}). The decision-analytic model --- the four-action cost structure,
+the net-benefit definition of \cref{eq:a20-nb}, the literature-anchored cost
+constants treated as a sensitivity range, and the miss-to-biopsy cost-ratio sweep ---
+is specified in Appendix~\ref{app:a20}; here we report the operating points and read
+them honestly. The triage gate requires only a per-input uncertainty signal; any
+off-the-shelf posterior uncertainty suffices, and a standard variational information
+bottleneck (Std VIB) is used as the reference uncertainty source.\footnote{The
+quality-conditional variant we also report carries \emph{no} method-gain claim over
+Std VIB; it appears here only as the strongest tested configuration, and it still does
+not outperform direct diagnosis. The triage shell is signal-agnostic (Std VIB, a
+calibration-conditioned posterior, or an a~priori corruption-severity scalar all
+serve).}
+
+\paragraph{Net benefit does not separate the methods.}
+Across the clinically relevant threshold range the maximum net benefit is
+\emph{statistically indistinguishable} among direct diagnosis and all
+information-bottleneck variants: EfficientNet-B3 direct diagnosis $0.186$
+($95\%$ CI $[0.143,0.233]$), the quality-conditional$+$token-fine-tuned variant
+$0.179$ $[0.139,0.223]$, Std VIB $0.186$ $[0.142,0.233]$, and Std VIB${}+{}$QCTS
+$0.192$ $[0.148,0.236]$ ($2{,}000$-sample bootstrap; all four confidence intervals
+overlap). The single positive statement the analysis supports is that every method
+attains net benefit above zero --- i.e.\ each is no worse than the treat-all reference
+--- across the threshold range examined. We therefore make \emph{no} claim that
+quality-conditional enhancement or triage raises net benefit over direct diagnosis.
+The cost-ratio sensitivity sweep (Appendix~\ref{app:a20}) confirms the same reading
+along the cost-sensitive axis: the normalised expected cost rises monotonically with
+the miss-to-biopsy cost ratio, while the maximum net benefit is invariant to it by the
+standard DCA definition, so the overlapping net-benefit intervals are not an artefact
+of a single cost assumption.
+
+\paragraph{The global triage comparison is an honest negative.}
+We next ask whether a globally applied, fixed-threshold quality-aware triage policy
+improves over direct diagnosis. It does \emph{not}. Under confidence-gated triage,
+where low-confidence cases are referred to a human reader, at a $20\%$ referral budget
+\emph{direct diagnosis attains the highest auto-handled sensitivity} ($0.818$,
+missed-positive rate $0.167$). The strongest tested bottleneck variant only
+\emph{matches} it ($0.788$ auto-handled sensitivity, missed-positive rate $0.183$) ---
+it does not exceed it --- whereas the under-confident Std VIB and Std VIB${}+{}$QCTS
+variants collapse at their natural operating thresholds ($0.137$ and $0.143$
+auto-handled sensitivity, missing $73\%$ and $70\%$ of positives respectively) because
+their compressed posteriors rarely cross the referral threshold. We state the
+conclusion plainly: \textbf{global quality-aware triage does not outperform direct
+diagnosis}, and the agent's global risk is \textbf{not} guaranteed to be at most that
+of direct diagnosis. This is the honest global counterpart of the band-local
+guarantee: Theorem~\ref{thm:agent-compact} bounds the routed risk only \emph{within}
+the moderate-degradation window $\qbar\in[\tauenh,\tauhigh]$ (Remark~\ref{rem:no-global}),
+and the within-band local guarantee does not aggregate into a global ordering at a
+fixed threshold. The genuinely useful local behaviour --- where the policy routes an
+input to the enhance channel and realises a per-band risk reduction relative to direct
+diagnosis --- is reported separately and only as a \emph{local, per-band} statement
+(\cref{sec:exp-boundary}); it is not contradicted here, but it must not be read as a
+global claim.
+
+\paragraph{What the analysis does and does not establish.}
+The defensible positive reading is narrow and twofold. First, a well-calibrated
+posterior supports \emph{confidence-driven reliable abstention}: when the per-input
+uncertainty is calibrated, low-confidence cases can be safely gated to the agent's
+defer / query-for-retake path, whereas an under-confident bare Std VIB --- missing
+$73\%$ of positives at its natural operating point --- cannot be gated for safe
+abstention at all. Second, every method retains positive net benefit across the swept
+cost-ratio range (no worse than treat-all). What the analysis does \emph{not}
+establish is any global net-benefit or sensitivity advantage of triage over direct
+diagnosis; on this worst-case subset direct diagnosis already attains the
+raw-discrimination performance, and the value of the bottleneck is the calibrated
+posterior that gates abstention, not a discrimination gain. Closing the gap between
+the band-local guarantee and global utility would require \emph{learning} the routing
+thresholds rather than fixing them, which we leave to future work
+(\cref{sec:discussion}). The cost model is reported as a deployment-feasibility
+sensitivity study, not a health-economic verdict
+(Appendix~\ref{app:a20}, \ref{app:a20-limits}).

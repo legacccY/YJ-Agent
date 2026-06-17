@@ -49,6 +49,18 @@
       "story": "project/meeting/MedAD-FailMap/01_STORY.md",
       "acceptance": "project/meeting/MedAD-FailMap/02_ACCEPTANCE.md",
       "log": "project/meeting/MedAD-FailMap/04_LOG.md"
+    },
+    "fmreg": {
+      "name": "FMReg",
+      "venue": "MICCAI 2027 / CVPR 2027 (top) → MedIA / TMLR (fallback)",
+      "deadline": "TBD (Gate1 理论复核+baseline 先行;MICCAI2027~2027-03)",
+      "status": "planning",
+      "priority": 4,
+      "phase": "🆕 2026-06-17 立项(用户拍板)。源=ideation run-002 G6 唯一存活候选 S2-03(G5 雅可比闸 GREEN: neg_jac=0% / dice_fm 0.9279>dice_aff 0.8384,verifier 0 drift)。RQ=flow-matching(OT-Flow)直线流形变场做可变形医学配准,少步(≤4)逼近 diffusion 配准精度+保拓扑合法(diffeomorphism)。书面 kill criteria K1拓扑(held-out neg_jac>5%或Dice≤TransMorph→KILL)/K2少步卖点(≤4步掉点>2%vs diffusion→塌)/K3撞车(投稿前复查FM-registration成片)。带债:R1 killshot用简化FM target代理,velocity→diffeomorphism理论待中训证(立项后第一前置=researcher+skeptic复核);R2单苗无对冲(用户并行申VinDr标注复活S4-05作潜在第二项目)。下一步Gate1前置:①复核R1理论定headline『保证』vs『经验』diffeomorphism ②下OASIS+Learn2Reg登datasets+跑通VoxelMorph/TransMorph/DiffuseMorph baseline ③/design-experiment出中训矩阵。详 04_LOG Entry1。",
+      "home": "project/meeting/FMReg/",
+      "story": "project/meeting/FMReg/01_STORY.md",
+      "acceptance": "project/meeting/FMReg/02_ACCEPTANCE.md",
+      "log": "project/meeting/FMReg/04_LOG.md"
     }
   },
   "training_lock": {
