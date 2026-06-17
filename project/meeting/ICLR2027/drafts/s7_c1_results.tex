@@ -99,7 +99,12 @@ keep FiLM on parsimony grounds: it matches cross-attention on both fidelity and 
 at $1.8$M fewer parameters.
 
 \paragraph{E1 / E12 --- fidelity and speed.}
-The deterministic enhancer attains per-image PSNR $32.74$\,dB with FiLM (SSIM $0.91$, $n=19878$\todo{口径已旁证（会话43）：n=19878 / SSIM~0.91 = e1\_film\_ablation harness，由 e1\_v6.json(n=19878,ssim 0.9094)+e1\_v7.json(n=19878,ssim 0.907) 同口径坐实；W3 早标的「nocrop n=6626/SSIM 0.946 mismatch」为假警报——nocrop\_e1.json 是另一套 test-split harness，非本表口径。with-FiLM 32.74 精确值仍随 e1\_film\_ablation.json 丢失，待 HPC job 1442290 .out 复核} held-out
+The deterministic enhancer attains per-image PSNR $32.74$\,dB with FiLM (SSIM $0.91$, $n=19878$
+% Caliber cross-checked (session 43): n=19878 / SSIM~0.91 is the e1_film_ablation harness,
+% corroborated by e1_v6.json (n=19878, ssim 0.9094) and e1_v7.json (n=19878, ssim 0.907) under
+% the same caliber; the earlier "nocrop n=6626 / SSIM 0.946 mismatch" flag was a false alarm
+% (nocrop_e1.json is a separate test-split harness, not this table's caliber).
+held-out
 images under mixed degradation severity), clearing the $30$\,dB restoration gate that also guards the
 non-vacuity condition of Lemma~\ref{lem:dp} / Proposition~\ref{prop:entropy}. End-to-end inference
 (quality scoring plus enhancement) runs at $16.08$\,ms/image ($p_{95}=17.0$\,ms) on a single GPU,

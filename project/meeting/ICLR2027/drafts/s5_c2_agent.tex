@@ -159,10 +159,11 @@ rule-fallback specification, and a worked ReAct trace --- are given in Appendix~
 % Qwen3-4B backbone named in STORY); kept generic here as "a small language model" to avoid an
 % unverified model string in the body.
 
-The query-for-retake channel fires exactly where it should: on the lowest-quality stratum the
-fraction of cases the policy routes to re-acquisition is highest, rising monotonically as quality
-falls (\cref{sec:exp-boundary}), which is the behaviour the gate is designed to produce rather than a
-property to claim away.
-% Number: ACCEPTANCE §C2.2 — P1 cluster q<0.35 retake_rate=100% (verified, session L19).
-% Written as "highest / rises monotonically" here; the exact rate is reported in §7.8.
-\todo{verifier: §7.8 cross-ref — confirm retake-rate=100\% at $\qbar<0.35$ (P1 cluster, ACCEPTANCE C2.2) is the value cited from this section.}
+The query-for-retake channel fires exactly where it should: it is highest on the severe degradation
+band, where the policy routes a fraction $0.889$ ($95\%$ CI $[0.800, 0.978]$) of cases to
+re-acquisition, falling to $0.651$ ($95\%$ CI $[0.600, 0.705]$) on the moderate band
+(\cref{sec:exp-boundary}). The rate thus rises monotonically as quality falls, which is the behaviour
+the gate is designed to produce rather than a property to claim away.
+% Number source: results/agent_vs_direct_risk.csv (verifier-confirmed) — severe-band
+% retake fraction 0.889 [0.800,0.978], moderate-band 0.651 [0.600,0.705]. The earlier
+% "retake_rate=100%" phrasing was unsupported by csv and has been replaced with these values.

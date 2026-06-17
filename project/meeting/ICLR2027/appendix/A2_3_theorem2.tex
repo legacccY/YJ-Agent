@@ -191,8 +191,11 @@ rather than fixing them by grid search, which we leave to future work.
 
 \paragraph{Tight constants.}
 With a calibrated posterior predictor the calibration proxy is taken as the empirical expected
-calibration error, $\delta_{\TV}\approx\ECE$;%
-\todo{verifier: insert the numeric ECE value for the routing predictor from its calibration csv once frozen; do not print a value from memory.}
+calibration error, $\delta_{\TV}\approx\ECE$, which is of order $0.15$ on the low-quality
+evaluation subset;%
+% Number source: results/dca/r1_calibration.csv (verifier-confirmed) — full routing predictor,
+% n=300, ECE 0.156, 95% CI [0.113, 0.206]. Reported qualitatively here ("of order 0.15") rather
+% than as a point value; the earlier 0.098 figure was unsourced and has been removed.
 the normalised enhancement cost is $c_e=0.02$; a validation grid yields
 $\tauenh\approx 0.35$, $\tauhigh\approx 0.5$. Corollary~\ref{cor:population} maps directly to
 the empirical salvage-rate ($\pisalv$) and $|\Delta\mathrm{AUC}|$ metrics.

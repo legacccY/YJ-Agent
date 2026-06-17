@@ -28,12 +28,12 @@
 
 \paragraph{Datasets.}
 We evaluate on dermoscopic skin-lesion imagery drawn from the public ISIC
-collection, using a fixed train/validation/test split; the held-out test split
-contains $n=3627$ images with $117$ melanoma-positive cases, and the
-diagnostic backbone is an EfficientNet-B3 classifier (denoted B3) frozen across
-all evaluations so that any change in diagnostic AUC is attributable to the
-input, not to retraining.\todo{verifier: confirm dataset source pool, split
-sizes, and B3 backbone identity against DATA\_INVENTORY / training config}
+collection (ISIC-2020), using a fixed train/validation/test split. The paired
+diagnostic evaluations are run on the paired evaluation subset of the held-out
+test split ($n=3627$, with $117$ melanoma-positive cases; the complete test
+split contains $6{,}626$ images), and the diagnostic backbone is an
+EfficientNet-B3 classifier (denoted B3) frozen across all evaluations so that
+any change in diagnostic AUC is attributable to the input, not to retraining.
 All imagery is public; we conduct no reader study and no offline collection.
 
 \paragraph{Degradation protocol.}
@@ -47,10 +47,10 @@ otherwise stated, the main paired-evaluation protocol applies the \emph{moderate
 degradation tier (blur $\sigma=1.5$; brightness factor sampled in $[0.65, 0.85]$;
 crop ratio in $[0.75, 0.89]$; colour-shift offset $0.12$; JPEG quality in
 $[50, 74]$), composited at $256\times256$, followed by enhancement at $256\times256$,
-a centre crop to $224\times224$, and the B3 classifier.\todo{verifier: confirm
-moderate-tier composition (activation probabilities and JPEG range) against
-data/degrade.py; confirm whether contrast/$\alpha$ is part of the moderate
-paired protocol or only the per-dimension severity sweep} For the per-dimension
+a centre crop to $224\times224$, and the B3 classifier. The moderate paired tier
+composites blur, brightness, crop and colour shift; contrast ($\alpha$) is exercised
+only in the per-dimension severity sweep below, not in the moderate paired protocol.
+For the per-dimension
 $\times$ per-severity decision surface of \S\ref{sec:decision-surface}, each
 dimension is instead swept across five severity levels along its physical scalar
 (severity grid in Table~\ref{tab:c0-severity}).
@@ -89,6 +89,6 @@ than admit it as a baseline. Each baseline is run under the identical degradatio
 protocol and the same frozen B3 classifier described above, so that the
 comparison isolates the effect of the enhancement model on diagnostic
 preservation; results appear in \S\ref{subsec:setup-baselines}
-(Table~\ref{tab:e10}).\todo{verifier: confirm each baseline's checkpoint /
-training configuration source (official release vs. re-trained) against the
-experiment log for E10, job 1448952}
+(Table~\ref{tab:e10}). All six baselines use official pre-trained weights
+released by their respective authors, applied zero-shot to the dermoscopy
+evaluation protocol.

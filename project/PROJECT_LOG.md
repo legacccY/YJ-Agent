@@ -63,6 +63,13 @@
 - **🏁 总判 PASS（带债放行）**：九章合稿 gate 通过，进投稿冲刺。**投稿前必清债**（abstract DDL 09-22 前，均非阻断本 gate）：① 🛑 E1 no-FiLM 33.06/32.74 配对值（HPC 待授权，恢复或软化 E8）② 渲染的 [TODO] 红字必全清（s6 setup 3处/A2_3 ECE/s5 cross-ref——多 verifier 已核可填）③ fig:dca/fig:c0-surface 图源确认非 BMVC（R10）④ VisiScore csv 落盘 ⑤ camera-ready 脱敏最终 grep。
 - **rebuttal 预防**（reviewer top）：(a) C2 全局 triage 诚实负→审稿人可质疑「系统整体没用」，§1.4/§8.3 应再强调 C1 硬实证(E7/E10)当主承重、C2 定位「机制新颖+诚实边界」非「性能赢」（A21 已预防）(b) theory 是 sketch→theory reviewer 可能压分，当前诚实标注是正确策略。
 
+### ✅ 清投稿债：[TODO] 红字 + 图源（会话43 续3 收尾，用户「继续清投稿债」）
+- **verifier 核 5 处未决**：① retake-rate「100%」=DRIFT（csv 实值 severe 0.889/moderate 0.651）② ECE routing 0.098=NO-SOURCE（最可靠 r1_calibration.csv 0.156 CI[0.113,0.206]）③ fig:dflip=✅ICLR 版（.verified 背书 job 1442284，非 BMVC）④ E10 6 baseline=✅全官方预训练权重 zero-shot ⑤ n=3627=paired 子集（full test=6626）。
+- **writer 一轮清 5 处 [TODO]**：s5 retake 改 0.889/0.651（删「100%」）+ A2_3 ECE 改定性「order 0.15」（删无源 0.098）+ s6 E10 ckpt 填「official pre-trained, zero-shot」+ s6 split 填 paired 子集口径(3627/6626/117) + s7_c1 L102 n/SSIM 旁证 \todo 清（保留 L84 E1）。主线清 s6 L50 moderate-tier 组成（verifier 已核 degrade.py medium，加 contrast 仅 per-dim sweep 澄清）。
+- **图源**：verifier 全确认非 BMVC——fig:dflip(ICLR job 1442284)/fig:dca(ICLR n=300)/fig:c0-surface(本会话 coder 自生成)。R10 守住。
+- **终态**：重编译 **65 页 / 0 致命 / 0 undef-cite / 0 undef-ref / 0 multidef**，**渲染红 [TODO] 仅剩 1 处=s7_c1 L84 E1 no-FiLM 33.06（HPC 待授权）**。其余投稿债全清。
+- **🛑 唯一剩硬阻断 = E1 no-FiLM HPC 恢复**（待用户授权拉 job 1442290/1442337 .out 或重跑 noFiLM eval）；camera-ready 级=VisiScore csv 落盘 + 最终脱敏 grep + ACCEPTANCE C2.2「retake 100%」措辞订正（与稿对齐 0.889）。
+
 ---
 
 ## 2026-06-17（会话 42 续2，九章重排第一批 W3/W4/W5 落地 + verifier 核 + 路径 bug 修正）
