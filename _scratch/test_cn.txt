@@ -1,0 +1,1 @@
+NCA cell state 内置双通道 UQ，每个细胞在局部传播时同步传递 aleatoric 和 epistemic 校准置信度
