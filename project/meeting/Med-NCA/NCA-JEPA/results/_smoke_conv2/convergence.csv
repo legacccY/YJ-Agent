@@ -1,0 +1,9 @@
+sample_id,domain,conv_step,converged,final_norm,max_steps,cos_thr,trained_S,extrapolated
+nih_0,NIH,,False,30.688995361328125,8,0.01,16,False
+nih_1,NIH,,False,30.688995361328125,8,0.01,16,False
+nih_2,NIH,,False,30.688995361328125,8,0.01,16,False
+nih_3,NIH,,False,30.688995361328125,8,0.01,16,False
+vindr_0,VinDr,,False,30.65570831298828,8,0.01,16,False
+vindr_1,VinDr,,False,30.65570831298828,8,0.01,16,False
+vindr_2,VinDr,,False,30.65570831298828,8,0.01,16,False
+vindr_3,VinDr,,False,30.65570831298828,8,0.01,16,False

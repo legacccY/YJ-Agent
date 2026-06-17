@@ -1,10 +1,12 @@
 """
 failure_boundary.py — PC-B 失败边界拟合 + 跨集外推 + strong baseline（纯 CPU）
-服务: MedAD-FailMap Phase 0, PC-B (B1/B2/B3/B4)
+服务: MedAD-FailMap Phase 0+1, PC-B (B1/B2/B3/B4)
+Phase 1 新增: run_b2_extrap — BraTS fit / 目标集 transform-only 零调参外推
 
 流程:
   B1: 在 BraTS 拟合失败边界 f(size, contrast) — 逻辑回归 + 浅 GBM
-  B2: 跨集零调参外推 -> HAM-NV (AUROC + 集内 vs 集外对比)
+  B2: 跨集零调参外推 -> HAM-NV (AUROC + 集内 vs 集外对比)  [Phase 0 proxy]
+  B2-extrap: BraTS-fit clf + scaler / 目标集 transform-only（Phase 1 真 mask 口径）
   B3: vs strong baseline (size 单变量 / size+contrast 双变量)
   B4: extrapolation — 训中等 size -> 测未见极小 size (非 i.i.d.)
 
@@ -41,6 +43,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler
 
 
 # ============================================================
@@ -142,20 +145,22 @@ def bootstrap_auroc_ci(y_true, scores, n_boot=500, seed=42, alpha=0.05):
 # B1: 拟合失败边界
 # ============================================================
 
-def fit_boundary(X, y, model_type="lr"):
+def fit_boundary(X, y, model_type="lr", seed=42):
     """
     model_type = "lr"  -> LogisticRegression (C=1.0)
     model_type = "gbm" -> GradientBoostingClassifier (n_estimators=50, max_depth=3)
+    seed: random_state（PR-5 多 seed 支持）
     🔴 TODO: GBM 超参 (n_estimators/max_depth) 未找到领域官方设定，
              此处 n_estimators=50, max_depth=3 为浅树经验值（防过拟合），
              需 researcher/主线确认。
     """
     if model_type == "lr":
-        clf = LogisticRegression(C=1.0, max_iter=1000, solver="lbfgs", random_state=42)
+        clf = LogisticRegression(C=1.0, max_iter=1000, solver="lbfgs",
+                                 random_state=seed)
     else:
         clf = GradientBoostingClassifier(
             n_estimators=50, max_depth=3, learning_rate=0.1,
-            random_state=42,
+            random_state=seed,
         )
     clf.fit(X, y)
     return clf
@@ -281,6 +286,181 @@ def run_b2(brats_data, ham_data, out_dir):
         })
 
     _write_csv(out_dir / "boundary_B2_extrapolation.csv", rows)
+
+
+# ============================================================
+# B2-extrap (Phase 1): BraTS-fit clf+scaler / 目标集 transform-only 零调参外推
+# ============================================================
+
+def fit_boundary_with_scaler(X, y, seed=42):
+    """
+    Phase 1 真同构口径：StandardScaler + LogisticRegression(C=1.0,lbfgs) 在 BraTS fit。
+    返回 (scaler, clf)，scaler.mean_/scale_ 冻结后目标集不得再 fit。
+
+    PR-3: proxy-clf + scaler 零调参（BraTS fit/目标 transform 不 refit），
+    已烤入 run_b2_extrap 的断言。
+    """
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    clf = LogisticRegression(C=1.0, max_iter=1000, solver="lbfgs",
+                             random_state=seed)
+    clf.fit(X_scaled, y)
+    return scaler, clf
+
+
+def run_b2_extrap(
+    brats_data,
+    target_data,
+    out_dir,
+    target_name="ham",
+    seed=42,
+    detected_pct=90.0,
+):
+    """
+    Phase 1 B2-extrap: BraTS 真 mask 口径 [size_px, contrast] fit
+    目标集（HAM/METS）同口径特征 transform predict，绝不 refit。
+
+    零调参铁律（PR-3）：
+      scaler 仅 BraTS fit → target transform（断言 mean_/scale_ 前后不变）
+      clf 仅 BraTS fit → target predict_proba（无 refit）
+
+    PR-1: y_fail 在目标集病灶子集内算 P{detected_pct}（detected_pct 参数化）
+    PR-5: seed 参数化（多 seed 聚合时传不同 seed）
+    Bootstrap CI 98.75%（α=0.0125，沿用 Phase 0 Bonferroni 4 并入 F-B family）
+
+    输入:
+      brats_data:   dict，需含 size_px / contrast / anomaly_score（来自 run_b1 预处理后）
+      target_data:  dict，需含 size_px / contrast / anomaly_score（来自 lesion_features.py）
+                    key 可含 _filenames 列表（用于 filename join 验证）
+
+    输出:
+      extrap_B2_<target_name>.csv — 列:
+        target / cross_domain_auroc / ci_lo_9875 / ci_hi_9875 /
+        in_domain_auroc / ratio_cross_over_in /
+        pass_ratio_80 / n_target / n_fail / seed
+    """
+    if target_data is None:
+        print(f"[B2-extrap] target_data ({target_name}) not provided, skip")
+        return
+
+    # ---- BraTS fit ----
+    brats_size = brats_data.get("size_px", brats_data.get("size_proxy"))
+    brats_contrast = brats_data.get("contrast", brats_data.get("contrast_proxy"))
+    if brats_size is None or brats_contrast is None:
+        print("[B2-extrap] BraTS size/contrast 缺失，skip")
+        return
+
+    brats_scores = brats_data["anomaly_score"]
+    threshold_pct = brats_data.get("_threshold_pct", 90)
+    brats_y_fail = 1 - (
+        (brats_scores >= np.percentile(brats_scores, threshold_pct)).astype(int)
+    )
+
+    X_brats = np.column_stack([brats_size, brats_contrast])
+    scaler, clf = fit_boundary_with_scaler(X_brats, brats_y_fail, seed=seed)
+
+    # 快照 scaler 参数（用于断言目标集 transform 后不被篡改）
+    mean_snapshot = scaler.mean_.copy()
+    scale_snapshot = scaler.scale_.copy()
+
+    # in-domain AUROC（BraTS 上）
+    X_brats_scaled = scaler.transform(X_brats)
+    # 断言 scaler 未被 transform 改变（PR-3）
+    assert np.allclose(scaler.mean_, mean_snapshot), "scaler.mean_ 被意外修改！"
+    assert np.allclose(scaler.scale_, scale_snapshot), "scaler.scale_ 被意外修改！"
+
+    if len(np.unique(brats_y_fail)) >= 2:
+        in_domain_auroc = float(roc_auc_score(brats_y_fail,
+                                               clf.predict_proba(X_brats_scaled)[:, 1]))
+    else:
+        in_domain_auroc = float("nan")
+
+    # ---- 目标集 transform-only（绝不 refit）----
+    target_size = target_data.get("size_px")
+    target_contrast = target_data.get("contrast")
+    if target_size is None or target_contrast is None:
+        print(f"[B2-extrap] target {target_name} 缺少 size_px/contrast，skip")
+        return
+
+    # PR-1: y_fail 在目标集病灶子集内算 P{detected_pct}
+    target_scores = target_data.get("anomaly_score")
+    if target_scores is not None and len(target_scores) >= 10:
+        valid_mask = ~np.isnan(target_scores)
+        if valid_mask.sum() >= 10:
+            thr = float(np.percentile(target_scores[valid_mask], detected_pct))
+            target_y_fail = np.where(
+                valid_mask,
+                1 - (target_scores >= thr).astype(int),
+                np.nan,
+            ).astype(float)
+            # 只保留有效（非 nan）行
+            valid_idx = np.where(~np.isnan(target_y_fail))[0]
+            target_y_fail = target_y_fail[valid_idx].astype(int)
+            target_size_v = target_size[valid_idx]
+            target_contrast_v = target_contrast[valid_idx]
+        else:
+            print(f"[B2-extrap] {target_name}: insufficient valid scores, skip")
+            return
+    else:
+        # 无 anomaly score → 无法算 y_fail
+        print(f"[B2-extrap] {target_name}: no anomaly_score in target_data, skip")
+        return
+
+    X_target = np.column_stack([target_size_v, target_contrast_v])
+    X_target_scaled = scaler.transform(X_target)
+
+    # 断言：transform 后 scaler 参数不变（PR-3 硬断言）
+    assert np.allclose(scaler.mean_, mean_snapshot), \
+        "PR-3 违反：scaler.mean_ 在 target transform 后被改变！"
+    assert np.allclose(scaler.scale_, scale_snapshot), \
+        "PR-3 违反：scaler.scale_ 在 target transform 后被改变！"
+
+    if len(np.unique(target_y_fail)) < 2:
+        cross_domain_auroc = float("nan")
+        ci_lo = ci_hi = float("nan")
+    else:
+        proba_target = clf.predict_proba(X_target_scaled)[:, 1]
+        cross_domain_auroc = float(roc_auc_score(target_y_fail, proba_target))
+        # CI 98.75%（α=0.0125，沿用 Phase 0 F-B family Bonferroni 4）
+        ci_lo, ci_hi = bootstrap_auroc_ci(
+            target_y_fail, proba_target, alpha=0.0125, seed=seed
+        )
+
+    ratio_cross_over_in = (
+        cross_domain_auroc / in_domain_auroc
+        if (not np.isnan(cross_domain_auroc) and not np.isnan(in_domain_auroc)
+            and in_domain_auroc > 0)
+        else float("nan")
+    )
+    # pass_ratio_80: 跨集 ≥ 集内×0.80（Gate1 判据）
+    pass_ratio_80 = int(
+        not np.isnan(ratio_cross_over_in) and ratio_cross_over_in >= 0.80
+    )
+
+    row = {
+        "target":               target_name,
+        "cross_domain_auroc":   round(cross_domain_auroc, 4) if not np.isnan(cross_domain_auroc) else "nan",
+        "ci_lo_9875":           round(ci_lo, 4)  if not np.isnan(ci_lo)  else "nan",
+        "ci_hi_9875":           round(ci_hi, 4)  if not np.isnan(ci_hi)  else "nan",
+        "in_domain_auroc":      round(in_domain_auroc, 4) if not np.isnan(in_domain_auroc) else "nan",
+        "ratio_cross_over_in":  round(ratio_cross_over_in, 4) if not np.isnan(ratio_cross_over_in) else "nan",
+        "pass_ratio_80":        pass_ratio_80,
+        "n_target":             len(target_y_fail),
+        "n_fail":               int(target_y_fail.sum()),
+        "seed":                 seed,
+        "detected_pct":         detected_pct,
+        "note": (
+            f"Phase1 B2-extrap PR-3 zero-adapt: BraTS fit scaler+clf, "
+            f"{target_name} transform-only; "
+            f"CI 98.75% (α=0.0125 Bonf/4 F-B family); "
+            f"PR-1 y_fail=lesion-only P{detected_pct:.0f}; "
+            f"PR-5 seed={seed}"
+        ),
+    }
+
+    out_csv = Path(out_dir) / f"extrap_B2_{target_name}.csv"
+    _write_csv(out_csv, [row])
+    return row
 
 
 # ============================================================
@@ -506,6 +686,112 @@ def run_b4(brats_data, out_dir):
 
 
 # ============================================================
+# PR-5: 多 seed 聚合 — seed 间最差 CI 下界
+# ============================================================
+
+def aggregate_seed_results(
+    seed_csv_paths,
+    out_csv=None,
+    target_name="ham",
+):
+    """
+    PR-5 跨 seed 聚合：读多个 extrap_B2_<target>_seed*.csv（每 seed 一行），
+    取 seed 间最差 CI 下界（min ci_lo_9875 across seeds）作为保守外推判据。
+
+    「最差」定义（PR-5 reviewer 定论）：
+      对每 seed 的 ci_lo_9875 取最小值（最差 CI 下界），不是最差 seed 点估计。
+      判据：min_ci_lo_across_seeds >= 0.70 = PASS 门（沿用 05 §E CI 门不调松）。
+
+    PR-4 校正基数注释（不改逻辑，仅标注）：
+      - F-B' family CI（本函数 ci_lo_9875）基数=「对数（pairings）」：
+        N_pairs = ≥2 对外推（HAM+METS等），Bonferroni 对 pair 数校正（α/N_pairs）。
+        CI 本身已按 α=0.0125（05_preregistration C 节 Bonf/4）算，此为 per-pair CI。
+      - SB Δ p 值（B3）基数=「对比数（comparisons）」：boundary vs SB1 + boundary vs SB2 = 2。
+        Holm 校正基数=2（非 pair 数）。
+      # TODO: PR-4 CI 类 vs Δ 类校正基数文字 待 05 冻结确认（此注释为 Phase 1 暂定，
+              冻结前不应以此为判据文字）。
+
+    Args:
+        seed_csv_paths: list of str/Path，每个是 extrap_B2_<target>_seed*.csv 路径
+        out_csv:        (可选) 聚合输出 csv 路径
+        target_name:    目标集名称，写入输出
+
+    输出 csv schema（extrap_B2_<target>_agg.csv）：
+      target / min_ci_lo_across_seeds / mean_auroc / seeds_n / pass_ci_70 /
+      seed_list / note
+    """
+    rows = []
+    for p in seed_csv_paths:
+        p = Path(p)
+        if not p.exists():
+            print(f"[seed_agg] WARNING: 文件不存在，跳过: {p}")
+            continue
+        with open(p, newline="") as f:
+            for row in csv.DictReader(f):
+                rows.append(row)
+
+    if not rows:
+        print(f"[seed_agg] {target_name}: 无有效 seed csv，跳过聚合")
+        return None
+
+    ci_los = []
+    aurocs = []
+    seeds_used = []
+    for r in rows:
+        ci_lo_str = r.get("ci_lo_9875", "nan")
+        auroc_str = r.get("cross_domain_auroc", "nan")
+        seed_str = r.get("seed", "nan")
+        try:
+            ci_lo = float(ci_lo_str)
+            if not np.isnan(ci_lo):
+                ci_los.append(ci_lo)
+        except (TypeError, ValueError):
+            pass
+        try:
+            auroc = float(auroc_str)
+            if not np.isnan(auroc):
+                aurocs.append(auroc)
+        except (TypeError, ValueError):
+            pass
+        try:
+            seeds_used.append(int(float(seed_str)))
+        except (TypeError, ValueError):
+            pass
+
+    if not ci_los:
+        print(f"[seed_agg] {target_name}: 所有 seed 的 ci_lo_9875 均为 nan，无法聚合")
+        return None
+
+    min_ci_lo = float(min(ci_los))
+    mean_auroc = float(np.mean(aurocs)) if aurocs else float("nan")
+    seeds_n = len(rows)
+    pass_ci_70 = int(min_ci_lo >= 0.70)  # Gate1 PASS 门（05 §E）
+
+    agg_row = {
+        "target":                target_name,
+        "min_ci_lo_across_seeds": round(min_ci_lo, 4),
+        "mean_auroc":            round(mean_auroc, 4) if not np.isnan(mean_auroc) else "nan",
+        "seeds_n":               seeds_n,
+        "pass_ci_70":            pass_ci_70,
+        "seed_list":             ";".join(str(s) for s in seeds_used),
+        "note": (
+            f"PR-5 seed-agg worst: min ci_lo_9875={min_ci_lo:.4f} across {seeds_n} seeds; "
+            f"pass_ci_70={pass_ci_70} (gate1 threshold=0.70, 05 §E); "
+            f"PR-4 CI 基数=对数(Bonf/N_pairs), Δ 基数=对比数(Holm/2)"
+            f" # TODO: PR-4 校正基数文字 待 05 冻结"
+        ),
+    }
+
+    if out_csv:
+        out_csv = Path(out_csv)
+        _write_csv(out_csv, [agg_row])
+        print(f"[seed_agg] {target_name}: min_ci_lo={min_ci_lo:.4f}, "
+              f"pass_ci_70={pass_ci_70}, seeds_n={seeds_n}")
+
+    return agg_row
+
+
+# ============================================================
 # Entry point
 # ============================================================
 
@@ -526,10 +812,34 @@ if __name__ == "__main__":
                         help="(可选) BraTS conspicuity proxy csv (size_proxy/contrast_proxy)")
     parser.add_argument("--ham-score-csv",
                         default=str(_res / "anomaly_scores_isic_ae.csv"),
-                        help="(可选) HAM anomaly score csv (B2 跨集外推)")
+                        help="(可选) HAM anomaly score csv (Phase 0 B2 代理外推)")
     parser.add_argument("--ham-conspicuity-csv",
                         default=str(_res / "conspicuity_features_ham.csv"),
-                        help="(可选) HAM conspicuity proxy csv")
+                        help="(可选) HAM conspicuity proxy csv (Phase 0)")
+    # ---- Phase 1 新增参数 ----
+    parser.add_argument("--target-lesion-csv",
+                        default=None,
+                        help="Phase 1: 目标集真 mask 特征 csv（lesion_features.py 产出）"
+                             "；含 size_px/contrast/anomaly_score/filename 列")
+    parser.add_argument("--target-name",
+                        default="ham",
+                        help="Phase 1: 目标集名称（ham/mets），用于输出文件名")
+    parser.add_argument("--seed",
+                        type=int, default=42,
+                        help="PR-5: random seed（影响 clf/bootstrap/np/random；默认 42）")
+    parser.add_argument("--seed-agg",
+                        default="worst",
+                        choices=["worst", "median"],
+                        help="PR-5: 多 seed 跑后聚合方式（worst=取最差 seed CI 下界）"
+                             " # TODO: PR-5 聚合方式待冻结（worst=取最差 seed CI 下界）")
+    parser.add_argument("--seed-agg-csvs", nargs="+", default=None,
+                        help="PR-5: 多 seed extrap_B2_*.csv 路径列表（空格分隔），"
+                             "传入时自动跑 aggregate_seed_results（worst 聚合）输出 extrap_B2_<target>_agg.csv。"
+                             "不传则仅跑单 seed。")
+    parser.add_argument("--detected-pct",
+                        type=float, default=90.0,
+                        help="PR-1: 跨集 detected 语义（目标集病灶子集内 P{pct}=y_fail）"
+                             " # TODO: PR-1 待冻结")
     parser.add_argument("--out-dir",
                         default=str(_res))
     parser.add_argument("--threshold-pct",
@@ -625,8 +935,44 @@ if __name__ == "__main__":
             ham_data["cnr_proxy_otsu"] = hc["cnr_proxy_otsu"][:n]
         print(f"[boundary] ham rows: {len(ham_data['anomaly_score'])}")
 
-    # ---- B2 ----
+    # ---- B2 (Phase 0 proxy，保留) ----
     run_b2(brats_data, ham_data, out_dir)
+
+    # ---- B2-extrap (Phase 1: 真 mask 同口径 + scaler BraTS fit/target transform) ----
+    if args.target_lesion_csv and Path(args.target_lesion_csv).exists():
+        # 从 lesion_features.py 产出 csv 读 size_px/contrast/anomaly_score/filename
+        target_data_p1 = {}
+        target_rows = []
+        with open(args.target_lesion_csv, newline="") as f:
+            for row in csv.DictReader(f):
+                target_rows.append(row)
+        if target_rows:
+            target_data_p1["_filenames"]   = [r.get("filename", "") for r in target_rows]
+            target_data_p1["size_px"]      = np.array([
+                _safe_float(r.get("size_px", "nan")) for r in target_rows
+            ])
+            target_data_p1["contrast"]     = np.array([
+                _safe_float(r.get("contrast", "nan")) for r in target_rows
+            ])
+            target_data_p1["anomaly_score"] = np.array([
+                _safe_float(r.get("anomaly_score", "nan")) for r in target_rows
+            ])
+            # 禁 [:n] 截断：filename join 验证（打印重复/缺失 warning）
+            fns = target_data_p1["_filenames"]
+            if len(set(fns)) != len(fns):
+                print(f"[B2-extrap] WARNING: target csv 有重复 filename！"
+                      f" ({len(fns)-len(set(fns))} 重复)")
+            print(f"[boundary] target ({args.target_name}) rows: {len(target_rows)}")
+            run_b2_extrap(
+                brats_data, target_data_p1, out_dir,
+                target_name=args.target_name,
+                seed=args.seed,
+                detected_pct=args.detected_pct,
+            )
+    else:
+        if args.target_lesion_csv:
+            print(f"[boundary] --target-lesion-csv 文件不存在，跳过 B2-extrap: "
+                  f"{args.target_lesion_csv}")
 
     # ---- B3 ----
     run_b3(brats_data, out_dir)
@@ -634,4 +980,13 @@ if __name__ == "__main__":
     # ---- B4 ----
     run_b4(brats_data, out_dir)
 
-    print("[boundary] all done.")
+    # ---- PR-5: 多 seed 聚合（若传 --seed-agg-csvs）----
+    if args.seed_agg_csvs:
+        agg_out = out_dir / f"extrap_B2_{args.target_name}_agg.csv"
+        aggregate_seed_results(
+            seed_csv_paths=args.seed_agg_csvs,
+            out_csv=str(agg_out),
+            target_name=args.target_name,
+        )
+
+    print(f"[boundary] all done. seed={args.seed}, seed_agg={args.seed_agg}")

@@ -293,3 +293,116 @@ MedSeg-UQ「医学分割 UQ 纯理论下界」三轮 reviewer 全塌缩后，用
 - **下一步**：监控 job 1451047（loss 收敛健康？25min 后查 epoch 进度）。完成后：①删 training.lock ②analyst 解读 Gate0（对 `05_preregistration` E 节三闸二值化规则判 PASS/FAIL）③verifier 核关键数字。**Gate FAIL 按预案走不续命，PC-A 红 / PC-B 红是拍板点。**
 
 **[收工 2026-06-17 01:30]**：A0 训练健康跑中（job 1451047，~15min loss 0.152→0.0053 平稳收敛，无报错）。**HPC 不停，训练锁保留**（win-1672 持，跨窗互斥仍在）。Monitor task `bel7o2pwb` armed（1h，每 120s 轮询，含崩溃签名）——job 完成会自动触发接手。**下窗/复跑接手清单**：①确认 job 终态正常 + `results/*.csv` 全出 → 删 `training.lock` ②`/analyze-results medad-failmap`：analyst 对 `05_preregistration` E 节判 Gate0 三闸 ③verifier 核数 ④Gate FAIL 按预案（PC-A/B 红=拍板点，PC-C 红自动退守砍 per-image 腿）。**未删锁前别在他窗启训练。**
+
+### 2026-06-17 续 — T6 跨集外推 pre-flight 审死 → 诚实退守（reviewer×2→planner→主线拍板）
+
+承接 A0 完成 + PC-A/PC-C 三档 PASS + T7 重设计救回，推 PC-B 最后一条 T6（跨集 BraTS→HAM）。本轮**没有把 T6 跑出来，而是在烧 CPU 前把它审死、确认当前形态科学上不成立、诚实退守**——这正是 pre-flight 的价值（同 A0 那次审死 8 下游 bug）。
+
+**① 数据核实（破「声称 ready 实则不通」）**：上轮 LOG 称「T6 train 脚本就位、HAM 数据在本地」。核查发现：(a) datasets.json + train 脚本默认路径都登错（`project/data/external/ham10000` 实为 repo 根 `data/external/ham10000`），(b) 数据真实在本地（10015 图，NV 6705），(c) 故本地可训、**T6 不必上传 HPC**（自降一个拍板点）。修了 datasets.json 路径 + used_by 补 medad-failmap。
+
+**② dataloader 修通（派 coder，45→后续 50 pytest）**：`HAMNVTrainDataset` fallback 找 `<root>/images/`，实际是 `HAM10000_images_part_1/part_2` 两目录 → 修多目录加载；默认 data_root `parents[3]`→`parents[4]`。又派 coder 给 conspicuity_proxy 加 `--img-dirs`（多目录）+ `--filter-csv`（NV 过滤）。
+
+**③ 自主起训练（卡槽 a3b6b56e，local 1 卡）**：HAM-NV AE（6705 图，250ep，官方超参），loss 0.152→0.005 平稳收敛、健康。checkpoint 作 Phase 1 可复用 B0 资产归档。
+
+**④ pre-flight 审死 T6 下游（reviewer→直接读码证实）**：3 个 🔴——(a) `_save_isic_scores` 只扫不存在的 `test_nv`/`test_abnormal` 目录 → 训练完不产 score csv；(b) `run_b1` 真 mask 特征训 clf vs `run_b2` 整图代理 predict + 无 scaler = 跨集纯噪声；(c) HAM 侧失败语义预登记没冻（缺口）。
+
+**⑤ planner 修正 + reviewer 复裁推翻（科学根基问题）**：planner 提「HAM 异常皮损子集当待检出目标对应 BraTS tumor」+ proxy-only clf。reviewer 复裁 = **CONDITIONAL 实质 🔴**：BraTS 失败 = tumor **区域**漏检（小病灶淹大片正常背景、conspicuity 低稀释整图分），HAM 皮镜异常图是**整图一个皮损特写**无此几何 → 「image-level 漏检 vs pixel-region 漏检」偷换（貌合神离非真同构）；整图代理硬迁即便 PASS 也证「跨域 image-level AD 可分性」≠ STORY 贡献①「failure-boundary 可外推」，对抗审稿一击穿。真同构须补 HAM 无监督 lesion 分割管线（大工程），无可信 mask 则此对作废。
+
+**⑥ 主线拍板 = 诚实退守**：T6 BraTS→HAM 标「不可同构外推·Phase 0 退守·留 Phase 1 重设计」，**不用整图代理凑 PASS**（守 §E 反跑偏不续命）。已落 `05_preregistration.md` 修订记录（reviewer 复裁 + 主线拍板留痕；§A.1/§B/§E 既有阈值口径一律不动）。
+
+**对 PC-B / Gate0**：T6 Phase 0 不出确证读数 → 按 §E PC-B 不字面 PASS（PASS 需 T6+T8+T7 全过）；但 T7 已救回（large AUROC=0.6447 CI 下界 0.5835>0.5）+ T8.1/T8.2 过 → PC-B **不字面 FAIL**，以 T7+T8+三档为准，T6 标 exploratory 留 Phase 1。
+
+**下一步**：①训练跑完 → `gpu_slot.py release a3b6b56e` 清账 ②起 Gate0 重判（verifier 核三档 PASS + T7 数字 → opus reviewer 对 ACCEPTANCE 严判 PC-A/PC-C PASS + T7 重设计合法性 + 最终 PC-B + Gate0 总决策）→ 定 Phase 1 readiness。
+
+### 2026-06-17 续 — Gate0 重判收口（/stage-gate：verifier 0 drift → opus 严判）+ 主线拍板有条件进 Phase 1
+
+承 T6 退守，跑 `/stage-gate medad-failmap` 对 Gate0 整体重判。
+
+**verifier 核数（sonnet，Bash/Grep 直核 csv）= 0 drift**：PC-A 三档 T1/T2/T3 p_holm 全显著 + 分桶检出率严格单调（size 0.0015→0.0478→0.2504 / contrast 0.0046→0.0339→0.2619 / 交互双高格 0.4489 最高）；PC-C C2 4/5 显著（glcm_cluster_prom chi2=0 不显著）+ C3 5/5 sig；T7 large 方向 AUROC=0.6447 CI 下界 0.5835>0.5、small 方向 DEGENERATE 退守；T8.1 Δ=0.1205 / T8.2 Δ=0.0515 均 Holm 显著。声称数字逐位对上。（小注：C3「4 特征」实为 C2∩C3=4，措辞待 writer 明确；LOG「train 4211」指 AE 训练集非评分 csv，非判定数。）
+
+**opus reviewer 严判（caveman OFF，对抗+反跑偏）**：
+- **PC-A ① = PASS（绿）**：三档一致坐实，本 Gate 唯一无争议硬绿。
+- **PC-C ③ = PASS（绿）**：C2/C3「或」规则满足。⚠️张力留痕：ACCEPTANCE ③ 要「三件套全过」含 C4 risk-coverage 校准，05 §D 却把 C4 降探索——C2+C3 两件足以支撑 ③ 绿、第三件校准留 Phase 1，但这是 ACCEPTANCE↔05 的口径张力，需主线知情（已知情）。
+- **PC-B ② = 不达绿**：T8.1/T8.2 PASS + T7 large 方向 PASS（**合法非 p-hacking**，预授权时序成立：准则「test≥20 detected 才 interpretable」在出数前就锁、两方向全报、small 透明退守），但 **T6 跨数据集+跨模态整条缺席无读数** → ② 字面「三条全过才绿」不满足。
+- **Gate0 总决策 = 报拍板**：PC-B 落 05 §E 决策表**空隙**——「外推腿退守（无读数）」既非字面 AMBER（AMBER 锁「T6 测出 0.5~0.70 弱值」，没测≠测出弱）也非字面 FAIL（锁「T6≤0.5 或 T8 Δ≤0」，均不满足）。reviewer 拒绝替 PC-B 圆场判黄，判「A/C 双绿是真成果、② 核心承诺『可外推』Phase 0 实质未验」。
+- **T7 重设计合法性 = 合法**（预授权时序成立，非测到过为止）。保留：large CI 下界 0.5835 距 0.5 仅 0.08、统计力薄，写作须标「single-dataset/single-seed 雏形」，救回的是 ② 次要腿非核心承诺。
+- **反跑偏审计 = 干净**：T6 退守=「教科书级反跑偏正例」（主动拒绝用整图代理凑 PASS）、T7 救回合法、主轴守住（刻画失败几何不刷 AUROC，T8 只用相对 Δ 不碰绝对 0.964）。唯一要守：**收口表述别把 B 缺席糊成全绿**（上次 opus 已驳回过同型「A/C 绿→进 Phase1」越界，本次 PC-B 状态无实质改善）。
+- **对抗审稿 top 漏洞**：🔴 ② 可外推性 Phase 0 零跨集确证（最可能 reject 理由）；🟠 全确证 single seed=42（进 Phase1/投稿前须 ≥3 seed）；🟠 T8 绝对 AUROC=0.964 是探索性别当卖点（GBM 超参无官方依据+in-domain 过拟合）。
+
+**主线拍板（用户选 B）= 有条件进 Phase 1，带债推进**：
+- 认「② 留 Phase 1 同构重设计 + ≥3 集补 T6」，**不现在退 MICCAI**（A/C 扎实方向没死），**不假装 Gate0 全绿**。
+- **Phase 1 第一硬前置（= Gate1 闸条件）**：出**一个真同构的跨集/跨模态外推读数**——HAM lesion 无监督分割管线让特征同构，或换一个自带 mask 的第二数据集。**② 这条腿 Phase 1 出不来，整篇 ICLR『可外推』定位站不住 → 那时退 MICCAI。**
+- **收口诚实表述（守反跑偏）**：Gate0 = **A/C 双绿确证 PASS + PC-B 外推腿 Phase 0 未验**；进 Phase 1 是**带债的战略选择，非 Gate0 机械判过的全绿**。已在 05 §E 补「B 外推腿退守档」+ 修订记录留痕（改预登记结构=拍板点，用户已拍）。
+- Phase 1 次优先 TODO（reviewer 提）：≥3 seed 方差带、C4 校准补确证、T8 只引相对 Δ。
+
+**下一步**：① 05 §E 补退守档 + registry phase 更新（本轮做）② 训练跑完 release slot a3b6b56e ③ Phase 1 启动走 `/phase-transition`（设计 Gate1 矩阵，第一棒=同构跨集外推，researcher 先查 dermoscopy 无监督 lesion 分割官方法 / 盘有 mask 的候选第二集）。
+
+**Phase 1 prep（researcher×2 并行探路，2026-06-17）—— 重大发现：第一硬前置成本大降**：
+- 🎯 **HAM10000 全 10015 图有官方 GT lesion mask**（Harvard Dataverse `HAM10000_segmentations_lesion_tschandl.zip`，doi:10.7910/DVN/DBW86T，人工审核，命名 `ISIC_<id>_segmentation.png` 与图 ID 直接一一对应）。reviewer 复裁说的「需补 HAM 无监督分割管线大工程」**前提作废**——官方 mask 现成，下载即可在病灶上算同口径 `size_px`（连通域面积 `mask.sum()`）+ contrast（mask 边界 dilation 环带内外灰度差，对应 dermoscopy 文献 abrupt border cutoff，BMC Bioinformatics 2016 doi:10.1186/s12859-016-1221-4）。**🔴-2 特征错配（整图代理 vs 真 mask 几何）直接消除**，T6 BraTS→HAM 同构路径从「大工程」降为「下载 mask + 算几何 + 重跑 B2」。环带宽度 dermoscopy 无统一标准（BraTS 用 3px），建议改相对宽度（mask 等效直径 5-10%）保跨图可比 = 待定 TODO。
+- **候选第二集**：(A) **BraTS-METS 2023** 脑转移瘤（同模态 MRI + voxel mask + 不同病种不同患者）= 最干净同模态外推，但需 Synapse 注册下载（syn51156910）+ 仅 238 例规模偏小。(B) **ISIC2018 Task1** = HAM 子集自带 mask，与本地零额外下载对接（同上 HAM mask 路径）。(C) Kvasir-SEG 结肠镜息肉有 mask = 跨模态压力最大但解释性弱。MedIAnomaly 框架内**仅 BraTS2021 有 pixel mask**（其余胸片/眼底/病理只 image-level）→ 要 mask 必须出框架找。
+- **遗留科学保留**（reviewer 原洞的真核心，mask 解决不了的部分）：即便两端都有真 mask，BraTS tumor=小病灶淹大片正常背景（conspicuity 稀释机制）vs HAM 皮损=占画面主体，失败机制可能仍不同模态——但这正是 T6 该回答的实证问题，**有了同口径特征后 T6 跑出 PASS/AMBER/负结果都是有效读数**（不再是 pipeline 坏）。
+- **Phase 1 第一棒推荐路径**：下载 HAM 官方 mask → 算同口径 size/contrast → proxy→真 mask 特征重跑 B2 出真 T6（跨模态）；并行可选 BraTS-METS 做同模态对照（两对外推 > 单对，统计力强）。**下载官方 mask 到本地非拍板点**（非对外传输/非算力花费），Phase 1 启动可自主取；HPC 上传新数据仍拍板。
+
+### 2026-06-17 续 — Phase 1 / Gate1 立项（planner 设计 → skeptic 红队 1 致命已修 → 用户立项拍板）
+
+`/phase-transition` 适配 MedAD 结构（非 ICLR 模板）。planner 出 Phase 1/Gate1 设计 → skeptic 红队（新角色，执行前闸口）。
+
+**skeptic 逮 1 致命 + 2 重要（裁决 CONDITIONAL→修后 PASS）**：
+- 🔴 **致命-1 AMBER 续命后门**：planner 原设计「同模态过+跨模态塌→报拍板收 ICLR 边界条件」= 把 ② 的失败标准（STORY ② 把跨模态不塌列为**必要条件**排除「数据集特异拟合」）包装成「边界发现」，精确复刻 Phase 0 被 opus 驳回的偷换（T7 反预测→正面边界刻画）；且只 1 对跨模态，塌=跨模态腿全灭，n=1「边界条件」站不住。**修法 (a) 已烤入**：「跨模态不塌」设为 Gate1 PASS 的 AND 硬条件，塌→FAIL 退 MICCAI，AMBER 仅留「测出弱值 0.5~0.70」。
+- 🟠 重要-1：G1-a 同构治标未治本 → 加 **PR-7 病灶/背景面积比分布重叠检查**（纯 CPU，不重叠则此对假同构作废止损）。
+- 🟠 重要-2：写明 **§5 Gate1 PASS 后→② 终绿差距清单**（strong baseline 跨集版/extrapolation 跨集版/第三个真正独立模态集，METS 是近分布脑 MRI），Gate1=外推腿解锁闸非 ② 验收。
+- 残差：METS 实为 402 studies/3076 lesions（非 238）；最差档定义待冻；HAM mask 单医师标注。
+
+**设计落 `06_phase1_plan.md`**（00_README 已登指针）。**Gate1 判据**沿用 05 §E CI 门不调松 + 新增 G1-a..d（同构性含面积比重叠/≥2 对/≥1 同模态+≥1 跨模态/≥3 seed），跨模态塌=FAIL。
+
+**用户立项拍板**：① Phase 1 按 06 设计立项 ✅ ② **同模态锚 = 现在拍 BraTS-METS**（Synapse 注册下载，最干净同模态对照锚，区分「模态差异 vs 边界不可外推」）。
+
+**🛑 BraTS-METS = 对外注册（需用户账号，主线代不了）**：Synapse syn51156910 需注册 + 接受 DUA。待用户自己注册 + 接受协议后给凭证，主线再 synapseclient 下载。
+
+**下一步（本轮起，自主并行）**：① P1-D1 HAM 官方 mask 下载（Harvard Dataverse doi:10.7910/DVN/DBW86T，public 非拍板）② 派 coder 实现 Phase 1（HAM mask 对接+同口径 lesion 特征+PR-7 面积比检查+failure_boundary 扩 BraTS→HAM/METS 零调参 transform+seed 参数化+B4 ≥20 detected 修，带 synthetic fixture 自测）③ 训练跑完 release slot a3b6b56e ④ 预登记 PR-1..7 跑前冻结（planner 建议值→reviewer 复裁→主线拍→写 05）再让主线跑出分。
+
+### 2026-06-17 续 — Phase 1 执行推进：代码 reviewer-hardened + HAM mask 下载 + B0 训练完收尾
+
+承立项，本轮把 Phase 1 从「设计」推到「代码就绪 + 数据备齐」：
+
+**① P1-D1 HAM 官方 mask 下载完成**：Harvard Dataverse fileId 3838943（10.8MB）→ `data/external/ham10000/HAM10000_segmentations_lesion_tschandl/`，**10016 张 `ISIC_<id>_segmentation.png`**。datasets.json ham10000 条目加 `lesion_mask` 字段登记。
+
+**② coder 实现 Phase 1 代码骨架**（第一轮，63 passed）：`lesion_features.py`（HAM/METS 同口径 size/contrast）+ `area_ratio_check.py`（PR-7 面积比重叠 G1-a 子条件）+ `failure_boundary.py` 扩 `run_b2_extrap`（BraTS fit/目标 transform-only + scaler 不 refit 硬断言 + filename join）+ seed 参数化 + B4 ≥20 detected 修。
+
+**③ reviewer 复裁预登记 PR-1..7 + coder 修 🔴**（第二轮，81 passed）：reviewer 逮到——🔴 **PR-2 环宽口径不对称**（BraTS 绝对 3px vs HAM 相对 7.5% = T6 同型同构洞）；🔴 **PR-7 两 bug**（min_target_support=1 太松 + total_px 坐标系不一致致 area_ratio 全错 overlap_ok flag 失效）；🟠 PR-1 代码是全 mask 集非 dx≠nv 子集。**主线定 PR-2 = Option B**（Phase 1 两端都用相对环宽新特征 + {5/7.5/10%} 三档敏感性，Phase 0 绝对 3px 冻结不动不涟漪 PC-A）。coder 修：相对环宽两端统一 64×64 坐标系 + area_ratio∈[0,1] 断言 + overlap 占比门槛（≥5% 或 ≥30）+ dx≠nv 过滤 + PR-5 跨 seed 聚合（worst=seed 间最差 CI 下界）。**81 passed，pytest 验证 Phase 0 `compute_contrast(dilation_px=3)` 未被动。**
+
+**④ B0 HAM-NV AE 训练完成 + 收尾**：epoch 250/250，loss 0.0032 健康收敛，checkpoint `results/checkpoints/isic_ae_ep250.pt`（Phase 1 复用资产）。`_save_isic_scores` 如预期跳过（test_nv/abnormal 目录不存在=退守预期，Phase 1 会用 dx mapping 重评分）。**slot a3b6b56e 已 release**（local 0/1 空）。
+
+**预登记冻结进度**（reviewer 复裁后）：可冻=PR-3/4/5/6 + PR-1 方向 + PR-7 的 brats_low_ratio_pct=25；**待真实数据分布定**=PR-7 min_overlap_frac 具体值、PR-2 ring_frac 单值/三档（须先跑 area_ratio_check 看 BraTS/HAM 面积比是否实质重叠）。
+
+**下一步**：① **G1-a 面积比诊断**（make-or-break：跑 area_ratio_check 看 BraTS→HAM 跨模态几何是否同构，reviewer/skeptic 都预期 HAM 皮损占主体大概率与 BraTS 小病灶低重叠=此对可能作废）——前置需 coder 给 lesion_features 加多 img-dir（HAM 图分 part_1/part_2）② 跑通后据分布冻 05 全部 PR ③ HAM AE dx-mapping 重评分出 anomaly score ④ BraTS-METS 待用户 Synapse 注册+接受 Terms（syn51514107 受控）后下载。
+
+### 2026-06-17 续 — 🔴 G1-a 面积比诊断：BraTS→HAM 跨模态几何不同构，此对作废（止损省 GPU）
+
+coder 给 lesion_features 加 `--img-dirs`（85 passed）后，跑 G1-a make-or-break 诊断：
+
+**lesion_features**（HAM dx≠nv 异常皮损 3310 张，phase1 64×64 相对环宽）→ `lesion_features_ham.csv`。**area_ratio_check**（BraTS tumor 1948 vs HAM 3310，同 64² 坐标系）→ `area_ratio_check_ham.csv` + 直方图。
+
+**结果（csv 实测，红线核源非 print）**：
+- BraTS tumor area_ratio（病灶/全图）：p25=0.0198 / **med=0.0393** / p75=0.0618 / max~0.12 → 小病灶淹大背景（中位仅占 3.9%）。
+- HAM lesion area_ratio：p25=0.150 / **med=0.283** / p75=0.450 / p99=0.853 → 皮损占画面主体（中位 28%，**7× 大于 BraTS**）。
+- BraTS 低区段（≤P25=0.0198=稀释 regime）内 HAM 仅落 **43/3310=1.3%**（需 ≥166=5%）→ **overlap_ok=False**。
+
+**判定**：BraTS→HAM **几何不同构，此对作废**（按 06_plan §4 Decision Gate「面积比不重叠→假同构作废，跑外推前止损省 GPU」）。**不跑 BraTS→HAM 跨模态外推**（跑了=reviewer 警告的 image-level vs pixel-region 偷换，无效读数）。
+
+**实证意义（诚实，非续命）**：驱动 BraTS 漏检的「小病灶淹大背景→整图 anomaly_score 被稀释」conspicuity 稀释机制，在 HAM 皮镜（皮损占主体）**几何上不存在** → 失败机制跨不过这个模态差。这是干净的负诊断（pre-flight 又一次烧 GPU 前止损），**但按 skeptic 致命-1 铁律：不得把「跨模态几何不同构」包装成「边界条件正面发现」凑 Gate1 PASS**。
+
+**对 Gate1 的冲击（🛑 待拍板）**：G1-c 要 ≥1 跨模态。**HAM 这个跨模态候选几何作废**。出路待定：(a) 找另一个**小病灶占小画面**几何的跨模态集（如胸片/CT 肺结节=小结节淹大肺野、眼底微动脉瘤=小病灶，几何匹配 BraTS 稀释 regime）；(b) 重审跨模态腿可行性。同模态 BraTS-METS（转移瘤=多发小病灶，几何应匹配 BraTS）仍是 G1-c 同模态腿候选，待 Synapse 下载验 G1-a。
+
+**待办**：① 🛑 跨模态腿出路拍板（找小病灶几何跨模态集 vs 重审）② BraTS-METS 待用户 Synapse（syn51514107 受控，注册+Terms）下载后验 G1-a + 训 AE ③ 冻 05 PR（HAM 跨模态作废后部分 PR 口径随之调整）。
+
+### 2026-06-17 续 — 跨模态腿出路：用户拍板找几何匹配集 → researcher 探得 IDRiD/CBIS-DDSM
+
+用户拍板 (a) 找小病灶几何跨模态集。researcher 探路（带几何/mask/可得性评估）：
+- **IDRiD**（眼底视网膜微动脉瘤 MA）：MA <0.15% 全图像素（比 BraTS tumor 中位 3.9% 更极端小），pixel mask 81 张，CC BY 4.0 Zenodo 直链（几 MB 免门控）。几何高匹配。
+- **CBIS-DDSM**（乳腺 X 线肿块）：81.8% 肿块 <1% 全乳面积（落 BraTS 稀释 regime），ROI pixel mask ~1696 张，CC BY 3.0 TCIA（163GB，NBIA Retriever）。几何高匹配。
+- 排除：HAM(几何作废)、Node21/JSRT(无 pixel mask)、LUNA16(无 2D mask 需 3D 自生成)、Kvasir(息肉偏大)。
+
+**主线结构性考量（待拍）**：IDRiD MA = 一图多个微小斑点（非单一病灶），lesion_features 取最大连通域 size 与 BraTS 单 tumor 语义对不齐，失败机制可能仍不同构；**CBIS-DDSM 一 ROI 一肿块（单病灶）结构上更贴 BraTS 单瘤**，但 163GB 大。建议优先 CBIS-DDSM（结构同构）但需评下载成本，或先下 IDRiD（快）跑 G1-a 探几何但留意多斑点语义。**下载源都开放免门控，非拍板点，确定哪个即可自主下。**
+
+**下一步**：选定跨模态集（CBIS-DDSM 结构优 / IDRiD 快）→ 下载 → 跑 G1-a 面积比 + 评单/多病灶语义 → 过则建跨模态 AE pipeline。同模态 BraTS-METS 仍待用户 Synapse。

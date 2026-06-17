@@ -1,0 +1,9 @@
+{
+  "AURC_F": 0.20071,
+  "AURC_A": 0.34834,
+  "AURC_D": 0.20997,
+  "F_AURC_lt_A": true,
+  "F_vs_A_CI_overlap": false,
+  "verdict": "PASS (F AURC < A, F wins selective prediction)",
+  "curve_png": "D:\\YJ-Agent\\project\\results\\qvib_minverify\\r3_risk_coverage_curve.png"
+}

@@ -1,0 +1,10 @@
+{
+  "ECE_F": 0.15654,
+  "ECE_D": 0.15419,
+  "ECE_A": 0.34543,
+  "delta_F_minus_D": 0.00235,
+  "delta_CI_lo": -0.06217,
+  "delta_CI_hi": 0.0631,
+  "delta_CI_contains_zero": true,
+  "verdict": "FAIL (CI contains 0, no calibration gain)"
+}

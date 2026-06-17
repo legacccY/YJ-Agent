@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-06-17 — 救援探路第二轮：5 路线便宜 kill-shot 预实验（A/B/C 已提交 HPC，等结果）
+- **背景**：08 doc 三卖点到顶 = 中等会议。用户给 5 路线救援分析，拍板「全跑 A+B+C」三个用已有 ckpt 的便宜预实验一次性筛掉最可能死的。
+- **编队**：planner 出可跑规格（对齐真实 ckpt/数据）+ researcher 核三前提（执行前已改生死）+ coder 写两探针脚本（smoke PASS）。
+- **researcher 前提核查（已改路线生死，详见 `09_救援探路判据`）**：
+  - 路线① **<10%**：CXR 跨数据集 shift 被 scanner artifact 平凡区分（纯像素 F1=0.982，arXiv:2509.15107），轨迹统计量几无增益空间。
+  - 路线③ 6-12%：Kvalsund 振荡吸引子（arXiv:**2604.10639** 非 2604.12720）是**像素级 NCA 无 latent 实验**，迁移两不靠 → pre-exp B 唯一真裁决。
+  - 路线④ ~20-30%：SP² framing 部分被抢（ICLR'25 谱正则两轴 + NeurIPS'22 LiDER 反证 Lipschitz 能减遗忘），但「纯谱约束减不了遗忘」strong negative 文献空白 = C 测的正是这块。
+- **预登记判据**（结果回来前 timestamp 防 p-hacking）：`09_救援探路判据_2026-06-17.md`。A 重叠>40%死/B 三组平行死/C R²>0.5 死。
+- **HPC 提交（gpu_slot 2c7e3f1c，4 卡）**：job 1451330 conv探针 / 1451331 genesis探针（NIH held probe_test.txt vs VinDr，主臂锁 S16 不外推）/ 1451332-1451334 S4/S8/S32 域B续训（补 RF 配已有 L_f 做 SP² 4 点回归）。新增 `eval/traj_probe_*.py`、`configs/b_continual_nca_S{4,8,32}.yaml`、`hpc/sbatch_probe.sh`、sbatch_pilot ARM。
+- **三路线全出结果（2026-06-17 12:00）**：**① 死**（final_norm 两域 overlap 73%/BC 0.90/KS p=0.142，端点都分不开）｜**③ 死**（三组 sim(k) RMSE 全<0.02 平行 + 100%单调 + max_rebound 全 0，latent NCA 无 Kvalsund 像素振荡）｜**④ 🟡 WEAK**（4 点回归 R²=0.12-0.15，定性强解耦 slope 近平但 n=4 不干净，S16 outlier 破 R²<0.1 线；L_f 仅解释 12-15% 遗忘方差）。详数见 `09_救援探路判据`。
+- **净结论**：救援第二轮**未给干净顶会 save**。①②③④全探明天花板，⑤(预测器过参数化)未动是非 NCA 主线底牌。最强资产=④定性解耦 + 全套负结果，自洽但中等。
+- **🛑 战略拍板 = C（用户拍板 2026-06-17）：弃 NCA 主线，本窗资源转 P1 ICLR(headline 危机)/P3 MedAD。NCA-JEPA 封存**（registry status→shelved, priority→8）。负结果（④定性解耦 + ①③ + B 路线 + 稳定≠抗遗忘）存档自洽，可后续发小 paper，不再投大力。①②③④天花板全探明=中等，⑤未动是非 NCA 底牌。
+- 本轮文件：09_救援探路判据、eval/traj_probe_{convergence,genesis}.py、configs/b_continual_nca_S{4,8,32}.yaml、hpc/sbatch_probe.sh、results/{traj_convergence,traj_genesis,forget/nca_S*}、figures/preexp_AB*。gpu_slot 2c7e3f1c 已 release 清账。
+
 ## 2026-06-17 — 路线 B 决死探针出结果 = 🔴 NO-GO（假说证伪且反转，回路线 A）
 - **决死探针全链路跑通**（用户「自动跑」授权，主线编排）：VinDr-CXR 域 B 数据下载（Kaggle xhlulu 512px PNG 绕 PhysioNet 凭证墙）→ 等参小 ViT NIH 预训练 seed42/123（COMPLETED，loss 0.078/0.085）→ 三臂域 B 续训 20ep（全 COMPLETED）→ 域 A(NIH 10k) 上 eval_forget。
 - **🔴 跑前逮+修两个致命 bug**：① **reset_epoch bug**——续训载 ep50 ckpt 后 `load_checkpoint` 把 start_epoch 设 50，epochs=20 → `range(50,20)` 空循环=完全不训练（遗忘探针变 no-op 假阴）。修：train.py 加 `reset_epoch` flag（续训载权重但 epoch 归 0，域 B 全新 warmup+cosine）。**验证生效**：三臂续训后 ckpt epoch=20（真训了 20ep 非 0）。② **eval 数据源 bug**——eval_forget 原用续训 config 的 data(=域 B)，但遗忘须在**域 A(NIH)** 上测；修为 eval 传域 A config（NIH 数据 + 对应 predictor）。

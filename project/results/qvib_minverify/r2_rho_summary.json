@@ -1,0 +1,19 @@
+{
+  "ITB_LQ_pearson_r": {
+    "D": 0.0141,
+    "E": -0.1729,
+    "F": -0.1476
+  },
+  "ITB_LQ_spearman_r": {
+    "D": 0.992,
+    "E": 0.992,
+    "F": 0.992
+  },
+  "ITB_HQ_pearson_r": {
+    "D": 0.0271,
+    "E": 0.0151,
+    "F": 0.026
+  },
+  "F_vs_D_CI_overlap_Pearson_ITB_LQ": true,
+  "verdict": "FAIL (F rho CI overlaps D, no significant coupling gain)"
+}

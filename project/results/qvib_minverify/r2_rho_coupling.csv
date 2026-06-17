@@ -1,0 +1,7 @@
+subset,baseline,baseline_name,n,pearson_r,pearson_pval,pearson_CI_lo,pearson_CI_hi,spearman_r,spearman_pval,spearman_CI_lo,spearman_CI_hi
+ITB-LQ,D,Std VIB,300,0.0141,0.807956,-0.0947,0.117,0.992,0.0,0.9784,1.0
+ITB-LQ,E,Adaptive Prior,300,-0.1729,0.002446,-0.2821,-0.0747,0.992,0.0,0.9794,1.0
+ITB-LQ,F,Q-VIB Full,300,-0.1476,0.009975,-0.2558,-0.0445,0.992,0.0,0.979,1.0
+ITB-HQ,D,Std VIB,360,0.0271,0.607956,-0.0766,0.1379,0.9962,0.0,0.9887,1.0
+ITB-HQ,E,Adaptive Prior,360,0.0151,0.775495,-0.084,0.1119,0.9962,0.0,0.9883,1.0
+ITB-HQ,F,Q-VIB Full,360,0.026,0.622107,-0.0775,0.136,0.9962,0.0,0.9876,1.0

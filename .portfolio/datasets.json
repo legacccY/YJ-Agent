@@ -43,6 +43,7 @@
         "medad-failmap"
       ],
       "purpose": "zero-shot 跨数据集 (iclr: results/external_ham10000_predictions.csv) + medad-failmap T6 跨集外推 B0 训 AE on NV(6705 图) (anomaly_scores_isic_ae.csv); 图分 HAM10000_images_part_1/part_2 两目录, dx==nv 过滤",
+      "lesion_mask": "data/external/ham10000/HAM10000_segmentations_lesion_tschandl/ (官方 GT lesion mask 10016 张 ISIC_<id>_segmentation.png, Tschandl 单医师 FIJI, Dataverse fileId 3838943; Phase1 真 mask 算同口径 size/contrast 用)",
       "status": "ready"
     },
     "pad_ufes": {

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-06-16T23",
+  "updated": "2026-06-17",
   "note": "跨论文协调单一真源。多终端窗口共享此文件 + locks/。规避 context 压缩断链，仿 run-experiment state.json 模式。",
   "projects": {
     "iclr": {
@@ -9,7 +9,7 @@
       "deadline": "2026-09-22 (abstract) / 2026-09-29 (full)",
       "status": "active",
       "priority": 1,
-      "phase": "🔴 会话39：headline 危机待用户消化拍板（已落 PROJECT_LOG 会话39 entry）。P-2 数据重建忠实成功(q逐行==cache_meta/efnet cos1.0/abcd从cache_deg精确重算,tools/reconstruct_p2_csv.py+regen_abcd_from_cachedeg.py),但权威重eval揭出三重矛盾+中心claim不成立:①headline四值打架(eval_ablation n19878=0.707陈旧旁支/itb_predictions 06-15=0.585=论文Table1真源/seed=0.72),abstract 0.707≠论文Table1 0.585内部矛盾②0.585根因=efnet/best_qad ckpt按val_acc选(老脚本ep26-27),但val_AUC ep1-2见顶后过拟合下跌→acc选法挑退化点③🔴钉死:换val_AUC选ckpt后全VIB方法ITB-LQ挤~0.72,Q-VIB Full(F)对Std VIB(D)无AUC优势(差~0.009在std内),普通B3 Direct 0.751反最高→中心AUC claim任何公平eval下不成立④seed批次eval有E=F=G数字逐位相同bug(预测被复制,主itb_results.csv正常)⑤唯一可能差异化在校准/ρ(F ρ−0.192/G−0.278>D−0.153)需修bug+统一选法重核。用户拍『暂停落档消化后决』,不改论文不重跑。待续会话40:用户定向(修eval bug+校准角度重核/planner+reviewer重定位贡献+会场/更大转向)。技术债:seed eval E=F=G重复bug+3seed_agg E/F混淆+P-2已就绪可随时算CI。datasets.json三处路径bug已修。｜会话38:L12临床baseline落文+揪出潜伏bibtex bug(条目内%注释致cached假象,须clean rebuild)+会话37新内容首审无reject。53页0undef。｜会话37:重大前提纠偏(ICLR不需Plan A大重训,S1/S2v5/6-SOTA/cross-domain早frozen)+矩阵A零训练A20/Thm2落paper。详见PROJECT_LOG。",
+      "phase": "🔀 会话41：用户拍板【拆两篇】重构。原 Q-VIB SOTA claim 判死不复活；两轮文献调研(7researcher+skeptic红队)定救援。**Paper1(D+A主投)**=安全诊断保持增强(DP-Loss+互信息下界Lemma3,E7 McNemar p=2.3e-45,BMVC零覆盖)+query-for-retake质量分级agent(全文献无人做采集闭环=独家钩子),triage实证负(Direct0.818>agent0.788)当部署边界诚实写,Thm2降格为局部条件界。会场MICCAI2027/TMLR。撞车=中(GradProm2501同ISIC先证增强伤诊断但解法梯度修复≠我们路由+保证)。**Paper2(E分流)**=质量偏移可靠性图谱(5维退化×9方法×校准崩塌×ρ耦合×跨域+ImageNetC,纯刻画benchmark,范式WILDS/Wild-Time)。会场NeurIPS2027 D&B。🔴最大风险=E↔BMVC重叠(BMVC占Table1九方法ECE/5backbone/HAM-PAD/ImageNetC/DCA),E须靠BMVC没呈现的维度(5维逐退化/UQ不差异化+IB欠拟合机理/增强帮倒忙)立足,动手前必逐表核BMVC提交版。兜底=负结果短文(UQ不差异化+IB欠拟合)投ICBINB/ML4H。砍纯IB理论论文(实证无增益致命)。计划全文 project/ICLR_重构计划_拆两篇_2026-06-17.md。下一步:核BMVC边界→/spin-off-paper建Paper2 registry→改Paper1 STORY(换headline/Thm2降格/加GradProm对比)→planner出补做矩阵。",
       "home": "project/",
       "story": "project/STORY_FRAMEWORK.md",
       "acceptance": "project/ACCEPTANCE_CRITERIA.md",
@@ -30,9 +30,9 @@
       "name": "NCA-JEPA",
       "venue": "TBD (arXiv pilot → NeurIPS/ICLR)",
       "deadline": "pilot Gate0 ~D2",
-      "status": "pilot-amber",
-      "priority": 2,
-      "phase": "🟡 双线探路收口=两卖点到顶,等战略拍板。路线 A（SN 压谱半径 1.37→1.01 + 残差 I 项致 L_f<1 结构性不可达）=扎实非惊艳（核心数学已知 i-ResNet + 有人工反例）。路线 B（NCA-as-JEPA-predictor 抗遗忘）决死探针 = 🔴 NO-GO：等容量对照(NCA 3.22M / 等参小ViT 3.28M / A0+ 11.76M)在 NIH→VinDr-CXR 续训测域A遗忘,RF = NCA −0.2763 / 小ViT −0.1512 / A0+ −0.2177 → NCA 遗忘比等参ViT多83%(diff 0.125≫0.02),假说证伪且反转(NCA 结构本身更易遗忘,非容量)。副发现:NCA dLf≈0=稳定≠抗遗忘解耦。跑前修两 bug(reset_epoch 空循环+eval 域B→域A)。NCA-JEPA 天花板=中等会议,撑不起『非常大胆』。岔路待拍:①路线A+负结果ship中等paper ②换激进新方向 ③搁置让位 ICLR/MedAD。全量现状见 08_现状全量_2026-06-17.md + 04_LOG 最新 entry。",
+      "status": "shelved",
+      "priority": 8,
+      "phase": "🗄️ 已封存（2026-06-17 用户拍板 C：弃 NCA 主线，资源转 P1 ICLR/P3 MedAD）。救援探路第二轮（5 路线便宜 kill-shot 预实验，gpu_slot 2c7e3f1c 4卡 <1GPU·h）终局=无干净顶会 save：**路线① 分布偏移探测器 🔴死**（NCA 轨迹端点 final_norm 两域 overlap 73%/BC 0.90/KS p=0.142，scanner artifact 把 OOD baseline 早顶满）；**路线③ 轨迹即表示 🔴死**（latent NCA sim(k) 三组 RMSE 全<0.02 平行 + 100%单调 + max_rebound 全0，无 Kvalsund 像素振荡，轨迹=h16+插值无独特信息）；**路线④ SP² 解耦平面 🟡WEAK**（4 点 L_f vs RF 回归 R²=0.12-0.15，定性强解耦 slope≈−0.04 近平 / L_f 仅解释 12-15% 遗忘方差，但 S16 outlier 破 R²<0.1 干净阈，n=4 不够）。加之前路线 A（SN 压谱 1.37→1.01 扎实非惊艳/核心数学 i-ResNet 已知）+ 路线 B（抗遗忘证伪反转 NCA 反更易忘）。①②③④天花板全探明=中等会议，撑不起『非常大胆』。⑤(预测器过参数化 Q(1)=0.975)未动=非 NCA 主线底牌。**封存资产可后续发小 paper**：④定性解耦 + 全套负结果（①无OOD信号/③单调插值/B更易遗忘/稳定≠抗遗忘解耦）自洽中等 analysis 故事。全量见 08_现状全量 + 09_救援探路判据_2026-06-17 + 04_LOG。",
       "home": "project/meeting/Med-NCA/NCA-JEPA/",
       "story": "project/meeting/Med-NCA/NCA-JEPA/01_创新计划.md",
       "acceptance": "project/meeting/Med-NCA/NCA-JEPA/03_pilot_NIH_ChestXray14.md",
@@ -42,9 +42,9 @@
       "name": "MedAD-FailMap",
       "venue": "ICLR/NeurIPS (主, analysis track) → MICCAI/MedIA (退路)",
       "deadline": "TBD (capability paper, Phase0 预检先行)",
-      "status": "phase0-gate0-fail",
+      "status": "phase1-active (Gate1=补②跨集外推腿，立项 2026-06-17)",
       "priority": 3,
-      "phase": "🔴 A0 跑完 + /stage-gate opus 终审 = Gate0 FAIL（不放行 Phase1，诚实回退，详见 04_LOG）。job 1451047 COMPLETED(1:22:20,exit0)。修复历程：PC-A mask 0匹配空跑(_flair_→_seg_ 映射修)→重跑三检全显著；PC-B tautology bug(默认接 interact 聚合表无 filename→fallback size_proxy=anomaly_score→AUROC=1.0)修(默认改 per_image)→重跑真值 B1 0.84/0.91/0.96。**opus 逮到 verifier/analyst/主线三方都漏的预登记硬前提：敏感性三档{5/10/15%}阈值扫描整体没跑**(脚本只跑 P90，无 P85/P95 产物)，而 05 钉死「三档方向一致是每条确证结论进 Gate0 硬前提，仅10%成立则降探索性」→ PC-A/C/B 全部确证结论停 exploratory，Gate0 基础不成立。PC-B 另字面 FAIL(T7 整段 CI<0.5 反预测 + T6 缺主柱 B0-HAM 未跑；T8 是 in-domain 过拟合属探索性)。analyst「T7 退化无效/PC-B AMBER」=post-hoc 续命被驳回。必修：①补跑三档(coder 已接 --threshold-pct 进 incremental_stats/failure_boundary+修 glcm chi2=0 量级 bug,41 pytest 绿,待 HPC 重跑=拍板)②PC-B T6(B0-HAM 训练,已转自主走 gpu_slot)/T7 重设计二选一③glcm 重跑核④纠跑偏写作口径。registry 待三档重跑定 A/C 确证资格后再判进 Phase1。",
+      "phase": "🟡 Gate0 重判收口（2026-06-17 /stage-gate：verifier 0 drift→opus 严判）+ 主线拍板（B）有条件进 Phase 1。**PC-A ① PASS 绿 + PC-C ③ PASS 绿**（三档敏感性全坐实，verifier 逐位核对 0 drift：T1/T2/T3 p_holm 全显著+检出率单调；C2 4/5+C3 5/5）。**PC-B ② 不达绿**：T8.1 Δ=0.1205/T8.2 Δ=0.0515 Holm 显著 PASS + T7 large 方向 AUROC=0.6447 CI 下界 0.5835>0.5 PASS（**合法非 p-hacking**，预授权时序成立），但 **T6 跨数据集+跨模态整条诚实退守无读数**（reviewer 复裁逮到 image-level vs pixel-region 漏检不同构，主线拍板退守不用整图代理凑 PASS=教科书级反跑偏正例）→ ② 字面「三条全过才绿」不满足。Gate0 落 05 §E 决策表空隙（外推腿退守原未预见）→ 报拍板。**主线拍板 B=有条件进 Phase 1 带债推进**：不现在退 MICCAI（A/C 扎实方向没死）、不假装全绿；**Phase 1 第一硬前置（Gate1 闸条件）= 出一个真同构跨集/跨模态外推读数**（HAM lesion 分割管线 或 换有 mask 第二集），出不来退 MICCAI。次优先：≥3 seed 方差带、C4 校准补确证、T8 写作只引相对 Δ 不碰绝对 0.964。已 05 §E 补「B 退守档」+ 修订记录留痕。HAM-NV AE(B0) checkpoint 已归档 Phase1 复用。下一步：`/phase-transition` 设计 Gate1 矩阵（第一棒=同构跨集外推，researcher 先查 dermoscopy 无监督 lesion 分割 / 盘有 mask 候选第二集）。",
       "home": "project/meeting/MedAD-FailMap/",
       "story": "project/meeting/MedAD-FailMap/01_STORY.md",
       "acceptance": "project/meeting/MedAD-FailMap/02_ACCEPTANCE.md",
@@ -59,5 +59,17 @@
     "pid": null,
     "start_ts": null,
     "comment": "已改按卡调度（非全局互斥）。真源 = locks/training.lock schema v2（capacity local=1/hpc=4 + active[] + queue[]），全走 tools/gpu_slot.py request|release|status。多任务可共存只要空闲卡够、绝不挤正在跑的、卡满排队。此镜像字段废弃，以锁文件为准。"
+  },
+  "iclr": {
+    "name": "VisiSkin-Agent",
+    "venue": "ICLR 2027",
+    "deadline": "2026-09-22 (abstract) / 2026-09-29 (full)",
+    "status": "active",
+    "priority": 1,
+    "phase": "🔀 会话41：用户拍板【拆两篇】重构。原 Q-VIB SOTA claim 判死不复活；两轮文献调研(7researcher+skeptic红队)定救援。**Paper1(D+A主投)**=安全诊断保持增强(DP-Loss+互信息下界Lemma3,E7 McNemar p=2.3e-45,BMVC零覆盖)+query-for-retake质量分级agent(全文献无人做采集闭环=独家钩子),triage实证负(Direct0.818>agent0.788)当部署边界诚实写,Thm2降格为局部条件界。会场MICCAI2027/TMLR。撞车=中(GradProm2501同ISIC先证增强伤诊断但解法梯度修复≠我们路由+保证)。**Paper2(E分流)**=质量偏移可靠性图谱(5维退化×9方法×校准崩塌×ρ耦合×跨域+ImageNetC,纯刻画benchmark,范式WILDS/Wild-Time)。会场NeurIPS2027 D&B。🔴最大风险=E↔BMVC重叠(BMVC占Table1九方法ECE/5backbone/HAM-PAD/ImageNetC/DCA),E须靠BMVC没呈现的维度(5维逐退化/UQ不差异化+IB欠拟合机理/增强帮倒忙)立足,动手前必逐表核BMVC提交版。兜底=负结果短文(UQ不差异化+IB欠拟合)投ICBINB/ML4H。砍纯IB理论论文(实证无增益致命)。计划全文 project/ICLR_重构计划_拆两篇_2026-06-17.md。下一步:核BMVC边界→/spin-off-paper建Paper2 registry→改Paper1 STORY(换headline/Thm2降格/加GradProm对比)→planner出补做矩阵。",
+    "home": "project/",
+    "story": "project/STORY_FRAMEWORK.md",
+    "acceptance": "project/ACCEPTANCE_CRITERIA.md",
+    "log": "project/PROJECT_LOG.md"
   }
 }

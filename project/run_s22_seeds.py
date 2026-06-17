@@ -1,5 +1,14 @@
-"""S2.2: 3-seed robustness training — seeds 123 and 2024 for D/E/F/G.
+"""S2.2: 3-seed robustness training — seeds 123 and 2024 for D/E/F.
 Seed 42 already exists in the original checkpoints.
+
+NOTE: G (Q-VIB+TokFT) is NOT trained here from scratch.
+G is produced by fine-tuning F via finetune_tokenizer.py.
+To produce G seed variants, run run_g_tokft_seeds.py after this script.
+
+Bug history (fixed): this script previously listed G with config=qad_finetuned_clean.yaml
+and called train_qad.py, producing a ckpt byte-for-byte identical to F (MD5 collision
+confirmed for efnet_tokft_s123 and efnet_tokft_s2024). G must be built on top of the
+corresponding F seed ckpt via finetune_tokenizer.py — see run_g_tokft_seeds.py.
 
 Run:
   cd D:/YJ-Agent/project
@@ -13,11 +22,11 @@ from pathlib import Path
 
 SEEDS = [123, 2024]
 
+# G intentionally absent: G = finetune_tokenizer.py(F seed ckpt).  See run_g_tokft_seeds.py.
 BASELINES = {
-    "D": {"config": "configs/qad_stdvib.yaml",         "ckpt_base": "D:/YJ-Agent/checkpoints/stdvib"},
-    "E": {"config": "configs/qad_adaptive.yaml",        "ckpt_base": "D:/YJ-Agent/checkpoints/adaptive"},
-    "F": {"config": "configs/qad_efnet.yaml",           "ckpt_base": "D:/YJ-Agent/checkpoints/efnet"},
-    "G": {"config": "configs/qad_finetuned_clean.yaml", "ckpt_base": "D:/YJ-Agent/checkpoints/efnet_tokft"},
+    "D": {"config": "configs/qad_stdvib.yaml",  "ckpt_base": "D:/YJ-Agent/checkpoints/stdvib"},
+    "E": {"config": "configs/qad_adaptive.yaml", "ckpt_base": "D:/YJ-Agent/checkpoints/adaptive"},
+    "F": {"config": "configs/qad_efnet.yaml",    "ckpt_base": "D:/YJ-Agent/checkpoints/efnet"},
 }
 
 def run(baseline, seed):

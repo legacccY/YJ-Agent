@@ -1,0 +1,4 @@
+baseline,baseline_name,n,ECE,CI_lo,CI_hi
+A,EfficientNet-B3 (Direct),300,0.34543,0.29743,0.39893
+D,Std VIB,300,0.15419,0.11538,0.20355
+F,Q-VIB Full,300,0.15654,0.1125,0.20604

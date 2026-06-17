@@ -6,6 +6,76 @@
 
 ---
 
+## 2026-06-17（会话 41，两轮文献调研 → 用户拍板【拆两篇】重构 ICLR 线）
+
+### 起因
+用户「重新计划，多查文献多找出路」。承会话 40 危机报告（Q-VIB SOTA claim 判死，四选一待拍）。认领 iclr.claim（ICLR-replan）。用户连续两次推「多上网看文献拓宽思路」「还有没有别的解决办法」。
+
+### 关键纠偏：危机报告框窄了
+会话 40 危机只盯「Q-VIB 是否更强」一条死 claim，没说还活着的两条腿。读全 ACCEPTANCE 后确认：**只有「Q-VIB 当更强分类器」死透**，但 ① 诊断保持增强（DP-Loss/Lemma3，E7 McNemar p=2.3e-45、E3 双 PASS、E10 6 SOTA，**BMVC 提交版零覆盖**）② 质量偏移可靠性实证（5 维退化×9 方法×跨域）两条腿独立活着、不依赖死 claim。
+
+### 两轮文献调研（7 researcher + 1 skeptic 红队，全部带引用）
+- **第一轮**：增强-诊断-triage 撞车（GradProm 2501.01114 同 ISIC 先证增强伤诊断但解法梯度修复≠我们路由+保证，撞车=中）；selective-pred+会场（TMLR 最配，明文不要 SOTA）；skeptic 红队 = **2 致命**：🔴 triage/校准/跨域 framing BMVC 全占了（salami-slicing），headline 必须焊死增强这条 BMVC-free 腿；🔴 Thm2 不能 claim agent 风险≤Direct（r4 实证 Direct B3=0.818>agent=0.788 自相矛盾）→ 降格局部条件界。
+- **第二轮（拓宽）**：负结果论文（ICBINB/ML4H/TMLR，撞车低，EDL Mirage NeurIPS24 只攻 EDL 一族）；纯 IB 理论（CDVIB/ICLR25 data-dep prior 最近邻，**实证无增益致命** → 砍）；医学 agent 浪潮（AT-CXR 2508 最像但 CXR+无质量门控，**query-for-retake 采集闭环全文献无人做=独家钩子**，诚实负结果已成 Nature Med 2024 接受模式）；鲁棒性表征（WILDS/Wild-Time 范式，MedMNIST-C/SAM-C 最近邻但无 calibration/UQ，撞车低）。
+
+### 🔀 用户拍板：拆两篇
+- **Paper1（D+A 主投）**：安全诊断保持增强 + query-for-retake 质量分级 agent。会场 MICCAI 2027/TMLR。
+- **Paper2（E 分流）**：质量偏移可靠性图谱 benchmark。会场 NeurIPS 2027 D&B。🔴 最大风险 = E↔BMVC 重叠（BMVC 占 Table1/5backbone/HAM-PAD/ImageNetC/DCA），E 须靠 BMVC 没呈现的维度立足（5 维逐退化/UQ 不差异化+IB 欠拟合机理/增强帮倒忙），动手前必逐表核 BMVC 提交版。
+- 兜底 = 负结果短文投 ICBINB/ML4H。砍纯 IB 理论论文。
+
+### 落地
+- 写 `project/ICLR_重构计划_拆两篇_2026-06-17.md`（两篇 headline/claim/复用资产/新增工作/会场/三道防火墙/诚实记录死掉的东西）。
+- 更新 `.portfolio/registry.json` iclr.phase。
+
+### 待续（会话 42）
+1. 逐表核 BMVC `itb_paper.pdf`/`itb_supp.pdf` 划 E 篇能用/必须新做边界（Paper2 前提）。
+2. `/spin-off-paper` 建 Paper2 独立 registry。
+3. 改 Paper1 STORY_FRAMEWORK（换 headline/Thm2 降格/加 GradProm 对比/triage 诚实 framing）。
+4. planner 出两篇补做实验矩阵。
+
+---
+
+## 2026-06-17（会话 40，消化会话39危机 → 三轮核查翻案+判死活+BMVC 审计｜⚠️ 论文存亡级，待用户定 ICLR 命运）
+
+### 起因
+用户「读档 ICLR，先弄明白现状别盲目开干」。承会话 39 待续 = headline 危机待消化定向。认领 iclr.claim（win-iclr-s40）。用户中途两次放权升级：先「先修 eval bug + 校准重核」→「不行就重新实验没关系」→「看看 BMVC 有没有问题，想想他们之间的联系」。
+
+### 🔄 verifier 三方对账 = 部分翻案会话39 悲观
+- **会话39「全 VIB 挤 ~0.72 无差异」建在坏数据上**：seed 批次 ckpt（`stdvib_s42/s123/s2024`、`efnet_s42` 的 best_qad.pth）**全 epoch=0 / best_acc=0**（`train_qad.py:304-317` 第一个 epoch 就存了随机模型）→ 随机模型 prob_pos 飙 0.80、ECE 暴涨 0.60。那批 0.72 全无效，3seed_agg 也无效。
+- **paper Table 1 真源 = `results/itb_results.csv`（主管线收敛 ckpt epoch 25-29），全列 AUC 精确对齐**。seed 那套量级差 4 倍纯因 ckpt 没训完，eval 逻辑/归一化/子集定义完全一致。
+- **校准裁决在唯一有效口径下成立**：F(Q-VIB Full) ECE 不优于 D(Std VIB)（LQ F 高 0.003、HQ 高 0.012）。
+
+### 🔴 coder 修 seed bug：根因是训练 bug 不是 eval bug
+- G(TokFT) 的 s123/s2024 ckpt 跟 F 的 ckpt **MD5 逐位相同**（`run_s22_missing.py` 用错 `train_qad.py` 而非 `finetune_tokenizer.py`）→ G 是 F 副本。
+- 已修：拆 `run_g_tokft_seeds.py` 正确产 G + `run_experiments.py` 加 F==G MD5 哨兵 + `scripts/aggregate_seeds.py` 加 WARN + `tests/test_seed_eval_regression.py` 6 pytest 绿。`3seed_agg` E/F auc_mean 相同 = 数值巧合非 agg bug。
+
+### 🕵️ coder 取证 0.707（abstract 中心数）= 幽灵数判定②
+- 0.707 出自 `results/eval_report_ablation.md`（05-07 16:09 旁支管线，old val_acc 选法 ckpt `checkpoints/efnet/best_qad.pth` ep26），`62467eee`（05-27）写 main.tex 时直接抄进 abstract 没核口径。
+- **原始 per-sample 预测从未进 git（gitignore）、现已不可考**（重跑给 0.62，代码漂移回不去）。坐实：abstract 0.707 ≠ Table 1 真源 0.585 = 内部矛盾红线硬伤。
+
+### 🩺 planner 设计 + R1-R5 离线判死活（零 GPU，本地 <30 min）
+**净结论：Q-VIB Full 在任何轴都跟自家最简 Std VIB 测不出区别。** 四卖点只一张 PASS 且非 Q-VIB 功劳：
+- C-α 校准增量：**FAIL**（F-D ECE 差值 CI=[−0.062,+0.063] 含 0）
+- C-γ ρ 质量耦合：**FAIL**（F Pearson −0.148 vs D +0.014 但 CI 重叠；Spearman 0.992 是 qbar 范围窄[0.054,0.45]假象）
+- **C-ε AURC/risk-coverage（胜负手）：PASS** — F=0.201 < A(Direct)=0.348 CI 不重叠，但 **F vs D 不分（0.201 vs 0.210）**
+- C-β triage 反超：**FAIL**（VIB 家族结构弱点，高熵把正样本全转介，sens_auto F=0.117 vs A=0.750）
+- 诊断：VIB 全家 HQ-AUC 也只 0.59-0.61（bottleneck 把判别信息压欠拟合），不是低质毁的。AUC 赢 Direct = 数学性证伪。R6 重训最多拉到持平，拉不出 Q-VIB 对 Std VIB 差异化 → 不建议烧卡。
+- 脚本：`results/qvib_minverify/r{1-5}_*.py` + csv/json + `r3_risk_coverage_curve.png`。
+
+### 🔍 BMVC 审计（用户问「BMVC 有没有问题 + 联系」）= BMVC 命脉扎实
+- **头条 QCTS ECE-LQ 0.079 有真 csv 撑**：`qcts_itb_predictions.csv` 实算 0.0792（官方 ECE skip bin<3 实现 `supp_pkg/code/itb/metrics.py`）。
+- D ECE-LQ 0.146 跨 BMVC/ICLR 一致，**用收敛 ckpt 非坏 seed ckpt**；0.707 幽灵 BMVC 全表无；TS 反转 ρ+0.241 有 `reversal_ci_verification.csv` 撑。
+- 唯一缺口：zero-shot D+QCTS ρ（HAM −0.108/PAD −0.150）的 `hamzero/padzero_predictions.csv` 不在磁盘（supp 次要，待补）。
+- **关系裁决**：BMVC claim 校准（post-hoc QCTS 砍 ECE，ours=朴素 Std VIB+QCTS，诚实承认 Direct 赢 AUC）→ 扎实；ICLR claim 方法更强（Q-VIB Full 赢 baseline）→ 实证假。坏管线（0.707/坏 seed ckpt）是 ICLR 后期代码漂移+multi-seed 独有，BMVC 血统干净。**这条线真成果 BMVC 已拿走（post-hoc 校准），ICLR 是过度延伸——可训练版打不过 baseline，且不能重做 QCTS（=BMVC 已投贡献，重复=自我抄袭）。**
+
+### 待续（会话 41，等用户定 ICLR 命运 = 拍板点）
+1. **拍板优先**：ICLR 走向四选一 —— ①调故事到 selective-prediction(C-ε)+5 定理理论 paper、降会场(TMLR/MICCAI/analysis) ②暂搁 ICLR 重排组合台精力 ③偏要试 R6 重训(我判大概率白烧) ④找 BMVC 不覆盖且数据支持的全新角度。**注意死结：ICLR 不能重做 QCTS（BMVC 已投）。**
+2. （技术债已修）seed eval 训练 bug + 0.707 取证 + R1-R5 脚本全落地，可 commit。
+3. （BMVC）zero-shot D+QCTS ρ 两数据源文件缺失，若 BMVC rebuttal 需要则补；主表头条不受影响。
+4. （未 commit）本会话改动：run_g_tokft_seeds/aggregate_seeds/test_seed_eval_regression + r{1-5} 脚本 + reconstruct/regen（承会话39）+ PROJECT_LOG + registry。
+
+---
+
 ## 2026-06-17（会话 39，P-2 数据重建忠实成功 → 但挖出 headline 三重矛盾 + 中心 AUC claim 不成立｜⚠️ 论文存亡级，用户拍板「暂停落档消化后决」）
 
 ### 起因
@@ -43,6 +113,18 @@
 - `project/tools/regen_abcd_from_cachedeg.py` — abcd 从 cache_deg.npy 精确重算
 - `project/tools/test_ckpts_auc.py` — 候选 ckpt AUC 快测
 - 诊断图：`project/results/figures/f_root_cause_analysis.png` + `f_tokenizer_analysis.png`
+- **（会话 40 coder 补）seed eval bug 修复四件套**：
+  - `project/run_g_tokft_seeds.py` — 正确产出 G seed ckpt（以 F seed ckpt 为起点调 finetune_tokenizer.py，修复 run_s22_seeds.py 错用 train_qad.py 导致 G==F 的 bug）
+  - `project/scripts/aggregate_seeds.py` — 从三个 seed itb_results csv 产出 itb_results_3seed_agg.csv（附同名 auc_mean 警告检测）
+  - `project/tests/test_seed_eval_regression.py` — 防回归 pytest（6 tests：dispatch 差异性 / ckpt MD5 哨兵 / agg 完整性）
+  - `project/run_experiments.py` — 加 F==G ckpt MD5 哨兵（seed override 后立即检测，相同即 RuntimeError 阻断 eval）
+
+### 新建工具（会话 40+ coder 补，Q-VIB 最小验证矩阵 R1-R5）
+- `project/results/qvib_minverify/r1_calibration.py` — ECE+bootstrap 95%CI，ITB-LQ，F/D/A，判 F vs D 校准增量
+- `project/results/qvib_minverify/r2_rho_coupling.py` — ρ(entropy,qbar) Pearson/Spearman+bootstrap，F/D/E，ITB-LQ+HQ
+- `project/results/qvib_minverify/r3_risk_coverage.py` — AURC+risk-coverage 曲线 png，F/A/D，ITB-LQ，判 selective prediction 胜负
+- `project/results/qvib_minverify/r4_triage.py` — sens_auto/净收益，读 dca/ 现有产物，核 C-β triage 反超
+- `project/results/qvib_minverify/r5_ckpt_sensitivity.py` — ckpt 多 epoch 敏感性诊断（单 ckpt 则 TODO 跳过）
 
 ### 待续（会话 40，等用户消化后定方向）
 1. **拍板优先**：用户消化后定 ICLR 走向——修 eval bug + 校准角度重核（看 ρ/ECE 是否真差异化）/ 重新定位贡献(planner+reviewer 重评 STORY 该投啥会场) / 还是更大转向。

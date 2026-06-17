@@ -1,0 +1,72 @@
+# ============================================================
+# 路线 C（SP² 平面）续训臂 — NCA A2 SCP S=32 域 A→B 续训（遗忘探针 before/after 对）
+#
+# 目的：测 S=32 变体的 RF（表示漂移遗忘），配 L_f(S32)=1.0032 在 SP² 平面补一个点。
+#   与 S4/S8/S16 共 4 点回归 L_f vs RF，判稳定性⊥可塑性是否解耦。
+#
+# 复现零偏离：仅 nca_steps / read_checkpoint / logging.folder 三字段与 b_continual_nca.yaml 不同，
+#   余全部一致（含 lr/epochs/warmup/mask/data）。nca_steps=32 与 S32 域A预训练一致。
+# ============================================================
+data:
+  batch_size: 64
+  color_jitter_strength: 0.2  # 与 a2 一致
+  crop_scale:
+  - 0.3
+  - 1.0
+  crop_size: 224
+  dataset: nih_cxr14          # 沿用同 dataset class（NIHChestXray14 通用：root+image_folder+subset_line）
+  image_folder: ""            # 空：split 行已含 train/<id>.png 相对路径（VinDr xhlulu 512px PNG）
+  num_workers: 8
+  pin_mem: true
+  root_path: data/vindr_cxr   # 域 B = VinDr-CXR（Kaggle xhlulu 镜像）；HPC 相对路径
+  subset_file: data/vindr_cxr/splits/domainB_10k.txt  # prep_domainB_cxr.py 生成（9000 train）
+  use_color_distortion: true  # 与 a2 一致
+  use_gaussian_blur: true     # 与 a2 一致
+  use_horizontal_flip: true   # 与 a2 一致
+logging:
+  folder: $EXP_LOG_ROOT/b_continual_nca_S32/
+  write_tag: jepa
+mask:
+  allow_overlap: false
+  aspect_ratio:
+  - 0.75
+  - 1.5
+  enc_mask_scale:  # 与 a2 一致
+  - 0.85
+  - 1.0
+  min_keep: 10
+  num_enc_masks: 1
+  num_pred_masks: 4
+  patch_size: 16
+  pred_mask_scale:  # 与 a2 一致
+  - 0.15
+  - 0.2
+meta:
+  copy_data: false
+  load_checkpoint: true       # 关键：续训载入域 A ckpt
+  reset_epoch: true           # 续训重置 epoch 0（否则 ckpt['epoch']=50 → range(50,20) 空跑不训练）
+  model_name: vit_small       # 与 a2 一致
+  pred_depth: 6               # 与 a2 一致
+  pred_emb_dim: 384           # 与 a2 一致
+  read_checkpoint: /gpfs/work/bio/jiayu2403/nca-jepa/logs/a2_scp_nca_vits_nih10k_S32_seed42/jepa-ep50.pth.tar  # S32 域A ckpt（HPC 实测命名带 _seed42）
+  use_bfloat16: true
+  # --- NCA-JEPA 字段（与 S32 域A预训练完全一致）---
+  predictor_type: scp_nca
+  nca_steps: 32
+  fire_rate: 0.5
+  nca_hidden: 128
+  stabilize: true
+  spectral_norm: true
+  deterministic: true
+optimization:
+  ema:
+  - 0.996
+  - 1.0
+  epochs: 20              # 短续训（探针只需趋势，不需充分收敛）
+  final_lr: 1.0e-06       # 与 a2 一致
+  final_weight_decay: 0.05
+  ipe_scale: 1.25
+  lr: 2.0e-4              # 与 a2 一致（复现零偏离：不私改 lr）
+  start_lr: 4.0e-5        # 与 a2 一致
+  warmup: 2               # 20ep 按 a2 warmup5/50ep 比例缩放（5/50*20=2ep）
+  weight_decay: 0.05

@@ -1,0 +1,18 @@
+{
+  "sens_auto_F_entropy": 0.1167,
+  "sens_auto_A_entropy": 0.75,
+  "sens_auto_D_entropy": 0.1167,
+  "sens_auto_F_joint_entropy_qbar": 0.1167,
+  "F_beats_A_entropy": false,
+  "F_beats_A_joint": false,
+  "dca_max_nb_F": null,
+  "dca_max_nb_A": 0.1863,
+  "existing_dca_summary_triage": {
+    "EfficientNet-B3": 0.818,
+    "Q-VIB+TokFT": 0.788,
+    "Std VIB": 0.137,
+    "Std VIB + QCTS": 0.143
+  },
+  "referral_rate_used": 0.2,
+  "verdict": "FAIL (C-\u03b2: F sens_auto <= A, triage not better)"
+}

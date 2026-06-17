@@ -13,8 +13,10 @@
 2. `01_STORY.md` — 核心 RQ + 三大贡献 + 与 incumbent 的边界 + 反跑偏红线 + 审稿人预对峙
 3. `02_ACCEPTANCE.md` — 验收标准 + Gate 定义（capability paper 判据，非刷分）
 4. `03_phase0_plan.md` — Phase 0 可行性预检设计（三道证伪闸 PC-A/C/B + Gate 0 决策表）
-5. `04_LOG.md` 最新 entry — 当前阶段
-6. 数据真源：`.portfolio/datasets.json`（MedIAnomaly 7 集 + 本地复用）
+5. `05_preregistration.md` — 预登记分析协议（17 确证检验 + Gate0 二值化 + T6 退守/Gate0 重判修订记录）
+6. `06_phase1_plan.md` — Phase 1 / Gate1 设计（补 ② 跨集外推腿，planner+skeptic 红队，**待立项拍板**）
+7. `04_LOG.md` 最新 entry — 当前阶段
+8. 数据真源：`.portfolio/datasets.json`（MedIAnomaly 7 集 + 本地复用）
 
 ## 当前状态
 

@@ -522,6 +522,35 @@ def main():
         OUT_CSV  = f"results/itb_results_s{args.seed}.csv"
         PRED_CSV = f"results/itb_predictions_s{args.seed}.csv"
 
+        # ── Sanity: F and G ckpts must be distinct files ──────────────────────
+        # Bug history: run_s22_seeds.py/run_s22_missing.py mistakenly called
+        # train_qad.py for G instead of finetune_tokenizer.py, producing G ckpts
+        # byte-for-byte identical to F (MD5 collision, confirmed s123 & s2024).
+        # Downstream effect: itb_predictions_s{seed}.csv had F==G predictions,
+        # causing silent AUC duplication in 3seed_agg.
+        import hashlib
+        def _md5(p):
+            try:
+                with open(p, "rb") as _f:
+                    return hashlib.md5(_f.read()).hexdigest()
+            except FileNotFoundError:
+                return None
+
+        f_ckpt = BASELINES["F"]["ckpt"]
+        g_ckpt = BASELINES["G"]["ckpt"]
+        hf, hg = _md5(f_ckpt), _md5(g_ckpt)
+        if hf is not None and hg is not None and hf == hg:
+            raise RuntimeError(
+                f"[ABORT] F and G checkpoints are byte-identical (MD5={hf[:12]})!\n"
+                f"  F: {f_ckpt}\n"
+                f"  G: {g_ckpt}\n"
+                "This means G was incorrectly trained with train_qad.py instead of\n"
+                "finetune_tokenizer.py. Fix: run run_g_tokft_seeds.py to regenerate\n"
+                "G seed checkpoints from the corresponding F seed ckpt."
+            )
+        elif hf is not None and hg is not None:
+            print(f"  [ckpt-check] F MD5={hf[:12]}  G MD5={hg[:12]}  OK (distinct)")
+
     itb = pd.read_csv(ITB_CSV)
     print(f"ITB loaded: {len(itb)} samples, {itb['subset'].nunique()} subsets")
     if args.seed:

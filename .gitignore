@@ -91,3 +91,4 @@ project/results/_bmvc_archive/
 .portfolio/friction.jsonl
 .portfolio/friction.archive.jsonl
 .claude/hooks/.delegate_gate_state.json
+.playwright-mcp/

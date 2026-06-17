@@ -31,9 +31,13 @@ case "$ARM" in
   a2_s32) CFG=configs/a2_scp_nca_vits_nih10k_S32.yaml ;;
   # --- 路线 B：等容量遗忘探针 ---
   b_smallvit)     CFG=configs/b_smallvit_pred_vits_nih10k.yaml ;;    # 等参小 ViT 预训练（NIH ep50）
-  b_cont_nca)     CFG=configs/b_continual_nca.yaml ;;                # NCA A2 域 A→B 续训
+  b_cont_nca)     CFG=configs/b_continual_nca.yaml ;;                # NCA A2 域 A→B 续训（S16）
   b_cont_smallvit) CFG=configs/b_continual_smallvit.yaml ;;          # 小 ViT 域 A→B 续训（等容量对照）
   b_cont_a0plus)  CFG=configs/b_continual_a0plus.yaml ;;             # A0+ 域 A→B 续训（大容量参照）
+  # --- 路线 C：SP² 平面 S 扫描续训（补 S4/S8/S32 的 RF，配已有 L_f 回归）---
+  b_cont_nca_s4)  CFG=configs/b_continual_nca_S4.yaml ;;             # S4  续训（L_f=1.6103）
+  b_cont_nca_s8)  CFG=configs/b_continual_nca_S8.yaml ;;             # S8  续训（L_f=1.4362）
+  b_cont_nca_s32) CFG=configs/b_continual_nca_S32.yaml ;;            # S32 续训（L_f=1.0032）
   *)  echo "未知 ARM=$ARM"; exit 1 ;;
 esac
 

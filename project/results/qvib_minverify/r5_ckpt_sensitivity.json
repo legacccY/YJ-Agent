@@ -1,0 +1,180 @@
+{
+  "ckpt_dir": "D:\\YJ-Agent\\checkpoints",
+  "F_ckpts_found": [
+    {
+      "path": "best_qad.pth",
+      "size_mb": 0.8
+    },
+    {
+      "path": "last_qad.pth",
+      "size_mb": 0.8
+    },
+    {
+      "path": "adaptive\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "adaptive\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "adaptive_s123\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "adaptive_s123\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "adaptive_s2024\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "adaptive_s2024\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "adaptive_s42\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "adaptive_s42\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "efnet\\best_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet\\last_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_s123\\best_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_s123\\last_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_s2024\\best_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_s2024\\last_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_s42\\best_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_s42\\last_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_tokft\\best_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_tokft\\last_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_tokft_s123\\best_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_tokft_s123\\last_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_tokft_s2024\\best_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "efnet_tokft_s2024\\last_qad.pth",
+      "size_mb": 4.3
+    },
+    {
+      "path": "kl_collapse_demo\\best_qad.pth",
+      "size_mb": 4.6
+    },
+    {
+      "path": "kl_collapse_demo\\last_qad.pth",
+      "size_mb": 4.6
+    },
+    {
+      "path": "mcdropout\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "mcdropout\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_ft\\best_qad.pth",
+      "size_mb": 4.6
+    },
+    {
+      "path": "stdvib_ft\\last_qad.pth",
+      "size_mb": 4.6
+    },
+    {
+      "path": "stdvib_s123\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s123\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s2024\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s2024\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s42\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s42\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s456\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s456\\last_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s789\\best_qad.pth",
+      "size_mb": 4.2
+    },
+    {
+      "path": "stdvib_s789\\last_qad.pth",
+      "size_mb": 4.2
+    }
+  ],
+  "D_ckpts_found": [],
+  "F_has_multi_epoch": true,
+  "D_has_multi_epoch": false,
+  "epoch_ckpts_F": [],
+  "epoch_ckpts_D": [],
+  "can_run_offline": true,
+  "verdict": "PARTIAL: Multiple ckpts found, offline AUC comparison possible with eval script."
+}
