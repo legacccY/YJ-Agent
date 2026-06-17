@@ -1,0 +1,2 @@
+brats_p25_area_ratio_full,min_overlap_frac_area,lgg_n_total,lgg_n_in_area_low_zone,lgg_frac_in_area_low_zone,iso_area,brats_p75_ncomp,min_overlap_frac_ncomp,lgg_n_ncomp_slices,lgg_n_ncomp_le_brats_p75,lgg_frac_ncomp_le_brats_p75,iso_ncomp,OVL_area_ratio,BC_area_ratio,OVL_n_components,BC_n_components,iso,note
+0.0198,0.05,1373,590,0.429716,True,3,0.05,1373,1325,0.96504,True,0.783671,0.963368,0.754429,0.937745,True,PR-7b: LGG 590/1373=43.0% <=brats_p25_area=0.0198 (need>=5%) -> iso_area=True; PR-7c: 1325/1373=96.5% n_comp<=3 (need>=5%) -> iso_ncomp=True; iso=True

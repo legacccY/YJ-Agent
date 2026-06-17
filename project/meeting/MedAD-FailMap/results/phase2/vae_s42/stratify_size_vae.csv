@@ -1,0 +1,4 @@
+size_bin,size_px_mean,size_px_min,size_px_max,n,n_detected,detection_rate,anomaly_score_mean
+0,54.4691,6.0,106.0,648,3,0.0046,0.010586
+1,162.2696,107.0,221.0,649,30,0.0462,0.015826
+2,315.0891,222.0,616.0,651,162,0.2488,0.022176

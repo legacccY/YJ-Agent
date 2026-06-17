@@ -7,6 +7,19 @@
     "hpc": "XJTLU HPC (gpu4090, 4 卡 qos) — 见 project/HPC_WORKFLOW.md / memory project_hpc_xjtlu"
   },
   "datasets": {
+    "hippocampus_msd": {
+      "name": "MSD Task04 Hippocampus",
+      "n": 260,
+      "local": "project/meeting/Med-NCA/data/Task04_Hippocampus/ (imagesTr/labelsTr nii.gz; MEDNCA_ROOT/data)",
+      "hpc": "/gpfs/work/bio/jiayu2403/run003/mednca/data/Task04_Hippocampus/",
+      "source": "Medical Segmentation Decathlon (http://medicaldecathlon.com/)",
+      "split": "脚本内 volume-level 7:3 (C001/C044 系列)",
+      "used_by": [
+        "nca-phasemap"
+      ],
+      "purpose": "NCA-PhaseMap 主数据：Med-NCA 复现 + update 稀疏度功能塌缩相边界 killshot (C044/C044b/C044c)；r1_hippocampus epoch_300 ckpt 在 MEDNCA_ROOT/checkpoints",
+      "status": "ready"
+    },
     "isic2020": {
       "name": "ISIC 2020",
       "n": 33126,
@@ -165,14 +178,50 @@
     },
     "oasis": {
       "name": "OASIS (brain MRI registration)",
-      "n": null,
+      "n": "Learn2Reg 版 416 subjects (~416 train / 39 test)",
       "local": "TODO 待下载",
       "hpc": "TODO",
-      "source": "https://www.oasis-brains.org/ ; Learn2Reg 预处理版 https://learn2reg.grand-challenge.org/ (OASIS task 常用 256³ T1, 含 35 标签分割可算 Dice/TRE)",
+      "source": "https://www.oasis-brains.org/ ; Learn2Reg 预处理版 https://learn2reg.grand-challenge.org/Datasets/ (OASIS-1 基, 160×224×192, 35 FreeSurfer 标签可算 Dice; 需 grand-challenge 账号)",
       "used_by": [
         "fmreg"
       ],
-      "purpose": "FMReg 脑 MRI 可变形配准标准 benchmark; G5 killshot 已用 2D 切片(neg_jac=0% GREEN), 中训用完整体/2D 全量 + 标签算 Dice + 雅可比",
+      "purpose": "FMReg 脑 MRI 可变形配准【正式 benchmark】; 中训 inter-subject 全量 + 35 标签算 Dice + neg_jac 折叠率。注: G5 killshot 实际用 BraTS2021 flair(非 OASIS, G6 卡/旧 Entry 措辞误写已订正)",
+      "status": "todo"
+    },
+    "ixi": {
+      "name": "IXI (brain MRI registration, junyuchen 预处理版)",
+      "n": "576 (403 train / 58 val / 115 test)",
+      "local": "TODO 待下载",
+      "hpc": "TODO",
+      "source": "https://github.com/junyuchen245/Preprocessed_IXI_Dataset (GDrive 1.44GB, 160×192×224 .pkl, 含 atlas + 皮层下 FreeSurfer 分割标签, 免注册); 原始 http://brain-development.org/ixi-dataset/",
+      "used_by": [
+        "fmreg"
+      ],
+      "purpose": "FMReg 脑配准【Gate1 快速 pilot 首选】(免注册 1.44GB 最快上手); TransMorph 标准集, 与 OASIS 互补",
+      "status": "todo"
+    },
+    "abdomenmrct": {
+      "name": "Learn2Reg AbdomenMRCT (跨模态 MRI-CT 腹部配准)",
+      "n": "8 配对 + 90 非配对 / 8 test",
+      "local": "TODO 待下载",
+      "hpc": "TODO",
+      "source": "https://learn2reg.grand-challenge.org/Datasets/ (L2R'21 Task1; MRI→CT 腹部, 器官分割标签; 需 grand-challenge 账号)",
+      "used_by": [
+        "fmreg"
+      ],
+      "purpose": "FMReg 跨模态 L4 lever【首选】; FM-based MR-CT 生成式配准是真空地(FlowReg/对手全无跨模态)",
+      "status": "todo"
+    },
+    "dirlab": {
+      "name": "Dir-Lab 4DCT (肺呼吸配准, TRE benchmark)",
+      "n": "10 cases × 300 landmark/对 = 3000 pts",
+      "local": "TODO 待下载",
+      "hpc": "TODO",
+      "source": "https://www.dir-lab.com/ (4D-CT 10例, inhale/exhale 300 手工 landmark/对, 1.0×1.0×2.5mm; 公开免费, 官网可达性中训前确认)",
+      "used_by": [
+        "fmreg"
+      ],
+      "purpose": "FMReg 肺配准【TRE 金标准 benchmark】; FM 少步配准在肺 4DCT 是真空地",
       "status": "todo"
     },
     "learn2reg": {
@@ -180,11 +229,11 @@
       "n": null,
       "local": "TODO 待下载",
       "hpc": "TODO",
-      "source": "https://learn2reg.grand-challenge.org/ (多任务: OASIS脑/AbdomenCT-CT/CT-MRI跨模态/肺CT; 公开 leaderboard + 官方 baseline)",
+      "source": "https://learn2reg.grand-challenge.org/ (多任务: OASIS脑/AbdomenCT-CT/AbdomenMRCT跨模态/肺CT/LUMIR脑/ReMIND超声-MRI; 公开 leaderboard + 官方 baseline; 指标 TRE/Dice/DSC30/HD95/%|J|≤0/SDlogJ 几何均值排名)",
       "used_by": [
         "fmreg"
       ],
-      "purpose": "FMReg 多任务配准 + 跨模态(CT-MRI) L4 lever; leaderboard 对照 VoxelMorph/TransMorph/LapIRN",
+      "purpose": "FMReg 多任务配准框架来源; 子集 oasis/abdomenmrct 已单列; leaderboard 对照 VoxelMorph/TransMorph/LapIRN/uniGradICON",
       "status": "todo"
     }
   }

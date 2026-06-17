@@ -1,0 +1,2 @@
+pair,feature,n_bins,bin_scheme,OVL,BC,n_source,n_target
+brats_lgg,area_ratio,100,"linear_100_[0,1]",0.783671,0.963368,1948,1373

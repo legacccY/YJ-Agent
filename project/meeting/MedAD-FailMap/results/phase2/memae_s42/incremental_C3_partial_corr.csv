@@ -1,0 +1,6 @@
+feature,controlled_for,partial_r,p_raw,p_holm,p_fdr_bh,sig_holm05,sig_fdr05,note
+sigma_global,size_px+contrast,0.0158,0.492165,0.98433,0.615207,0,0,C3 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+glcm_cluster_prom,size_px+contrast,0.0741,0.001224,0.003672,0.00204,1,1,C3 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+glcm_contrast,size_px+contrast,-0.006,0.780419,0.98433,0.780419,0,0,C3 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+fft_spectral_entropy,size_px+contrast,-0.1496,0.0,0.0,0.0,1,1,C3 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)
+cnr_proxy_otsu,size_px+contrast,-0.0849,0.000253,0.001011,0.000632,1,1,C3 family-internal 5-test Holm; Gate0 determination: see incremental_FC_family_holm.csv (10-test unified)

@@ -1,0 +1,4 @@
+contrast_bin,contrast_mean,contrast_min,contrast_max,n,n_detected,detection_rate,anomaly_score_mean
+0,0.1294,0.0038,0.1802,650,3,0.0046,0.010423
+1,0.2201,0.1804,0.2612,649,21,0.0324,0.014895
+2,0.3306,0.2615,0.4764,649,171,0.2635,0.023307

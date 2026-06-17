@@ -521,3 +521,80 @@ coder 给 lesion_features 加 `--img-dirs`（85 passed）后，跑 G1-a make-or-
 **④ planner Phase 2 多方法 coverage 设计（零 METS 依赖，顶会 ≥3 方法门槛）**：AE（已有）+ VAE（脚本现成 `--model vae` 近零成本）+ RD（特征蒸馏，机制差异化，**须 researcher 先查 MedIAnomaly 官方超参/64² 适配**）。~9 GPU·h 首轮（VAE 3 seed 本地 + RD 1 seed 探）。读数=各方法 BraTS 协变量分层（稀释→漏检跨方法一致？=A'/①）+ conspicuity 桥增量信息跨方法（C2/C3）+ 跨方法相图形状差异（Pillar ④）。多方法**不碰外推臂/iso 标签**（几何属性与方法无关）。全程不阻塞 METS。
 
 **下一步**：① 🛑 **拍板：冻结收敛版 PR-7c + 铁律5**（措辞下方呈）② 🛑 **METS：用户注册 Synapse syn51514107 给 PAT**（ICLR 命门正臂唯一来源，主线代不了）③ 拍板后并行可起：researcher 查 RD 官方超参（解锁 Phase 2）+ coder 把 area_ratio 列固化进 lesion_features ④ Phase 2 VAE 经 gpu_slot 本地自主起。**判决仍 = borderline ICLR，命门 METS 正臂 PASS + Gate2 held-out；A' 负臂三模态 + 数字固化扎实。**
+
+### 2026-06-17 续 — PR-7c/铁律5 冻结 + METS 下载迷宫(数据迁 BraTS2026,卡用户表单核验) + Phase 2 启动(F1 三方法全复现)
+
+**① PR-7c + 铁律5 冻结落档**（skeptic+reviewer 双闸收敛，用户给 PAT 同步放行）：05 §F 加 PR-7c（多灶性 iso 第二维=单向占比门，复用 PR-7b area 维结构：BraTS 自身 P75=3 作 regime 边界 + 5% 占比门；OVL 系数退描述性证据非二分门）+ 06 §2 加铁律5（iso 双维标签跑外推前钉死、禁单维回溯改判）+ 05 修订记录。时序清白：冻结早于任何 METS n_components 实测。
+
+**② METS 下载迷宫（用户给 PAT 实地遍历 Synapse）**：原 syn51514107(2023)/2024 BraTS-MET 文件夹全是空壳 README「数据已归档移走」。今天 2026-06-17 当前挑战=**BraTS 2026**（项目 syn74274097）。真入口：填 Data Access 表单(forms.gle/UiCpXos2zKFPdMnK6)→收 BraTS Service Account 邀请→加 **@BraTS2026DataAccessTeam(team 3586605, invite-only)**→Files tab 下载。**用户已注册(在 Participants 3584866)但未进 Data Access Team(3586605)**，填表后等组织者人工核验发邀请（数小时-数天）。⚠️ 表单身份须填 `legacccy`/`legacccy1@gmail.com` 否则邀请发不到。METS 仍是 ICLR 命门正臂、卡此核验。PAT 临时存 D:/tmp/syn_pat.txt（repo 外，用完删；带 modify scope 建议撤销）。
+
+**③ Phase 2 多方法 coverage 启动（零 METS 依赖）**：
+- researcher 核 MedIAnomaly 官方：**有 MemAE 无 RD** → 第三方法定 **MemAE**（drop-in 官方超参 mem_size=25/shrink_thres=0.0025/λ=0.0002/latent=16/mid_num=2048），RD 弃用（不在官方 repo+通道冲突=复现偏离）。
+- coder 从官方 4 文件逐字移植 MemAE 进 train_recon_ae.py，93 pytest 绿、VAE 验通、seed 贯穿。
+- 本地 gpu_slot 自启探信号批 VAE+MemAE s42（250ep，loss 0.009/0.005 健康，scores 2776 行 0 NaN 有方差）。
+- **s42 跨方法 F1/F2（同 AE 口径，verifier 待核）**：
+  - **F1「稀释→漏检」三方法全复现 ✅**：AE/VAE/MemAE 的 T1 size/T2 contrast/T3 交互三档全 p_holm 显著 + 检出率单调升序同向（VAE T1 chi2=179.5/T2=244.9/T3=21.9；MemAE T1=167.1/T2=127.7/T3=11.2，P90 p_holm<0.001）。**=稀释失败几何是重建 AD 范式共性非 AE 特例**，撑 A'① + 顶会 ≥3 方法门槛。
+  - **F2 conspicuity 桥 C3 部分复现**：VAE 4/5 显著同向、MemAE 3/5 同向（MemAE memory 模块可能消化部分 contrast=诚实 nuance）。
+  - **caveat 记账**：(a) VAE C2 嵌套 LR 因 score range 压缩 lbfgs 塌 chi2=0 → 以 C3 偏相关为主判据(本就设计)；(b) **AE 基线 C3 当年用聚合 csv=无控制 Pearson，Phase 2 用 per-image=更严口径** → 跨方法公平比较须 AE 重跑 per-image C3（Phase 2 比较 artifact，**不动 Phase 0 冻结 Gate0**）。
+- seed-fill（VAE/MemAE s1,s2 凑 PR-5 ≥3 seed）QUEUED(gpu_slot 72572377)，本地卡被 ideation-run002 占~0.8h 完自动取出。
+
+**下一步**：① METS 等用户进 Data Access Team → 主线 synapseclient 下数据→切 2D 训 AE→正臂 G1-a（命门）② seed-fill 卡空自启 → 全方法 ×3 seed F1/F2 + AE per-image C3 同口径重跑 → analyst+verifier → Phase 2 多方法章 ③ verifier 核 s42 跨方法数字。**判决 = borderline ICLR，命门 METS 正臂 PASS + Gate2 held-out；A' 负臂三模态 + Phase 2 F1 三方法全复现 = coverage 成果扎实。**
+
+### 2026-06-17 续 — METS 死局→开放 LGG 正臂候选(iso=True 但口径漂移+15例欠功效) + verifier/skeptic 双查揪命门级 iso 门口径 bug
+
+**① METS 彻底卡死**：BraTS-METS 数据已迁 BraTS 2026（项目 syn74274097），下载要加 @BraTS2026DataAccessTeam（invite-only，填表 forms.gle/UiCpXos2zKFPdMnK6 后组织者人工核验发邀请）。用户填表后**邀请一直没来、拿不到**。METS 作正臂主锚卡在外部核验、无限期。
+
+**② 正臂改走开放数据（绕 Synapse）**：researcher 扫开放同模态脑 MRI mask 集 → **LGG-MRI（Kaggle mateuszbuda）**=FLAIR+mask、单灶 likely iso=True、kaggle 直下。已下（110 患者/1373 含瘤切片，data/external/lgg_mri_seg/kaggle_3m/）。BraTS-Africa(TCIA 匿名查 0 series 要账号)、UCSF/MSD(BraTS 血缘) 排除/暂搁。
+
+**③ coder 跑 LGG G1-a = iso=True（但用 full 分母）**：PR-7b area 门 43%(590/1373≤0.0198) + PR-7c n_comp 门 96.5%(≤3)，OVL area=0.784/n_comp=0.754，186 pytest。**但 LGG 未 skull-strip、用 area_ratio_full（size/4096），非 anatomy 分母。**
+
+**④ verifier 核出命门级 iso 门口径三重漂移**（Bash 直核 csv，0 数字 drift 但口径不一致）：
+- 正臂 LGG + 负臂 HAM = **full 分母**（BraTS P25_full=0.0198，门方向 ≤）；负臂 CBIS + IDRiD = **anatomy 分母**（乳腺/FOV Otsu，BraTS P25_brain=0.0517，门方向 ≥）。三重不统一：分母 full vs anatomy / P25 0.0198 vs 0.0517(2.6×) / 门方向 ≤ vs ≥（当年按目标落 BraTS 哪侧逐对挑=HARKing 隐患）。
+- 致命：若统一 full+≤，CBIS 翻 iso=True（97.1%≤0.0198）。
+
+**⑤ skeptic 决定性红队（用户选「先 skeptic 再定」）= 2🔴 CONDITIONAL**：
+- 🔴 **别换对称 OVL≥0.5 门**：reviewer 当年已驳回 OVL 当二分门（离散计数不稳），实证 n_comp OVL HAM=0.498/CBIS=0.506 跨 0.5 仅差 0.008=噪声刀刃；0.5 阈值有反推 verdict 循环嫌疑。**保留已冻单向占比门**（5% 先验、时序清白）。
+- 🔴 **「修法 verdict 稳定」未验证**：LGG iso=True 是 full 分母，anatomy 分母 LGG 数字不存在（没 skull-strip）。现有「LGG full 正 + CBIS/IDRiD anatomy 负」是两套尺子拼的，不能冒充统一口径的稳定性。**硬前置=先 skull-strip LGG + anatomy 重算，证 anatomy 口径下 LGG 仍 iso=True / 余仍 False 才能改预登记。**
+- ✅ anatomy 分母科学正确（病灶/AE 实际重建器官，乳腺黑背景非重建目标）→ 修法 = **full→anatomy 全四对一视同仁纠错**（非「为 LGG 调门」），满留痕 + 反事实自缚（LGG anatomy 重算若翻 False 就接受正臂落空退 MICCAI）。
+- 🔴 **LGG 去重数未实核**：overlaps_brats2021 全 unknown，「15 独立例」是估计。researcher 已给精确法：BraTS2021_MappingToTCIA.xlsx（cancerimagingarchive.net/wp-content/uploads/，Sheet=TCIA，筛 DataCollection=TCGA-LGG=108 例，PatientID 格式 TCGA-XX-XXXX，与本地目录前三段 join）→ 实核出 **95 重叠/15 独立**（researcher 已联网验：15 例目录全在）。
+- 🔴 **15 患者(~180 切片)单独当 ICLR 命门正臂欠功效**（同患者切片相关 CI 超宽 + 还要切 held-out）。**最优=METS+LGG 独立例双同模态锚**（LGG=真独立第三脑 MRI 源补 coverage，非替 METS）；不等 METS=LGG+BraTS 跨中心 split（06 §3 备胎）双锚。
+
+**下一步（skeptic 要求的前置事实，GPU-free 先做再拍策略）**：① coder 实核去重（mapping join 出真独立例数）② skull-strip LGG（HD-BET/BET）+ anatomy 分母重算 LGG iso（占比门，**不换 OVL 门**）③ full→anatomy 全四对统一重算坐实 verdict 稳定 ④ 拿真数字定正臂策略（METS+LGG 双锚 / LGG+跨中心 split 双锚）+ 改预登记口径纠错（拍板+满留痕）。**判决仍 borderline ICLR，正臂从 METS 单押转向「双同模态锚」更稳，但需先把 LGG 口径+去重+功效三道实证补上。**
+
+### 2026-06-17 续 — 路 B 定（用户拍）：LGG+跨中心 split 双锚 + iso 门重设计 skeptic PASS + LGG 事实(15 例/skull-strip 待精)
+
+**用户拍板路 B**（不等 METS：LGG 独立例 + BraTS 跨中心 split 双同模态锚，全开放可自主跑完）。
+
+**① iso 门统一重设计（planner→skeptic PASS，待 reviewer 复裁+拍板冻 05）**：
+- 设计=统一 anatomy 分母 + **area 维双侧区间占比门**（band=[BraTS 自身 P33,P67]=[0.0688,0.1430] + **无参双侧守门 inband≥下方 AND inband≥上方**）+ n_comp 维单侧上界（≤P75=3，5%，沿用 PR-7c 不动）。area 双侧/n_comp 单侧非对称科学自洽（太大太小都破同构 vs 少灶不破）。
+- **skeptic 0 致命 PASS**：关键=**无参守门是真主力**，8 组合实算证 band 宽度([P33,P67] vs [P25,P75])+33% 对四集 verdict 零影响（HAM/CBIS/IDRiD 全 False 各因 above/below 远超 inband、BraTS 自洽 True）→ HARKing「band 事后收窄」残口**被架空**（band 不承重）。3🟠 留痕措辞：守门写主判据/band 当语义锚、诚实写「重设计产生于 HAM/IDRiD 实测之后、清白靠结构(无参守门+band 不承重+零候选依赖)非时序、禁写冻在实测前」、§A.2 对齐写「同方法论 BraTS-only tertile」非「同冻值」(量纲不同：§A.2 是 size/contrast 三等分)。
+- 不换 OVL 系数门（reviewer 已否决，OVL 退连续趋势描述性）。不改双臂方向/命中率口径/Phase 0 既有。
+
+**② LGG 事实（coder 实核，199 pytest）**：
+- 去重：官方 BraTS2021_MappingToTCIA.xlsx join → **95 重叠/15 独立**确认（独立 ID 列表落 results/phase1/lgg_dedup.csv）。FLAIR=ch1 确认。
+- **⚠️ LGG area_ratio_brain_approx 系统性比 BraTS 低 2-4×**（LGG P25/med/P75=0.0112/0.0232/0.0422 vs BraTS 0.0517/0.1053/0.1629）→ 新门下 LGG 大概率落 band 下方=iso=False（像 CBIS 太小）。**但 coder 判这很可能是近似 skull-strip artifact**（Otsu 脑区过大含颅骨→分母虚高→比值虚低）。**LGG iso 真伪未定，须精确 skull-strip(HD-BET/FSL) 重算才能拍。**
+
+**🔴 路 B 风险浮现**：LGG 正臂腿存疑——若精确 skull-strip 后 LGG 仍落 band 下方=真 iso=False（LGG 瘤本就比 BraTS 占比小）→ LGG 正臂死，路 B 只剩 BraTS 跨中心 split 单锚（退化）。15 例本就小，iso 还未定。
+
+**下一步**：① 精确 skull-strip LGG（HD-BET，Windows 工程坎：pip 装 + CPU 跑 15 患者切片）→ anatomy 重算定 LGG iso 真伪（make-or-break）② reviewer 复裁 iso 门设计（并入 3🟠）→ 拍板冻 05 §F 替代 PR-7b/7c + 留痕 ③ 设计 BraTS 跨中心 split（需 BraTS2021 中心元数据）第二锚 ④ iso 定 + 门冻后训 AE + 双锚外推 + Gate2 held-out。**判决 borderline ICLR，正臂落地是命门、当前 LGG iso 卡在精确 skull-strip。**
+
+### 2026-06-17 续 — 🎯 终局决断（用户拍板）：ICLR 命门正臂填不出 → 退 MICCAI/MedIA（诚实回退，不硬撑不改门凑）
+
+**make-or-break 结果（coder 精确 skull-strip，artifact 证实）**：原 Otsu 近似在 64² 上 fill_holes 把脑区填成整图（brain_px≡4096=没 skull-strip），故 area_ratio_brain_approx≡full。精确版（256²+腐蚀去颅骨，brain≈40% 对齐 BraTS 39.5%）后 LGG 比值放大 4-5×、不再系统性偏低。**但套已设计的无参守门，LGG 独立例(15 患者 n=228) iso=False**：落 band 内 39.9% / 下方 44.7% / 上方 15.4% → inband<下方(差 4.8 点)→ iso_area=False。LGG 非 CBIS 那种干净 disjoint（大幅重叠、上方仅 15.4%），但机械守门按字面=False，且 4.8 点差在 2D Otsu skull-strip 近似误差量级内、LGG 是 2D 切片拿不到 HD-BET 3D 更准值。
+
+**纪律点（关键，反跑偏正例）**：刚锁的反事实自缚=「LGG 落 band 下方=真 iso=False→绝不改门救 LGG」。为这 4.8 点放松守门=整套判据要防的 HARKing。**按纪律接受 LGG iso=False，不动门。**
+
+**正臂全景（三条都堵）**：METS=Synapse BraTS2026 Data Access Team 人工核验拿不到（无限期）；LGG=iso=False（边界，开放数据）；BraTS 跨中心 split=同病种同集太 trivial（「只跨中心不算真外推」一击穿）。**开放数据填不出干净 ICLR 命门正臂。**
+
+**用户拍板=退 MICCAI/MedIA**（先答「跨中心 split 冲 ICLR」后改口「退吧」=诚实回退）。理由：ICLR「可外推」命门=正臂 PASS 不兑现，不硬撑赌跨中心 split（高概率 reject）、不改门凑（守纪律）。
+
+**带去 MICCAI/MedIA 的硬资产（capability/analysis 故事，不需 ICLR「可外推 PASS」headline）**：
+- PC-A/PC-C 确证 PASS（协变量失败边界 phase diagram + conspicuity 桥 per-image 判据，三档敏感性坐实）。
+- **A' 三模态负发现**（病灶几何天然多峰、稀释失败 regime 窄 niche；HAM/CBIS/IDRiD 三模态从太大/太小/太碎三向 disjoint，verifier 0 drift + n_components/OVL 固化）。
+- **Phase 2 F1 三方法全复现**（稀释→漏检跨 AE/VAE/MemAE 一致=重建 AD 范式共性非 AE 特例；MemAE 官方移植零偏离）。
+- **iso 几何同构前验判据框架**（area 双侧守门 + n_comp 单侧上界，skeptic+reviewer 双闸 vetted；负臂三模态实测 + LGG 边界=判据有判别力的证据，连续趋势支撑）。
+- 反跑偏纪律链（T6 退守 / T7 重设计 / LGG 不改门救=三次教科书级不续命）。
+
+**MICCAI/MedIA 重铸 framing（待后续）**：「重建式医学 AD 的失败何时可预测/可迁移——协变量失败相图 + conspicuity per-image 可靠性判据 + 几何同构前验门（病灶几何决定失败迁移性，跨模态稀释 regime 窄 niche）」。analysis/capability，非刷 SOTA、非赌「可外推」。正臂落空当诚实边界写（开放数据几何分布天然不覆盖 BraTS niche=负发现的一部分）。
+
+**registry 状态 → phase1→retreat-MICCAI**。下一步（后续会话）：①/stage-gate 对 MICCAI/MedIA 标准重判现有资产够不够 ②STORY/ACCEPTANCE 重铸去掉 ICLR「可外推 PASS」命门、正臂落空诚实入文 ③iso 门 reviewer 4 必修留痕仍补全（判据框架是 MICCAI 贡献之一，留痕要齐）④Phase 2 seed-fill 跑完补 ≥3 seed 确证。**METS 哪天表单通了=可重启 ICLR 重投的 bonus，但不等。**
