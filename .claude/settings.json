@@ -64,6 +64,12 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\writing_caveman_off.js\"",
             "timeout": 3,
             "statusMessage": "writing caveman-off check..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\delegate_code_gate.js\"",
+            "timeout": 4,
+            "statusMessage": "delegate-to-coder gate..."
           }
         ]
       },

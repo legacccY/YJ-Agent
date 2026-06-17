@@ -25,6 +25,9 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 | pin_memory | `false` | true（spawn worker 不支持） |
 | 后台进程 | `Start-Process powershell`（但启动交主线） | bash 后台（随 shell 退出被杀） |
 
+## 派单门豁免
+写 `project/` 下实验 .py 时可能撞 `delegate_code_gate.js`（拦主线自己写码用）。你**就是 coder**，看到「[派单门 ⛔]」提示 → **直接重试该次 Edit/Write 即放行**（6 分钟内同类不再拦），别因此停工或改去写别处。
+
 ## 方法
 - 先 Read/Grep 摸清现有代码结构、命名、风格，**新代码贴合周围代码**（注释密度/命名/惯用法一致），不另起一套。
 - 改完用 `Bash` 自测：`python -m py_compile <file>` 过语法；有 `tests/` 跑 `python -m pytest tests/ -x -q`。

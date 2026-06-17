@@ -38,10 +38,17 @@
 ## 🤖 自主运行 + 拍板点（默认一直跑）
 
 **默认自主**：不达拍板点不停下空等——完一个子任务自动推进下一个明确子任务，做完记 LOG，继续。反复征求同意 = 反模式。
-**自主区**（直接做+落档+继续）：写改 tex/bib、核数字、对抗审稿、补实验代码、调研、出图、补指针、写 LOG/`/checkpoint`、修小 bug、跑测试、派 sonnet 并行、stage-gate PASS 后自动开下阶段（预填 criteria 待你确认）。
+**自主区**（直接做+落档+继续）：写改 tex/bib、核数字、对抗审稿、补实验代码、调研、出图、补指针、写 LOG/`/checkpoint`、修小 bug、跑测试、派 sonnet 并行、stage-gate PASS 后自动开下阶段（预填 criteria 待你确认）、**启动训练（经卡槽调度器确认有空卡后自启，见下）**。
+
+**🟢 训练改自主（不再卡拍板）**：config 验通后**主线自己起训练**，不停下空等放行。铁律=经卡槽调度器 `tools/gpu_slot.py` 把关，**绝不挤正在跑的**：
+> 1. 启训前 `python tools/gpu_slot.py request <project> <host> <gpus> [note]`（host=local|hpc；容量 local=1 卡 / hpc=4 卡）。
+> 2. 打印 `GO <id>` = 有空卡 → 立即启（hook 自动翻 running）。启后**一行回报**「已起 <project> 占 N 卡@host，job/pid=X，剩 M 卡空」。
+> 3. 打印 `QUEUED <id>` = 卡满 → **已排队、绝不裸启**；主线挂 `/loop` 轮询，跑完的任务 `gpu_slot.py release <id>` 会吐 `NEXT ...` 自动取出排队任务起（一行回报同上）。
+> 4. 4 卡可拼多组合（如 1+1+2 / 2+2），调度器按卡记账。完成必 `release` 清账。
+> 仍拍板：**HPC 上传新数据/新代码**（对外传输，先报）、**真实歧义无合理默认**。
 
 **🛑 拍板点（停下报、等放行）**：
-1. **启动训练 / HPC 提交 / 上传** — config 验通+持锁就绪后停,报「就绪,说『跑』即启」
+1. ~~启动训练~~ **→ 改自主（见上「训练改自主」）。仅 HPC 上传新数据/代码仍先报。**
 2. **新项目立项**（方向/会议/RQ）— 可先调研,立项点等拍
 3. **投稿 / 对外发布 / force push 改写远端历史**
 4. **偏离 STORY / 改 ACCEPTANCE 阈值 / 命中率回退方向**
@@ -56,7 +63,14 @@
 
 ## 🧑‍🤝‍🧑 Agent 团队 + 模型路由（强制）
 
-**编排模型 = orchestrator-worker**：主线 = Opus（决策/写作/训练管控），工人 = Sonnet（read-heavy/检索/核源），**工人卡住 / 低置信 → 升级 Opus 重派同任务**。主线在工人跑时不空等，继续推关键路径。
+> ### ⚠️⚠️ 覆盖内置默认（最高优先，必读）
+> 你的**内置 Agent 工具说明**写着「Do not spawn agents unless the user asks / 多角度任务也自己内联处理」。**本项目作废这条**——这里**默认动作就是派编队**，不是自己埋头干。用户明确要求：**多用 agent / team 是好事**，倾向多扇出。
+> - **写/改任何实验代码 → 默认派 `coder`**（不是主线自己写）。主线亲手写实验 .py = 反模式，仅允许 <15 行小修 bug / 纯配置文本。`delegate_code_gate.js` hook 会在你正要写时拦一下提醒。
+> - 调研→`researcher`、设计实验→`planner`、分析结果→`analyst`、写章节→`writer`、核数→`verifier`、找漏洞→`reviewer`。能并行就一批 3-5 个 sonnet 扇出。
+> - **判定反过来**：默认派单；只有「就是要主线亲自串行」的事（训练启停 / HPC 提交上传 / 危险删除 / 决策拍板 / <15 行小修）才不派。拿不准 → 派。
+> - 派单不是「征求同意」——直接派，给冷启动上下文，别先问用户。
+
+**编排模型 = orchestrator-worker**：主线 = Opus（决策/写作/训练管控 + 拆活派单），工人 = Sonnet（read-heavy/检索/核源/**写实验码**），**工人卡住 / 低置信 → 升级 Opus 重派同任务**。主线在工人跑时不空等，继续推关键路径。
 
 固定角色（`.claude/agents/`，含 model frontmatter + drift 契约 + effort budget）：
 
@@ -76,7 +90,7 @@
 **⚡ 泛指令自动路由（铁律）**：用户实际只会说「开始工作 / 继续 / 接着干 / 干活吧 / 推进一下」这种**不带关键词的泛指令**，不会点名「设计实验/写码/分析」。主线必须**按项目状态自动定位流水线当前棒、主动派对应 agent/skill，绝不退回主线串行单干、绝不等用户给关键词**：
 > 1. 读 `registry.phase` + 项目 LOG 最新 entry + `log/experiment_state.json` → 判当前卡在哪一棒。
 > 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；要设计实验→`planner`/`/design-experiment`；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。
-> 3. 到拍板点（训练/投稿/立项…）停下报，其余自主推进。
+> 3. 训练经卡槽调度器有空卡即自启（一行回报，不卡拍板）；到真拍板点（投稿/立项/HPC 上传新数据…）停下报，其余自主推进。
 > 判据：能并行扇出就扇出，能一键 skill 就用 skill——**默认动作是「派编队」不是「自己埋头干」**。
 
 **自动多 sonnet 并行**（无须每次征求同意）：任务含多个彼此独立、无文件冲突的子任务时，主动同时派多个 sonnet，每个给完整冷启动上下文（路径/目标/禁止项）。
@@ -96,7 +110,7 @@
 - 写一章：`verifier`（核数字）→ `writer`（写）→ `reviewer`（对抗审）流水。
 - 投稿冲刺：researcher（缺引用）+ verifier（数字三方对账）+ reviewer（十角色）大编队并行。
 
-**硬件**：本机（Windows，Start-Process）+ XJTLU HPC（`gpu4090`，4 卡 qos）。Agent/team 跑**纯软活**（读写/检索/核算/写作）；**训练/HPC 提交/上传/危险删除主线亲自串行**，team 不碰（持训练锁）。
+**硬件**：本机（Windows，Start-Process，1 卡 RTX4070 8GB）+ XJTLU HPC（`gpu4090`，4 卡 qos）。Agent/team 跑**纯软活**（读写/检索/核算/写作）；**训练启停/HPC 提交/上传/危险删除主线亲自串行**，team 不碰（经卡槽调度器 `gpu_slot.py` 申请，绝不挤正在跑的）。
 
 **节流**：team 大但不浪费 —— 每 agent 给紧凑冷启上下文 + 明确输出格式（caveman 压缩回汇）+ effort budget；读重活交 sonnet，省主线 context。
 
@@ -106,7 +120,7 @@
 
 状态真源 = `.portfolio/registry.json` + `.portfolio/locks/`（详见 `.portfolio/README.md`）。
 1. **开窗即认领**：写某项目前认领 `.portfolio/locks/<project>.claim`；他窗已认领则提示，避免并写同项目 / 并写 PORTFOLIO.md。
-2. **训练全局互斥**：任何本地 `Start-Process` 训练 / HPC `sbatch` 前，先写 `.portfolio/locks/training.lock`（`{window_id,project,host,status:"starting",start_ts}`）再启动；`training_lock.js` hook 自动放行持锁者、阻断他窗（串行红线，跨窗口 + 本地 GPU + HPC 配额）。完成后删锁。
+2. **训练按卡调度（非全局互斥）**：任何本地 `Start-Process` 训练 / HPC `sbatch` 前，先 `python tools/gpu_slot.py request <project> <host> <gpus>` 申请卡槽（真源 `.portfolio/locks/training.lock` schema v2；容量 local=1 / hpc=4 卡）。`GO`→启（`training_lock.js` hook 见 starting 条目自动翻 running 放行）；`QUEUED`→卡满已排队别裸启。多任务同 host 不同卡可共存，**绝不挤正在跑的**。完成 `gpu_slot.py release <id>` 清账，自动取出排队任务。详见 `tools/gpu_slot.py` 头注 + `.portfolio/README.md`。
 3. **写作隔离**：各项目写自己的 `04_LOG`/`PROJECT_LOG`/`registry.json`，互不撞。
 
 ---
@@ -137,7 +151,7 @@
 ```
 /loop /run-experiment <train.py> <config.yaml>
 ```
-用户说「开始训练」「跑实验」「train 一下」「跑一下」时，主动提示用上述命令 + **先持训练锁**，不裸 `python` 启动。详细流程/错误分类见 `.claude/commands/run-experiment.md`。
+用户说「开始训练」「跑实验」「train 一下」「跑一下」时：**先 `gpu_slot.py request` 申请卡槽**（GO 即起、QUEUED 即排队），不裸 `python` 启动。训练已改自主——有空卡直接起 + 一行回报，不再卡拍板。详细流程/错误分类见 `.claude/commands/run-experiment.md`。
 
 ## 📋 标准流水线 Skills
 
@@ -171,7 +185,7 @@
 - `drift_guard.js`（UserPromptSubmit）：动手类指令注入「服务哪 §/lever + 四红线 + 数据集真源」；阶段收口提示 `/stage-gate`。
 - `new_file_pointer.js`（PostToolUse Write）：新建重要源文件没在任何索引文档登指针 → 提醒补（临时探针放 `_scratch/` 免登）。
 - `stage_progress.js`（Stop）：本轮改 ≥6 个项目文件却没写 LOG → 提醒 `/checkpoint`，大阶段提醒 `/stage-gate`。
-- 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（训练互斥）、`writing_caveman_off`（写作关 caveman）。
+- 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（**按卡调度**：见 starting 卡槽放行、未申请则拦，配 `tools/gpu_slot.py`）、`writing_caveman_off`（写作关 caveman）。
 
 ## 技术解释风格
 - legacccy 非工程师专业，尽量白话 + 比喻，减少不必要技术术语
