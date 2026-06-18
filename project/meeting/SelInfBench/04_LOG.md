@@ -4,6 +4,20 @@
 
 ---
 
+## ⏳ 续跑交接（2026-06-18 12:30，A3 重跑中，新窗口接力看这里）
+
+> ⚠️ A3 首跑(slot 46970170)异常：跑 ~2h(GPU 89% 实证在算)但 exit0 + log 0字节 + csv 没落盘 = 疑被外部清掉、stdout 全缓冲 buffer 丢光。**已重跑**(下条)，这次 `python -u` 不缓冲 log 实时流。
+
+**A3 deflation-vs-M sweep 重跑中**（GPU local 卡 **gpu_slot id=6ce4a6b4** 占用中，run b3d9r43jz，PYTHONUNBUFFERED）：
+- 脚本 `scripts/selinf_a3_benchmarks.py`（ISIC2020+BraTS2021 二分类 ×M∈{4,8,18,36} data fission deflation + 难度体检）。
+- log `results/a3_run.log`（**这次实时流，非空且在长=在跑；停止增长+有 VERDICT=跑完**），输出 `results/a3_deflation_vs_M.csv`。
+- **判完成**：`a3_deflation_vs_M.csv` 存在 + log 尾有 `A3 VERDICT` → 跑完。
+- **跑完必做**：`python tools/gpu_slot.py release 6ce4a6b4` 清账（会吐 NEXT 取排队任务）。
+- **跑完下一步**：analyst 读 a3_deflation_vs_M.csv 判 A3（3 benchmark deflation 随 M 单调增 + 斜率同向为正 + data fission 随 M 系统失效=PASS；BraTS 若 AUROC>0.95 触顶 deflation 坍=任务过易 artifact 非 winner's curse 不存在,脚本已 WARN,换更难变体）→ verifier 核数。
+- ⚠️ 若 a3_run.log 非空但报错/崩 → 看尾部，多半又是 RTX4070 env bug（已知 inplace SiLU+cudnn.benchmark，selinf_datafission.py 有修法可抄）。
+
+---
+
 ## Entry 3 — Gate1 A2 GO/NO-GO 跑通（2026-06-18，data fission 真区间 = GO）
 
 coder 修 env bug（torchvision EfficientNet-B3 inplace SiLU + cudnn.benchmark 在 RTX4070 Laptop WDDM 崩 → 关 inplace + cudnn.benchmark=False）后，HAM 18-config sweep + data fission 跑通（local 卡 9bebdda5→939e5da4，~0.36 GPU·h，主线核 log）：

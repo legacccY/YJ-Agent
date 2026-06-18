@@ -17,9 +17,13 @@
 **修复 + patient-level CV 重跑（省下载聪明解）**：coder 重写 kill1_baseline=StratifiedGroupKFold(groups=patient,5 折)+ 置换只打乱 train+≥100rep + bootstrap CI 按 patient 重采样 + GBK ✓✗→[PASS]/[FAIL]。现有 75 样本 5 折 OOF 聚合：
 - **CV pooled AUROC(n=75)=0.7094，bootstrap 95% CI [0.6031,0.8116]** → CI 下界 0.60 > 0.50 = 真正向信号（远比单切 15-test 有意义，且不用加下载）。
 - 折 AUROC：0.53/0.44/0.84/0.69/0.83（fold2 below chance，但 pooled 稳）。
-- ⚠️ **provisional PASS**：100-rep 置换检验跑中(buuwx9eij CPU ~1-2h)，需确认 perm null 塌回 ~0.50 才定 KILL-1 PASS（终极排 leakage）。
 
-**下一步**：置换确认 → PASS 则 KILL-1 过、claim「分歧可从图像预测」站住(50-scan 量级)，可考虑扩 150 scan 加功效 / 进 A2。FAIL/perm 不塌 → 回查。csv: `results/kill1_cv_auroc.csv`。
+**✅ KILL-1 PASS 确认（2026-06-18，100-rep 置换跑完 buuwx9eij）**：
+- **置换 null 100 rep = 0.5063 ≈ 0.50（塌回了）**，perm p-value = 0.0000 → 修复后置换正确塌回随机 = **零 leakage**，0.71 是真信号非泄漏 artifact。
+- 判据三条全过：AUROC 0.71 > 0.60 ✓ / CI 下界 0.60 > 0.50 ✓ / perm null 0.51 < 0.60 ✓ = **KILL-1 PASS**。
+- claim「分歧可从图像预测」在 50-scan 量级站住，A1 主判据初步达标。csv: `results/kill1_cv_auroc.csv` 汇总行 `cv_pooled_auroc=0.709402, perm_auroc_mean=0.506346, verdict=PASS`。
+
+**下一步（KILL-1 既过，进 A2/A4）**：① 扩 ~150 scan 加统计功效坐实（可选，50-scan 已 PASS）② A2：分歧预测 vs 模型自身 UQ（熵/MC-dropout）对照，证预测专家间分歧非模型自身不确定 ③ A3：related work 切清 EDUE/2508.09381（辅助任务 vs 预测目标）④ A4：QUBIQ 第二集 + deferral 临床价值。
 
 ---
 
