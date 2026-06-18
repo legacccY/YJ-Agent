@@ -52,7 +52,9 @@ process.stdin.on('end', () => {
   try { fs.writeFileSync(statePath, JSON.stringify({ last_block_ts: now }, null, 2)); } catch (e) {}
 
   // friction 记账（best-effort）
-  try { require('./_friction.js').log('main-writes-code', norm.split('YJ-Agent/')[1] || norm); } catch (e) {}
+  // 注意：hook 无法区分主线 vs subagent 写入（Claude hook schema 无 agent 标识字段）。
+  // 用 code-gate-trigger 而非 main-writes-code，避免 optimizer 误把 coder 的写入当主线违规聚类。
+  try { require('./_friction.js').log('code-gate-trigger', norm.split('YJ-Agent/')[1] || norm); } catch (e) {}
 
   const short = norm.split('YJ-Agent/')[1] || norm;
   process.stderr.write(
