@@ -21,7 +21,25 @@
 - **K3（撞车复查）**：投稿前 researcher 复查 NCA 稳定性/相变是否出现成片（当前 2508.06389 正交、空白真实，方向有人动须复核）。
 - **K4（梯度因果反转）**：若梯度时序分析显示梯度其实是塌缩前驱（先死）→ 改写 A3 claim，不强行"与梯度无关"。
 
+## K1 预登记判定规则（2026-06-18 冻结，跑 BraTS 前生效，防 HARKing）
+
+> Gate1 设计经 skeptic 红队（🟡-5）：原 [0.25,0.50] 区间过宽（实测 Hippo 过渡区仅 0.30→0.40），让 K1 几乎不可能 KILL=失去筛选力。改挂钩实测 ur*_hippo±0.10。**动 coder 前冻结 + git commit 留痕，事后不得调宽区间。**
+
+```
+ur*_hippo = Hippo **no-clip** 实测临界点（B2 在 Hippo no-clip 同管线复测；G5 的 0.35 带非官方 clip 仅历史参考，以 no-clip 复测为准记 git，复测值与 0.35 差异即 🔴-6 归因证据）
+ur*_brats = 腿① B2/B3 BraTS 实测临界点
+过渡宽 w  = dice 从高台跌破 collapse 阈跨越的 ur 区间宽度
+
+PASS（A4 第二数据集复现）：ur*_brats ∈ [ur*_hippo−0.10, +0.10] = [0.25, 0.45] 且 w≤0.10 且高 ur 档 dice 显著 > dice_bg
+KILL（K1 触发）：临界消失（无断崖 / w>0.10）或 ur*_brats 漂出 [0.25, 0.45]
+假 KILL（不判 K1，回查数据）：全程 dice ≈ dice_bg（判据失效）→ 查前景占比/归一化/mask 配对
+灰区（拍板点 4 停报）：ur*_brats ∈ [0.45, 0.625]（合理 NCA 区间但偏离）→ 不 KILL，headline 数值从「≈0.375 普适常数」改「区间一致、点位数据依赖」
+```
+
+collapse 判据（跨集自适应，B0 标定后冻结）：`collapse := final_dice < max(0.01, dice_bg + 3·σ_bg)`。Hippo dice_bg≈0 退回 ≈0.01（不破既往三重实证）；BraTS 自适应抬阈防低前景假 collapse（实测 BraTS 前景 median 5%/min 0.36%）。B0 的 dice_bg/σ_bg 跑前写 config 冻结。
+
 ## 复现红线（全程）
 
-- 零偏离官方：NCA 架构/超参照 Med-NCA 官方（LR=16e-4 / betas=(0.5,0.5) / 300 step / channel=16），禁私改凑收敛。CLIP_NORM=1.0 官方未明确，标 TODO。
+- 零偏离官方：NCA 架构/超参照 Med-NCA 官方（LR=16e-4 / betas=(0.5,0.5) / 300 step / channel=16），禁私改凑收敛。
+- ⚠️ **CLIP_NORM 复核结论（2026-06-18 researcher 核官方 repo）**：官方 Med-NCA `train_Med_NCA.ipynb` + `Agent.py` L76-105 **从不用 `clip_grad_norm_`**（distill 2020 用 per-variable L2 norm 是另一回事）。G5 沿用的 CLIP_NORM=1.0 = **非官方自加**，且可能污染 A3「塌缩与梯度无关」（名义 grad 被裁到 1.0）。Gate1 主结果改**官方无 clip**，clip=1.0 作对照解释 G5；腿② A3 因果必在无 clip 下重测。**触复现红线，已报用户。**
 - 数字一律 Bash/Grep 核 csv，入文前过 verifier。

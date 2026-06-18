@@ -4,6 +4,31 @@
 
 ---
 
+## Entry 2 — Gate1 实验矩阵设计 + 红队收口（2026-06-18）
+
+**流水线**：/design-experiment → planner 出矩阵 → skeptic 红队 → researcher 核超参 → 全纳修订定稿。落 `实验设计_Gate1_2026-06-18.md`。
+
+**矩阵三腿（~85 run / ~1.7 GPU·h / 4 卡墙钟 ~0.5h，HPC）**：
+- 腿① K1/A4 普适性：B0 全背景基线标定 → B1 粗扫 → B2 加密 → B3 5seed（BraTS 第二数据集临界复现）。
+- 腿①-b A4 第二独立实现 B4（Hippo 上换 NCA 实现验非单实现 artifact）。
+- 腿② A3/K4 因果：G1/G2/G3 梯度时序（塌/活/临界三档，逐 step 轨迹定梯度先死 vs 网络先垮）。
+- 腿③ R1 机制 M1：单脉冲传播半径探针（预期大概率 K2）。
+
+**skeptic 红队 2🔴+3🟡 全修**：
+- 🔴-1 BraTS 前景 median 5%（实测）→ 绝对 `dice<0.01` 假性触发 collapse → 新增 B0 标定 + collapse 改相对自适应 `max(0.01, dice_bg+3σ)` + 真/假 KILL 流程 + 诚实回退备选。
+- 🔴-2 A4「第二独立实现」漏腿 → 加 B4 对照（选 b，~0.1 GPU·h 补成整条）。
+- 🟡-3+🟡-7 腿③ q=ur×T 单调=零预言力 → 判据从「穿阈」改「非单调拐点」，明说大概率 K2。
+- 🟡-4 腿② 阈值拍脑袋 → 加 27 组敏感性扫描，符号全稳才升级 A3 因果。
+- 🟡-5 K1 区间 [0.25,0.50] 过宽 → 挂钩实测 ur*_hippo±0.10，**预登记冻进 ACCEPTANCE + git 留痕防 HARKing**。
+
+**🔴-6 researcher 逮到复现红线偏离（重磅）**：官方 Med-NCA `Agent.py` L102-103 **零 `clip_grad_norm_`**，G5 三重实证全带非官方 CLIP_NORM=1.0。致命=clip 把真实步长夹平 → A3「塌缩与名义 max_grad 无关 r=0.238」是 **clip artifact**，动摇 headline 支柱2。处置：no-clip 改主条件（对齐官方），clip=1.0 降对照解释 G5，腿①B1/B2+腿②G* 加 clip 维度，A3 必在 no-clip 重测。**已报用户拍板**。
+
+**两拍板点报用户**：①🔴-6 no-clip 复现订正（G5 需 no-clip 复核，可能修正支柱2）②STORY headline 数值订正（过渡宽 ≤0.05→≤0.10、ur*≈0.375→区间）。+ P0 数据口径（BraTS train 无 mask，拟用 test/tumor+annotation 配对当扫描集）。
+
+**下一步**：用户拍 🔴-6/数值订正/P0 口径 → 派 coder 写 P0 适配器 + no-clip 训练脚本 + B0/B4/腿②记录脚本 → HPC 卡槽申请跑（4 卡空）。
+
+---
+
 ## Entry 1 — 立项（2026-06-17，用户拍板）
 
 **立项决策**：源 = ideation run-003（NCA × 医学图像）G6 唯一存活旗舰 **C044**。用户拍板「立项 C044」。
