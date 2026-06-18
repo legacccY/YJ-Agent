@@ -1,0 +1,6 @@
+config,lr,dropout,seed,val_acc,macro_auc,method,selected_config,ci_low,ci_high,ci_width,deflation_pct,M,sigma_hat,tau
+lr=0.001_dp=0.2_s=42,0.001,0.2,42.0,0.68,0.716929,,,,,,,,,
+lr=0.0003_dp=0.4_s=123,0.0003,0.4,123.0,0.66,0.463171,,,,,,,,,
+_STAT_naive,,,,,,naive,lr=0.001_dp=0.2_s=42,0.6504,0.6896,0.039199,0.0,2.0,0.014142,1.0
+_STAT_datafission,,,,,,datafission,lr=0.001_dp=0.2_s=42,0.636491,0.71489,0.078399,100.0,2.0,0.014142,1.0
+_STAT_sqrtM_invalid_INVALID_BASELINE,,,,,,sqrtM_invalid,lr=0.001_dp=0.2_s=42,0.644258,0.699694,0.055436,41.4214,2.0,0.014142,1.0

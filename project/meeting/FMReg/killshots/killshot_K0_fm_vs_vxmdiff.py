@@ -751,5 +751,13 @@ if __name__ == "__main__":
         description="Killshot K0: VoxelMorph-diff vs FM-in-SVF 增益对照 (FMReg A0)")
     parser.add_argument("--smoke", action="store_true",
                         help="5 pairs, 10 steps smoke test (cpu ok, ~30s)")
+    parser.add_argument("--data-dir", default=DATA_DIR,
+                        help="override BraTS flair png dir (HPC path)")
+    parser.add_argument("--out-dir", default=RESULT_DIR,
+                        help="override result csv output dir (HPC path)")
     args = parser.parse_args()
+    # allow HPC paths to override Windows defaults
+    DATA_DIR   = args.data_dir
+    RESULT_DIR = args.out_dir
+    RESULT_CSV = os.path.join(RESULT_DIR, "killshot_K0_fm_vs_vxmdiff.csv")
     run(smoke=args.smoke)

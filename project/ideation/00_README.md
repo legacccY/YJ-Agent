@@ -103,7 +103,7 @@ G0 宪章把搜索空间一次性钉死：领域边界、**硬排除清单**（N
 - `runs/2026-06-17_run-001_nca-wm-medseg-uq/` — NCA-WM/MedSeg-UQ 残值挖
 - `runs/2026-06-17_run-002_medimg-method/` — 医学影像全模态·方法创新型(CVPR/MICCAI/NeurIPS)·70/30 稳健·≤两周中训（charter 锁定，G1 进行中）
 - `runs/2026-06-17_run-003_nca-medimg/` — NCA × 医学影像单轴（剔除世界模型轴）
-- `runs/2026-06-17_run-004_medimg-worldmodel/` — 世界模型 × 医学影像（与 run-003 正交，硬排除 NCA/JEPA 家族）·60/40·ML 顶会主投。**charter 已锁定；G1 完成=ideator×6 产 104 候选→pool.jsonl(104)**。下一步 G2 机器硬筛（撞车检测需先 `pip install transformers adapters faiss-cpu torch`，或降级 OpenAlex/researcher 网页逐条核 top）。
+- `runs/2026-06-17_run-004_medimg-worldmodel/` — 世界模型 × 医学影像（与 run-003 正交，硬排除 NCA/JEPA 家族）·60/40·ML 顶会主投。全漏斗 `104→(G2)69→(G3)45→(G4 0致命)12→(G5)终判`。**G5 无强去风险赢家**：C049 PASS 但 floor effect（rollout 卖点软）/ C047 GRAY（同模态 proxy 太弱）/ C042 GRAY（归一化假象）/ C077 KILL。**2026-06-18 G6 用户拍板=B+C：先补 C047 真 CHAOS 跨模态 G5 去风险，暂不立项**；对齐后仍分歧→立 C047，塌→回 C049 reframe 兜底。决策档 `07_report/G6_decision.md`。下一步=researcher 解 CHAOS 闸→planner 设计→coder→主线跑。
 
 运行时挂件：`.claude/agents/ideator.md`（批量产出工）+ `.claude/commands/ideate.md`（编排 skill）+ `tools/ideation_collision.py` / `ideation_gapmine.py`（已实现+测试）。
 

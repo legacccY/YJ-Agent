@@ -6,6 +6,71 @@
 
 ---
 
+## 2026-06-18（会话 44，🏁 E1 HPC 恢复 + pre-submit 全绿 + 补图 3→11 → 🏷️ 封存·待最终打磨）
+
+> 🏷️ **本会话末封存为「待最终打磨」**（非 BMVC 式硬封印，稿可改、只暂停推进）。九章合稿 71 页 / 11 图 / 0 硬阻断。**待最终打磨清单**：① framework/架构概念图（需外部 AI 出图工具，用户暂缓）② camera-ready 最终脱敏 grep ③ fairness ECE 张力 rebuttal 预案 ④ VisiScore csv 已落盘。重开按 README 状态行 + 本 entry 读档。DDL abstract 09-22 / full 09-29。
+
+用户「大集群开始工作」= 授权上 XJTLU HPC 清最后硬阻断 = E1 no-FiLM 33.06 配对值恢复（stage-gate 带债放行后唯一渲染红 [TODO]，s7_c1 L84）。
+
+### 完成
+1. **paramiko 连 HPC 成功**（dtn.hpc.xjtlu.edu.cn / jiayu2403），找到 job `1442290.out` + `1442337.out`（logs/，均 exit=0、.err 0 字节干净）。
+2. **E1 配对值全坐实**（job 1442290.out，E1 FiLM ablation，test split）：
+   - with-FiLM perimg PSNR=**32.743**（ckpt stage1_planA_256, epoch40），SSIM 0.9099
+   - no-FiLM perimg PSNR=**33.064**（ckpt stage1_planA_256_noFiLM, epoch89），SSIM 0.9141
+   - 两 variant 同 n=19878。tex 写的 32.74/33.06 逐位对上，**无需软化 E8 措辞**。
+   - 附带：E8 那行 ΔAUC/agreement/KL（with -0.033/0.90/0.24 vs without -0.042/0.87/0.35）也与 `1442337.out`（with dAUC -0.0325/consist 0.9018/KL 0.2397；no-FiLM -0.0421/0.8660/0.3486）对上。
+3. **源工件恢复**：HPC 上 `results/e1_film_ablation.json` 确已丢失（PULL FileNotFound，与会话43 记录一致）→ 从 1442290.out 逐字重建 `project/results/e1_film_ablation.json`（带 _provenance）；原始 .out 存档 `meeting/ICLR2027/_e1_recovery/{1442290,1442337}.out`。
+4. **清 s7_c1 L84 \todo** → 换为 % 源注释（job 1442290 + ckpt 名 + 工件路径），值 32.74/33.06 不动。
+5. **三遍重编译 main.tex**：**65 页 / 0 undef-cite / 0 undef-ref / 0 fatal / 0 undefined-ctrl-seq**。渲染红 [TODO] 清零。
+6. **camera-ready 小债顺手清**：ACCEPTANCE C2.2「retake_rate=100%」旧措辞 → 订正为 high 0.055/moderate 0.651/severe 0.889（源 agent_vs_direct_risk.csv，与稿对齐）。
+
+### ✅ /pre-submit-check 全绿（会话44 续，用户「跑」）
+- **verifier 数字三方对账**：27/27 核查点 ✅ **0 DRIFT**（main.tex↔csv↔STORY/ACCEPTANCE）。涵盖 E1(32.74/33.06)/E8(ΔAUC/agree/KL)/triage@20%(0.818/0.788/0.137/0.143)/DCA 4 法 maxNB/retake band(0.055/0.651/0.889)/E10(VE 32.79 + range [-0.116,-0.066])/E7(McNemar 2.3e-45)/E12 速度/VisiScore(0.924/0.895)。+TokFT maxNB 0.179 真源 dca_results.csv（非 summary 0.1798）已锁。
+- **脱敏 grep**：0 命中机构/邮箱/真名/非匿名链接；`\author{Anonymous Authors}` + ANON-BMVC bib 占位在；无致谢/grant 段。
+- **图源 R10 复核**：3 图全 PDF 矢量。fig:dca CONFIRMED = `project/report/figures/fig_dca_triage.pdf`（run_dca_triage.py 从 itb_predictions.csv ITB-LQ n=300 生成；mtime Jun16 23:42 + size 33781 与封印 BMVC 版 Jun15/32908 不同）→ 编译实际引用此文件，**非 BMVC import，R10 守住**。清 s77 两处 stale fig:dca \todo 注释存根（确认改 CONFIRMED）。
+- **格式**：65 页（正文 ICLR 限内 + appendix 不限），bib 0 undef，图全 PDF。
+- **camera-ready 小债清**：VisiScore PLCC/SRCC 落盘 `results/visiscore_plcc_srcc.csv`（key 值 mean 0.924/0.895 现可 Bash 核，替 .md 人工读）。
+
+### 状态
+- **✅ 投稿就绪：0 ❌**。九章稿 65 页 / 0 undef / 0 渲染 [TODO] / 数字 0 DRIFT / 脱敏过 / R10 守。**无硬阻断**。
+- 剩纯 nice-to-have（不阻投）：c0 figures 无 .verified 标记（值已 heatmap self-check 会话43 核）；VisiScore completeness 维 SRCC 0.689<0.7 边界（paper 只引 mean，不影响）。
+
+### ✅ 补图：正文结果图 3 → 9 张（会话44 续2，用户「图还是太太少了」）
+- **诊断**：65 页仅 3 张渲染图（c0_heatmap/fig_dca/fig_dflip），ICLR analysis 稿图荒；且 3 张已生成图白放未接（c0_reliability_curves/fig_cost_sweep/fig_e5_salvage 旧版）。
+- **接 2 张已就绪图**（验 ICLR 源 + 修 1 路径 bug：c0_reliability 在 ICLR2027/figures/ 非 report/figures/）：`fig:c0-reliability`（AUC vs 严重度退化曲线）→§7.1；`fig:a20-sweep`（成本-比率 sweep 双panel）→A20。
+- **coder 批量出 6 张新数据图**（plot_iclr_*.py，源 csv→report/figures/，PDF+PNG dpi300，coder 值全核 csv）。接 4 张干净的（各加内文 \cref 锚定防浮图）：
+  1. `fig:e10-tradeoff`（KEY，PSNR vs ΔAUC 散点，VE 独占高保真+保诊断角，6 baseline 全在 ΔAUC<0）→s7_e10_sota。
+  2. `fig:retake-gradient`（retake 触发率 0.055/0.651/0.889 三档梯度+CI）→s7_c3。
+  3. `fig:e2-perdim`（per-dim PSNR gain + SSIM，contrast 唯一 harmful −3.2）→s7_c1。caption 写清 gain vs 绝对口径（blur 绝对 35.82 高但 gain −0.8，起点高）。
+  4. `fig:e5-salvage`（E5 melanoma v6 null 瀑布，salvage 4/77=5.2% vs damage 83/274=30.3% net−79）→s7_c3 取代旧 Jun9 v5 版。
+- **修 2 图一致性 bug**（派回 coder）：e5 inset DamageRate 23.6%(83/351)→**30.3%(83/274)** 对齐稿口径；e2 contrast/blur 柱矛盾双标(+3.2 & −3.2)→单标负值。修后图文一致。
+- **终态**：重编译 **68 页 / 0 undef-cite / 0 undef-ref / 0 fatal / 0 missing-fig**，正文结果图 **3→9 张**（翻 3 倍，全是稿内既有结果可视化）。
+
+### ⚠️ 发现：fairness ECE 真张力（已记，本轮不动稿）
+- coder 出 fairness 图时揪出：`results/fairness_fitzpatrick_iclr_full.csv` 的 `ece_15` = 标准 15-bin ECE（核脚本 `_ece(prob,tgt,n_bins=15)` 坐实），显示 **Q-VIB+TokFT 在 Fitzpatrick17k 上 ECE≈0.81（全方法最差）**，而稿 §7.7/A20 triage 故事称其「well-calibrated」（实测在 ITB-LQ n=300）。**不同子集**（fairness=ITB-Diverse 广域池；triage=ITB-LQ 部署子集），ECE 测校准幅度、triage 需置信序——非严格矛盾，但 reviewer 会探。用户拍板 **fairness 图只接 AUC 子图、ECE 先不碰**，张力留作单独 analysis 决策。
+
+### ✅ fairness/crossdomain 两图 + 附录 A27（会话44 续3 完成）
+- 关键约束：九章正文**故意没纳入** fairness/crossdomain（s8 L48 注：BMVC 内容 R10 不复用）→ 决定放**附录 A27**（绝对 AUC 低 0.5-0.8 难池，放正文恐招「分类器弱」批评，附录诚实 analysis 更稳，不扩正文 claim 面）。
+- R10 验源：fairness=ICLR 干净（脚本 `fairness_fitzpatrick_iclr_full.py` 明写 never touches BMVC，读 external_fitz17k_predictions.csv Jun15）；crossdomain 用 external_*_predictions.csv（Jun14-15 ICLR 重跑），**避开** cross_dataset_qcdi.csv（Jun5 BMVC 嫌疑）。
+- coder 重生成：fairness 删 ECE 子图只留 per-skin-tone AUC（用户拍板）；crossdomain 删 CheXray 只 4 皮肤域 per-baseline。
+- **主线独立 Bash 重算核 crossdomain AUC**（红线①不信 sonnet）：首次重算全对不上→查出**我的 AUC 函数 bug**（reorder y 但 ranks 用原序错位）→ 修（含 tie 平均秩）后 16 cell 全对上 coder+图（HAM A 0.8048/F 0.6212/H 0.7561/G 0.7060，PAD A 0.6726/F 0.4889，DermNet A 0.5030…）。fairness 值早先已对 raw csv 确认。
+- **writer 写 `appendix/A27_generalization_fairness.tex`**（87 行，opus caveman OFF）：§ Cross-Source Generalisation and Skin-Tone Fairness（app:gen-fair）含两 subsection + 两图。诚实 framing（reach+limits/disparity 非性能赢，绝对值低=难池非分类器弱）；fairness **只报 AUC 差异、绝不提 ECE**（两处明写）；R10 caption 显式声明 no BMVC reused；不改 C1/C2 headline。主线 \input 进 main.tex + s8 加 limitation (8) 指针（跨源脆弱 HAM 强→DermNet 近 chance + 深肤色 V-VI 系统性偏低 + Focal+LS 跌破 0.479）。
+- **终编译：71 页 / 0 undef-cite / 0 undef-ref / 0 fatal / 0 missing-fig**。
+
+### 🏁 补图总账：正文图 **3 → 11 张**（翻 ~3.7 倍）
+- 原 3：c0_heatmap / fig_dca / fig_dflip。
+- §7/§A20 内新 6：c0-reliability / a20-sweep / **e10-tradeoff(KEY)** / retake-gradient / e2-perdim / e5-salvage(v6 null)。
+- A27 新 2：fairness-fitz（per-skin-tone AUC disparity）/ crossdomain（4 皮肤源泛化不均）。
+- 全部值 csv 核实（主线/verifier/独立 Bash 重算），修 4 个一致性 bug（c0 路径/e5 分母 30.3%/e2 双标/我的 AUC 函数）。
+
+### ⚠️ 留账：fairness ECE 真张力（单独 analysis 决策，本轮未动稿）
+Q-VIB+TokFT 在 Fitz17k 上标准 ECE≈0.81（最差）vs triage「well-calibrated」(ITB-LQ)。不同子集但 reviewer 会探。A27 fairness 只报 AUC 已规避，但若投稿后被 raise，需准备 rebuttal（校准是子集相关：LQ 部署集 triage 可用 vs 广域池校准退化）。
+
+### 下一步
+- 投稿冲刺（abstract DDL 09-22 / full 09-29，距 3 个月）。稿现 71 页 11 图、0 硬阻断。可进 rebuttal 预案（含 ECE 张力预防）/ 封板候投。framework/架构概念图按用户拍板暂不出（需外部 AI 出图工具）。
+
+---
+
 ## 2026-06-17（会话 43，九章重排第二批 W6/W7 落地 + verifier 全 PASS + E1 溯源收窄 + C0 heatmap 出图）
 
 ### 完成（W6/W7 = 九章剩两章，七章→九章 draft 全到）

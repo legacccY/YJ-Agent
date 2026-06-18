@@ -1,0 +1,17 @@
+pair_id,sigma,offset_x,pair_note,lambda_smooth,n_alpha_points,n_minima,barrier_height,min_alpha_positions,verdict_per_curve
+0,10.0,30,"standard: offset=30, sigma=10",0.0,41,2,0.1297,"[0.0, 1.0]",BIMODAL
+0,10.0,30,"standard: offset=30, sigma=10",0.1,41,2,0.1297,"[0.0, 1.0]",BIMODAL
+0,10.0,30,"standard: offset=30, sigma=10",1.0,41,2,0.1297,"[0.0, 1.0]",BIMODAL
+1,10.0,20,"closer blobs: offset=20, sigma=10",0.0,41,2,0.022616,"[0.07500000000000001, 0.925]",BIMODAL
+1,10.0,20,"closer blobs: offset=20, sigma=10",0.1,41,2,0.022616,"[0.07500000000000001, 0.925]",BIMODAL
+1,10.0,20,"closer blobs: offset=20, sigma=10",1.0,41,2,0.022616,"[0.07500000000000001, 0.925]",BIMODAL
+2,15.0,35,"wider blob: offset=35, sigma=15",0.0,41,2,0.057859,"[0.0, 1.0]",BIMODAL
+2,15.0,35,"wider blob: offset=35, sigma=15",0.1,41,2,0.057859,"[0.0, 1.0]",BIMODAL
+2,15.0,35,"wider blob: offset=35, sigma=15",1.0,41,2,0.057859,"[0.0, 1.0]",BIMODAL
+3,8.0,25,"narrower blob: offset=25, sigma=8",0.0,41,2,0.105951,"[0.0, 1.0]",BIMODAL
+3,8.0,25,"narrower blob: offset=25, sigma=8",0.1,41,2,0.105951,"[0.0, 1.0]",BIMODAL
+3,8.0,25,"narrower blob: offset=25, sigma=8",1.0,41,2,0.105951,"[0.0, 1.0]",BIMODAL
+4,12.0,40,"large offset: offset=40, sigma=12",0.0,41,2,0.203522,"[0.0, 1.0]",BIMODAL
+4,12.0,40,"large offset: offset=40, sigma=12",0.1,41,2,0.203522,"[0.0, 1.0]",BIMODAL
+4,12.0,40,"large offset: offset=40, sigma=12",1.0,41,2,0.203522,"[0.0, 1.0]",BIMODAL
+SUMMARY,,,,1.0,41,5,1.0,,GREEN_PROBE: lambda=1.0 下 5/5 对 = 100% 双谷 → 多峰能量地形成立，FM-in-SVF 多解后验假设可保留，放行写实现 a

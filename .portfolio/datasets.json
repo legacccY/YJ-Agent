@@ -202,15 +202,16 @@
     },
     "abdomenmrct": {
       "name": "Learn2Reg AbdomenMRCT (跨模态 MRI-CT 腹部配准)",
-      "n": "8 配对 + 90 非配对 / 8 test",
-      "local": "TODO 待下载",
+      "n": "8 配对 + 90 非配对 / 8 test (122 scans 总; 192×160×192 @ 2mm iso; 4 器官标注: liver/spleen/left+right kidney, test 集额外 gallbladder/stomach/aorta/portal vein/pancreas)",
+      "local": "D:/YJ-Agent/data/AbdomenMRCT/ (已下解压验通; Train/ 8配对 + Test/ 8配对; 命名 img<ID>_tcia_{CT,MR}.nii.gz + seg<ID>_tcia_{CT,MR}.nii.gz, 模态靠_CT/_MR后缀, 配对靠4位<ID>; 标签{1,2,3,4}=liver/spleen/L+R kidney bg=0; 滤 ._ 垃圾; run-004 C047 killshot + fmreg 共用)",
       "hpc": "TODO",
-      "source": "https://learn2reg.grand-challenge.org/Datasets/ (L2R'21 Task1; MRI→CT 腹部, 器官分割标签; 需 grand-challenge 账号)",
+      "source": "免登录直链(Lübeck 云,不需 grand-challenge 账号,1.8GB): train=https://cloud.imi.uni-luebeck.de/s/DgGZFpTKBEn8PpS/download | test=https://cloud.imi.uni-luebeck.de/s/zP5RekyR6xeKCPp/download | ROI masks(gdrive)=https://drive.google.com/uc?export=download&id=1pW_UNe28_7gnZ4GynpV6XvLP-hLQrbyP | 官方页 https://learn2reg.grand-challenge.org/Learn2Reg2021/ (ref arXiv:2112.04489)",
       "used_by": [
-        "fmreg"
+        "fmreg",
+        "ideation-run004 (C047 killshot 去风险)"
       ],
-      "purpose": "FMReg 跨模态 L4 lever【首选】; FM-based MR-CT 生成式配准是真空地(FlowReg/对手全无跨模态)",
-      "status": "todo"
+      "purpose": "FMReg 跨模态 L4 lever【首选】; FM-based MR-CT 生成式配准是真空地(FlowReg/对手全无跨模态)。run-004 C047 killshot: 真配对 CT/MRI 验跨模态 dynamics collapse 是否=domain-shift",
+      "status": "ready (local, 2026-06-18 下载解压+nibabel 验通; 192×160×192 float32; 90 非配对在辅助 BCV-CT/CHAOS-MR 直链未下, killshot 用 16 配对足够)"
     },
     "dirlab": {
       "name": "Dir-Lab 4DCT (肺呼吸配准, TRE benchmark)",
@@ -234,6 +235,19 @@
         "fmreg"
       ],
       "purpose": "FMReg 多任务配准框架来源; 子集 oasis/abdomenmrct 已单列; leaderboard 对照 VoxelMorph/TransMorph/LapIRN/uniGradICON",
+      "status": "todo"
+    },
+    "lidc_idri": {
+      "name": "LIDC-IDRI",
+      "n": "1018 CT (4-annotator 结节标注)",
+      "local": "TODO 待下载",
+      "hpc": "TODO (上传新数据=拍板点,先报用户)",
+      "source": "TCIA 公开免费 https://www.cancerimagingarchive.net/collection/lidc-idri/ (1018 胸部 CT ~124GB; 4 位放射科医师独立标注结节; pylidc 解析库 cluster_annotations tol 默认=slice_thickness; 存在性分歧 65.2%=2669被标结节仅928获4/4一致, Armato2011 PMC3041807; 注: 旧稿 margin 0.22=Dong2017边缘锐利度评分分歧≠存在性, 勿混用)",
+      "split": "立项后定 (KILL-1 baseline 先行)",
+      "used_by": [
+        "disagree"
+      ],
+      "purpose": "DisagreePred 主 benchmark: 预测 4-annotator 分歧本身(非 majority-vote 取 GT)。KILL-1 gating=下载后跑分歧可预测性 baseline,AUROC≤0.60 即砍。QUBIQ 备用第二集验普适",
       "status": "todo"
     }
   }

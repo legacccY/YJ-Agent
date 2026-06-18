@@ -81,7 +81,11 @@ the motivation for the query-for-retake channel (\cref{sec:agent}).
 \subsection{Conditioning, Fidelity, and Speed Ablations}\label{sec:exp-ablations}
 \paragraph{E8 --- quality-conditional FiLM ablation (diagnostic, not perceptual).}
 Removing FiLM leaves pixel fidelity essentially unchanged --- per-image PSNR moves within $0.4$\,dB
-($32.74$ with FiLM versus $33.06$ without\todo{HPC 恢复项（会话43 收窄）：no-FiLM 33.06 与 with-FiLM 32.74 配对源 e1\_film\_ablation.json 丢失，本地无 no-FiLM ckpt（在 HPC stage1\_planA\_256\_noFiLM）。恢复二选一：①拉 HPC job 1442290/1442337 .out 取打印值 ②重跑 noFiLM eval。入 main.tex 前必恢复，否则 E8「PSNR 中性」改为软化措辞不引精确 33.06。注：n/SSIM 口径已旁证非问题，仅此配对精确值待恢复}), so FiLM is \emph{not} a fidelity mechanism --- yet it
+($32.74$ with FiLM versus $33.06$ without
+% E1 paired source RECOVERED (session 44, 2026-06-18) from HPC job 1442290.out (exit=0, clean):
+%   with-FiLM perimg PSNR=32.743 (ckpt stage1_planA_256), no-FiLM=33.064 (ckpt stage1_planA_256_noFiLM), both n=19878.
+%   Artifact restored at project/results/e1_film_ablation.json; raw log at meeting/ICLR2027/_e1_recovery/1442290.out.
+), so FiLM is \emph{not} a fidelity mechanism --- yet it
 degrades diagnostic preservation on every axis: with FiLM $\Delta\mathrm{AUC}=-0.033$, agreement
 $0.90$, KL $0.24$, versus $-0.042$, $0.87$, $0.35$ without, measured even at the no-DP stage. FiLM's
 contribution is therefore quality-conditional \emph{diagnostic} fidelity, not perceptual sharpening:
@@ -112,9 +116,24 @@ comfortably within the $50$\,ms real-time budget. We report PSNR as a per-image 
 (\cref{sec:setup}), the caliber used for both the fidelity gate and the E10 comparison.
 
 \paragraph{E2 --- per-degradation breakdown and a limitation.}
-A per-degradation analysis shows the enhancer is strongest on brightness ($37.68$\,dB) and blur
-($35.82$\,dB), weaker on colour-shift ($33.77$\,dB, below the $35$\,dB target), and --- notably ---
+A per-degradation analysis (\cref{fig:e2-perdim}) shows the enhancer is strongest on brightness
+($37.68$\,dB) and blur ($35.82$\,dB), weaker on colour-shift ($33.77$\,dB, below the $35$\,dB target), and --- notably ---
 \emph{harmful} on contrast degradation ($29.11$\,dB, below the $32.29$\,dB of the degraded input
 itself). We do not paper over this: contrast restoration is a genuine limitation of the current model
 (\cref{sec:discussion}), and it is one of the per-dimension conditions that the agent can route to
 query-for-retake rather than enhance.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../../report/figures/fig_e2_perdim.pdf}
+  \caption{\textbf{Per-degradation enhancement: PSNR gain and enhanced SSIM by corruption axis
+  (E2).} \textbf{(a)} PSNR \emph{gain} (enhanced $-$ degraded; source
+  \texttt{results/e2\_perdim.csv}). The gain is largest where the corruption is most severe
+  (brightness degrades the input to $13.7$\,dB, so enhancement recovers $+24.0$\,dB to an absolute
+  $37.7$\,dB), and small or negative where the degraded input already starts high: blur
+  ($36.7\!\to\!35.8$\,dB, $-0.8$) and contrast ($32.3\!\to\!29.1$\,dB, $-3.2$). Contrast is the one
+  axis where enhancement is genuinely \emph{harmful} --- the enhanced PSNR drops below the degraded
+  input --- which is why the policy routes contrast-degraded inputs to query-for-retake rather than
+  enhance. \textbf{(b)} Enhanced SSIM stays high on every axis ($\ge 0.92$).}
+  \label{fig:e2-perdim}
+\end{figure}

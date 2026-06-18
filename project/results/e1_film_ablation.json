@@ -1,0 +1,10 @@
+{
+  "_provenance": "Reconstructed 2026-06-18 from HPC job 1442290.out (gpu4090n3, exit=0, clean). Original results/e1_film_ablation.json on HPC was lost; this file restores the canonical E1 FiLM-ablation artifact verbatim from the run log. Raw log archived at project/meeting/ICLR2027/_e1_recovery/1442290.out. Checkpoints: with-FiLM=stage1_planA_256, no-FiLM=stage1_planA_256_noFiLM.",
+  "job_id": "1442290",
+  "split": "test",
+  "results": {
+    "with-FiLM": {"tag": "with-FiLM", "film_scale": 0.1, "ckpt_epoch": 40, "n": 19878, "psnr_perimg_input": 22.665, "psnr_perimg_enh": 32.743, "psnr_perimg_gain": 10.079, "psnr_aggmse_enh": 28.825, "ssim_enh": 0.9099, "sec": 493.4},
+    "no-FiLM":   {"tag": "no-FiLM",   "film_scale": 0.0, "ckpt_epoch": 89, "n": 19878, "psnr_perimg_input": 22.665, "psnr_perimg_enh": 33.064, "psnr_perimg_gain": 10.4,   "psnr_aggmse_enh": 29.082, "ssim_enh": 0.9141, "sec": 499.4}
+  },
+  "summary_perimg_PSNR": {"with-FiLM": 32.743, "no-FiLM": 33.064}
+}

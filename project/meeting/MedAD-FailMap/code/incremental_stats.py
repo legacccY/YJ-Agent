@@ -604,8 +604,9 @@ if __name__ == "__main__":
                         default=str(_res / "conspicuity_features_tumor.csv"),
                         help="tumor-only conspicuity_proxy.py 产出 csv (C2/C3 用)")
     parser.add_argument("--stratify-csv",
-                        default=str(_res / "stratify_interact_ae.csv"),
-                        help="(可选) stratify_eval.py 产出 csv，用于提取 size/contrast 列")
+                        default=str(_res / "stratify_per_image_ae.csv"),
+                        help="(可选) stratify_eval.py 产出 per-image csv (含 filename/size_px/contrast 列)。"
+                             "注: 必须传 stratify_per_image_<model>.csv 而非 stratify_interact (聚合桶无 filename 列，join 失败)")
     # C4 用 normal+tumor 混合集
     parser.add_argument("--normal-conspicuity-csv",
                         default=str(_res / "conspicuity_features_normal.csv"),

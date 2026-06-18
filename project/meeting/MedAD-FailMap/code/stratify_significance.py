@@ -268,7 +268,7 @@ def run_fa_significance(score_csv, strat_per_image_csv, out_csv,
             "sig_holm":    int(holm_ps[i] < 0.05),
             "family":      "F-A",
             "n_family":    3,
-            "note":        "FA family Holm α=0.05/4=0.0125 per step; Gate0 用 p_holm<0.05 判显著",
+            "note":        "FA family Holm α=0.05/3=0.0167 per step (n_family=3); Gate0 用 p_holm<0.05 判显著",
         })
 
     out_path = Path(out_csv)

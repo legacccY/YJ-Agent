@@ -1,0 +1,2 @@
+dice_vxmdiff,dice_fm,neg_jac_pct_vxmdiff,neg_jac_pct_fm,fm_uncertainty_corr,fm_uncert_p,fm_steps_N1,fm_steps_N2,fm_steps_N4,fm_steps_N8,n_train_steps,n_eval_pairs,k_samples,ss_int_steps,euler_steps_eval,smoke,verdict
+0.9528,0.9424,0.0000,0.0000,-0.2273,0.0209,0.9390,0.9417,0.9424,0.9420,2000,100,8,7,4,False,"RED: FM Dice worse than VoxelMorph-diff AND posterior rho not significant (rho<=0 or p>=0.05) → FM-in-SVF degrades to 'VoxelMorph-diff with different sampler' → headline NOT established, report for downgrade/redirect"

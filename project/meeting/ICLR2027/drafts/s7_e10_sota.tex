@@ -46,13 +46,28 @@ Real-ESRGAN \citep{wang2021realesrgan}   & $\times2$ SR    & 21.61 & 0.8175 & $-
 \end{tabular}
 \end{table}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.74\linewidth]{../../report/figures/fig_e10_tradeoff.pdf}
+  \caption{\textbf{Fidelity is not safety: per-image PSNR versus diagnostic
+  $\Delta\mathrm{AUC}$ for six generic restorers and \visienhance{}.} Each point is one
+  enhancement model on the identical mixed-severity paired inputs ($n{=}10881$, source
+  \texttt{results/e10\_*.csv}); the $y$-axis is enhanced$-$reference AUC (closer to $0$,
+  i.e.\ higher on the plot, is safer). \visienhance{} (star) sits alone in the
+  high-fidelity, diagnosis-preserving corner (PSNR $32.79$, $\Delta\mathrm{AUC}=-0.017$),
+  whereas every generic restorer falls well below ($\Delta\mathrm{AUC}\in[-0.13,-0.08]$)
+  regardless of its PSNR --- the diagnosis-preserving objective, not pixel fidelity, is
+  what separates them.}
+  \label{fig:e10-tradeoff}
+\end{figure}
+
 % --- prose 段 (放 main.tex E9 段之后) -------------------------------------------------
 \paragraph{E10 --- generic restoration SOTA degrades diagnosis.}
 We test whether a strong off-the-shelf restorer could substitute for our diagnosis-preserving
 training. We run six non-diffusion restoration/enhancement models
 (Restormer, NAFNet, MIRNet-v2, SwinIR, Uformer-B, Real-ESRGAN) zero-shot with official weights on the
-same mixed-severity paired inputs (\cref{tab:e10}). All six are worse diagnostic preservers than
-\visienhance{} by a wide margin: paired bootstraps give $\Delta\mathrm{AUC}_{\text{baseline}-\text{VE}}
+same mixed-severity paired inputs (\cref{tab:e10}, visualised in \cref{fig:e10-tradeoff}). All six are
+worse diagnostic preservers than \visienhance{} by a wide margin: paired bootstraps give $\Delta\mathrm{AUC}_{\text{baseline}-\text{VE}}
 \in[-0.116,-0.066]$ (every $95\%$ confidence interval excluding zero, every McNemar $p<10^{-150}$).
 % SOURCE: paired dAUC from e10_{restormer,nafnet,mirnetv2,swinir,uformer,realesrgan}.csv PAIRED rows;
 %   range [-0.1160 (SwinIR) to -0.0661 (Real-ESRGAN)]. STORY_FRAMEWORK.md previously stated [-0.12,-0.07]

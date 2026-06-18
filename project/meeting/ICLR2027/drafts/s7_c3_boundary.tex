@@ -62,8 +62,9 @@ We tested whether the malignant-salvage deficit is an artefact of the reconstruc
 specifically, whether the enhancer simply smooths over the lesion. We retrained with a
 \emph{mask-weighted} reconstruction objective ($\lambda_{\text{mask}}=3.0$, applying a $4\times$
 weight to the lesion region so the enhancer cannot smooth over the lesion itself). The result is a
-null: melanoma salvage stays at $5.2\%$ ($4/77$, unchanged from the feature-DP model) while damage
-moves only marginally to $30.3\%$ ($83/274$), for a net of $-79$ malignant cases --- statistically
+null (\cref{fig:e5-salvage}): melanoma salvage stays at $5.2\%$ ($4/77$, unchanged from the feature-DP
+model) while damage moves only marginally to $30.3\%$ ($83/274$), for a net of $-79$ malignant cases ---
+statistically
 indistinguishable from the feature-DP result's $-81$. Reweighting the reconstruction loss toward
 the lesion is therefore \emph{not sufficient} to close the malignant salvage gap. The failure mode
 is not ``the enhancer smooths away the lesion'' but something the per-pixel reconstruction
@@ -75,6 +76,20 @@ gate is required. This is a genuine safety mechanism, not a project shortcoming:
 precisely because reconstruction-loss surgery cannot recover the malignant cases. Closing the
 malignant salvage gap by other means (e.g.\ diagnosis-aware or adversarial objectives) is left to
 future work (\cref{sec:discussion}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{../../report/figures/fig_e5_salvage_v6.pdf}
+  \caption{\textbf{Enhancement is net-negative on melanoma (E5, mask-weighted v6 honest null).}
+  \textbf{(a)} Of the $77$ melanomas misclassified after degradation, enhancement salvages only
+  $4$ ($5.2\%$), while damaging $83$ of the $274$ originally-correct melanomas ($30.3\%$), for a
+  net change of $-79$ malignant cases. \textbf{(b)} The deficit holds at every severity (salvaged
+  versus damaged: $1/14$ mild, $1/26$ moderate, $2/43$ severe). Source
+  \texttt{results/e5\_salvage\_v6\_persample.csv}. The mask-weighted reconstruction objective
+  ($\lambda_{\text{mask}}=3.0$, $4\times$ lesion weight) leaves the malignant salvage rate
+  unchanged, confirming the gap is not a smoothing artefact.}
+  \label{fig:e5-salvage}
+\end{figure}
 
 % --- §7.8 E6 severe boundary + retake routing (migrated from main.tex L429-461) ------
 
@@ -108,9 +123,9 @@ P1/P3).}
 The complement of the salvage boundary is the retake channel, and its empirical behaviour matches
 the threshold-window structure of Theorem~\ref{thm:agent-compact}. As quality drops, the fraction
 of cases the agent routes to query-for-retake increases strictly and monotonically across the
-three quality bands: $0.055$ on the high band ($95\%$ CI $[0.031,0.083]$), $0.651$ on the moderate
-band ($[0.600,0.705]$), and $0.889$ on the severe band ($[0.800,0.978]$; bootstrap CIs, all
-non-overlapping).% \todo{verifier: re-check retake-fraction CIs migrated from main.tex L441-442 against results source before merge}
+three quality bands (\cref{fig:retake-gradient}): $0.055$ on the high band ($95\%$ CI $[0.031,0.083]$),
+$0.651$ on the moderate band ($[0.600,0.705]$), and $0.889$ on the severe band ($[0.800,0.978]$;
+bootstrap CIs, all non-overlapping).% \todo{verifier: re-check retake-fraction CIs migrated from main.tex L441-442 against results source before merge}
 This is the realised counterpart of the policy: the retake action is essentially dormant where
 direct diagnosis suffices (P3) and dominates exactly where enhancement is unsafe (P1), so the
 channel that the severe-band boundary above calls for is precisely the channel the policy
@@ -119,6 +134,19 @@ efficacy: the aggregate salvage rate on the severe band ($0.898$) is benign-domi
 way as the moderate band quantified above, and is \textbf{not} evidence that enhancement helps
 severe malignant cases --- the correct action on the severe band is to route to retake ($0.889$),
 not to enhance, which is exactly what Theorem~\ref{thm:agent-compact} P3 prescribes.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.58\linewidth]{../../report/figures/fig_retake_gradient.pdf}
+  \caption{\textbf{The query-for-retake channel fires monotonically with degradation.}
+  Fraction of cases the agent routes to query-for-retake across the three quality bands,
+  with bootstrap $95\%$ confidence intervals (source
+  \texttt{results/agent\_vs\_direct\_risk.csv}): $0.055$ (high), $0.651$ (moderate),
+  $0.889$ (severe); the intervals are mutually non-overlapping. The channel is essentially
+  dormant where direct diagnosis suffices and dominates exactly where enhancement is unsafe,
+  realising the threshold-window policy of Theorem~\ref{thm:agent-compact}.}
+  \label{fig:retake-gradient}
+\end{figure}
 
 \paragraph{Local, per-band reading only.}
 Where the policy does route an input to the enhance channel, the same per-quality routing yields

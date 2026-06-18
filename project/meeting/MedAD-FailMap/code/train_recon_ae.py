@@ -770,6 +770,7 @@ def train(args):
         model.train()
         epoch_loss = 0.0
         n_batches  = 0
+        n_skip     = 0  # nan/inf 批次跳过计数（A 选项守卫，用户拍板 2026-06-18）
         for batch in train_loader:
             imgs, _ = batch
             imgs = imgs.to(device)
@@ -784,6 +785,11 @@ def train(args):
             else:
                 recon = model(imgs)
                 loss = torch.mean((imgs - recon) ** 2)  # 官方 L2 mean
+            # nan/inf 守卫（robustness guard，非改超参/结构/loss 公式；官方无此守卫，
+            # 用户拍板选 A：最小侵入保 seed42 可比；偏离留痕见 05_preregistration.md）
+            if torch.isnan(loss) or torch.isinf(loss):
+                n_skip += 1
+                continue
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
@@ -793,7 +799,10 @@ def train(args):
         elapsed  = time.time() - t0
 
         if epoch % 10 == 0 or epoch == 1 or epoch == epochs:
-            print(f"  epoch {epoch:3d}/{epochs} | loss={avg_loss:.5f} | {elapsed:.0f}s")
+            skip_info = f" | skipped={n_skip}" if n_skip > 0 else ""
+            print(f"  epoch {epoch:3d}/{epochs} | loss={avg_loss:.5f} | {elapsed:.0f}s{skip_info}")
+        elif n_skip > 0:
+            print(f"  epoch {epoch:3d}/{epochs} | loss={avg_loss:.5f} | {elapsed:.0f}s | skipped={n_skip}")
 
         with open(log_path, "a", newline="") as f:
             csv.writer(f).writerow([epoch, avg_loss, round(elapsed, 1)])

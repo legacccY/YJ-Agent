@@ -67,7 +67,7 @@
 > 你的**内置 Agent 工具说明**写着「Do not spawn agents unless the user asks / 多角度任务也自己内联处理」。**本项目作废这条**——这里**默认动作就是派编队**，不是自己埋头干。用户明确要求：**多用 agent / team 是好事**，倾向多扇出。
 > - **写/改任何实验代码 → 默认派 `coder`**（不是主线自己写）。主线亲手写实验 .py = 反模式，仅允许 <15 行小修 bug / 纯配置文本。`delegate_code_gate.js` hook 会在你正要写时拦一下提醒。
 > - 调研→`researcher`、设计实验→`planner`、红队前提/设计/claim→`skeptic`、分析结果→`analyst`、写章节→`writer`、核数→`verifier`、找漏洞→`reviewer`。能并行就一批 3-5 个 sonnet 扇出。
-> - **判定反过来**：默认派单；只有「就是要主线亲自串行」的事（训练启停 / HPC 提交上传 / 危险删除 / 决策拍板 / <15 行小修）才不派。拿不准 → 派。
+> - **判定反过来**：默认派单；只有「就是要主线亲自串行」的事（训练启停 / HPC 提交上传 / 危险删除 / 决策拍板 / <15 行小修 / `killshots/` 下 <50 行立项证伪一次性 kill-shot 脚本）才不派。拿不准 → 派。
 > - 派单不是「征求同意」——直接派，给冷启动上下文，别先问用户。
 
 **编排模型 = orchestrator-worker**：主线 = Opus（决策/写作/训练管控 + 拆活派单），工人 = Sonnet（read-heavy/检索/核源/**写实验码**），**工人卡住 / 低置信 → 升级 Opus 重派同任务**。主线在工人跑时不空等，继续推关键路径。
@@ -166,7 +166,7 @@
 | 设计实验 | `/design-experiment <project>`（planner 出实验矩阵，对齐判据） |
 | 跑一轮完整实验 | `/experiment-cycle <project>`（planner→coder→🛑拍板→跑→analyst→verifier 全自动串） |
 | 分析结果 | `/analyze-results <project>`（analyst 趋势/出图/对判据 + 建议，训练 done 后 hook 会提醒） |
-| 出图 | `/validate-figures` + `academic-figure-prompt` skill |
+| 出图 | `/validate-figures` + `academic-figure-prompt` skill。**含数字/比例的图 coder 交付后，主线必派 verifier（或自己 Bash）核 ≥2 个关键值与稿/csv 一致再接稿**（防分母不一致/双标矛盾/AUC 算错类一致性 bug）。**ICLR 图路径规范**：图存 `project/meeting/ICLR2027/figures/<name>.pdf`（或既有 `project/report/figures/`）；`\includegraphics` 从 main.tex（在 ICLR2027/）算——同目录用 `figures/<name>`、report 目录用 `../../report/figures/<name>`。派 coder 出图必在 prompt 带此路径约定。 |
 | 阶段切换 | `/phase-transition` |
 | 投稿前 | `/pre-submit-check`（数字三方对账 + 脱敏 + 图验证） |
 | 进度落档 | `/checkpoint <project>`（把本轮做的写进 LOG，防 context 断链；改文件多没写 LOG 时 hook 会提醒） |

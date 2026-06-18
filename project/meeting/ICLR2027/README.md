@@ -34,6 +34,12 @@ meeting/ICLR2027/
 
 ---
 
+## 附录指针
+
+- `appendix/A27_generalization_fairness.tex` — 补充 analysis 附录（§\label{app:gen-fair}）：cross-source 泛化（fig:crossdomain，源 external_*_predictions.csv，Jun14-15 ICLR 重跑）+ skin-tone fairness（fig:fairness-fitz，源 fairness_fitzpatrick_iclr_full.csv，ICLR 专属）。R10 口径，只用 ICLR 重跑数；fairness 仅报 AUC 差异（不碰 ECE）。诚实边界 framing，不改 C1/C2 headline。待主线 \input 进 main.tex + 加正文指针。
+
+---
+
 ## ⚠️ 严禁
 
 - ❌ 从 BMVC 直接搬 fig / tex / 数字（必须重跑，cite-as-paper 引用方式）

@@ -158,12 +158,29 @@ The normalised expected cost of a decision rule,
 \widehat{C}(r) \;=\; \frac{\mathrm{FP}+\mathrm{TP}}{n} \;+\; \frac{\mathrm{FN}}{n}\cdot r,
 \label{eq:a20-expcost}
 \end{equation}
-charges every positive decision a unit biopsy cost and every false negative the relative miss cost $r$.
+charges every positive decision a unit biopsy cost and every false negative the relative miss cost $r$
+(\cref{fig:a20-sweep}).
 By construction $\widehat{C}(r)$ is monotonically increasing in $r$ (verifier-confirmed on the swept
 grid), so it is the quantity on which the break-even of \cref{eq:a20-breakeven} actually plays out: as
 the miss cost rises relative to the biopsy cost, rules that abstain on uncertain malignant cases (and
 thus avoid the heavily-weighted $\mathrm{FN}$ term) become progressively favoured. The break-even
 between any two rules is therefore located on the expected-cost axis, not the net-benefit axis.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../../report/figures/fig_cost_sweep.pdf}
+  \caption{\textbf{Cost-ratio sensitivity sweep on \itb{}-LQ ($n=300$).}
+  \textbf{(a)} Normalised expected cost $\widehat{C}$ (\cref{eq:a20-expcost}) versus the decision
+  threshold at the mid-sweep miss-to-biopsy ratio. \textbf{(b)} Break-even view: expected cost
+  versus the swept cost ratio $r=c_{\mathrm{miss}}/c_{\mathrm{biopsy}}$ at a fixed threshold
+  ($p_t=0.3$), $r$ log-spaced from $50$ to $10{,}000$ around the literature anchor
+  ($\approx 4{,}440$). Source \texttt{results/dca/cost\_sweep\_breakeven.csv}. Expected cost rises
+  monotonically with $r$ for every rule, confirming that the break-even of
+  \cref{eq:a20-breakeven} plays out on the expected-cost axis; the curves do not separate the
+  information-bottleneck variants, consistent with the overlapping net-benefit intervals of
+  \cref{app:a20-netbenefit}.}
+  \label{fig:a20-sweep}
+\end{figure}
 
 \paragraph{Net benefit is, by definition, invariant to $r$.}
 The net benefit of \cref{eq:a20-nb} is parametrised by the decision threshold $p_t$ alone and does not

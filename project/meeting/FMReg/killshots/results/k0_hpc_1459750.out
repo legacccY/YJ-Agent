@@ -1,0 +1,56 @@
+FMReg K0 start Thu Jun 18 08:41:02 CST 2026 node=gpu4090n2 gpu=0
+[INFO] device=cuda  smoke=False
+[INFO] train_steps=2000  eval_pairs=100  k_samples=8  euler_eval=4
+[INFO] === Training Model A: VoxelMorph-diff (SVF + S&S, int_steps=7) ===
+  [VXM-diff] step 1/2000  loss=-0.09896  t=4.7s
+  [VXM-diff] step 2/2000  loss=-0.02345  t=4.8s
+  [VXM-diff] step 3/2000  loss=-0.06293  t=4.8s
+  [VXM-diff] step 200/2000  loss=-0.18476  t=13.0s
+  [VXM-diff] step 400/2000  loss=-0.22237  t=16.7s
+  [VXM-diff] step 600/2000  loss=-0.24048  t=20.4s
+  [VXM-diff] step 800/2000  loss=-0.20721  t=24.2s
+  [VXM-diff] step 1000/2000  loss=-0.26743  t=28.1s
+  [VXM-diff] step 1200/2000  loss=-0.21448  t=32.0s
+  [VXM-diff] step 1400/2000  loss=-0.26933  t=35.8s
+  [VXM-diff] step 1600/2000  loss=-0.25809  t=39.6s
+  [VXM-diff] step 1800/2000  loss=-0.18693  t=43.5s
+  [VXM-diff] step 2000/2000  loss=-0.27698  t=47.3s
+[INFO] VoxelMorph-diff training done (47.3s)
+[INFO] === Training Model B: FM-in-SVF (teacher=VoxelMorph-diff) ===
+  [FM-SVF]   step 1/2000  loss=-0.20054  t=0.0s
+  [FM-SVF]   step 2/2000  loss=-0.13932  t=0.1s
+  [FM-SVF]   step 3/2000  loss=-0.25089  t=0.1s
+  [FM-SVF]   step 200/2000  loss=-0.19276  t=3.9s
+  [FM-SVF]   step 400/2000  loss=-0.29755  t=7.8s
+  [FM-SVF]   step 600/2000  loss=-0.16752  t=11.6s
+  [FM-SVF]   step 800/2000  loss=-0.16997  t=15.4s
+  [FM-SVF]   step 1000/2000  loss=-0.17096  t=19.2s
+  [FM-SVF]   step 1200/2000  loss=-0.21946  t=23.0s
+  [FM-SVF]   step 1400/2000  loss=-0.17823  t=26.8s
+  [FM-SVF]   step 1600/2000  loss=-0.28734  t=30.7s
+  [FM-SVF]   step 1800/2000  loss=-0.15641  t=34.5s
+  [FM-SVF]   step 2000/2000  loss=-0.17669  t=38.4s
+[INFO] FM-in-SVF training done (38.4s)
+[INFO] === Evaluating VoxelMorph-diff ===
+[INFO] === Evaluating FM-in-SVF ===
+
+======================================================================
+  KILLSHOT K0 RESULTS: VoxelMorph-diff vs FM-in-SVF
+======================================================================
+  dice_vxmdiff          = 0.9528
+  dice_fm (N=4)       = 0.9424
+  neg_jac_pct_vxmdiff   = 0.0000%
+  neg_jac_pct_fm        = 0.0000%
+  fm_uncertainty_corr ρ = -0.2273  (p_approx=0.0209)
+  fm_steps_dice N=1     = 0.9389713171124459
+  fm_steps_dice N=2     = 0.9416870486736297
+  fm_steps_dice N=4     = 0.9423991397023201
+  fm_steps_dice N=8     = 0.9420366290211678
+  n_train_steps (each)  = 2000
+  n_eval_pairs          = 100
+  k_samples             = 8
+  VERDICT: RED: FM Dice worse than VoxelMorph-diff AND posterior rho not significant (rho<=0 or p>=0.05) → FM-in-SVF degrades to 'VoxelMorph-diff with different sampler' → headline NOT established, report for downgrade/redirect
+======================================================================
+
+[SAVED] /gpfs/work/bio/jiayu2403/fmreg/results/killshot_K0_fm_vs_vxmdiff.csv
+FMReg K0 exit=0 end Thu Jun 18 08:42:52 CST 2026

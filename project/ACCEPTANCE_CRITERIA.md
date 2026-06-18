@@ -106,7 +106,7 @@
 
 ### C2.2 — query-for-retake 通道在低质段触发率高 ✅（实证弹药）
 - **验收**：retake 通道在 severe / 低质段触发率显著高于高质段。
-- **实测**：✅ P1 cluster q<0.35 **retake_rate=100%**（已 verified，会话 L19 deliverable）。
+- **实测**：✅ retake 触发率随退化档单调升：high 0.055 / moderate 0.651 / severe 0.889（源 `results/agent_vs_direct_risk.csv`，verifier 会话43 核 PASS；稿内 §5/§7.8 已用此组值，替代旧「cluster q<0.35 retake_rate=100%」措辞，与 paper 对齐）。
 - **写入位置**：§5.1 + §7.8。
 
 ### C2.3 — Theorem 2（降格判据，🔴 skeptic 致命攻击必守）

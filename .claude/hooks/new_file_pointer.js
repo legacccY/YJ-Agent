@@ -34,7 +34,8 @@ process.stdin.on('end', () => {
 
   // 深层代码/config 子树（src/ configs/ utils/ scripts/ code/ eval/ tools/ tests/ ideation/ 下的文件）→ 整个目录已被项目索引覆盖，单文件不逐一登
   // ideation/ 有 runs/ 结构化子树，由 00_README.md 统筹；tests/ 是测试套件，同 code/ 处理
-  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts?)\//.test('/' + rel)) process.exit(0);
+  // killshots/ = 立项前证伪小脚本目录，类同 scripts/；_hpc/ = HPC 上传/提交脚本，类同 _scratch/
+  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts?|killshots?|_hpc)\//.test('/' + rel)) process.exit(0);
 
   // 带日期戳的调研/日志 md（文件名含 \d{4}-\d{2}-\d{2}）→ 日记性质，不要求上层索引
   if (/\d{4}-\d{2}-\d{2}/.test(base)) process.exit(0);

@@ -2,7 +2,9 @@
 
 **Deadline**：2026-09-22（ICLR 2027 abstract）/ 2026-09-29（full paper）
 **目标命中率**：**78-80%**（25 lever stack，详见 [`ACCEPTANCE_CRITERIA.md`](ACCEPTANCE_CRITERIA.md)）
-**当前状态**：M3 写作（会38）。paper 53 页 clean build 0 undef / 0 dangling / 0 bibtex error；5 定理证明 + E1-E12(11/12) + 6-SOTA + cross-domain + A20 cost + L12 临床 baseline 全落。**Plan A 大重训前提已纠偏（会37）：数字侧不阻塞于重训**，真缺口仅 P-2 per-sample CI（须 HPC 取回 quality_labels_all/abcd_cache）+ P-3 A19 LLM-judge（API 拍板点）+ P-1 Stage3 hinge（用户已拍缓跑）
+**当前状态**：🏷️ **封存·待最终打磨（会44，2026-06-18）**。九章合稿 **71 页 / 11 图 / 0 undef-cite / 0 undef-ref / 0 fatal / 0 渲染 [TODO]**；stage-gate PASS（带债已清）+ E1 no-FiLM HPC 恢复（投稿唯一硬阻断解除）+ pre-submit-check 全绿（数字 27/27 三方对账 0 DRIFT、脱敏 0 命中、R10 守）+ 补图 3→11 张。会场锁 ICLR 2027 主投（analysis/系统轨）。
+> **⚠️ 非 BMVC 式硬封印**——稿可改，只是暂停推进，等最终打磨。**待最终打磨清单**（投稿前清）：① framework/架构概念图（需外部 AI 出图工具，用户暂缓）② camera-ready 最终脱敏 grep ③ fairness ECE 张力 rebuttal 预案（Q-VIB+TokFT Fitz17k ECE≈0.81 vs triage well-calibrated，子集相关）④ VisiScore csv 已落盘。明细见 PROJECT_LOG 会话44 + ACCEPTANCE 红线。
+> DDL：abstract 09-22 / full 09-29（距 ~3 个月）。
 **BMVC 2026**：已封印（[`meeting/BMVC/SUBMITTED.md`](meeting/BMVC/SUBMITTED.md)），不再修改
 **代码库 README**：[`CODEBASE_README.md`](CODEBASE_README.md)（reproduce 步骤、目录结构、baseline 列表）
 

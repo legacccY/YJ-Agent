@@ -156,6 +156,12 @@ reconstruction objectives, or through learned rather than fixed routing threshol
 is the central item of future work. We report these negative results rather than omit
 them, because they are the genuine evidence that a query-for-retake gate is a necessary
 safety mechanism and not a project shortcoming.
+(8)~\textbf{Uneven cross-source transfer and a skin-tone disparity.} A supplementary
+analysis (Appendix~\ref{app:gen-fair}) shows that transfer across dermatology acquisition
+sources is highly uneven --- strong near the training distribution (HAM10000) but
+degrading towards chance on the most distant source (DermNet) --- and that diagnostic AUC
+is systematically lowest on darker (Fitzpatrick V--VI) skin across every method examined.
+We surface both as honest boundaries on the system's reach rather than resolved properties.
 
 \paragraph{Future work.}
 Two directions follow directly from the honest boundary. First, replacing the

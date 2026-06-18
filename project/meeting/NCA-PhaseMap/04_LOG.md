@@ -4,6 +4,24 @@
 
 ---
 
+## Entry 3 — Gate1 实验脚本交付（2026-06-18，coder）
+
+**脚本目录**：`project/meeting/NCA-PhaseMap/06_experiments/`
+
+| 脚本 | 功能 |
+|---|---|
+| `data_brats.py` | P0 BraTSSliceDataset：tumor+annotation 配对，min-max 归一，前景<2% 排除，接口=HipSliceDataset |
+| `B0_baseline.py` | 全背景解基线：产 dice_bg/σ_bg（BraTS+Hippo 两集），collapse 阈 = max(0.01, dice_bg+3σ) 冻 config |
+| `B1_B2_B3_sweep.py` | 腿① 临界扫描：B1 粗扫/B2 加密/B3 seed，no-clip 主条件，clip=1.0 可选 flag，diverged 严记 |
+| `B4_impl2.py` + `nca_impl2.py` | 腿①-b 第二独立 NCA 实现（mask=rand<update_rate 正向，超参全对齐官方） |
+| `G_gradient_traj.py` | 腿② 梯度时序：每 step 落 per-layer grad_norm+dice_proxy+前景占比+diverged |
+| `G_sensitivity.py` | 腿② 后处理：27 组 P_g×P_f×N 阈值敏感性，读 traj csv 算 sign(t_grad−t_func) 全稳性 |
+| `M1_probe.py` | 腿③ 传播半径探针：单脉冲前向，d(ur) 形状曲线，标 proposed metric (arXiv 2310.14809) |
+
+**collapse 判据（冻结）**：`collapse := (not diverged) and final_dice < max(0.01, dice_bg + 3·σ_bg)`，B0 跑后写 config 冻结，所有脚本从 config 读阈值。
+
+---
+
 ## Entry 2 — Gate1 实验矩阵设计 + 红队收口（2026-06-18）
 
 **流水线**：/design-experiment → planner 出矩阵 → skeptic 红队 → researcher 核超参 → 全纳修订定稿。落 `实验设计_Gate1_2026-06-18.md`。

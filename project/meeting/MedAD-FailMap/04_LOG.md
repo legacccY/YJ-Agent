@@ -598,3 +598,36 @@ coder 给 lesion_features 加 `--img-dirs`（85 passed）后，跑 G1-a make-or-
 **MICCAI/MedIA 重铸 framing（待后续）**：「重建式医学 AD 的失败何时可预测/可迁移——协变量失败相图 + conspicuity per-image 可靠性判据 + 几何同构前验门（病灶几何决定失败迁移性，跨模态稀释 regime 窄 niche）」。analysis/capability，非刷 SOTA、非赌「可外推」。正臂落空当诚实边界写（开放数据几何分布天然不覆盖 BraTS niche=负发现的一部分）。
 
 **registry 状态 → phase1→retreat-MICCAI**。下一步（后续会话）：①/stage-gate 对 MICCAI/MedIA 标准重判现有资产够不够 ②STORY/ACCEPTANCE 重铸去掉 ICLR「可外推 PASS」命门、正臂落空诚实入文 ③iso 门 reviewer 4 必修留痕仍补全（判据框架是 MICCAI 贡献之一，留痕要齐）④Phase 2 seed-fill 跑完补 ≥3 seed 确证。**METS 哪天表单通了=可重启 ICLR 重投的 bonus，但不等。**
+
+### 2026-06-18 — 退守 MICCAI/MedIA 后首轮重铸（大编队：headline双柱翻盘拍板 + STORY/ACCEPTANCE重铸 + 三口径硬伤纠 + C3 bug修 + Phase2 seed-fill重启）
+
+承 2026-06-17 终局退守，本窗大集群开工把 MICCAI/MedIA 重铸第一波全推完。
+
+**① 战队三路诊断（researcher+reviewer+verifier 并行）**：
+- researcher 摸 MICCAI/MedIA 接收标准：**MedIAnomaly（Cai，MedIA2025，30方法×7集无新方法）= 最近 precedent**；同类 What Do AEs Learn(MICCAI2023)/Rethinking AEs(MICCAI2024理论failure-mode)/Comparative Benchmarking of Failure Detection(MedIA2024 per-image)均靠机制洞见+诚实边界立住非刷SOTA。我们 per-image 粒度+phase diagram **无直接撞车**；MedIA 对负发现/benchmark 接受度高于 ICLR。
+- reviewer 资产诚实预判：**够 MICCAI 不够 MedIA，当前承重柱选错**（PC-A 相图≈MedIAnomaly+ε 判 incremental）→ 真该领证的是 **PC-C per-image 判据，用 C4 risk-coverage actionable 领证非小 partial_r**。揪 3 口径硬伤（诚信级）：⛔「1.3% 重叠」vs OVL=0.469 裸写误导 / ⛔ iso门 band 后设留痕只在 LOG 没进正文 / 🟠 三模态面积比四分母不统一。缺口排序：≥3seed(must)/per-image held-out(must,用LGG15例)/MedIAnomaly differentiation表/分母统一。
+- verifier 核三疑点：「1.3%」=43/3310 低尾占比门 csv 内部一致（≠OVL=0.469，须改措辞）；Holm note `/4` 笔误应 `/3`（结论不变 max p=0.0092）；glcm C2 vs C3 非真矛盾（测不同量），但**揪出新 bug**=主目录 `incremental_C3_partial_corr.csv` controlled_for 空=没真控协变量，partial_r=0.5044 是无条件相关。
+
+**② headline + venue 用户拍板**：headline=**双柱翻盘版**（柱1 per-image 可靠性判据 C4 risk-coverage 领证 / 柱2 病灶几何 a priori transferability diagnostic，iso门写诊断框架非已验证判据 / 相图退地基；正臂落空写成「开放数据系统性覆盖不到 dilution regime」的 benchmark 生态发现，只 claim 负向命中，headline 绝不带「外推」）；venue=**MICCAI 起步可升级**。
+
+**③ STORY/ACCEPTANCE 重铸（writer×2 并行，caveman OFF）**：
+- 01_STORY.md 第四次全文重铸：新 headline 定稿「When does reconstruction-based medical AD fail — and can we tell from a single image before trusting it?」+ 三贡献按双柱重排（PC-C 承重/iso 诊断框架/相图地基）+ MedIAnomaly differentiation 钉死 + 反跑偏加「绝不带外推/只 claim 负向命中」铁律 + 退守版十角色预对峙。口径纠（1.3% 写全 vs OVL=0.469；partial_r 处标 [pending] 一律 C4 领证）。
+- 02_ACCEPTANCE.md 重铸：删 ICLR 正臂命门 → 双柱双档（MICCAI 硬 M-1..M-5：口径纠/≥3seed/柱1 LGG held-out/differentiation表/防循环+边界+负发现；MedIA 升级 U-1 BraTS跨中心split当weak positive control+U-2 相图跨≥3集）。Gate2=MICCAI 就绪，正臂落空≠FAIL。U-1 防复活外推 headline 纪律写死。**阈值标「草案待冻」=拍板点，结构跟用户拍的方向对齐。**
+
+**④ C3 bug 修 + 纠口径代码（coder）**：`incremental_stats.py:606-608` 默认 `--stratify-csv` 从 stratify_interact_ae.csv（无filename列）改 stratify_per_image_ae.csv；`stratify_significance.py:271` note `/4=0.0125`→`/3=0.0167(n_family=3)`。C3 重跑被 coder 权限正确拦（覆写Phase0冻结）→ **主线重跑进 `results/c3_corrected/` 不覆写原frozen留全审计痕**。corrected C3（真控size+contrast）：glcm_cluster_prom partial_r=**0.3054**（旧bug 0.5044=无条件相关）/glcm_contrast 0.1702/sigma 0.1395/fft −0.1411/cnr −0.0489，Holm 后全显著。**PC-C 承重在修正口径下仍站得住，结论不翻。**
+
+**⑤ Phase 2 seed-fill 重启（主线，GPU）**：昨晚 watchdog 起 vae_s1 跑到 epoch7 机器关机断（幽灵槽 72572377）。coder 出幂等 python orchestrator `code/run_seedfill.py`（4 run 串行：vae s1/s2+memae s1/s2，每 run 复刻 train+stratify+significance+conspicuity+incremental 5步链，完整则skip半截则清重跑）。主线 `python code/run_seedfill.py` 后台起，占 local 1 卡@slot 72572377，09:04 vae_s1 epoch20 loss 0.0115 健康。fmreg K0 仍排队其后。~2h 跑完。
+
+**下一步**：① seed-fill 跑完 → analyst 解读 vae/memae ×3seed（42/1/2）F1/F2 + verifier 核 → 填 M-2 ② 柱1 C4 risk-coverage 在 LGG 独立15例 held-out 重跑验单调（M-3）③ STORY/ACCEPTANCE 的 [pending] partial_r 回填 corrected 值（glcm 0.3054）+ verifier 复核 ④ 05_preregistration 补 C3 修正留痕 + iso门 reviewer-4 必修留痕进正文 ⑤ MedIAnomaly differentiation 表填充（M-4）⑥ ACCEPTANCE Gate 阈值定稿冻结（拍板）。**判决=扎实 MICCAI，MedIA 还差 iso 正向锚(U-1)+多集相图(U-2)。**
+
+### 2026-06-18 续 — Phase2 seed-fill VAE nan 发散（官方数值不稳）→ 用户拍板 A 加 nan-skip 守卫 → 重跑 QUEUED（多窗口卡争用）
+
+承上轮 seed-fill 重启，本批暴雷+诚实处理：
+- **VAE seed1/2 nan 崩**：vae_s1 epoch60 loss=nan→`CUDA error: illegal memory access`（train_recon_ae.py:789）崩；vae_s2 epoch10 即 nan。**且非法内存访问毒化 GPU 状态，殃及后续 memae_s1（epoch1 健康却同样崩）**。orchestrator 全 4 run FAIL（vae s1/s2 nan + memae s1/s2 被毒化/未跑）。s42（vae+memae）早先已完整，不受影响。
+- **coder 诊断（核官方源 0 臆想）**：根因=VAE logvar 无 clamp，`exp(0.5*log_var)`(L213)/`lv.exp()`(L257) 上溢→nan。**核 MedIAnomaly 官方（blocks.py VaeBottleNeck + losses.py VAELoss）= 同样无 clamp/grad clip/KL warmup，我们完全对齐官方** → 判定 (b)：官方代码本身数值不稳，seed42 走运、seed1/2 崩。撞「复现零偏离」红线=拍板点。
+- **用户拍板 A**（nan-skip + 重跑 s1/s2 保留 s42）：coder 改 train_recon_ae.py L769-805 +8 行（backward 前 `if isnan/isinf(loss): n_skip++; continue`，不累加 epoch_loss，epoch 末打印 skip 数；**只加守卫绝不动 lr/beta/结构/loss/epochs**），py_compile OK。05_preregistration 修订记录补偏离留痕（官方零稳定化 nan→A 守卫=robustness guard 非改超参，已知微偏离 + 选 A 理由）。nan-skip 同时根治 GPU 毒化（catch 在 backward 前）。**风险记账：重跑若每 epoch skip>50% 批=logvar 全发散救不回→升级 B 换 seed。**
+- **重跑 QUEUED**：medad seedfill 槽（失败让出）已释放，local 卡被别窗 selinf（HAM 18-config Gate1，09:25 起）抢占 + run-004（C047 AbdomenMRCT）排第1。medad 重跑 `gpu_slot request` 得 QUEUED **b453e4cb**（队列第2=单卡第3跑，等数小时）。卡空自动取出（需本窗 launch 守卫版 run_seedfill.py，幂等只补 4 个失败 run，s42 skip）。
+
+**本轮其余全清（GPU-free）**：01_STORY+02_ACCEPTANCE 双柱重铸、3口径硬伤纠、C3 bug 修(corrected glcm 0.3054 进 c3_corrected 不覆写 frozen)、differentiation 表(M-4)、05 §F.iso-audit + C3/iso-4必修留痕、STORY/ACCEPTANCE [pending] 回填 corrected 值 + C4「单调」软化为「总体趋势升高」(verifier 揪非严格单调)。
+
+**下一步**：① medad 重跑 b453e4cb 卡空 launch（守卫版，监控 skip 率，>50% 则升级 B）→ analyst ×3seed F1/F2 + verifier 填 M-2 ② 柱1 C4 在 LGG 独立15例 held-out 验单调（M-3）③ ACCEPTANCE Gate 阈值定稿冻结（拍板）。判决=扎实 MICCAI。

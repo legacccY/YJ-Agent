@@ -1,0 +1,7 @@
+dimension,PLCC,SRCC,pass_ge_0.7
+sharpness,0.947,0.863,True
+brightness,0.987,0.986,True
+completeness,0.731,0.689,False
+color_temp,0.992,0.990,True
+contrast,0.961,0.945,True
+mean,0.924,0.895,True

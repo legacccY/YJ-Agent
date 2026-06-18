@@ -56,7 +56,7 @@ carries no recoverability axis. The full grid is plotted as a heatmap in
 
 \paragraph{Reliability axis.}
 Diagnostic AUC degrades monotonically, or near-monotonically, with severity
-along every dimension, but the magnitude differs sharply by corruption type.
+along every dimension (\cref{fig:c0-reliability}), but the magnitude differs sharply by corruption type.
 Ranking the drop from the identity anchor (S1) to the most severe level (S5),
 blur is by far the most fragile: AUC falls from $0.9219$ at S1 to $0.8307$ at S5
 ($\sigma=3.5$), a strictly monotone decline of $-0.0911$. Completeness is next
@@ -70,6 +70,20 @@ multiplier $0.345$, only $-0.0177$, non-monotone) and contrast ($0.9238 \to
 five, yet, as the recoverability axis shows next, it is the single dimension on
 which enhancement actively backfires at the extreme level. All per-cell AUC
 values are reported with bootstrap $95\%$ CIs in \cref{app:surface}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.82\linewidth]{figures/c0_reliability_curves.pdf}
+  \caption{\textbf{Reliability curves: diagnostic AUC versus severity, per degradation
+  dimension.} Each curve traces held-out AUC as a single corruption is intensified from the
+  identity anchor (S1) to its most severe level (S5), $n=360$/cell (source
+  \texttt{results/c0\_decision\_surface.csv}). Blur is the most fragile dimension
+  ($0.922\!\to\!0.831$, $-0.091$); contrast and brightness drop least
+  ($-0.015$, $-0.018$). The small reliability drop of contrast is deceptive: the
+  recoverability surface (\cref{fig:c0-surface}) shows it is the one dimension where
+  enhancement actively backfires at S5.}
+  \label{fig:c0-reliability}
+\end{figure}
 
 \paragraph{Recoverability axis.}
 Overlaying $\Delta_{\text{rec}}$ on the same grid separates the surface into

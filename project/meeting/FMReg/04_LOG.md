@@ -38,6 +38,24 @@
 
 **K0 脚本已就绪**：`project/meeting/FMReg/killshots/killshot_K0_fm_vs_vxmdiff.py`（smoke --cpu 跑通，全流程无报错）。输出 csv → `killshots/results/killshot_K0_fm_vs_vxmdiff.csv`。主线 `/loop /run-experiment` 触发正式跑（2000 steps）。
 
+**▶ K0 上 HPC 跑（2026-06-18，用户拍板「大集群」）**：本地槽被 medad seed-fill 占满 → 改道 HPC（dequeue local 360c8b43 → gpu_slot GO `2873287f` hpc 1 卡）。上传 K0 脚本 + BraTS2021/train（4211 PNG/40M tar）→ `HPC:/gpfs/work/bio/jiayu2403/fmreg/{code,data,results,logs}`；脚本加 `--data-dir/--out-dir` argparse override（不 fork，<15 行）。SLURM `submit_k0.sh`（gpu4090/4gpus/1卡/16G/1h，env=yjcu124py310 py3.10）→ **sbatch job=1459750 RUNNING @gpu4090n2**。full run 2000 步 ×2 模型。下一步：轮询 `logs/1459750.out` → 跑完拉 `results/killshot_K0_fm_vs_vxmdiff.csv` → analyst 判 GREEN(走候选①生成式后验 headline)/RED(降级报拍板)/YELLOW → HPC release 清账。
+
+**K0v2 能量地形前置探针（2026-06-18）**：skeptic 红队命根——多解后验全押在「warp-loss 能量地形多峰」假设，在平滑正则下可能单峰坍缩。写 5 分钟纯前向证伪脚本（零训练）：
+- 脚本：`project/meeting/FMReg/killshots/killshot_K0v2_energy_probe.py`
+- 输出 csv：`killshots/results/killshot_K0v2_energy_probe.csv`
+- 输出图：`killshots/results/energy_probe_lambda{0.0,0.1,1.0}.png`
+- 逻辑：合成受控歧义对（中心 blob → 双对称 blob，已知双解），沿 psi_left↔psi_right 插值密采 E(α)，扫 λ∈{0.0,0.1,1.0} 机械判峰（纯 numpy），λ=1.0 多数双谷=GREEN_PROBE 放行，多数单谷=RED_PROBE 证伪。
+- 就绪可跑（smoke --cpu <30s 自测通过）→ 主线 `/loop /run-experiment killshot_K0v2_energy_probe.py --smoke` 先 smoke 验证。
+- **▶ 跑完（2026-06-18 CPU full 5 对 41 点）= GREEN_PROBE**：λ=1.0 实际 diffeomorphic 正则下 **5/5 双谷**（barrier 0.023-0.204），λ=0/0.1 也全双谷。即 diffeomorphic 正则**不填平**多峰能量地形，warp-loss 在有歧义时保留多谷。命根假设站住 → 放行写整轮三臂 K0v2。诚实标注：探针用**受控歧义对**（人造单 blob→双对称 blob，构造上已知双解），证的是「**当**有 2 个合法 warp 时正则不毁多模态」=skeptic 第三条路核心（eval 用受控歧义对不赌 BraTS 自然歧义）。csv/png 落 `killshots/results/`。
+- **臂 B 官方实现（researcher 回汇）**：VoxelMorph-prob = **ELBO/cVAE 式**（输出 velocity mean+log_sigma，KL 用 degree-matrix Laplacian 先验 `0.5·ndims·(λ·D·exp(logσ)−logσ + λ·prec(mean))`），**非** Kendall-Gal 异方差 NLL → 臂 B claim 写「cVAE-style velocity 后验」别写「heteroscedastic aleatoric」。PyTorch `use_probs` 官方未实现（抛 NotImplementedError）需从 TF 移植。init：mean flow `Normal(0,1e-5)`，log_sigma `Normal(0,1e-10)` bias −10。`prior_lambda` 官方无固定默认值=TODO。
+- **K0v2 三臂 killshot 脚本（2026-06-18，coder 交付）**：
+  - 脚本：`project/meeting/FMReg/killshots/killshot_K0v2_three_arm.py`
+  - 三臂：A(det TinyUNetDet) / B(cVAE TinyUNetCVAE, VoxelMorph-prob 式) / C(FM warp-driven 零 teacher TinyUNetFM)
+  - 关键函数：`train_arm_A/B/C` / `estimate_sigma_p`（σ_p 数据驱动）/ `eval_arm_A/B/C` / `eval_forking_on_synth` / `compute_forking_metrics`（dip/BC/cluster_sep 纯 numpy）/ `compute_verdict`（预登记判据）/ `bootstrap_dip_diff_ci`
+  - 输出：`killshots/results/killshot_K0v2_three_arm.csv` + `killshots/results/k0v2_posterior_BvsC.png`
+  - smoke `--smoke` <60s CPU 验三臂全跑通；full = 2000 步×3 臂，`--data-dir/--out-dir` HPC override
+  - 残留 TODO：`prior_lambda=10`（占位，researcher 查 Dalca 2019 附录）；`sigma_p` 由 `estimate_sigma_p()` 数据驱动（在 run() 内臂 A 跑完后统计 SVF std），不臆想
+
 **🏁 收工状态（2026-06-17 晚）**：K0 卡槽 **QUEUED 360c8b43**（local 满，ideation-run002-g5 占着，排在 medad-failmap 后），**未 release**，留着卡空自动取出跑。脚本超参 3 处 TODO（VoxelMorph 官方 lr/λ/NCC win，中训复现 baseline 时查实，killshot 内部对照可用占位）。**下次开窗第一件事**：查 `gpu_slot.py status`，360c8b43 轮到→主线跑 K0→analyst 判 GREEN(走候选①生成式后验 headline)/RED(降级报拍板)。headline 在 K0 出结果前不锁主轴、不写正文。
 
 ---
