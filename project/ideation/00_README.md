@@ -24,7 +24,10 @@
 3. **挑"蓝海"一碰就塌** —— 优化"大胆/新"没优化"能活"。很多 claim "没人做过"正因为一碰就塌。→ **G2 工具撞车检测 + 可行性硬闸 + G3 excited-reader 测试**。
 4. **顶会执念** —— 默认全 ICLR/NeurIPS，本可发表的工作被顶会尺子量成"失败"。→ **G0/G6 强制双 venue 分档**（顶会版 + 退路版同时写）。
 
+5. **【2026-06-18 新增】只量下风险、塌成 benchmark 工厂** —— 前 4 闸全是「会不会死」的硬闸，没一道量「活了够不够顶会」。5 轮幸存者全 benchmark/分析型（selinf→TMLR/D&B、disagree、ArtiOODBench），能上 CVPR/NeurIPS main-track 的 method/theory 型（A 族）全死在 G5。**矫枉过正成另一种病**。→ **R8 顶会天花板维度（G3 surface + MAIN-tier 保底配额 + G4 上风险红队 + G6 按 tier 定档）** 补上风险闸；**R9 kill-shot 三分流（KILL/GRAY/KILL-proxy + 强制功效声明）** 防 <1 GPU·h pilot 假阴性误杀顶会苗子。两者互为平衡：找出 CVPR 苗子，但天花板信号必须举证（防 LLM novelty 自评虚高泡沫），且不放松干净 KILL 纪律。
+
 > 核心理念：**把组合台现有的"事后才严"（verifier/reviewer/stage-gate 极诚实极能杀，但杀在闸口）提前到"事前就严"。** 立项门槛建在证据上，不建在希望上。
+> **双向平衡（别矫枉过正）**：下风险硬闸杀「会死的」，上风险维度（R8）surface「能上顶会的」，kill-shot 三分流（R9）保护「被小实验误判的」。既不退回拍脑袋大胆全死，也不塌成只活 benchmark 安全题。
 
 ---
 
@@ -40,14 +43,14 @@ G1 批量产出 Generate   ideator×N 多策略扇出 → 去重+多样性聚类
 G2 机器硬筛 Screen     二元 kill checklist + 工具撞车检测           自动(tools/) + 主线
    │  ~50 → ~20   撞车>0.85 / 超算力预算 / 无 gap / 命中排除清单 → 砍   通过率 ~40%
    ▼
-G3 评分排序 Rank       补情报 → InnoEval加权 + Swiss pairwise        researcher + 主线
-   │  ~20 → 8-10   硬阈: Feasibility<4 或 Novelty<5 即砍          通过率 ~45%
+G3 评分排序 Rank       补情报 → InnoEval加权 + Swiss + R8天花板      researcher + 主线
+   │  ~20 → 8-10   硬阈 Feas<4/Q-Nov<4；+R8定tier+MAIN保底晋级      通过率 ~45%
    ▼
-G4 红队预演 Pre-mortem skeptic 攻三死法 + pre-mortem → RAT          skeptic(opus)
-   │  8-10 → ~5    列致命路径，提炼最大风险假设                   通过率 ~55%
+G4 红队预演 Pre-mortem skeptic 攻三死法 + pre-mortem + 上风险红队    skeptic(opus)
+   │  8-10 → ~5    致命路径+校准天花板(低tier降级非砍)             通过率 ~55%
    ▼
-G5 杀手锏预实验 Kill-shot 设计<1GPU·h 廉价证伪 → 跑 → 核心claim没死  planner→🛑主线跑→verifier
-   │  ~5 → 2-3     ⚠️训练经 gpu_slot.py 调度                     通过率 ~50%
+G5 杀手锏预实验 Kill-shot <1GPU·h证伪 + R9三分流(强制功效声明)       planner→🛑主线跑→verifier
+   │  ~5 → 2-3     KILL砍/GRAY欠功效不砍/KILL-proxy；gpu_slot调度   通过率 ~50%
    ▼
 G6 立项拍板 Go        完整双 venue + 书面 kill criteria             用户拍板
       2-3 → 1      → /spin-off-paper 建 schema + 登 registry
@@ -92,7 +95,7 @@ G0 宪章把搜索空间一次性钉死：领域边界、**硬排除清单**（N
 |---|---|
 | `00_README.md` | 本文：病因 + 总图 + 三支柱 + 怎么跑 |
 | `01_CHARTER.template.md` | G0 宪章模板（每次立项探索复制一份填） |
-| `02_RUBRICS.md` | 全部评分量规（12 维 taste + InnoEval 加权 + Heilmeier + kill criteria 模板）|
+| `02_RUBRICS.md` | 全部评分量规（12 维 taste + InnoEval 加权 + Heilmeier + kill criteria 模板 + **R8 顶会天花板 + R9 kill-shot 三分流**）|
 | `03_GATES.md` | G0–G6 逐闸细则（方法/负责 agent/通过率/kill 条件/I-O）|
 | `04_POOL.schema.md` | 候选池 `pool.jsonl` 字段 schema |
 | `05_TOOLING.md` | 撞车检测 + gap 挖掘工作流（API/SPECTER2）+ 工具实现状态 |

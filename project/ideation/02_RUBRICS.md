@@ -127,3 +127,52 @@ KILL-4 (资源): 若 [算力/时间] 超出预算 [X GPU·h / Y 周] 仍无 PASS
 ```
 
 立项后这份 kill criteria 进项目 `ACCEPTANCE_CRITERIA.md`，stage-gate 时一并核。
+
+---
+
+## R8 — 顶会天花板 Ceiling（G3 surface + G4 红队 + G6 定档共用）
+
+> **病因**：漏斗历来只量「会不会死」（下风险全是硬闸），从不量「活了够不够顶会」（上风险无闸）。结果 5 轮幸存者全是 benchmark/分析型（selinf→TMLR/D&B、disagree、ArtiOODBench），没一个 CVPR/NeurIPS main-track 苗子；能上顶会的 method/theory 型（A 族）全死在 G5。这条量规把上风险补成显式维度。
+> **反矫枉过正铁律**：天花板**不靠 novelty 自评**——Si et al.（[arXiv:2506.20803](https://arxiv.org/html/2506.20803v1)）+ HindSight（[arXiv:2603.15164](https://arxiv.org/pdf/2603.15164)）实证 **LLM 打高 novelty 的 idea 真实价值反而更低**（负相关）。故 5 个信号**全要举证据，举不出=0 分**，杜绝「听起来大胆」泡沫。
+
+5 信号，各 0-2 分，满分 10：
+
+| # | 信号 | 接地测试（举不出实据 = 0） | 来源 |
+|---|---|---|---|
+| 1 | **新领地非新点** | 能一句话说「这是第一篇做 X 类问题的」+ 文献 isolation 实测（与近 3 年最近邻 conceptual 距离大且**非缝合**距离）。只能说「比上篇高 Y%」= 0 | NeurIPS guidelines；[arXiv:2602.06607](https://arxiv.org/pdf/2602.06607)（central-claim isolation = 被引/disruption 最强前兆）|
+| 2 | **10x 非 10% upside** | 写出「方法全成→领域具体怎样不同」，是量级跳还是边际。边际改进 = 0（除非 trivially simple 到人人会用）| Schulman 10%/10x 测试 |
+| 3 | **enabling 开线** | 列举 ≥3 个独立 follow-up 论文方向，每个能单独成文。列不出 = 0 | Schulman（stacking toward ambitious objective）|
+| 4 | **跨域桥** | 说出领域 A 机制用到领域 B 问题的**具体机制连接**（非「都用神经网络」泛泛）。单域应用 = 0 | Kirsch（generality）；[PLOS](https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0312945)（interdisciplinarity 正相关被引）|
+| 5 | **reviewer 7.5+ 相** | 三件套全有：清晰 challenge（为何难）+ 明确 insight（为何之前做不到）+ 可行验证路径 → 推 7+；insight 模糊 → borderline 5-6（ICLR 实证 >7.4 几乎全 Oral，5-6 是博弈区）| [arXiv:2510.13201](https://arxiv.org/html/2510.13201v2) |
+
+**档位映射**（顶会 main-track 有「新领地 OR 强 insight」缺一不可，对齐 NeurIPS「new territory > incremental SoTA」+ CVPR 2026 反 novelty fallacy 但分 Findings track）：
+- **Ceiling ≥7 且（信号 1 或 5）≥1**：`ceiling_tier=MAIN` — CVPR/NeurIPS/ICLR main-track 潜力 = **顶会苗子**
+- **Ceiling 4-6**：`ceiling_tier=FINDINGS` — CVPR Findings / MICCAI / TMLR / D&B 档，能发但非顶会 main
+- **Ceiling <4**：`ceiling_tier=WORKSHOP` — 除非 reframe 否则不进顶会通道
+
+**用法（关键，防两头矫枉过正）**：
+- 低 Ceiling **不在 G3 直接砍**——扎实的 B-venue 好题仍是真论文，只**诚实标档**，不让它冒充顶会 slot（CVPR 2026 Findings track 实操：solid-but-incremental 自愿进 Findings，不当 main-track 胜）。
+- 但 G3 re-rank **保底**：≥1-2 个 `MAIN` 候选必须晋级 G4，即使 Swiss 名次较低（标 `lane=high_variance`）。直接对冲 pairwise judge 的风险厌恶——保守 benchmark 题在两两比较里天然更易胜（[Si et al.] + Swiss 系统性偏差 [arXiv:2410.19333](https://arxiv.org/html/2410.19333v1)），不保底就会把顶会苗子全埋掉。
+- 70-20-10 portfolio：不强制每题都去风险到安全档；留 transformational 通道（[innovation portfolio](https://www.acceptmission.com/blog/innovation-portfolio-management-guide/)）。
+
+---
+
+## R9 — G5 kill-shot 判定三分流 + 强制功效声明（防假阴性误杀）
+
+> **病因**：<1 GPU·h 最小数据 pilot 统计功效低，floor effect / proxy 失真易把「测不出」误判成「信号不存在」，杀错真顶会苗子（run-004 终判一堆 GRAY 即此症）。ML 领域 ~93% 研究不做统计检验、95% 不报 effect size（[arXiv:2502.00902](https://arxiv.org/html/2502.00902v2)），null 无法与「欠功效」区分。
+> **反矫枉过正**：这条放松的是**误杀**，不放松 kill 纪律——干净 KILL 照杀不误，只是欠功效的 null 不当死信号。
+
+**每个 kill-shot 跑完必附功效声明**（verifier 核，缺则判 GRAY 不判 KILL）：
+```
+N(epochs/samples): X | metric: <continuous / binary-exactmatch> | 95% CI: [lo, hi] | MDE@80%power: Y
+verdict: KILL / GRAY / KILL-proxy
+```
+
+三分流：
+1. **KILL（可信否定，照砍）**：null + **CI 窄**（上界 < 最小有意义 effect）+ 用了 **continuous metric**（非 exact-match）。「没信号」是真信息 → 砍。
+2. **GRAY（欠功效，不可判，不砍）**：null + **CI 宽** 或 用了 binary/exact-match 且 MDE > 合理 effect size。只说明「实验太小」→ **候选存活**，带债排队更大规模验证或换 continuous proxy。kill 权重设 **0.3**（降权非等权），绝不当死。
+3. **KILL-proxy（代理否定，偏强 kill）**：目标能力小规模本就不可测（emergent，[arXiv:2412.07111](https://arxiv.org/html/2412.07111v1)）→ 设计相关 proxy task → proxy 也无信号 → 给 **0.6** 权重 kill（非 1.0，proxy 不完美）。
+
+**反 floor-effect 操作**：pilot 评估指标**优先 continuous**（Brier/edit-distance/连续 score），别用 0/1 exact-match——后者最易触发 floor effect 把微弱信号抹平（[arXiv:2310.03262](https://arxiv.org/html/2310.03262v3) PassUntil：大采样可在小模型捞出信号）。
+
+`null result = no evidence of effect ≠ evidence of no effect`（[arXiv:2406.03980](https://arxiv.org/abs/2406.03980)）——宽 CI 的 null 是 GRAY 不是 KILL。

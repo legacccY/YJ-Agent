@@ -22,6 +22,9 @@
   "cluster": 3,                    // G1 多样性聚类簇号
   "mechanism_anchor": "phenomenon", // G1 A族必填：phenomenon（锚在可观测反常/数据特性）/ mechanism（指名具体机制）/ MISSING（答不上）；B族(S3/S4)天然填 phenomenon
   "anchor_note": "一句话说明锚点：具体是哪个现象或机制",  // G1 A族必填，B族建议填
+  "ceiling_upside": "全成后领域怎样不同（10x量级跳 / 10%边际）",  // G1 预填，喂 R8 信号2
+  "ceiling_followups": ["独立follow-up方向1", "2", "3"],  // G1 预填，喂 R8 信号3 enabling；列不出留空
+  "ceiling_bridge": "领域A机制→领域B问题的具体连接 / none",  // G1 预填，喂 R8 信号4 跨域桥
 
   // —— G2 机器筛追加 ——
   "g2_collision": {"max_cos": 0.72, "nearest": "arXiv:xxxx 标题", "source": "specter2|s2|openalex"},
@@ -35,6 +38,8 @@
   "g3_swiss_wins": 4,              // 5 轮 Swiss 累计胜场
   "g3_rank": 3,                    // final rerank 后名次
   "g3_taste12": [4,3,5,4,3,2,5,4,4,5,5,3],  // 仅 top10 跑，12 维 0-5
+  "g3_ceiling": {"s1_newterritory": 2, "s2_upside10x": 1, "s3_enabling": 2, "s4_bridge": 0, "s5_reviewer75": 1, "total": 6, "tier": "FINDINGS"},  // R8 顶会天花板：5信号各0-2，total/10 → tier MAIN(≥7且s1或s5≥1)/FINDINGS(4-6)/WORKSHOP(<4)；举不出实据=0
+  "lane": null,                    // null | "high_variance"（G3 保底晋级的 MAIN-tier 苗子，名额受保护不被 cutoff 砍）
   "researcher_brief": "情报回汇路径 / 关键发现",
 
   // —— G4 红队追加 ——
@@ -44,7 +49,8 @@
   "g5_design": "杀手锏实验设计（planner）",
 
   // —— G5 预实验追加 ——
-  "g5_result": {"job": "gpu_slot id", "csv": "结果路径", "verdict": "claim 没死|证伪"},
+  "g5_power": {"n": "epochs/samples", "metric": "continuous|binary", "ci95": [0.01, 0.18], "mde": 0.05},  // R9 强制功效声明
+  "g5_result": {"job": "gpu_slot id", "csv": "结果路径", "verdict": "KILL|GRAY|KILL-proxy|claim没死", "kill_weight": 0.3},  // GRAY=欠功效不砍(权0.3) / KILL-proxy(权0.6) / KILL=干净砍
 
   // —— G6 立项追加 ——
   "kill_criteria": "R7 书面 kill criteria（幸存才填）",
