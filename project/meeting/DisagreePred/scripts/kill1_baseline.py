@@ -1,29 +1,35 @@
 """
-kill1_baseline.py — DisagreePred KILL-1 分歧可预测性 baseline
+kill1_baseline.py — DisagreePred KILL-1 分歧可预测性 baseline (v2, CV 版)
 
 服务项目：DisagreePred，lever = KILL-1 gating（方案甲）
 前置：先跑 parse_lidc.py 生成 lidc_disagree_labels.csv + patch npy 文件
 
-方案：ImageNet 预训练 ResNet-18（2D），预测 disagree_binary（方案甲标签）
-超参来源（researcher 核源 2026-06-18）：
-  - Adam lr=1e-4, weight_decay=1e-4（官方口径）
-  - batch=16~32（单卡 RTX4070 8GB 2D 全够）
-  - 增强：水平翻转 + ±10° 旋转（CT 禁垂直翻转）
-  - 5 seed {0,1,2,3,4}，报 test AUROC 均值±std
-  - bootstrap 1000 次 AUROC 95% CI（纯 numpy，绕 scipy OMP 冲突）
-  - 置换检验：标签打乱重训，AUROC 应塌 ~0.50（sanity check，非设计层防泄漏）
+设计变更（v2, 2026-06-18）：
+  - 废弃单次 train/val/test split（test 仅 15 cluster，AUROC 粒度 0.25）
+  - 改为 patient-level StratifiedGroupKFold（n_splits=5）：
+      groups = patient_id，stratify = disagree_binary
+      每折 test 出 out-of-fold P(disagree) → 聚合全 75 cluster → CV-AUROC
+  - Bootstrap CI 按 patient 重采样（防同一 patient 多 cluster 非独立高估）
+  - 置换检验：只打乱 train fold 标签，val/test 保持真实；>=100 rep 稳定 null
+  - ASCII print（[PASS]/[FAIL]），避免 Windows GBK UnicodeEncodeError
 
-判据（02_ACCEPTANCE.md A1）：
-  5-seed 均值 AUROC > 0.60 且 CI 下界 > 0.50 = KILL-1 PASS
-  ≤ 0.60 = KILL-1 触发砍
+超参来源（researcher 核源 2026-06-18）：
+  - Adam lr=1e-4, weight_decay=1e-4
+  - batch=16，max_epochs=50，patience=8
+  - 增强：水平翻转 + +-10 度旋转（CT 禁垂直翻转）
+  - ImageNet 预训练 ResNet-18
+
+判据（02_ACCEPTANCE.md A1，更新为 CV 版）：
+  CV-AUROC（75 样本）> 0.60
+  AND bootstrap CI 下界 > 0.50（patient 级重采样）
+  AND perm null 塌回 ~0.50（perm_auroc_mean < 0.60）
+  三条全满足 = KILL-1 PASS；否则 FAIL/不可定论
 
 Windows 规范：
   - if __name__=='__main__' 包主逻辑 + freeze_support
-  - num_workers=0（spawn 模式不用 fork workers）
-  - pin_memory=False（spawn worker 不支持）
-  - 路径用正斜杠 / pathlib.Path
-
-注意：本脚本不启动训练调度，写完交主线 /loop /run-experiment 跑
+  - num_workers=0，pin_memory=False
+  - 路径正斜杠 / pathlib.Path
+  - ASCII print only（无 Unicode 特殊字符）
 """
 
 from __future__ import annotations
@@ -31,6 +37,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import os
 import random
 from pathlib import Path
@@ -40,31 +47,34 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
-# ─── 路径配置 ─────────────────────────────────────────────────────────────────
+# --- 路径配置 -----------------------------------------------------------------
 SCRIPTS_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = SCRIPTS_DIR.parent
 RESULTS_DIR = PROJECT_DIR / "results"
 LABEL_CSV   = RESULTS_DIR / "lidc_disagree_labels.csv"
-OUT_CSV     = RESULTS_DIR / "kill1_disagree_auroc.csv"
+OUT_CSV     = RESULTS_DIR / "kill1_cv_auroc.csv"       # 新输出：per-fold + 汇总
 
 # 超参（官方口径，researcher 核源 2026-06-18）
 LR           = 1e-4
 WEIGHT_DECAY = 1e-4
 BATCH_SIZE   = 16
 MAX_EPOCHS   = 50
-PATIENCE     = 8       # 早停
-SEEDS        = [0, 1, 2, 3, 4]
-N_BOOTSTRAP  = 1000    # bootstrap 次数（AUROC CI）
+PATIENCE     = 8
+N_SPLITS     = 5       # StratifiedGroupKFold 折数
+N_BOOTSTRAP  = 1000    # bootstrap AUROC CI 次数（纯 numpy）
+N_PERM       = 100     # 置换检验 rep 数（>=100 稳定 null）
 
-# 增强角度
-ROTATE_DEG   = 10      # ±10° 旋转（CT 禁垂直翻转）
+# 置换检验 epoch 数（CPU 上 100 rep 可能耗时，少 epoch 加速保留早停）
+PERM_MAX_EPOCHS = 30
+PERM_PATIENCE   = 5
+
+ROTATE_DEG   = 10      # +-10 度旋转（CT 禁垂直翻转）
 
 
-# ─── 纯 numpy AUROC（绕 scipy.stats OMP Error #15）──────────────────────────
+# --- 纯 numpy AUROC（绕 scipy.stats OMP Error #15）---------------------------
 def auroc_numpy(labels: np.ndarray, scores: np.ndarray) -> float:
     """
     纯 numpy 计算 AUROC（trapezoid rule）。
-    绕过 scipy.stats.rankdata / kendalltau 与 torch 争 OpenMP → OMP Error #15。
     labels: binary int/float array; scores: float array (higher = more likely positive)
     """
     labels = np.asarray(labels, dtype=np.float32)
@@ -79,29 +89,44 @@ def auroc_numpy(labels: np.ndarray, scores: np.ndarray) -> float:
     fp_cum = np.cumsum(1 - labels_sorted)
     tpr = tp_cum / n_pos
     fpr = fp_cum / n_neg
-    # 加 (0,0) 起点
     tpr = np.concatenate([[0.0], tpr])
     fpr = np.concatenate([[0.0], fpr])
     auc = float(np.trapz(tpr, fpr))
     return auc
 
 
-def bootstrap_auroc_ci(labels: np.ndarray, scores: np.ndarray,
-                       n: int = N_BOOTSTRAP,
-                       ci: float = 0.95,
-                       seed: int = 0) -> tuple[float, float]:
-    """Bootstrap AUROC 95% CI（纯 numpy）。"""
+def bootstrap_auroc_ci_patient(
+    labels: np.ndarray,
+    scores: np.ndarray,
+    patient_ids: np.ndarray,
+    n: int = N_BOOTSTRAP,
+    ci: float = 0.95,
+    seed: int = 0,
+) -> tuple[float, float]:
+    """
+    按 patient 重采样的 bootstrap AUROC 95% CI（纯 numpy）。
+    patient 内所有 cluster 一同选入/排除，防同 patient 多 cluster 非独立高估。
+    labels/scores/patient_ids: 1-D arrays，长度 = 全 cluster 数。
+    """
     rng = np.random.default_rng(seed)
-    size = len(labels)
+    unique_pids = np.unique(patient_ids)
+    n_patients = len(unique_pids)
+
     boot_aurocs = []
     for _ in range(n):
-        idx = rng.integers(0, size, size)
+        # 按 patient 有放回采样
+        sampled_pids = rng.choice(unique_pids, size=n_patients, replace=True)
+        idx_list = []
+        for pid in sampled_pids:
+            idx_list.append(np.where(patient_ids == pid)[0])
+        idx = np.concatenate(idx_list)
         try:
             a = auroc_numpy(labels[idx], scores[idx])
             if not np.isnan(a):
                 boot_aurocs.append(a)
         except Exception:
             pass
+
     if not boot_aurocs:
         return float("nan"), float("nan")
     lo = float(np.percentile(boot_aurocs, (1 - ci) / 2 * 100))
@@ -122,72 +147,64 @@ def auprc_numpy(labels: np.ndarray, scores: np.ndarray) -> float:
     idx_arr = np.arange(1, len(labels_sorted) + 1, dtype=np.float32)
     precision = tp_cum / idx_arr
     recall = tp_cum / n_pos
-    # 加 (0, precision[0]) 起点（避免 recall=0 漏起）
     precision = np.concatenate([[precision[0]], precision])
     recall = np.concatenate([[0.0], recall])
     auc = float(np.trapz(precision, recall))
     return auc
 
 
-# ─── Dataset ─────────────────────────────────────────────────────────────────
-class LIDCDisagreeDataset(Dataset):
+# --- 纯 numpy StratifiedGroupKFold -------------------------------------------
+def stratified_group_kfold_split(
+    n_splits: int,
+    labels: np.ndarray,
+    groups: np.ndarray,
+    seed: int = 0,
+) -> list[tuple[np.ndarray, np.ndarray]]:
     """
-    方案甲：从 parse_lidc.py 输出的 CSV + npy patch 加载。
-    只含 k≥1 cluster（CSV 已过滤，无需二次过滤）。
-    输入：96×96 float32 灰度 npy → 复制成 3 通道 (3, 96, 96)。
-    标签：disagree_binary (0/1)。
-    增强（仅 train）：水平翻转 + ±10° 旋转（CT 禁垂直翻转）。
+    Patient-level StratifiedGroupKFold，纯 numpy 实现（绕 sklearn OMP 冲突风险）。
+    按 patient 分组（同 patient 全进同一 fold），尽量保持各折正负比接近总体。
+
+    返回 [(train_indices, test_indices), ...] 长度 = n_splits。
+    所有 index 基于输入数组 0-based 行号。
     """
+    rng = np.random.default_rng(seed)
+    unique_groups = np.unique(groups)
 
-    def __init__(self, rows: list[dict], split: str,
-                 augment: bool = False,
-                 permute_labels: bool = False,
-                 seed: int = 0) -> None:
-        self.rows = [r for r in rows if r["split"] == split]
-        self.augment = augment
-        self.permute_labels = permute_labels
-        if permute_labels:
-            # 置换检验：打乱标签（不动 patch）
-            rng = random.Random(seed + 9999)
-            labels = [int(r["disagree_binary"]) for r in self.rows]
-            rng.shuffle(labels)
-            for r, lb in zip(self.rows, labels):
-                r = dict(r)   # 浅拷贝，不改原 rows
-            # 重新构造带置换标签的 rows
-            self._perm_labels = labels
-        else:
-            self._perm_labels = None
+    # 计算每个 patient 的 label（patient 若混合正负则取多数票）
+    pid_labels = {}
+    for pid in unique_groups:
+        mask = groups == pid
+        majority = int(np.round(labels[mask].mean()))
+        pid_labels[pid] = majority
 
-    def __len__(self) -> int:
-        return len(self.rows)
+    # 按 label 分桶，patient 内随机打乱再分折（最简单有效分层策略）
+    pos_pids = [p for p in unique_groups if pid_labels[p] == 1]
+    neg_pids = [p for p in unique_groups if pid_labels[p] == 0]
+    rng.shuffle(pos_pids)
+    rng.shuffle(neg_pids)
 
-    def __getitem__(self, idx: int):
-        row = self.rows[idx]
-        patch_path = row["patch_path"]
-        label = self._perm_labels[idx] if self._perm_labels else int(row["disagree_binary"])
+    # 各折分配 patient
+    fold_patients: list[list] = [[] for _ in range(n_splits)]
+    for i, pid in enumerate(pos_pids):
+        fold_patients[i % n_splits].append(pid)
+    for i, pid in enumerate(neg_pids):
+        fold_patients[i % n_splits].append(pid)
 
-        # 加载 npy patch
-        patch = np.load(patch_path).astype(np.float32)   # (96, 96) 或 (H, W)
-
-        # 增强（仅 train，CT 禁垂直翻转）
-        if self.augment:
-            # 水平翻转
-            if random.random() > 0.5:
-                patch = np.fliplr(patch).copy()
-            # ±10° 旋转（scipy 不可用，用 numpy 实现简单旋转）
-            angle_deg = random.uniform(-ROTATE_DEG, ROTATE_DEG)
-            patch = _rotate_patch(patch, angle_deg)
-
-        # 灰度复制 3 通道（ImageNet ResNet-18 期望 3 通道输入）
-        tensor = torch.from_numpy(patch).unsqueeze(0).repeat(3, 1, 1)   # (3, H, W)
-        return tensor, torch.tensor(label, dtype=torch.float32)
+    # 构造 (train_idx, test_idx)
+    folds = []
+    all_idx = np.arange(len(labels))
+    for fold_i in range(n_splits):
+        test_pids = set(fold_patients[fold_i])
+        test_mask = np.array([g in test_pids for g in groups])
+        test_idx  = all_idx[test_mask]
+        train_idx = all_idx[~test_mask]
+        folds.append((train_idx, test_idx))
+    return folds
 
 
+# --- 旋转（纯 numpy，避免 scipy.ndimage）-------------------------------------
 def _rotate_patch(patch: np.ndarray, angle_deg: float) -> np.ndarray:
-    """
-    纯 numpy 双线性旋转（绕中心）。避免 scipy.ndimage（OMP 冲突）。
-    angle_deg：旋转角度（度）
-    """
+    """纯 numpy 双线性旋转（绕中心），angle_deg 单位度。"""
     if abs(angle_deg) < 0.5:
         return patch
     h, w = patch.shape
@@ -196,16 +213,12 @@ def _rotate_patch(patch: np.ndarray, angle_deg: float) -> np.ndarray:
     cos_a = math.cos(angle_rad)
     sin_a = math.sin(angle_rad)
 
-    # 目标像素坐标网格
     ys, xs = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
-    # 平移到中心
     xs_c = xs - cx
     ys_c = ys - cy
-    # 逆旋转（从目标到源）
     xs_src = cos_a * xs_c + sin_a * ys_c + cx
     ys_src = -sin_a * xs_c + cos_a * ys_c + cy
 
-    # 双线性插值
     xs_src = np.clip(xs_src, 0, w - 1)
     ys_src = np.clip(ys_src, 0, h - 1)
     x0 = np.floor(xs_src).astype(np.int32)
@@ -222,33 +235,69 @@ def _rotate_patch(patch: np.ndarray, angle_deg: float) -> np.ndarray:
     return out.astype(np.float32)
 
 
-import math   # 补 import（_rotate_patch 依赖）
+# --- Dataset（fold-based，无 split 列依赖）-----------------------------------
+class LIDCFoldDataset(Dataset):
+    """
+    从全量 rows + 索引子集构造，按 fold 切割，不依赖 CSV 的 split 列。
+    augment=True 时做水平翻转 + +-10 度旋转（train fold 用）。
+    perm_labels: 若非 None，则用这个 array 替换原始 label（置换检验用）。
+    """
+
+    def __init__(
+        self,
+        rows: list[dict],
+        indices: np.ndarray,
+        augment: bool = False,
+        perm_labels: np.ndarray | None = None,
+    ) -> None:
+        self.rows = [rows[i] for i in indices]
+        self.augment = augment
+        # perm_labels 长度应等于 indices 长度（train fold 子集）
+        self.perm_labels = perm_labels
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def __getitem__(self, idx: int):
+        row = self.rows[idx]
+        patch_path = row["patch_path"]
+        if self.perm_labels is not None:
+            label = int(self.perm_labels[idx])
+        else:
+            label = int(row["disagree_binary"])
+
+        patch = np.load(patch_path).astype(np.float32)   # (96, 96)
+
+        if self.augment:
+            if random.random() > 0.5:
+                patch = np.fliplr(patch).copy()
+            angle_deg = random.uniform(-ROTATE_DEG, ROTATE_DEG)
+            patch = _rotate_patch(patch, angle_deg)
+
+        # 灰度复制 3 通道 (3, H, W)
+        tensor = torch.from_numpy(patch).unsqueeze(0).repeat(3, 1, 1)
+        return tensor, torch.tensor(label, dtype=torch.float32)
 
 
-# ─── 模型 ─────────────────────────────────────────────────────────────────────
+# --- 模型 --------------------------------------------------------------------
 def build_model(device: torch.device) -> nn.Module:
-    """
-    ImageNet 预训练 ResNet-18，输出单 logit（sigmoid 后为 P(disagree=1)）。
-    输入：(B, 3, 96, 96) 灰度复制 3 通道。
-    首层保持 7×7 conv（96×96 输入够用，无需改）。
-    """
+    """ImageNet 预训练 ResNet-18，fc 替换为单 logit。"""
     from torchvision.models import resnet18, ResNet18_Weights
     model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
-    # 替换最终 fc → 单 logit
     model.fc = nn.Linear(model.fc.in_features, 1)
     return model.to(device)
 
 
-# ─── 训练 / 评估单轮 ──────────────────────────────────────────────────────────
-def train_epoch(model, loader, optimizer, criterion, device):
+# --- 训练 / 推理 --------------------------------------------------------------
+def train_epoch(model, loader, optimizer, criterion, device) -> float:
     model.train()
     total_loss = 0.0
     for imgs, labels in loader:
-        imgs = imgs.to(device, non_blocking=False)
+        imgs   = imgs.to(device, non_blocking=False)
         labels = labels.to(device)
         optimizer.zero_grad()
         logits = model(imgs).squeeze(1)
-        loss = criterion(logits, labels)
+        loss   = criterion(logits, labels)
         loss.backward()
         optimizer.step()
         total_loss += loss.item() * len(labels)
@@ -261,7 +310,7 @@ def eval_epoch(model, loader, device) -> tuple[np.ndarray, np.ndarray]:
     model.eval()
     all_labels, all_scores = [], []
     for imgs, labels in loader:
-        imgs = imgs.to(device, non_blocking=False)
+        imgs   = imgs.to(device, non_blocking=False)
         logits = model(imgs).squeeze(1)
         scores = torch.sigmoid(logits).cpu().numpy()
         all_labels.append(labels.numpy())
@@ -271,28 +320,35 @@ def eval_epoch(model, loader, device) -> tuple[np.ndarray, np.ndarray]:
     return np.concatenate(all_labels), np.concatenate(all_scores)
 
 
-# ─── 单 seed 跑完整训练 ───────────────────────────────────────────────────────
-def run_one_seed(rows: list[dict], seed: int, device: torch.device,
-                 permute: bool = False) -> dict:
+# --- 单折训练（基础 or 置换检验）----------------------------------------------
+def train_fold(
+    rows: list[dict],
+    train_idx: np.ndarray,
+    val_idx: np.ndarray,
+    test_idx: np.ndarray,
+    seed: int,
+    device: torch.device,
+    perm_train_labels: np.ndarray | None = None,   # 置换检验时传入打乱后 train 标签
+    max_epochs: int = MAX_EPOCHS,
+    patience: int = PATIENCE,
+    verbose: bool = True,
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    训练一个 seed，返回结果字典。
-    permute=True：标签置换检验模式。
+    在 train_idx 上训练（可选置换标签），val_idx 用于早停（标签不打乱），
+    在 test_idx 上出预测分数。
+    返回 (test_labels, test_scores)。
     """
-    # 固定随机种子
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-    train_set = LIDCDisagreeDataset(rows, "train", augment=True,
-                                    permute_labels=permute, seed=seed)
-    val_set   = LIDCDisagreeDataset(rows, "val",   augment=False,
-                                    permute_labels=permute, seed=seed)
-    test_set  = LIDCDisagreeDataset(rows, "test",  augment=False,
-                                    permute_labels=permute, seed=seed)
+    train_set = LIDCFoldDataset(rows, train_idx, augment=True,
+                                perm_labels=perm_train_labels)
+    val_set   = LIDCFoldDataset(rows, val_idx,   augment=False, perm_labels=None)
+    test_set  = LIDCFoldDataset(rows, test_idx,  augment=False, perm_labels=None)
 
-    # Windows：num_workers=0，pin_memory=False
     train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True,
                               num_workers=0, pin_memory=False)
     val_loader   = DataLoader(val_set,   batch_size=BATCH_SIZE, shuffle=False,
@@ -300,83 +356,62 @@ def run_one_seed(rows: list[dict], seed: int, device: torch.device,
     test_loader  = DataLoader(test_set,  batch_size=BATCH_SIZE, shuffle=False,
                               num_workers=0, pin_memory=False)
 
-    model = build_model(device)
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    model     = build_model(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     criterion = nn.BCEWithLogitsLoss()
 
-    # 早停
-    best_val_auroc = -1.0
-    best_state = None
+    best_val_auroc   = -1.0
+    best_state       = None
     patience_counter = 0
 
-    print(f"  [seed={seed}{'|PERM' if permute else ''}] "
-          f"train={len(train_set)} val={len(val_set)} test={len(test_set)}")
-
-    for epoch in range(MAX_EPOCHS):
-        tr_loss = train_epoch(model, train_loader, optimizer, criterion, device)
-        val_labels, val_scores = eval_epoch(model, val_loader, device)
-        val_auroc = auroc_numpy(val_labels, val_scores)
+    for epoch in range(max_epochs):
+        tr_loss          = train_epoch(model, train_loader, optimizer, criterion, device)
+        val_lbl, val_sc  = eval_epoch(model, val_loader, device)
+        val_auroc        = auroc_numpy(val_lbl, val_sc)
         if np.isnan(val_auroc):
             val_auroc = 0.0
 
         if val_auroc > best_val_auroc:
-            best_val_auroc = val_auroc
-            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            best_val_auroc   = val_auroc
+            best_state       = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             patience_counter = 0
         else:
             patience_counter += 1
 
-        if (epoch + 1) % 10 == 0 or patience_counter == PATIENCE:
-            print(f"    epoch {epoch+1:3d} | tr_loss={tr_loss:.4f} "
+        if verbose and ((epoch + 1) % 10 == 0 or patience_counter == patience):
+            perm_tag = "[PERM]" if perm_train_labels is not None else ""
+            print(f"    epoch {epoch+1:3d}{perm_tag} | tr_loss={tr_loss:.4f} "
                   f"| val_auroc={val_auroc:.4f} | best={best_val_auroc:.4f} "
-                  f"| patience={patience_counter}/{PATIENCE}")
+                  f"| patience={patience_counter}/{patience}")
 
-        if patience_counter >= PATIENCE:
-            print(f"    [早停] epoch {epoch+1}")
+        if patience_counter >= patience:
+            if verbose:
+                print(f"    [early_stop] epoch {epoch+1}")
             break
 
-    # 恢复最佳 ckpt 评估测试集
     if best_state is not None:
         model.load_state_dict(best_state)
 
-    test_labels, test_scores = eval_epoch(model, test_loader, device)
-    test_auroc = auroc_numpy(test_labels, test_scores)
-    ci_lo, ci_hi = bootstrap_auroc_ci(test_labels, test_scores,
-                                      N_BOOTSTRAP, seed=seed)
-    test_auprc = auprc_numpy(test_labels, test_scores)
-
-    return {
-        "seed": seed,
-        "permute": permute,
-        "split": "test",
-        "n_test": len(test_set),
-        "auroc": round(float(test_auroc), 6),
-        "auroc_ci_low": round(float(ci_lo), 6),
-        "auroc_ci_high": round(float(ci_hi), 6),
-        "auprc": round(float(test_auprc), 6),
-        "best_val_auroc": round(float(best_val_auroc), 6),
-    }
+    test_lbl, test_sc = eval_epoch(model, test_loader, device)
+    return test_lbl, test_sc
 
 
-# ─── 主函数 ───────────────────────────────────────────────────────────────────
+# --- 主逻辑 -------------------------------------------------------------------
 def load_label_csv(csv_path: Path) -> list[dict]:
     assert csv_path.exists(), (
-        f"[DATA] 标签 CSV 未找到：{csv_path}\n"
-        "请先运行 parse_lidc.py 生成 lidc_disagree_labels.csv"
+        f"[DATA] label CSV not found: {csv_path}\n"
+        "Please run parse_lidc.py first to generate lidc_disagree_labels.csv"
     )
     rows = []
     with open(str(csv_path), newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # 验证所有 patch 文件存在
             pp = Path(row["patch_path"])
-            assert pp.exists(), f"[DATA] patch 文件缺失：{pp}"
+            assert pp.exists(), f"[DATA] patch file missing: {pp}"
             rows.append(row)
-    assert rows, f"[DATA] CSV 为空：{csv_path}"
-    print(f"[load] 共 {len(rows)} 条 cluster（全 k>=1，方案甲）")
+    assert rows, f"[DATA] CSV empty: {csv_path}"
+    print(f"[load] total {len(rows)} clusters (k>=1, schema A)")
 
-    # 统计类别分布
     n_pos = sum(int(r["disagree_binary"]) for r in rows)
     n_neg = len(rows) - n_pos
     print(f"[load] disagree=1: {n_pos}, disagree=0: {n_neg}, "
@@ -384,141 +419,275 @@ def load_label_csv(csv_path: Path) -> list[dict]:
     return rows
 
 
-def run_kill1(rows: list[dict], device: torch.device,
-              run_permutation: bool = True,
-              seeds: list[int] | None = None) -> None:
+def run_kill1_cv(
+    rows: list[dict],
+    device: torch.device,
+    run_permutation: bool = True,
+    n_perm: int = N_PERM,
+    seed: int = 0,
+    verbose_fold: bool = True,
+) -> None:
     """
-    主实验：5 seed 跑 baseline + 置换检验（标签打乱）。
-    输出 kill1_disagree_auroc.csv + 终端 KILL-1 判决。
-    seeds: 使用的 seed 列表，None 则用模块常量 SEEDS。
+    Patient-level StratifiedGroupKFold (n_splits=5) CV baseline.
+    置换检验：只打乱 train fold 标签，val/test 保持真实标签。
+    输出 kill1_cv_auroc.csv + kill1_cv_summary.json。
     """
-    if seeds is None:
-        seeds = SEEDS
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    all_results = []
+    # 准备数组
+    all_labels   = np.array([int(r["disagree_binary"]) for r in rows])
+    all_patients = np.array([r["patient_id"] for r in rows])
 
-    # ─── 5 seed baseline ─────────────────────────────────────────────────
-    print("\n[KILL-1] 开始 5-seed baseline 训练...")
-    for seed in seeds:
-        print(f"\n[seed={seed}]")
-        result = run_one_seed(rows, seed, device, permute=False)
-        all_results.append(result)
-        print(f"  test AUROC={result['auroc']:.4f} "
-              f"CI=[{result['auroc_ci_low']:.4f}, {result['auroc_ci_high']:.4f}] "
-              f"AUPRC={result['auprc']:.4f}")
+    unique_patients = np.unique(all_patients)
+    print(f"[cv] {len(rows)} clusters / {len(unique_patients)} patients / "
+          f"n_splits={N_SPLITS}")
 
-    # ─── 置换检验（仅 seed=0，验 sanity）────────────────────────────────
-    perm_aurocs = []
+    # 生成 fold 划分
+    folds = stratified_group_kfold_split(
+        N_SPLITS, all_labels, all_patients, seed=seed
+    )
+
+    # CV：5 折 out-of-fold 预测
+    oof_labels = np.full(len(rows), -1, dtype=np.float32)
+    oof_scores = np.full(len(rows), float("nan"), dtype=np.float32)
+    fold_results = []
+
+    print("\n[KILL-1 CV] Starting 5-fold patient-level CV ...")
+    for fold_i, (train_val_idx, test_idx) in enumerate(folds):
+        # 从 train+val 中按 patient 留 20% 作 val（用于早停）
+        tv_patients  = np.unique(all_patients[train_val_idx])
+        rng_split    = np.random.default_rng(seed + fold_i + 1)
+        n_val_p      = max(1, len(tv_patients) // 5)
+        val_pids_set = set(rng_split.choice(
+            tv_patients, size=n_val_p, replace=False).tolist())
+        val_mask      = np.array([all_patients[i] in val_pids_set
+                                   for i in train_val_idx])
+        val_idx_sub   = train_val_idx[val_mask]
+        train_idx_sub = train_val_idx[~val_mask]
+
+        n_test_pos = all_labels[test_idx].sum()
+        n_test_neg = len(test_idx) - n_test_pos
+        print(f"\n  [fold {fold_i+1}/{N_SPLITS}] "
+              f"train={len(train_idx_sub)} val={len(val_idx_sub)} "
+              f"test={len(test_idx)}(pos={int(n_test_pos)},neg={int(n_test_neg)})")
+
+        test_lbl, test_sc = train_fold(
+            rows, train_idx_sub, val_idx_sub, test_idx,
+            seed=seed + fold_i * 100,
+            device=device,
+            verbose=verbose_fold,
+        )
+        oof_labels[test_idx] = test_lbl
+        oof_scores[test_idx] = test_sc
+
+        fold_auroc = auroc_numpy(test_lbl, test_sc)
+        fold_results.append({
+            "fold": fold_i + 1,
+            "n_test_fold": len(test_idx),
+            "auroc_fold": round(float(fold_auroc), 6),
+        })
+        print(f"  [fold {fold_i+1}] auroc={fold_auroc:.4f}")
+
+    # CV-AUROC（基于全 75 样本 out-of-fold 预测）
+    assert (oof_labels >= 0).all(), "[BUG] Some OOF labels not filled"
+    cv_auroc = auroc_numpy(oof_labels, oof_scores)
+
+    print(f"\n[KILL-1] CV pooled AUROC (n={len(rows)}): {cv_auroc:.4f}")
+
+    # Bootstrap CI（patient 级重采样）
+    print("[KILL-1] Computing bootstrap CI (patient-level resampling)...")
+    ci_lo, ci_hi = bootstrap_auroc_ci_patient(
+        oof_labels, oof_scores, all_patients,
+        n=N_BOOTSTRAP, seed=seed,
+    )
+    print(f"[KILL-1] Bootstrap 95% CI: [{ci_lo:.4f}, {ci_hi:.4f}]")
+
+    # 置换检验（只打乱 train fold 标签，>=100 rep）
+    perm_aurocs: list[float] = []
     if run_permutation:
-        print("\n[KILL-1] 置换检验（标签打乱，AUROC 应塌 ~0.50）...")
-        print("  注意：置换检验是 sanity check，非设计层防泄漏手段")
-        print("  方案甲防泄漏靠：只在 k>=1 区内预测（不含 k=0 无结节区）")
-        for seed in seeds[:2]:   # 只跑 2 个 seed 节省算力
-            print(f"\n[perm seed={seed}]")
-            result_perm = run_one_seed(rows, seed, device, permute=True)
-            all_results.append(result_perm)
-            perm_aurocs.append(result_perm["auroc"])
-            print(f"  perm AUROC={result_perm['auroc']:.4f}")
+        print(f"\n[KILL-1] Permutation test ({n_perm} reps) ...")
+        print("  [note] Only train-fold labels shuffled; val/test labels unchanged.")
+        print(f"  [note] Each rep: {PERM_MAX_EPOCHS} max epochs, "
+              f"patience={PERM_PATIENCE}.")
+        print("  [note] CPU 100 rep estimate: ~30-90 min depending on hardware.")
 
-    # ─── 写 CSV ──────────────────────────────────────────────────────────
+        for rep in range(n_perm):
+            rep_seed = seed + 10000 + rep
+            perm_rng = np.random.default_rng(rep_seed)
+
+            # 对每折只打乱 train 标签，不碰 val/test
+            rep_oof_labels = np.full(len(rows), -1, dtype=np.float32)
+            rep_oof_scores = np.full(len(rows), float("nan"), dtype=np.float32)
+
+            for fold_i, (train_val_idx, test_idx) in enumerate(folds):
+                tv_patients  = np.unique(all_patients[train_val_idx])
+                rng_split    = np.random.default_rng(rep_seed + fold_i + 1)
+                n_val_p      = max(1, len(tv_patients) // 5)
+                val_pids_set = set(rng_split.choice(
+                    tv_patients, size=n_val_p, replace=False).tolist())
+                val_mask      = np.array([all_patients[i] in val_pids_set
+                                           for i in train_val_idx])
+                val_idx_sub   = train_val_idx[val_mask]
+                train_idx_sub = train_val_idx[~val_mask]
+
+                # 只打乱 train fold 的标签
+                train_orig_labels = all_labels[train_idx_sub].copy()
+                perm_rng.shuffle(train_orig_labels)
+
+                test_lbl, test_sc = train_fold(
+                    rows, train_idx_sub, val_idx_sub, test_idx,
+                    seed=rep_seed + fold_i * 100,
+                    device=device,
+                    perm_train_labels=train_orig_labels,
+                    max_epochs=PERM_MAX_EPOCHS,
+                    patience=PERM_PATIENCE,
+                    verbose=False,   # perm rep 不打详细 log，只报进度
+                )
+                rep_oof_labels[test_idx] = test_lbl
+                rep_oof_scores[test_idx] = test_sc
+
+            rep_auroc = auroc_numpy(rep_oof_labels, rep_oof_scores)
+            perm_aurocs.append(float(rep_auroc))
+
+            if (rep + 1) % 10 == 0 or rep == 0:
+                print(f"  perm rep {rep+1:3d}/{n_perm} | "
+                      f"auroc={rep_auroc:.4f} | "
+                      f"running_mean={np.mean(perm_aurocs):.4f}")
+
     perm_mean = float(np.mean(perm_aurocs)) if perm_aurocs else float("nan")
-    fieldnames = [
-        "seed", "split", "n_test", "auroc",
-        "auroc_ci_low", "auroc_ci_high", "auprc",
-        "permutation_auroc_mean",
-    ]
-    with open(str(OUT_CSV), "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for r in all_results:
-            if r["permute"]:
-                continue   # 置换结果单独在摘要，不混入主 CSV
-            writer.writerow({
-                "seed": r["seed"],
-                "split": r["split"],
-                "n_test": r["n_test"],
-                "auroc": r["auroc"],
-                "auroc_ci_low": r["auroc_ci_low"],
-                "auroc_ci_high": r["auroc_ci_high"],
-                "auprc": r["auprc"],
-                "permutation_auroc_mean": round(perm_mean, 6) if not np.isnan(perm_mean) else "nan",
-            })
+    # p-value：置换分布中 >= 真实 CV-AUROC 的比例
+    perm_p = (float(np.mean(np.array(perm_aurocs) >= cv_auroc))
+              if perm_aurocs else float("nan"))
 
-    # ─── KILL-1 判决 ─────────────────────────────────────────────────────
-    baseline_aurocs = [r["auroc"] for r in all_results if not r["permute"]]
-    mean_auroc = float(np.mean(baseline_aurocs))
-    std_auroc  = float(np.std(baseline_aurocs))
-    # 5-seed 联合 CI：对所有 test 样本合并后跑 bootstrap
-    # 此处以各 seed 的 CI 下界均值作为保守估计（严格需合并预测）
-    ci_lows = [r["auroc_ci_low"] for r in all_results if not r["permute"]]
-    mean_ci_low = float(np.mean(ci_lows))
+    # 判决
+    crit_auroc = cv_auroc > 0.60
+    crit_ci    = ci_lo > 0.50
+    crit_perm  = (np.isnan(perm_mean) or perm_mean < 0.60)  # null 应塌回 <0.60
 
     print("\n" + "=" * 60)
-    print("KILL-1 VERDICT (02_ACCEPTANCE.md A1)")
-    print(f"  5-seed 均值 AUROC : {mean_auroc:.4f} ± {std_auroc:.4f}")
-    print(f"  CI 下界（各 seed 均值）: {mean_ci_low:.4f}")
+    print("KILL-1 VERDICT (02_ACCEPTANCE.md A1, CV version)")
+    print(f"  CV pooled AUROC (n={len(rows)}) : {cv_auroc:.4f}")
+    print(f"  Bootstrap 95% CI              : [{ci_lo:.4f}, {ci_hi:.4f}]")
     if perm_aurocs:
-        print(f"  置换检验均值 AUROC   : {perm_mean:.4f}  (期望 ~0.50)")
+        print(f"  Perm null mean ({n_perm} rep)     : {perm_mean:.4f}  (expected ~0.50)")
+        print(f"  Perm p-value                  : {perm_p:.4f}")
     print()
-    if mean_auroc > 0.60 and mean_ci_low > 0.50:
+    if crit_auroc and crit_ci and crit_perm:
         verdict = "PASS"
-        print("  ✓ KILL-1 PASS：均值 AUROC > 0.60，CI 下界 > 0.50")
-        print("  → 分歧可预测性 claim 有实证支撑，继续 A2/A3/A4。")
+        print("  [PASS] KILL-1 PASS: AUROC > 0.60, CI_low > 0.50, perm null < 0.60")
+        print("  --> Disagreement predictability claim supported. Proceed A2/A3/A4.")
     else:
         verdict = "FAIL"
-        print("  ✗ KILL-1 FAIL：AUROC ≤ 0.60 或 CI 下界 ≤ 0.50")
-        print("  → 核心 claim 死，按 ACCEPTANCE.md kill criteria 诚实回退。")
+        reasons = []
+        if not crit_auroc:
+            reasons.append(f"AUROC={cv_auroc:.4f} <= 0.60")
+        if not crit_ci:
+            reasons.append(f"CI_low={ci_lo:.4f} <= 0.50")
+        if not crit_perm:
+            reasons.append(f"perm_mean={perm_mean:.4f} >= 0.60 (null did not collapse)")
+        print(f"  [FAIL] KILL-1 FAIL: {'; '.join(reasons)}")
+        print("  --> Core claim dead. Honest withdrawal per ACCEPTANCE.md kill criteria.")
     print("=" * 60)
 
-    # 写摘要 json
+    # 写 CSV（per-fold 行 + summary 行）
+    fieldnames_ext = [
+        "fold", "n_test_fold", "auroc_fold",
+        "cv_pooled_auroc", "ci_low", "ci_high",
+        "perm_auroc_mean", "perm_p_value", "verdict",
+    ]
+
+    with open(str(OUT_CSV), "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames_ext, extrasaction="ignore")
+        writer.writeheader()
+        for fr in fold_results:
+            writer.writerow(fr)
+        # 汇总行
+        writer.writerow({
+            "fold": "summary",
+            "n_test_fold": len(rows),
+            "auroc_fold": "",
+            "cv_pooled_auroc": round(cv_auroc, 6),
+            "ci_low": round(float(ci_lo), 6),
+            "ci_high": round(float(ci_hi), 6),
+            "perm_auroc_mean": (round(perm_mean, 6)
+                                if not np.isnan(perm_mean) else "nan"),
+            "perm_p_value": (round(perm_p, 6)
+                             if not np.isnan(perm_p) else "nan"),
+            "verdict": verdict,
+        })
+
+    print(f"\n[output] CSV     -> {OUT_CSV}")
+
+    # 写 summary JSON
     summary = {
-        "mean_auroc": round(mean_auroc, 6),
-        "std_auroc": round(std_auroc, 6),
-        "mean_ci_low": round(mean_ci_low, 6),
-        "permutation_auroc_mean": round(perm_mean, 6) if not np.isnan(perm_mean) else None,
+        "cv_pooled_auroc": round(cv_auroc, 6),
+        "ci_low": round(float(ci_lo), 6),
+        "ci_high": round(float(ci_hi), 6),
+        "perm_auroc_mean": (round(perm_mean, 6)
+                            if not np.isnan(perm_mean) else None),
+        "perm_p_value": (round(perm_p, 6)
+                         if not np.isnan(perm_p) else None),
+        "perm_n_rep": n_perm,
         "kill1_verdict": verdict,
         "threshold_auroc": 0.60,
         "threshold_ci_low": 0.50,
-        "seeds": seeds,
+        "n_clusters": len(rows),
+        "n_patients": int(len(unique_patients)),
+        "n_splits": N_SPLITS,
+        "per_fold": fold_results,
         "hyperparams": {
-            "lr": LR, "weight_decay": WEIGHT_DECAY,
-            "batch_size": BATCH_SIZE, "max_epochs": MAX_EPOCHS,
-            "patience": PATIENCE, "augment": "hflip+rot10deg",
+            "lr": LR,
+            "weight_decay": WEIGHT_DECAY,
+            "batch_size": BATCH_SIZE,
+            "max_epochs": MAX_EPOCHS,
+            "patience": PATIENCE,
+            "perm_max_epochs": PERM_MAX_EPOCHS,
+            "perm_patience": PERM_PATIENCE,
+            "augment": "hflip+rot10deg",
             "model": "ResNet-18 ImageNet pretrained",
-            "source": "researcher 官方口径 2026-06-18",
+            "source": "researcher official 2026-06-18",
         },
-        "design_note": "方案甲：k>=1 区内预测分歧；置换检验=sanity check非设计层防泄漏",
+        "design_note": (
+            "Patient-level StratifiedGroupKFold n=5; "
+            "groups=patient_id; stratify=disagree_binary. "
+            "OOF predictions aggregated over all 75 clusters -> CV-AUROC. "
+            "Permutation: only train-fold labels shuffled, val/test unchanged."
+        ),
     }
-    summary_path = RESULTS_DIR / "kill1_summary.json"
+    summary_path = RESULTS_DIR / "kill1_cv_summary.json"
     with open(str(summary_path), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
-
-    print(f"\n[输出] CSV     → {OUT_CSV}")
-    print(f"[输出] 摘要    → {summary_path}")
+    print(f"[output] summary -> {summary_path}")
 
 
+# --- 主函数 -------------------------------------------------------------------
 def main() -> None:
     import multiprocessing
-    multiprocessing.freeze_support()   # Windows spawn 必须
+    multiprocessing.freeze_support()   # Windows spawn required
 
     parser = argparse.ArgumentParser(
-        description="DisagreePred KILL-1 baseline：ResNet-18 预测分歧（方案甲）")
+        description="DisagreePred KILL-1 CV baseline: ResNet-18 predicts disagreement")
     parser.add_argument(
         "--label_csv", type=str, default=str(LABEL_CSV),
-        help="parse_lidc.py 输出的标签 CSV 路径")
+        help="Path to lidc_disagree_labels.csv from parse_lidc.py")
     parser.add_argument(
         "--no_permutation", action="store_true",
-        help="跳过置换检验（节省时间，调试用）")
+        help="Skip permutation test (debug / faster run)")
+    parser.add_argument(
+        "--n_perm", type=int, default=N_PERM,
+        help=f"Number of permutation reps (default {N_PERM})")
     parser.add_argument(
         "--cpu", action="store_true",
-        help="强制 CPU（smoke 测试用）")
+        help="Force CPU (smoke test)")
     parser.add_argument(
         "--smoke", type=int, default=0,
-        help="smoke 模式：只用前 N 条（0=全量）")
+        help="Smoke mode: use first N rows only (0=full)")
     parser.add_argument(
-        "--seeds", type=int, nargs="+", default=SEEDS,
-        help="运行的 seed 列表（默认 0 1 2 3 4）")
+        "--seed", type=int, default=0,
+        help="Global random seed (default 0)")
+    parser.add_argument(
+        "--quiet_fold", action="store_true",
+        help="Suppress per-epoch fold output")
     args = parser.parse_args()
 
     # device
@@ -529,17 +698,23 @@ def main() -> None:
         device = torch.device("cuda")
         print(f"[device] {torch.cuda.get_device_name(0)}")
 
-    # 加载标签
+    # load labels
     csv_path = Path(args.label_csv)
     rows = load_label_csv(csv_path)
 
-    # smoke 模式：截断
+    # smoke mode
     if args.smoke > 0:
         rows = rows[: args.smoke]
-        print(f"[smoke] 截断到前 {args.smoke} 条")
+        print(f"[smoke] truncated to first {args.smoke} rows")
 
-    run_kill1(rows, device, run_permutation=not args.no_permutation,
-              seeds=args.seeds)
+    run_kill1_cv(
+        rows,
+        device,
+        run_permutation=not args.no_permutation,
+        n_perm=args.n_perm,
+        seed=args.seed,
+        verbose_fold=not args.quiet_fold,
+    )
 
 
 if __name__ == "__main__":

@@ -4,6 +4,25 @@
 
 ---
 
+## Entry 4 — KILL-1 真跑（2026-06-18，50-scan smoke→诊断→patient-CV，CV pooled AUROC 0.71 provisional PASS 待置换确认）
+
+用户拍板下 ~50 scan(~6GB) CT 子集跑 KILL-1 smoke。全程主线串：
+
+**下载 + 解析（零拍板，公开数据）**：
+- coder 写 `download_lidc_subset.py`（pylidc DB 取 series UID + NBIA getImage 公开 API 免 auth + 选 50 平衡 patient）→ 主线跑下载：50/50 patient，4.29GB，落 `data/LIDC_subset/`，pylidc.conf 配好。
+- `parse_lidc.py`（方案甲：只 k≥1 区）串修 4 个 compat bug（主线 <15 行小修）：configparser.SafeConfigParser shim(Py3.12 移除)+ 子集过滤(只跑 50 已下载非全 1018)+ pylidc.conf 写对位置(C:\Users\yj200\pylidc.conf 非 .pylidcrc)+ 熵 k≥total 边界(k>4 合并 cluster log2(0) 崩)。出 **75 cluster：disagree=1:39(52%)/disagree=0:36(48%) 平衡**，75 patch 落盘。
+
+**KILL-1 smoke（50-scan）→ 不可定论 + 红旗**：5-seed AUROC=0.6545±0.3051(seed 间 0.25~0.98 噪声级)，**置换 0.81 没塌回 0.50**。analyst 诊断：根因=(a)实现 bug(置换错把 val/test 标签也打乱+仅2rep)+(b)test 仅 15 cluster/6 patient/4 负例→AUROC 粒度 0.25/步纯噪声。**非 leakage**(patient split 干净 0 重叠 + HU 固定常量归一化无全局泄漏)。
+
+**修复 + patient-level CV 重跑（省下载聪明解）**：coder 重写 kill1_baseline=StratifiedGroupKFold(groups=patient,5 折)+ 置换只打乱 train+≥100rep + bootstrap CI 按 patient 重采样 + GBK ✓✗→[PASS]/[FAIL]。现有 75 样本 5 折 OOF 聚合：
+- **CV pooled AUROC(n=75)=0.7094，bootstrap 95% CI [0.6031,0.8116]** → CI 下界 0.60 > 0.50 = 真正向信号（远比单切 15-test 有意义，且不用加下载）。
+- 折 AUROC：0.53/0.44/0.84/0.69/0.83（fold2 below chance，但 pooled 稳）。
+- ⚠️ **provisional PASS**：100-rep 置换检验跑中(buuwx9eij CPU ~1-2h)，需确认 perm null 塌回 ~0.50 才定 KILL-1 PASS（终极排 leakage）。
+
+**下一步**：置换确认 → PASS 则 KILL-1 过、claim「分歧可从图像预测」站住(50-scan 量级)，可考虑扩 150 scan 加功效 / 进 A2。FAIL/perm 不塌 → 回查。csv: `results/kill1_cv_auroc.csv`。
+
+---
+
 ## Entry 3 — 分歧分布确认（2026-06-18，零下载，用户拍板「先 XML-only 算分布」）
 
 用户拍板**不下载过大数据**（LIDC 全集 124GB 出局）。researcher 探精简路径 → 关键发现：**pylidc 自带 `pylidc.sqlite`（6859 标注/1018 scan 全在 DB），算分歧分布零下载**（比下 XML <200MB 还省）。coder 写 `scripts/lidc_disagreement_stats.py`（monkey-patch np.int 修 pylidc 0.2.3 compat + 顺修 parse_lidc.py 同 bug）跑通：

@@ -191,14 +191,14 @@
     "ixi": {
       "name": "IXI (brain MRI registration, junyuchen 预处理版)",
       "n": "576 (403 train / 58 val / 115 test)",
-      "local": "TODO 待下载",
-      "hpc": "TODO",
-      "source": "https://github.com/junyuchen245/Preprocessed_IXI_Dataset (GDrive 1.44GB, 160×192×224 .pkl, 含 atlas + 皮层下 FreeSurfer 分割标签, 免注册); 原始 http://brain-development.org/ixi-dataset/",
+      "local": "project/meeting/FMReg/data/IXI/IXI_data/ (Train 403/Val 58/Test 115 + atlas.pkl, 160×192×224, 每 .pkl=(image,label) FreeSurfer 皮层下分割; zip 原档 IXI_data.pkl 1.54GB 同目录可删)",
+      "hpc": "TODO (Gate1 G2-A 上传是拍板点先报)",
+      "source": "https://github.com/junyuchen245/Preprocessed_IXI_Dataset (GDrive id=1-VQewCVNj5eTtc3eQGhTM2yXBQmgm8Ol, 1.54GB zip 误名.pkl, atlas-to-patient, 160×192×224, 含 atlas + 皮层下 FreeSurfer 分割标签, 免注册); 原始 http://brain-development.org/ixi-dataset/",
       "used_by": [
         "fmreg"
       ],
-      "purpose": "FMReg 脑配准【Gate1 快速 pilot 首选】(免注册 1.44GB 最快上手); TransMorph 标准集, 与 OASIS 互补",
-      "status": "todo"
+      "purpose": "FMReg 脑配准【Gate1 G2-A gating 主战场】(atlas-to-patient, 带标签可算 Dice/NCC_LM); TransMorph 标准集, 与 OASIS 互补",
+      "status": "ready(local 已下载解压 2026-06-18; HPC 待上传)"
     },
     "abdomenmrct": {
       "name": "Learn2Reg AbdomenMRCT (跨模态 MRI-CT 腹部配准)",

@@ -1,0 +1,27 @@
+{
+  "total_clusters": 75,
+  "disagree_binary_1": 39,
+  "disagree_binary_0": 36,
+  "disagree_rate": 0.52,
+  "k_distribution": {
+    "4": 36,
+    "3": 14,
+    "1": 17,
+    "2": 8
+  },
+  "split_counts": {
+    "train": 50,
+    "val": 10,
+    "test": 15
+  },
+  "skipped_k0": 0,
+  "skipped_vol_load_fail": 0,
+  "skipped_patch_oob": 145,
+  "patch_size": 96,
+  "hu_clip": [
+    -1000.0,
+    400.0
+  ],
+  "label_source": "Armato et al. Medical Physics 2011 (PMC3041807): 存在性分歧 65.2%",
+  "design_note": "方案甲：只保留 k>=1 cluster，禁 k=0 负样本（避检测 leakage）"
+}

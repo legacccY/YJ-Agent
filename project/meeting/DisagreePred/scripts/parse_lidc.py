@@ -48,6 +48,13 @@ np.bool = bool
 np.object = object
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─── compat: pylidc 用 configparser.SafeConfigParser（Py3.12 已移除）─────────
+# 不补丁 → 读不到 ~/.pylidcrc → to_volume 全失败 → 0 cluster
+import configparser as _cp
+if not hasattr(_cp, "SafeConfigParser"):
+    _cp.SafeConfigParser = _cp.ConfigParser
+# ─────────────────────────────────────────────────────────────────────────────
+
 # ─── 数据配置（真源：.portfolio/datasets.json lidc_idri.local）────────────
 # 数据就位后修改 DATA_ROOT，或通过 --data_root 传入
 DATA_ROOT = Path("TODO_LIDC_LOCAL_PATH")   # 待下载 LIDC DICOM 根目录
@@ -121,7 +128,7 @@ def compute_entropy(k: int, total: int = 4) -> float:
     p = k/total（有结节概率），熵 = -p*log2(p) - (1-p)*log2(1-p)（二项）。
     k=0 或 k=4 熵=0（全一致）；k=2 熵=1（最大分歧）。
     """
-    if k == 0 or k == total:
+    if k <= 0 or k >= total:   # k>=total（含 k>4 的 pylidc 合并边缘）熵=0
         return 0.0
     p = k / total
     return float(-p * math.log2(p) - (1 - p) * math.log2(1 - p))
@@ -175,8 +182,11 @@ def parse_lidc(data_root: Path, out_dir: Path = OUT_DIR,
     skipped_vol = 0       # volume 加载失败数
     skipped_patch = 0     # patch 出界数
 
-    scans = pl.query(pl.Scan).all()
-    print(f"[parse_lidc] 共 {len(scans)} 个 Scan")
+    # 只处理 data_root 下已下载的 patient（子集 smoke，避免迭代全 1018 scan）
+    downloaded = {p.name for p in Path(data_root).iterdir() if p.is_dir()}
+    all_scans = pl.query(pl.Scan).all()
+    scans = [s for s in all_scans if s.patient_id in downloaded]
+    print(f"[parse_lidc] DB 共 {len(all_scans)} scan，data_root 已下载 {len(downloaded)} patient → 处理 {len(scans)} scan")
 
     for scan in scans:
         patient_id = scan.patient_id  # 例：LIDC-IDRI-0001

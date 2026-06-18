@@ -1,0 +1,54 @@
+{
+  "cv_pooled_auroc": 0.709402,
+  "ci_low": 0.6031,
+  "ci_high": 0.811608,
+  "perm_auroc_mean": null,
+  "perm_p_value": null,
+  "perm_n_rep": 100,
+  "kill1_verdict": "PASS",
+  "threshold_auroc": 0.6,
+  "threshold_ci_low": 0.5,
+  "n_clusters": 75,
+  "n_patients": 35,
+  "n_splits": 5,
+  "per_fold": [
+    {
+      "fold": 1,
+      "n_test_fold": 16,
+      "auroc_fold": 0.53125
+    },
+    {
+      "fold": 2,
+      "n_test_fold": 18,
+      "auroc_fold": 0.441558
+    },
+    {
+      "fold": 3,
+      "n_test_fold": 10,
+      "auroc_fold": 0.84
+    },
+    {
+      "fold": 4,
+      "n_test_fold": 12,
+      "auroc_fold": 0.6875
+    },
+    {
+      "fold": 5,
+      "n_test_fold": 19,
+      "auroc_fold": 0.829545
+    }
+  ],
+  "hyperparams": {
+    "lr": 0.0001,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "max_epochs": 50,
+    "patience": 8,
+    "perm_max_epochs": 30,
+    "perm_patience": 5,
+    "augment": "hflip+rot10deg",
+    "model": "ResNet-18 ImageNet pretrained",
+    "source": "researcher official 2026-06-18"
+  },
+  "design_note": "Patient-level StratifiedGroupKFold n=5; groups=patient_id; stratify=disagree_binary. OOF predictions aggregated over all 75 clusters -> CV-AUROC. Permutation: only train-fold labels shuffled, val/test unchanged."
+}
