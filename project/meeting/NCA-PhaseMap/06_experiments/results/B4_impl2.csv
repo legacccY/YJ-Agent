@@ -1,0 +1,16 @@
+ur,fire_rate,seed,dataset,final_dice,diverged,collapsed,max_grad_norm,fg_ratio_mean,n_steps_run,collapse_thresh,impl
+0.3,0.7,42,Hippocampus,0.31596,0,0,39.84161,0.155125,300,0.01,MinimalNCA_impl2
+0.3,0.7,43,Hippocampus,0.227954,0,0,67.344696,0.149269,300,0.01,MinimalNCA_impl2
+0.3,0.7,44,Hippocampus,0.303641,0,0,23.765186,0.129155,300,0.01,MinimalNCA_impl2
+0.35,0.65,42,Hippocampus,0.327625,0,0,48.935844,0.136159,300,0.01,MinimalNCA_impl2
+0.35,0.65,43,Hippocampus,0.232234,0,0,62.995052,0.155062,300,0.01,MinimalNCA_impl2
+0.35,0.65,44,Hippocampus,0.311411,0,0,26.330772,0.129155,300,0.01,MinimalNCA_impl2
+0.4,0.6,42,Hippocampus,0.318885,0,0,25.094656,0.122484,300,0.01,MinimalNCA_impl2
+0.4,0.6,43,Hippocampus,0.212608,0,0,31.446762,0.14629,300,0.01,MinimalNCA_impl2
+0.4,0.6,44,Hippocampus,0.322626,0,0,19.552906,0.130471,300,0.01,MinimalNCA_impl2
+0.45,0.55,42,Hippocampus,0.346866,0,0,40.443291,0.134784,300,0.01,MinimalNCA_impl2
+0.45,0.55,43,Hippocampus,0.277127,0,0,58.576229,0.15282,300,0.01,MinimalNCA_impl2
+0.45,0.55,44,Hippocampus,0.312254,0,0,21.537746,0.125726,300,0.01,MinimalNCA_impl2
+0.5,0.5,42,Hippocampus,0.333987,0,0,51.232018,0.135611,300,0.01,MinimalNCA_impl2
+0.5,0.5,43,Hippocampus,0.281532,0,0,50.766197,0.145378,300,0.01,MinimalNCA_impl2
+0.5,0.5,44,Hippocampus,0.33207,0,0,33.492138,0.129759,300,0.01,MinimalNCA_impl2

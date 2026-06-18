@@ -1,0 +1,8 @@
+{
+  "phase": "done",
+  "timestamp": "2026-06-18T15:01:18",
+  "total": 25,
+  "diverged_runs": 0,
+  "collapsed_runs": 11,
+  "csv": "/gpfs/work/bio/jiayu2403/run003/phasemap/results/B3_seed.csv"
+}
