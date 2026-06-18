@@ -3,13 +3,17 @@ run_seedfill.py — MedAD-FailMap Phase 2 seed-fill orchestrator (Python 版)
 
 目标: 补齐 vae seed1/seed2 + memae seed1/seed2 共 4 个 run，
       使 vae/memae 各拥有 3 seeds (42/1/2)，凑 PR-5 confirmatory 方差带。
+      + M-3 扩展: ae seed42 重训（regenerate 丢失的 brats_ae ckpt + re-score BraTS ae）
 
 用法 (从项目根跑，或直接绝对路径调):
     python code/run_seedfill.py
     # 后台调用示例:
     python code/run_seedfill.py > results/phase2/seedfill_master.log 2>&1
 
-预计时间: ~2h (单卡 RTX4070，每个 run ~30min x 4)
+    # 跳过 vae/memae 只跑 ae_s42 重训（M-3 应急恢复用）:
+    python code/run_seedfill.py --ae-only
+
+预计时间: ~2.5h (单卡 RTX4070，每个 run ~30min x 4 + ae_s42 ~30min)
 
 完整 5-step 命令链 (每个 run):
   1. train_recon_ae.py  -> train_log + ckpt + anomaly_scores + config
@@ -18,6 +22,12 @@ run_seedfill.py — MedAD-FailMap Phase 2 seed-fill orchestrator (Python 版)
   4. conspicuity_proxy.py (tumor only)
   5. incremental_stats.py (C2/C3/C4/FC)
 
+ae_s42 重训 (M-3 扩展，run_ae_s42):
+  - 训练: train_recon_ae.py -d brats -m ae --seed 42 -> results/phase2/ae_s42/
+  - re-score: 产出 results/phase2/ae_s42/anomaly_scores_brats_ae.csv
+    （主线核对是否 ≈ 现有主结果 results/anomaly_scores_brats_ae.csv，验复现）
+  - 幂等: ae_s42/checkpoints/brats_ae_ep250.pt 已存在 + 251 行 train_log => skip
+
 幂等规则:
   - train_log 达 250 epoch 行 (含 header = 251 行) + anomaly_scores csv 存在 => skip
   - 否则 shutil.rmtree 清掉重跑
@@ -25,6 +35,7 @@ run_seedfill.py — MedAD-FailMap Phase 2 seed-fill orchestrator (Python 版)
 不启动训练: 此脚本由主线后台起，Coder 只交脚本
 """
 
+import argparse
 import os
 import sys
 import shutil
@@ -204,7 +215,93 @@ def run_one(model: str, seed: int) -> bool:
     return True
 
 
+# ---- ae_s42 重训 (M-3 扩展) -------------------------------------------------
+
+def is_ae_s42_complete(outdir: Path) -> bool:
+    """
+    ae_s42 完整判定:
+      ckpt 存在 + train_log 达 251 行 + anomaly_scores 存在
+    """
+    ckpt_path  = outdir / "checkpoints" / "brats_ae_ep250.pt"
+    log_csv    = outdir / "train_log_brats_ae.csv"
+    score_csv  = outdir / "anomaly_scores_brats_ae.csv"
+    if not ckpt_path.exists() or not log_csv.exists() or not score_csv.exists():
+        return False
+    with open(log_csv, encoding="utf-8") as f:
+        lines = sum(1 for _ in f)
+    return lines >= 251  # 1 header + 250 epoch rows
+
+
+def run_ae_s42() -> bool:
+    """
+    M-3 扩展: 重训 AE seed=42，产出:
+      results/phase2/ae_s42/checkpoints/brats_ae_ep250.pt   <- 丢失的 brats_ae ckpt
+      results/phase2/ae_s42/anomaly_scores_brats_ae.csv     <- re-score BraTS test
+
+    幂等: ckpt + train_log(251 行) + anomaly_scores 全存在则 skip。
+    主线核对 re-score 结果是否 ≈ results/anomaly_scores_brats_ae.csv（验复现，AUROC ≈ 0.8228）。
+    """
+    tag    = "ae_s42"
+    outdir = PHASE2 / tag
+    logfile = PHASE2 / f"{tag}.log"
+
+    print(f"\n{'='*56}", flush=True)
+    print(f"  RUN: {tag}  (model=ae seed=42) [M-3 AE ckpt recovery]", flush=True)
+    print(f"{'='*56}", flush=True)
+
+    # 幂等检查
+    if is_ae_s42_complete(outdir):
+        print(f"[seedfill] SKIP {tag}: already complete (ckpt + log + score all exist)", flush=True)
+        ckpt_path = outdir / "checkpoints" / "brats_ae_ep250.pt"
+        print(f"[seedfill]   ckpt: {ckpt_path}", flush=True)
+        return True
+
+    # 半截清除
+    if outdir.exists():
+        print(f"[seedfill] CLEAN {tag}: removing incomplete dir ...", flush=True)
+        shutil.rmtree(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    with open(logfile, "w", encoding="utf-8") as log_fh:
+        log_fh.write(f"# seedfill log: {tag}\n\n")
+
+        # STEP 1: 训练 ae seed=42 (GPU)
+        # train_recon_ae.py 内部会同时 re-score BraTS test 并保存
+        # anomaly_scores_brats_ae.csv 到 outdir
+        ok = run_step(tag, 1, "train_recon_ae (ae seed=42, GPU)", [
+            PYTHON, str(SCRIPT_DIR / "train_recon_ae.py"),
+            "-d", "brats",
+            "-m", "ae",
+            "--seed", "42",
+            "--out-dir", str(outdir),
+            "-g", "0",
+            "--data-root", str(DATA_DIR),
+        ], log_fh)
+        if not ok:
+            print(f"[seedfill] FAIL {tag} at step1", flush=True)
+            return False
+
+    # 完整性二次确认
+    if not is_ae_s42_complete(outdir):
+        print(f"[seedfill] FAIL {tag}: post-train completeness check failed", flush=True)
+        return False
+
+    ckpt_path = outdir / "checkpoints" / "brats_ae_ep250.pt"
+    print(f"[seedfill] COMPLETE {tag}", flush=True)
+    print(f"[seedfill]   ckpt:  {ckpt_path}", flush=True)
+    print(f"[seedfill]   re-score -> {outdir / 'anomaly_scores_brats_ae.csv'}", flush=True)
+    print(f"[seedfill]   NOTE: 主线核对 re-score AUROC ≈ 0.8228（主结果验复现）", flush=True)
+    return True
+
+
+# ---- 主逻辑 (含 ae_s42 扩展) -------------------------------------------------
+
 def main():
+    parser = argparse.ArgumentParser(description="run_seedfill.py — Phase2 seed-fill + M-3 ae_s42")
+    parser.add_argument("--ae-only", action="store_true",
+                        help="只跑 ae_s42 重训（跳过 vae/memae seed1/seed2），M-3 应急恢复用")
+    args = parser.parse_args()
+
     PHASE2.mkdir(parents=True, exist_ok=True)
 
     print("[seedfill] MedAD-FailMap Phase 2 seed-fill start", flush=True)
@@ -213,13 +310,21 @@ def main():
     print(f"[seedfill] DATA_DIR   = {DATA_DIR}", flush=True)
     print(f"[seedfill] PHASE2     = {PHASE2}", flush=True)
     print(f"[seedfill] normal_conspicuity = {NORMAL_CONSPICUITY}", flush=True)
-    print(f"[seedfill] runs = {RUNS}", flush=True)
 
     results = {}
-    for model, seed in RUNS:
-        tag = f"{model}_s{seed}"
-        ok = run_one(model, seed)
-        results[tag] = ok
+
+    # ---- M-3: ae_s42 重训（首先跑，ckpt 就绪后 CPU 链可并行）----
+    ok_ae = run_ae_s42()
+    results["ae_s42"] = ok_ae
+
+    if args.ae_only:
+        print("[seedfill] --ae-only: skip vae/memae seed-fill runs", flush=True)
+    else:
+        print(f"[seedfill] runs = {RUNS}", flush=True)
+        for model, seed in RUNS:
+            tag = f"{model}_s{seed}"
+            ok = run_one(model, seed)
+            results[tag] = ok
 
     # ---- 汇总 ----
     print(f"\n{'='*56}", flush=True)

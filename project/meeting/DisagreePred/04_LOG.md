@@ -4,6 +4,23 @@
 
 ---
 
+## Entry 3 — 分歧分布确认（2026-06-18，零下载，用户拍板「先 XML-only 算分布」）
+
+用户拍板**不下载过大数据**（LIDC 全集 124GB 出局）。researcher 探精简路径 → 关键发现：**pylidc 自带 `pylidc.sqlite`（6859 标注/1018 scan 全在 DB），算分歧分布零下载**（比下 XML <200MB 还省）。coder 写 `scripts/lidc_disagreement_stats.py`（monkey-patch np.int 修 pylidc 0.2.3 compat + 顺修 parse_lidc.py 同 bug）跑通：
+
+**分歧分布（2651 cluster，无异常 scan，`results/lidc_disagreement_dist.csv`）**：
+- k=1:771(29.1%) / k=2:488(18.4%) / k=3:481(18.1%) / k=4:897(33.8%) / k>4:14(0.5%,pylidc 聚类未降到≤4 的边缘)。
+- **k=4 全一致=897(33.8%) vs k<4 存在分歧=1754(66.2%)**。
+- 对照 Armato2011 65.2%，偏差仅 1.0pp = 数量级完全吻合 → **分歧标签信号真实存在，统计先验过**。
+
+⚠️ 注意：这只证**标签分布真实**，"分歧可从图像预测"（真 KILL-1）仍需 CT patch 跑 AUROC。
+
+**精简数据路径（datasets.json lidc_idri 已登）**：①XML/DB 零下载算分布(已做✅) ②DICOM-LIDC-IDRI-Nodules 2.51GB=per-annotator SEG mask(非CT像素) ③真 KILL-1 需 CT 图像 patch→NBIA 子集 ~50 scan(~6GB,smoke)/~150 scan(~18-24GB,功效足)。LUNA16 衍生丢标注者身份不可用/QUBIQ 无肺结节排除。
+
+**带债 / 下一步拍板点**：分布既已坐实，真 KILL-1（图像预测分歧 AUROC>0.60）需下小 CT 子集——等用户定 ~6GB(50scan smoke) 还是 ~18-24GB(150scan 一步到位)，或继续暂缓。k>4 的 14 cluster 处理（clamp 到 4 还是丢）留 parse_lidc 实现时定。
+
+---
+
 ## Entry 2 — Gate1 设计 + skeptic 红队 + 数字订正（2026-06-18，用户拍板方案甲）
 
 **planner 出 KILL-1 矩阵 → skeptic 红队 1🔴 + researcher 核源逮出 STORY 数字错 → 用户拍板补救。**

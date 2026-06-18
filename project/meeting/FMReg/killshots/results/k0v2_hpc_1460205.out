@@ -1,0 +1,127 @@
+FMReg K0v2 start Thu Jun 18 09:38:09 CST 2026 node=gpu4090n2 gpu=0
+[INFO] Imported shared ops from killshot_K0_fm_vs_vxmdiff.py
+[INFO] Imported geometry/loss ops from killshot_K0_fm_vs_vxmdiff.py
+[INFO] Imported synth_ambiguity_pair ops from killshot_K0v2_energy_probe.py
+[INFO] K0v2 three-arm killshot | device=cuda | smoke=False
+[INFO] train_steps=2000  eval_pairs=100  synth_pairs=24  k_samples=48
+[INFO] === 训练臂 A (det: TinyUNetDet) ===
+  [A-det] step 1/2000  loss=-0.04707  t=0.5s
+  [A-det] step 2/2000  loss=-0.07026  t=0.6s
+  [A-det] step 3/2000  loss=-0.02508  t=0.6s
+  [A-det] step 200/2000  loss=-0.17627  t=4.0s
+  [A-det] step 400/2000  loss=-0.18128  t=7.4s
+  [A-det] step 600/2000  loss=-0.21790  t=10.8s
+  [A-det] step 800/2000  loss=-0.21871  t=14.2s
+  [A-det] step 1000/2000  loss=-0.26686  t=17.5s
+  [A-det] step 1200/2000  loss=-0.29426  t=20.9s
+  [A-det] step 1400/2000  loss=-0.28047  t=24.3s
+  [A-det] step 1600/2000  loss=-0.23761  t=27.7s
+  [A-det] step 1800/2000  loss=-0.25310  t=31.1s
+  [A-det] step 2000/2000  loss=-0.24591  t=34.5s
+[INFO] 臂 A 训练完成 (34.5s)
+[INFO] 估计 σ_p (臂 A SVF std over 5 batches) = 0.080083
+[INFO] σ_p (data-driven) = 0.080083
+[INFO] === 训练臂 B (cVAE: TinyUNetCVAE, VoxelMorph-prob 式) ===
+  [B-cVAE] step 1/2000  recon=-0.05733  kl=10.00182  t=0.0s
+  [B-cVAE] step 2/2000  recon=-0.10661  kl=10.00130  t=0.0s
+  [B-cVAE] step 3/2000  recon=-0.04615  kl=10.00074  t=0.1s
+  [B-cVAE] step 200/2000  recon=-0.13182  kl=9.87374  t=3.5s
+  [B-cVAE] step 400/2000  recon=-0.19086  kl=9.72551  t=6.9s
+  [B-cVAE] step 600/2000  recon=-0.22948  kl=9.57909  t=10.3s
+  [B-cVAE] step 800/2000  recon=-0.19348  kl=9.43429  t=13.7s
+  [B-cVAE] step 1000/2000  recon=-0.24195  kl=9.27711  t=17.1s
+  [B-cVAE] step 1200/2000  recon=-0.25052  kl=9.13323  t=20.5s
+  [B-cVAE] step 1400/2000  recon=-0.25111  kl=8.99410  t=24.0s
+  [B-cVAE] step 1600/2000  recon=-0.25494  kl=8.83975  t=27.4s
+  [B-cVAE] step 1800/2000  recon=-0.28133  kl=8.68832  t=30.9s
+  [B-cVAE] step 2000/2000  recon=-0.29263  kl=8.54177  t=34.3s
+[INFO] 臂 B 训练完成 (34.3s)
+[INFO] === 训练臂 C (FM warp-driven, 零 teacher, σ_p=0.080083) ===
+  [C-FM]   step 1/2000  loss=-0.06845  t=0.0s
+  [C-FM]   step 2/2000  loss=0.00496  t=0.1s
+  [C-FM]   step 3/2000  loss=-0.02635  t=0.1s
+  [C-FM]   step 200/2000  loss=-0.09800  t=4.4s
+  [C-FM]   step 400/2000  loss=-0.14011  t=8.9s
+  [C-FM]   step 600/2000  loss=-0.14377  t=13.3s
+  [C-FM]   step 800/2000  loss=-0.20111  t=17.8s
+  [C-FM]   step 1000/2000  loss=-0.21379  t=22.3s
+  [C-FM]   step 1200/2000  loss=-0.16409  t=26.7s
+  [C-FM]   step 1400/2000  loss=-0.18569  t=31.2s
+  [C-FM]   step 1600/2000  loss=-0.21316  t=35.6s
+  [C-FM]   step 1800/2000  loss=-0.21672  t=40.0s
+  [C-FM]   step 2000/2000  loss=-0.19351  t=44.5s
+[INFO] 臂 C 训练完成 (44.5s)
+[INFO] === Eval on BraTS pairs ===
+[INFO] === Eval on synth ambiguity pairs ===
+  [synth pair 0]  B dip=0.1433 bc=0.565  |  C dip=0.1458 bc=0.415
+  [synth pair 1]  B dip=0.1562 bc=0.289  |  C dip=0.2083 bc=0.547
+  [synth pair 2]  B dip=0.1640 bc=0.298  |  C dip=0.1875 bc=0.613
+  [synth pair 3]  B dip=0.1979 bc=0.379  |  C dip=0.1587 bc=0.396
+  [synth pair 4]  B dip=0.1181 bc=0.550  |  C dip=0.1392 bc=0.328
+  [synth pair 5]  B dip=0.1667 bc=0.370  |  C dip=0.1771 bc=0.463
+  [synth pair 6]  B dip=0.1730 bc=0.539  |  C dip=0.1562 bc=0.349
+  [synth pair 7]  B dip=0.1525 bc=0.396  |  C dip=0.1594 bc=0.548
+  [synth pair 8]  B dip=0.1381 bc=0.489  |  C dip=0.1337 bc=0.356
+  [synth pair 9]  B dip=0.1771 bc=0.403  |  C dip=0.1875 bc=0.475
+  [synth pair 10]  B dip=0.1490 bc=0.479  |  C dip=0.1562 bc=0.533
+  [synth pair 11]  B dip=0.1719 bc=0.389  |  C dip=0.1813 bc=0.393
+  [synth pair 12]  B dip=0.1717 bc=0.480  |  C dip=0.1639 bc=0.337
+  [synth pair 13]  B dip=0.1809 bc=0.294  |  C dip=0.1354 bc=0.477
+  [synth pair 14]  B dip=0.1554 bc=0.408  |  C dip=0.1354 bc=0.489
+  [synth pair 15]  B dip=0.1499 bc=0.311  |  C dip=0.1675 bc=0.482
+  [synth pair 16]  B dip=0.1510 bc=0.528  |  C dip=0.1458 bc=0.314
+  [synth pair 17]  B dip=0.1458 bc=0.380  |  C dip=0.1745 bc=0.418
+  [synth pair 18]  B dip=0.1354 bc=0.378  |  C dip=0.1667 bc=0.442
+  [synth pair 19]  B dip=0.1458 bc=0.491  |  C dip=0.2031 bc=0.463
+  [synth pair 20]  B dip=0.1667 bc=0.556  |  C dip=0.1458 bc=0.384
+  [synth pair 21]  B dip=0.1458 bc=0.371  |  C dip=0.1692 bc=0.614
+  [synth pair 22]  B dip=0.1562 bc=0.328  |  C dip=0.1458 bc=0.410
+  [synth pair 23]  B dip=0.1667 bc=0.359  |  C dip=0.1667 bc=0.473
+
+========================================================================
+  K0v2 THREE-ARM KILLSHOT RESULTS
+========================================================================
+  σ_p (data-driven)        = 0.080083
+  prior_lambda (臂B, TODO) = 10  # researcher 待确认
+
+  === BraTS 全集 ===
+  dice_A                   = 0.9461
+  dice_B (mean path)       = 0.9468
+  dice_C (ensemble)        = 0.9444
+  neg_jac_A                = 0.0000%
+  neg_jac_B                = 0.0000%
+  neg_jac_C                = 0.0000%
+
+  === BraTS top40% 大形变子集 (n=40, mean_disp=0.0623) ===
+  dice_A_top40             = 0.9259
+  dice_B_top40             = 0.9244
+  dice_C_top40_ens         = 0.9255
+  neg_jac_A_top40          = 0.0000%
+  neg_jac_B_top40          = 0.0000%
+  neg_jac_C_top40          = 0.0000%
+
+  rho_B (BraTS)            = -0.3890  (p=0.0000)
+  rho_C (BraTS)            = 0.5161  (p=0.0000)
+
+  === 受控歧义对 (n=24) ===
+  dip_B (mean)             = 0.1575
+  dip_C (mean)             = 0.1630
+  dip_diff CI              = [-0.0038, 0.0156]  (dip_C - dip_B = 0.0052)
+  bimodal_coeff_B          = 0.4179  (Sarle BC, threshold=0.555)
+  bimodal_coeff_C          = 0.4466  bc_sig=(C>0.555 AND C>B): False
+  cluster_sep_B            = 0.4238  [UNRELIABLE: 饱和恒1.0, 已移出判据]
+  cluster_sep_C            = 0.8239  [UNRELIABLE: 饱和恒1.0, 已移出判据]
+  disp_spread_B            = 0.001624
+  disp_spread_C            = 0.003720
+  rho_B_syn                = -0.6954
+  rho_C_syn                = 0.9073
+
+  n_train_steps (each arm) = 2000
+  k_samples                = 48
+
+  VERDICT: YELLOW: rho_C > rho_B+0.02 但 dip_C not wins(CI≤0) → 校准改善但多模态性未达显著，部分证据（当前 K0v2 full run 命中此分支）
+========================================================================
+[SAVED FIG] /gpfs/work/bio/jiayu2403/fmreg/results/k0v2_posterior_BvsC.png
+[SAVED CSV] /gpfs/work/bio/jiayu2403/fmreg/results/killshot_K0v2_three_arm.csv
+[DONE] K0v2 three-arm killshot complete.
+FMReg K0v2 exit=0 end Thu Jun 18 09:40:46 CST 2026

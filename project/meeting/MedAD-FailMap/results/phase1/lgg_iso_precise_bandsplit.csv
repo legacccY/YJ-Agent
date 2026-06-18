@@ -1,0 +1,2 @@
+scope,n_patients,n_slices,frac_below,frac_inband,frac_above,iso_verdict,band_lo,band_hi,note
+lgg_independent_15,15,228,0.447368,0.399123,0.153509,False,0.0688,0.143,"256x256 improved_otsu skull-strip, anatomy denominator (brain_px_exact); independent 15 patients = overlaps_brats2021==False in lgg_dedup.csv; iso_verdict=inband>=below AND inband>=above; source=lesion_features_lgg_anatomy_exact.csv; computed 2026-06-18"

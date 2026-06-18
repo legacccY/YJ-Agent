@@ -631,3 +631,24 @@ coder 给 lesion_features 加 `--img-dirs`（85 passed）后，跑 G1-a make-or-
 **本轮其余全清（GPU-free）**：01_STORY+02_ACCEPTANCE 双柱重铸、3口径硬伤纠、C3 bug 修(corrected glcm 0.3054 进 c3_corrected 不覆写 frozen)、differentiation 表(M-4)、05 §F.iso-audit + C3/iso-4必修留痕、STORY/ACCEPTANCE [pending] 回填 corrected 值 + C4「单调」软化为「总体趋势升高」(verifier 揪非严格单调)。
 
 **下一步**：① medad 重跑 b453e4cb 卡空 launch（守卫版，监控 skip 率，>50% 则升级 B）→ analyst ×3seed F1/F2 + verifier 填 M-2 ② 柱1 C4 在 LGG 独立15例 held-out 验单调（M-3）③ ACCEPTANCE Gate 阈值定稿冻结（拍板）。判决=扎实 MICCAI。
+
+### 2026-06-18 续2 — reviewer/skeptic 审新稿揪柱1 cherry-pick(2🔴)→用户拍板先跑M-3定c/a + LGG iso诚信缺口闭合 + M-3全链就绪(数据+代码,差AE ckpt)
+
+承双柱重铸，本轮 reviewer+skeptic 审成稿，暴雷+处理：
+
+**① LGG iso 诚信缺口闭合（coder）**：reviewer 揪出「终局 iso=False 唯一落盘 csv（g1a_iso_lgg.csv）竟显示 iso=True（旧64²full近似版）」。coder 查到精确版数据其实在盘（`results/phase1/lesion_features_lgg_anatomy_exact.csv`，256² improved-Otsu skull-strip+anatomy 分母），复算独立15例：below 102/228=**44.7%** / inband 91/228=**39.9%** / above 35/228=**15.4%** → iso=False，**与 LOG 三位数零偏差**。落盘 `results/phase1/lgg_iso_precise_bandsplit.csv`（note 标 improved-Otsu 非 HD-BET）。缺口闭合，verifier 矛盾解消（两 csv 口径不同，精确版取代近似版）。
+
+**② 柱1 cherry-pick 2🔴（reviewer+skeptic 双查，比预想严重）**：
+- 🔴 **C4 领证是 cherry-pick**：5 conspicuity 特征只 glcm_cluster_prom top-10% 升(0.9119)，glcm_contrast 0.739/fft 0.7239/cnr 0.7403 **三条反向**，sigma 0.8668 弱升。被选恰是 C3 partial_r 最大那条=看了曲线才挑=HARKing。
+- 🔴 **corrected 口径 C2 全5特征不显著**（glcm p_holm=0.1005），C3 只3个 sig（fft/cnr 也掉）。早先「C2 4/5+C3 5/5 坐实」是 z-score bug 前旧值。**「conspicuity 桥」当统一信号站不住**，双领证通道互否（C4 多数反向 vs C3 偏相关被自家纪律判太弱）。
+- **修法红队**：b（预登记锁glcm+Siviengphanom）=post-hoc HARKing时间线即穿排除（但 Siviengphanom 最重要特征恰是同一 GLCM cluster prominence=可作事后机制讨论）；a（组合score+CV+held-out）=部分闭合但≈glcm换皮风险；c（诚实降格 GLCM单维+透明报全5）=零HARKing但新颖性缩水≈Lagogiannis+ε。**c/a 共同硬前置=M-3 held-out**。
+- **用户拍板：先跑 M-3 再定 c/a**（held-out 重现→a/c活；不重现→柱1退承重，柱2单撑=高incremental，整篇可行性悬）。
+
+**③ M-3 全链就绪（planner设计→coder实现，GPU-free 部分全做完）**：
+- 坑：LGG 原图不在盘 + **柱1主结果 BraTS AE ckpt 也丢了**（盘上只 isic_ae+phase2 vae/memae s42 ckpt）→ M-3 非纯CPU，需重训 AE。
+- 已做：LGG 从 kaggle 重下完整解压（data/external/kaggle_3m/TCGA_*）；coder 写 `score_external.py`(load ckpt+forward 任意img-dir，只推理不重训)+`prep_lgg_heldout.py`+`run_m3_heldout.py`(C4+patient-level cluster bootstrap CI 1000resample)，并扩 run_seedfill.py 补 **ae s42 重训**(regenerate丢失ckpt+re-score BraTS验≈0.8228)。`prep_lgg_heldout.py` 已跑：15/15独立患者，228 tumor+499 normal=727切片，manifest落盘。
+- 待 GPU：ae s42 重训（折进排队的 seedfill b453e4cb，local 3rd in line）→ ckpt 就绪后 `run_m3_heldout.py`(CPU) 出 LGG C4 risk-coverage+bootstrap CI → analyst 判 glcm 排序丢低可靠图 AUROC 在 held-out 升不升 → 定 c/a。
+
+**④ 新稿其余审计**：反跑偏零硬命中（外推/transfer 主张未泄漏、正臂落空未糊全绿、1.3% 全写、differentiation 表无自造AUROC）。待修：ACCEPTANCE C1-2/C1-3「单调」未跟STORY软化同步（小修）；C1-1「增量信息坐实」需按 corrected(C2塌/C3 3-of-5)订正措辞（随 c/a 定后一起改）。
+
+**下一步**：① GPU 卡空（b453e4cb 弹出）launch 扩展版 run_seedfill（ae s42 重训+vae/memae s1,s2，监控 VAE skip 率>50%升级B）② ae ckpt 就绪→run_m3_heldout 出 LGG held-out C4 → analyst 判重现→定柱1 c/a（拍板）③ 据 c/a 订正 STORY/ACCEPTANCE 柱1 措辞+C1-1 corrected ④ ACCEPTANCE Gate 阈值冻结（拍板）。判决=柱1命门级悬于 M-3 held-out，重现则扎实MICCAI、不重现则需整篇承重重排。

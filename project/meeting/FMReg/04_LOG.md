@@ -4,6 +4,32 @@
 
 ---
 
+## Entry 5 — K0 立项闸两轮 HPC 实证 → YELLOW 固化 → headline 收窄（2026-06-18）
+
+用户拍「大集群」→ K0 killshot 全程上 XJTLU HPC（gpu4090，env yjcu124py310，BraTS2021 4211 PNG 已传 `/gpfs/work/bio/jiayu2403/fmreg/`）。
+
+**K0v1（job 1459750）= RED**：二臂 VoxelMorph-diff vs FM-in-SVF（FM 蒸馏 vxm teacher SVF）。dice_vxm 0.9528 > dice_fm 0.9424，后验 ρ=−0.2273（反校准）。FM 退化成「换采样器」，正中 skeptic 预登记 R1' 范畴矛盾。**不降级**（用户拍「转向新 K0 设计」）。
+
+**逃逸前提红队**（skeptic+researcher）：RED 根因 = 两退化源叠加（① 蒸馏陷阱 FM 回归 teacher / ② 后验坍缩 ψ_0 微小先验拉单峰）。有条件 GREEN——E1 去 teacher + warp-loss 从头训消①，但 `ρ>0` 不充分（异方差回归平凡满足），须加**确定性 cVAE 对照臂 B** + **多模态分叉判据**。
+
+**能量地形探针（GREEN_PROBE）**：skeptic 命根——多解后验押在「warp-loss 能量地形多峰」假设。纯前向探针（受控歧义对 单 blob→双对称 blob）证：λ=1.0 实际 diffeomorphic 正则下 5/5 双谷（正则不填平多峰）→ 放行写三臂。
+
+**K0v2 三臂（A 确定性 / B cVAE VoxelMorph-prob / C FM warp-driven 零 teacher）**：
+- 首跑（job 1460073）多峰测试 3 bug（synth 5×假重复 / cluster_sep 饱和 / K=8 太小）→ analyst 逮到 → coder 修（24 distinct 几何 + K=48 + 弃 cluster_sep 用 BC + 修 verdict YELLOW 分支）。
+- **修复重跑（job 1460205）= YELLOW 固化**（csv `killshot_K0v2_three_arm_HPC_fixed.csv`）：
+  - **校准腿 FM 硬赢（二次复现）**：rho_C(BraTS)=+0.5161 p<1e-4 vs rho_B=−0.3890 p<1e-4；synth rho_C=0.9073 vs rho_B=−0.6954。cVAE 基线反校准。
+  - **精度不退**：dice_A 0.9461 / dice_C_ens 0.9444 / dice_B 0.9468；neg_jac 三臂全 0%。
+  - **多峰腿（公平测试 FM 没赢）**：dip_C 0.1630≈dip_B 0.1575，CI[−0.0038,0.0156] 含 0；BC_C 0.4466<0.555（两臂都没到双峰）；disp_spread_C 0.0037>B 0.0016（更宽但单峰）。
+
+**结局拍板**：用户「接 YELLOW 收窄 headline」（+ 先「修复重跑」确认非测试假象，已确认）。**headline 收窄定稿**（writer 改 01_STORY + 02_ACCEPTANCE）：
+- **立**：「FM-in-SVF 给出良好校准的形变后验」（少步采样 + diffeomorphic 保拓扑 + 精度不退，区别 cVAE/确定性 baseline 反校准）。
+- **杀**：旧候选①「生成式多解后验」——多峰未立，不 claim 多解。
+- **Gate1 命门**：MICCAI 需对「为何 FM 校准优于 cVAE」给机制解释（当前纯实证 rho 优势），证不出 → 降 TMLR analysis。撞车防护：后验配准拥挤领域（prob-VoxelMorph/DiffuseMorph/PULPo），差异化靠 FM 少步 + 校准质量。
+
+**下一步（Gate1）**：`/design-experiment fmreg` 出中训矩阵（机制解释 FM 校准优势 + cVAE 对照 + 通用 benchmark 广度）。残留 TODO：prior_lambda=10 占位（verifier 核 Dalca 2019）；σ_p 数据驱动已实现。
+
+---
+
 ## Entry 3 — 真实实力复核 + Gate1 探路启动（2026-06-17）
 
 **真实实力评估**（`ideation/runs/2026-06-17_run-002_medimg-method/07_report/真实实力评估_FMReg_S4-05.md`）：逐行读 killshot 代码 + 联网核撞车 → **FMReg 黄牌，G6 GREEN 被高估**：

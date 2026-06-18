@@ -242,7 +242,7 @@
       "n": "1018 CT (4-annotator 结节标注)",
       "local": "TODO 待下载",
       "hpc": "TODO (上传新数据=拍板点,先报用户)",
-      "source": "TCIA 公开免费 https://www.cancerimagingarchive.net/collection/lidc-idri/ (1018 胸部 CT ~124GB; 4 位放射科医师独立标注结节; pylidc 解析库 cluster_annotations tol 默认=slice_thickness; 存在性分歧 65.2%=2669被标结节仅928获4/4一致, Armato2011 PMC3041807; 注: 旧稿 margin 0.22=Dong2017边缘锐利度评分分歧≠存在性, 勿混用)",
+      "source": "TCIA 公开免费 https://www.cancerimagingarchive.net/collection/lidc-idri/ ; 全集 1018 CT ~124GB(过大不下,用户拍板); 4 医师独立标注; pylidc cluster_annotations tol默认=slice_thickness(文档写pixel_spacing是bug); 存在性分歧65.2%(2669被标结节仅928获4/4一致,Armato2011 PMC3041807; 旧稿margin0.22=Dong2017边缘评分分歧≠存在性,勿混). 【精简路径(2026-06-18 researcher探,避124GB)】①XML-only<200MB=pylidc无DICOM纯查k分歧标签+坐标(免费,先算分布) https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=1966254 ②DICOM-LIDC-IDRI-Nodules 2.51GB=per-annotator SEG mask(非CT像素) https://www.cancerimagingarchive.net/analysis-result/dicom-lidc-idri-nodules/ ③KILL-1需CT图像patch→NBIA子集下~150-200 scan≈18-30GB(MIC-DKFZ/LIDC-IDRI-processing保per-annotator). ④LUNA16衍生丢标注者身份不可用/QUBIQ无肺结节排除",
       "split": "立项后定 (KILL-1 baseline 先行)",
       "used_by": [
         "disagree"

@@ -4,6 +4,23 @@
 
 ---
 
+## Entry 3 — Gate1 A2 GO/NO-GO 跑通（2026-06-18，data fission 真区间 = GO）
+
+coder 修 env bug（torchvision EfficientNet-B3 inplace SiLU + cudnn.benchmark 在 RTX4070 Laptop WDDM 崩 → 关 inplace + cudnn.benchmark=False）后，HAM 18-config sweep + data fission 跑通（local 卡 9bebdda5→939e5da4，~0.36 GPU·h，主线核 log）：
+
+**A2 GO/NO-GO = GO ✅**（结果 `results/ham_datafission.csv` + `datafission_run.log`）：
+- sweep M=18，sigma_hat(pooled std)=0.008343，best acc=0.8200（lr=3e-4/dp=0.4/s=2024，落在 naive CI 外=winner's curse 真实）。
+- **data fission 有效 CI=[0.7930,0.8392] 宽 0.0463 vs naive 宽 0.0077 → deflation=500.0% > 20% = GO**。
+- **K3 解除**：data fission 500% ≠ √M 近似 324.26%（=√18−1 正好印证 skeptic 恒等式诊断）——真区间给出不同且更大的数，证 deflation 非 √M artifact 而是真 winner's curse。
+
+**A2 覆盖率模拟 PASS**（`results/coverage_sim.csv`，N_rep=2000，纯 CPU）：data fission 覆盖 0.947（名义 95%，12/12 cell 全 ≥0.90）、naive 0.003（12/12 cell <0.95=选择破坏有效性）、√M 过宽 1.000。→ data fission 区间有效性坐实。
+
+**下一步 A3**：扩 ISIC2020 + BraTS slice 二分类 sweep（本地 ready）+ deflation-vs-M 曲线（M∈{4,8,18,36}）。需 coder 加 ISIC/BraTS dataset 类 + 难度体检避 AUROC 触顶坍 deflation。local 现被 run-004 占→排队或等。
+
+**带债**：本地 HAM 真值已落地（best 0.82），旧 HPC job1454467 的 324% smoke 不再用。
+
+---
+
 ## Entry 2 — Gate1 设计 + skeptic 红队（2026-06-18，用户拍板 data fission）
 
 **planner 出 Gate1 矩阵 → skeptic 红队 2🔴 → 用户拍板补救。**

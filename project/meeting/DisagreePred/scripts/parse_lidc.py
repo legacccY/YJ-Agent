@@ -39,6 +39,15 @@ from pathlib import Path
 
 import numpy as np
 
+# ─── monkey-patch numpy 弃用别名（pylidc 0.2.3 用 np.int/float/bool/object）──
+# numpy >= 1.24 移除这些别名，必须在 import pylidc 前打补丁（parse_lidc 在函数
+# 内部 import pylidc，但补丁需在模块顶层执行以确保生效）
+np.int = int
+np.float = float
+np.bool = bool
+np.object = object
+# ─────────────────────────────────────────────────────────────────────────────
+
 # ─── 数据配置（真源：.portfolio/datasets.json lidc_idri.local）────────────
 # 数据就位后修改 DATA_ROOT，或通过 --data_root 传入
 DATA_ROOT = Path("TODO_LIDC_LOCAL_PATH")   # 待下载 LIDC DICOM 根目录
