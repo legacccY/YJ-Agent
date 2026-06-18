@@ -106,8 +106,9 @@ G0 宪章把搜索空间一次性钉死：领域边界、**硬排除清单**（N
 | S3-contradiction | B | selinf（benchmark 樱桃挑通胀） | ✓ 立项 | — |
 | S4-dataset | B | disagree（标注分歧可预测）/ nca-phasemap（稀疏度相变） | ✓×2 立项 | — |
 | S1-gap | A | C015（公平+长尾，run-005） | — | ✗ G5 杀（缝合空机制） |
-| S6-sota-limit | A | C105（mech-interp 搬皮肤，run-005） | — | ✗ G5 杀（缝合空机制） |
+| S6-sota-limit | A | C105（mech-interp 搬皮肤，run-005）/ run-006 C126(MAE频域) | — | ✗ run-005 G5杀；run-006 C126 G5a撞车 |
 | S2-cross | A | run-004 世界模型×医学（多条） | — | ✗ G5/G6 无强赢家 |
+| S5-salvage | B | **run-006 C107（NCA-JEPA死项目→OOD benchmark artifact污染）** | ✓ 立项 ArtiOODBench | — |
 
 > 注：selinf/disagree/nca-phasemap 精确策略 tag 为 inferred（主线据现象型归 B 族），run-002/003 pool 有真 tag 以真 tag 为准。每轮补录：「哪策略产的，存活/死亡 + 死因」。配额按此表数据在下轮 G0 宪章时动态调。
 

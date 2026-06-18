@@ -4,30 +4,41 @@
 
 ---
 
-## 🔖 续跑指南（下一窗口开门必读，2026-06-18 11:41 写）
+## 🔖 续跑指南（下一窗口开门必读，2026-06-18 收工更新）
 
-**当前态**：Gate1 阶段1 **G2-A gating 在 HPC 跑**，job=**1461174** RUNNING @gpu4090n7（启于 11:41，GPU 96%/17GB 健康），slot=`a54df04b`。减 epoch 200 探针，四臂 A/B/C/DE 串行，IXI 3D。stdout 缓冲看不到 epoch，靠 ckpt+csv 监控。估 12-36 GPU·h，可能逼近 24h walltime。
+**当前态**：G2-A gating job **1461174 已 scancel 杀掉**（200ep 太慢——arm_A 单臂 6h13m 还没落 ckpt，stdout 全缓冲看不到 epoch，8 单元 A+B+C+DE(5×) 投影远超 walltime）。slot `a54df04b` 已 release，**无 job 在跑**。
 
-**下窗第一步——查 job**（paramiko，凭证见 `project/HPC_WORKFLOW.md`：dtn.hpc.xjtlu.edu.cn / jiayu2403 / pxXd3VGhbB）：
-```
-squeue -j 1461174 -h -o '%T %M'                          # 状态/已跑时长
-ls -la /gpfs/work/bio/jiayu2403/fmreg/gate1_results/ckpts/   # arm_A/B/C.pt 各臂跑完落=进度标
-tail -40 /gpfs/work/bio/jiayu2403/fmreg/logs/1461174.out     # 缓冲flush后能看四臂结果表+verdict
-cat /gpfs/work/bio/jiayu2403/fmreg/gate1_results/gate1_g2a_fourarm.csv  # 跑完才有
-srun --jobid=1461174 --overlap nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv  # 确认GPU忙
-```
+**关键发现**：qos `4gpus` MaxWall = **7 天**（不是 24h）；旧 submit 脚本自己写死 `--time=24:00:00` 才是假瓶颈。HPC 上 `submit_g2a.sh` 仍是旧版（time 24h / epochs 200），**重投前必改**。
 
-**三种结局分支**：
-1. **跑完（csv 出 verdict）**：拉 csv+verdict.txt+png 回 `gate1/results/` → 派 **analyst** 判（禁 Read 核数，Bash/Grep）。预登记门：`rho_C 显著>rho_DE(强baseline) AND >rho_B AND AUSE/ECE方向一致 AND dice_C≥dice_A−0.02`。
-   - **PASS** → 报用户拍**阶段2全量**(~500 GPU·h，2×2机制因子+多集校准+广度benchmark，见 `05_Gate1_matrix.md`)。
-   - **FAIL**（强 baseline 反超）→ 诚实**降 TMLR analysis 不洗**（已 ACCEPTANCE §A0′ 预登记），报用户。
-2. **walltime 杀（24h 到/超）**：ckpt 已存的臂（arm_A/B/C.pt）可 `--phase eval` 复用；缺的臂补训。或减 epoch 重跑。看 ckpt 进度定。
-3. **报错挂**：看 `logs/1461174.err`，按错误类型修（OOM→batch already 1，看显存；数据→loader）。
-4. **任一结局**：`python tools/gpu_slot.py release a54df04b` 清账。
+**下窗第一步——重投 G2-A**（用户拍 B=减 epoch 重投；凭证见 `project/HPC_WORKFLOW.md`：dtn.hpc.xjtlu.edu.cn / jiayu2403 / pxXd3VGhbB）：
+1. `gpu_slot.py request fmreg hpc 1` 申卡槽（GO 即起 / QUEUED 即排队）。
+2. 改 HPC `/gpfs/work/bio/jiayu2403/fmreg/submit_g2a.sh`：`--time=24:00:00 → 72:00:00`、`--epochs 200 → 100`（砍半探针，跨臂相对比较仍公平；72h 用 7 天余量兜底确保跑完）。
+3. `sbatch submit_g2a.sh` → 记新 jobid 写进本指南。
+4. **建议**：脚本中途无 per-epoch state.json/flush → 监控盲。重投前可让 coder 给 `gate1_g2a_fourarm.py` 的 print 加 `flush=True`（或 submit 用 `python3.10 -u`）+ 每臂 epoch 末写 state.json，下窗能看 epoch 不抓瞎（<15 行，非必须但强烈建议）。
 
-**关键文件**：脚本 `gate1/gate1_g2a_fourarm.py`（含 `--epochs/--arm/--phase` 参数）；设计真源 `05_Gate1_matrix.md`；判据 `02_ACCEPTANCE.md` §A0′ 预登记表；K0 收口史见 Entry 5。HPC 数据 `/gpfs/work/bio/jiayu2403/fmreg/data/IXI/IXI_data/`（已传，下次免传）。
+**结局分支**（重投跑完后）：
+1. **csv 出 verdict**：拉 `gate1_results/gate1_g2a_fourarm.csv`+verdict.txt+png 回 `gate1/results/` → 派 **analyst** 判（禁 Read 核数，Bash/Grep）。预登记门：`rho_C 显著>rho_DE(强baseline) AND >rho_B AND AUSE/ECE方向一致 AND dice_C≥dice_A−0.02`。PASS → 报用户拍阶段2全量(~500 GPU·h，见 `05_Gate1_matrix.md`)；FAIL(强baseline反超) → 诚实降 TMLR analysis 不洗（ACCEPTANCE §A0′ 预登记）。
+2. **walltime 杀**：ckpt 已存的臂（arm_A/B/C.pt）`--phase eval` 复用；缺的补训。
+3. **报错挂**：看 `logs/<jobid>.err` 按错误类型修。
+4. **任一结局**：`gpu_slot.py release <id>` 清账。
 
-**别动**：跑着的 job 1461174（关窗不影响它）；BMVC 封印。
+**关键文件**：脚本 HPC `code/gate1_g2a_fourarm.py` / 本地 `gate1/gate1_g2a_fourarm.py`（含 `--epochs/--arm/--phase`，ckpt 只在单臂全 epoch 完后落盘 line 816-819）；submit `HPC:fmreg/submit_g2a.sh`；设计真源 `05_Gate1_matrix.md`；判据 `02_ACCEPTANCE.md` §A0′；K0 史见 Entry 5。HPC 数据 `/gpfs/work/bio/jiayu2403/fmreg/data/IXI/IXI_data/`（已传，免传）。
+
+**别动**：BMVC 封印。
+
+---
+
+## Entry 7 — G2-A job 200ep 太慢 → 杀 + 重投参数定（2026-06-18 收工）
+
+**监控 job 1461174（200ep 探针）**：启于 11:41。盯到 6h13m，arm_A.pt **始终没落盘**（ckpt 只在单臂全 epoch 完后落，line 816-819）。GPU 全程 96-100%/17GB = 真训练非死循环（死循环会 CPU 满 GPU 闲）。stdout 67 字节只 start echo = Python **全缓冲**，中途完全看不到 epoch（脚本无 per-epoch state.json/flush=监控盲）。py-spy 没装栈拿不到。
+
+**判定 walltime 风险**：训练量 = A+B+C+**DE(5×A 架构)** ≈ 8 单元。arm_A 单臂 6h+ 投影总量远超 24h walltime → 大概率 A/B/C 落盘、DE（最重那棒）被杀，而预登记门要 rho_DE（强 baseline），缺 DE 判不了门。报用户拍 → **用户拍 B（杀+减 epoch 重投）**。
+
+**关键发现**：核 `sacctmgr` qos `4gpus` MaxWall=**7 天**，旧 submit 写死 `--time=24:00:00` 是假瓶颈。
+
+**执行**：scancel 1461174（首次被 auto 分类器拦——只看到「进度」无杀 job 授权；用户明确「杀掉」后放行）→ 确认 squeue 空死透 → `gpu_slot.py release a54df04b` 清账。**未重投**（用户「直接收工」）。
+
+**重投参数已定**（写进续跑指南）：epochs 200→100 + time 24h→72h + 建议加 flush/state.json 解监控盲。下窗 `request fmreg hpc 1` → 改 submit_g2a.sh → sbatch。
 
 ---
 

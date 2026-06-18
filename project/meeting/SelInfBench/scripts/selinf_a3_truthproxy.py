@@ -68,6 +68,7 @@ from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 from PIL import Image
 
 # ── 路径（真源 .portfolio/datasets.json）──────────────────────────────────────
+# 默认值保留 Windows 本地路径；HPC 运行时由 argparse 参数覆盖（_apply_path_args）。
 ISIC_IMG_DIR   = Path("D:/YJ-Agent/data/raw/isic2020/train-image/image")
 ISIC_GT_CSV    = Path("D:/YJ-Agent/data/raw/isic2020/ISIC_2020_Training_GroundTruth_v2.csv")
 ISIC_SPLIT_CSV = Path("D:/YJ-Agent/data/isic_split.csv")
@@ -78,14 +79,52 @@ BRATS_NORMAL   = BRATS_TEST / "normal"
 BRATS_TUMOR    = BRATS_TEST / "tumor"
 
 # HAM10000（可选，需 metadata）
+HAM_ROOT     = Path("D:/YJ-Agent/data/external/ham10000")
 HAM_IMG_DIRS = [
-    Path("D:/YJ-Agent/data/external/ham10000/HAM10000_images_part_1"),
-    Path("D:/YJ-Agent/data/external/ham10000/HAM10000_images_part_2"),
+    HAM_ROOT / "HAM10000_images_part_1",
+    HAM_ROOT / "HAM10000_images_part_2",
 ]
-HAM_META_CSV = Path("D:/YJ-Agent/data/external/ham10000/HAM10000_metadata.csv")
+HAM_META_CSV = HAM_ROOT / "HAM10000_metadata.csv"
 
 OUT_DIR  = Path("D:/YJ-Agent/project/meeting/SelInfBench/results")
 OUT_CSV  = OUT_DIR / "a3_truthproxy.csv"
+
+
+def _apply_path_args(args: argparse.Namespace) -> None:
+    """
+    把 argparse 覆盖路径同步到模块全局变量。
+    在 main() 入口调用一次，之后所有 Dataset/builder 读全局变量即可。
+    HPC 覆盖示例：
+      --isic_img_dir /gpfs/.../isic2020/
+      --isic_gt_csv  /gpfs/.../selinf/data/ISIC_2020_Training_GroundTruth_v2.csv
+      --isic_split_csv /gpfs/.../selinf/data/isic_split.csv
+      --ham_root     /gpfs/.../ham10000
+      --brats_test_dir /gpfs/.../BraTS2021/test
+      --out_dir      /gpfs/.../selinf/results
+    """
+    global ISIC_IMG_DIR, ISIC_GT_CSV, ISIC_SPLIT_CSV
+    global BRATS_TEST, BRATS_NORMAL, BRATS_TUMOR
+    global HAM_ROOT, HAM_IMG_DIRS, HAM_META_CSV
+    global OUT_DIR, OUT_CSV
+
+    if args.isic_img_dir:
+        ISIC_IMG_DIR = Path(args.isic_img_dir)
+    if args.isic_gt_csv:
+        ISIC_GT_CSV = Path(args.isic_gt_csv)
+    if args.isic_split_csv:
+        ISIC_SPLIT_CSV = Path(args.isic_split_csv)
+    if args.ham_root:
+        HAM_ROOT     = Path(args.ham_root)
+        HAM_IMG_DIRS = [HAM_ROOT / "HAM10000_images_part_1",
+                        HAM_ROOT / "HAM10000_images_part_2"]
+        HAM_META_CSV = HAM_ROOT / "HAM10000_metadata.csv"
+    if args.brats_test_dir:
+        BRATS_TEST   = Path(args.brats_test_dir)
+        BRATS_NORMAL = BRATS_TEST / "normal"
+        BRATS_TUMOR  = BRATS_TEST / "tumor"
+    if args.out_dir:
+        OUT_DIR = Path(args.out_dir)
+        OUT_CSV = OUT_DIR / "a3_truthproxy.csv"
 
 # ── HP sweep 网格（与 a3_benchmarks.py 完全一致，跨集可比）──────────────────
 HP_LR          = [1e-3, 3e-4]
@@ -256,6 +295,8 @@ class ISICDataset(Dataset):
 
     def __getitem__(self, idx):
         rec  = self.records[idx]
+        # ISIC 扁平目录兼容：HPC 上图像直接在 ISIC_IMG_DIR/，
+        # 本地可能是 train-image/image/ 子目录结构，均通过 ISIC_IMG_DIR 指向正确位置。
         path = ISIC_IMG_DIR / f"{rec['image_name']}.jpg"
         img  = Image.open(path).convert("RGB")
         return self.tfm(img), int(rec["label"])
@@ -348,11 +389,15 @@ def build_brats_case_split(seed: int = 42) -> dict:
     文件名格式：BraTS2021_<case_id>_flair_<slice>.png
     返回 {"train": [...], "val": [...], "test": [...]}
 
+    BraTS2021 数据特征：同一 case 里，不含肿瘤的切片归 normal/，
+    含肿瘤的切片归 tumor/，因此 174/175 个 case_id 同时出现在两个目录。
+    必须以「case 整体」为单位切分：同一 case 的所有 slices（normal + tumor）
+    都分到同一个 partition，才能防止 slice 信息跨 partition 泄漏。
+
     策略：
-      1. 提取所有 case_id（normal + tumor 分别独立 shuffle+split）
-      2. normal case: 60/20/20
-      3. tumor case:  60/20/20
-      4. 按 case_id 映射回 slice 记录
+      1. 取所有 case_id 的并集（normal union tumor）
+      2. 统一 seeded shuffle + 60/20/20 切分
+      3. normal 和 tumor 各自按 case_id -> partition 映射
     """
     normal_paths = sorted(BRATS_NORMAL.glob("*.png"))
     tumor_paths  = sorted(BRATS_TUMOR.glob("*.png"))
@@ -360,7 +405,6 @@ def build_brats_case_split(seed: int = 42) -> dict:
     def extract_case_id(p: Path) -> str:
         return p.stem.split("_")[1]   # BraTS2021_01467_flair_13 -> "01467"
 
-    # 分组
     normal_by_case: dict = {}
     for p in normal_paths:
         cid = extract_case_id(p)
@@ -371,37 +415,40 @@ def build_brats_case_split(seed: int = 42) -> dict:
         cid = extract_case_id(p)
         tumor_by_case.setdefault(cid, []).append(p)
 
-    rng = np.random.default_rng(seed)
+    # 取 case 并集，统一 shuffle + 三分（防 normal/tumor 同 case 分到不同 partition）
+    all_case_ids = sorted(set(normal_by_case.keys()) | set(tumor_by_case.keys()))
+    rng          = np.random.default_rng(seed)
+    shuffled     = rng.permutation(all_case_ids).tolist()
+    n            = len(shuffled)
+    n_train      = int(n * BRATS_SPLIT_TRAIN)
+    n_val        = int(n * BRATS_SPLIT_VAL)
+    train_ids    = set(shuffled[:n_train])
+    val_ids      = set(shuffled[n_train:n_train + n_val])
+    # test = 余下 case
 
-    def split_cases(cases_dict: dict, label: int) -> dict:
-        case_ids  = sorted(cases_dict.keys())
-        shuffled  = rng.permutation(case_ids).tolist()
-        n         = len(shuffled)
-        n_train   = int(n * BRATS_SPLIT_TRAIN)
-        n_val     = int(n * BRATS_SPLIT_VAL)
-        train_ids = set(shuffled[:n_train])
-        val_ids   = set(shuffled[n_train:n_train + n_val])
-        # test = 余下 case
-        result    = {"train": [], "val": [], "test": []}
-        for cid, paths in cases_dict.items():
-            for p in paths:
-                rec = {"path": str(p), "label": label, "case_id": cid}
-                if cid in train_ids:
-                    result["train"].append(rec)
-                elif cid in val_ids:
-                    result["val"].append(rec)
-                else:
-                    result["test"].append(rec)
-        return result
+    result: dict = {"train": [], "val": [], "test": []}
 
-    normal_split = split_cases(normal_by_case, label=0)
-    tumor_split  = split_cases(tumor_by_case,  label=1)
+    for cid, paths in normal_by_case.items():
+        for p in paths:
+            rec = {"path": str(p), "label": 0, "case_id": cid}
+            if cid in train_ids:
+                result["train"].append(rec)
+            elif cid in val_ids:
+                result["val"].append(rec)
+            else:
+                result["test"].append(rec)
 
-    combined: dict = {}
-    for sp in ("train", "val", "test"):
-        combined[sp] = normal_split[sp] + tumor_split[sp]
+    for cid, paths in tumor_by_case.items():
+        for p in paths:
+            rec = {"path": str(p), "label": 1, "case_id": cid}
+            if cid in train_ids:
+                result["train"].append(rec)
+            elif cid in val_ids:
+                result["val"].append(rec)
+            else:
+                result["test"].append(rec)
 
-    return combined
+    return result
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1036,6 +1083,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="SelInfBench A3: test-as-truth winner's curse 验证"
     )
+    # ── 实验控制 ──────────────────────────────────────────────────────────────
     parser.add_argument(
         "--smoke", type=int, default=0,
         help="1 = smoke: 2 config × 2 epoch，加 --cpu 做 CPU dry-run",
@@ -1060,7 +1108,36 @@ if __name__ == "__main__":
         "--brats_seed", type=int, default=42,
         help="BraTS case-level split seed (default: 42)",
     )
+    # ── 路径覆盖（HPC 用，本地默认值见模块顶部常量）────────────────────────
+    parser.add_argument(
+        "--isic_img_dir", type=str, default=None,
+        help="ISIC2020 图像目录（HPC 扁平: /gpfs/.../isic2020/；"
+             "本地默认: D:/YJ-Agent/data/raw/isic2020/train-image/image）",
+    )
+    parser.add_argument(
+        "--isic_gt_csv", type=str, default=None,
+        help="ISIC_2020_Training_GroundTruth_v2.csv 路径",
+    )
+    parser.add_argument(
+        "--isic_split_csv", type=str, default=None,
+        help="isic_split.csv 路径（train/val/test 三分，HPC 需上传到 workdir）",
+    )
+    parser.add_argument(
+        "--ham_root", type=str, default=None,
+        help="HAM10000 根目录（含 HAM10000_images_part_1/2/ + HAM10000_metadata.csv）",
+    )
+    parser.add_argument(
+        "--brats_test_dir", type=str, default=None,
+        help="BraTS2021 test 目录（含 normal/ + tumor/ 子目录）",
+    )
+    parser.add_argument(
+        "--out_dir", type=str, default=None,
+        help="结果输出目录（默认: D:/YJ-Agent/project/meeting/SelInfBench/results）",
+    )
     args = parser.parse_args()
+
+    # 把路径参数同步到全局变量（HPC 覆盖；本地 None → 保持模块顶部默认）
+    _apply_path_args(args)
 
     benchmarks_list = [b.strip() for b in args.benchmarks.split(",")]
     m_values_list   = [int(x)    for x in args.m_values.split(",")]

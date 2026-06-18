@@ -4,6 +4,47 @@
 
 ---
 
+## Entry 7 — ICLR 升级探索 = 死，项目暂停于 TMLR/D&B（2026-06-18，用户拍板转别的项目）
+
+用户问"能否升级 80% 稳中 ICLR"→ 探"医学挑战赛 leaderboard 冠军高估审计 + 自适应选择条件推断"升级路 → **两 kill-shot 双杀，升级死，回 TMLR/D&B**。
+
+**调研（3 researcher）**：① Kaggle 医学赛（ISIC2020 3314 队/RSNA）public+private 双分可得；② 最大撞车 Zrnic-Fithian arXiv2411.18569（单轮 winner CI）；③ 公开医学 sweep 数据基本不存在，自跑审计够 TMLR 不够顶会（Åkesson2024 已占医学自跑 best-seed 高估）；④ reduction 缝隙未先发但薄（~70%）。
+
+**skeptic 红队 2 命门 + 2 kill-shot 验**：
+- **命门 2 审计腿 🔴 proxy 错位**：Kaggle public→private gap = 对 public split 的自适应过拟合（Roelofs NeurIPS2019 已证整体小），**不是 winner's curse on 真实性能**；private 本身是干净真值代理。要 claim"高估真实泛化"需第三份独立部署分布数据，多数赛没有。kill-shot #1（扒双分）因此 moot——未跑。
+- **命门 1 方法腿 🔴 DEAD**：kill-shot #2 合成 pilot（`tools/selinf_method_pilot.py` → `results/method_pilot.csv`，N_rep=3000，主线 Bash 核）证 **naive-on-private 覆盖全程 [0.9417,0.957]**（最坏 R=50 重度自适应也 ~95% 不破），naive-on-public 最低 0.0（public winner's curse 真严重）。→ private 是条件独立 fresh holdout，自动兜底，新条件推断在 leaderboard 场景**无角色**。方法只在"无 private、单 test 反复复用"（=SelInfBench 原方向，TMLR 级）ALIVE。
+
+**结论**：leaderboard 升级到 ICLR 死（两腿同根塌于"Kaggle private 是干净 holdout"）。SelInfBench 诚实天花板 = **TMLR / NeurIPS D&B**，资产扎实（A1 winner's curse 可测 + A2 合成覆盖坐实 + 校正器 + A3 2/3 真 benchmark 去偏 3/3 正向）。唯一活的细缝=单 test 复用下精确条件推断比 Bonferroni 有 power 优势（pilot bonf 0.99 过保守），增量、仍 TMLR。
+
+**🅿️ 项目状态 = PAUSED（暂停，资产完好，非砍）**。用户 2026-06-18 拍板转别的项目（精力转更有胜算的 ICLR 主线/DisagreePred/FMReg）。
+**恢复入口（重启时读）**：要发 TMLR/D&B 就走 → ① A3 补强（ISIC test 阳性仅 17 个太少，扩 test 降方差看 winner's curse 是否转正，把 2/3→3/3）② A4 校正器工程化（挂任意 sweep 日志出去偏 CI）③ writer 写稿（A1+A2+A3+校正器）。别再碰 leaderboard 路（已证死，见本 entry）。
+
+---
+
+## Entry 6 — A3 truthproxy 跑完 = PARTIAL（2026-06-18，HPC job 1462992，2/3 winner's curse，退路稳顶会腿不够）
+
+**修正版 A3（test-as-truth winner's curse）HPC 跑完**（gpu4090 job 1462992，~2h45m，slot 199ce2a2 已 release，csv 拉回本地 `results/a3_truthproxy.csv`）。3 benchmark M=18，val 选 best → test 当真值：
+
+| benchmark | val_best | test_selected | winners_curse(val−test) | debias_shift(val−g*) | g* vs naive 距 test |
+|---|---|---|---|---|---|
+| ISIC2020 | 0.8646 | 0.8726 | **−0.0080** ❌ | +0.0114 | g* 更远(0.0195>0.0080) ❌ |
+| BraTS2021 | 0.9951 | 0.9788 | +0.0163 ✅(触顶弱) | +0.0022 | g* 更近 ✅ |
+| HAM10000 | 0.9283 | 0.8536 | **+0.0746** ✅强 | +0.0169 | g* 更近 ✅ |
+
+**A3 = PARTIAL**（脚本 VERDICT 同判）：winner's curse>0 **2/3**、debias_shift>0 **3/3**、g* 更近 test **2/3**。
+- **ISIC 反例**：test_selected(0.873) > val_best(0.865)，winner's curse 负——test 集 1000 仅 17 阳性，AUROC 方差大（sigma 0.0147），噪声里被选 config 在 test 反而更好。非系统高估。
+- **BraTS 触顶**：AUROC~0.99 饱和（难度体检 WARN 在案），winner's curse +0.016 方向对但幅度小。
+- **HAM 强**：高估 +0.075、去偏 g* 明显更近 test，干净的 winner's curse。
+
+**判据对照 ACCEPTANCE**：A3 顶会线要 ≥3 benchmark 一致——**未达**（2/3）。**退路档 TMLR/D&B 稳**（A1 winner's curse 可测 ✅ + A2 合成覆盖 ✅ + 校正器 + 2/3 真 benchmark 去偏 3/3 正向）。顶会原方向这条腿不够硬。
+
+**带债 / 方向**：
+- A3 弱 → 印证"自跑 sweep 审计"够 TMLR 不够顶会（与 researcher 调研 Åkesson2024 已占医学自跑一致）。顶会需升级路（Kaggle leaderboard 审计，但 skeptic 命门 2 proxy 错位待破）。
+- 可选补强：ISIC 扩 test 阳性数（现 17 个太少）降方差再看 winner's curse 是否转正；BraTS 换更难变体避触顶。但这只把 A3 从 2/3 推向 3/3，仍是 TMLR 级，不解决顶会新意。
+- **升级 kill-shot 待跑**：① Kaggle 双分 gap 探针（等用户下 CSV，已备 `tools/selinf_kaggle_lb_probe.py`）② 方法腿合成 pilot（private naive 是否已覆盖）。两个定升级生死。
+
+---
+
 ## Entry 5 — deflation 指标暴雷：headline 整体重定（2026-06-18，skeptic 三 🔴 → 两必补全 PASS → 项目得救待 ACCEPTANCE 重写）
 
 **重大纠错：Entry 3「K3 解除 / data fission 500% 证明 winner's curse」结论作废。** 主线接 A3 后台跑（slot 46970170）时核脚本数学，逮出致命问题，派 skeptic 红队坐实，再派 coder+researcher 两诊断救场。
