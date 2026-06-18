@@ -10,7 +10,7 @@
 
 **G0 宪章**（人主导）：据种子草拟 `project/ideation/runs/<date>_charter.md`（复制 `01_CHARTER.template.md`）→ AskUserQuestion 让用户过目/改硬排除/算力预算/双venue/风险配比 → 锁定。
 
-**G1 批量产出**（自主）：起 **ideator(sonnet)×N**（每个领一种正交策略 S1-S6），每个产 15-20 条 → 合并 → SPECTER2 余弦 0.8 去重 + 多样性聚类 → 落 `runs/<date>_pool.jsonl`（~50 唯一）。工具未实现前去重可降级人工判。
+**G1 批量产出**（自主）：起 **ideator(sonnet)×8**，按 **B 族倾斜配额**（S3×2 + S4×2 + S1/S2/S5/S6 各×1；B 族实证命中率高，A 族须填 mechanism_anchor），每个产 15-20 条 → 合并 → SPECTER2 余弦 0.8 去重 + 多样性聚类 → 落 `runs/<date>_pool.jsonl`（~50 唯一）。工具未实现前去重可降级人工判。
 
 **G2 机器硬筛**（自主）：撞车检测（`tools/ideation_collision.py`，未实现则 researcher 网页版逐条查 top 候选）+ R1 二元 kill checklist → ~20 存活，砍的记 reason + 最近邻论文。
 

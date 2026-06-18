@@ -23,19 +23,23 @@
 - **负责**：`ideator`(sonnet)×N 扇出（每个领一种生成策略），主线收口去重聚类。
 - **输入**：锁定的 charter.md。
 - **动作**：
-  1. 起 N 个 ideator，**每个用一种正交生成策略**（避免同质，Nova 多样性原则）：
-     - **S1 gap 挖掘**：从近 2 年顶会论文 future-work/limitation 段批量挖未解问题
-     - **S2 跨域迁移**：方法 X（领域 A 成熟）→ 问题 Y（领域 B 没人用过）
-     - **S3 矛盾/复现失败**：文献里互相打架的结论 / 复现不出来的声称 = 选题金矿
-     - **S4 dataset-first**：被低估/新出的数据集能问什么新问题
-     - **S5 死项目残值**：组合台已死项目（NCA-JEPA 负结果 / MedSeg-UQ）的可救残值
-     - **S6 SOTA-limitation**：当前 SOTA 方法的已知失效边界 = capability 型选题
-  2. 每个 ideator 产 ~15-20 条，每条按 `pool.jsonl` schema 输出（含 one-liner / 问题 / 初步方法 / why-new / 候选 venue / 数据 / 算力估）。
-  3. 主线汇总 → **SPECTER2 余弦 0.8 去重**（95% 可能重复）→ **多样性聚类**（k-means，确保进 G2 的来自不同簇）。
+  1. 起 **8 个 ideator**，按**B 族倾斜配额**分配（实证：B 族现象/矛盾型命中率显著高于 A 族缝合/迁移型）：
+     - **S3 矛盾/复现失败 ×2**：文献里互相打架的结论 / 复现不出来的声称 = 选题金矿（B族，已出 selinf）
+     - **S4 dataset-first ×2**：被低估/新出的数据集能问什么新问题（B族，已出 disagree、nca-phasemap）
+     - **S1 gap 挖掘 ×1**：从近 2 年顶会论文 future-work/limitation 段批量挖未解问题（A族，须填机制栏）
+     - **S2 跨域迁移 ×1**：方法 X（领域 A 成熟）→ 问题 Y（领域 B 没人用过）（A族，须填机制栏）
+     - **S5 死项目残值 ×1**：组合台已死项目（NCA-JEPA 负结果 / MedSeg-UQ）的可救残值
+     - **S6 SOTA-limitation ×1**：当前 SOTA 方法的已知失效边界 = capability 型选题（A族，须填机制栏）
+
+     > **配额倾斜理由**：5 轮实证 B 族（S3/S4）产的候选全部存活（selinf/disagree/nca-phasemap）；A 族（S1/S2/S6）产的候选全军覆没（C015 S1-gap、C105 S6 缝合）。根因：A 族易产「A+B 没人拼过」型缝合，G5 杀手锏一捅「绑两块的机制是空的」即塌；B 族从真实可测的反常现象出发，机制实存。**S3/S4 各 ×2 扩容，A 族（S1/S2/S6）各保 ×1 维持多样**。
+
+  2. **A 族（S1/S2/S6）强制机制栏**：S1/S2/S6 ideator 产出的每条候选，schema 里**必须填** `mechanism_anchor`（现象驱动 `phenomenon` / 有具体机制 `mechanism` / 缺失 `MISSING`）+ `anchor_note`（一句话说明机制/现象）。填不出的标 `mechanism_anchor=MISSING`——这类候选在 G2 anchor 闸会受重罚。
+  3. 每个 ideator 产 ~15-20 条，每条按 `pool.jsonl` schema 输出（含 one-liner / 问题 / 初步方法 / why-new / 候选 venue / 数据 / 算力估 / mechanism_anchor / anchor_note）。
+  4. 主线汇总 → **SPECTER2 余弦 0.8 去重**（95% 可能重复）→ **多样性聚类**（k-means，确保进 G2 的来自不同簇）。
 - **kill 条件**：去重命中（与池内已有 >0.8）→ 合并。
 - **输出**：`pool.jsonl` ~50 条唯一候选。
 - **通过率**：~50%（100 raw → ~50 唯一）。
-- **杀死法 ③（蓝海一碰就塌）**：多策略广撒 + S6 capability 型，不只押单个大胆理论。
+- **杀死法 ③（蓝海一碰就塌）**：多策略广撒 + B 族倾斜，不只押缝合型。
 
 ---
 
@@ -48,7 +52,7 @@
   1. **撞车检测**（`tools/ideation_collision.py`，见 [`05_TOOLING.md`](05_TOOLING.md)）：每条候选 → Semantic Scholar / OpenAlex 检索 + 本地 SPECTER2 余弦比对 top-K 已发论文，记录最大相似度 + 最近邻论文。
   2. **gap 验证**：检索是否有 future-work/limitation 支撑这是真空白。
   3. **R1 二元 kill checklist**逐条过（硬排除/撞车阈/算力/可行/gap/已解/DDL）。
-- **kill 条件**（R1，任一命中即砍）：撞车 >0.85 无差异化 / 超算力预算 / 命中硬排除 / 无 gap 支撑 / 已有完整解 / DDL 超期。
+- **kill 条件**（R1，任一命中即砍）：撞车 >0.85 无差异化 / 超算力预算 / 命中硬排除 / 无 gap 支撑 / 已有完整解 / DDL 超期 / **anchor 闸：核心 claim 既无可观测现象/反常锚点（phenomenon）也无指名机制（mechanism），且 `mechanism_anchor=MISSING`** → 砍或打回 G1 补锚（此闸只对 A 族候选严格执行；B 族 S3/S4 天然以现象为锚，不重复判）。
 - **输出**：~20 候选存活，被砍的记 `killed@G2 + reason + 最近邻论文`。
 - **通过率**：~40%（50 → ~20）。
 - **杀死法 ③（撞车自欺）**：工具显式比对，杜绝"以为新其实撞车/塌"。
@@ -80,7 +84,8 @@
 - **动作**：
   1. 每个候选先填 **R5 Heilmeier 8 问**，答不出的即红队重点。
   2. `skeptic` 攻三死法（立项前提：可行性/撞车/理论会不会塌 ←→ severity-gated，0 致命即放行）。
-  3. **R6 Pre-mortem**：假设"1 年后已失败"倒推失败路径 → 提炼 2-3 个最大风险假设 → 配 <1 GPU·h 证伪实验设计（喂 G5）。
+  3. **缝合测试（强制，对所有候选）**：skeptic 问——「赌它死在 killshot，空的前提是 ___；这前提在文献里被直接测过（phenomenon-grounded），还是只是假设（assumption）？」逐词检查 A+B 绑定的机制是否实存，是假设 → 标为最大风险假设之一，喂 G5 优先证伪。此步专堵「绑两块的机制是空的」型塌缩（历史根因：C015/C105/run-004 世界模型×医学，G5 才暴雷）。
+  4. **R6 Pre-mortem**：假设"1 年后已失败"倒推失败路径 → 提炼 2-3 个最大风险假设 → 配 <1 GPU·h 证伪实验设计（喂 G5）。
 - **kill 条件**：skeptic 给 ≥1 个**无出路**的 🔴 致命 → 砍 / 回 G1 重挖。
 - **输出**：~5 候选，每个带：红队裁决 + 最大风险假设 + G5 杀手锏实验设计草案。
 - **通过率**：~55%（8-10 → ~5）。

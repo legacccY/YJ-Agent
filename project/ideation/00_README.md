@@ -99,6 +99,18 @@ G0 宪章把搜索空间一次性钉死：领域边界、**硬排除清单**（N
 | `06_STRUCTURE.md` | **工业化留痕目录规范**：每轮 `runs/<date>_run-NNN_<slug>/` 的子目录布局 + 只增不删铁律 |
 | `runs/` | 每轮一个独立留痕文件夹（约束→文献→候选→逐闸筛选→自动实验→立项报告全留痕）|
 
+**策略存活台账**（每轮 G6 后更新，数据驱动调配额）：
+
+| 策略 | 族 | 产出候选（inferred tag） | G6 存活 | G5/G6 死亡 |
+|---|---|---|---|---|
+| S3-contradiction | B | selinf（benchmark 樱桃挑通胀） | ✓ 立项 | — |
+| S4-dataset | B | disagree（标注分歧可预测）/ nca-phasemap（稀疏度相变） | ✓×2 立项 | — |
+| S1-gap | A | C015（公平+长尾，run-005） | — | ✗ G5 杀（缝合空机制） |
+| S6-sota-limit | A | C105（mech-interp 搬皮肤，run-005） | — | ✗ G5 杀（缝合空机制） |
+| S2-cross | A | run-004 世界模型×医学（多条） | — | ✗ G5/G6 无强赢家 |
+
+> 注：selinf/disagree/nca-phasemap 精确策略 tag 为 inferred（主线据现象型归 B 族），run-002/003 pool 有真 tag 以真 tag 为准。每轮补录：「哪策略产的，存活/死亡 + 死因」。配额按此表数据在下轮 G0 宪章时动态调。
+
 **轮次台账**：
 - `runs/2026-06-17_run-001_nca-wm-medseg-uq/` — NCA-WM/MedSeg-UQ 残值挖
 - `runs/2026-06-17_run-002_medimg-method/` — 医学影像全模态·方法创新型(CVPR/MICCAI/NeurIPS)·70/30 稳健·≤两周中训（charter 锁定，G1 进行中）

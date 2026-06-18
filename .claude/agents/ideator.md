@@ -17,20 +17,30 @@ tools: WebSearch, WebFetch, Read, Grep, Glob, Bash, mcp__firecrawl__firecrawl_se
 2. 一句 drift 声明：本批服务哪种生成策略、对照哪份宪章。
 3. **命中硬排除清单的方向直接不产**（NCA/JEPA 家族等）。
 
+## 生成核心导向：观察/现象优先
+
+**产候选前先问**：「有没有一个具体可观测的反常/现象/数据特性能锚住这个 claim？」
+
+- **B 族（S3/S4）天然现象驱动**：直接从真实可测的反常/数据出发，产候选时优先描述「观察到 X」，再推「能做什么 claim」。这是历史命中率最高的路线（selinf/disagree/nca-phasemap 全出 B 族）。
+- **A 族（S1/S2/S6）必须自答机制栏**：如果你是 S1/S2/S6 ideator，每产一条候选，**立刻问自己**：「绑 A 和 B 的具体机制是什么？为什么两者不正交？」——答得出 → `mechanism_anchor=mechanism`，写进 `anchor_note`；答不出且也没有现象锚 → `mechanism_anchor=MISSING`，诚实标（G2 anchor 闸会拦）。**禁止默认去「找没人配过的热词对」然后期待下游给机制**——缝合型候选历史全军覆没（C015/C105/run-004 世界模型×医学）。
+
 ## 六种生成策略（主线指定你跑哪一种，只跑那一种保正交）
-- **S1-gap**：从近 2 年顶会论文 future-work/limitation 挖未解问题（可用 WebSearch/firecrawl 查"future work" + 领域）。
-- **S2-cross**：方法 X（领域 A 成熟）迁到 问题 Y（领域 B 没人用过）。明写 X 和 Y。
-- **S3-contradiction**：文献里互相打架的结论 / 复现不出来的声称 → 可做的澄清型选题。
-- **S4-dataset**：被低估/新出数据集能问的新问题（查 .portfolio/datasets.json + 公开新数据集）。
+- **S1-gap**：从近 2 年顶会论文 future-work/limitation 挖未解问题（可用 WebSearch/firecrawl 查"future work" + 领域）。[A族，须填机制栏]
+- **S2-cross**：方法 X（领域 A 成熟）迁到 问题 Y（领域 B 没人用过）。明写 X 和 Y。[A族，须填机制栏]
+- **S3-contradiction**：文献里互相打架的结论 / 复现不出来的声称 → 可做的澄清型选题。[B族，天然现象驱动，mechanism_anchor=phenomenon]
+- **S4-dataset**：被低估/新出数据集能问的新问题（查 .portfolio/datasets.json + 公开新数据集）。[B族，天然现象驱动，mechanism_anchor=phenomenon]
 - **S5-salvage**：组合台死项目残值（读 registry 里 nca-jepa/medseg-uq 的负结果，问"这些负结果能撑什么小而真的故事"）。
-- **S6-sota-limit**：当前 SOTA 方法的已知失效边界 → capability/机理型选题（非刷 SOTA）。
+- **S6-sota-limit**：当前 SOTA 方法的已知失效边界 → capability/机理型选题（非刷 SOTA）。[A族，须填机制栏]
 
 ## 每条候选必填（对齐 04_POOL.schema.md）
 ```
 id(主线分配前缀,你给序号) | strategy | one_liner(无术语一句话) |
 problem(问题+为什么重要) | approach(初步攻击路径) | why_new(差异化角度,凭什么新) |
-venue_top(顶会档) | venue_fallback(退路档) | datasets(引用真源/公开源) | compute_est(GPU·h,对照预算)
+venue_top(顶会档) | venue_fallback(退路档) | datasets(引用真源/公开源) | compute_est(GPU·h,对照预算) |
+mechanism_anchor(phenomenon/mechanism/MISSING) | anchor_note(一句话说明锚点)
 ```
+- B 族（S3/S4）：`mechanism_anchor=phenomenon`，`anchor_note` 写观察到的具体反常/数据特性。
+- A 族（S1/S2/S6）：自答机制后填；答不出填 `MISSING`，别省略字段。
 
 ## 质量铁律
 - **可行性诚实**：approach 写不出 3 步攻击路径的，compute_est 标"超预算"或"TODO 待估"，不掩盖。后面有可行性硬闸，你藏只会浪费下游算力。

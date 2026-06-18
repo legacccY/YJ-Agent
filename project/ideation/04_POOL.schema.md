@@ -20,6 +20,8 @@
   "datasets": ["引用 .portfolio/datasets.json 或公开源"],
   "compute_est": "算力估（GPU·h，对照宪章 C）",
   "cluster": 3,                    // G1 多样性聚类簇号
+  "mechanism_anchor": "phenomenon", // G1 A族必填：phenomenon（锚在可观测反常/数据特性）/ mechanism（指名具体机制）/ MISSING（答不上）；B族(S3/S4)天然填 phenomenon
+  "anchor_note": "一句话说明锚点：具体是哪个现象或机制",  // G1 A族必填，B族建议填
 
   // —— G2 机器筛追加 ——
   "g2_collision": {"max_cos": 0.72, "nearest": "arXiv:xxxx 标题", "source": "specter2|s2|openalex"},
@@ -27,8 +29,9 @@
   "g2_kill": null,                 // null=过；否则 "硬排除|撞车|算力|可行|无gap|已解|DDL"
 
   // —— G3 评分追加 ——
-  "g3_innoeval": {"novelty": 7, "feasibility": 5, "significance": 6, "validity": 6, "clarity": 8},
-  "g3_weighted": 6.45,             // Σ(维×权)
+  "g3_innoeval": {"q_novelty": 7, "c_novelty": 5, "feasibility": 5, "significance": 6, "validity": 6, "clarity": 8},  // q_novelty×0.20 + c_novelty×0.10 + feasibility×0.25 + significance×0.25 + validity×0.10 + clarity×0.10
+  "g3_pattern": null,              // null | "pure_recombination"（C-Novelty≥7 且 Q-Novelty≤4，扣 0.5）
+  "g3_weighted": 6.20,             // Σ(维×权) ±惩罚
   "g3_swiss_wins": 4,              // 5 轮 Swiss 累计胜场
   "g3_rank": 3,                    // final rerank 后名次
   "g3_taste12": [4,3,5,4,3,2,5,4,4,5,5,3],  // 仅 top10 跑，12 维 0-5
