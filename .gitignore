@@ -79,6 +79,7 @@ project/meeting/Med-NCA/NCA-JEPA/ijepa/
 # 草稿/临时探针脚本
 _scratch/
 project/meeting/Med-NCA/NCA-JEPA/_scratch/
+tools/_scratch_*
 
 # 逐图预测 dump（可由模型重跑数据集重生成，见 DATA_INVENTORY）
 project/results/external_*_predictions.csv
