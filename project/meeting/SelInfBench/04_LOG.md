@@ -4,17 +4,35 @@
 
 ---
 
-## ⏳ 续跑交接（2026-06-18 12:30，A3 重跑中，新窗口接力看这里）
+## Entry 5 — deflation 指标暴雷：headline 整体重定（2026-06-18，skeptic 三 🔴 → 两必补全 PASS → 项目得救待 ACCEPTANCE 重写）
 
-> ⚠️ A3 首跑(slot 46970170)异常：跑 ~2h(GPU 89% 实证在算)但 exit0 + log 0字节 + csv 没落盘 = 疑被外部清掉、stdout 全缓冲 buffer 丢光。**已重跑**(下条)，这次 `python -u` 不缓冲 log 实时流。
+**重大纠错：Entry 3「K3 解除 / data fission 500% 证明 winner's curse」结论作废。** 主线接 A3 后台跑（slot 46970170）时核脚本数学，逮出致命问题，派 skeptic 红队坐实，再派 coder+researcher 两诊断救场。
 
-**A3 deflation-vs-M sweep 重跑中**（GPU local 卡 **gpu_slot id=6ce4a6b4** 占用中，run b3d9r43jz，PYTHONUNBUFFERED）：
-- 脚本 `scripts/selinf_a3_benchmarks.py`（ISIC2020+BraTS2021 二分类 ×M∈{4,8,18,36} data fission deflation + 难度体检）。
-- log `results/a3_run.log`（**这次实时流，非空且在长=在跑；停止增长+有 VERDICT=跑完**），输出 `results/a3_deflation_vs_M.csv`。
-- **判完成**：`a3_deflation_vs_M.csv` 存在 + log 尾有 `A3 VERDICT` → 跑完。
-- **跑完必做**：`python tools/gpu_slot.py release 6ce4a6b4` 清账（会吐 NEXT 取排队任务）。
-- **跑完下一步**：analyst 读 a3_deflation_vs_M.csv 判 A3（3 benchmark deflation 随 M 单调增 + 斜率同向为正 + data fission 随 M 系统失效=PASS；BraTS 若 AUROC>0.95 触顶 deflation 坍=任务过易 artifact 非 winner's curse 不存在,脚本已 WARN,换更难变体）→ verifier 核数。
-- ⚠️ 若 a3_run.log 非空但报错/崩 → 看尾部，多半又是 RTX4070 env bug（已知 inplace SiLU+cudnn.benchmark，selinf_datafission.py 有修法可抄）。
+**致命问题（主线发现 + skeptic 独立 MC 复核坐实）**：
+- 原 headline 指标 deflation = `df_width/naive_width − 1`。data_fission_ci width = 2z·σ·√(1+1/τ²)（τ=1 → 2z·σ·√2，**不含 M**），naive_ci width = 2z·σ/√M，比值里 **σ 全约掉** → deflation ≡ **√(2M)−1**，纯 M 恒等式，与真假 winner's curse 无关。
+- HAM M=18 实测 500.0% = √36−1（datafission）、324.26% = √18−1（sqrtM），两者都是 M-恒等式。Entry 3「500%≠324% 证非 artifact」错——两者只差 τ=1 引入的 √2，都是 artifact。
+- 后果：A3「deflation 随 M 单调增」对任何数据 trivially PASS，证不了东西 = skeptic 早砍的 K3 √M-陷阱原样复活。
+- **A3 sweep 当场 kill**（pid 19816，省剩 ~1h GPU），slot 46970170 released。原始 deflation_pct 列作废。
+
+**skeptic 红队（opus）追加两 🔴（比主线发现更深）**：
+- 🔴 旧 coverage_sim 的「naive 0.003 vs datafission 0.947」是**张冠李戴**：naive 区间盖的是 sweep 均值 target，却拿去覆盖被选 config 真值 = 两个参数错配造的人为必败。换公平 naive（被选 config 单点 CI）覆盖 0.93-0.95 不破裂 → **Entry 3 的 A2 有效性证据作废**。
+- 🔴 旧合成 target=mu_{i*} 且 mu 间距太开 → 选的是真最好者，winner's curse 在该设定下不存在（实测偏差 +0.0001）。
+- 🔴 替代「移位 best−g_star」幅度 = σ·E[max] 确定性函数，零真偏差下照样非零，同病根。
+
+**两必补（coder + researcher 并行）全 PASS**：
+- ✅ **必补 1 — 修正合成实验 GO**（`scripts/selinf_coverage_sim_v2.py` → `results/coverage_sim_v2.csv`，N_rep=2000，主线 Bash 核数）：三区间对齐同一 target=mu_{i*} + naive 改单点 CI（中心 acc_{i*}、宽 2z·σ）+ 扫 σ_mu∈{0,0.5,1,2,5}×σ。winner's curse 真区制（σ_mu=0/0.5）下 **naive 覆盖跌到 0.715（M=36）远破 0.90 + 系统正偏差 +0.027~+0.030**，datafission 覆盖 0.944~0.949（修回名义 95%）、去偏 ≈0。弱区制（σ_mu=5）naive 回 0.93-0.95、偏差降到 +0.007 → **gap 来自真 winner's curse 非恒等式**。skeptic 三 🔴 全解。naive width 现固定 0.0784 不含 M、df 0.1109、宽度比恒 √2 → 坐实**宽度比是 artifact，真信号在覆盖率破裂 + 点偏差**。
+- ✅ **必补 2 — K3 不触发（researcher 调研，置信 85%）**：医学 benchmark 确实按 sweep/seed max 报告——Koopmans 2025（arXiv:2505.04720，MICCAI 2023 全量 >80% 报最优无方差、仅 10-13% 做统计检验）+ Gustafsson 2024（CompBioMed，nnU-Net 50-seed，best seed 在 hold-out 显著优于 0-76% 其他 seed = 医学影像 winner's curse 实测）+ Sculley 2018 winner's curse 先例 + Renard 2020（25% 论文完全不报方差）。caveat：未找到「sweep 后取 max 报告」的精确比率统计，多为「不报 std + 不做检验」侧证。
+
+**新 headline 方向（待用户拍 ACCEPTANCE/STORY 重写）**：
+- 弃「deflation% 通胀倍数」（√(2M)−1 artifact），改 = **① 条件覆盖率破裂**（naive 单点 CI 在 winner's curse 区制覆盖 <90% / datafission 修回 ~95%）+ **② 去偏移位**（acc_{i*} 系统正偏差 vs datafission g_star 去偏≈0），均数据驱动、随 winner's curse 强度（σ_mu）正确缩放。
+- A2/A3/K3 待据此重定（skeptic 建议：A2=合成下 naive 覆盖<90% 且 df≥93%；A3=真 benchmark 上去偏移位 + naive 覆盖随 M/σ_mu 联动，弃宽度比）。
+
+**带债 / 下一步**：
+- 🛑 拍板点：ACCEPTANCE A2/A3/K3 + STORY headline 重写（改方向，等用户放行）。
+- 放行后：(a) 改 `selinf_a3_benchmarks.py` 在真 benchmark（HAM/ISIC/BraTS）上算去偏移位 + 自助覆盖，弃 deflation 列；(b) writer 重写 STORY/ACCEPTANCE；(c) 引用入库：Koopmans2025/Gustafsson2024/Sculley2018/Renard2020。
+- 引用全文件：`scripts/selinf_coverage_sim_v2.py`、`results/coverage_sim_v2.csv`、`scripts/selinf_a3_benchmarks.py` L182-227（恒等式来源）、`results/ham_datafission.csv` _STAT_ 三行。
+
+---
 
 ---
 

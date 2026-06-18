@@ -132,7 +132,8 @@ class BraTSSliceDataset(Dataset):
                 continue
 
             # 快速检查前景占比（读 mask）
-            mask_arr = np.array(__import__('PIL').Image.open(str(annot_index[key])),
+            from PIL import Image as _PILImage
+            mask_arr = np.array(_PILImage.open(str(annot_index[key])),
                                 dtype=np.float32)
             if mask_arr.ndim == 3:
                 mask_arr = mask_arr.mean(axis=2)

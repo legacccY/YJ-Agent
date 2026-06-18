@@ -4,6 +4,56 @@
 
 ---
 
+## 🔖 续跑指南（下一窗口开门必读，2026-06-18 11:41 写）
+
+**当前态**：Gate1 阶段1 **G2-A gating 在 HPC 跑**，job=**1461174** RUNNING @gpu4090n7（启于 11:41，GPU 96%/17GB 健康），slot=`a54df04b`。减 epoch 200 探针，四臂 A/B/C/DE 串行，IXI 3D。stdout 缓冲看不到 epoch，靠 ckpt+csv 监控。估 12-36 GPU·h，可能逼近 24h walltime。
+
+**下窗第一步——查 job**（paramiko，凭证见 `project/HPC_WORKFLOW.md`：dtn.hpc.xjtlu.edu.cn / jiayu2403 / pxXd3VGhbB）：
+```
+squeue -j 1461174 -h -o '%T %M'                          # 状态/已跑时长
+ls -la /gpfs/work/bio/jiayu2403/fmreg/gate1_results/ckpts/   # arm_A/B/C.pt 各臂跑完落=进度标
+tail -40 /gpfs/work/bio/jiayu2403/fmreg/logs/1461174.out     # 缓冲flush后能看四臂结果表+verdict
+cat /gpfs/work/bio/jiayu2403/fmreg/gate1_results/gate1_g2a_fourarm.csv  # 跑完才有
+srun --jobid=1461174 --overlap nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv  # 确认GPU忙
+```
+
+**三种结局分支**：
+1. **跑完（csv 出 verdict）**：拉 csv+verdict.txt+png 回 `gate1/results/` → 派 **analyst** 判（禁 Read 核数，Bash/Grep）。预登记门：`rho_C 显著>rho_DE(强baseline) AND >rho_B AND AUSE/ECE方向一致 AND dice_C≥dice_A−0.02`。
+   - **PASS** → 报用户拍**阶段2全量**(~500 GPU·h，2×2机制因子+多集校准+广度benchmark，见 `05_Gate1_matrix.md`)。
+   - **FAIL**（强 baseline 反超）→ 诚实**降 TMLR analysis 不洗**（已 ACCEPTANCE §A0′ 预登记），报用户。
+2. **walltime 杀（24h 到/超）**：ckpt 已存的臂（arm_A/B/C.pt）可 `--phase eval` 复用；缺的臂补训。或减 epoch 重跑。看 ckpt 进度定。
+3. **报错挂**：看 `logs/1461174.err`，按错误类型修（OOM→batch already 1，看显存；数据→loader）。
+4. **任一结局**：`python tools/gpu_slot.py release a54df04b` 清账。
+
+**关键文件**：脚本 `gate1/gate1_g2a_fourarm.py`（含 `--epochs/--arm/--phase` 参数）；设计真源 `05_Gate1_matrix.md`；判据 `02_ACCEPTANCE.md` §A0′ 预登记表；K0 收口史见 Entry 5。HPC 数据 `/gpfs/work/bio/jiayu2403/fmreg/data/IXI/IXI_data/`（已传，下次免传）。
+
+**别动**：跑着的 job 1461174（关窗不影响它）；BMVC 封印。
+
+---
+
+## Entry 6 — G2-A gating 脚本就绪（2026-06-18）
+
+**coder 交付**：`gate1/gate1_g2a_fourarm.py` — Gate1 阶段1 G2-A 四臂 3D 真中训脚本。
+- 四臂：A(det VoxelMorph-diff) / B(cVAE prob-VoxelMorph) / C(FM warp-driven 零teacher) / DE(N=5 deep ensemble)
+- 数据：IXI 3D .pkl 160×192×224，atlas-to-patient，38 FreeSurfer subcortical 结构 Dice
+- 指标：rho+bootstrap CI / AUSE / ECE / NCC_VX / neg_jac_pct / SDlogJ / Dice
+- Gating verdict 预登记写死（§6 真源）：rho_C 显著>rho_DE(CI不重叠 or p<0.05) AND rho_C>rho_B AND AUSE/ECE 方向一致 AND dice_C>=dice_A-0.02 → PASS；否则 FAIL→降 TMLR
+- 输出：`gate1/results/gate1_g2a_fourarm.csv` + `gate1_g2a_sparsification.png` + `gate1_g2a_verdict.txt`
+- smoke 通过（CPU <3min，2 subjects/3 epochs/64³ crop/K=2/DE N=2）
+- 残留 TODO：N_EPOCHS_DEFAULT(500占位需researcher核) / ECE精确WACV2022口径 / NCC_LM landmark centroid实现
+
+**▶ G2-A gating 上 HPC 跑（2026-06-18，用户拍「上传+跑减epoch探针」）**：
+- 前置全过：阶段0 researcher 核 baseline 超参（prob-VoxelMorph **prior_lambda=10**[官方Dalca2019,03附录25错] **image_sigma=0.02** / VoxelMorph enc[16,32,32,32] int_steps7 lr1e-4 λ0.01 / TransMorph embed96 / DiffuseMorph T2000 nsample7）+ 撞车（FlowReg repo在但cardiac确定性无后验K3差异化成立 / 新竞品Structured SIR 2603.17415 SIR非FM须related work区分）+ 校准指标领域标准=AUSE+ECE+NCC_VX/LM。
+- skeptic 复裁 05 矩阵 **GREEN 0致命**（2×2因子修🔴-1不正交 + deep ensemble强baseline修🔴-2稻草人,DE进G2-A gating第一棒）。
+- ACCEPTANCE 落 §A0′ Gate1 预登记PASS表(防HARKing)+L0四指标口径(writer)。
+- IXI 下载解压(403/58/115 atlas-to-patient)登 datasets.json,真IXI smoke 验通(rho=0是良性小n守门line418非bug)。
+- 加 `--epochs` 参数(<15行)。**上传 IXI 1.5GB+脚本→HPC fmreg/{code,data/IXI,gate1_results}→sbatch job=1461174 RUNNING@gpu4090n7**(减epoch200探针,A/B/C/DE四臂串行,walltime24h)。
+- 估12-36GPU·h可能逼近walltime。监控=ckpt(arm_A/B/C.pt各臂跑完落)+最终csv `gate1_results/gate1_g2a_fourarm.csv`。
+- **预登记gating门**：rho_C显著>rho_DE(强baseline) AND >rho_B AND AUSE/ECE方向一致 AND dice_C≥A-0.02 → PASS拍阶段2全量;FAIL(强baseline反超)→降TMLR不洗。
+- 下一步:监控job→analyst判verdict→PASS则/design全量,FAIL则诚实降TMLR。slot a54df04b 跑完release。
+
+---
+
 ## Entry 5 — K0 立项闸两轮 HPC 实证 → YELLOW 固化 → headline 收窄（2026-06-18）
 
 用户拍「大集群」→ K0 killshot 全程上 XJTLU HPC（gpu4090，env yjcu124py310，BraTS2021 4211 PNG 已传 `/gpfs/work/bio/jiayu2403/fmreg/`）。

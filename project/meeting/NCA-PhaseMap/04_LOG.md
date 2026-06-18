@@ -4,6 +4,20 @@
 
 ---
 
+## Entry 4 — Gate1 开跑（2026-06-18，用户拍板 no-clip 主条件+开跑）
+
+**拍板落实**：用户拍 ① 🔴-6 no-clip 改主条件（已在 STORY/ACCEPTANCE 写入，脚本 `run_one_cell` 默认 `clip_norm=None`=no-clip 主条件，B1 跑 {None,1.0} 两档对照、B3 仅 no-clip）② 数值订正（STORY line 12/16-17 区间表述，A1 过渡宽 ≤0.10）③ 开跑。
+
+**发现并修 B0 崩溃 bug**：上轮 B0 job 1461115（11:35）崩于 `data_brats.py:135` `AttributeError: module 'PIL' has no attribute 'Image'`（`__import__('PIL').Image` 不自动加载子模块）。修为 `from PIL import Image as _PILImage`。本地烟测通过：BraTSSliceDataset 建成 1489 切片（1948 flair − 459 低前景<2%，no_mask=0），img/lbl (1,64,64)，fg=3.1%。重传 HPC（单文件，BraTS 1948 对数据已在不重传）。
+
+**幽灵槽清理**：旧 nca-phasemap 槽 529bca01（B0 崩溃后没 release）→ `gpu_slot.py release` → 重申请 `GO 6f38bd06`（hpc 占 1/4 剩 2）。
+
+**B0 已提交**：job=1462504 RUNNING gpu4090n4（sb_B0，walltime 20min）。产 BraTS+Hippo dice_bg/σ_bg → collapse 阈 `max(0.01, dice_bg+3σ)` 冻 config。
+
+**下一步链（B0 done 后）**：注入 DICE_BG_BRATS/SIGMA_BG_BRATS → 提 B1 粗扫（9ur×{None,1.0}=18run）→ 读临界区 → B2 加密（±0.10 步0.025）→ B3 seed（5ur×5seed no-clip）+ 并行 G 梯度时序 + M1B4 探针。全完派 analyst 解读 → 写去留报告（必要性/天花板/风险）。
+
+---
+
 ## Entry 3 — Gate1 实验脚本交付（2026-06-18，coder）
 
 **脚本目录**：`project/meeting/NCA-PhaseMap/06_experiments/`
