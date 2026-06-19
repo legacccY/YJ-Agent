@@ -9,18 +9,14 @@
 %   2000-sample 95% CIs and McNemar p where stated.
 % \input from main_accv.tex / main_iclr9.tex (path relative to that file).
 % =============================================================================
-\begin{table}[!tbp]
+\begin{table}[!ht]
 \centering
 \caption{\textbf{Conditioning, fidelity, and speed ablations.}
 Quality-conditional FiLM is a diagnostic, not a perceptual, mechanism: removing it leaves
-fidelity essentially unchanged ($\le0.4$\,dB PSNR) yet degrades diagnostic preservation on
-every axis. A heavier cross-attention module ($+1.8$M parameters) is statistically
-indistinguishable from FiLM (paired-bootstrap CIs all include zero, McNemar $p{=}0.679$),
-so we keep FiLM on parsimony grounds. The PSNR\,$=32.74$\,dB clears the $30$\,dB
-non-vacuity gate of Lemma~\ref{lem:dp}. Lower is better for $\Delta$AUC magnitude towards
-zero and KL; higher is better for agreement, PSNR, SSIM. Best diagnostic-preservation
-value in bold. Single-seed; the FiLM-vs-cross-attention comparison is on matched
-paired-bootstrap resamples (CIs in text).}
+fidelity essentially unchanged yet degrades diagnostic preservation on every axis. A heavier
+cross-attention module is statistically indistinguishable from FiLM, so we keep FiLM on
+parsimony grounds. PSNR $32.74$\,dB clears the $30$\,dB non-vacuity gate of
+Lemma~\ref{lem:dp}. Best diagnostic-preservation value in bold.}
 \label{tab:ablations}
 \vspace{4pt}
 \footnotesize
@@ -28,10 +24,10 @@ paired-bootstrap resamples (CIs in text).}
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{lccccc}
 \toprule
-Configuration & $\Delta$AUC & Agreement\,$\uparrow$ & Diag.\ KL\,$\downarrow$ & PSNR (dB)\,$\uparrow$ & Params \\
+Configuration & $\Delta$AUC\,$\to0$ & Agreement\,$\uparrow$ & Diag.\ KL\,$\downarrow$ & PSNR (dB)\,$\uparrow$ & Params \\
 \midrule
-With FiLM (ours)        & $\mathbf{-0.033}$ & $\mathbf{0.90}$ & $\mathbf{0.24}$ & $32.74$ & --- \\
-Without FiLM            & $-0.042$          & $0.87$          & $0.35$          & $33.06$ & --- \\
+\rowcolor{green!12}With FiLM (ours) & \cellcolor{green!18}$\mathbf{-0.033}$ & \cellcolor{green!18}$\mathbf{0.90}$ & \cellcolor{green!18}$\mathbf{0.24}$ & $32.74$ & --- \\
+Without FiLM            & $-0.042$          & $0.87$          & $0.35$          & $\mathbf{33.06}$ & --- \\
 Cross-attention ($+1.8$M) & \multicolumn{3}{c}{indistinguishable (CIs incl.\ 0, McNemar $p{=}0.679$)} & --- & $+1.8$M \\
 \bottomrule
 \end{tabular}

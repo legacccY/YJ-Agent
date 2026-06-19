@@ -15,17 +15,17 @@
 \paragraph{Datasets and metrics.}
 We evaluate on dermoscopic skin-lesion imagery from the public ISIC-2020
 collection under a fixed train/validation/test split. Paired diagnostic
-evaluations use the held-out paired subset ($n=3627$, with $117$
-melanoma-positive cases) and a frozen EfficientNet-B3 classifier (B3), held fixed
-so that any change in diagnostic AUC is attributable to the input rather than to
-retraining. We report PSNR, SSIM, the frozen-B3 AUC and induced $\Delta\mathrm{AUC}$,
-the enhanced-vs-reference agreement rate, and the DP-Loss feature-level KL; every
+evaluations use the held-out paired subset of $n=3627$ images with $117$
+melanoma-positive cases, together with a frozen EfficientNet-B3 classifier that is
+held fixed so that any change in diagnostic AUC is attributable to the input and not
+to retraining. We report PSNR, SSIM, the frozen-B3 AUC and induced $\Delta\mathrm{AUC}$,
+the enhanced-vs-reference agreement rate, and the DP-Loss feature-level KL. Every
 such figure carries a bootstrap $2000$-sample $95\%$ confidence interval with a
 McNemar test on paired comparisons. Quality is made a known variable through
-controlled degradations along five physically parameterised dimensions (blur,
-brightness, completeness, colour shift, contrast) at a \emph{moderate} tier. The
+controlled degradations along five physically parameterised dimensions at a
+\emph{moderate} tier: blur, brightness, completeness, colour shift, and contrast. The
 split details, the severity grid, and the full metric and degradation protocol are
-deferred to Appendix~\ref{app:a4}; a companion calibration study is cited
+deferred to Appendix~\ref{app:a4}. A companion calibration study is cited
 \citep{ANON-BMVC} but not reused.
 
 \paragraph{Enhancement baselines.}
@@ -35,9 +35,9 @@ NAFNet~\citep{chen2022simple}, MIRNet-v2~\citep{zamir2022mirnetv2},
 SwinIR~\citep{liang2021swinir}, Uformer-B~\citep{wang2022uformer}, and
 Real-ESRGAN~\citep{wang2021realesrgan}, each run zero-shot from official weights
 under the identical protocol and frozen B3, and additionally fine-tuned on the same
-degraded split under a matched protocol (Appendix~\ref{app:a4-ft}).\todo{R1 ft 协议}
-We deliberately exclude diffusion and other generative restorers: on dermoscopy they
-can hallucinate diagnostically salient structure (invented pigment networks or
-vessels), a medical-safety hazard we analyse in \S\ref{sec:discussion} rather than
-admit as a baseline.
+degraded split under a matched protocol detailed in Appendix~\ref{app:a4-ft}.\todo{R1 ft 协议}
+We deliberately exclude diffusion and other generative restorers. On dermoscopy they
+can hallucinate diagnostically salient structure such as invented pigment networks or
+vessels. This is a medical-safety hazard that we analyse in \S\ref{sec:discussion} and
+do not admit as a baseline.
 

@@ -1,14 +1,14 @@
 \section{Conclusion}\label{sec:conclusion}
 We presented a closed-loop quality-triage system for skin-lesion diagnosis on degraded
-consumer imagery, built on two contributions: a feature-level diagnosis-preserving
-enhancement objective (DP-Loss) whose information loss is bounded by a mutual-information
-lower bound (Lemma~\ref{lem:dp}) and confirmed empirically, and a query-for-retake channel
-that --- to our knowledge, the first to request re-acquisition rather than merely abstain
-or defer --- closes the acquisition loop under a local, per-band conditional risk guarantee
-(Theorem~\ref{thm:agent-compact}). We also chart its limits: enhancement turns
-net-negative on extreme contrast loss and on malignant lesions under severe degradation,
-and global triage does not yet beat direct diagnosis --- honest negatives we read as
-motivation for learned routing thresholds. Mapping where degradation-aware enhancement
-helps, and where it must yield to re-acquisition, is the more useful contribution for
-deploying diagnosis on the quality-varying inputs that curated benchmarks exclude by
-design.
+consumer imagery, built on two contributions. The first is a feature-level
+diagnosis-preserving enhancement objective (DP-Loss) whose information loss is bounded by a
+mutual-information lower bound (Lemma~\ref{lem:dp}) and confirmed empirically. The second is
+a query-for-retake channel that, to our knowledge, is the first to request re-acquisition
+rather than merely abstain or defer, and it closes the acquisition loop under a local,
+per-band conditional risk guarantee (Theorem~\ref{thm:agent-compact}). We also chart its
+limits. Enhancement turns net-negative on extreme contrast loss and on malignant lesions
+under severe degradation, and global triage does not yet beat direct diagnosis. We read
+these honest negatives as motivation for learned routing thresholds. Mapping where
+degradation-aware enhancement helps, and where it must yield to re-acquisition, is the more
+useful contribution for deploying diagnosis on the quality-varying inputs that curated
+benchmarks exclude by design.

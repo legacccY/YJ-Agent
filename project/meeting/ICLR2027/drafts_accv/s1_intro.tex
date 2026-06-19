@@ -2,21 +2,18 @@
 
 \paragraph{Problem.}
 Diagnostic models for skin lesions are typically trained on curated dermoscopic images, yet real
-consumer-device photographs span a wide quality range --- motion blur, poor illumination, incomplete
-framing, colour casts, and low contrast --- on which a model accurate on clean data can be both wrong
-and confident. The deployment question is therefore not only ``what is the diagnosis?'' but ``is this
-image good enough to diagnose, and if not, what should the system do about it?''
+consumer-device photographs span a wide quality range on which a model accurate on clean data can be
+both wrong and confident. The deployment question is therefore not only ``what is the diagnosis?'' but
+``is this image good enough to diagnose, and if not, what should the system do about it?''
 
 \paragraph{Why existing tools fall short.}
-Three families each address part of the problem but none closes the loop:
-(i) \emph{post-hoc calibration} (temperature scaling \citep{guo2017calibration}, Platt/isotonic) and
-(ii) \emph{uncertainty estimation} (MC dropout \citep{gal2016dropout}, deep ensembles
-\citep{lakshminarayanan2017simple}) both yield quality-oblivious confidence, unable to attribute it to
-degradation rather than genuine ambiguity; (iii) \emph{generic enhancement} (Real-ESRGAN
-\citep{wang2021realesrgan}, Restormer \citep{zamir2022restormer}) optimises perception with no
-guarantee that diagnostic content survives, and generative restoration risks inventing clinically
-unacceptable structure (pigment networks, vessels). None \emph{preserves the diagnostic signal under a
-guarantee}; gradient-level repair~\citep{gradprom2025} treats the symptom during training, whereas we
+Three families each address part of the problem but none closes the loop.
+\emph{Post-hoc calibration}~\citep{guo2017calibration} and \emph{uncertainty
+estimation}~\citep{gal2016dropout,lakshminarayanan2017simple} both yield quality-oblivious confidence
+and cannot attribute it to degradation. \emph{Generic enhancement}~\citep{wang2021realesrgan,zamir2022restormer}
+optimises perception with no guarantee that diagnostic content survives, and generative restoration
+risks inventing clinically unacceptable structure. None \emph{preserves the diagnostic signal under a
+guarantee}. Gradient-level repair~\citep{gradprom2025} treats the symptom during training, whereas we
 bound the information loss directly and decide, per input, when enhancement should be withheld in
 favour of re-acquisition.
 
@@ -24,37 +21,35 @@ favour of re-acquisition.
 We argue that quality must be a first-class signal threaded through the whole pipeline. Our system
 forms a closed loop: \visiscore assesses quality; the agent decides whether to diagnose directly,
 diagnose with caution, enhance-then-diagnose with our diagnosis-preserving enhancer \visienhance, or
-query for a retake; and a frozen classifier produces the final diagnosis, its posterior confidence
-being the signal the gate routes on (a standard bottleneck posterior suffices, \S\ref{sec:exp-dca}). Crucially, the driving quality scalar
-need not come from \visiscore alone: any per-input estimate --- a learned scorer, a no-reference IQA
-metric, or a known corruption severity --- keeps the framework general.
+query for a retake; and a frozen classifier produces the final diagnosis, whose posterior confidence
+is the signal the gate routes on. The driving quality scalar need not come from \visiscore alone.
+Any per-input estimate keeps the framework general, whether a learned scorer, a no-reference IQA
+metric, or a known corruption severity.
 
 \paragraph{Contributions.}
 To motivate quality-aware triage, we first chart a reliability~$\times$~recoverability decision
-surface (per-dimension~$\times$~per-severity, AUC-led, recoverability axis derived from enhancement)
-that quantifies where degradation breaks diagnosis and where enhancement recovers it; complementing
-rather than reusing prior per-dimension calibration views, it frames the three contributions below.
+surface that quantifies where degradation breaks diagnosis and where enhancement recovers it. It frames
+the three contributions below.
 \begin{itemize}
 \item \textbf{C1 --- A diagnosis-preserving enhancement objective with a mutual-information lower
-bound.} A feature-level objective (DP-Loss) constrains the enhancer \visienhance to retain the
-information a frozen diagnostic probe relies on, rather than optimising perceptual fidelity. We derive
-a Pinsker-optimal mutual-information lower bound, $I(\Zenh;Y)\geq I(\Zref;Y)-\beta\sqrt{\epsilon}$
-under a KL budget $\Ldp\leq\epsilon$ (Lemma~\ref{lem:dp}), with a directional entropy result
-(Proposition~\ref{prop:entropy}). An ablation attributes the effect to the objective itself
-($\Delta\mathrm{AUC}_{\text{enh}}$ improves by $+0.0205$, $95\%$ CI $[+0.005,+0.035]$; McNemar
-$p=2.3\times10^{-45}$), and against six restoration baselines under a matched zero-shot protocol
-\visienhance preserves diagnosis better on every one\todo{R1 核：fine-tuned baseline 公平比数字补强后升级此句口径}.
-\item \textbf{C2 --- A query-for-retake agent.} A routing policy selects among four channels ---
-direct diagnosis, cautioned diagnosis, enhance-then-diagnose, and query-for-retake --- of which
-query-for-retake is, to our knowledge, the first to request \emph{re-acquisition} rather than merely
-abstain or defer. A local, per-band conditional risk guarantee (Theorem~\ref{thm:agent-compact})
-backs its licence to enhance: the benefit is positive only inside a quality band
-$[\tauenh,\tauhigh]$, outside which the policy routes to a retake.
+bound.} A feature-level objective constrains the enhancer \visienhance to retain the information a
+frozen diagnostic probe relies on, rather than optimising perceptual fidelity. We derive a
+Pinsker-optimal mutual-information lower bound, $I(\Zenh;Y)\geq I(\Zref;Y)-\beta\sqrt{\epsilon}$ under
+a KL budget $\Ldp\leq\epsilon$ (Lemma~\ref{lem:dp}), with a directional entropy result
+(Proposition~\ref{prop:entropy}). An ablation attributes the effect to the objective itself, and under
+a matched zero-shot protocol \visienhance preserves diagnosis better than six restoration
+baselines\todo{R1 核：fine-tuned baseline 公平比数字补强后升级此句口径}.
+\item \textbf{C2 --- A query-for-retake agent.} A routing policy selects among four channels: direct
+diagnosis, cautioned diagnosis, enhance-then-diagnose, and query-for-retake. To our knowledge,
+query-for-retake is the first channel to request \emph{re-acquisition} rather than merely abstain or
+defer. A local, per-band conditional risk guarantee (Theorem~\ref{thm:agent-compact}) backs its
+licence to enhance: the benefit is positive only inside a quality band $[\tauenh,\tauhigh]$, outside
+which the policy routes to a retake.
 \item \textbf{C3 --- An honest reliability boundary.} We show, and do not hide, where enhancement
-turns net-negative: severely degraded malignant cases, where reweighting the reconstruction loss
-fails to close the salvage gap (a melanoma salvage of $5.2\%$ against a $31\%$ damage rate), and
-extreme contrast loss at the per-dimension level. These boundaries are the hardest motivation for the
-query-for-retake gate; correspondingly, under a fixed-threshold policy global triage does not yet beat
-direct diagnosis (confidence-gated sensitivity $0.818$ versus $0.788$), which we report as motivation
+turns net-negative. On severely degraded malignant cases, reweighting the reconstruction loss fails to
+close the salvage gap, yielding a melanoma salvage of $5.2\%$ against a $31\%$ damage rate, and extreme
+contrast loss is net-negative at the per-dimension level. These boundaries are the hardest motivation
+for the query-for-retake gate. Under a fixed-threshold policy, global triage does not yet beat direct
+diagnosis, with a confidence-gated sensitivity of $0.818$ against $0.788$. We report this as motivation
 for learned routing thresholds rather than a result to suppress.
 \end{itemize}

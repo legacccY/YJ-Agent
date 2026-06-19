@@ -20,13 +20,24 @@
 ### 用户拍板（2026-06-19）
 - **会场坚持 ACCV 2026，认天花板 35-55%**（用户明确目标「80% 稳录用」→ 主线诚实告知 ACCV 结构性天花板 35-55%、80% 是 oral 级共识撑不起、越线凑数=红线 → 提 WACV 2027 客观更优[CORE-A+应用稿 AC 保护护 method novelty 弱轴+45-60%]，用户三选一**选坚持 ACCV**）。→ 把录用概率推到 ACCV 天花板最高处（R1/R3 补强 + 诚实 reframe），不承诺 80%、不越线。
 
+### 同会话续：正文 BMVC 风格大改（用户主导，趁训练跑并行）
+用户连串指令把正文往 BMVC 风格收（富表驱动 + 干净陈述句 + 少公式补充）。全程数字核 csv、负结果零删：
+- **行文压缩**（3 writer 并行 §1-3/4-6/7-9）：紧致 + 证明挪附录，body §1-§9 **17p→15p**；5 定理陈述/三铁律负结果/CI/per-class/数字一字未动。
+- **脱敏 1 🔴 硬伤修**：`s3_decision_surface.tex` 字面 `VisiScore` 渲染破双盲 → `\visiscore{}`（gh-publisher 全稿审：author/institute/email/BMVC 自引占位全就位 0 漏网；余为注释层 Qwen3-4B/路径，已清 2 处）。
+- **录用二审 2 桥接**（reviewer，0 reject 级）：§7 加 melanoma `117×3 severity=351` 桥接句（核 e5_salvage csv：10881=3627×3、target==1=351=117×3）+ 3 处 zero-shot 限定词补全。
+- **BMVC 富表**（writer，数字逐项核 e10 csv）：`tab:e10` 升级富表（彩色阴影+±CI+ours `\rowcolor` 高亮+Paired ΔAUC CI 列+每列粗体最优）移进 §7.4 正文 **p12**；VisiEnhance **赢 5/6**（PSNR 32.79/SSIM 0.907/ΔAUC −0.017/consist 0.955/KL 0.10），**dflip 0.194 诚实不标赢**（粗体给 Uformer 0.054），caption 坦白 trade-off。`tab:ablations` 同富表风格 → §7.6 **p13**。
+- **括号补充全删**（3 writer，用户「总是加很多括号和补充文字全部不要」）：§1-9 删 ~30 处插入语/解释括号/em-dash 补充/namely-rather 从句 → 干净陈述句；诚实限定改写保留不删（grep 核三铁律负结果三节全在、数字未漂）。
+- **表格 float bug 修**：`tab:e10` 原 `table*` 跨栏 + 20 行超长 caption → 飘到附录 p49（用户「正文的表格呢」逮到）→ 改 `table[!ht]` + caption 砍 6 行 → 落回正文 p12/p13。
+- 末状态：**main_accv 55 页 / body §1-§9 = p1-15 / 0 断引 0 fatal**；正文=干净陈述句 + 2 富表 + 2 图（fig1 pipeline/fig4 boundary）+ 5 定理陈述。
+
 ### 待续
-1. **监控 4 running + 队列**：restormer-R1/mirnetv2/nafnet 出心跳确认 micro=2 plain baseline 不 OOM（realesrgan 含 GAN 判别器，micro=2 仍有 OOM 风险，到时盯）；任一 release → 取 NEXT 提交（swinir→uformer→realesrgan→R3）。
-2. R1/R3 全出 → analyst 解读 per-baseline ΔAUC CI + melanoma per-class → verifier 逐 csv 核 → writer 按 fill-spec 填 7 \todo。
-3. 填完 → 砍图卡正文 ≤14p → 脱敏验证 → /pre-submit-check。
+1. **训练监控（HPC 仍在跑，本窗收工但 job 不停）**：R1 nafnet(1472609)/restormer(1472943)/mirnetv2(1472970) running + 队列 swinir/uformer/realesrgan/R3(已修micro=1)。下窗开门先 `_scratch_r1_hb.py` 核心跳 + 完成的 `gpu_slot release <id>` 取 NEXT 提交（realesrgan GAN micro=2 留意 OOM）。**收工不重排 /loop**（session 结束），下窗续盯。
+2. R1/R3 全出 → analyst 解读 per-baseline ΔAUC CI + melanoma per-class → verifier 逐 csv 核 → writer 按 fill-spec 填 7 \todo（§7.5 transfer 现为 \todo 骨架，留 ~0.5p headroom）。
+3. 正文待用户拍的 3 项（暂搁）：① universality 5-backbone 表是否做富表进正文 ② §4/§5 公式是否再减 ③ §6 数据集 n/melanoma 是否收进小表。
+4. 填完 → 卡正文 ≤14p（ACCV 硬限，现 15p 差 1p，等填数后统一卡，fig4 可挪或微调）→ 脱敏最终 grep → /pre-submit-check。
 
 ### 诚实底线（不变）
-melanoma 净负、全局 triage 不超 Direct、Thm2 局部界全如实留正文带数字带 CI。补强建 C1/C2 正向贡献，reframe 只改 emphasis 不改 truth value。
+melanoma 净负、全局 triage 不超 Direct、Thm2 局部界全如实留正文带数字带 CI。补强建 C1/C2 正向贡献，reframe 只改 emphasis 不改 truth value。BMVC 富表里 dflip 输的指标诚实不标赢（如 BMVC 坦白 AUC trade-off）。会场 ACCV 认天花板 35-55%，不承诺 80%、不越线凑数。
 
 ---
 

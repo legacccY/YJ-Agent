@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const THROTTLE_MS = 6 * 60 * 1000; // 6 分钟内只拦一次，避免唠叨 + 不卡 coder 连写
+const THROTTLE_MS = 30 * 60 * 1000; // 30 分钟内只提醒一次，避免同工作段连写重复噪声
 
 let input = '';
 process.stdin.setEncoding('utf8');

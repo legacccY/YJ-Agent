@@ -11,43 +11,45 @@
 \section{Discussion and Limitations}\label{sec:discussion}
 
 \paragraph{Relation to gradient-repair and generative restoration.}
-As detailed in \cref{sec:related}, our contribution is orthogonal to GradProm: where
+As detailed in \cref{sec:related}, our contribution is orthogonal to GradProm. Where
 GradProm repairs gradients during training, we \emph{derive} a diagnosis-preserving
 information lower bound (\cref{lem:dp}) \emph{and} add a routing decision with a
-query-for-retake channel---complementary, not competing. We avoid diffusion- and GAN-based
-restoration because optimising perceptual realism can synthesise plausible-but-absent
-structure (pigment networks, vessels), a medical-safety hazard; deterministic restoration
-instead trades sharpness for an information-preservation property a generative model cannot
-guarantee, and diffusion enters only as a rejected cautionary contrast.
+query-for-retake channel, which is complementary rather than competing. We avoid diffusion-
+and GAN-based restoration because optimising perceptual realism can synthesise
+plausible-but-absent structure such as pigment networks and vessels, a medical-safety
+hazard. Deterministic restoration instead trades sharpness for an information-preservation
+property a generative model cannot guarantee, and diffusion enters only as a rejected
+cautionary contrast.
 
 \paragraph{What the method establishes, and its honest boundary.}
-The positive contribution is concrete and statistically attributable: within the
+The positive contribution is concrete and statistically attributable. Within the
 moderate-degradation window the diagnosis-preserving objective lets \visienhance retain the
-discriminative information a frozen probe relies on (DP-Loss ablation
-$\Delta\mathrm{AUC}_{\text{enh}}=+0.0205$, $95\%$ CI $[+0.005,+0.035]$; McNemar
-$p=2.3\times10^{-45}$), and it preserves diagnosis better than six restoration baselines on
-every one under a matched zero-shot protocol (the fine-tuned comparison is reported in
-\cref{sec:exp-transfer}). We are equally explicit about where the method stops: we make no
+discriminative information a frozen probe relies on, raising the DP-Loss ablation
+$\Delta\mathrm{AUC}_{\text{enh}}$ by $+0.0205$ with McNemar $p=2.3\times10^{-45}$
+(\cref{sec:exp-dploss}), and it preserves diagnosis better than six restoration baselines on
+every metric under a matched zero-shot protocol, with the fine-tuned comparison reported in
+\cref{sec:exp-transfer}. We are equally explicit about where the method stops. We make no
 claim that quality-aware triage beats direct diagnosis \emph{globally}, since at a fixed
-threshold direct diagnosis attains the best auto-handled sensitivity ($0.818$ versus
-$0.788$ for the strongest variant at a $20\%$ referral budget) with net-benefit CIs
+threshold direct diagnosis attains the best auto-handled sensitivity of $0.818$ against
+$0.788$ for the strongest variant at a $20\%$ referral budget, with net-benefit CIs
 overlapping (\cref{sec:exp-triage}). The positive claim is local, and recoverability is
-dimension- and severity-dependent (\cref{sec:exp-surface})---exactly what the
+dimension- and severity-dependent (\cref{sec:exp-surface}), exactly what the
 query-for-retake gate is built to exploit.
 
 \paragraph{Limitations and future work.}
 Several limitations are themselves the motivation for the retake gate, stated plainly.
 (1)~The theory is argued under explicit assumptions rather than watertight, and
-\cref{thm:agent-compact} is band-local, not a global ordering.
-(2)~Degradations are semi-synthetic; prospective validation on genuinely degraded clinical
-captures remains open.
+\cref{thm:agent-compact} is band-local rather than a global ordering.
+(2)~Degradations are semi-synthetic, and prospective validation on genuinely degraded
+clinical captures remains open.
 (3)~Routing depends on a per-input quality scalar whose annotation and re-fitting cost we
-do not eliminate, with claims restricted to dermatology.
+do not eliminate, and our claims are restricted to dermatology.
 (4)~We report no clinical deployment, and diagnosis-preservation results are tied to a
 single frozen probe.
 (5)~Enhancement is uneven across axes, backfiring on contrast and underperforming on
-colour-shift (\cref{sec:exp-ablations}).
-(6)~The malignant-salvage gap is unresolved: enhancement salvages only $5.2\%$ of
-misclassified melanomas (a net loss of malignant cases), unchanged by a mask-weighted
+colour-shift, as shown in \cref{sec:exp-ablations}.
+(6)~The malignant-salvage gap is unresolved. Enhancement salvages only $5.2\%$ of
+misclassified melanomas, a net loss of malignant cases, unchanged by a mask-weighted
 retrain, and closing it is the central open question. These negative results are genuine
-evidence that the retake gate is a necessary safety mechanism, not a project shortcoming.
+evidence that the retake gate is a necessary safety mechanism rather than a project
+shortcoming.

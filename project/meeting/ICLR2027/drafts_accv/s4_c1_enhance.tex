@@ -9,31 +9,31 @@
 
 \section{Diagnosis-Preserving Enhancement}\label{sec:enhance}
 
-Of the five quality dimensions, four (sharpness, brightness, colour temperature, and contrast) admit
-deterministic restoration, whereas completeness ($q_3$, a truncated field of view) is only
-\emph{partially recoverable}: enhancement cannot synthesise tissue that was never captured, so the agent
-treats low completeness as a query-for-retake signal rather than an enhancement target. This split ---
-which dimensions are recoverable, and within what severity window --- is the boundary this section
-formalises and \cref{sec:exp} measures.
+Of the five quality dimensions, four admit deterministic restoration: sharpness, brightness, colour
+temperature, and contrast. Completeness $q_3$ measures a truncated field of view and is only
+\emph{partially recoverable}. Enhancement cannot synthesise tissue that was never captured, so the agent
+treats low completeness as a query-for-retake signal and not as an enhancement target. This section
+formalises the boundary of which dimensions are recoverable and within what severity window, and
+\cref{sec:exp} measures it.
 
 \subsection{Architecture: NAFNet with quality-conditional FiLM}\label{sec:arch}
 \visienhance{} is a NAFNet backbone \citep{chen2022simple} with FiLM modulation \citep{perez2018film}
 conditioned on the per-input quality vector, so restoration strength adapts to \emph{how} an image is
-degraded rather than applying a fixed correction. The restoration map $\Tw(x,q)$ is
-\emph{deterministic}: we avoid generative restoration (diffusion or adversarial backbones), because such
-models can hallucinate diagnostic structure --- inventing a pigment network or vascular pattern that was
-never present --- which is unacceptable clinically (\cref{sec:discussion} analyses why diffusion fails
-here). FiLM is \emph{not} a fidelity mechanism: its empirical role (E8, \cref{sec:exp}) is
-quality-conditional \emph{diagnostic} fidelity rather than perceptual sharpening.
+degraded instead of applying a fixed correction. The restoration map $\Tw(x,q)$ is
+\emph{deterministic}. We avoid generative restoration backbones such as diffusion and adversarial
+models, because such models can hallucinate diagnostic structure and invent a pigment network or
+vascular pattern that was never present, which is clinically unacceptable. \cref{sec:discussion}
+analyses why diffusion fails here. FiLM is \emph{not} a fidelity mechanism. Its empirical role under
+ablation E8 is quality-conditional \emph{diagnostic} fidelity and not perceptual sharpening.
 
 \subsection{DP-Loss: a feature-level diagnosis-preserving objective}\label{sec:dploss}
-DP-Loss is the core contribution of this work: a feature-level training objective
-that makes diagnostic fidelity --- rather than pixel or perceptual fidelity --- the
-explicitly preserved quantity, and whose information loss we bound (Lemma~\ref{lem:dp},
-Section~\ref{sec:prop3lemma3}). Where prior restoration optimises perception with no
-guarantee that diagnostic content survives, this objective constrains the enhancer to
-leave the diagnostic posterior intact; its ablation (E7, \cref{sec:exp}) attributes the
-diagnosis-preserving effect to the design rather than to restoration capacity. Training minimises
+DP-Loss is the core contribution of this work. It is a feature-level training objective
+that makes diagnostic fidelity the explicitly preserved quantity instead of pixel or perceptual
+fidelity, and Lemma~\ref{lem:dp} in Section~\ref{sec:prop3lemma3} bounds its information loss.
+Where prior restoration optimises perception with no guarantee that diagnostic content survives,
+this objective constrains the enhancer to leave the diagnostic posterior intact. Its ablation E7
+attributes the diagnosis-preserving effect to the design and not to restoration capacity. Training
+minimises
 \begin{equation}
 \mathcal{L}=\mathcal{L}_1
   +\lambda_{\mathrm{LPIPS}}\,\mathcal{L}_{\mathrm{LPIPS}}
@@ -47,12 +47,12 @@ diagnosis-preserving term is a \emph{feature-level} KL,
 \Ldp \;=\; \KL\!\big(p_\phi^{\mathrm{enh}} \,\big\|\, p_\phi^{\mathrm{ref}}\big),
 \label{eq:dploss}
 \end{equation}
-computed in the latent space of a frozen diagnostic feature extractor (the $1536\times7\times7$
-penultimate features of an independent EfficientNet-B3 probe). The point is that $\Ldp$ aligns the
-enhanced image with its clean reference \emph{in the space that drives the diagnosis}, not in pixel
-space: a restorer can be pixel-faithful yet still shift the diagnostic posterior, and \eqref{eq:dploss}
-penalises exactly that movement. The quality hinge $\mathcal{L}_{\mathrm{hinge}}$ encourages
-$\qbar(\Tw(x,q))>\qbar(x)$ within the salvage band, tying restoration to a measured quality gain.
+computed in the latent space of a frozen diagnostic feature extractor, the $1536\times7\times7$
+penultimate features of an independent EfficientNet-B3 probe. $\Ldp$ aligns the enhanced image with
+its clean reference in the space that drives the diagnosis and not in pixel space. A restorer can be
+pixel-faithful yet still shift the diagnostic posterior, and \eqref{eq:dploss} penalises exactly that
+movement. The quality hinge $\mathcal{L}_{\mathrm{hinge}}$ encourages $\qbar(\Tw(x,q))>\qbar(x)$ within
+the salvage band, tying restoration to a measured quality gain.
 
 \subsection{Mutual-information preservation}\label{sec:prop3lemma3}
 % Lemma stated in body; directional entropy Proposition (prop:entropy) deferred to Appendix A2. R2: derive/sketch, not "prove".
@@ -60,17 +60,18 @@ The theoretical leg of DP-Loss connects the objective to diagnosis through a fea
 mutual-information lower bound, stated here and derived in full in Appendix~\ref{app:a2}.
 \input{appendix/A2_prop3_lemma3_compact}
 Lemma~\ref{lem:dp} caps how much diagnostic information enhancement can destroy once the
-feature-level KL is small; the information-preservation role is carried by this bound, validated
-empirically by experiment~E7 (\cref{sec:exp}), together with the Stage-1 PSNR$\,\geq30$\,dB
-non-vacuity condition. A companion directional entropy result
-(Proposition~\ref{prop:entropy}, Appendix~\ref{app:a2}) characterises only the sign of one variance
-term and is \emph{not} a net entropy reduction --- a quality-conditioned probe finds that predictive
-entropy does not fall after enhancement --- so we state these as derivations under the listed
-assumptions rather than as watertight proofs (\cref{app:a2}).
+feature-level KL is small. This bound carries the information-preservation role, and experiment E7
+validates it empirically together with the Stage-1 PSNR$\,\geq30$\,dB non-vacuity condition. A
+companion directional entropy result, Proposition~\ref{prop:entropy} in Appendix~\ref{app:a2},
+characterises only the sign of one variance term and is \emph{not} a net entropy reduction. A
+quality-conditioned probe finds that predictive entropy does not fall after enhancement. We therefore
+state these results as derivations under the listed assumptions and not as watertight proofs; the full
+treatment is in \cref{app:a2}.
 
 \subsection{Three-stage training protocol}\label{sec:training}
-We train $\visienhance$ in three stages, each isolating one term in \eqref{eq:total-loss}: \textbf{(1)}
-pixel restoration ($\mathcal{L}_1$ + LPIPS) to the PSNR gate guarding the non-vacuity condition of
-\eqref{eq:lemma3}; \textbf{(2)} DP-Loss fine-tuning tightening $\Ldp$ toward the budget $\epsilon$
-(the stage ablated as E7); and \textbf{(3)} a quality-hinge stage calibrating the $\qbar$ gain inside
-the salvage band $[\tauenh,\tauhigh]$, crediting enhancement only where it measurably raises quality.
+We train $\visienhance$ in three stages, each isolating one term in \eqref{eq:total-loss}. Stage
+\textbf{(1)} is pixel restoration with $\mathcal{L}_1$ and LPIPS up to the PSNR gate that guards the
+non-vacuity condition of \eqref{eq:lemma3}. Stage \textbf{(2)} is DP-Loss fine-tuning that tightens
+$\Ldp$ toward the budget $\epsilon$, and this stage is ablated as E7. Stage \textbf{(3)} is a
+quality-hinge stage that calibrates the $\qbar$ gain inside the salvage band $[\tauenh,\tauhigh]$ and
+credits enhancement only where it measurably raises quality.

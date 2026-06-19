@@ -88,12 +88,14 @@
       "n": null,
       "local": "project/data/external/chexpert/",
       "hpc": "TODO",
-      "source": "https://stanfordmlgroup.github.io/competitions/chexpert/",
+      "source": "kaggle ashery/chexpert (CheXpert-v1.0-small 11.5GB, CC0-1.0) | 官方 stanfordaimi.azurewebsites.net",
       "used_by": [
-        "iclr"
+        "iclr",
+        "ideation-run007"
       ],
       "purpose": "cross-modality 跨域 (chest X-ray); 脚本 scripts/eval_chexray_crossdomain.py 就位待跑",
-      "status": "todo"
+      "status": "partial_download",
+      "note": "train.csv已落; 全量chexpert.zip下载中断在~762MB/11.5GB(收工2026-06-19);续:kaggle datasets download ashery/chexpert -p project/data/external/chexpert/ --unzip"
     },
     "aptos2019": {
       "name": "APTOS 2019 Blindness (fundus)",
