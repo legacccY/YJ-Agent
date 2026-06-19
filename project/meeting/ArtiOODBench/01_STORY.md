@@ -1,15 +1,18 @@
 # ArtiOODBench — STORY
 
-> **⚠️ Headline reframe（2026-06-19，用户拍板 option ① + skeptic 0 致命放行）**：原承重命门 L3「去污染后方法排名翻转（actionable so-what）」据实跑出 FAIL（4 对中 3 对可评估，Spearman(orig,C) = 1.0 / 0.857 / 0.286，无一对达预登记 CI 上界<0.7 或 top1 掉出 top3；7 方法 Spearman 经剖析为结构性低功效判据）。**重心从「排名翻转」转移到同批预登记实验中稳健成立的 L1（artifact-only 高 AUROC）+ source-leakage（ViM 在跨机构 normal-vs-normal 对上 AUROC=1.0）**。L3 FAIL 不删，连同低功效剖析降级为 negative result / limitation 并当 contribution（见 § Lever、§ L3 退场与新承重、`02_ACCEPTANCE.md` A-4 修订记录、`04_LOG.md` Entry 7）。**本节为重心转移后的修订版；原 headline 留痕于下方 § 原 headline（reframe 前，留痕勿删）。**
+> **⚠️ Headline reframe v6（2026-06-19，用户拍板「held-out 重算 + 把 in-sample 灌水升为新 benchmark-critique 主贡献」；详 04_LOG Entry 10/11，verifier 零 drift）**：v4 的 source-leakage 承重数字「ViM 在跨机构 normal-vs-normal 对上 AUROC=1.0」**被证为 in-sample 评估伪迹**（l3 用 `feats_test=concat(feats_id,feats_ood)` 致投影类残差打分把 in-sample ID 当满分信号、与 source 无关地完美分离）。held-out 协议重算真值：ViM 0.406–0.997（mean 0.777，>0.95 仅 2/7）→ **A-5 v5 strict 门 FAIL**，触预登记 FAIL 三档退路 #1。**承重据实迁移到三贡献框架**：①现象（L1，artifact-only 白盒定位，A-1/A-2 PASS）②机制（in-sample 评估灌水陷阱，A-7 新机制贡献）③处方（held-out 协议 + sanity baseline + artifact 上界，A-6）。source 信号仍真实可检但**中等、由 source 距离驱动、含诚实负例**（NIH/RSNA held-out ViM 0.406≈chance）。**本节为 v6 修订版；v4 reframe 块与原 headline 全留痕于下，不删（HARKing 免疫）。**
 
-## Headline（reframe 后，承重版）
+> **⚠️ v4 Headline reframe（2026-06-19，用户拍板 option ① + skeptic 0 致命放行；留痕，已被 v6 校正）**：原承重命门 L3「去污染后方法排名翻转（actionable so-what）」据实跑出 FAIL（4 对中 3 对可评估，Spearman(orig,C) = 1.0 / 0.857 / 0.286，无一对达预登记 CI 上界<0.7 或 top1 掉出 top3；7 方法 Spearman 经剖析为结构性低功效判据）。v4 重心从「排名翻转」转移到 L1（artifact-only 高 AUROC）+ source-leakage（ViM 在跨机构 normal-vs-normal 对上 AUROC=1.0）。L3 FAIL 不删，连同低功效剖析降级为 negative result / limitation 并当 contribution。**⚠️ v4 的 ViM=1.0 source-leakage 承重数字已被 v6 证为 in-sample 伪迹、held-out 重算后 strict FAIL，见上 v6 块 + `02_ACCEPTANCE.md` A-5 v6 修订记录。**
 
-**医学影像 OOD detection 基准上的方法表现主要由采集 artifact（扫描仪、机构、源域特征泄漏）驱动，而非真病理异常的检测能力。** 两路独立预登记证据承重：
+## Headline（reframe v6 后，承重版）
 
-1. **白盒 artifact 可定位（L1）**：不读任何病理内容的 artifact-only 43 维手工特征，即可在跨机构对上高 AUROC 区分 ID/OOD（跨机构对 AUROC 范围 0.82–0.9997，A-1/A-2 PASS，verifier 已核）。benchmark 的「OOD 信号」大半是 scanner/机构采集指纹。
-2. **深层 source leakage（source-leakage 承重）**：主流 OOD 方法 ViM 在**跨机构 normal-vs-normal 对**（两端都是正常图、无任何病理差异，唯一系统差异 = 采集来源）上 AUROC=1.0（4/4 对在 raw 与 cleanC 去污染子集上恒为 1.0；vim_score 内点上界 ~2–7 vs 外点下界 ~3 万–15 万，零重叠）。其「OOD 检测」在物理上等价于「数据集来源检测」——ViM 的 virtual-logit residual 捕获的是源域表示，不是异常。
+**医学影像 OOD detection 基准受采集 artifact（扫描仪、机构、源域指纹）污染——不读任何病理内容的 artifact-only 手工特征即可高 AUROC 预测 source 身份（跨 3 模态 AUROC 0.64–1.00）；且投影类 OOD 检测器（ViM/Residual）因在 in-sample principal subspace 上拟合产生系统性评估虚高（in-sample 近完美 1.00 → held-out 0.78），held-out 校正后真 source 信号中等且由 source 距离驱动。** 三路独立证据承重（现象 / 机制 / 处方）：
 
-当 ID 与 OOD 来自不同机构/设备时（绝大多数医学 OOD benchmark 如此），「更强的 OOD 检测器」可能只是「更会读源域指纹的检测器」。我们给出可操作的评测处方（见 § Lever L3'），而非依赖低功效的 7 点 Spearman 排名翻转。
+1. **白盒 artifact 可定位（现象，L1）**：不读任何病理内容的 artifact-only 43 维手工特征即可高 AUROC 区分 source 身份（跨机构命门对 AUROC 0.82–0.9997、含两美国源最弱对 0.64，覆盖 CXR / 脑 MRI / dermoscopy 三模态，A-1/A-2 PASS，verifier 已核）。benchmark 的「OOD 信号」大半是 scanner/机构采集指纹。
+2. **in-sample 评估灌水陷阱（机制，A-7 新贡献）**：投影类 OOD 检测器（ViM/Residual，基于 principal-subspace 残差打分）在常见 in-sample 评估协议下报近完美 AUROC（1.00），但这是 null-space 残差伪迹（N_id<D 致 in-sample ID 残差≈0、完美分离任何 held-out，**与 source 无关**），非真 source 信号。held-out 校正后 ViM 真值 mean 0.777（仅投影类受影响：ViM/Residual 各 −0.223，其余 11 法 |Δ|<0.012）。这是可推广任意 projection-based OOD 法的评测协议陷阱。
+3. **诚实量级的 source leakage（held-out 真值）**：held-out 协议下 source 信号真实可检（ViM 7 对 0.406–0.997 全 >> 同源 held-out chance ≈0.5 的中位）但**中等、由 source 距离单因子驱动**（artifact 可分性 vs held-out ViM 的 Spearman ρ=1.0 / Pearson r=0.9995, p=0.0005, n=4）。含同模态内**诚实负例**：NIH/RSNA 两美国源 artifact=0.64 → held-out ViM=0.406≈chance（证非「普遍/完美 source leakage」，是 source 距离驱动）。
+
+当 ID 与 OOD 来自不同机构/设备时（绝大多数医学 OOD benchmark 如此），且当评估协议为 in-sample 时，「更强的 OOD 检测器」可能只是「读 in-sample 几何伪迹 + 源域指纹的检测器」。我们给出可操作的评测处方（held-out 协议 + cross-source normal-vs-normal sanity baseline + artifact-only 污染上界，见 § Lever L3'），而非依赖低功效的 7 点 Spearman 排名翻转或被 in-sample 灌水的近完美 AUROC。
 
 ## 原 headline（reframe 前，留痕勿删）
 
@@ -21,9 +24,9 @@
 
 这是 **spurious correlation / shortcut learning 在 OOD detection 评测层的实例**：评测协议本身被一个与任务无关但与域标签强相关的混杂变量（采集 artifact）污染。CV 社区对「benchmark 在测捷径不测能力」高度敏感（ImageNet-C、backgrounds challenge、shortcut learning 系列）。医学影像是这个失效的**最佳放大镜**——不同机构的 scanner/采集协议差异巨大且系统化，artifact 信号比自然图像强得多。
 
-## Lever（承重链，reframe 后）
+## Lever（承重链，reframe v6 后）
 
-> reframe 后承重链 = **L1（白盒 artifact 量化，PASS）+ source-leakage（深层源域泄漏，新承重）+ L3'（评测协议处方，补 L3 退场的 actionable so-what 空缺）**。原 L3「排名翻转」降级，原文保留于 § L3 退场与新承重。
+> **reframe v6 承重链 = L1（白盒 artifact 量化 source 身份，PASS）+ 新机制贡献（in-sample 评估灌水陷阱，A-7）+ L3'（评测协议处方：held-out + sanity baseline + artifact 上界，A-6）。** v4 的「source-leakage 深层泄漏 ViM=1.0」承重数字被证为 in-sample 伪迹、held-out 重算后 strict FAIL、降为 held-out 真值描述性证据（source 信号真实但中等、source 距离驱动、含诚实负例），承重让位给 A-7 机制贡献。原 L3「排名翻转」维持降级。**以下编号项 1/2/3/4 为 v4 原文留痕（含已失效的 ViM=1.0 承重表述），v6 校正口径见上 § Headline + 下 § L3 退场与新承重 v6 时间线 + `02_ACCEPTANCE.md` A-5 v6 / A-7。**
 
 1. **L1 现象量化**（G5 + Gate1 已确证 PASS）：artifact-only 43 维手工特征在跨机构对上高 AUROC（范围 0.82–0.9997），覆盖 ≥3 模态。证明污染普遍非个例（A-1/A-2 PASS，verifier 核实）。
 2. **L2 去污染协议**：propensity-matched artifact-matched ID-OOD 配对（1 维 logit caliper），削去手工 artifact 可解释的 covariate 部分（A-3 artifact-only 掉到 <0.65）。**边界**：propensity 削的是 43 维手工特征能匹配的那部分，对 backbone 深层 source 表示无能为力（见下 source-leakage）。
@@ -55,12 +58,23 @@
 3. **低功效剖析**：7 方法仅 7 个 rank 点，bootstrap Spearman CI 天然趋向 [-1,1]，CI 上界<0.7 近乎不可达——**该判据结构性低功效，可能与真值无关地恒 FAIL**。此剖析「为何 7 方法 Spearman 是结构性低功效判据」对社区有用，**当 contribution 写入，不删 L3 FAIL**。
 4. **据实降级 + 重心转移**：headline 移至同批预登记实验中稳健成立的 **L1（artifact 0.82–0.9997 PASS）+ source-leakage（ViM=1.0）**。source-leakage 的 ViM=1.0 在 paper 中写为「pre-specified L3 matrix 的 consistent observation across all 4 pairs」，**不写「we found」**（它出自预登记矩阵的一致观测，非事后挖掘）。
 
-## 诚实边界（防跑偏）
+### v6 时间线追加（HARKing 免疫：ViM=1.0 被证 in-sample 伪迹 → held-out 校正 → 承重据实再迁移；discussion/methods 必明写，不写成「一直就是这 claim」）
 
-- **artifact 量化边界**：跨机构对 AUROC 范围 0.82–0.9997，headline 不夸大成「完全是 artifact」；claim 是「方法表现主要由 artifact 驱动」，由 normal-vs-normal 纯 covariate 切分支撑。
-- **不 claim「所有 OOD benchmark 都废」**；claim「当 ID/OOD 跨机构时方法表现被源域混淆，需 cross-source normal-vs-normal sanity baseline + artifact-only 污染上界」。
-- **ViM cleanC=1.0 主动 disclose（不藏）**：L2 propensity 去污染（cleanC）削的是 43 维手工 artifact 可解释的那部分 covariate（A-3 artifact-only 掉 <0.65），但 **ViM 在 cleanC 子集上仍 AUROC=1.0**（4/4 对 raw+cleanC 恒 1.0）。物理含义 = ViM virtual-logit residual 捕获的 backbone 深层 source 表示**超出 43 维手工特征的匹配范围** → 写成 finding + limitation：「深层 source leakage 比手工特征能量化的更顽固，propensity 配对无法削除」。这既加强 source-leakage 承重，也是协议的诚实 limitation。
-- **L3 FAIL 不删、不硬撑排名翻转**：原 L3 命门据实 FAIL，连同低功效剖析降级 negative result / limitation（见上 § L3 退场与新承重 + `02_ACCEPTANCE.md` A-4 修订记录）。
+> v4 把承重押在「ViM=1.0 完美 source leakage」。**v6 据实校正这条数字本身——必须明写完整时间线，不得抹平：**
+
+5. **v5 报满分（in-sample）**：v5 扩证据后 A-5 ViM raw AUROC = 1.0 全 7/7 对，写入 ACCEPTANCE 为「pre-specified consistent observation」（Entry 9，in-sample 协议）。
+6. **reviewer 攻**：对抗审 05_DRAFT_core.md 列头号 reject 风险 =「ViM=1.0 可能是 trivial 评估伪迹而非真 source covariate」（Entry 10）。
+7. **负对照证伪**：主线写 `scripts/sanity_samesource_vim.py`，C1 同一来源对半切 + in-sample 也给 ViM=1.0（1.0 来自 in-sample 不对称、非 source）、C2 同源 held-out ≈0.5（无信号）、C3 跨源 held-out 真信号但非完美 → **坐实 1.0 是 in-sample 评估协议混杂**（根因：投影类 null-space 残差，N_id<D 致 in-sample ID 残差≈0）。
+8. **held-out 校正 + 承重据实再迁移**：用户拍板 held-out 重算（Entry 11）。held-out ViM 0.406–0.997（mean 0.777，>0.95 仅 2/7）→ A-5 v5 strict 门 **FAIL**，触预登记 FAIL 三档退路 #1。**承重再迁移到三贡献框架**：现象（L1，A-1/A-2 PASS，不变）+ 机制（in-sample 评估灌水陷阱，A-7 新贡献）+ 处方（held-out 协议 + sanity baseline + artifact 上界，A-6）。**in-sample 灌水写成 finding + 方法学贡献（评测协议陷阱），不写成 bug 致歉。** source 信号据实写诚实量级（中等、source 距离驱动、含 NIH/RSNA 0.406 诚实负例），不再写「完美/普遍 source leakage」。**paper 必呈这条「v5 满分→reviewer 攻→负对照证伪→held-out 校正→承重据实迁移」时间线，证非 HARKing。**
+
+## 诚实边界（防跑偏，v6 校正）
+
+- **artifact 量化边界**：跨机构命门对 AUROC 范围 0.82–0.9997（含两美国源最弱对 0.64），headline 不夸大成「完全是 artifact」；claim 是「benchmark 受 artifact 污染、方法表现主要由 source 可分性驱动」，由 normal-vs-normal 纯 covariate 切分支撑。
+- **source leakage 写诚实量级，不写「完美/普遍」（v6 红线）**：held-out 校正后 ViM 真值 0.406–0.997（mean 0.777，>0.95 仅 2/7），**不再写「ViM=1.0 完美 source leakage」**。写：source 信号真实可检（全 >> 同源 held-out chance ≈0.5 的中位）但**中等、source 距离单因子驱动（Spearman ρ=1.0 / Pearson r=0.9995, p=0.0005, n=4）、含诚实负例（NIH/RSNA held-out ViM 0.406≈chance）**。
+- **in-sample 灌水写成 finding/机制贡献，不写成 bug 致歉（v6 红线）**：投影类 OOD 检测器 in-sample 评估虚高（ViM/Residual 1.00→0.78，其余 11 法 |Δ|<0.012）是 null-space 残差的内在数学特性（N_id<D），可机理解释可复现、可推广任意 projection-based 法 → 写成评测协议陷阱 finding（A-7），是比原 claim 更契合 D&B 的 benchmark-critique 贡献。
+- **不 claim「所有 OOD benchmark 都废」**；claim「当 ID/OOD 跨机构时方法表现被 source 可分性混淆，且投影类检测器 in-sample 评估会报虚高，需 held-out 协议 + cross-source normal-vs-normal sanity baseline + artifact-only 污染上界」。
+- **ViM cleanC held-out 0.628 主动 disclose（不藏）**：L2 propensity 去污染（cleanC）削的是 43 维手工 artifact 可解释的那部分 covariate（A-3 artifact-only 掉 <0.65），但 **ViM 在 cleanC held-out 子集上仍 AUROC=0.628**（raw held-out 0.777，Δ−0.149）> chance。物理含义 = ViM virtual-logit residual 捕获的 backbone 深层 source 表示**超出 43 维手工特征的匹配范围** → 写成 finding + limitation：「深层 source leakage 比手工特征能量化的更顽固，propensity 配对仅削去一部分」。（注：v4 此处写「cleanC 仍 1.0」系 in-sample 伪迹，v6 校正为 held-out 0.628。）
+- **L3 FAIL 不删、不硬撑排名翻转**：原 L3 命门据实 FAIL（in-sample 与 held-out 协议下均 FAIL），连同低功效剖析降级 negative result / limitation（见上 § L3 退场与新承重 + `02_ACCEPTANCE.md` A-4 修订记录）。
 
 ## 会场（reframe 后更新 → 2026-06-19 v5：D&B 主投，用户拍板「为 70 中稿」）
 

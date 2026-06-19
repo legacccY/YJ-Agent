@@ -2,6 +2,39 @@
 
 > **核心章节散文草稿指针**：`05_DRAFT_core.md`（writer 出，§Method/§Results/§Discussion-Limitations，paper-ready，venue 无关 md 待落 D&B LaTeX；数字全 verifier 核，2026-06-19）。⚠️ **Entry 10 后此草稿的 A-5「ViM=1.0 完美 source leakage」段落已失效待重写**（in-sample 伪迹，见 Entry 10）。
 
+## Entry 11 — 2026-06-19 ~17:40 held-out 全矩阵重跑（用户拍板「held-out 重算 + 银边升主线」）→ A-5 strict FAIL，承重据实迁移
+
+**用户拍板**：option ① held-out 重算 + 把 in-sample 灌水升为新 benchmark-critique 主贡献。
+
+**coder 改 l3 加 `--protocol {insample,heldout}` 旗**（ID 切 fit/eval seed42 0.5，方法 fit 在 id_fit、eval 在 concat(id_eval,ood)，cleanC 在 id_eval×ood 配对；in-sample 路径保留作对比；输出 `_heldout` 后缀不毁 in-sample csv）。主线跑全 13 法×7 对，verifier+analyst 收口。
+
+**held-out A-5 真值（verifier MWU 从原始分数独立重算，零 drift；与 C3 负对照高度一致）**：
+
+| 对 | held-out ViM | in-sample(伪) | artifact-only |
+|---|---|---|---|
+| BraTS_vs_BrainTumor | 0.997 | 1.0 | 0.9997 |
+| HAM_vs_fitzpatrick | 0.938 | 1.0 | — |
+| NIH_vs_VinDr | 0.841 | 1.0 | 0.896 |
+| ISIC_vs_PAD_UFES | 0.798 | 1.0 | — |
+| VinDr_vs_RSNA | 0.772 | 1.0 | — |
+| HAM_vs_ISIC2020 | 0.689 | 1.0 | 0.816 |
+| **NIH_vs_RSNA(诚实负例)** | **0.406** | 1.0 | 0.640 |
+
+- **A-5 v5 strict 门 FAIL**：held-out ViM 仅 **2/7 >0.95**（BraTS+HAM/fitz），需 ≥6/7 → FAIL。触预登记 **FAIL 三档退路 #1**：承重退 **A-1/A-2(已 PASS)+A-6 处方 + 新增 in-sample 灌水 finding**。
+- **灌水局部性铁证（verifier 核）**：Δ(insample−heldout) **只** ViM=+0.223 / Residual=+0.223，其余 11 法 |Δ|<0.012。根因 = ViM/Residual 的 null-space 残差打分，N_id<D 致 in-sample ID 残差≈0、完美分离任何 held-out，**与 source 无关**。非 bug，是投影降维方案内在数学特性，可机理解释可复现。
+- **source 距离单因子驱动**（Spearman ρ=1.0 / Pearson r=0.9995, p=0.0005, n=4 有 artifact 参考对）：artifact 可分性越强 held-out ViM 越高；NIH/RSNA 两美国源 artifact=0.64→ViM=0.41≈chance = **同模态内诚实负例**（证非 CXR 模态 ViM 天然好，是 source 距离驱动）。
+- **13 法 held-out 谱异质**：ViM/Residual 0.777 > KNN0.709/MDS0.688/SHE0.686 > logit 类 0.61-0.64 > DICE0.551/fDBD0.510/GradNorm0.397。BraTS 上 8/13 法>0.75、NIH/RSNA 上 8/13 法<0.55 → source leakage 非普遍、强弱看 source 距离。
+- **A-4 held-out 仍全 FAIL**（5 可评估 1 极宽 CI + 2 INSUFFICIENT n<30；held-out 配对更少低功效更重，结构性低功效预判成立当 contribution）。
+- **ViM cleanC held-out 0.628**（raw 0.777，Δ−0.149）仍 > chance → 深层 source leakage 超 43 维手工特征匹配范围（PR-G4 disclose limitation 不藏）。
+
+**修正后承重故事（诚实，三贡献）**：①现象 = artifact-only 白盒定位（A-1/A-2 PASS，3 模态 artifact 0.64-0.9997）②机制 = 投影类 OOD 检测器 in-sample 评估虚高（ViM/Residual 1.0→0.78，null-space 根因，可推广任意 projection-based 法）③处方 = held-out 协议 + cross-source normal-vs-normal sanity baseline + artifact-only 污染上界。A-4 排名翻转 negative + 低功效剖析当 discussion contribution。
+
+**资产**：results/l3_*_heldout.csv 全落 + sanity_samesource_vim.csv（C0-C3）+ analyst 3 图（fig_heldout_insample_delta / fig_heldout_vim_vs_artifact / fig_heldout_heatmap_13x7）。verifier 零 drift。
+
+**待办**：①writer 重写 STORY/ACCEPTANCE 承重口径(留全痕)+05_DRAFT_core.md 失效段 → 新诚实 headline ②skeptic 红队新框架 ③（增益，低优先）补 a1_artifact_auroc 到 7 对全覆盖把 source 距离相关 n=4→7 ④sanity csv note 列含 ASCII 逗号致 resid_auroc 解析偏移，cosmetic 待修。
+
+---
+
 ## Entry 10 — 2026-06-19 ~17:10 ⚠️ 重大发现：A-5 承重 ViM=1.0 是 in-sample 几何伪迹，非纯 source leakage（到拍板点）
 
 **触发**：reviewer 对抗审 05_DRAFT_core.md 列头号 reject 风险 = 「ViM=1.0 可能是 trivial 评估伪迹而非真 source covariate」。主线写负对照 `scripts/sanity_samesource_vim.py` 验，**坐实是评估协议混杂**。

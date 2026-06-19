@@ -105,9 +105,11 @@ query-for-retake channel (\cref{sec:agent}).
   \centering
   \includegraphics[width=0.74\linewidth]{figures/fig4_boundary_agent.pdf}
   \caption{\textbf{The honest boundary and the query-for-retake gate.}
-  \textbf{(A)} Per-class salvage: enhancement recovers most degradation-misclassified benign
-  lesions but only $5.2\%$ of melanomas while damaging far more, a net loss of malignant cases
-  left unchanged by mask-weighted retraining. \textbf{(B)} Decision-curve and triage analysis on
+  \textbf{(A)} Per-class salvage on distinct conditional pools: enhancement recovers most
+  degradation-misclassified benign lesions ($75.6\%$, $1809/2392$) but only $5.2\%$ of the
+  salvageable melanoma pool ($4/77$) while damaging $31.0\%$ of the at-risk melanoma pool
+  ($85/274$), a net loss of malignant cases left unchanged by mask-weighted retraining; see
+  \cref{sec:exp-boundary} for the full per-class denominators. \textbf{(B)} Decision-curve and triage analysis on
   \itb{}-LQ ($n=300$): net benefit is statistically indistinguishable across direct diagnosis and
   all variants (overlapping $95\%$ CIs), and at a $20\%$ referral budget direct diagnosis attains
   the highest auto-handled sensitivity ($0.818$) while the strongest variant only tracks it
@@ -159,13 +161,24 @@ consistent with the contrast-S5 trigger of \cref{sec:exp-surface}.
 
 \subsection{The Honest Boundary: When Enhancement Hurts Diagnosis}
 \label{sec:exp-boundary}
-The aggregate moderate-band salvage rate is $0.737$, but we deliberately do \emph{not}
-report it as a capability: a per-class split (\cref{fig:boundary-agent}A) shows it is
-almost entirely benign false-positive correction. Enhancement salvages most
-degradation-misclassified benign lesions while damaging almost none, yet on melanoma it
-salvages only $5.2\%$ and damages far more than it rescues --- a \emph{net loss of
-malignant cases}, helping the benign errors that least need help and harming the
-malignant cases that matter most. This is not a reconstruction-loss artefact: retraining
+A per-class split (\cref{fig:boundary-agent}A) is where the salvage story collapses. The
+benign and malignant subgroups behave in opposite directions: enhancement salvages most
+degradation-misclassified benign lesions ($75.6\%$, $1809/2392$) while damaging almost
+none, yet on melanoma it salvages only $5.2\%$ and damages far more than it rescues --- a
+\emph{net loss of malignant cases}, helping the benign errors that least need help and
+harming the malignant cases that matter most. We report the two melanoma rates on
+distinct conditional pools by construction: the salvage rate is computed over the
+\emph{salvageable pool} of melanomas already misclassified after degradation
+($n=77$), of which enhancement recovers $4$ ($4/77=5.2\%$), while the damage rate is
+computed over the \emph{at-risk pool} of melanomas still correctly called after
+degradation ($n=274$), of which enhancement pushes $85$ below the decision threshold
+($85/274=31.0\%$); the two denominators differ because the two events are conditioned on
+opposite pre-enhancement outcomes, not because cases were selected. Across all $351$
+melanomas this leaves a net change of $4-85=-81$ correctly-called malignant cases.
+Because the benign subgroup dominates the population, the benign-dominated aggregate
+moderate-band salvage rate ($0.737$) is therefore \emph{not} a meaningful capability
+number, and we deliberately do not report it as one; only the per-class breakdown
+reflects clinical risk. This is not a reconstruction-loss artefact: retraining
 with a mask-weighted objective ($4\times$ lesion weight) leaves melanoma salvage
 unchanged at $5.2\%$ (an honest null; \cref{fig:boundary-agent}A), so the failure mode
 lies beyond what per-pixel $L_1$ can reach. The boundary is sharper still on the severe

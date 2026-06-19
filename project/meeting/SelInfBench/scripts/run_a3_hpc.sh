@@ -33,14 +33,24 @@ cd ${WORKDIR}
 echo "=== SLURM job ${SLURM_JOB_ID} started at $(date) ==="
 echo "    Node: ${SLURMD_NODENAME}  GPU: ${CUDA_VISIBLE_DEVICES}"
 
+# R1 (2026-06-19): --cache_scores 缓存 per-sample 分数供 bootstrap 复用；ISIC 全 test（脚本默认 isic_test_n=None 纠正下采样 bug）；--skip_probe 跳难度体检
 ${PYTHON} -u ${WORKDIR}/selinf_a3_truthproxy.py \
     --benchmarks ISIC2020,BraTS2021,HAM10000 \
     --m_values 18 \
+    --skip_probe \
+    --cache_scores \
     --isic_img_dir /gpfs/work/bio/jiayu2403/visienhance/data/isic2020 \
     --isic_gt_csv  ${DATA_DIR}/ISIC_2020_Training_GroundTruth_v2.csv \
     --isic_split_csv ${DATA_DIR}/isic_split.csv \
     --ham_root     /gpfs/work/bio/jiayu2403/ideation_run002/data/ham10000 \
     --brats_test_dir /gpfs/work/bio/jiayu2403/medad-failmap/data/BraTS2021/test \
     --out_dir      ${WORKDIR}/results
+
+echo "=== running bootstrap coverage (A1 CI + A2 real-data coverage) ==="
+${PYTHON} -u ${WORKDIR}/selinf_bootstrap_coverage.py \
+    --benchmarks HAM10000,BraTS2021,ISIC2020 \
+    --b 1000 \
+    --scores_dir ${WORKDIR}/results \
+    --out_dir ${WORKDIR}/results
 
 echo "=== job ${SLURM_JOB_ID} finished at $(date) ==="

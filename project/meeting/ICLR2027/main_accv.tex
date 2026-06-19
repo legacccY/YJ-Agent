@@ -131,7 +131,7 @@ diagnosis-preserving enhancement \and uncertainty estimation}
   \visienhance{} (C1), or \emph{query-for-retake} (C2), the acquisition loop that requests
   re-acquisition when an image is beyond safe enhancement and feeds the re-captured image back to the
   same downstream classifier. Routing thresholds $\tau_{\text{low}}{=}0.25 < \tau_{\text{enh}}{=}0.35 <
-  \tau_{\text{high}}{=}0.50$.}
+  \tau_{\text{high}}{=}0.50$ are fixed by grid search; under this fixed-threshold policy global triage does not yet beat direct diagnosis, and learning the routing thresholds is left to future work (Section~\ref{sec:agent}).}
   \label{fig:pipeline}
 \end{figure}
 

@@ -104,7 +104,7 @@
       "deadline": "TBD (CVPR2027 ~2026-11)",
       "status": "planning",
       "priority": 5,
-      "phase": "✅ 2026-06-19 v5 扩证据实跑完成(7→13 法×4→7 对). A-5 source-leakage 承重命门 PASS 满分:ViM raw AUROC=1.0 全 7/7 对(门 6/7>0.95),跨 CXR×3/BrainMRI×1/Derm×3 三模态;cleanC=1.0 全 6/6 可评估(BraTS n<30 剔)→L2 去污染对 ViM 形同虚设=深层 source leakage(PR-G4 disclose limitation);Residual 7/7=1.0 佐证. verifier 从原始分数独立重算零 drift. 13 法谱据实异质(ViM/Residual 顶,GradNorm 0.387 底,不挂组帽). A-4 排名翻转 negative 未翻案(6 对全 FAIL+BraTS INSUFFICIENT,13 法 CI 上界仍>0.7=结构性低功效印证当 contribution). skeptic 跑后 HARKing 过闸 0 致命(预登记守住). 3 扩展图落 figures/fig_v5_*. 下一步:writer 写 draft §Results/§Method/§Discussion(6 前置:raw-ViM 隔离/cleanC disclose/排除 5 法理由/pre-specified 措辞/SMD disclose/n 口径 P4c=188-BraTS=6-P4b=39).",
+      "phase": "⚠️→🔧 2026-06-19 held-out 重算颠覆 A-5：原 ViM=1.0 系 in-sample 评估伪迹(feats_test=concat(feats_id,feats_ood) 致 ID in-sample；负对照证同源对半切也1.0)。held-out 真值 ViM 0.41-0.997(mean0.777,>0.95 仅2/7)→A-5 v5 strict门 FAIL→触预登记 FAIL退路#1：承重退 A-1/A-2(PASS)+A-6处方+新贡献。灌水Δ只ViM/Residual(+0.223)其余11法≈0(null-space根因,可机理解释)。source距离单因子驱动(ρ=1.0 vs artifact-only,NIH/RSNA两美国源 artifact0.64→ViM0.41诚实负例)。修正后三贡献:①artifact白盒定位(A-1/A-2)②投影类OOD in-sample虚高陷阱(新)③held-out+sanity baseline处方。verifier零drift,3图出。下一步:writer reframe STORY/ACCEPTANCE+draft失效段→新诚实headline,skeptic红队新框架。",
       "home": "project/meeting/ArtiOODBench/",
       "story": "project/meeting/ArtiOODBench/01_STORY.md",
       "acceptance": "project/meeting/ArtiOODBench/02_ACCEPTANCE.md",

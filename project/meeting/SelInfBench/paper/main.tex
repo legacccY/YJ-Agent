@@ -9,6 +9,7 @@
 
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
@@ -41,7 +42,62 @@ medical imaging, reproducibility, benchmark, winner's curse, selective inference
 \todo{writer: Akesson 2024 (phenomenon, no correction) / Zrnic-Fithian 2024 + Leiner 2023 (general post-selection methods, no medical-imaging application) / Koopmans 2025 + Sculley 2018 (reporting-practice evidence). Draw boundaries explicitly. CITATIONS MUST PASS verifier (Akesson vs Gustafsson author/DOI discrepancy unresolved -- see BUILD_MAP).}
 
 \section{Method}
-\todo{writer: data fission post-selection CI construction (f=X+tau*Z selection / g=X-Z/tau inference, tau=1), per Leiner+ JASA2023. The report-value corrector algorithm (scripts/selinf\_corrector.py). NO deflation, NO debias\_shift as validity metric (method red lines).}
+
+\subsection{Problem Setting}
+A benchmark report is typically produced by sweeping over $M$ configurations---combinations of hyperparameters and random seeds---training each, and reporting the single configuration that attains the best validation metric. Let $X_i$ denote the observed validation metric for configuration $i \in \{1, \dots, M\}$, modeled as a noisy measurement of an unknown population value $\mu_i$, i.e.\ $X_i = \mu_i + \varepsilon_i$ with $\varepsilon_i \sim \mathcal{N}(0, \sigma^2)$. The selected configuration is
+\begin{equation}
+i^\star = \arg\max_{i} X_i ,
+\end{equation}
+and the \emph{naive} report consists of the point value $X_{i^\star}$ together with a standard confidence interval (CI) built around it.
+
+The difficulty is that $i^\star$ is itself a function of the data. Conditioning on the event $\{i^\star = i\}$ shifts the sampling distribution of $X_{i^\star}$ upward: the maximum of $M$ noisy draws systematically overshoots the underlying value of the configuration it selects. Consequently $X_{i^\star}$ is a positively biased estimator of $\mu_{i^\star}$, and a CI centered at $X_{i^\star}$ that ignores the selection event is conditionally invalid---it undercovers $\mu_{i^\star}$, the true performance of the very configuration being reported. This is the winner's curse. Classical post-selection inference~\cite{lee2016exact} addresses it by characterizing the selection event as a polyhedral constraint and conditioning on it; we instead adopt the data-fission construction~\cite{leiner2023datafission}, which decouples selection from inference without requiring an explicit polyhedral characterization of the sweep.
+
+\subsection{Data Fission Construction}
+Data fission~\cite{leiner2023datafission} injects independent auxiliary Gaussian noise to split each observation into a \emph{selection channel} and an \emph{inference channel}. For each configuration we draw $Z_i \sim \mathcal{N}(0, \sigma^2)$ independently and form
+\begin{equation}
+f(X_i) = X_i + \tau Z_i, \qquad
+g(X_i) = X_i - \tau^{-1} Z_i ,
+\end{equation}
+with split parameter $\tau > 0$ ($\tau = 1$ by default). The two channels are constructed so that, under the Gaussian model, $f(X_i)$ and $g(X_i)$ are independent: their covariance $\mathrm{Cov}(f(X_i), g(X_i)) = \sigma^2 - \tau \cdot \tau^{-1} \sigma^2 = 0$, and jointly Gaussian uncorrelated variables are independent. Selection is performed on the selection channel,
+\begin{equation}
+i^\star = \arg\max_{i} f(X_i) ,
+\end{equation}
+while inference is performed on the inference channel $g(X_{i^\star})$. Because the selection event $\{i^\star = i\}$ is a function of $f$ alone and is independent of $g$, the conditional distribution of $g(X_{i^\star})$ given the selection is simply its unconditional Gaussian law,
+\begin{equation}
+g(X_{i^\star}) \;\sim\; \mathcal{N}\!\left(\mu_{i^\star},\; \sigma^2(1 + \tau^{-2})\right) ,
+\end{equation}
+with no selection-induced shift. A standard (untruncated) interval therefore attains nominal conditional coverage of $\mu_{i^\star}$:
+\begin{equation}
+\mathrm{CI} = g(X_{i^\star}) \;\pm\; z_{1-\alpha/2}\,\sigma\sqrt{1 + \tau^{-2}} ,
+\label{eq:fission-ci}
+\end{equation}
+where $z_{1-\alpha/2}$ is the upper $\alpha/2$ standard-normal quantile. The point $g(X_{i^\star})$ serves as a debiased estimate of $\mu_{i^\star}$, as the upward selection bias carried by $f$ is removed in the orthogonal inference channel. The validity claim we make is about conditional coverage of the interval in Eq.~\eqref{eq:fission-ci}, established empirically in Section~\ref{sec:results}; we do not interpret interval width or the magnitude of the point adjustment as evidence of validity.
+
+\subsection{Variance Estimation}
+The construction requires the noise scale $\sigma$. Because each configuration is trained once, no within-configuration replication is available for a per-configuration bootstrap. We therefore estimate $\sigma$ by the pooled standard deviation of the metric across the $M$ swept configurations,
+\begin{equation}
+\hat\sigma = \sqrt{\frac{1}{M-1}\sum_{i=1}^{M}\bigl(X_i - \bar X\bigr)^2} ,
+\end{equation}
+which acts as a conservative proxy for the configuration-to-configuration dispersion that drives the winner's curse. When repeated runs of the same configuration are available, a per-configuration estimate may be supplied directly.
+
+\subsection{Report-Value Corrector}
+We package the construction as a tool that attaches to any sweep log. The corrector takes a table of (configuration, metric) rows, estimates $\hat\sigma$ as above (or accepts a user-provided value), and applies the data-fission split with $\tau = 1$. It returns, for the selected configuration, (i) the naive reported value $X_{\arg\max_i X_i}$, (ii) the debiased point estimate $g(X_{i^\star})$, and (iii) the conditionally valid interval of Eq.~\eqref{eq:fission-ci}. The corrector emits neither a width-ratio statistic nor any quantity defined as the difference between the naive value and $g(X_{i^\star})$ as an indicator of validity, since such quantities are not informative about conditional coverage. The procedure is summarized in Algorithm~\ref{alg:corrector}.
+
+\begin{algorithm}[t]
+\caption{Data-fission report-value corrector}
+\label{alg:corrector}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} metrics $X_1,\dots,X_M$; split $\tau$; level $\alpha$; optional $\sigma$
+\IF{$\sigma$ not provided}
+  \STATE $\hat\sigma \leftarrow$ pooled std of $\{X_i\}$ (ddof $=1$)
+\ENDIF
+\STATE draw $Z_i \sim \mathcal{N}(0,\hat\sigma^2)$ independently, $i=1,\dots,M$
+\STATE $f_i \leftarrow X_i + \tau Z_i$;\quad $g_i \leftarrow X_i - \tau^{-1} Z_i$
+\STATE $i^\star \leftarrow \arg\max_i f_i$
+\STATE $\hat\sigma_g \leftarrow \hat\sigma\sqrt{1 + \tau^{-2}}$
+\STATE \textbf{return} debiased estimate $g_{i^\star}$, interval $g_{i^\star} \pm z_{1-\alpha/2}\,\hat\sigma_g$
+\end{algorithmic}
+\end{algorithm}
 
 \section{Experiments and Results}
 \todo{writer: A1 measurable winner's curse (HAM truthproxy +0.0746, with bootstrap CI from R-experiments) / A2 coverage breakdown + recovery (synthetic coverage\_sim\_v2 + real-data bootstrap coverage) / A3 three benchmarks honest (HAM strong, BraTS ceiling-limited weak, ISIC pre-registered full-test result). All numbers from BUILD_MAP verified csv.}
