@@ -75,6 +75,8 @@ from pathlib import Path
 # OpenMP/MKL env 必须在 numpy/torch import 前 (Windows + HPC 共用)
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
+# 显存碎片缓解 — OOM 提示官方建议 (torch>=2.1); 须在 import torch 前设置
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import cv2
 import numpy as np
@@ -853,6 +855,14 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
             total_psnr += (10 * np.log10(1.0 / (mse + 1e-8))) * B
         n += B
         global_step += 1
+
+        # Heartbeat: per-200-iter 活信号 (配 python -u 看实时, 防瞎跑一小时无输出)
+        if global_step % 200 == 0:
+            with torch.no_grad():
+                _hb_psnr = 10 * np.log10(1.0 / (F.mse_loss(
+                    x_enh.detach().float(), x_ref.float()).item() + 1e-8))
+            print(f"[hb] step={global_step:06d}  loss={loss.item():.4f}  "
+                  f"train_PSNR~{_hb_psnr:.2f}  skipped={n_skipped}", flush=True)
 
     safe_n = max(n, 1)  # 防全 skip 时除 0
     return {

@@ -183,6 +183,7 @@
 - **数字一律 Bash/Grep 核 csv，不信 Read**（曾幻觉编造不存在的 csv，险踩红线）；数字入 tex 前过 `verifier`
 - **复现零偏离**：完全按官方，禁私加裁剪/降 lr/改步数/换实现凑收敛
 - **超参禁臆想**：backbone/lr/增强/架构联网查官方源，查不到标 TODO，绝不照搬别库
+- **评估集不可泄漏**：OOD/分类实验 `feats_test` 禁止拼入 ID 样本（`concat(feats_id, feats_ood)` = in-sample 伪迹，导致 ID 在自身集评估分数虚高）；汇报数字前确认是 held-out 集而非训练/拟合集（2026-06-19 ArtiOODBench A-5 ViM=1.0 实证踩坑）
 - **BMVC 已封印**：`meeting/BMVC/` 不再改（pre_edit hook 守）；违反走 ICLR 分支
 - 信心低 / 有更好方案 → 上网研究后直接提，无须护主；可主动提问
 

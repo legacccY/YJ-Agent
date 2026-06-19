@@ -104,7 +104,7 @@
       "deadline": "TBD (CVPR2027 ~2026-11)",
       "status": "planning",
       "priority": 5,
-      "phase": "⚠️→🔧 2026-06-19 held-out 重算颠覆 A-5：原 ViM=1.0 系 in-sample 评估伪迹(feats_test=concat(feats_id,feats_ood) 致 ID in-sample；负对照证同源对半切也1.0)。held-out 真值 ViM 0.41-0.997(mean0.777,>0.95 仅2/7)→A-5 v5 strict门 FAIL→触预登记 FAIL退路#1：承重退 A-1/A-2(PASS)+A-6处方+新贡献。灌水Δ只ViM/Residual(+0.223)其余11法≈0(null-space根因,可机理解释)。source距离单因子驱动(ρ=1.0 vs artifact-only,NIH/RSNA两美国源 artifact0.64→ViM0.41诚实负例)。修正后三贡献:①artifact白盒定位(A-1/A-2)②投影类OOD in-sample虚高陷阱(新)③held-out+sanity baseline处方。verifier零drift,3图出。下一步:writer reframe STORY/ACCEPTANCE+draft失效段→新诚实headline,skeptic红队新框架。",
+      "phase": "🔧→📝 2026-06-19 held-out 校正+v6 收窄定稿完成。A-5 原 ViM=1.0 证为 in-sample 评估伪迹(负对照:同源对半切也1.0;l3 feats_test 含ID)→held-out 真值 ViM0.41-0.997(mean0.777,>0.95仅2/7)→A-5 strict FAIL→承重迁移三贡献:①A-1/A-2 artifact白盒(PASS,7对0.64-0.9997)②A-7 in-sample灌水 cautionary(Δ+0.223只ViM/Residual,N_id<D放大,收窄不claim发现held-out)③A-6 held-out+sanity处方。source距离驱动 n=7 ρ=0.821/r=0.955(NIH/RSNA诚实负例0.64→0.41)。skeptic 致命-1(held-out是ViM/OpenOOD既有标准)已收窄化解。STORY/ACCEPTANCE/draft v6定稿留全痕,verifier零drift。收尾TODO:核arXiv:2604.04199引文真实性+fig重出n=7+落D&B LaTeX+Intro/Abstract。下一步:补完整章节投稿冲刺。",
       "home": "project/meeting/ArtiOODBench/",
       "story": "project/meeting/ArtiOODBench/01_STORY.md",
       "acceptance": "project/meeting/ArtiOODBench/02_ACCEPTANCE.md",

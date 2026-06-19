@@ -19,7 +19,10 @@ process.stdin.on('end', () => {
   const norm = path.replace(/\\/g, '/');
 
   // Target paths: ICLR2027 *.tex/*.md (full check), or main project guidance docs (writing-only check)
-  const isTexTarget = /project\/meeting\/ICLR2027\/.*\.(tex|md)$/.test(norm);
+  // Exempt: _开头的 prep/工具文档（如 _脱敏替换表.md），这类文件合法引用禁词作为"需 grep 清单"
+  const base = (norm.split('/').pop() || '');
+  const isPrepDoc = /^_/.test(base) && /\.md$/.test(base);
+  const isTexTarget = !isPrepDoc && /project\/meeting\/ICLR2027\/.*\.(tex|md)$/.test(norm);
   const isDocTarget = /project\/(STORY_FRAMEWORK|ACCEPTANCE_CRITERIA|README)\.md$/.test(norm);
 
   if (!isTexTarget && !isDocTarget) process.exit(0);

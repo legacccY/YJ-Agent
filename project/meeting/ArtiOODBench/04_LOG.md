@@ -41,6 +41,13 @@
 - **🟢 残-2**：§Method 补「N_id=500 是评估子集规模、非 ViM 推荐全训练集（原文 200k）」诚实说明。
 - **skeptic 上交用户**：A-7 收窄后是否仍够当 D&B 主贡献 = venue 适配判断（skeptic 置信中，D&B 对 cautionary/工件类宽容、收窄后配 A-1/A-2/A-6 应够边界带，但建议用户复核）。
 
+**用户拍板（2026-06-19）= 继续执行收窄框架推 D&B，先补 3 项**。已全部落实：
+- ✅ **改-2 a1 补 7 对（n=4→7）**：coder 扩 a1_a2_artifact_auroc.py 加 P2b/P4b/P4c（新增 fitzpatrick/PAD collector）。主线跑全量。**source 距离相关 n=7：Spearman ρ=0.821 / Pearson r=0.955**（替换 n=4 的 ρ=1.0）。7 对 artifact_all43/held-out ViM：BraTS 1.000/0.997・HAM_fitz 0.991/0.938・VinDr_RSNA 0.907/0.772・NIH_VinDr 0.896/0.841・HAM_ISIC 0.816/0.689・ISIC_PAD 0.805/0.798・NIH_RSNA 0.640/0.406（诚实负例双低）。
+- ✅ **致命-1 A-7 收窄定稿**：writer 改 STORY/ACCEPTANCE/draft——A-7 从「发现投影类要 held-out 评测陷阱」收窄为「量化已知 estimation/in-sample leakage 在 N_id<D 跨源 medical 子空间放大到 Δ+0.223 + 精确伪装成完美 source leakage 的 cautionary 方法学贡献」；A-6 处方③改「投影类须显式声明 fit/eval 切分」（不写常识「必须 held-out」）；Related Work 正面引 ViM 原文 train-fit + leakage taxonomy 差异化。
+- ✅ **改-3/改-1/残-2**：headline 改单一叙事弧（污染物→伪装→去伪处方）；§Discussion 七步 reframe 成「工件自我证伪=可信度证据」+ 前置 A-1/A-2 独立于几何打分链；§Method 补 N_id=500 是评估子集非全训练集（ViM 原文 ~200k）。
+
+**收尾 TODO（投稿前，非阻断）**：①**核 arXiv:2604.04199 引文真实存在**（writer/skeptic 标可疑，2604=未来编号疑占位，verifier 复核否则换真引文）②**fig_heldout_vim_vs_artifact 重出 n=7 版**（analyst 原图 n=4，draft 文本已 n=7 需对齐）③sanity_samesource_vim.csv note 列 ASCII 逗号致 resid_auroc 解析偏移（cosmetic）④draft 落 D&B LaTeX 模板 + 补 Intro/Abstract/完整 Related Work。
+
 ---
 
 ## Entry 10 — 2026-06-19 ~17:10 ⚠️ 重大发现：A-5 承重 ViM=1.0 是 in-sample 几何伪迹，非纯 source leakage（到拍板点）

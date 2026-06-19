@@ -30,8 +30,8 @@ process.stdin.on('end', () => {
   // 自身就是索引/日志/临时 → 不要求被指（README / LOG / registry / _scratch / _archive / sentinels）
   const base = path.basename(rel);
   if (/(README|_LOG|PROJECT_LOG|04_LOG|registry|MEMORY|PORTFOLIO|SUBMITTED)/i.test(base)) process.exit(0);
-  // 项目内规划/蓝图/规范文档（蓝图.md / reframe_*.md / 投稿规范.md 等）→ 项目内自洽，不要求被外部索引指向
-  if (/蓝图|reframe|规范|roadmap/i.test(base) && /\.md$/i.test(base)) process.exit(0);
+  // 项目内规划/蓝图/规范文档（蓝图.md / reframe_*.md / 投稿规范.md / DRAFT_*.md / BUILD_MAP.md / _脱敏*.md 等）→ 项目内自洽，不要求被外部索引指向
+  if (/蓝图|reframe|规范|roadmap|DRAFT_|BUILD_MAP|_脱敏|_desens/i.test(base) && /\.md$/i.test(base)) process.exit(0);
   if (/\/(\_scratch|\_archive|archive|sentinels|node_modules)\//.test('/' + rel)) process.exit(0);
 
   // 深层代码/config 子树（src/ configs/ utils/ scripts/ code/ eval/ tools/ tests/ ideation/ 下的文件）→ 整个目录已被项目索引覆盖，单文件不逐一登
@@ -39,6 +39,8 @@ process.stdin.on('end', () => {
   // killshots/ = 立项前证伪小脚本目录，类同 scripts/；_hpc/ = HPC 上传/提交脚本，类同 _scratch/
   // drafts_short/ drafts_long/ 等带后缀变体与 drafts/ 同等豁免；appendix/ 同 drafts
   if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts[\w-]*|appendix|killshots?|_hpc)\//.test('/' + rel)) process.exit(0);
+  // ICLR2027/ 根目录 *.tex：论文核心稿件，由项目 README 统筹索引，单文件无须逐一登记
+  if (/project\/meeting\/ICLR2027\/[^/]+\.tex$/.test(rel)) process.exit(0);
 
   // 带日期戳的调研/日志 md（文件名含 \d{4}-\d{2}-\d{2}）→ 日记性质，不要求上层索引
   if (/\d{4}-\d{2}-\d{2}/.test(base)) process.exit(0);

@@ -37,8 +37,8 @@
 | A-3 | 去污染协议有效性：去污染后 artifact-only AUROC 显著下降 | artifact-only 掉到 <0.65 **且** 降幅 Δ>0.15 | L2 | 支撑 · L2 有效性（手工 artifact 部分） |
 | A-4（原命门 → **降级**） | 去污染后主流 OOD 方法排名改变 | **方案 C（artifact-matched 配对子集）为唯一裁决**：bootstrap Spearman(原,C) **CI 上界<0.7**（或 top1 掉出 top3）**AND** 口径2 翻转机制可解释（掉幅顺序符合 MDS>KNN/ViM>MSP 敏感度假设）。方案 A/B 仅附录 robustness | L3 | **negative result / limitation（in-sample 与 held-out 协议下均实跑 FAIL，见下修订记录；连同低功效剖析当 contribution）** |
 | A-5（v5 承重 → **v6 据实 strict FAIL · 降描述性证据**） | source-leakage：ViM AUROC 在 cross-source normal-vs-normal 对（纯 covariate、零 semantic）上接近完美分离 | **ViM AUROC 在 ≥(N-1)/N 个 cross-source normal-vs-normal 对上 >0.95**（v2/v5 阈值文字不改） | source-leakage | **held-out 重算 strict FAIL（仅 2/7 >0.95，mean 0.777）→ 触 FAIL 三档退路 #1。降为 held-out 真值描述性证据：source 信号真实（held-out 0.41–0.997 全 >> chance 中位）但中等、source 距离驱动、含诚实负例。见 A-5 v6 修订记录** |
-| **A-6（承重，维持）** | 评测协议处方（L3' actionable so-what）：给出可操作评测规范 | ①cross-source normal-vs-normal 作 sanity baseline（方法在它上高 AUROC → benchmark 被源域污染、结果作废）②报 artifact-only AUROC 作污染上界 | L3'（补 L3 退场空缺） | **承重（held-out 校正后补 ③：投影类检测器必须 held-out 评估，in-sample 会报虚高近完美 AUROC，见 A-7）** |
-| **A-7（新承重 · v6 in-sample 评估灌水 finding / 机制贡献）** | 投影类 OOD 检测器（ViM/Residual，基于 principal-subspace 残差打分）的 in-sample 评估系统性虚高；held-out 校正暴露真信号 | **Δ(in-sample − held-out) AUROC 在投影类（ViM/Residual）上 >0.2，且在非投影类（logit 类等其余 11 法）上 ≈0（\|Δ\|<0.012）**。已确证：ViM/Residual 各 +0.223（1.0→0.777），其余 11 法 \|Δ\|<0.012 | 机制贡献（评测协议陷阱） | **承重（确证 PASS；根因 = null-space 残差 in-sample ID≈0，N_id<D 致投影子空间不满秩，可机理解释可复现、可推广任意 projection-based 法）** |
+| **A-6（承重，维持）** | 评测协议处方（L3' actionable so-what）：给出可操作评测规范 | ①cross-source normal-vs-normal 作 sanity baseline（方法在它上高 AUROC → benchmark 被源域污染、结果作废）②报 artifact-only AUROC 作污染上界 | L3'（补 L3 退场空缺） | **承重（held-out 校正后补 ③，skeptic 收窄：投影类检测器报告须显式声明 fit/eval 切分——其 in-sample 误用在 N_id<D 下确定性伪完美分离；不写「必须 held-out」常识，见 A-7 收窄）** |
+| **A-7（新承重 · v6 in-sample 评估灌水 finding / 机制贡献 · skeptic 致命-1 收窄）** | 量化一个**已知的** estimation/in-sample leakage 误用，在 N_id<D underdetermined 投影子空间 + 跨源 medical benchmark 下被放大到 Δ=+0.223 且精确伪装成完美 source-leakage 结论（ViM=1.0，骗过投稿前自审） | **Δ(in-sample − held-out) AUROC 在投影类（ViM/Residual）上 >0.2，且在非投影类（logit 类等其余 11 法）上 ≈0（\|Δ\|<0.012）**。已确证：ViM/Residual 各 +0.223（1.0→0.777），其余 11 法 \|Δ\|<0.012 | 机制贡献（已知 leakage 的 N_id<D 放大 + masquerade，cautionary） | **承重（确证 PASS；根因 = null-space 残差 in-sample ID≈0，N_id<D 致投影子空间不满秩。**不 claim 发现 held-out 协议**——held-out 是 ViM 原文/OpenOOD 既有标准；贡献 = 量化已知 leakage 在 N_id<D 投影子空间下放大到确定性 perfect separation，区别于 taxonomy arXiv:2604.04199 已知 N>>D 下 ΔAUC<0.005）** |
 
 **防 K3 硬约束**：去污染后 artifact-only<0.65，但 7 方法在方案 C 子集上平均 AUROC **不得同时 <0.55**（否则把 semantic 也删了 → 回设计）。
 
@@ -185,17 +185,24 @@ L3 重排用 **cross-source 跨机构对**（ID=本机构如 NIH，OOD=跨机构
 - **source 信号仍真实（不抹杀，写诚实量级）**：held-out ViM 7 对全 >> C2 同源 held-out ≈0.5 的 chance 水平（最低 NIH/RSNA 0.406 即诚实负例，下文），**source 距离单因子驱动**——artifact-only 可分性 vs held-out ViM 的 Spearman ρ=1.0 / Pearson r=0.9995（p=0.0005，n=4 有 artifact 参考对）。NIH/RSNA 两美国源 artifact=0.64 → held-out ViM=0.406≈chance = **同模态内诚实负例**（证非 CXR 模态 ViM 天然差，是 source 距离驱动；非「普遍 source leakage」）。
 - **校正方向不偏向 PASS**：held-out 恢复无偏估计，恰把 v5 的满分 PASS（in-sample 1.0）据实拉回 strict FAIL，不是改阈值凑结果。
 
-### A-7 定义（v6 新增承重 · in-sample 评估灌水 finding / 机制贡献）
+### A-7 定义（v6 新增承重 · in-sample 评估灌水 finding / 机制贡献；**skeptic v6 致命-1 收窄定稿**）
 
-- **finding**：投影类 OOD 检测器（ViM/Residual，基于 principal-subspace 几何残差打分）在 in-sample 评估下系统性虚高、报近完美 AUROC；held-out 校正暴露真信号（中等、source 距离驱动）。
-- **判据（确证 PASS）**：Δ(in-sample − held-out) AUROC 在投影类 **>0.2**，在非投影类 **≈0（|Δ|<0.012）**。实测 ViM/Residual 各 +0.223（1.0→0.777）、其余 11 法 |Δ|<0.012（logit 类不依赖 ID 几何拟合，几乎不受影响）。
-- **根因（可机理解释可复现）**：ViM/Residual 的 null-space 残差打分，N_id（500）< D（1024）致 in-sample ID 残差≈0、完美分离任何 held-out，**与 source 无关**——可推广任意 projection-based / subspace-residual OOD 方法。
-- **承重定位**：这是比原「ViM=1.0 完美 source leakage」更契合 D&B 的 benchmark-critique 贡献——「投影类 OOD 检测器在这些 benchmark 上 in-sample 评估会报虚高近完美 AUROC，held-out 后 source 信号真实但小得多」=评测协议陷阱 + 处方（A-6 补「投影类必须 held-out 评估」）。**写成 finding + 方法学贡献，不写成 bug 致歉。**
+> **【skeptic v6 致命-1 收窄，2026-06-19，04_LOG Entry 11】**：held-out 评估**是 ViM 原论文（arXiv:2203.10807，principal space P 与 α 由 training set 事前确定）+ OpenOOD 既有强制标准协议**，不是本文发现。A-7 **绝不能 claim「我们发现投影类 OOD 需 held-out 评估」**（常识，会被反咬「自己跑错又改对」）。原宽口径（含「评测协议陷阱 + 处方 A-6 补『投影类必须 held-out 评估』」）据此收窄，原文留痕于本块末。
 
-### A-6 处方补充（v6，held-out 校正后追加第 ③ 条）
+- **收窄后 finding（定稿）**：量化一个**已知的** estimation/in-sample leakage 误用，在 **N_id<D 的 underdetermined 投影子空间 + 跨源 medical benchmark** 场景下被放大到 **Δ=+0.223** 且**精确伪装成完美 source-leakage 结论（ViM=1.0，足以骗过投稿前自审）**——这个 N_id<D 放大效应 + 它如何 masquerade 成可信 benchmark-critique，文献未专门打包过，是 cautionary 方法学贡献。
+- **判据（确证 PASS，数字不改）**：Δ(in-sample − held-out) AUROC 在投影类 **>0.2**，在非投影类 **≈0（|Δ|<0.012）**。实测 ViM/Residual 各 +0.223（1.0→0.777）、其余 11 法 |Δ|<0.012（logit 类不依赖 ID 几何拟合，几乎不受影响）。
+- **根因（可机理解释可复现）**：ViM/Residual 的 null-space 残差打分，N_id（500）< D（1024）致投影 principal subspace 不满秩、in-sample ID 残差≈0、完美分离任何 held-out，**与 source 无关**——本文证此类已知 leakage 在 N_id<D 投影子空间下被放大到确定性 perfect separation（+0.223），区别于 leakage taxonomy（arXiv:2604.04199）已知的 N>>D 低维下 estimation leakage ΔAUC<0.005。
+- **Related Work 硬对齐（必正面引）**：ViM 原论文（arXiv:2203.10807）的 train-fit 设定 + leakage taxonomy（arXiv:2604.04199）→ 差异化 = 「本文证同类 leakage 在 N_id<D 投影子空间下放大到 +0.223 且产生确定性 perfect separation，且精确伪装成可信 source-leakage benchmark-critique」。
+- **承重定位**：这是比原「ViM=1.0 完美 source leakage」更契合 D&B 的 benchmark-critique 贡献——cautionary 量化「已知 leakage 在 N_id<D 跨源 medical 子空间下的放大 + masquerade」，配 A-1/A-2（现象）+ A-6（处方）。**写成 finding + 方法学贡献，不写成 bug 致歉，也不 claim 发现 held-out 协议。**
+
+> **A-7 原宽口径留痕（skeptic 收窄前，勿删）**：原 finding 写「投影类 OOD 检测器在 in-sample 评估下系统性虚高、报近完美 AUROC；held-out 校正暴露真信号……这是比原『ViM=1.0 完美 source leakage』更契合 D&B 的评测协议陷阱 + 处方（A-6 补『投影类必须 held-out 评估』）」。**「评测协议陷阱 + 投影类必须 held-out」隐含「本文发现 held-out 才对」，据 skeptic 致命-1 收窄为上文定稿版（held-out 是既有标准，本文贡献 = 量化已知 leakage 的 N_id<D 放大 + masquerade）。**
+
+### A-6 处方补充（v6，held-out 校正后追加第 ③ 条；**skeptic v6 致命-1 收窄定稿**）
 
 - 原 ①cross-source normal-vs-normal 作 sanity baseline + ②artifact-only AUROC 作污染上界 **不变**。
-- **新增 ③：投影类 / subspace-residual OOD 检测器（ViM/Residual 等）必须用 held-out 协议评估**（fit 集与 eval 的 ID 半严格切分）；in-sample 评估（fit 集 = eval 的 ID 半）会因 null-space 残差报虚高近完美 AUROC，与真 source 信号无关。报告必须声明评估协议（in-sample / held-out）。
+- **新增 ③（收窄定稿）：投影类 / subspace-residual OOD 检测器（ViM/Residual 等）的报告须显式声明 fit/eval 切分**，因其 in-sample 误用（fit 集 = eval 的 ID 半）**在 N_id<D 下产生确定性伪完美分离**（与真 source 信号无关），而该误用极易在跨源 medical benchmark 上 masquerade 成可信结论。**不写「投影类必须 held-out」**——held-out 本就是 ViM 原文 + OpenOOD 既有标准协议（常识），本文处方贡献 = 提醒 N_id<D 投影子空间下 in-sample 误用会确定性伪完美分离、须显式声明切分以免被骗过自审。
+
+> **A-6 ③ 原宽口径留痕（skeptic 收窄前，勿删）**：原写「投影类 / subspace-residual OOD 检测器必须用 held-out 协议评估」。**「必须 held-out」是 ViM/OpenOOD 既有标准、属常识，据 skeptic 致命-1 收窄为「须显式声明 fit/eval 切分（因 in-sample 误用在 N_id<D 下确定性伪完美分离）」。**
 
 ### v6 据实退路（held-out FAIL 后，不再想新退路）
 
