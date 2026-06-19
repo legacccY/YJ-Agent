@@ -1,0 +1,30 @@
+% =====================================================================
+% Section 3 (SHORT, 9-page) — Reliability x Recoverability Decision Surface
+% C0 motivation chapter. caveman OFF. Serves Claim C0, levers C0.1/C0.2.
+% Numbers: results/c0_decision_surface.csv (verifier PASS, n=360/cell).
+% Trend in prose; full 5x5 grid + CIs -> figure + Appendix A4/A5_2.
+% completeness = "partially recoverable" (NOT irreversible, per R1).
+% contrast S5 = per-dimension trigger (NOT "severe universally unrecoverable").
+% =====================================================================
+
+\section{Reliability~$\times$~Recoverability Decision Surface}
+\label{sec:decision-surface}
+
+Before introducing diagnosis-preserving enhancement (Section~\ref{sec:enhance}) and the query-for-retake agent (Section~\ref{sec:agent}), we motivate \emph{why} quality-aware triage is needed at all. This section is a motivation chapter, not a standalone contribution: it provides the empirical groundwork that licenses the two methods that follow. We describe a two-axis decision surface over degraded dermoscopy: a \emph{reliability} axis led by diagnostic AUC across a per-dimension~$\times$~per-severity grid, and a \emph{recoverability} axis recording whether deterministic enhancement recovers the lost signal at each point. The surface is purely descriptive and serves only to delimit \emph{when} enhancement is licensed and \emph{when} re-acquisition is the safer route; it occupies an angle the per-dimension ECE/QCTS analysis of prior work (\citep{ANON-BMVC}, \texttt{tab:perdeg}; cited, not reused) does not cover, in that we lead with diagnostic AUC rather than calibration error, sweep severity, and add a completeness dimension.
+
+\textbf{Five-dimension degradation taxonomy.}
+We organise consumer-device degradation into five physically interpretable dimensions: \emph{blur} (Gaussian~$\sigma$), \emph{brightness} (multiplicative gain), \emph{contrast} (factor~$\alpha$), \emph{color shift} (per-channel offset), and \emph{completeness} (field-of-view crop ratio). Each is swept over five severity levels S1 (mildest) through S5. S1 is the identity transform for brightness, contrast and completeness, so their S1 AUC coincides at $0.9238$. Levels are quantised on each dimension's native physical scale rather than chosen by inspection (Appendix~A4), so the grid can be re-instantiated under any per-input quality scalar and ported to the triage policy of Section~\ref{sec:agent}.
+
+\textbf{Reliability axis.}
+Reliability declines monotonically with severity along every dimension, but the rate is strikingly dimension-dependent. \emph{Blur is by far the most fragile axis} ($\Delta\mathrm{AUC}=-0.0911$ from S1 to S5), followed by completeness and colour shift, whereas brightness and contrast are the most robust; the per-dimension ranking is quantified in \cref{sec:exp-surface}. Each cell reports melanoma-vs-benign AUC over $n=360$ images with bootstrap $95\%$ CIs (full $5\times5$ grid in Fig.~\ref{fig:c0-surface} and Appendix~A5\_2). The ranking already carries a deployment message: a triage policy treating degradation as a single scalar would mis-prioritise the dimensions that actually erode diagnosis.
+
+\textbf{Recoverability axis.}
+The reliability axis says where diagnosis is lost, not whether the loss can be undone. At each cell we overlay the recoverability $\Delta = \mathrm{AUC}_{\mathrm{enhanced}} - \mathrm{AUC}_{\mathrm{degraded}}$ with a bootstrap $95\%$ CI, partitioning cells into \emph{recoverable} (CI above zero), \emph{harmful} (below zero), and \emph{inconclusive} (straddling zero). Enhancement is significantly beneficial across a moderate window: blur and colour shift become recoverable from S3 onward, the region targeted in Section~\ref{sec:enhance}. Exactly one of the twenty-five cells is harmful, namely \emph{contrast at S5}, where enhancement significantly \emph{lowers} AUC (quantified in \cref{sec:exp-surface}). We scope this precisely: it does \emph{not} imply that severe degradation is universally unrecoverable, since blur and colour shift at S5 remain significantly recoverable. Extreme contrast collapse is instead one \emph{per-dimension} trigger for the query-for-retake channel of Section~\ref{sec:agent}, complementary to (not a replacement for) the per-class melanoma boundary of Section~\ref{sec:exp-boundary}. Completeness, finally, is \emph{inconclusive} at all five levels; we therefore describe it as \emph{partially recoverable}, a trend that does not reach significance, rather than irreversible.
+
+Read together (Fig.~\ref{fig:c0-surface}), the two axes supply the motivation for the methods that follow: they expose a moderate window where enhancement demonstrably helps (Section~\ref{sec:enhance}), and isolated triggers where it should yield to re-acquisition (Section~\ref{sec:agent}). We treat the surface as the diagnostic substrate that justifies quality-aware triage rather than as a result claimed in its own right. The surface presupposes a per-input degradation estimate, obtained here from a five-head quality assessor (VisiScore; mean PLCC $0.924$ / SRCC $0.895$ against held-out degradation labels) but agnostic to its source: any per-input quality signal, whether learned, no-reference IQA, or known corruption severity, can be substituted.
+
+% Fig 2 (decision surface) relocated to Appendix A28 (app:moved-figs) for the 9-page limit;
+% fig:c0-surface label now lives there, main-text \ref{fig:c0-surface} resolves to the appendix.
+
+% Cross-referenced labels preserved for the long version / other sections:
+% \label{sec:exp-surface} now lives in the results section of the full draft.

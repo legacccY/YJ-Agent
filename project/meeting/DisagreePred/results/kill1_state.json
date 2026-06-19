@@ -1,0 +1,14 @@
+{
+  "phase": "done",
+  "current_fold": null,
+  "total_folds": null,
+  "perm_rep": null,
+  "total_perm": null,
+  "start_ts": 1781857564.3662453,
+  "start_iso": "2026-06-19T16:26:04",
+  "last_update_ts": 1781857620.7046878,
+  "last_update_iso": "2026-06-19T16:27:00",
+  "elapsed_sec": 56.3,
+  "status": "done",
+  "msg": "verdict=FAIL cv_auroc=0.6157"
+}

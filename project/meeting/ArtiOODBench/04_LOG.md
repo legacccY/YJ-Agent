@@ -1,5 +1,66 @@
 # ArtiOODBench — LOG
 
+> **核心章节散文草稿指针**：`05_DRAFT_core.md`（writer 出，§Method/§Results/§Discussion-Limitations，paper-ready，venue 无关 md 待落 D&B LaTeX；数字全 verifier 核，2026-06-19）。⚠️ **Entry 10 后此草稿的 A-5「ViM=1.0 完美 source leakage」段落已失效待重写**（in-sample 伪迹，见 Entry 10）。
+
+## Entry 10 — 2026-06-19 ~17:10 ⚠️ 重大发现：A-5 承重 ViM=1.0 是 in-sample 几何伪迹，非纯 source leakage（到拍板点）
+
+**触发**：reviewer 对抗审 05_DRAFT_core.md 列头号 reject 风险 = 「ViM=1.0 可能是 trivial 评估伪迹而非真 source covariate」。主线写负对照 `scripts/sanity_samesource_vim.py` 验，**坐实是评估协议混杂**。
+
+**根因（已读 l3_ood_rerank.py L1037-1062 确认非误读）**：`_run_full_pipeline` 用 `feats_test = np.concatenate([feats_id, feats_ood])`，方法以 `fn(feats_id, feats_test)` 调用 → **ID 部分既是 ViM/Residual/MDS/KNN 的 fit 集，又是 test 的 ID 半（in-sample）**，无 held-out 切分。500 样本 < 1024 维 → PCA 子空间不满秩 → in-sample ID 残差≈0、任何 held-out 残差>0 → 残差类方法把「in-sample vs held-out」当信号，**与 source 无关地完美分离**。
+
+**负对照证据（4 对照 × 3 模态，已存 feats，复用 l3 官方 method_vim/method_residual）**：
+
+| 模态 | C0 cross-source in-sample(=l3报A-5) | C1 same-source in-sample | C2 same-source held-out 对称 | **C3 cross-source HELD-OUT(正确协议)** |
+|---|---|---|---|---|
+| CXR (NIH/VinDr) | 1.0 | **1.0** | 0.470 | **0.841** |
+| BrainMRI (BraTS/BrainTumor) | 1.0 | **1.0** | 0.515 | **0.998** |
+| Dermoscopy (HAM/ISIC) | 1.0 | **1.0** | 0.590 | **0.673** |
+
+- **C1 铁证**：同一来源（NIH 对半切）+ in-sample 评估也给 ViM=1.0 → 1.0 来自 in-sample 不对称，**不是 source**。
+- **C2 公平负对照**：两端都 held-out 同源 → ≈0.5（无信号，正常）。
+- **C3 正确协议**（fit=A 前半 / id-test=A 后半 held-out / ood=B 跨源）：**source leakage 真实存在但非完美**——CXR 0.841 / MRI 0.998 / Derm 0.673，全 >> C2≈0.5。Residual 同步（与 ViM 同几何）。
+
+**判定（诚实，不硬撑）**：
+1. **headline「OOD 方法测 source 非病理」存活**：C3 held-out 全 >> 0.5 chance，source 信号真实可检、跨 3 模态。
+2. **但承重数字必须从「ViM=1.0 完美」改为「held-out 0.67–0.998」**：Entry 9 的 A-5 PASS 满分（in-sample 1.0）失效。strict A-5 阈值（>0.95 on ≥6/7）在 held-out 下**只 MRI 过、CXR/Derm 不过 → A-5 strict FAIL**。
+3. **波及全 l3 矩阵**：13 法 × 7 对 raw+cleanC **全部用 in-sample concat** → 残差/距离类方法（ViM/Residual/MDS/KNN）的 AUROC 都被 in-sample 灌水，需 held-out 重算才有效。logit 类（MSP/Energy…不依赖 ID 几何拟合）受影响小。
+4. **银边 = in-sample 灌水本身是新 benchmark-critique contribution**：「OOD 检测器在这些 benchmark 上 in-sample 评估会报虚高近完美 AUROC；held-out 后 source 信号真实但小得多」——比原 claim 更契合 D&B（评测协议陷阱 + 处方）。
+
+**到拍板点（#4 偏离 STORY 承重数字 / #5 stage-gate strict-A-5 FAIL 放行方向）**：需用户拍板重算+reframe 方向，不擅自改 STORY 承重口径。资产：`results/sanity_samesource_vim.csv` + `scripts/sanity_samesource_vim.py`。
+
+**下一步（待拍板）**：推荐 = 改 l3 为 held-out 协议（ID train/test 切分）重算全 13 法×7 对 → A-5 承重换 held-out 真值 → reframe headline 到诚实量级 + in-sample 灌水当新 finding。
+
+---
+
+## Entry 9 — 2026-06-19 ~16:40 v5 扩证据实跑完成（7→13 法 × 4→7 对）→ A-5 承重 PASS 满分（⚠️ 见 Entry 10：此 1.0 系 in-sample 伪迹，承重数字失效）
+
+**触发**：D&B 主投「为 70 中稿」扩证据（STORY/ACCEPTANCE v5 预登记块，2026-06-19 跑前冻结）。代码 e6f36ec 已写，本轮纯执行。
+
+**执行链**：
+1. 抽 2 套新 derm feats（GPU frozen 推理）：Fitzpatrick_NV (485,1024)、PAD_UFES_NEV (244,1024) + 各 18 logits。manifest 6229 行含 13 套。
+2. **逮 bug**：l3 查找名 `fitzpatrick17k`/`PAD_UFES` ≠ feats 实存名 `Fitzpatrick_NV`/`PAD_UFES_NEV` → P4b/P4c 优雅跳过。改 l3 第 1350/1360 行查找名重跑全量（确定性，5 旧对重算同值 + 补 2 新 derm 对）。
+3. 跑 l3 全矩阵：13 法 × 7 对 × (raw + cleanC propensity 配对) + bootstrap。
+
+**A-5 source-leakage 承重命门 = PASS 满分（verifier 从原始分数独立重算确证，零 drift）**：
+- **ViM raw AUROC = 1.0 全 7/7 对**（门 ≥(N-1)/N=6/7 >0.95）→ 超额达标，跨 CXR×3 / BrainMRI×1 / Dermoscopy×3 三模态。
+- ViM cleanC = 1.0 全 6/6 可评估对（BraTS cleanC n_matched=6<30 按 PR-匹配半径第 6 条剔）→ **去污染后仍 1.0 = 深层 source leakage 顽固，L2 propensity 对 ViM 形同虚设**（PR-G4 disclosure 债，必当 finding+limitation 主动写）。
+- Residual raw=1.0 全 7/7 佐证（feature-geometric 残差 = 纯源检测，但非命门承载法，仅描述性对照）。
+- 新对 P2b(VinDr×RSNA)/P4b(HAM×fitzpatrick)/P4c(ISIC×PAD_UFES) ViM 全 1.0 → 普适性扩稳。
+
+**13 法 AUROC 谱（描述性，v5 不预登记组级命门）**：三层异质——ViM/Residual 恒 1.0 → KNN(0.719)/MDS(0.694)/SHE(0.682) 中层（跨模态方差大，CXR 低 derm/MRI 高）→ DICE/fDBD/GradNorm 弱（GradNorm mean=0.387 全对最低，唯一依赖梯度的法，frozen encoder 下捕不到 source covariate，据实陈异质不挂组帽）。
+
+**A-4 排名翻转 negative result（已降级，未翻案）**：6 可评估对全 FAIL + BraTS INSUFFICIENT，无一 PASS。spearman_point CXR 高(0.945/0.978/0.775) vs derm 低(0.582/0.720/0.676)，**13 法 CI 上界仍全 >0.7（0.966-1.0）→ 扩方法数 7→13 没救回功效，印证「结构性低功效」预登记剖析当 contribution**（discussion：「即使 7→13 法，所有 CI 上界仍>0.7，判据恒 FAIL 与真值无关」）。
+
+**skeptic 跑后 HARKing 轻量过闸 = 0 致命放行**：A-5 升级口径跑前冻结且留 FAIL 空间（非松到必过）；13 法 7 对全报无挑无藏（弱法 GradNorm/fDBD 如实低分在列）；承重隔离守住（只 ViM 担、独立于配对质量）；A-4 negative 诚实留痕未翻案。**口径校正**：P4c(ISIC×PAD_UFES) cleanC n_matched=**188**（充足），n=6 的是 **BraTS**；P4b(HAM×fitzpatrick) n=39 SMD_max=0.675 平衡差，**仅拖累 A-4/cleanC 不拖累 A-5**（A-5 看 raw 不依赖配对）。
+
+**资产**：results/ 全落盘（l3_raw_ranking / l3_cleanC_ranking / a4_bootstrap_spearman 全 7 对 13 法）+ scripts/plot_v5_figures.py + 3 张扩展图（figures/fig_v5_heatmap_13x7 / fig_v5_vim_leakage / fig_v5_a4_negative，pdf+png，主线核 GradNorm0.387/ViM7×1.0/KNN0.719 三值一致）。
+
+**写 draft 前置（skeptic+analyst 收口，写入待办）**：①A-5 段明写承重基于 raw ViM、独立配对质量（化解 P4b SMD 攻击面）②PR-G4 ViM cleanC 仍 1.0 当 limitation 主动 disclose ③排除 5 法(GEN/KLM/Relation/RankFeat/SCALE) backbone 不兼容理由写 methods ④ViM=1.0 措辞「pre-specified consistent observation」非「we found」⑤SMD 全对 max>0.1（mean<0.1）需 disclose ⑥n 口径别写串(P4c=188/BraTS=6/P4b=39)。
+
+**下一步**：draft 章节（verifier 已核数 → writer 按 STORY v4 + 6 前置写 §Results/§Method/§Discussion）；A-6 评测处方可补 checklist 图。**未到拍板点**（无投稿/训练/删除），自主推进。
+
+---
+
 ## Entry 8 — 2026-06-19 ~15:30 命门 reframe 锁定（用户拍板 option ① + 编队收口）
 
 **用户拍板 = ①诚实 reframe headline**（非降 ICBINB、非改裁决救 L3）。

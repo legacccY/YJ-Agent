@@ -1,0 +1,2 @@
+pair,spearman_point,ci_lower,ci_upper,ci_upper_lt_0.7,top1_orig,top1_cleanC_rank,top1_dropped_from_top3,A4_verdict,n_matched_pairs,common_support_pct,artifact_only_auroc_cleanC,method_mean_auroc_cleanC,smd_max,smd_mean
+smoke_NIH_vs_VinDr,nan,nan,nan,-1,ODIN,-1,-1,"INSUFFICIENT (n_matched=0, unable to decide)",0,0.0,nan,nan,nan,nan

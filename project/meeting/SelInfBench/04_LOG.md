@@ -4,6 +4,21 @@
 
 ---
 
+## Entry 8 — 转投 BIBE 2026 + 补强冲稳中稿（2026-06-19，用户拍板降档 EI）
+
+用户拍板：从 paused(TMLR/D&B) 降档投 **IEEE BIBE 2026**（EI/IEEE，DDL 用户称 06-24 官网未核实，full 8 页双栏）。用户追加要求：**①一定要稳稳中稿（可加实验）②注意故事讲法**。
+
+**四闸复核（本窗）**：
+- 资产 Bash 核盘属实：A1✅(truthproxy HAM winner's curse +0.0746) / A2✅稳(coverage_sim_v2 naive 覆盖跌 0.715~0.794 破名义 90%、df 修回 ~0.95、弱区制 gap 消失) / A3 PARTIAL 2/3(HAM 强+BraTS 触顶+ISIC 负) / A4✅校正器建好(`scripts/selinf_corrector.py` 烟测核过 CI 逐位对上)。
+- K2 撞车 🟢 不撞（researcher）：无人先发同 claim；prior=Åkesson2024/Zrnic-Fithian2024/Leiner2023。
+- ⚠️ 数字隐患钉死：A1 旧 headline 0.7467/0.7330 来自 HPC `c025_deflation.csv` **未回传本地无源 → 🚫 禁入稿**，A1 证据改用本地可核 truthproxy +0.0746。
+
+**新建**：`paper/BUILD_MAP.md`（章节↔判据↔本地可核 csv 数字钉死表 + venue 决策留痕 + 禁用 deflation 红线）+ `paper/figures/`。IEEEtran+pdflatex 已验在 texlive2025。
+
+**下一步（本窗在跑）**：planner 设计补强实验矩阵（核心=扩 ISIC test 阳性数把 2/3→3/3 + 真 benchmark 自助覆盖率）+ skeptic 红队 BIBE 拒稿风险 → 重述 BIBE 故事(医学可复现性角度，headline 改= 拍板点先报) → 补实验 → writer 写稿。
+
+---
+
 ## Entry 7 — ICLR 升级探索 = 死，项目暂停于 TMLR/D&B（2026-06-18，用户拍板转别的项目）
 
 用户问"能否升级 80% 稳中 ICLR"→ 探"医学挑战赛 leaderboard 冠军高估审计 + 自适应选择条件推断"升级路 → **两 kill-shot 双杀，升级死，回 TMLR/D&B**。

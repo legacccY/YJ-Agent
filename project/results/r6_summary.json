@@ -1,0 +1,71 @@
+{
+  "dataset": "ITB-LQ (n=300)",
+  "methods_run": [
+    "Direct (EfficientNet-B3)",
+    "Chow's rule (max-softmax)",
+    "Deep Ensemble (3-seed)",
+    "MC-Dropout (T=30, mean-conf proxy)",
+    "Query-for-Retake (qbar threshold)"
+  ],
+  "methods_skipped": [
+    "SelectiveNet: checkpoints not found. Run: python project/train_selectivenet.py --coverage all (GPU ~15min), then re-run this script.",
+    "MC-Dropout exact UQ: per-sample T-pass variance not saved. Using confidence of mean prediction as proxy. TODO: re-run run_mcdropout_baseline with variance logging for exact method."
+  ],
+  "honesty_check": {
+    "direct_risk_at_full_coverage": 0.46,
+    "retake_mel_miss_at_cov80": 1.0,
+    "C2_4_check": "NOTE: retake risk lower than Direct at full coverage \u2014 double-check coverage alignment"
+  },
+  "metrics": {
+    "direct": {
+      "method": "Direct (EfficientNet-B3)",
+      "rc_auc": null,
+      "risk_at_full_coverage": 0.46,
+      "auc_roc": 0.715,
+      "mel_miss_at_cov20": 0.2,
+      "mel_miss_at_cov50": 0.2,
+      "mel_miss_at_cov80": 0.2,
+      "note": "Reference: no abstention"
+    },
+    "chow": {
+      "method": "Chow's rule (max-softmax)",
+      "rc_auc": 0.4694,
+      "risk_at_full_coverage": 0.46,
+      "auc_roc": 0.715,
+      "mel_miss_at_cov20": 0.8,
+      "mel_miss_at_cov50": 0.3,
+      "mel_miss_at_cov80": 0.2,
+      "note": "Chow 1970 / Geifman&El-Yaniv 2017; abstain = low max-softmax confidence"
+    },
+    "ensemble": {
+      "method": "Deep Ensemble (3-seed)",
+      "rc_auc": 0.6191,
+      "risk_at_full_coverage": 0.66,
+      "auc_roc": 0.79,
+      "mel_miss_at_cov20": 0.5,
+      "mel_miss_at_cov50": 0.2,
+      "mel_miss_at_cov80": 0.1,
+      "note": "Deep Ensemble 3-seed (s42/s123/s2024); uncertainty = predictive variance. TODO: s456/s789 ckpts missing, ideally 5-seed per paper."
+    },
+    "mcdropout": {
+      "method": "MC-Dropout (T=30, mean-conf proxy)",
+      "rc_auc": 0.6335,
+      "risk_at_full_coverage": 0.7,
+      "auc_roc": 0.8075,
+      "mel_miss_at_cov20": 0.5,
+      "mel_miss_at_cov50": 0.1,
+      "mel_miss_at_cov80": 0.0,
+      "note": "MC-Dropout T=30 (N_MCD=30 in run_experiments.py). Uncertainty proxy = 1 - max(p, 1-p) of averaged prediction. TODO: exact MC-Dropout UQ requires re-running inference with per-sample variance logging (not yet saved in itb_predictions.csv I baseline)."
+    },
+    "retake": {
+      "method": "Query-for-Retake (qbar threshold)",
+      "rc_auc": 0.1467,
+      "risk_at_full_coverage": 0.22,
+      "auc_roc": 0.6225,
+      "mel_miss_at_cov20": 1.0,
+      "mel_miss_at_cov50": 1.0,
+      "mel_miss_at_cov80": 1.0,
+      "note": "Query-for-retake: abstain when qbar < tau (image quality signal). Orthogonal to prediction confidence. Prediction model = Std VIB. KEY DISTINCTION: retake triggers re-acquisition (new image request); other methods defer to human. On ITB-LQ static benchmark, modelled as abstention on qbar signal."
+    }
+  }
+}

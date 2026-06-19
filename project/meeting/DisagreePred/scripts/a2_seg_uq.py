@@ -45,6 +45,8 @@ import json
 import math
 import os
 import random
+import time
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -61,6 +63,7 @@ PATCH_DIR   = RESULTS_DIR / "patches"
 LABEL_CSV   = RESULTS_DIR / "lidc_disagree_labels.csv"
 OUT_CSV     = RESULTS_DIR / "a2_uq_proxy_scores.csv"
 CKPT_DIR    = RESULTS_DIR / "a2_seg_ckpts"   # 保存 ensemble 模型权重
+A2_STATE_JSON = RESULTS_DIR / "a2_seg_state.json"  # 可观测性心跳文件
 
 # ─── 超参 ─────────────────────────────────────────────────────────────────────
 # TODO 超参待核源：以下分割超参均为 LIDC 社区惯例，未找到单一权威出处，需 researcher 确认
@@ -83,6 +86,45 @@ SEED     = 0
 PATCH_SIZE = 96
 HU_MIN     = -1000.0
 HU_MAX     = 400.0
+
+
+# ─── 可观测性心跳（不影响计算，写盘失败静默）──────────────────────────────────
+_A2_STATE_START_TS: float = 0.0   # 由 main 设置
+
+
+def write_a2_state(**kw) -> None:
+    """
+    原子写 a2_seg_state.json（先写 .tmp 再 os.replace）。
+    任何 IO 异常静默忽略，绝不影响训练主流程。
+    字段：phase / current_fold / total_folds /
+           start_ts / last_update_ts / elapsed_sec / status / msg
+    """
+    global _A2_STATE_START_TS
+    try:
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        now = time.time()
+        state = {
+            "phase":           kw.get("phase", "unknown"),
+            "current_fold":    kw.get("current_fold", None),
+            "total_folds":     kw.get("total_folds", None),
+            "perm_rep":        None,
+            "total_perm":      None,
+            "start_ts":        _A2_STATE_START_TS,
+            "start_iso":       time.strftime(
+                "%Y-%m-%dT%H:%M:%S", time.localtime(_A2_STATE_START_TS)
+            ) if _A2_STATE_START_TS else None,
+            "last_update_ts":  now,
+            "last_update_iso": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
+            "elapsed_sec":     round(now - _A2_STATE_START_TS, 1) if _A2_STATE_START_TS else None,
+            "status":          kw.get("status", "running"),
+            "msg":             kw.get("msg", ""),
+        }
+        tmp = A2_STATE_JSON.with_suffix(".tmp")
+        with open(str(tmp), "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+        os.replace(str(tmp), str(A2_STATE_JSON))
+    except Exception:
+        pass   # 心跳写盘失败绝不拖垮训练
 
 
 # ─── 复用 kill1 的折划分（直接 import 或本地复刻，带对齐注释）────────────────
@@ -720,7 +762,7 @@ def run_a2_seg_uq(
 
     unique_patients = np.unique(all_patients)
     print(f"[a2] {len(rows)} clusters / {len(unique_patients)} patients / "
-          f"n_splits={N_SPLITS}")
+          f"n_splits={N_SPLITS}", flush=True)
 
     # 折划分（与 kill1 完全对齐：同函数、同 seed）
     folds = stratified_group_kfold_split(N_SPLITS, all_labels, all_patients, seed=seed)
@@ -729,21 +771,30 @@ def run_a2_seg_uq(
     uq_mcdropout = np.full(len(rows), float("nan"), dtype=np.float64)
     uq_ensemble  = np.full(len(rows), float("nan"), dtype=np.float64)
 
-    print("\n[a2] Starting 5-fold patient-level seg UQ training ...")
+    print("\n[a2] Starting 5-fold patient-level seg UQ training ...", flush=True)
+    write_a2_state(phase="seg_train", current_fold=0, total_folds=N_SPLITS,
+                   status="running")
 
     for fold_i, (train_val_idx, test_idx) in enumerate(folds):
         print(f"\n  [fold {fold_i+1}/{N_SPLITS}] "
-              f"train+val={len(train_val_idx)} test={len(test_idx)}")
+              f"train+val={len(train_val_idx)} test={len(test_idx)}", flush=True)
+        write_a2_state(phase="seg_train", current_fold=fold_i + 1,
+                       total_folds=N_SPLITS, status="running",
+                       msg=f"fold {fold_i+1} start")
 
         # 二级 val split（与 kill1 对齐：seed + fold_i + 1）
         train_idx, val_idx = split_train_val(
             train_val_idx, all_patients, rng_seed=seed + fold_i + 1
         )
-        print(f"    train={len(train_idx)} val={len(val_idx)} test={len(test_idx)}")
+        print(f"    train={len(train_idx)} val={len(val_idx)} test={len(test_idx)}",
+              flush=True)
 
         # ── MC-dropout 模型：单个模型，推理时开 dropout ────────────────────
         mc_ckpt = CKPT_DIR / f"fold{fold_i+1}_mcdropout.pt"
-        print(f"    [MC-dropout] training fold {fold_i+1} ...")
+        print(f"    [MC-dropout] training fold {fold_i+1} ...", flush=True)
+        write_a2_state(phase="mcdropout", current_fold=fold_i + 1,
+                       total_folds=N_SPLITS, status="running",
+                       msg=f"fold {fold_i+1} mc-dropout training")
         mc_model = train_seg_fold(
             rows, train_idx, val_idx,
             seed=seed + fold_i * 100,
@@ -758,7 +809,11 @@ def run_a2_seg_uq(
         for ens_i in range(ENS_K):
             ens_seed  = seed + fold_i * 100 + (ens_i + 1) * 1000
             ens_ckpt  = CKPT_DIR / f"fold{fold_i+1}_ens{ens_i}.pt"
-            print(f"    [ensemble] training fold {fold_i+1} member {ens_i+1}/{ENS_K} ...")
+            print(f"    [ensemble] training fold {fold_i+1} member {ens_i+1}/{ENS_K} ...",
+                  flush=True)
+            write_a2_state(phase="ensemble", current_fold=fold_i + 1,
+                           total_folds=N_SPLITS, status="running",
+                           msg=f"fold {fold_i+1} ens member {ens_i+1}/{ENS_K}")
             ens_m = train_seg_fold(
                 rows, train_idx, val_idx,
                 seed=ens_seed,
@@ -770,7 +825,11 @@ def run_a2_seg_uq(
             ens_models.append(ens_m)
 
         # ── 对 test_idx 推理 UQ ────────────────────────────────────────────
-        print(f"    [infer] computing UQ for {len(test_idx)} test clusters ...")
+        print(f"    [infer] computing UQ for {len(test_idx)} test clusters ...",
+              flush=True)
+        write_a2_state(phase="mcdropout_infer", current_fold=fold_i + 1,
+                       total_folds=N_SPLITS, status="running",
+                       msg=f"fold {fold_i+1} UQ inference")
         for idx in test_idx:
             row      = rows[idx]
             patch    = np.load(row["patch_path"]).astype(np.float32)
@@ -788,7 +847,11 @@ def run_a2_seg_uq(
 
         n_nan_mc  = int(np.isnan(uq_mcdropout[test_idx]).sum())
         n_nan_ens = int(np.isnan(uq_ensemble[test_idx]).sum())
-        print(f"    [fold {fold_i+1}] done. NaN mc={n_nan_mc} ens={n_nan_ens}")
+        print(f"    [fold {fold_i+1}] done. NaN mc={n_nan_mc} ens={n_nan_ens}",
+              flush=True)
+        write_a2_state(phase="seg_train", current_fold=fold_i + 1,
+                       total_folds=N_SPLITS, status="running",
+                       msg=f"fold {fold_i+1} done nan_mc={n_nan_mc} nan_ens={n_nan_ens}")
 
     # ── 写 CSV ────────────────────────────────────────────────────────────────
     assert not np.isnan(uq_mcdropout).all(), "[BUG] all MC-dropout UQ are nan"
@@ -807,21 +870,30 @@ def run_a2_seg_uq(
                 "uq_mcdropout":    float(uq_mcdropout[i]) if not np.isnan(uq_mcdropout[i]) else "",
                 "uq_ensemble":     float(uq_ensemble[i])  if not np.isnan(uq_ensemble[i])  else "",
             })
-    print(f"\n[output] a2 UQ CSV -> {OUT_CSV}")
+    print(f"\n[output] a2 UQ CSV -> {OUT_CSV}", flush=True)
 
     # 简单统计
     valid_mc  = uq_mcdropout[~np.isnan(uq_mcdropout)]
     valid_ens = uq_ensemble[~np.isnan(uq_ensemble)]
     print(f"[a2] MC-dropout: n={len(valid_mc)} mean={valid_mc.mean():.4f} "
-          f"std={valid_mc.std():.4f}")
+          f"std={valid_mc.std():.4f}", flush=True)
     print(f"[a2] Ensemble:   n={len(valid_ens)} mean={valid_ens.mean():.4f} "
-          f"std={valid_ens.std():.4f}")
+          f"std={valid_ens.std():.4f}", flush=True)
+    write_a2_state(phase="done", status="done",
+                   msg=f"n_valid_mc={len(valid_mc)} n_valid_ens={len(valid_ens)}")
 
 
 # ─── 主函数 ──────────────────────────────────────────────────────────────────
 def main() -> None:
+    import sys
     import multiprocessing
+    # 无缓冲：防 HPC stdout 块缓冲藏进度（Python 3.7+，HPC env 3.10）
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
     multiprocessing.freeze_support()   # Windows spawn required
+
+    global _A2_STATE_START_TS
+    _A2_STATE_START_TS = time.time()
 
     parser = argparse.ArgumentParser(
         description="DisagreePred A2 UQ-proxy: 2D UNet seg uncertainty on LIDC")
@@ -862,8 +934,14 @@ def main() -> None:
         print(f"[smoke] truncated to {args.smoke} rows")
 
     # Step 2：训练 + UQ 推理
-    print("[a2] Step 2: training seg models + UQ inference ...")
-    run_a2_seg_uq(rows, device, seed=args.seed)
+    print("[a2] Step 2: training seg models + UQ inference ...", flush=True)
+    try:
+        run_a2_seg_uq(rows, device, seed=args.seed)
+    except Exception as _exc:
+        _tb = traceback.format_exc()
+        write_a2_state(phase="error", status="error",
+                       msg=_tb[-500:])   # 只取末 500 字符防 json 过大
+        raise
 
 
 if __name__ == "__main__":

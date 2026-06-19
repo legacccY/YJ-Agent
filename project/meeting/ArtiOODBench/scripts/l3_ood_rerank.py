@@ -75,6 +75,14 @@ OUT_BOOTSTRAP = OUT_DIR / "a4_bootstrap_spearman.csv"
 OUT_L3_CLEAN_A = OUT_DIR / "l3_cleanA_ranking.csv"
 OUT_L3_CLEAN_B = OUT_DIR / "l3_cleanB_ranking.csv"
 
+# heldout 协议输出（_heldout 后缀，绝不覆盖上面 insample 文件）
+OUT_SCORES_RAW_H = OUT_DIR / "l3_method_scores_raw_heldout.csv"
+OUT_L3_RAW_H = OUT_DIR / "l3_raw_ranking_heldout.csv"
+OUT_L3_CLEAN_C_H = OUT_DIR / "l3_cleanC_ranking_heldout.csv"
+OUT_BOOTSTRAP_H = OUT_DIR / "a4_bootstrap_spearman_heldout.csv"
+OUT_L3_CLEAN_A_H = OUT_DIR / "l3_cleanA_ranking_heldout.csv"
+OUT_L3_CLEAN_B_H = OUT_DIR / "l3_cleanB_ranking_heldout.csv"
+
 # ViM dim（自定，依 arXiv:2203.10807 N<1500→D≈N/2，N=1024→D=512；paper 标注）
 VIM_DIM = 512  # TODO: 标注 paper 为自定（ViM 原论文 N/2 法则）
 KNN_K = 50
@@ -1130,17 +1138,89 @@ def _load_xrv_model(device: str):
     return model
 
 
-def main(smoke: bool = False, device: str = "cpu", caliper: float = CALIPER_SD):
+# ============================================================
+# heldout cleanC 子集专用评测（fit=id_fit，eval=concat(id_eval_sub, ood_sub)）
+# 避免修改 run_pair_on_subset 接口，单独提取
+# ============================================================
+def _run_subset_heldout(
+    feats_id_fit, logits_id_fit, paths_id_fit,
+    feats_id_eval_sub, logits_id_eval_sub, paths_id_eval_sub,
+    feats_ood_sub, logits_ood_sub, paths_ood_sub,
+    pair_name, subset_name,
+    model=None, method_names=None,
+) -> dict:
+    """
+    heldout 协议 cleanC 子集评测。
+    fit 集 = feats_id_fit（全 id_fit，calibration 无泄漏）。
+    test 集 = concat(feats_id_eval_sub, feats_ood_sub)。
+    labels  = [0]*n_id_eval_sub + [1]*n_ood_sub。
+    """
+    if method_names is None:
+        method_names = OOD_METHODS
+    n_eval = len(feats_id_eval_sub)
+    n_ood  = len(feats_ood_sub)
+    labels = np.array([0]*n_eval + [1]*n_ood, dtype=np.int32)
+
+    feats_test = np.concatenate([feats_id_eval_sub, feats_ood_sub], axis=0)
+    logits_test = (np.concatenate([logits_id_eval_sub, logits_ood_sub], axis=0)
+                   if (logits_id_eval_sub is not None and logits_ood_sub is not None) else None)
+    paths_test = ((list(paths_id_eval_sub or []) + list(paths_ood_sub or []))
+                  if (paths_id_eval_sub is not None and paths_ood_sub is not None) else None)
+
+    aurocs = {}
+    for method in method_names:
+        fn = METHOD_FNS[method]
+        try:
+            if method in LIVE_METHODS:
+                if paths_test is None or model is None:
+                    raise ValueError(f"{method} live 路径缺失")
+                scores = fn(feats_id_fit, feats_test,
+                            logits_id=logits_id_fit, logits_test=logits_test,
+                            paths_test=paths_test, model=model)
+            elif method in MODEL_METHODS:
+                if model is None:
+                    raise ValueError(f"{method} 需要 model（get_fc）")
+                scores = fn(feats_id_fit, feats_test,
+                            logits_id=logits_id_fit, logits_test=logits_test,
+                            model=model)
+            else:
+                scores = fn(feats_id_fit, feats_test,
+                            logits_id=logits_id_fit, logits_test=logits_test)
+            auroc = auroc_numpy(labels, scores)
+        except Exception as e:
+            print(f"  [WARN] {method}/{subset_name}: {e}", file=sys.stderr)
+            auroc = float("nan")
+        aurocs[method] = auroc
+        print(f"  {pair_name}/{subset_name} | {method:12s}: AUROC={auroc:.4f} [heldout]")
+    return aurocs
+
+
+def main(smoke: bool = False, device: str = "cpu", caliper: float = CALIPER_SD,
+         protocol: str = "insample"):
+    """
+    protocol:
+      insample  — 现行行为：ID 全量既 fit 又在 test（in-sample，对照基准）。
+      heldout   — 标准 OOD 评测：ID 5:5 切 fit/eval，方法 calibration 用 id_fit，
+                  test = concat(id_eval, ood)，输出带 _heldout 后缀，不覆盖 insample。
+    """
+    assert protocol in ("insample", "heldout"), f"--protocol 必须是 insample 或 heldout，got: {protocol}"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    # 按协议选输出路径组
+    if protocol == "heldout":
+        _base_outputs = [OUT_SCORES_RAW_H, OUT_L3_RAW_H, OUT_L3_CLEAN_C_H,
+                         OUT_BOOTSTRAP_H, OUT_L3_CLEAN_A_H, OUT_L3_CLEAN_B_H]
+    else:
+        _base_outputs = [OUT_SCORES_RAW, OUT_L3_RAW, OUT_L3_CLEAN_C,
+                         OUT_BOOTSTRAP, OUT_L3_CLEAN_A, OUT_L3_CLEAN_B]
 
     # ============================================================
     # Bug4 fix: 真实运行时，run 开头清空上轮输出（含可能残留的 smoke 行）
     # smoke 模式用独立文件名，不污染真实结果文件。
     # ============================================================
     if not smoke:
-        # 清空所有输出 csv，确保本轮 4 对数据从头累积，不混入旧轮/smoke 行
-        for csv_path in [OUT_SCORES_RAW, OUT_L3_RAW, OUT_L3_CLEAN_C,
-                         OUT_BOOTSTRAP, OUT_L3_CLEAN_A, OUT_L3_CLEAN_B]:
+        # 清空对应协议的输出 csv，确保本轮 4 对数据从头累积，不混入旧轮/smoke 行
+        for csv_path in _base_outputs:
             if csv_path.exists():
                 csv_path.unlink()
                 print(f"[INIT] cleared old output: {csv_path.name}")
@@ -1193,13 +1273,15 @@ def main(smoke: bool = False, device: str = "cpu", caliper: float = CALIPER_SD):
 
         # smoke 写独立文件（_smoke 后缀），不污染真实结果 csv
         # Bug4 fix: smoke 与 real-data csv 完全隔离
+        # heldout smoke 另加 _heldout_smoke 后缀
+        _proto_tag = f"_{protocol}_smoke" if protocol == "heldout" else "_smoke"
         _smoke_suffix_map = {
-            OUT_SCORES_RAW: OUT_DIR / "l3_method_scores_raw_smoke.csv",
-            OUT_L3_RAW:     OUT_DIR / "l3_raw_ranking_smoke.csv",
-            OUT_L3_CLEAN_C: OUT_DIR / "l3_cleanC_ranking_smoke.csv",
-            OUT_BOOTSTRAP:  OUT_DIR / "a4_bootstrap_spearman_smoke.csv",
-            OUT_L3_CLEAN_A: OUT_DIR / "l3_cleanA_ranking_smoke.csv",
-            OUT_L3_CLEAN_B: OUT_DIR / "l3_cleanB_ranking_smoke.csv",
+            OUT_SCORES_RAW: OUT_DIR / f"l3_method_scores_raw{_proto_tag}.csv",
+            OUT_L3_RAW:     OUT_DIR / f"l3_raw_ranking{_proto_tag}.csv",
+            OUT_L3_CLEAN_C: OUT_DIR / f"l3_cleanC_ranking{_proto_tag}.csv",
+            OUT_BOOTSTRAP:  OUT_DIR / f"a4_bootstrap_spearman{_proto_tag}.csv",
+            OUT_L3_CLEAN_A: OUT_DIR / f"l3_cleanA_ranking{_proto_tag}.csv",
+            OUT_L3_CLEAN_B: OUT_DIR / f"l3_cleanB_ranking{_proto_tag}.csv",
         }
         # 清旧 smoke 文件
         for _p in _smoke_suffix_map.values():
@@ -1212,6 +1294,7 @@ def main(smoke: bool = False, device: str = "cpu", caliper: float = CALIPER_SD):
                            paths_id=paths_id, paths_ood=paths_ood,
                            model=model, device=device, smoke=True,
                            out_path_override=_smoke_suffix_map,
+                           protocol=protocol,
                            method_names=OOD_METHODS)
 
         # 清理临时文件
@@ -1282,11 +1365,25 @@ def main(smoke: bool = False, device: str = "cpu", caliper: float = CALIPER_SD):
         print(f"[L3] extracting artifact features for {ood_ds}...")
         art_ood = extract_artifact_features_batch(ood_paths)
 
+        # heldout 协议时输出路径替换为 _heldout 版本
+        _out_override = None
+        if protocol == "heldout":
+            _out_override = {
+                OUT_SCORES_RAW: OUT_SCORES_RAW_H,
+                OUT_L3_RAW:     OUT_L3_RAW_H,
+                OUT_L3_CLEAN_C: OUT_L3_CLEAN_C_H,
+                OUT_BOOTSTRAP:  OUT_BOOTSTRAP_H,
+                OUT_L3_CLEAN_A: OUT_L3_CLEAN_A_H,
+                OUT_L3_CLEAN_B: OUT_L3_CLEAN_B_H,
+            }
+
         _run_full_pipeline(feats_id, feats_ood, art_id, art_ood, pair_name,
                            logits_id=logits_id, logits_ood=logits_ood,
                            paths_id=id_paths, paths_ood=ood_paths,
                            model=model, device=device, smoke=False,
+                           out_path_override=_out_override,
                            caliper=caliper,
+                           protocol=protocol,
                            method_names=OOD_METHODS)
 
     # 4 cross-source pairs (ACCEPTANCE v2 frozen)
@@ -1347,7 +1444,7 @@ def main(smoke: bool = False, device: str = "cpu", caliper: float = CALIPER_SD):
     print("\n[P4b] Derm cross-source: HAM_NV vs fitzpatrick17k")
     print("[P4b] NOTE: feats 待另一 coder 提取（fitzpatrick17k），缺 feats 时优雅跳过。")
     try:
-        _run_pair_from_feats("HAM_NV", "fitzpatrick17k", "HAM_NV_vs_fitzpatrick17k")
+        _run_pair_from_feats("HAM_NV", "Fitzpatrick_NV", "HAM_NV_vs_fitzpatrick17k")
     except Exception:
         traceback.print_exc()
         print("[P4b] 失败，跳过，继续下一对", file=sys.stderr)
@@ -1357,7 +1454,7 @@ def main(smoke: bool = False, device: str = "cpu", caliper: float = CALIPER_SD):
     print("\n[P4c] Derm cross-source (optional): ISIC2020_benign vs PAD_UFES")
     print("[P4c] NOTE: 可选对，feats 待提取（PAD_UFES），缺 feats 时优雅跳过。")
     try:
-        _run_pair_from_feats("ISIC2020_benign", "PAD_UFES", "ISIC2020_benign_vs_PAD_UFES")
+        _run_pair_from_feats("ISIC2020_benign", "PAD_UFES_NEV", "ISIC2020_benign_vs_PAD_UFES")
     except Exception:
         traceback.print_exc()
         print("[P4c] 失败，跳过（可选对）", file=sys.stderr)
@@ -1370,13 +1467,18 @@ def _run_full_pipeline(
     model=None, device="cpu", smoke=False,
     out_path_override=None,      # Bug4 fix: smoke 隔离用，dict {orig_path: smoke_path}
     caliper: float = CALIPER_SD, # Bug5 fix: 参数化 caliper
+    protocol: str = "insample",  # heldout 协议：ID 5:5 切 fit/eval
     method_names=None,           # v5: 支持传入 13 法列表（默认 OOD_METHODS）
 ):
-    """R3b → R4 → R5 → R6/R7 完整流水线（v5：支持 13 法）。"""
+    """R3b → R4 → R5 → R6/R7 完整流水线（v5：支持 13 法）。
+    protocol="heldout": ID 前50%=id_fit（calibration），后50%=id_eval（test端ID），
+                        OOD 全量 test。方法 fit 集=id_fit，test=concat(id_eval,ood)。
+    protocol="insample": 现行行为，ID 全量既 fit 又在 test。
+    """
     if method_names is None:
         method_names = OOD_METHODS
 
-    # 路径别名（smoke 时替换为 _smoke 版本）
+    # 路径别名（smoke/heldout 时替换为对应版本）
     def _out(p):
         if out_path_override and p in out_path_override:
             return out_path_override[p]
@@ -1389,21 +1491,114 @@ def _run_full_pipeline(
     _OUT_L3_CLEAN_A = _out(OUT_L3_CLEAN_A)
     _OUT_L3_CLEAN_B = _out(OUT_L3_CLEAN_B)
     N_ID, N_OOD = len(feats_id), len(feats_ood)
-    n_id_idx = np.arange(N_ID)
-    n_ood_idx = np.arange(N_OOD)
+
+    # ============================================================
+    # heldout 协议：ID 5:5 切 fit/eval（seed=42 RandomState permutation）
+    # insample 协议：id_fit = id_eval = 全量 ID（保持现行行为）
+    # ============================================================
+    if protocol == "heldout":
+        rng_split = np.random.RandomState(42)
+        perm = rng_split.permutation(N_ID)
+        n_fit = N_ID // 2           # 前 50% → fit（calibration）
+        fit_idx  = perm[:n_fit]     # id_fit 索引（相对 feats_id）
+        eval_idx = perm[n_fit:]     # id_eval 索引（held-out ID，进 test）
+
+        feats_id_fit  = feats_id[fit_idx]
+        feats_id_eval = feats_id[eval_idx]
+        logits_id_fit  = logits_id[fit_idx]  if logits_id  is not None else None
+        logits_id_eval = logits_id[eval_idx] if logits_id  is not None else None
+        paths_id_fit   = ([paths_id[i] for i in fit_idx]  if paths_id  else None)
+        paths_id_eval  = ([paths_id[i] for i in eval_idx] if paths_id  else None)
+        art_id_fit     = art_id[fit_idx]
+        art_id_eval    = art_id[eval_idx]
+
+        n_id_fit  = len(feats_id_fit)
+        n_id_eval = len(feats_id_eval)
+        print(f"[heldout] {pair_name}: id_fit={n_id_fit}, id_eval={n_id_eval}, ood={N_OOD}")
+
+        # test 集 = concat(id_eval, ood)
+        feats_test_h  = np.concatenate([feats_id_eval, feats_ood], axis=0)
+        logits_test_h = (np.concatenate([logits_id_eval, logits_ood], axis=0)
+                         if (logits_id_eval is not None and logits_ood is not None) else None)
+        paths_test_h  = ((list(paths_id_eval or []) + list(paths_ood or []))
+                         if (paths_id_eval is not None and paths_ood is not None) else None)
+        labels_h = np.array([0]*n_id_eval + [1]*N_OOD, dtype=np.int32)
+
+        # 配对子集（R5）用 art_id_eval vs art_ood，对应 eval 端 ID 索引
+        art_id_for_match  = art_id_eval
+        idx_id_for_match  = np.arange(n_id_eval)   # 相对 feats_id_eval
+        idx_ood_for_match = np.arange(N_OOD)
+    else:
+        # insample：保持原逻辑
+        feats_id_fit   = feats_id
+        feats_id_eval  = feats_id
+        logits_id_fit  = logits_id
+        logits_id_eval = logits_id
+        paths_id_fit   = paths_id
+        paths_id_eval  = paths_id
+        art_id_fit     = art_id
+        art_id_eval    = art_id
+        n_id_fit       = N_ID
+        n_id_eval      = N_ID
+
+        feats_test_h  = None   # 占位，insample 用 run_pair() 内拼
+        logits_test_h = None
+        paths_test_h  = None
+        labels_h      = None
+
+        art_id_for_match  = art_id
+        idx_id_for_match  = np.arange(N_ID)
+        idx_ood_for_match = np.arange(N_OOD)
 
     # ============================================================
     # R3b 准入门：去污染前 raw AUROC（PR-F3）
+    # insample: run_pair() 内部拼 feats_test（含全量 ID），现行行为
+    # heldout:  fit=id_fit，test=concat(id_eval, ood)，labels=[0]*eval+[1]*ood
     # ============================================================
     n_methods = len(method_names)
-    print(f"\n[R3b] {pair_name}: 去污染前 {n_methods} 方法 raw AUROC")
-    raw_results = run_pair(
-        feats_id, feats_ood, art_id, art_ood, pair_name,
-        logits_id=logits_id, logits_ood=logits_ood,
-        paths_id=paths_id, paths_ood=paths_ood,
-        model=model,
-        method_names=method_names,
-    )
+    print(f"\n[R3b] {pair_name}: 去污染前 {n_methods} 方法 raw AUROC [{protocol}]")
+
+    if protocol == "heldout":
+        # heldout 直接调方法 fn，fit=feats_id_fit，test=feats_test_h
+        raw_results = {}
+        for method in method_names:
+            fn = METHOD_FNS[method]
+            try:
+                if method in LIVE_METHODS:
+                    if paths_test_h is None or model is None:
+                        raise ValueError(f"{method} 需要 paths_test + model（live 路径缺失）")
+                    scores = fn(feats_id_fit, feats_test_h,
+                                logits_id=logits_id_fit, logits_test=logits_test_h,
+                                paths_test=paths_test_h, model=model)
+                elif method in MODEL_METHODS:
+                    if model is None:
+                        raise ValueError(f"{method} 需要 model（get_fc）")
+                    scores = fn(feats_id_fit, feats_test_h,
+                                logits_id=logits_id_fit, logits_test=logits_test_h,
+                                model=model)
+                else:
+                    scores = fn(feats_id_fit, feats_test_h,
+                                logits_id=logits_id_fit, logits_test=logits_test_h)
+                auroc = auroc_numpy(labels_h, scores)
+            except Exception as e:
+                print(f"  [WARN] {method} failed: {e}", file=sys.stderr)
+                scores = np.zeros(len(feats_test_h), dtype=np.float32)
+                auroc = float("nan")
+            raw_results[method] = {"auroc": auroc, "scores": scores}
+            print(f"  {pair_name} | {method:12s}: AUROC={auroc:.4f} [heldout]")
+        _n_test = n_id_eval + N_OOD
+        _labels_raw = labels_h
+    else:
+        # insample：原逻辑 run_pair()（fit=全量ID，test=concat(全量ID,ood)）
+        raw_results = run_pair(
+            feats_id, feats_ood, art_id, art_ood, pair_name,
+            logits_id=logits_id, logits_ood=logits_ood,
+            paths_id=paths_id, paths_ood=paths_ood,
+            model=model,
+            method_names=method_names,
+        )
+        _n_test = N_ID + N_OOD
+        _labels_raw = np.array([0]*N_ID + [1]*N_OOD, dtype=np.int32)
 
     # 判断模态是否过 PR-F3（全法全<0.6 = 不计入 A-4）
     raw_aurocs = {m: raw_results[m]["auroc"] for m in method_names}
@@ -1413,8 +1608,8 @@ def _run_full_pipeline(
 
     # 保存 raw scores (Bug4 fix: 用 _OUT_SCORES_RAW 本地路径，smoke 时指向 _smoke 文件)
     all_scores_rows = []
-    for i in range(N_ID + N_OOD):
-        row = {"pair": pair_name, "idx": i, "label": 0 if i < N_ID else 1}
+    for i in range(_n_test):
+        row = {"pair": pair_name, "idx": i, "label": int(_labels_raw[i])}
         for method in method_names:
             row[method.lower() + "_score"] = round(float(raw_results[method]["scores"][i]), 6)
         all_scores_rows.append(row)
@@ -1443,23 +1638,28 @@ def _run_full_pipeline(
 
     # ============================================================
     # R5：方案 C artifact-matched 配对子集（命门）
+    # heldout: 配对在 id_eval vs ood 上做（art_id_for_match / idx_id_for_match）
+    # insample: 配对在全量 id vs ood 上做（原逻辑）
+    # 方法 calibration 一律用 id_fit（heldout下无泄漏；insample下 id_fit=全量ID，现行）
     # ============================================================
-    print(f"\n[R5] {pair_name}: artifact-matched 配对（caliper={caliper} SD）")
+    print(f"\n[R5] {pair_name}: artifact-matched 配对（caliper={caliper} SD, {protocol}）")
 
-    # common-support 诊断（Bug5 fix: 报告两源 artifact 分布重叠率）
-    # 用 ID 的 IQR 判断 OOD 落在 ID artifact 分布内的比例（每维度取均值）
-    iqr_lo = np.percentile(art_id, 25, axis=0)
-    iqr_hi = np.percentile(art_id, 75, axis=0)
+    # common-support 诊断：用 id_eval（heldout）或全量 id（insample）的 IQR
+    iqr_lo = np.percentile(art_id_for_match, 25, axis=0)
+    iqr_hi = np.percentile(art_id_for_match, 75, axis=0)
     in_iqr = ((art_ood >= iqr_lo) & (art_ood <= iqr_hi)).all(axis=1)
     common_support_pct = float(in_iqr.mean()) * 100.0
     print(f"  [common-support] OOD samples within ID IQR (all dims): {common_support_pct:.1f}%")
 
+    # artifact_matched_subset 接收：art_id_for_match（eval端）、art_ood（全量）
     matched_id_idx, matched_ood_idx, smd_max, smd_mean = artifact_matched_subset(
-        art_id, n_id_idx, art_ood, n_ood_idx, caliper=caliper,
-        smoke=smoke,
+        art_id_for_match, idx_id_for_match,
+        art_ood, idx_ood_for_match,
+        caliper=caliper, smoke=smoke,
     )
     n_matched = len(matched_id_idx)
-    print(f"  matched: {n_matched} 对 (from {N_ID} ID + {N_OOD} OOD, caliper={caliper} SD)")
+    _id_pool_n = n_id_eval if protocol == "heldout" else N_ID
+    print(f"  matched: {n_matched} 对 (from {_id_pool_n} ID_eval + {N_OOD} OOD, caliper={caliper} SD)")
 
     # Bug5 fix: n_matched < 30 → INSUFFICIENT，不宣 PASS/FAIL
     MIN_MATCHED = 30
@@ -1505,22 +1705,38 @@ def _run_full_pipeline(
                 w.writeheader()
             w.writerows(insuf_rows)
     else:
-        feats_id_c  = feats_id[matched_id_idx]
+        # matched_id_idx 是相对 art_id_for_match（即 id_eval 端）的局部索引
+        # heldout: feats_id_eval[matched_id_idx] → 配对后 ID 子集（eval 端，无 fit 泄漏）
+        # insample: feats_id[matched_id_idx]（原逻辑）
+        feats_id_c  = feats_id_eval[matched_id_idx]
         feats_ood_c = feats_ood[matched_ood_idx]
-        art_id_c  = art_id[matched_id_idx]
-        art_ood_c = art_ood[matched_ood_idx]
-        logits_id_c  = logits_id[matched_id_idx]   if logits_id  is not None else None
-        logits_ood_c = logits_ood[matched_ood_idx] if logits_ood is not None else None
-        paths_id_c  = ([paths_id[i]  for i in matched_id_idx]  if paths_id  else None)
-        paths_ood_c = ([paths_ood[i] for i in matched_ood_idx] if paths_ood else None)
+        art_id_c    = art_id_for_match[matched_id_idx]
+        art_ood_c   = art_ood[matched_ood_idx]
+        logits_id_c  = logits_id_eval[matched_id_idx]  if logits_id_eval  is not None else None
+        logits_ood_c = logits_ood[matched_ood_idx]     if logits_ood  is not None else None
+        paths_id_c   = ([paths_id_eval[i] for i in matched_id_idx] if paths_id_eval else None)
+        paths_ood_c  = ([paths_ood[i] for i in matched_ood_idx]    if paths_ood else None)
 
-        clean_c_aurocs = run_pair_on_subset(
-            feats_id_c, feats_ood_c, pair_name, "cleanC",
-            logits_id_sub=logits_id_c, logits_ood_sub=logits_ood_c,
-            paths_id_sub=paths_id_c, paths_ood_sub=paths_ood_c,
-            model=model,
-            method_names=method_names,
-        )
+        # run_pair_on_subset: fit=feats_id_fit（heldout无泄漏），eval端=feats_id_c
+        # 注：run_pair_on_subset 内部 feats_id_sub 是 fit 集，test=concat(feats_id_sub, feats_ood_sub)
+        # heldout 下需要把 fit/eval 分开传——但 run_pair_on_subset 接口只有 feats_id_sub（fit）
+        # 所以 heldout cleanC 子集的 run_pair_on_subset 也要区分 fit vs eval 端
+        if protocol == "heldout":
+            # heldout cleanC: fit=id_fit（全量），eval子集=feats_id_c（id_eval配对子集）
+            clean_c_aurocs = _run_subset_heldout(
+                feats_id_fit, logits_id_fit, paths_id_fit,
+                feats_id_c, logits_id_c, paths_id_c,
+                feats_ood_c, logits_ood_c, paths_ood_c,
+                pair_name, "cleanC", model=model, method_names=method_names,
+            )
+        else:
+            clean_c_aurocs = run_pair_on_subset(
+                feats_id_c, feats_ood_c, pair_name, "cleanC",
+                logits_id_sub=logits_id_c, logits_ood_sub=logits_ood_c,
+                paths_id_sub=paths_id_c, paths_ood_sub=paths_ood_c,
+                model=model,
+                method_names=method_names,
+            )
 
         # K3 检查：去污染后 artifact-only<0.65 AND 7 方法均值<0.55
         labels_c = np.array([0]*len(feats_id_c) + [1]*len(feats_ood_c), dtype=np.int32)
@@ -1612,9 +1828,13 @@ def _run_full_pipeline(
     if run_scheme_a:
         print("[R6] regress-out artifact linear component...")
         clean_a_aurocs = {}
+        # heldout: test = id_eval+ood, art_all 对应 id_eval 端 art + art_ood
+        # insample: test = id+ood, art_all = art_id + art_ood（原逻辑）
+        _art_id_r6  = art_id_eval  # heldout=id_eval; insample=全量id（两者相同）
+        _labels_r6  = _labels_raw  # 已在 R3b 段按协议赋值
         for method in method_names:
             raw_scores = raw_results[method]["scores"]
-            art_all = np.concatenate([art_id, art_ood], axis=0)
+            art_all = np.concatenate([_art_id_r6, art_ood], axis=0)
             mu = art_all.mean(0)
             sigma = art_all.std(0) + 1e-8
             art_s = (art_all - mu) / sigma
@@ -1628,8 +1848,7 @@ def _run_full_pipeline(
             except np.linalg.LinAlgError:
                 w = np.linalg.lstsq(ATA, A.T @ b, rcond=None)[0]
             residual_scores = (b - A @ w).astype(np.float32)
-            labels_all = np.array([0]*N_ID + [1]*N_OOD, dtype=np.int32)
-            clean_a_aurocs[method] = auroc_numpy(labels_all, residual_scores)
+            clean_a_aurocs[method] = auroc_numpy(_labels_r6, residual_scores)
 
         clean_a_ranking = auroc_to_ranking(clean_a_aurocs)
         ra_rows = ranking_to_rows(clean_a_ranking, clean_a_aurocs, "cleanA", pair_name)
@@ -1646,8 +1865,10 @@ def _run_full_pipeline(
     # ============================================================
     print(f"\n[R7] {pair_name}: 方案 B PCA-1 artifact 分层")
     # PCA-1 on artifact 特征，按第一主成分中位数分两层
-    art_all = np.concatenate([art_id, art_ood], axis=0)
-    labels_all = np.array([0]*N_ID + [1]*N_OOD, dtype=np.int32)
+    # heldout: art_all = art_id_eval + art_ood（与 raw_results scores 长度对齐）
+    # insample: art_all = art_id + art_ood（原逻辑）
+    art_all = np.concatenate([art_id_eval, art_ood], axis=0)
+    labels_all = _labels_raw   # 已在 R3b 段赋值（协议对齐）
     mu_art = art_all.mean(0)
     art_c = art_all - mu_art
     try:
@@ -1698,5 +1919,10 @@ if __name__ == "__main__":
                         help="cuda | cpu (for ODIN/GradNorm live inference)")
     parser.add_argument("--caliper", type=float, default=CALIPER_SD,
                         help=f"Scheme C caliper in SD units (default={CALIPER_SD}, pre-registered)")
+    parser.add_argument("--protocol", type=str, default="insample",
+                        choices=["insample", "heldout"],
+                        help=("insample: 现行 in-sample 协议（fit=test ID，对照基准）; "
+                              "heldout: 标准 OOD 评测，ID 5:5 切 fit/eval，"
+                              "输出带 _heldout 后缀（不覆盖 insample csv）"))
     args = parser.parse_args()
-    main(smoke=args.smoke, device=args.device, caliper=args.caliper)
+    main(smoke=args.smoke, device=args.device, caliper=args.caliper, protocol=args.protocol)

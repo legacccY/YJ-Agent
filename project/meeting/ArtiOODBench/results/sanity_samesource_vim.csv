@@ -1,0 +1,13 @@
+modality,source_A,source_B,control,vim_auroc,resid_auroc,n_fit,n_id_test,n_ood,note
+CXR,NIH_CXR14,VinDr_CXR,C0_cross_source_insample,1.0,1.0,500,500,500,复刻 l3：fit+id=A 全量(in-sample), ood=B 全量
+CXR,NIH_CXR14,NIH_CXR14,C1_same_source_insample,1.0,1.0,250,250,250,fit+id=A前半(in-sample), pseudo-ood=A后半(同源held-out)
+CXR,NIH_CXR14,NIH_CXR14,C2_same_source_heldout_symmetric,0.4701698359703876,0.4701698359703876,166,166,166,fit=A1/3; id-test+pseudo-ood 都 held-out 对称, 应≈0.5
+CXR,NIH_CXR14,VinDr_CXR,C3_cross_source_heldout,0.840688,0.840688,250,250,500,fit=A前半; id-test=A后半(held-out); ood=B(跨源). 正确协议=真 source 信号
+BrainMRI,BraTS_normal,BrainTumor_normal,C0_cross_source_insample,1.0,1.0,500,500,500,复刻 l3：fit+id=A 全量(in-sample), ood=B 全量
+BrainMRI,BraTS_normal,BraTS_normal,C1_same_source_insample,1.0,1.0,250,250,250,fit+id=A前半(in-sample), pseudo-ood=A后半(同源held-out)
+BrainMRI,BraTS_normal,BraTS_normal,C2_same_source_heldout_symmetric,0.5153868485992161,0.5153868485992161,166,166,166,fit=A1/3; id-test+pseudo-ood 都 held-out 对称, 应≈0.5
+BrainMRI,BraTS_normal,BrainTumor_normal,C3_cross_source_heldout,0.998192,0.998192,250,250,500,fit=A前半; id-test=A后半(held-out); ood=B(跨源). 正确协议=真 source 信号
+Dermoscopy,HAM_NV,ISIC2020_benign,C0_cross_source_insample,1.0,1.0,500,500,500,复刻 l3：fit+id=A 全量(in-sample), ood=B 全量
+Dermoscopy,HAM_NV,HAM_NV,C1_same_source_insample,1.0,1.0,250,250,250,fit+id=A前半(in-sample), pseudo-ood=A后半(同源held-out)
+Dermoscopy,HAM_NV,HAM_NV,C2_same_source_heldout_symmetric,0.589454202351575,0.589454202351575,166,166,166,fit=A1/3; id-test+pseudo-ood 都 held-out 对称, 应≈0.5
+Dermoscopy,HAM_NV,ISIC2020_benign,C3_cross_source_heldout,0.672632,0.672632,250,250,500,fit=A前半; id-test=A后半(held-out); ood=B(跨源). 正确协议=真 source 信号

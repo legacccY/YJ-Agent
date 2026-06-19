@@ -1,0 +1,91 @@
+% =====================================================================
+% §5 Query-for-Retake Agent (C2 — exclusive hook). ICLR S version (≤1.0 p).
+% Compressed from drafts/s5_c2_agent.tex (1616w → ≤550w). caveman OFF.
+% Anti-drift locks (STORY): retake = re-acquisition (collection loop), NOT abstain/defer (rule 8);
+%   agent never diagnoses, only routes (C2); Thm2 LOCAL per-band only, deny global dominance,
+%   honest negative → §7.7 (R11/R3); derive/under-assumption wording (R2); any per-input quality
+%   scalar (R7); quality-conditioned bottleneck = footnote, off-the-shelf uncertainty (R13).
+% Preserved labels (cited elsewhere): sec:agent, sec:agent-routing, sec:agent-thm2,
+%   thm:agent-compact, eq:agent-policy-body. Cross-refs to app:a5 / app:a2-thm2 / sec:exp-dca /
+%   sec:exp-boundary / sec:enhance kept. NUMBERS搬自源稿/ACCEPTANCE逐字, 未重算.
+% =====================================================================
+
+\section{Query-for-Retake Agent}\label{sec:agent}
+
+The restorer of \cref{sec:enhance} is only safe to apply \emph{within} the salvage band. Outside
+it, enhancement either does nothing useful or, as our boundary evidence shows
+(\cref{sec:exp-boundary}), harms the diagnosis. The agent therefore does not diagnose: from a
+per-input quality reading it \emph{decides} whether to diagnose directly, to enhance and then
+diagnose, or to ask for a better image. The last channel is the mechanistic contribution of this
+section. Existing reliability mechanisms stop the moment an input is judged unsafe: selective
+prediction \emph{abstains} \citep{geifman2017selective}, learning-to-defer hands the case to a
+human, and the closest agentic medical pipeline, AT-CXR \citep{atcxr2025}, likewise only routes
+to deferral. None of them acts on the cause of the failure --- a recoverably bad acquisition. The
+query-for-retake channel instead closes a \emph{collection} loop back to the sensor, requesting a
+better image rather than abstaining on or deferring the present one.
+
+\paragraph{Four-channel routing.}\label{sec:agent-routing}
+The policy $\pi^{*}$ reads a per-input quality scalar $\qbar(x)$ --- learned here by \visiscore{},
+but in principle any per-input quality estimate (a no-reference IQA score, or a known corruption
+severity) --- together with a predictive-entropy gate $\Hent(\hat p_x)\!\le\!\hhigh$, and selects
+one of four actions $\{\actd,\acte,\actq,\actr\}$:
+\begin{equation}
+\pi^{*}(x)=
+\begin{cases}
+\actd & \qbar(x)\geq\tauhigh \quad\text{(direct diagnosis)},\\[1pt]
+\acte & \qbar(x)\in[\tauenh,\tauhigh],\ \Hent(\hat p_x)\leq\hhigh \quad\text{(enhance-then-diagnose)},\\[1pt]
+\actq & \taulow\leq\qbar(x)<\tauenh \quad\text{(query-for-retake)},\\[1pt]
+\actr & \qbar(x)<\taulow\ \text{or}\ \big(\qbar(x)\in[\tauenh,\tauhigh],\ \Hent(\hat p_x)>\hhigh\big) \quad\text{(cautioned)},
+\end{cases}
+\label{eq:agent-policy-body}
+\end{equation}
+with grid-searched thresholds $\taulow\!=\!0.25<\tauenh\!=\!0.35<\tauhigh\!=\!0.50$. The entropy
+gate separates a \emph{cautioned} high-quality case, quality-sufficient yet intrinsically ambiguous
+and beyond what enhancement can salvage, from one the enhancement pathway can help. The
+\textbf{query-for-retake} channel makes this mechanism concrete: instead of abstaining
+\citep{geifman2017selective} or deferring the case, the agent issues a \emph{re-acquisition
+request} that closes a collection loop around the diagnostic model. Image-quality work that flags
+re-capture \citep{vodrahalli2021teledermatology,jalaboi2023explainable} decouples the flag from the
+diagnostic objective and offers no risk analysis; here, by contrast, the re-acquisition decision is
+made jointly with the diagnostic risk and embedded in the risk-bounded routing policy below. To our
+knowledge, this is the first \emph{risk-bounded re-acquisition loop coupled jointly with the
+diagnostic decision} in this setting --- a scope we delimit deliberately, since image-quality work
+that flags re-capture does exist but decouples the flag from any diagnostic-risk estimate and
+provides no local risk bound. The agent never emits a
+diagnosis on its own; each channel hands the original, restored, or re-acquired image to the same
+downstream classifier.
+The uncertainty signal is taken off the shelf, so routing does not depend on any bespoke
+quality-conditioned bottleneck.\footnote{A quality-conditioned bottleneck variant was evaluated as
+an uncertainty source but showed no measurable advantage over the standard variant here.}
+Implementation is a lightweight ReAct-style controller backed by a small language model with a
+deterministic rule fallback applying \eqref{eq:agent-policy-body}, so routing is never less safe than
+the rule (prompt, fallback specification, and a worked trace in Appendix~\ref{app:a5}). The retake
+channel fires where it should, rising monotonically as quality falls across the high-quality,
+moderate, and severe bands (\cref{sec:exp-boundary}).
+
+\paragraph{A local, per-band risk guarantee (Theorem~\ref{thm:agent-compact}).}\label{sec:agent-thm2}
+\emph{Within} the salvage band, and under a diagnosis-preserving restorer satisfying the information
+lower bound of \cref{sec:enhance}, we derive that enhance-then-diagnose attains a strictly lower
+conditional expected risk than direct diagnosis,
+$\Renh(x)\le\Rdirect(x)-\Delta(\qbar(x),\Tw)$ with $\Delta(\qbar,\Tw)>0$ for
+$\qbar\in[\tauenh,\tauhigh]$; the per-band reductions are realised empirically with bootstrap $95\%$
+CIs excluding zero (\cref{sec:exp-boundary}). The decision-theoretic setup, auxiliary lemmas, and
+finite-sample companion are in Appendix~\ref{app:a2-thm2}.
+
+\input{appendix/A2_3_theorem2_compact}
+
+This is deliberately a \emph{local} result: it certifies enhancement as the risk-reducing action
+exactly where the band holds, and is silent elsewhere. \textbf{We make no claim that the routed agent
+dominates direct diagnosis globally.} The within-band gain does not aggregate to a global ordering,
+because the query channel's safety relies on a re-acquisition operator that improves quality only in
+expectation, and the thresholds are fixed by grid search. Consistently, our triage simulation reports
+an honest \emph{negative} global result: at a fixed referral budget direct triage attains the higher
+auto-handled sensitivity, with net benefit statistically indistinguishable across direct diagnosis
+and all variants (overlapping $95\%$ bootstrap CIs; \cref{sec:exp-dca}). We therefore treat the global utility of routing as an open, empirically
+negative question, and leave \emph{learning} the thresholds, rather than fixing them by grid search,
+to future work. The band-local statement is moreover a population result over the salvage-band
+subpopulation; it does \emph{not} certify a per-class reduction, and the malignant subgroup, whose
+net-negative salvage is our hardest boundary evidence (\cref{sec:exp-boundary}), stays in the
+query-for-retake regime rather than the enhance regime.
+% TODO(verifier): small-LM identity (Qwen3-4B per STORY) kept generic pre-deanonymisation; atcxr2025
+% is a TODO bib entry. All numbers (0.818/0.788, retake 0.889/0.651/0.055, TAU 0.25/0.35/0.50)搬自源稿/ACCEPTANCE, 未重算.

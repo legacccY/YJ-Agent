@@ -1,0 +1,58 @@
+% SelInfBench -> IEEE BIBE 2026
+% Venue: IEEE BIBE 2026 (EI/IEEE, double-column 10pt, full 8 pages)
+% Framing (user-approved 2026-06-19): clinical/reproducibility-first.
+% Title keywords: "Medical Imaging" + "Trustworthy Reporting".
+% Number discipline: all numbers must trace to paper/BUILD_MAP.md verified csv. Use \todo{} placeholders until verifier-confirmed.
+
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+
+% TODO marker (renders red, non-fatal)
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\begin{document}
+
+\title{Are Reported Accuracies in Medical Imaging AI Benchmarks Trustworthy? Diagnosing and Correcting the Winner's Curse via Data Fission}
+
+\author{\IEEEauthorblockN{Anonymous}\IEEEauthorblockA{\todo{author block / affiliation -- fill at camera-ready, keep anonymous if double-blind required}}}
+
+\maketitle
+
+\begin{abstract}
+\todo{Abstract -- writer to draft. Cover: (1) medical imaging AI papers report best-of-sweep numbers -> winner's curse inflates reported accuracy and invalidates CIs used for deployment decisions; (2) we measure winner's curse on real medical benchmarks (HAM10000, BraTS); (3) classical CIs undercover the selected model's true accuracy, a data-fission correction restores nominal coverage; (4) we deliver a plug-in corrector. Numbers from BUILD_MAP only.}
+\end{abstract}
+
+\begin{IEEEkeywords}
+medical imaging, reproducibility, benchmark, winner's curse, selective inference, data fission, trustworthy reporting
+\end{IEEEkeywords}
+
+\section{Introduction}
+\todo{writer: lead with clinical/reproducibility pain (over-reported benchmark accuracy misleads deployment model selection). Contributions: (i) first selective-inference treatment of medical-imaging benchmark reporting; (ii) measurable winner's curse on real benchmarks + coverage diagnosis; (iii) plug-in corrector tool. Scope discipline per STORY red lines (bias != model bad; no over-generalization).}
+
+\section{Related Work}
+\todo{writer: Akesson 2024 (phenomenon, no correction) / Zrnic-Fithian 2024 + Leiner 2023 (general post-selection methods, no medical-imaging application) / Koopmans 2025 + Sculley 2018 (reporting-practice evidence). Draw boundaries explicitly. CITATIONS MUST PASS verifier (Akesson vs Gustafsson author/DOI discrepancy unresolved -- see BUILD_MAP).}
+
+\section{Method}
+\todo{writer: data fission post-selection CI construction (f=X+tau*Z selection / g=X-Z/tau inference, tau=1), per Leiner+ JASA2023. The report-value corrector algorithm (scripts/selinf\_corrector.py). NO deflation, NO debias\_shift as validity metric (method red lines).}
+
+\section{Experiments and Results}
+\todo{writer: A1 measurable winner's curse (HAM truthproxy +0.0746, with bootstrap CI from R-experiments) / A2 coverage breakdown + recovery (synthetic coverage\_sim\_v2 + real-data bootstrap coverage) / A3 three benchmarks honest (HAM strong, BraTS ceiling-limited weak, ISIC pre-registered full-test result). All numbers from BUILD_MAP verified csv.}
+
+\section{Discussion}
+\todo{writer: scope/limitations -- ISIC low-SNR boundary case (honest), BraTS AUROC ceiling, single-sweep results not universal constants, real-benchmark coverage uses full-test truth proxy (caveat). Corrector as deliverable for the medical imaging community.}
+
+\section{Conclusion}
+\todo{writer.}
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}

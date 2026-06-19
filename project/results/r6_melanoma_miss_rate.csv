@@ -1,0 +1,16 @@
+method,key,coverage_target,melanoma_miss_rate,risk
+Direct (EfficientNet-B3),direct,0.2,0.2,0.46
+Direct (EfficientNet-B3),direct,0.5,0.2,0.46
+Direct (EfficientNet-B3),direct,0.8,0.2,0.46
+Chow's rule (max-softmax),chow,0.2,0.8,0.6
+Chow's rule (max-softmax),chow,0.5,0.3,0.4
+Chow's rule (max-softmax),chow,0.8,0.2,0.425
+Deep Ensemble (3-seed),ensemble,0.2,0.5,0.5
+Deep Ensemble (3-seed),ensemble,0.5,0.2,0.64
+Deep Ensemble (3-seed),ensemble,0.8,0.1,0.675
+"MC-Dropout (T=30, mean-conf proxy)",mcdropout,0.2,0.5,0.5
+"MC-Dropout (T=30, mean-conf proxy)",mcdropout,0.5,0.1,0.64
+"MC-Dropout (T=30, mean-conf proxy)",mcdropout,0.8,0.0,0.75
+Query-for-Retake (qbar threshold),retake,0.2,1.0,0.2
+Query-for-Retake (qbar threshold),retake,0.5,1.0,0.12
+Query-for-Retake (qbar threshold),retake,0.8,1.0,0.175

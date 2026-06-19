@@ -1,0 +1,62 @@
+% =============================================================================
+% s8_discussion.tex --- §8 Discussion and Limitations (S version, ICLR 9-page).
+% Compressed from drafts/s8_discussion.tex (1580 words) to <=300 words / ~0.5 page.
+% Reflection-style limitations: "evaluation bounded by X; Y is an open question
+% listed as future work" --- honest, not apologetic, not buried (STORY drift #10).
+% Numbers carried verbatim from the long draft (locked); none invented (R6).
+% Red lines: R3/R11 (no global triage win), R8 (diffusion only as rejected
+% contrast), R12 (GradProm weld), R1/R2 (no absolutes / "we derive").
+% =============================================================================
+
+\section{Discussion and Limitations}\label{sec:discussion}
+
+\paragraph{Relation to gradient-repair (GradProm).}
+GradProm~\citep{gradprom2025} also observes that enhancement can harm diagnosis in
+the ISIC domain, but treats the symptom by repairing gradients during training. Our
+contribution is orthogonal: we (i)~\emph{derive} a diagnosis-preserving information
+lower bound (\cref{lem:dp}), and (ii)~add a \emph{routing} decision
+with a query-for-retake channel. Where GradProm fixes gradients, we bound the
+information loss \emph{and} decide when not to enhance at all---complementary,
+not competing.
+
+\paragraph{Why generative enhancement is rejected.}
+We avoid diffusion- and GAN-based restoration: optimising perceptual realism in
+dermoscopy can synthesise plausible-but-absent structure (pigment networks, vessels),
+a diagnostically misleading medical-safety hazard. Deterministic restoration
+trades some sharpness for an information-preservation property a generative model
+cannot guarantee; diffusion enters only as a rejected cautionary contrast.
+
+\paragraph{What the method establishes, and its honest boundary.}
+The positive contribution is concrete and statistically attributable: within the
+moderate-degradation window the diagnosis-preserving objective lets \visienhance retain the
+discriminative information a frozen probe relies on (DP-Loss ablation
+$\Delta\mathrm{AUC}_{\text{enh}}=+0.0205$, $95\%$ CI $[+0.005,+0.035]$; McNemar
+$p=2.3\times10^{-45}$), and it preserves diagnosis better than six restoration baselines on every one.
+We are equally explicit about where the method stops. We make no claim that quality-aware triage beats
+direct diagnosis \emph{globally}: at a fixed threshold, direct diagnosis attains the best auto-handled
+sensitivity ($0.818$ versus $0.788$ for the strongest variant at a $20\%$ referral budget) with
+net-benefit CIs overlapping (\cref{sec:exp-triage}). The positive claim is
+local---the enhancer preserves discriminative information within the
+moderate-degradation window---and the decision surface (\cref{sec:exp-surface}) shows
+recoverability is dimension- and severity-dependent, exactly what the query-for-retake
+gate is built to exploit.
+
+\paragraph{Limitations and future work.}
+Several limitations are themselves the motivation for the retake gate, stated plainly.
+(1)~The theory is derived under explicit assumptions and is argued rather than
+watertight; \cref{thm:agent-compact} is band-local and does not aggregate into a
+global ordering.
+(2)~Degradations are semi-synthetic; prospective validation on genuinely degraded
+clinical captures remains open.
+(3)~Routing depends on a per-input quality scalar whose annotation and re-fitting cost
+we do not eliminate (claims restricted to dermatology, no cross-modality universality).
+(4)~We report no clinical deployment; all clinical statements rest on decision-curve and
+triage simulation, and diagnosis-preservation results are tied to a single frozen probe.
+(5)~Enhancement is uneven across axes: it backfires on contrast and underperforms on
+colour-shift (\cref{sec:exp-ablations})---honest failure modes that trigger the
+caution/retake channels.
+(6)~The malignant-salvage gap is unresolved: enhancement salvages only $5.2\%$ of
+misclassified melanomas (a net loss of malignant cases), unchanged by a mask-weighted
+retrain; closing it---via diagnosis-aware reconstruction or learned routing
+thresholds---is the central open question. These negative results are genuine evidence
+that the retake gate is a necessary safety mechanism, not a project shortcoming.

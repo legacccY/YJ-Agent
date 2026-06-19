@@ -4,9 +4,15 @@
 > 2026-06-18 立项首版（源 ideation run-002 G6 C025）。
 > 2026-06-18 重写（Entry 5 暴雷后，用户拍板放行）：弃「deflation 通胀倍数」headline，证据换成条件覆盖率破裂 + 去偏移位。
 
-## Headline
+## Headline（2026-06-19 转投 BIBE 2026 重述，用户拍板「临床可复现优先」）
 
-**医学 AI benchmark 普遍按跨 HP / seed sweep 取最优（sweep/seed-max）报告，这种后选下经典置信区间系统性欠覆盖「被选中 config 的真实精度」——winner's curse 在医学影像上实测可证；本文用 data fission 给出去偏点估计 + 恢复名义条件覆盖率的有效区间，并交付可挂任意 benchmark sweep 的校正器。**
+> **venue：IEEE BIBE 2026（EI/IEEE，full 8 页双栏，DDL 2026-06-24 待用户官方核实）。从 TMLR/D&B 降档——资产已撞顶会天花板（A3 仅 2/3），EI 量级正合适。**
+
+**临床可复现切入（BIBE 叙事主线）**：医学影像 AI 论文惯例报告超参 / seed sweep 里的**最优数**，这让报告的精度系统性虚高（winner's curse），并使临床医生 / 工程师据以选型部署所依赖的置信区间失效。本文 (1) 在真实医学 benchmark（HAM10000 皮肤镜 / BraTS 脑 MRI）上实测可量化的 winner's curse；(2) 证明经典置信区间欠覆盖被选模型的真实精度，而基于 data fission 的校正能恢复名义覆盖；(3) 交付一个即插即用的报告值校正器，任何 benchmark sweep 都可挂用以给出去偏点估计与有效区间。
+
+**拟标题方向**：*Are Reported Accuracies in Medical Imaging AI Benchmarks Trustworthy? Diagnosing and Correcting the Winner's Curse via Data Fission*（标题含 "Medical Imaging" + "Trustworthy Reporting" 关键词，强化 BIBE scope fit）。
+
+**方法层不变（仅叙事重排）**：data fission 仍是核心校正手段，但降为「解决临床可复现痛点的手段」而非叙事主角；校正器工具作为可交付物前置强调。
 
 ## 三支柱卖点
 
@@ -19,6 +25,7 @@
 - **弃宽度比 deflation 作为 headline 指标**：旧指标 deflation = `df_width/naive_width − 1` 经实测坐实是 **`√(2M)−1` 纯 M 数学恒等式**（data fission 宽 = 2z·σ·√2 不含 M，naive 宽 = 2z·σ/√M，比值里 σ 全约掉），喂任何噪声都吐固定值，与真假 winner's curse 无关——审稿人一句话 K3 翻盘。**宽度比/deflation% 永不作为有效性证据写进 headline 或验收。**
 - **真证据 = 条件覆盖率 + 去偏移位**：① naive 单点 CI 在 winner's curse 真区制条件覆盖率跌破 90%、data fission 修回 ~95%（合成 coverage_sim_v2 坐实）；② 点估计系统正偏（acc_{i*} 高估被选 config 真值），data fission 去偏后残偏 ≈0。两者均随 winner's curse 强度（σ_mu/σ）正确缩放——弱区制（σ_mu/σ=5）naive 覆盖回 0.948/0.932、偏差降到 +0.0069/+0.0083，gap 随之消失，证非恒等式 artifact。
 - **data fission 实现本身正确这一事实保留**：合成实验下覆盖率修回名义 95%、去偏 ≈0，方法构造无误（Leiner+ JASA2023）。暴雷的是「拿宽度比当 headline 指标」，不是 data fission 方法本身。
+- **弃真数据 debias_shift = val_best − g_star 当 A3 证据（2026-06-19 skeptic 红队抓出）**：该量构造性偏正——零真 winner's curse 下蒙特卡洛 P(>0)≈0.95、随 σ 单调放大，与真偏差脱钩（`a3_truthproxy.csv` 里 ISIC winner's curse=−0.008 为负但 debias_shift=+0.011 为正，自证矛盾）。与旧 deflation 同病根。**A3 承重改用**：① winner's curse = val_best − test_selected（独立 test 当真值的真高估，HAM/BraTS 正）+ ② g_star 是否比 naive 更接近独立 test（方向检验，ISIC 诚实 FAIL）+ ③ A2 合成覆盖率破裂&修回。注意区分：A2 合成实验的 mean_point_bias（相对已知真值 target 的偏差，弱区制塌回 0）是干净的，被弃的是 A3 真数据 debias_shift。若要复活 debias_shift 须配零信号 null 校准报净值。
 - **真 benchmark（A3）报去偏移位 + 条件/自助覆盖，弃 deflation-vs-M 曲线**：在 HAM/ISIC/BraTS 上报去偏移位 acc_best − g_star（data fission 校正幅度）一致为正 + naive 欠覆盖，而非宽度比随 M 单调增（后者 trivially PASS，证不了东西）。
 
 ## 关键概念厘清（措辞红线，违反即跑偏）

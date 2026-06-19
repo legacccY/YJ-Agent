@@ -1,0 +1,212 @@
+% =============================================================================
+% ICLR2027 → ACCV 2026 机械迁移版 (main_accv.tex)
+%
+% 目标：内容零修改，只换模板骨架 + 解决兼容问题。
+% 内容重组 (reframe) 在后续步骤进行，本文件不动 drafts_short/ 原文。
+%
+% 兼容处理记录：
+%   [C1] \eg \ie \etc \etal \aka — accvabbrv.sty 已重定义 \eg \ie \etc \etal；
+%        preamble_accv.tex 不再重定义这四个，\aka 单独 \providecommand。
+%   [C2] natbib vs cite — drafts 大量用 \citep/\citet；
+%        accv.sty 内置 \RequirePackage{cite}。解法：natbib first（在 accv 之前
+%        加载），cite.sty 遇到已有 natbib 时会跳过（LaTeX 内部互斥保护）。
+%        若 cite 仍与 natbib 冲突报 fatal error，改用 \providecommand 兜底。
+%   [C3] cleveref — accv.sty 通过 \AtEndPreamble 自动加载 cleveref；
+%        preamble 不再单独 \usepackage{cleveref}。
+%   [C4] hyperref — accv.sty 不自动加 hyperref；模板示例在 accv 之后手动加，
+%        本文件保持同样顺序（review 版含 pagebackref）。
+%   [C5] \theorem/\lemma 等环境 — llncs 用 \spnewtheorem，不预定义 theorem 等；
+%        preamble_accv.tex 保留 \newtheorem 定义，与 llncs 兼容（amsthm 接管）。
+%   [C6] ICLR 特有命令去除 — \PassOptionsToPackage{round}{natbib} 和
+%        \usepackage{iclr2026_conference,times} 不在此文件出现；
+%        \setlength 紧缩浮动间距行也不搬入（ACCV 默认间距）。
+%   [C7] \paragraph — llncs 内置 \paragraph，与 drafts_short 用法兼容。
+%   [C8] \appendix + appendix \input — llncs 支持 \appendix，附录章节变 A B C …
+%        编号方式；ACCV 不限制附录页数（仅正文 14 页限制）。
+%   [C9] \keywords — llncs/accv 要求 \keywords 在 abstract 内，已嵌入。
+% =============================================================================
+
+% ── 文档类 ──────────────────────────────────────────────────────────────────
+\documentclass[runningheads]{llncs}
+
+% ── natbib 必须在 accv 之前加载 [C2] ────────────────────────────────────────
+% splncs04.bst 以数字引用排序，round 选项换圆括号（保持 \citep 输出一致）
+\usepackage[numbers,sort&compress]{natbib}
+
+% ── ACCV 核心包 ─────────────────────────────────────────────────────────────
+% TODO REVIEW: 获得正式 paper ID 后替换 *****
+\usepackage[review,year=2026,ID=*****]{accv}
+% TODO FINAL: 摄像头就绪版改为：\usepackage{accv}
+
+% ── 常用缩写（含 \eg \ie \etc \etal \cf \vs 等）[C1] ───────────────────────
+% accvabbrv 用 \def 强制覆盖，放在 accv 之后保证生效
+\usepackage{accvabbrv}
+
+% ── 其他包（在 hyperref 之前）───────────────────────────────────────────────
+% amsthm 不加载：llncs.cls 已用 \spnewtheorem 定义 theorem/lemma 等环境，
+% 同时加载 amsthm 会导致 "Command \theorem already defined" fatal error [C5]
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{xspace}
+% axessibility 改善 PDF 可读性（ACCV 模板推荐）
+\usepackage[accsupp]{axessibility}
+
+% ── hyperref（review 版含 pagebackref）[C4] ──────────────────────────────────
+% TODO FINAL: camera-ready 改为 \usepackage{hyperref}（去掉 pagebackref）
+\usepackage[pagebackref,breaklinks,colorlinks,citecolor=accvblue]{hyperref}
+
+% ── cleveref 由 accv.sty 的 \AtEndPreamble 自动加载 [C3] ────────────────────
+% 不重复 \usepackage{cleveref}
+
+% ── ACCV 版 preamble（数学宏 + theorem 环境，去除与 accvabbrv 冲突的缩写）────
+\input{preamble_accv}
+
+
+% =============================================================================
+% 标题 / 作者（review 版匿名占位）
+% =============================================================================
+\title{Closed-Loop Quality-Triage for Reliable Skin-Lesion Diagnosis
+on Quality-Varying Consumer Imagery}
+
+% TODO REVIEW: 如论文标题过长，在此设置缩略 running head
+\titlerunning{Closed-Loop Quality-Triage for Skin-Lesion Diagnosis}
+
+% TODO FINAL: 摄像头就绪版替换为真实作者列表
+\author{Anonymous Authors}
+\authorrunning{Anonymous et al.}
+
+% TODO FINAL: 替换为真实机构
+\institute{Anonymous Institution \email{anonymous@example.com}}
+
+\begin{document}
+\maketitle
+
+% =============================================================================
+% Abstract（复用自 main_iclr9.tex，零改动）
+% =============================================================================
+\begin{abstract}
+% LOCKED hook (anti-drift rule 1 / R14): constructive, closed-loop quality-triage.
+% ACCV reframe (蓝图 §4.1): method/system paper 腔, DP-Enhance headline, 负结果如实压末尾, 数字全锁定值.
+Skin-lesion diagnostic models trained on curated dermoscopy degrade sharply on real consumer-device
+photographs --- blurred, poorly lit, incompletely framed, colour-cast, low-contrast --- on which a
+model can be confidently wrong. Generic restoration improves perceptual quality but offers \emph{no
+guarantee that diagnostic content survives}, and blindly deferring every imperfect image wastes
+recoverable cases. We present \visienhance, a \emph{diagnosis-preserving enhancement} method wrapped in
+a \emph{closed-loop quality-triage} system. Our core contribution is a feature-level
+diagnosis-preserving objective (DP-Loss) whose information loss we bound by a Pinsker-optimal
+mutual-information lower bound ($I(\Zenh;Y)\geq I(\Zref;Y)-\beta\sqrt{\epsilon}$, Lemma~\ref{lem:dp}).
+Within a moderate-degradation window, enhancement leaves diagnosis essentially unchanged
+($\Delta\mathrm{AUC}=-0.012$, $95.8\%$ enhanced-versus-reference agreement, McNemar $p=0.57$), and a
+DP-Loss ablation confirms the effect is attributable to the objective ($\Delta\mathrm{AUC}_{\text{enh}}$
+$+0.0205$, $95\%$ CI $[+0.005,+0.035]$; McNemar $p=2.3\times10^{-45}$); against six restoration
+baselines \visienhance{} preserves diagnosis better on every one under a matched zero-shot protocol (a matched fine-tuned comparison is reported in \cref{sec:exp-transfer}). A per-input quality estimate (our
+instantiation uses a five-head assessor, PLCC $0.924$; any no-reference scalar suffices) routes each
+image to one of four channels --- diagnose, cautioned diagnose, enhance-then-diagnose, or \emph{query
+for a retake} --- the last, to our knowledge, the \textbf{first re-acquisition channel} in this
+setting, under a \emph{local, per-band} conditional risk guarantee (Theorem~\ref{thm:agent-compact}).
+We \emph{report, rather than hide}, two honest boundaries that justify the retake gate: enhancement
+turns net-negative on severely degraded melanoma (salvage $5.2\%$ against a $31\%$ damage rate,
+unchanged under a mask-reweighted retrain), and under a fixed-threshold policy global triage does not
+yet beat direct diagnosis (confidence-gated sensitivity $0.818$ versus $0.788$ at a $20\%$ referral
+budget) --- motivating learned routing thresholds. Code and benchmark will be released.
+\keywords{skin lesion diagnosis \and image quality assessment \and quality-triage \and
+diagnosis-preserving enhancement \and uncertainty estimation}
+\end{abstract}
+
+
+% =============================================================================
+% 正文（现有 9 节，按 ICLR 版顺序原样 \input，不重组）
+% =============================================================================
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig1_pipeline}
+  \caption{\textbf{System overview: closed-loop quality-aware triage for dermoscopy.} A per-input
+  quality estimate (a five-head assessor) routes each image to one of four channels --- direct
+  diagnosis, cautioned diagnosis, enhance-then-diagnose via the diagnosis-preserving enhancer
+  \visienhance{} (C1), or \emph{query-for-retake} (C2), the acquisition loop that requests
+  re-acquisition when an image is beyond safe enhancement and feeds the re-captured image back to the
+  same downstream classifier. Routing thresholds $\tau_{\text{low}}{=}0.25 < \tau_{\text{enh}}{=}0.35 <
+  \tau_{\text{high}}{=}0.50$.}
+  \label{fig:pipeline}
+\end{figure}
+
+\input{drafts_accv/s1_intro}
+
+\input{drafts_accv/s2_related}
+
+\input{drafts_accv/s3_decision_surface}
+
+\input{drafts_accv/s4_c1_enhance}
+
+\input{drafts_accv/s5_c2_agent}
+
+\input{drafts_accv/s6_setup}
+
+\input{drafts_accv/s7_experiments}
+
+\input{drafts_accv/s8_discussion}
+
+\input{drafts_accv/s9_conclusion}
+
+
+% =============================================================================
+% Ethics Statement & Reproducibility Statement
+% =============================================================================
+\section*{Ethics Statement}\label{sec:ethics}
+This work uses only publicly available, de-identified dermatology datasets under their respective
+licences; it does not recruit participants, collect new patient imagery, or run any prospective
+clinical protocol. We make \emph{no} claim of clinician validation: the system is a research
+framework, not a medical device, and production use would require institutional review, regulatory
+clearance, and prospective trials (\cref{sec:discussion}). To mitigate dual-use and over-trust risks,
+the agent includes an explicit refuse channel, enhancement is deterministic and diagnosis-preserving
+rather than generative (avoiding hallucinated structure; \cref{sec:discussion}). Subgroup fairness
+across sex, age, and skin tone is a recognised concern for deployment; a per-subgroup calibration
+analysis is reported in companion work and is not claimed here. Clinical value is assessed only
+through decision-curve analysis and triage simulation, each with
+stated limits (Appendix~\ref{app:a20}); an LLM-as-judge audit is specified as a protocol
+(Appendix~\ref{app:a19}) but its ratings are not yet collected and are deferred to the
+camera-ready, under the disclaimer in Appendix~\ref{app:a23}.
+
+\section*{Reproducibility Statement}\label{sec:repro}
+All theoretical claims are stated with explicit assumptions and full proofs in
+Appendices~\ref{app:a1}--\ref{app:a3}. The benchmark construction (sources, quality scoring,
+degradation tiers, subset definitions, composition) is detailed in Appendix~\ref{app:a4}, and the
+complete environment, data splits, seeds, compute budget, and release artefacts --- including code,
+configurations, checkpoints, and benchmark metadata --- are described in Appendix~\ref{app:a26}. A
+one-command \texttt{reproduce.sh} regenerates the reported figures and statistics.
+
+
+% =============================================================================
+% 附录
+% =============================================================================
+\appendix
+\input{appendix/A0_notation}
+\input{appendix/A1_qvib}
+\input{appendix/A2_prop3_lemma3}
+\input{appendix/A2_3_theorem2}
+\input{appendix/A3_corollary1}
+\input{appendix/A4_itb_construction}
+\input{appendix/A5_agent_impl}
+\input{appendix/A28_moved_figures}
+\input{appendix/A5_2_c0_surface_ci}
+\input{appendix/A18_failure_modes}
+\input{appendix/A19_llm_judge}
+\input{appendix/A20_cost_benefit}
+\input{appendix/A21_rebuttal}
+\input{appendix/A23_reader_study_disclaimer}
+\input{appendix/A26_reproducibility}
+\input{appendix/A27_generalization_fairness}
+
+
+% =============================================================================
+% 参考文献
+% =============================================================================
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}

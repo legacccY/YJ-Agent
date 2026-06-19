@@ -1,0 +1,14 @@
+pair,subset,method,rank,auroc
+NIH_vs_VinDr,cleanA,ViM,1,0.663
+NIH_vs_VinDr,cleanA,Residual,2,0.663
+NIH_vs_VinDr,cleanA,KNN,3,0.6069
+NIH_vs_VinDr,cleanA,MSP,4,0.5553
+NIH_vs_VinDr,cleanA,ODIN,5,0.5553
+NIH_vs_VinDr,cleanA,fDBD,6,0.5473
+NIH_vs_VinDr,cleanA,SHE,7,0.5363
+NIH_vs_VinDr,cleanA,NNGuide,8,0.5328
+NIH_vs_VinDr,cleanA,Energy,9,0.52
+NIH_vs_VinDr,cleanA,ASH,10,0.5146
+NIH_vs_VinDr,cleanA,DICE,11,0.5142
+NIH_vs_VinDr,cleanA,GradNorm,12,0.4956
+NIH_vs_VinDr,cleanA,MDS,13,0.4845

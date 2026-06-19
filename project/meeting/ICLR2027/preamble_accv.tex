@@ -1,0 +1,85 @@
+% =============================================================================
+% preamble_accv.tex — ACCV 版数学宏 + theorem 环境
+%
+% 与 preamble.tex 的差异：
+%   [C1] 删除 \eg \ie \etc \etal 定义（由 accvabbrv.sty 负责，避免 \already defined 冲突）
+%        保留 \aka（accvabbrv 未定义）
+%   [C3] 删除 \usepackage{cleveref}（由 accv.sty \AtEndPreamble 自动加载）
+%   [C2] 删除 \usepackage[round]{natbib}（已在 main_accv.tex 加载于 accv 之前）
+%   [C5] \newtheorem 在 amsthm 下定义，llncs 的 \spnewtheorem 不与其冲突
+%   其余数学宏与 preamble.tex 完全一致，以保证 drafts_short/ 正常编译
+% =============================================================================
+
+% ── 已在 main_accv.tex 顶层加载，此处不重复 ──────────────────────────────────
+% amsmath, amssymb, mathtools, bm, graphicx, booktabs, multirow,
+% xcolor[table], xspace, hyperref, natbib — 均已在 main_accv.tex 处理
+%
+% NOTE: amsthm 不在此加载。llncs.cls 已通过 \spnewtheorem / \spn@wtheorem
+%   定义 theorem / lemma / corollary / proposition / remark / proof / claim 等。
+%   在 llncs 下再 \usepackage{amsthm} + \newtheorem 会触发
+%   "Command \theorem already defined" fatal error [C5]。
+
+% ── \aka（accvabbrv 未提供的缩写）[C1] ──────────────────────────────────────
+\providecommand{\aka}{a.k.a.\xspace}
+
+% ── Theorem 环境 [C5] ────────────────────────────────────────────────────────
+% theorem / lemma / corollary / proposition / remark / proof / claim
+%   已由 llncs.cls 的 \spn@wtheorem 定义，此处不重复。
+%
+% assumption：llncs 未定义，用 \spnewtheorem 补充
+\spnewtheorem{assumption}{Assumption}{\bfseries}{\itshape}
+
+% ── \qedhere 兼容 [C5-补] ────────────────────────────────────────────────────
+% amsthm 的 \qedhere 在 llncs proof 环境内无效（llncs 不加载 amsthm）。
+% 用 \providecommand 静默忽略；llncs proof 环境末尾已自动插入 QED 方框。
+\providecommand{\qedhere}{}
+
+% ── 匿名模型名宏（de-anon 只需改 RHS）──────────────────────────────────────
+\newcommand{\qvib}{QC-VIB}
+\newcommand{\visiscore}{5-head IQA}
+\newcommand{\visienhance}{QP-Enhance}
+\newcommand{\qcts}{QC-TS}
+\newcommand{\itb}{QSB}
+
+% ── 数学算子 ────────────────────────────────────────────────────────────────
+\DeclareMathOperator{\KL}{KL}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\sigmoid}{sigmoid}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\TV}{\mathrm{TV}}
+\newcommand{\Hent}{H}
+\newcommand{\qbar}{\bar{q}}
+\newcommand{\Tw}{T_\omega}
+\newcommand{\Zenh}{Z_{\mathrm{enh}}}
+\newcommand{\Zref}{Z_{\mathrm{ref}}}
+\newcommand{\Lq}{L_{q_\theta}}
+\newcommand{\Ldp}{\mathcal{L}_{\mathrm{DP}}}
+\newcommand{\Ragent}{\mathcal{R}_{\mathrm{agent}}}
+\newcommand{\Rdirect}{\mathcal{R}_{\mathrm{direct}}}
+\newcommand{\Renh}{\mathcal{R}_{\mathrm{enh}}}
+\newcommand{\tauenh}{\tau_{\mathrm{enh}}}
+\newcommand{\tauhigh}{\tau_{\mathrm{high}}}
+\newcommand{\taulow}{\tau_{\mathrm{low}}}
+% Theorem 2 (agent risk bound)
+\newcommand{\Gen}{G_{\mathrm{enh}}}
+\newcommand{\Gret}{G_{\mathrm{retake}}}
+\newcommand{\pisalv}{\pi_{\mathrm{salvage}}}
+\newcommand{\hhigh}{h_{\mathrm{high}}}
+\newcommand{\actd}{a_d}
+\newcommand{\acte}{a_e}
+\newcommand{\actq}{a_q}
+\newcommand{\actr}{a_r}
+% Corollary 1 (composite ECE bound)
+\DeclareMathOperator{\ECE}{ECE}
+\newcommand{\Lt}{L_T}
+\newcommand{\Tmin}{T_{\min}}
+\newcommand{\epsqts}{\epsilon_{\mathrm{qts}}}
+\newcommand{\pQV}{\hat{p}^{(\mathrm{QV})}}
+\newcommand{\pQCTS}{\hat{p}^{(\mathrm{QCTS})}}
+\newcommand{\pComp}{\hat{p}^{(\mathrm{comp})}}
+
+% ── Draft-stage TODO marker（红色 [TODO] 占位，不输出参数文字）────────────────
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO]}}}

@@ -1,41 +1,41 @@
 {
-  "cv_pooled_auroc": 0.572268,
-  "ci_low": 0.40165,
-  "ci_high": 0.734706,
-  "perm_auroc_mean": null,
-  "perm_p_value": null,
-  "perm_n_rep": 100,
+  "cv_pooled_auroc": 0.615741,
+  "ci_low": 0.379506,
+  "ci_high": 0.827825,
+  "perm_auroc_mean": 0.476852,
+  "perm_p_value": 0.0,
+  "perm_n_rep": 2,
   "kill1_verdict": "FAIL",
   "threshold_auroc": 0.6,
   "threshold_ci_low": 0.5,
-  "n_clusters": 60,
-  "n_patients": 26,
+  "n_clusters": 30,
+  "n_patients": 15,
   "n_splits": 5,
   "per_fold": [
     {
       "fold": 1,
-      "n_test_fold": 13,
-      "auroc_fold": 0.625
+      "n_test_fold": 4,
+      "auroc_fold": 0.25
     },
     {
       "fold": 2,
-      "n_test_fold": 14,
-      "auroc_fold": 0.65
+      "n_test_fold": 10,
+      "auroc_fold": 0.714286
     },
     {
       "fold": 3,
-      "n_test_fold": 14,
-      "auroc_fold": 0.577778
+      "n_test_fold": 5,
+      "auroc_fold": 0.166667
     },
     {
       "fold": 4,
-      "n_test_fold": 12,
-      "auroc_fold": 0.5
+      "n_test_fold": 4,
+      "auroc_fold": 1.0
     },
     {
       "fold": 5,
       "n_test_fold": 7,
-      "auroc_fold": 0.666667
+      "auroc_fold": 0.6
     }
   ],
   "hyperparams": {

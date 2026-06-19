@@ -1,0 +1,35 @@
+{
+  "input": {
+    "csv": "D:/YJ-Agent/project/meeting/SelInfBench/results/ham_datafission.csv",
+    "metric_col": "macro_auc",
+    "config_col": "config"
+  },
+  "params": {
+    "sigma": 0.014740929187928749,
+    "sigma_mode": "pooled-std (ddof=1, M=18)",
+    "tau": 1.0,
+    "alpha": 0.05,
+    "rng_seed": 42
+  },
+  "selected_config": {
+    "i_naive": 2,
+    "i_star": 2,
+    "naive_config": "lr=0.001_dp=0.2_s=2024",
+    "fission_config": "lr=0.001_dp=0.2_s=2024"
+  },
+  "corrections": {
+    "naive_value": 0.946922,
+    "g_star": 0.9358596520636207,
+    "ci_low": 0.8950006317915842,
+    "ci_high": 0.9767186723356571,
+    "ci_width": 0.08171804054407295,
+    "debias_shift": 0.01106234793637939,
+    "se_g": 0.02084682197955025,
+    "z_alpha": 1.959963984540054
+  },
+  "meta": {
+    "M": 18,
+    "method": "data_fission_Leiner_JASA2023",
+    "note_deflation_forbidden": "deflation=df_width/naive_width-1 is a sqrt(2M)-1 M-artifact (02_ACCEPTANCE method redline), never computed or output here."
+  }
+}

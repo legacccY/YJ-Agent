@@ -23,11 +23,44 @@
 ### 完成
 - **R1/R3 统一脚本就绪** `project/run_r1r3_finetune_eval.py`（coder，~650 行，smoke 全过）：R1=baseline 官方配方 fine-tune（task-agnostic），R3=DP-Loss graft 到最强 baseline（task-aware），评测对齐 E7/E10 口径（诊断保持 ΔAUC/agreement/KL/dangerous_flip + **per-class melanoma 拆分** + paired bootstrap 95% CI），复用 run_e10_baseline_hpc.py 管线。公平性设计内嵌（同退化训练集 fine-tune 到收敛、不 cherry-pick、melanoma 净负如实输出）。
 
+### 执行进展（同会话续，用户放行 HPC + 并行 reframe）
+- ✅ researcher 补齐 ft 配方：Real-ESRGAN perceptual 精确层权重（commit aa584e05：conv1_2/2_2=0.1, conv3_4/4_4/5_4=1, vgg19, perceptual_weight=1.0, l1）+ fine-tune 合规背书（HAT CVPR2023 / SwinIR issue#3「小 lr fine-tune 非私自降步数凑收敛」）。
+- ✅ coder 收尾小修脚本：Real-ESRGAN perceptual 精确化（弃 features[:18] 笼统切片）+ 合规注释 + 自查 **6 baseline 全可 fine-tune（裸 nn.Module requires_grad=True，无 inference-only 阻断）**。
+- ✅ HPC 环境核查全绿：6 baseline 权重 + efficientnet_b3_isic + VisiScore + VE ckpt + ISIC2020 + paired_dataset_nocrop + quality_labels_nocrop_hpc.csv + splits + lesion_masks 全在 `/gpfs/work/bio/jiayu2403/visienhance/`，**不需上传新数据，仅传 R1 脚本**。
+- ✅ writer reframe 蓝图 `meeting/ICLR2027/ACCV_reframe_蓝图.md`：新 headline 双核（DP-Enhance C1 + query-for-retake C2）+ 贡献三层重排 + 17 claim 对照表（负结果如实降 LIMITATION 带数字）+ abstract/§1 草案 + 诚实自查清单。守诚实安全线（改 emphasis 不改 truth value）。
+- ✅ **R1 nafnet 验管线 job 已提交**：gpu_slot `6856492f`（hpc 1 卡），jobid **1471613**（PD 排队中，待启动验 import/数据/fine-tune 管线通后铺全量）。HPC 现况：disagree 占 1 卡，nafnet 占 1，剩 2 卡空。
+- 提交工具：`tools/_scratch_r1_{submit,check,envcheck}.py`（复用 hpc_monitor 凭证不暴露密码，一次性探针）。
+
+### ACCV 模板骨架（本会话追加）
+- `meeting/ICLR2027/main_accv.tex` — ACCV review 版主文件（llncs + accv.sty，内容零改动，机械迁移 S 版 9 章）
+- `meeting/ICLR2027/preamble_accv.tex` — ACCV 版数学宏（去除与 accvabbrv 冲突的 \eg/\ie/\etc/\etal，保留所有数学宏）
+- `meeting/ICLR2027/{accv.sty,accvabbrv.sty,llncs.cls,splncs04.bst}` — 从 _accv_tmpl/ 复制的模板文件
+
+### 完成（续，R6 脚本就绪 — 同会话 coder 追加）
+- ✅ **R6 SelectiveNet 训练脚本** `project/train_selectivenet.py`：官方 SelectiveNet（Geifman&El-Yaniv ICML 2019）head-only fine-tune（frozen stdvib encoder + f head + 新 g/h head）；官方超参 lambda=32, alpha=0.5, coverage targets {0.70,0.75,0.80,0.85,0.90,0.95}；py_compile ✅ + forward+loss smoke ✅ + frozen-backbone load ✅。GPU ~15min，产出 `checkpoints/selectivenet_c{cov}/best.pth`。
+- ✅ **R6 比较脚本** `project/run_r6_selective_compare.py`：ITB-LQ n=300 上跑 5 方法 risk-coverage 对比（Direct / Chow / Deep Ensemble 3-seed / MC-Dropout / Query-for-Retake）+ SelectiveNet（有 ckpt 则自动纳入）；输出 `results/r6_selective_compare.csv` + `r6_risk_coverage_curves.csv` + `r6_melanoma_miss_rate.csv` + `r6_summary.json` + `report/figures/fig_r6_selective_compare.{pdf,png}`；py_compile ✅ + smoke（--cpu --smoke）全绿 ✅。诚实底线 C2.4 内嵌：retake 不 claim 全局超 Direct，如实输出。
+
+### ACCV 论文写作进展（autonomous 自主续，用户 2026-06-19 授全权「ACCV 论文写完 + 实验做完不停」）
+- ✅ ACCV 官方模板解压 `_accv_tmpl/`（llncs.cls + accv.sty + splncs04.bst，ECCV2024 CVF 系单栏 LNCS）。
+- ✅ coder 搭 ACCV 骨架 `main_accv.tex` + `preamble_accv.tex`：解 5 类兼容冲突（natbib/theorem/abbrv/cleveref/qedhere），编译 0 fatal。
+- ✅ **drafts_accv/ 隔离副本建立**（cp drafts_short，ICLR 版冻结不污染），main_accv 重指向 drafts_accv。
+- ✅ **reframe 全 9 章完成**（主线改 abstract + 3 writer 并行：W1 §1/8/9、W2 §2/3/4/6、W3 §5/7）：新 headline 双核（DP-Enhance C1 + query-for-retake C2 机制 novelty）、C0 降动机章、§7.5b「DP-Loss is Transferable」(R3 占位)新小节、§6 R1 ft 协议占位、abstract method/system 腔。**三铁律负结果全保留带数字带 CI，method 宏名未改（脱敏留最后改宏），R1/R3 数字全 \todo 占位（6 处）**。
+- ✅ 编译 main_accv：54 页（正文 §1-§9 到 **p15**，超 ACCV 14 页限 1 页，待 R1/R3 填完统一卡页）、0 fatal、0 断引。
+- ✅ **R6 脚本就绪**：`project/train_selectivenet.py` + `run_r6_selective_compare.py`。本地 ckpt 齐（stdvib_s{42,123,2024}=3seed ensemble + mcdropout + oracle）。自查：SelectiveNet 需训 ~15-90min GPU；Deep Ensemble 缺 s456/s789（只 3seed→论文写 3-seed 或补跑）；MC-Dropout 用 mean-conf proxy（variance 未存，标 TODO）。
+- ✅ **Fig.1 系统 pipeline 总览图（teaser）**：`meeting/ICLR2027/figures/fig1_pipeline.tex` + `fig1_pipeline.pdf`（TikZ standalone，pdflatex 0 error 0 warning，108 KB，Okabe-Ito 配色，4 通道彩色区分，C2 query-for-retake 闭环橙色粗虚线高亮，τ 阈值注标）。插入用：`\includegraphics[width=\textwidth]{figures/fig1_pipeline}`，建议置 §1 顶部 teaser。
+- ⏳ R1 nafnet(1471613)+restormer(1471977)+R3 graft(1472058) 三 job HPC 排队中（全校塞满，jiayu2403 QOS 4 GPU 满）；其余 4 baseline(mirnetv2/swinir/uformer/realesrgan) 等 gpu_slot release 自动取；R6 本地待跑（local 被他窗 disagree 占）。
+- ✅ verifier 核 reframe 数字：**24 个数字全核 0 DRIFT**，三铁律负结果完整准确未弱化（附带发现 STORY 文档误指 E3 源 csv=stage2_diag_paired_v5，实为 dflip_persample.csv，文档索引错不影响 tex 数字——待修）。
+- ✅ reviewer 对抗审完：**无 reject 级硬伤，跑偏审计全守（R1-R14 + 三铁律 + Q-VIB 脚注 + Thm2 局部界 + 数字未自创）**。🟠 全修：abstract 加 zero-shot 限定 / §7.5b 动词改条件式 + 两分支诚实预案 / §7.2↔§7.4 two-regime 桥接 / C2 novelty 收窄到「risk-bounded 采集闭环」1 处主张 + §2 划界排除 active perception/next-best-view。🔴 脱敏推迟定稿前统一做（涉共享附录 + R1/R3 未出）。录用评估：当前 borderline-reject，R1/R3+脱敏后 borderline。
+- ✅ Fig.1 pipeline teaser 接进 main_accv §1 顶部（caption + DP-Enhance typo 修）。
+- ✅ **R1 nafnet HPC 管线验通**（job 1471613 R@gpu4090n10：backbone/oracle 加载 OK、train=80607/val=9936、ft 启动 50k iter lr=1e-4 AMP）→ R1 脚本 HPC 跑通，可铺全量。
+- ✅ main_accv 重编译 55 页（正文 §1-§9 到 **p16**，超 14 限 2 页，待 R1/R3 填完 + 脱敏后统一卡页 ≤14）、0 fatal、0 断引。
+- ⏳ restormer/R3 SLURM 排队（QOS 4 满）；其余 4 baseline 等 release 自动轮转。
+
 ### 待续
-1. **补 ft 超参 TODO**（researcher 核或先跑观察早停）：Restormer/NAFNet/MIRNetv2/SwinIR ft iterations（暂按 BasicSR 1/6 惯例 50k）、Real-ESRGAN perceptual_weight + ft iterations、VGG19 conv 层索引、R3 backbone 选择（默认 restormer=PSNR 最高）。
-2. **HPC 跑 R1×6 + R3**（🛑 拍板点：传新代码 run_r1r3_finetune_eval.py = 对外传输 + ~150 GPU·h 大算力）。
-3. **reframe 设计**（提 DP-Loss/retake 当 positive headline，全局 triage 负结果 + melanoma 净负如实降 analysis，不藏不夸）。
-4. **LNCS 14 页重排**（ACCV）或等 venue 最终定。
+1. **nafnet 管线验证**（job 1471613 启动后看 log：import/数据/fine-tune 出 loss）→ 通 → 铺其余 5 baseline（restormer/mirnetv2/swinir/uformer/realesrgan）+ R3 DP-graft（gpu_slot 申请，HPC 剩 2 卡 → 2 GO + 4 QUEUED 自动取，跑完 release 自动取队）。
+2. **analyst 解读 R1**（per-baseline paired ΔAUC CI + melanoma per-class）+ verifier 核 csv → 填 reframe 蓝图的 \todo 占位数字。
+3. **reframe 蓝图主线/用户审** → 改 drafts → **LNCS 14 页重排**（**venue 锁死 ACCV 2026**，用户 2026-06-19 完全否决 WACV，不再权衡）。
+4. 跑完所有 R1/R3 job 必 `gpu_slot.py release` 清账。
 
 ### 诚实底线（钉死）
 melanoma 净负（−81/v6 null）、全局 triage 不超 Direct、Thm2 局部界 **全部如实留正文带数字**。reframe 只改 emphasis 不改 truth value。补强建立 C1/C2 正向贡献，不触碰任何诚实负结果。

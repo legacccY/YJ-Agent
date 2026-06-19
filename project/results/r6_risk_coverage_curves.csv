@@ -1,0 +1,406 @@
+tau,coverage,risk,n_kept,melanoma_miss_rate,method,key
+0.0,1.0,0.46,50,0.2,Direct (EfficientNet-B3),direct
+0.0010718703269958496,0.02,1.0,1,1.0,Chow's rule (max-softmax),chow
+0.001188286542892456,0.02,1.0,1,1.0,Chow's rule (max-softmax),chow
+0.0013047027587890624,0.02,1.0,1,1.0,Chow's rule (max-softmax),chow
+0.0015128934383392334,0.04,1.0,2,1.0,Chow's rule (max-softmax),chow
+0.001724989414215088,0.04,1.0,2,1.0,Chow's rule (max-softmax),chow
+0.0018862307071685791,0.06,1.0,3,1.0,Chow's rule (max-softmax),chow
+0.0020429515838623047,0.06,1.0,3,1.0,Chow's rule (max-softmax),chow
+0.002292308281175792,0.08,0.75,4,0.9,Chow's rule (max-softmax),chow
+0.0025545909069478513,0.08,0.75,4,0.9,Chow's rule (max-softmax),chow
+0.0027532571810297214,0.1,0.6,5,0.9,Chow's rule (max-softmax),chow
+0.002939510508440335,0.1,0.6,5,0.9,Chow's rule (max-softmax),chow
+0.004984901363495711,0.12,0.5,6,0.9,Chow's rule (max-softmax),chow
+0.0075069941487164145,0.12,0.5,6,0.9,Chow's rule (max-softmax),chow
+0.008905593752861051,0.14,0.5714285714285714,7,0.9,Chow's rule (max-softmax),chow
+0.00993981719017021,0.14,0.5714285714285714,7,0.9,Chow's rule (max-softmax),chow
+0.010455024242401011,0.16,0.625,8,0.9,Chow's rule (max-softmax),chow
+0.010762624740600475,0.16,0.625,8,0.9,Chow's rule (max-softmax),chow
+0.011354607343673669,0.18,0.5555555555555556,9,0.8,Chow's rule (max-softmax),chow
+0.012084472179412914,0.18,0.5555555555555556,9,0.8,Chow's rule (max-softmax),chow
+0.01254920423030861,0.2,0.6,10,0.8,Chow's rule (max-softmax),chow
+0.012859988212585471,0.2,0.6,10,0.8,Chow's rule (max-softmax),chow
+0.014253977369517085,0.22,0.5454545454545454,11,0.7,Chow's rule (max-softmax),chow
+0.01639500457793474,0.22,0.5454545454545454,11,0.7,Chow's rule (max-softmax),chow
+0.01743101766332981,0.24,0.5,12,0.7,Chow's rule (max-softmax),chow
+0.017566648870706473,0.24,0.5,12,0.7,Chow's rule (max-softmax),chow
+0.017872627358883536,0.26,0.5384615384615384,13,0.7,Chow's rule (max-softmax),chow
+0.01834213923662898,0.26,0.5384615384615384,13,0.7,Chow's rule (max-softmax),chow
+0.01969970185309646,0.28,0.5,14,0.7,Chow's rule (max-softmax),chow
+0.022061147913336677,0.28,0.5,14,0.7,Chow's rule (max-softmax),chow
+0.023594821747392327,0.3,0.4666666666666667,15,0.7,Chow's rule (max-softmax),chow
+0.02402479927986857,0.3,0.4666666666666667,15,0.7,Chow's rule (max-softmax),chow
+0.024396589919924737,0.32,0.4375,16,0.7,Chow's rule (max-softmax),chow
+0.024676506519317628,0.32,0.4375,16,0.7,Chow's rule (max-softmax),chow
+0.02515060663223269,0.34,0.4117647058823529,17,0.6,Chow's rule (max-softmax),chow
+0.025990228652954174,0.34,0.4117647058823529,17,0.6,Chow's rule (max-softmax),chow
+0.027184518054127783,0.36,0.3888888888888889,18,0.5,Chow's rule (max-softmax),chow
+0.029182720184326213,0.36,0.3888888888888889,18,0.5,Chow's rule (max-softmax),chow
+0.031694098785519605,0.38,0.3684210526315789,19,0.5,Chow's rule (max-softmax),chow
+0.03562658146023758,0.38,0.3684210526315789,19,0.5,Chow's rule (max-softmax),chow
+0.03958260774612436,0.4,0.4,20,0.5,Chow's rule (max-softmax),chow
+0.04361996650695806,0.4,0.4,20,0.5,Chow's rule (max-softmax),chow
+0.04761680614203215,0.42,0.42857142857142855,21,0.5,Chow's rule (max-softmax),chow
+0.051433560773730264,0.42,0.42857142857142855,21,0.5,Chow's rule (max-softmax),chow
+0.05472132977098226,0.44,0.4090909090909091,22,0.5,Chow's rule (max-softmax),chow
+0.05483518496155739,0.44,0.4090909090909091,22,0.5,Chow's rule (max-softmax),chow
+0.05528097450733186,0.46,0.391304347826087,23,0.4,Chow's rule (max-softmax),chow
+0.058647786378860554,0.46,0.391304347826087,23,0.4,Chow's rule (max-softmax),chow
+0.06192649483680735,0.48,0.375,24,0.3,Chow's rule (max-softmax),chow
+0.06385428428649907,0.48,0.375,24,0.3,Chow's rule (max-softmax),chow
+0.06578875102102756,0.5,0.4,25,0.3,Chow's rule (max-softmax),chow
+0.06804372742772102,0.5,0.4,25,0.3,Chow's rule (max-softmax),chow
+0.07029870383441449,0.5,0.4,25,0.3,Chow's rule (max-softmax),chow
+0.07281515628099441,0.52,0.38461538461538464,26,0.3,Chow's rule (max-softmax),chow
+0.075337056145072,0.52,0.38461538461538464,26,0.3,Chow's rule (max-softmax),chow
+0.07840426504611965,0.54,0.37037037037037035,27,0.3,Chow's rule (max-softmax),chow
+0.08150703758001318,0.54,0.37037037037037035,27,0.3,Chow's rule (max-softmax),chow
+0.08315682172775267,0.56,0.39285714285714285,28,0.3,Chow's rule (max-softmax),chow
+0.08464149355888376,0.56,0.39285714285714285,28,0.3,Chow's rule (max-softmax),chow
+0.08664779469370848,0.58,0.41379310344827586,29,0.3,Chow's rule (max-softmax),chow
+0.08874103404581547,0.58,0.41379310344827586,29,0.3,Chow's rule (max-softmax),chow
+0.09626472443342206,0.6,0.43333333333333335,30,0.3,Chow's rule (max-softmax),chow
+0.10501026630401612,0.6,0.43333333333333335,30,0.3,Chow's rule (max-softmax),chow
+0.10724636480212207,0.62,0.41935483870967744,31,0.3,Chow's rule (max-softmax),chow
+0.10759815074503412,0.62,0.41935483870967744,31,0.3,Chow's rule (max-softmax),chow
+0.11310801506042469,0.64,0.40625,32,0.3,Chow's rule (max-softmax),chow
+0.1204805187880992,0.64,0.40625,32,0.3,Chow's rule (max-softmax),chow
+0.12334351062774651,0.66,0.3939393939393939,33,0.3,Chow's rule (max-softmax),chow
+0.12421701192855834,0.66,0.3939393939393939,33,0.3,Chow's rule (max-softmax),chow
+0.12913300037384035,0.68,0.4117647058823529,34,0.3,Chow's rule (max-softmax),chow
+0.13619656011462206,0.68,0.4117647058823529,34,0.3,Chow's rule (max-softmax),chow
+0.14430216252803799,0.7,0.4,35,0.3,Chow's rule (max-softmax),chow
+0.15306772530078885,0.7,0.4,35,0.3,Chow's rule (max-softmax),chow
+0.1573329597711563,0.72,0.3888888888888889,36,0.3,Chow's rule (max-softmax),chow
+0.15822294801473616,0.72,0.3888888888888889,36,0.3,Chow's rule (max-softmax),chow
+0.16035160094499587,0.74,0.40540540540540543,37,0.3,Chow's rule (max-softmax),chow
+0.16357599571347237,0.74,0.40540540540540543,37,0.3,Chow's rule (max-softmax),chow
+0.16579503059387207,0.76,0.39473684210526316,38,0.2,Chow's rule (max-softmax),chow
+0.16696681559085846,0.76,0.39473684210526316,38,0.2,Chow's rule (max-softmax),chow
+0.17468354582786558,0.78,0.41025641025641024,39,0.2,Chow's rule (max-softmax),chow
+0.1904327088594437,0.78,0.41025641025641024,39,0.2,Chow's rule (max-softmax),chow
+0.2045690298080445,0.8,0.425,40,0.2,Chow's rule (max-softmax),chow
+0.21636672973632823,0.8,0.425,40,0.2,Chow's rule (max-softmax),chow
+0.23352613866329192,0.82,0.43902439024390244,41,0.2,Chow's rule (max-softmax),chow
+0.2599196019768712,0.82,0.43902439024390244,41,0.2,Chow's rule (max-softmax),chow
+0.28301302790641775,0.84,0.42857142857142855,42,0.2,Chow's rule (max-softmax),chow
+0.29930012673139567,0.84,0.42857142857142855,42,0.2,Chow's rule (max-softmax),chow
+0.3124108135700226,0.86,0.4186046511627907,43,0.2,Chow's rule (max-softmax),chow
+0.31758047044277193,0.86,0.4186046511627907,43,0.2,Chow's rule (max-softmax),chow
+0.3266084957122802,0.88,0.4090909090909091,44,0.2,Chow's rule (max-softmax),chow
+0.34753315687179565,0.88,0.4090909090909091,44,0.2,Chow's rule (max-softmax),chow
+0.37143081426620495,0.9,0.4222222222222222,45,0.2,Chow's rule (max-softmax),chow
+0.40692315697670006,0.9,0.4222222222222222,45,0.2,Chow's rule (max-softmax),chow
+0.4368076610565186,0.92,0.43478260869565216,46,0.2,Chow's rule (max-softmax),chow
+0.4379519921541214,0.92,0.43478260869565216,46,0.2,Chow's rule (max-softmax),chow
+0.4409067142009733,0.94,0.44680851063829785,47,0.2,Chow's rule (max-softmax),chow
+0.4568359047174453,0.94,0.44680851063829785,47,0.2,Chow's rule (max-softmax),chow
+0.47208088874816895,0.96,0.4583333333333333,48,0.2,Chow's rule (max-softmax),chow
+0.47962854981422426,0.96,0.4583333333333333,48,0.2,Chow's rule (max-softmax),chow
+0.48700668632984156,0.98,0.46938775510204084,49,0.2,Chow's rule (max-softmax),chow
+0.49040099591016767,0.98,0.46938775510204084,49,0.2,Chow's rule (max-softmax),chow
+0.4937953054904938,1.0,0.46,50,0.2,Chow's rule (max-softmax),chow
+3.4619808767880994e-07,0.02,1.0,1,1.0,Deep Ensemble (3-seed),ensemble
+7.113927156471406e-07,0.02,1.0,1,1.0,Deep Ensemble (3-seed),ensemble
+1.0765873436154714e-06,0.02,1.0,1,1.0,Deep Ensemble (3-seed),ensemble
+1.266097801778228e-06,0.04,1.0,2,1.0,Deep Ensemble (3-seed),ensemble
+1.4481323378215985e-06,0.04,1.0,2,1.0,Deep Ensemble (3-seed),ensemble
+1.5412236733269174e-06,0.06,0.6666666666666666,3,0.9,Deep Ensemble (3-seed),ensemble
+1.626408946562187e-06,0.06,0.6666666666666666,3,0.9,Deep Ensemble (3-seed),ensemble
+1.6739074813741708e-06,0.08,0.5,4,0.8,Deep Ensemble (3-seed),ensemble
+1.71614740152244e-06,0.08,0.5,4,0.8,Deep Ensemble (3-seed),ensemble
+1.7418809037571633e-06,0.1,0.6,5,0.8,Deep Ensemble (3-seed),ensemble
+1.7643936415209504e-06,0.1,0.6,5,0.8,Deep Ensemble (3-seed),ensemble
+1.7763807169045437e-06,0.12,0.5,6,0.7,Deep Ensemble (3-seed),ensemble
+1.785668904498344e-06,0.12,0.5,6,0.7,Deep Ensemble (3-seed),ensemble
+1.8815512529592128e-06,0.14,0.5714285714285714,7,0.7,Deep Ensemble (3-seed),ensemble
+2.005518194133725e-06,0.14,0.5714285714285714,7,0.7,Deep Ensemble (3-seed),ensemble
+2.0850820084441465e-06,0.16,0.625,8,0.7,Deep Ensemble (3-seed),ensemble
+2.1468845720089308e-06,0.16,0.625,8,0.7,Deep Ensemble (3-seed),ensemble
+2.348155952560687e-06,0.18,0.5555555555555556,9,0.6,Deep Ensemble (3-seed),ensemble
+2.617048577712187e-06,0.18,0.5555555555555556,9,0.6,Deep Ensemble (3-seed),ensemble
+3.052405601143391e-06,0.2,0.5,10,0.5,Deep Ensemble (3-seed),ensemble
+3.5844193719628092e-06,0.2,0.5,10,0.5,Deep Ensemble (3-seed),ensemble
+4.451994967145901e-06,0.22,0.45454545454545453,11,0.4,Deep Ensemble (3-seed),ensemble
+5.550992510166015e-06,0.22,0.45454545454545453,11,0.4,Deep Ensemble (3-seed),ensemble
+6.2040109194564065e-06,0.24,0.5,12,0.4,Deep Ensemble (3-seed),ensemble
+6.493638923485537e-06,0.24,0.5,12,0.4,Deep Ensemble (3-seed),ensemble
+6.711721591143352e-06,0.26,0.5384615384615384,13,0.4,Deep Ensemble (3-seed),ensemble
+6.861120735884705e-06,0.26,0.5384615384615384,13,0.4,Deep Ensemble (3-seed),ensemble
+7.388868194608328e-06,0.28,0.5,14,0.3,Deep Ensemble (3-seed),ensemble
+8.344313747398865e-06,0.28,0.5,14,0.3,Deep Ensemble (3-seed),ensemble
+1.1087131144817527e-05,0.3,0.5333333333333333,15,0.3,Deep Ensemble (3-seed),ensemble
+1.621311100174038e-05,0.3,0.5333333333333333,15,0.3,Deep Ensemble (3-seed),ensemble
+2.008960446391427e-05,0.32,0.5625,16,0.3,Deep Ensemble (3-seed),ensemble
+2.1993224671221346e-05,0.32,0.5625,16,0.3,Deep Ensemble (3-seed),ensemble
+2.471048227698789e-05,0.34,0.5882352941176471,17,0.3,Deep Ensemble (3-seed),ensemble
+2.8959292632795713e-05,0.34,0.5882352941176471,17,0.3,Deep Ensemble (3-seed),ensemble
+3.482066331914545e-05,0.36,0.6111111111111112,18,0.3,Deep Ensemble (3-seed),ensemble
+4.43371707547236e-05,0.36,0.6111111111111112,18,0.3,Deep Ensemble (3-seed),ensemble
+5.4299266452345386e-05,0.38,0.5789473684210527,19,0.3,Deep Ensemble (3-seed),ensemble
+6.549529887562674e-05,0.38,0.5789473684210527,19,0.3,Deep Ensemble (3-seed),ensemble
+7.437762126404422e-05,0.4,0.6,20,0.3,Deep Ensemble (3-seed),ensemble
+7.526712716838675e-05,0.4,0.6,20,0.3,Deep Ensemble (3-seed),ensemble
+7.603726535112007e-05,0.42,0.6190476190476191,21,0.3,Deep Ensemble (3-seed),ensemble
+7.627688032670139e-05,0.42,0.6190476190476191,21,0.3,Deep Ensemble (3-seed),ensemble
+7.828809978541838e-05,0.44,0.6363636363636364,22,0.3,Deep Ensemble (3-seed),ensemble
+9.092894614294927e-05,0.44,0.6363636363636364,22,0.3,Deep Ensemble (3-seed),ensemble
+0.00010368860882606842,0.46,0.6521739130434783,23,0.3,Deep Ensemble (3-seed),ensemble
+0.00011749385517436338,0.46,0.6521739130434783,23,0.3,Deep Ensemble (3-seed),ensemble
+0.00013180999096223505,0.48,0.6666666666666666,24,0.3,Deep Ensemble (3-seed),ensemble
+0.00015395976482362054,0.48,0.6666666666666666,24,0.3,Deep Ensemble (3-seed),ensemble
+0.00017645164643064225,0.5,0.64,25,0.2,Deep Ensemble (3-seed),ensemble
+0.0002153646998282155,0.5,0.64,25,0.2,Deep Ensemble (3-seed),ensemble
+0.0002542777532257887,0.5,0.64,25,0.2,Deep Ensemble (3-seed),ensemble
+0.00025552378849268045,0.52,0.6153846153846154,26,0.1,Deep Ensemble (3-seed),ensemble
+0.0002559850942151831,0.52,0.6153846153846154,26,0.1,Deep Ensemble (3-seed),ensemble
+0.0002599683535559274,0.54,0.6296296296296297,27,0.1,Deep Ensemble (3-seed),ensemble
+0.0002641813055239483,0.54,0.6296296296296297,27,0.1,Deep Ensemble (3-seed),ensemble
+0.00028709612789195926,0.56,0.6428571428571429,28,0.1,Deep Ensemble (3-seed),ensemble
+0.00031213616280542335,0.56,0.6428571428571429,28,0.1,Deep Ensemble (3-seed),ensemble
+0.00038637090259405286,0.58,0.6206896551724138,29,0.1,Deep Ensemble (3-seed),ensemble
+0.0004688047598618771,0.58,0.6206896551724138,29,0.1,Deep Ensemble (3-seed),ensemble
+0.000496067309352417,0.6,0.6333333333333333,30,0.1,Deep Ensemble (3-seed),ensemble
+0.0005109163145930683,0.6,0.6333333333333333,30,0.1,Deep Ensemble (3-seed),ensemble
+0.0005374672049420174,0.62,0.6451612903225806,31,0.1,Deep Ensemble (3-seed),ensemble
+0.0005674054830854739,0.62,0.6451612903225806,31,0.1,Deep Ensemble (3-seed),ensemble
+0.0006291871531613284,0.64,0.65625,32,0.1,Deep Ensemble (3-seed),ensemble
+0.0007024678258794383,0.64,0.65625,32,0.1,Deep Ensemble (3-seed),ensemble
+0.0008183653334675818,0.66,0.6666666666666666,33,0.1,Deep Ensemble (3-seed),ensemble
+0.000953064385851328,0.66,0.6666666666666666,33,0.1,Deep Ensemble (3-seed),ensemble
+0.001255687462175609,0.68,0.6764705882352942,34,0.1,Deep Ensemble (3-seed),ensemble
+0.0016475201762182975,0.68,0.6764705882352942,34,0.1,Deep Ensemble (3-seed),ensemble
+0.0019140552219463988,0.7,0.6857142857142857,35,0.1,Deep Ensemble (3-seed),ensemble
+0.002101235077741922,0.7,0.6857142857142857,35,0.1,Deep Ensemble (3-seed),ensemble
+0.0023490430893894024,0.72,0.6666666666666666,36,0.1,Deep Ensemble (3-seed),ensemble
+0.0026423222179258465,0.72,0.6666666666666666,36,0.1,Deep Ensemble (3-seed),ensemble
+0.00327433739016584,0.74,0.6756756756756757,37,0.1,Deep Ensemble (3-seed),ensemble
+0.004206003677989746,0.74,0.6756756756756757,37,0.1,Deep Ensemble (3-seed),ensemble
+0.006756392830570466,0.76,0.6578947368421053,38,0.1,Deep Ensemble (3-seed),ensemble
+0.010992951633939518,0.76,0.6578947368421053,38,0.1,Deep Ensemble (3-seed),ensemble
+0.014909532284991443,0.78,0.6666666666666666,39,0.1,Deep Ensemble (3-seed),ensemble
+0.01843341247638157,0.78,0.6666666666666666,39,0.1,Deep Ensemble (3-seed),ensemble
+0.020754377841907815,0.8,0.675,40,0.1,Deep Ensemble (3-seed),ensemble
+0.02133111670993147,0.8,0.675,40,0.1,Deep Ensemble (3-seed),ensemble
+0.02185556179351554,0.82,0.6829268292682927,41,0.1,Deep Ensemble (3-seed),ensemble
+0.022289945359453688,0.82,0.6829268292682927,41,0.1,Deep Ensemble (3-seed),ensemble
+0.022660933853124073,0.84,0.6904761904761905,42,0.1,Deep Ensemble (3-seed),ensemble
+0.022901170010242194,0.84,0.6904761904761905,42,0.1,Deep Ensemble (3-seed),ensemble
+0.0230862514312234,0.86,0.6744186046511628,43,0.1,Deep Ensemble (3-seed),ensemble
+0.023133446011862326,0.86,0.6744186046511628,43,0.1,Deep Ensemble (3-seed),ensemble
+0.02327172012668486,0.88,0.6818181818181818,44,0.1,Deep Ensemble (3-seed),ensemble
+0.02369082280524019,0.88,0.6818181818181818,44,0.1,Deep Ensemble (3-seed),ensemble
+0.02441084854038512,0.9,0.6666666666666666,45,0.1,Deep Ensemble (3-seed),ensemble
+0.02630447419622947,0.9,0.6666666666666666,45,0.1,Deep Ensemble (3-seed),ensemble
+0.027904026607034504,0.92,0.6739130434782609,46,0.1,Deep Ensemble (3-seed),ensemble
+0.027996453637013165,0.92,0.6739130434782609,46,0.1,Deep Ensemble (3-seed),ensemble
+0.029961165225190448,0.94,0.6808510638297872,47,0.1,Deep Ensemble (3-seed),ensemble
+0.04534391614712581,0.94,0.6808510638297872,47,0.1,Deep Ensemble (3-seed),ensemble
+0.05985751055621664,0.96,0.6875,48,0.1,Deep Ensemble (3-seed),ensemble
+0.06459309419580628,0.96,0.6875,48,0.1,Deep Ensemble (3-seed),ensemble
+0.06920752024664509,0.98,0.673469387755102,49,0.1,Deep Ensemble (3-seed),ensemble
+0.07097474296184027,0.98,0.673469387755102,49,0.1,Deep Ensemble (3-seed),ensemble
+0.07274196567703546,1.0,0.66,50,0.0,Deep Ensemble (3-seed),ensemble
+0.0037595629692077637,0.02,0.0,1,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0037770867347717285,0.02,0.0,1,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0037946105003356934,0.02,0.0,1,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.003863876461982727,0.04,0.5,2,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.003935344219207763,0.04,0.5,2,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004036852717399597,0.06,0.6666666666666666,3,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004141031503677368,0.06,0.6666666666666666,3,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004266534447670031,0.08,0.75,4,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004395012855529888,0.08,0.75,4,0.9,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004424224495887822,0.1,0.6,5,0.8,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004434067010879528,0.1,0.6,5,0.8,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004441980123519897,0.12,0.6666666666666666,6,0.8,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004449398517608643,0.12,0.6666666666666666,6,0.8,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004452340006828267,0.14,0.5714285714285714,7,0.7,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00445382952690115,0.14,0.5714285714285714,7,0.7,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004475972056388744,0.16,0.625,8,0.7,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004506375789642223,0.16,0.625,8,0.7,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00451768040657036,0.18,0.5555555555555556,9,0.6,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00451972484588621,0.18,0.5555555555555556,9,0.6,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004526813626289368,0.2,0.5,10,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004536831378936767,0.2,0.5,10,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0045645666122436845,0.22,0.5454545454545454,11,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0046045207977295785,0.22,0.5454545454545454,11,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004627721905708394,0.24,0.5833333333333334,12,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0046372723579407,0.24,0.5833333333333334,12,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004658713936805725,0.26,0.6153846153846154,13,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004691570997238159,0.26,0.6153846153846154,13,0.5,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004757453203201294,0.28,0.5714285714285714,14,0.4,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004860668182373047,0.28,0.5714285714285714,14,0.4,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004933479428291321,0.3,0.6,15,0.4,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004965752363204956,0.3,0.6,15,0.4,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004987096786499024,0.32,0.625,16,0.4,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.004991185665130615,0.32,0.625,16,0.4,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005018620491027833,0.34,0.5882352941176471,17,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0050900006294250484,0.34,0.5882352941176471,17,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005145439505577071,0.36,0.6111111111111112,18,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005164744853973318,0.36,0.6111111111111112,18,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005217407941818155,0.38,0.631578947368421,19,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005362446308136013,0.38,0.631578947368421,19,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005477836132049659,0.4,0.65,20,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005490803718566939,0.4,0.65,20,0.3,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00550597608089447,0.42,0.6190476190476191,21,0.2,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00553094744682312,0.42,0.6190476190476191,21,0.2,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0055721825361251835,0.44,0.5909090909090909,22,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005710999965667724,0.44,0.5909090909090909,22,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005844789743423467,0.46,0.6086956521739131,23,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.005934336185455383,0.46,0.6086956521739131,23,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00602089107036601,0.48,0.625,24,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00606157541275024,0.48,0.625,24,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006102018952369579,0.5,0.64,25,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006130903959274181,0.5,0.64,25,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006159788966178783,0.5,0.64,25,0.1,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006175599098205508,0.52,0.6153846153846154,26,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006191136837005612,0.52,0.6153846153846154,26,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.00621191143989563,0.54,0.6296296296296297,27,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006233027577400208,0.54,0.6296296296296297,27,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006333739757537842,0.56,0.6428571428571429,28,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006443496942520141,0.56,0.6428571428571429,28,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006508868932724046,0.58,0.6551724137931034,29,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006566843390464884,0.58,0.6551724137931034,29,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006731152534484885,0.6,0.6666666666666666,30,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006919386982917699,0.6,0.6666666666666666,30,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.006963342428207371,0.62,0.6774193548387096,31,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0069655328989029755,0.62,0.6774193548387096,31,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.007560791969299386,0.64,0.6875,32,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.008370214700698871,0.64,0.6875,32,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.008689635992050172,0.66,0.696969696969697,33,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.008792880177497865,0.66,0.696969696969697,33,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.008862135410308803,0.68,0.7058823529411765,34,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.008913334012031465,0.68,0.7058823529411765,34,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.009062486886978038,0.7,0.7142857142857143,35,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.009273677468299754,0.7,0.7142857142857143,35,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.009586405754089245,0.72,0.7222222222222222,36,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.009975287318229562,0.72,0.7222222222222222,36,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.010773465633392248,0.74,0.7297297297297297,37,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.011933714151382419,0.74,0.7297297297297297,37,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.012906851768493682,0.76,0.7368421052631579,38,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.013685082197189419,0.76,0.7368421052631579,38,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.01594448089599617,0.78,0.7435897435897436,39,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.020021677017211952,0.78,0.7435897435897436,39,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.023409569263458267,0.8,0.75,40,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.025797970890998865,0.8,0.75,40,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.030094949975609776,0.82,0.7560975609756098,41,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.03767892356961957,0.82,0.7560975609756098,41,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.04385997369885441,0.84,0.7380952380952381,42,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.04714749418199054,0.84,0.7380952380952381,42,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0499063377827405,0.86,0.7209302325581395,43,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.05134348917752501,0.86,0.7209302325581395,43,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.0543230631947517,0.88,0.7045454545454546,44,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.062058440297842014,0.88,0.7045454545454546,44,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.07188595905900007,0.9,0.6888888888888889,45,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.08987283028662217,0.9,0.6888888888888889,45,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.1064141058921815,0.92,0.6956521739130435,46,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.1155467039346695,0.92,0.6956521739130435,46,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.12435897827148432,0.94,0.7021276595744681,47,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.13087559938430782,0.94,0.7021276595744681,47,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.14469356775283798,0.96,0.7083333333333334,48,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.24065169274806997,0.96,0.7083333333333334,48,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.3355759418010706,0.98,0.6938775510204082,49,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.40620410621166203,0.98,0.6938775510204082,49,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.4768322706222534,1.0,0.7,50,0.0,"MC-Dropout (T=30, mean-conf proxy)",mcdropout
+0.55054,0.02,0.0,1,1.0,Query-for-Retake (qbar threshold),retake
+0.5506086,0.02,0.0,1,1.0,Query-for-Retake (qbar threshold),retake
+0.5506772000000001,0.02,0.0,1,1.0,Query-for-Retake (qbar threshold),retake
+0.5518456,0.04,0.0,2,1.0,Query-for-Retake (qbar threshold),retake
+0.5530608,0.04,0.0,2,1.0,Query-for-Retake (qbar threshold),retake
+0.554915,0.06,0.0,3,1.0,Query-for-Retake (qbar threshold),retake
+0.556826,0.06,0.0,3,1.0,Query-for-Retake (qbar threshold),retake
+0.560285,0.08,0.25,4,1.0,Query-for-Retake (qbar threshold),retake
+0.5639599999999999,0.08,0.25,4,1.0,Query-for-Retake (qbar threshold),retake
+0.5672332,0.1,0.2,5,1.0,Query-for-Retake (qbar threshold),retake
+0.570428,0.1,0.2,5,1.0,Query-for-Retake (qbar threshold),retake
+0.571119,0.12,0.16666666666666666,6,1.0,Query-for-Retake (qbar threshold),retake
+0.571168,0.12,0.16666666666666666,6,1.0,Query-for-Retake (qbar threshold),retake
+0.5717794,0.14,0.14285714285714285,7,1.0,Query-for-Retake (qbar threshold),retake
+0.5725732000000001,0.14,0.14285714285714285,7,1.0,Query-for-Retake (qbar threshold),retake
+0.5736050000000001,0.16,0.25,8,1.0,Query-for-Retake (qbar threshold),retake
+0.5747320000000001,0.16,0.25,8,1.0,Query-for-Retake (qbar threshold),retake
+0.5757468000000001,0.18,0.2222222222222222,9,1.0,Query-for-Retake (qbar threshold),retake
+0.5767072000000001,0.18,0.2222222222222222,9,1.0,Query-for-Retake (qbar threshold),retake
+0.5777296000000001,0.2,0.2,10,1.0,Query-for-Retake (qbar threshold),retake
+0.5787880000000001,0.2,0.2,10,1.0,Query-for-Retake (qbar threshold),retake
+0.5798348,0.22,0.18181818181818182,11,1.0,Query-for-Retake (qbar threshold),retake
+0.5808736,0.22,0.18181818181818182,11,1.0,Query-for-Retake (qbar threshold),retake
+0.5813832,0.24,0.16666666666666666,12,1.0,Query-for-Retake (qbar threshold),retake
+0.5814616,0.24,0.16666666666666666,12,1.0,Query-for-Retake (qbar threshold),retake
+0.58448,0.26,0.15384615384615385,13,1.0,Query-for-Retake (qbar threshold),retake
+0.5903208000000001,0.26,0.15384615384615385,13,1.0,Query-for-Retake (qbar threshold),retake
+0.5934292000000001,0.28,0.14285714285714285,14,1.0,Query-for-Retake (qbar threshold),retake
+0.5934488000000001,0.28,0.14285714285714285,14,1.0,Query-for-Retake (qbar threshold),retake
+0.5941278000000001,0.3,0.13333333333333333,15,1.0,Query-for-Retake (qbar threshold),retake
+0.595686,0.3,0.13333333333333333,15,1.0,Query-for-Retake (qbar threshold),retake
+0.5967958000000001,0.32,0.125,16,1.0,Query-for-Retake (qbar threshold),retake
+0.5971976000000001,0.32,0.125,16,1.0,Query-for-Retake (qbar threshold),retake
+0.5978272000000001,0.34,0.11764705882352941,17,1.0,Query-for-Retake (qbar threshold),retake
+0.5988856,0.34,0.11764705882352941,17,1.0,Query-for-Retake (qbar threshold),retake
+0.599917,0.36,0.1111111111111111,18,1.0,Query-for-Retake (qbar threshold),retake
+0.6008872000000001,0.36,0.1111111111111111,18,1.0,Query-for-Retake (qbar threshold),retake
+0.6020914,0.38,0.10526315789473684,19,1.0,Query-for-Retake (qbar threshold),retake
+0.6039436,0.38,0.10526315789473684,19,1.0,Query-for-Retake (qbar threshold),retake
+0.6054856000000001,0.4,0.1,20,1.0,Query-for-Retake (qbar threshold),retake
+0.605956,0.4,0.1,20,1.0,Query-for-Retake (qbar threshold),retake
+0.6064138,0.42,0.09523809523809523,21,1.0,Query-for-Retake (qbar threshold),retake
+0.6068155999999999,0.42,0.09523809523809523,21,1.0,Query-for-Retake (qbar threshold),retake
+0.6077773999999999,0.44,0.09090909090909091,22,1.0,Query-for-Retake (qbar threshold),retake
+0.6120992,0.44,0.09090909090909091,22,1.0,Query-for-Retake (qbar threshold),retake
+0.616005,0.46,0.08695652173913043,23,1.0,Query-for-Retake (qbar threshold),retake
+0.6162500000000001,0.46,0.08695652173913043,23,1.0,Query-for-Retake (qbar threshold),retake
+0.6165484000000001,0.48,0.125,24,1.0,Query-for-Retake (qbar threshold),retake
+0.6176656000000001,0.48,0.125,24,1.0,Query-for-Retake (qbar threshold),retake
+0.6187640000000001,0.5,0.12,25,1.0,Query-for-Retake (qbar threshold),retake
+0.6189600000000002,0.5,0.12,25,1.0,Query-for-Retake (qbar threshold),retake
+0.6191560000000002,0.5,0.12,25,1.0,Query-for-Retake (qbar threshold),retake
+0.6197648000000001,0.52,0.11538461538461539,26,1.0,Query-for-Retake (qbar threshold),retake
+0.6203822000000001,0.52,0.11538461538461539,26,1.0,Query-for-Retake (qbar threshold),retake
+0.6215516000000001,0.54,0.1111111111111111,27,1.0,Query-for-Retake (qbar threshold),retake
+0.622757,0.54,0.1111111111111111,27,1.0,Query-for-Retake (qbar threshold),retake
+0.623232,0.56,0.10714285714285714,28,1.0,Query-for-Retake (qbar threshold),retake
+0.623624,0.56,0.10714285714285714,28,1.0,Query-for-Retake (qbar threshold),retake
+0.6244948,0.58,0.13793103448275862,29,1.0,Query-for-Retake (qbar threshold),retake
+0.6254454,0.58,0.13793103448275862,29,1.0,Query-for-Retake (qbar threshold),retake
+0.6263960000000001,0.6,0.13333333333333333,30,1.0,Query-for-Retake (qbar threshold),retake
+0.6273466,0.6,0.13333333333333333,30,1.0,Query-for-Retake (qbar threshold),retake
+0.6276056,0.62,0.16129032258064516,31,1.0,Query-for-Retake (qbar threshold),retake
+0.6276644,0.62,0.16129032258064516,31,1.0,Query-for-Retake (qbar threshold),retake
+0.6294512,0.64,0.15625,32,1.0,Query-for-Retake (qbar threshold),retake
+0.631862,0.64,0.15625,32,1.0,Query-for-Retake (qbar threshold),retake
+0.6342592,0.66,0.15151515151515152,33,1.0,Query-for-Retake (qbar threshold),retake
+0.6366504000000001,0.66,0.15151515151515152,33,1.0,Query-for-Retake (qbar threshold),retake
+0.6378256,0.68,0.14705882352941177,34,1.0,Query-for-Retake (qbar threshold),retake
+0.6383548,0.68,0.14705882352941177,34,1.0,Query-for-Retake (qbar threshold),retake
+0.638866,0.7,0.17142857142857143,35,1.0,Query-for-Retake (qbar threshold),retake
+0.6393658,0.7,0.17142857142857143,35,1.0,Query-for-Retake (qbar threshold),retake
+0.6434664,0.72,0.16666666666666666,36,1.0,Query-for-Retake (qbar threshold),retake
+0.6502676,0.72,0.16666666666666666,36,1.0,Query-for-Retake (qbar threshold),retake
+0.6553319999999999,0.74,0.16216216216216217,37,1.0,Query-for-Retake (qbar threshold),retake
+0.65886,0.74,0.16216216216216217,37,1.0,Query-for-Retake (qbar threshold),retake
+0.6625032000000001,0.76,0.15789473684210525,38,1.0,Query-for-Retake (qbar threshold),retake
+0.6662664000000001,0.76,0.15789473684210525,38,1.0,Query-for-Retake (qbar threshold),retake
+0.6717456,0.78,0.15384615384615385,39,1.0,Query-for-Retake (qbar threshold),retake
+0.6793308,0.78,0.15384615384615385,39,1.0,Query-for-Retake (qbar threshold),retake
+0.685908,0.8,0.175,40,1.0,Query-for-Retake (qbar threshold),retake
+0.6910236000000001,0.8,0.175,40,1.0,Query-for-Retake (qbar threshold),retake
+0.6944688,0.82,0.17073170731707318,41,1.0,Query-for-Retake (qbar threshold),retake
+0.6950372000000001,0.82,0.17073170731707318,41,1.0,Query-for-Retake (qbar threshold),retake
+0.6980088000000001,0.84,0.16666666666666666,42,1.0,Query-for-Retake (qbar threshold),retake
+0.705937,0.84,0.16666666666666666,42,1.0,Query-for-Retake (qbar threshold),retake
+0.7131428,0.86,0.18604651162790697,43,1.0,Query-for-Retake (qbar threshold),retake
+0.7185426,0.86,0.18604651162790697,43,1.0,Query-for-Retake (qbar threshold),retake
+0.7231024,0.88,0.20454545454545456,44,1.0,Query-for-Retake (qbar threshold),retake
+0.7250722,0.88,0.20454545454545456,44,1.0,Query-for-Retake (qbar threshold),retake
+0.72668,0.9,0.2,45,1.0,Query-for-Retake (qbar threshold),retake
+0.726876,0.9,0.2,45,1.0,Query-for-Retake (qbar threshold),retake
+0.7299472000000002,0.92,0.1956521739130435,46,1.0,Query-for-Retake (qbar threshold),retake
+0.7477538,0.92,0.1956521739130435,46,1.0,Query-for-Retake (qbar threshold),retake
+0.764322,0.94,0.19148936170212766,47,1.0,Query-for-Retake (qbar threshold),retake
+0.772015,0.94,0.19148936170212766,47,1.0,Query-for-Retake (qbar threshold),retake
+0.7791048,0.96,0.20833333333333334,48,1.0,Query-for-Retake (qbar threshold),retake
+0.7794086,0.96,0.20833333333333334,48,1.0,Query-for-Retake (qbar threshold),retake
+0.7799088000000001,0.98,0.20408163265306123,49,0.9,Query-for-Retake (qbar threshold),retake
+0.7850244000000001,0.98,0.20408163265306123,49,0.9,Query-for-Retake (qbar threshold),retake
+0.7901400000000001,1.0,0.22,50,0.9,Query-for-Retake (qbar threshold),retake

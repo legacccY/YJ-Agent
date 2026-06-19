@@ -1,0 +1,2 @@
+pair,spearman_point,ci_lower,ci_upper,ci_upper_lt_0.7,top1_orig,top1_cleanC_rank,top1_dropped_from_top3,A4_verdict,n_matched_pairs,common_support_pct,artifact_only_auroc_cleanC,method_mean_auroc_cleanC,smd_max,smd_mean
+NIH_vs_VinDr,0.9725,0.8492,1.0,0,ViM,1,0,A-4 FAIL,128,0.0,0.5524,0.5663,0.1595,0.0632

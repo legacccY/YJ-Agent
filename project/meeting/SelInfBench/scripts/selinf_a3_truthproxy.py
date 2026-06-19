@@ -3,6 +3,15 @@ selinf_a3_truthproxy.py — SelInfBench A3 test-as-truth winner's curse 验证
 服务: SelInfBench (selinf) A3，lever = 真 benchmark 上 winner's curse 去偏证据
 不启动训练外部进程；写完交主线跑。
 
+# 2026-06-19 更新（R1 纠正评估 bug）
+#   ISIC2020 test 分区改用全量（约 6626 张，117 阳性），去掉原 ISIC_TEST_N=1000 下采样。
+#   理由：1000 下采样把 117 阳性砍到 ~17，是任意注噪的评估 bug，全 test 才是正确口径。
+#   train=2000/val=600/选择流程/超参一律不变；这是纠正 bug 而非调数据方向。
+#   CLI 保留 --isic_test_n（默认 None=全量），供特殊场景指定大小。
+#
+#   新增 --cache_scores：对每个 config 的 val/test per-sample 分数落盘到
+#   results/scores_<benchmark>_<config>.npz，供 selinf_bootstrap_coverage.py 复用。
+
 # 核心协议（test-as-truth）
 对每个 benchmark（HAM10000/ISIC2020/BraTS2021）：
   1. 三分 train/val/test（test = truth proxy，选择阶段绝不碰）
@@ -147,7 +156,10 @@ ALPHA               = 0.05
 # ISIC 样本数控制（保持阳性比例 stratified）
 ISIC_TRAIN_N        = 2000
 ISIC_VAL_N          = 600
-ISIC_TEST_N         = 1000   # truth proxy 子集，保持 pos 比例
+# ISIC_TEST_N: R1 纠正 bug — 改为全量 test（None=全量，约 6626 张/117 阳性）。
+# 原 1000 下采样把 117 阳性砍到 ~17，是任意注噪，全 test 才是正确评估口径。
+# CLI 参数 --isic_test_n 保留，默认 None；如需限量可传整数（仅供特殊场景，不改论文主结果）。
+ISIC_TEST_N         = None   # None = 全 test 分区（约 6626），R1 评估 bug 修复
 
 # BraTS case-level 三分比例（按 case 切，防 slice 泄漏）
 BRATS_SPLIT_TRAIN   = 0.60   # 60% cases → train slices
@@ -586,13 +598,17 @@ def run_config_val_test(
     dataset_cls,
     use_weighted_sampler: bool  = False,
     pos_weight            = None,
+    return_scores:        bool  = False,
 ) -> tuple:
     """
     Fine-tune EfficientNet-B3 二分类。
     - 训练: train_recs
     - 每 epoch 后: val AUROC（用于选 best epoch + 选 i*）
     - 训练结束: 用 best val 模型评 test AUROC（truth proxy，不参与任何选择）
-    返回 (best_val_auroc, test_auroc_at_best_val)。
+    返回:
+      return_scores=False: (best_val_auroc, test_auroc_at_best_val)
+      return_scores=True:  (best_val_auroc, test_auroc_at_best_val,
+                            val_labels, val_scores, te_labels, te_scores)
     """
     set_seed(seed)
     model = build_model(n_classes=2, dropout=dropout)
@@ -673,6 +689,9 @@ def run_config_val_test(
     te_scores  = np.concatenate(all_scores_te)
     test_auroc = binary_auroc_numpy(te_labels, te_scores)
 
+    if return_scores:
+        return (float(best_val_auroc), float(test_auroc),
+                val_labels, val_scores, te_labels, te_scores)
     return float(best_val_auroc), float(test_auroc)
 
 
@@ -747,6 +766,7 @@ def sweep_benchmark_truthproxy(
     use_weighted_sampler: bool  = False,
     pos_weight                  = None,
     smoke:                bool  = False,
+    cache_scores:         bool  = False,
 ) -> dict:
     """
     跑 M-config sweep。选择/sigma 只用 val；test 仅在 i* 选定后评一次。
@@ -758,23 +778,44 @@ def sweep_benchmark_truthproxy(
 
     epochs   = 2 if smoke else EPOCHS_PER_CONFIG
     m_actual = len(grid)
-    print(f"\n[SWEEP] {bench_name} M={m_actual} epochs={epochs}")
+    print(f"\n[SWEEP] {bench_name} M={m_actual} epochs={epochs}"
+          f"  cache_scores={cache_scores}")
 
     val_aurocs  = []
     test_aurocs = []
     cfg_names   = []
+    # per-sample 分数列表（仅 cache_scores=True 时填充，供 bootstrap 用）
+    all_val_labels_list  = []
+    all_val_scores_list  = []
+    all_test_labels_list = []
+    all_test_scores_list = []
 
     for i, (lr, dropout, seed) in enumerate(grid):
         cfg = f"lr={lr}_dp={dropout}_s={seed}"
         print(f"  [{i+1}/{m_actual}] {cfg}")
-        va, te = run_config_val_test(
-            train_recs, val_recs, test_recs,
-            lr=lr, dropout=dropout, seed=seed,
-            epochs=epochs,
-            dataset_cls=dataset_cls,
-            use_weighted_sampler=use_weighted_sampler,
-            pos_weight=pos_weight,
-        )
+        if cache_scores:
+            va, te, vl_lbl, vl_sc, te_lbl, te_sc = run_config_val_test(
+                train_recs, val_recs, test_recs,
+                lr=lr, dropout=dropout, seed=seed,
+                epochs=epochs,
+                dataset_cls=dataset_cls,
+                use_weighted_sampler=use_weighted_sampler,
+                pos_weight=pos_weight,
+                return_scores=True,
+            )
+            all_val_labels_list.append(vl_lbl)
+            all_val_scores_list.append(vl_sc)
+            all_test_labels_list.append(te_lbl)
+            all_test_scores_list.append(te_sc)
+        else:
+            va, te = run_config_val_test(
+                train_recs, val_recs, test_recs,
+                lr=lr, dropout=dropout, seed=seed,
+                epochs=epochs,
+                dataset_cls=dataset_cls,
+                use_weighted_sampler=use_weighted_sampler,
+                pos_weight=pos_weight,
+            )
         print(f"    val_AUROC={va:.4f}  test_AUROC={te:.4f}")
         val_aurocs.append(va)
         test_aurocs.append(te)
@@ -790,6 +831,30 @@ def sweep_benchmark_truthproxy(
 
     sigma_hat     = float(np.std(val_arr, ddof=1))
 
+    # ── 缓存 per-sample 分数（--cache_scores 时）─────────────────────────────
+    # 仅落盘 i* 被选 config 的 val/test per-sample 分数，供 selinf_bootstrap_coverage.py
+    # 复用（bootstrap CI A1/A2 用，免重训）。
+    # 格式: npz 含 val_labels/val_scores/test_labels/test_scores + 元信息。
+    if cache_scores and all_val_labels_list:
+        safe_bm  = bench_name.replace("/", "_").replace(" ", "_")
+        safe_cfg = cfg_names[i_star].replace("=", "").replace(".", "p")
+        npz_path = OUT_DIR / f"scores_{safe_bm}_M{m_actual}_{safe_cfg}.npz"
+        np.savez(
+            npz_path,
+            val_labels   = all_val_labels_list[i_star],
+            val_scores   = all_val_scores_list[i_star],
+            test_labels  = all_test_labels_list[i_star],
+            test_scores  = all_test_scores_list[i_star],
+            val_auroc    = np.array([val_best]),
+            test_auroc   = np.array([test_selected]),
+            # 附全 M 的 val_aurocs 供 bootstrap 脚本重建 sigma_hat
+            all_val_aurocs = val_arr,
+            benchmark    = np.array([bench_name]),
+            selected_cfg = np.array([cfg_names[i_star]]),
+            M            = np.array([m_actual]),
+        )
+        print(f"  [CACHE] per-sample scores saved: {npz_path}")
+
     # winner's curse = val_best − test_selected（>0 = 高估）
     winners_curse = val_best - test_selected
 
@@ -798,7 +863,10 @@ def sweep_benchmark_truthproxy(
     df_res = data_fission_ci(val_arr, sigma=sigma_hat, tau=FISSION_TAU, rng=rng_f)
     g_star = df_res["g_star"]
 
-    # debias_shift = val_best − g_star（data fission 校正幅度，>0 = 向下校正）
+    # debias_shift = val_best − g_star（列保留供对比，**弃用作证据**）
+    # 2026-06-19 skeptic 红队：构造性偏正（零真信号下 P(>0)≈0.95，随 σ 放大），
+    # 与真偏差脱钩（ISIC WC<0 但 shift>0 自证）。同 deflation 病根，
+    # 见 BUILD_MAP.md 禁用指标节。永不当 A3 证据，不入稿。
     debias_shift = val_best - g_star
 
     # 方向验证：g* 是否比 val_best 更接近 test（真泛化估计改善了多少）
@@ -918,12 +986,14 @@ def print_a3_verdict(df: pd.DataFrame):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main(
-    smoke:      bool = False,
-    cpu_only:   bool = False,
-    benchmarks: list = None,
-    m_values:   list = None,
-    skip_probe: bool = False,
-    brats_seed: int  = 42,
+    smoke:        bool = False,
+    cpu_only:     bool = False,
+    benchmarks:   list = None,
+    m_values:     list = None,
+    skip_probe:   bool = False,
+    brats_seed:   int  = 42,
+    isic_test_n:  int  = None,   # None=全量 test；传整数=限量（供特殊场景）
+    cache_scores: bool = False,  # True=缓存 per-sample 分数到 results/scores_*.npz
 ):
     global DEVICE
     if cpu_only:
@@ -944,9 +1014,11 @@ def main(
         print("\n" + "-" * 60)
         print("BENCHMARK: ISIC2020 (truth proxy = isic_split.csv test split)")
         print("-" * 60)
-        train_recs = build_isic_records("train", max_n=ISIC_TRAIN_N, seed=42)
-        val_recs   = build_isic_records("val",   max_n=ISIC_VAL_N,   seed=42)
-        test_recs  = build_isic_records("test",  max_n=ISIC_TEST_N,  seed=42)
+        # R1: test 全量（ISIC_TEST_N=None），--isic_test_n 可覆盖（不影响 train/val/选择流程）
+        _isic_test_n_eff = isic_test_n if isic_test_n is not None else ISIC_TEST_N
+        train_recs = build_isic_records("train", max_n=ISIC_TRAIN_N,     seed=42)
+        val_recs   = build_isic_records("val",   max_n=ISIC_VAL_N,       seed=42)
+        test_recs  = build_isic_records("test",  max_n=_isic_test_n_eff, seed=42)
         n_pos_tr   = sum(r["label"] for r in train_recs)
         n_pos_vl   = sum(r["label"] for r in val_recs)
         n_pos_te   = sum(r["label"] for r in test_recs)
@@ -975,6 +1047,7 @@ def main(
                 use_weighted_sampler=True,
                 pos_weight=pos_w,
                 smoke=smoke,
+                cache_scores=cache_scores,
             )
             all_rows.append(row)
 
@@ -1013,6 +1086,7 @@ def main(
                 use_weighted_sampler=False,
                 pos_weight=None,
                 smoke=smoke,
+                cache_scores=cache_scores,
             )
             all_rows.append(row)
 
@@ -1045,6 +1119,7 @@ def main(
                     use_weighted_sampler=True,
                     pos_weight=pos_w,
                     smoke=smoke,
+                    cache_scores=cache_scores,
                 )
                 all_rows.append(row)
         else:
@@ -1108,6 +1183,22 @@ if __name__ == "__main__":
         "--brats_seed", type=int, default=42,
         help="BraTS case-level split seed (default: 42)",
     )
+    parser.add_argument(
+        "--isic_test_n", type=int, default=None,
+        help=(
+            "ISIC2020 test 分区最大样本数（默认 None=全量 ~6626；"
+            "原始 1000 是评估 bug，R1 已改为全量。"
+            "此参数保留供特殊调试，论文主结果必须用全量）"
+        ),
+    )
+    parser.add_argument(
+        "--cache_scores", action="store_true",
+        help=(
+            "落盘每个 benchmark i* config 的 per-sample val/test 预测概率+label，"
+            "到 results/scores_<benchmark>_<config>.npz。"
+            "供 selinf_bootstrap_coverage.py bootstrap CI 复用（免重训）。"
+        ),
+    )
     # ── 路径覆盖（HPC 用，本地默认值见模块顶部常量）────────────────────────
     parser.add_argument(
         "--isic_img_dir", type=str, default=None,
@@ -1143,10 +1234,12 @@ if __name__ == "__main__":
     m_values_list   = [int(x)    for x in args.m_values.split(",")]
 
     main(
-        smoke      = bool(args.smoke),
-        cpu_only   = args.cpu,
-        benchmarks = benchmarks_list,
-        m_values   = m_values_list,
-        skip_probe = args.skip_probe,
-        brats_seed = args.brats_seed,
+        smoke        = bool(args.smoke),
+        cpu_only     = args.cpu,
+        benchmarks   = benchmarks_list,
+        m_values     = m_values_list,
+        skip_probe   = args.skip_probe,
+        brats_seed   = args.brats_seed,
+        isic_test_n  = args.isic_test_n,
+        cache_scores = args.cache_scores,
     )

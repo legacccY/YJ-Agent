@@ -40,6 +40,8 @@ import json
 import math
 import os
 import random
+import time
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -53,6 +55,7 @@ PROJECT_DIR = SCRIPTS_DIR.parent
 RESULTS_DIR = PROJECT_DIR / "results"
 LABEL_CSV   = RESULTS_DIR / "lidc_disagree_labels.csv"
 OUT_CSV     = RESULTS_DIR / "kill1_cv_auroc.csv"       # 新输出：per-fold + 汇总
+STATE_JSON  = RESULTS_DIR / "kill1_state.json"          # 可观测性心跳文件
 
 # 超参（官方口径，researcher 核源 2026-06-18）
 LR           = 1e-4
@@ -69,6 +72,45 @@ PERM_MAX_EPOCHS = 30
 PERM_PATIENCE   = 5
 
 ROTATE_DEG   = 10      # +-10 度旋转（CT 禁垂直翻转）
+
+
+# --- 可观测性心跳（不影响计算，写盘失败静默）---------------------------------
+_STATE_START_TS: float = 0.0   # 由 main 在真正开始时设置
+
+
+def write_state(**kw) -> None:
+    """
+    原子写 kill1_state.json（先写 .tmp 再 os.replace）。
+    任何 IO 异常静默忽略，绝不影响训练主流程。
+    字段：phase / current_fold / total_folds / perm_rep / total_perm /
+           start_ts / last_update_ts / elapsed_sec / status / msg
+    """
+    global _STATE_START_TS
+    try:
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        now = time.time()
+        state = {
+            "phase":           kw.get("phase", "unknown"),
+            "current_fold":    kw.get("current_fold", None),
+            "total_folds":     kw.get("total_folds", None),
+            "perm_rep":        kw.get("perm_rep", None),
+            "total_perm":      kw.get("total_perm", None),
+            "start_ts":        _STATE_START_TS,
+            "start_iso":       time.strftime(
+                "%Y-%m-%dT%H:%M:%S", time.localtime(_STATE_START_TS)
+            ) if _STATE_START_TS else None,
+            "last_update_ts":  now,
+            "last_update_iso": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
+            "elapsed_sec":     round(now - _STATE_START_TS, 1) if _STATE_START_TS else None,
+            "status":          kw.get("status", "running"),
+            "msg":             kw.get("msg", ""),
+        }
+        tmp = STATE_JSON.with_suffix(".tmp")
+        with open(str(tmp), "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+        os.replace(str(tmp), str(STATE_JSON))
+    except Exception:
+        pass   # 心跳写盘失败绝不拖垮训练
 
 
 # --- 纯 numpy AUROC（绕 scipy.stats OMP Error #15）---------------------------
@@ -458,7 +500,9 @@ def run_kill1_cv(
     oof_scores = np.full(len(rows), float("nan"), dtype=np.float32)
     fold_results = []
 
-    print("\n[KILL-1 CV] Starting 5-fold patient-level CV ...")
+    print("\n[KILL-1 CV] Starting 5-fold patient-level CV ...", flush=True)
+    write_state(phase="cv", current_fold=0, total_folds=N_SPLITS,
+                status="running")
     for fold_i, (train_val_idx, test_idx) in enumerate(folds):
         # 从 train+val 中按 patient 留 20% 作 val（用于早停）
         tv_patients  = np.unique(all_patients[train_val_idx])
@@ -475,7 +519,10 @@ def run_kill1_cv(
         n_test_neg = len(test_idx) - n_test_pos
         print(f"\n  [fold {fold_i+1}/{N_SPLITS}] "
               f"train={len(train_idx_sub)} val={len(val_idx_sub)} "
-              f"test={len(test_idx)}(pos={int(n_test_pos)},neg={int(n_test_neg)})")
+              f"test={len(test_idx)}(pos={int(n_test_pos)},neg={int(n_test_neg)})",
+              flush=True)
+        write_state(phase="cv", current_fold=fold_i + 1, total_folds=N_SPLITS,
+                    status="running")
 
         test_lbl, test_sc = train_fold(
             rows, train_idx_sub, val_idx_sub, test_idx,
@@ -492,30 +539,37 @@ def run_kill1_cv(
             "n_test_fold": len(test_idx),
             "auroc_fold": round(float(fold_auroc), 6),
         })
-        print(f"  [fold {fold_i+1}] auroc={fold_auroc:.4f}")
+        print(f"  [fold {fold_i+1}] auroc={fold_auroc:.4f}", flush=True)
+        write_state(phase="cv", current_fold=fold_i + 1, total_folds=N_SPLITS,
+                    status="running",
+                    msg=f"fold {fold_i+1} done auroc={fold_auroc:.4f}")
 
     # CV-AUROC（基于全 75 样本 out-of-fold 预测）
     assert (oof_labels >= 0).all(), "[BUG] Some OOF labels not filled"
     cv_auroc = auroc_numpy(oof_labels, oof_scores)
 
-    print(f"\n[KILL-1] CV pooled AUROC (n={len(rows)}): {cv_auroc:.4f}")
+    print(f"\n[KILL-1] CV pooled AUROC (n={len(rows)}): {cv_auroc:.4f}", flush=True)
 
     # Bootstrap CI（patient 级重采样）
-    print("[KILL-1] Computing bootstrap CI (patient-level resampling)...")
+    print("[KILL-1] Computing bootstrap CI (patient-level resampling)...", flush=True)
     ci_lo, ci_hi = bootstrap_auroc_ci_patient(
         oof_labels, oof_scores, all_patients,
         n=N_BOOTSTRAP, seed=seed,
     )
-    print(f"[KILL-1] Bootstrap 95% CI: [{ci_lo:.4f}, {ci_hi:.4f}]")
+    print(f"[KILL-1] Bootstrap 95% CI: [{ci_lo:.4f}, {ci_hi:.4f}]", flush=True)
 
     # 置换检验（只打乱 train fold 标签，>=100 rep）
     perm_aurocs: list[float] = []
     if run_permutation:
-        print(f"\n[KILL-1] Permutation test ({n_perm} reps) ...")
-        print("  [note] Only train-fold labels shuffled; val/test labels unchanged.")
+        print(f"\n[KILL-1] Permutation test ({n_perm} reps) ...", flush=True)
+        print("  [note] Only train-fold labels shuffled; val/test labels unchanged.",
+              flush=True)
         print(f"  [note] Each rep: {PERM_MAX_EPOCHS} max epochs, "
-              f"patience={PERM_PATIENCE}.")
-        print("  [note] CPU 100 rep estimate: ~30-90 min depending on hardware.")
+              f"patience={PERM_PATIENCE}.", flush=True)
+        print("  [note] CPU 100 rep estimate: ~30-90 min depending on hardware.",
+              flush=True)
+        write_state(phase="permutation", perm_rep=0, total_perm=n_perm,
+                    status="running", msg="perm start")
 
         for rep in range(n_perm):
             rep_seed = seed + 10000 + rep
@@ -558,7 +612,16 @@ def run_kill1_cv(
             if (rep + 1) % 10 == 0 or rep == 0:
                 print(f"  perm rep {rep+1:3d}/{n_perm} | "
                       f"auroc={rep_auroc:.4f} | "
-                      f"running_mean={np.mean(perm_aurocs):.4f}")
+                      f"running_mean={np.mean(perm_aurocs):.4f}", flush=True)
+            # 心跳：每 25 rep 写一次（轮询粒度）
+            if (rep + 1) % 25 == 0 or rep == 0:
+                write_state(
+                    phase="permutation",
+                    perm_rep=rep + 1,
+                    total_perm=n_perm,
+                    status="running",
+                    msg=f"perm_mean={np.mean(perm_aurocs):.4f}",
+                )
 
     perm_mean = float(np.mean(perm_aurocs)) if perm_aurocs else float("nan")
     # p-value：置换分布中 >= 真实 CV-AUROC 的比例
@@ -622,7 +685,7 @@ def run_kill1_cv(
             "verdict": verdict,
         })
 
-    print(f"\n[output] CSV     -> {OUT_CSV}")
+    print(f"\n[output] CSV     -> {OUT_CSV}", flush=True)
 
     # ── 持久化 per-cluster OOF 分数（供 A2 残余信息分析配对使用）──────────
     # 只加落盘，不改任何训练逻辑/超参/折划分。
@@ -643,7 +706,7 @@ def run_kill1_cv(
                 "oof_score": float(oof_scores[i]),
                 "fold": int(cluster_to_fold[i]),
             })
-    print(f"[output] OOF CSV -> {OOF_CSV}")
+    print(f"[output] OOF CSV -> {OOF_CSV}", flush=True)
     # ─────────────────────────────────────────────────────────────────────────
 
     # 写 summary JSON
@@ -685,13 +748,22 @@ def run_kill1_cv(
     summary_path = RESULTS_DIR / "kill1_cv_summary.json"
     with open(str(summary_path), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
-    print(f"[output] summary -> {summary_path}")
+    print(f"[output] summary -> {summary_path}", flush=True)
+    write_state(phase="done", status="done",
+                msg=f"verdict={verdict} cv_auroc={cv_auroc:.4f}")
 
 
 # --- 主函数 -------------------------------------------------------------------
 def main() -> None:
+    import sys
     import multiprocessing
+    # 无缓冲：防 HPC stdout 块缓冲藏进度（Python 3.7+，HPC env 3.10）
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
     multiprocessing.freeze_support()   # Windows spawn required
+
+    global _STATE_START_TS
+    _STATE_START_TS = time.time()
 
     parser = argparse.ArgumentParser(
         description="DisagreePred KILL-1 CV baseline: ResNet-18 predicts disagreement")
@@ -735,14 +807,20 @@ def main() -> None:
         rows = rows[: args.smoke]
         print(f"[smoke] truncated to first {args.smoke} rows")
 
-    run_kill1_cv(
-        rows,
-        device,
-        run_permutation=not args.no_permutation,
-        n_perm=args.n_perm,
-        seed=args.seed,
-        verbose_fold=not args.quiet_fold,
-    )
+    try:
+        run_kill1_cv(
+            rows,
+            device,
+            run_permutation=not args.no_permutation,
+            n_perm=args.n_perm,
+            seed=args.seed,
+            verbose_fold=not args.quiet_fold,
+        )
+    except Exception as _exc:
+        _tb = traceback.format_exc()
+        write_state(phase="error", status="error",
+                    msg=_tb[-500:])   # 只取末 500 字符防 json 过大
+        raise
 
 
 if __name__ == "__main__":

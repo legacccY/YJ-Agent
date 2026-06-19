@@ -1,0 +1,6 @@
+method,key,rc_auc,risk_at_full_coverage,auc_roc,mel_miss_at_cov20,mel_miss_at_cov50,mel_miss_at_cov80,n,n_pos,note
+Direct (EfficientNet-B3),direct,,0.46,0.715,0.2,0.2,0.2,50,10,Reference: no abstention
+Chow's rule (max-softmax),chow,0.469409996786612,0.46,0.715,0.8,0.3,0.2,50,10,Chow 1970 / Geifman&El-Yaniv 2017; abstain = low max-softmax confidence
+Deep Ensemble (3-seed),ensemble,0.619122752997461,0.66,0.79,0.5,0.2,0.1,50,10,"Deep Ensemble 3-seed (s42/s123/s2024); uncertainty = predictive variance. TODO: s456/s789 ckpts missing, ideally 5-seed per paper."
+"MC-Dropout (T=30, mean-conf proxy)",mcdropout,0.6334639144344444,0.7,0.8074999999999999,0.5,0.1,0.0,50,10,"MC-Dropout T=30 (N_MCD=30 in run_experiments.py). Uncertainty proxy = 1 - max(p, 1-p) of averaged prediction. TODO: exact MC-Dropout UQ requires re-running inference with per-sample variance logging (not yet saved in itb_predictions.csv I baseline)."
+Query-for-Retake (qbar threshold),retake,0.1466590985553483,0.22,0.6224999999999999,1.0,1.0,1.0,50,10,"Query-for-retake: abstain when qbar < tau (image quality signal). Orthogonal to prediction confidence. Prediction model = Std VIB. KEY DISTINCTION: retake triggers re-acquisition (new image request); other methods defer to human. On ITB-LQ static benchmark, modelled as abstention on qbar signal."
