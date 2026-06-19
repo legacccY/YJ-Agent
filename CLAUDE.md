@@ -40,7 +40,7 @@
 **默认自主**：不达拍板点不停下空等——完一个子任务自动推进下一个明确子任务，做完记 LOG，继续。反复征求同意 = 反模式。
 **自主区**（直接做+落档+继续）：写改 tex/bib、核数字、对抗审稿、补实验代码、调研、出图、补指针、写 LOG/`/checkpoint`、修小 bug、跑测试、派 sonnet 并行、stage-gate PASS 后自动开下阶段（预填 criteria 待你确认）、**启动训练（经卡槽调度器确认有空卡后自启，见下）**。
 
-**🟢 训练改自主（不再卡拍板）**：config 验通后**主线自己起训练**，不停下空等放行。铁律=经卡槽调度器 `tools/gpu_slot.py` 把关，**绝不挤正在跑的**：
+**🟢 训练全自主（彻底脱拍板，含泛指令）**：config 验通后**主线自己起训练**，不停下空等放行。**不需要用户明确「启训指令」——泛指令「开始工作/继续/大集群开工」也直接起**。铁律=经卡槽调度器 `tools/gpu_slot.py` 把关，**绝不挤正在跑的**（这是后台记账、防多任务抢同卡，不是问你拍板）：
 > 1. **【强制前置，不可跳过】** 启训前先 `python tools/gpu_slot.py request <project> <host> <gpus> [note]`（host=local|hpc；容量 local=1 卡 / hpc=4 卡）。**HPC `<gpus>` 默认填 1**（见第 4 条）。跳过此步 → `training_lock.js` 阻断并记 friction。
 > 2. 打印 `GO <id>` = 有空卡 → 立即启（hook 自动翻 running）。启后**一行回报**「已起 <project> 占 N 卡@host，job/pid=X，剩 M 卡空」。
 > 3. 打印 `QUEUED <id>` = 卡满 → **已排队、绝不裸启**；主线挂 `/loop` 轮询，跑完的任务 `gpu_slot.py release <id>` 会吐 `NEXT ...` 自动取出排队任务起（一行回报同上）。**如果排队后改道（改用其他 host / 放弃该任务）→ 必须立即 `gpu_slot.py dequeue <id>` 撤回，否则后续 release 会错误提升该幽灵条目占卡。**
@@ -48,7 +48,7 @@
 > 仍拍板：**HPC 上传新数据/新代码**（对外传输，先报）、**真实歧义无合理默认**。
 
 **🛑 拍板点（停下报、等放行）**：
-1. ~~启动训练~~ **→ 改自主（见上「训练改自主」）。仅 HPC 上传新数据/代码仍先报。**
+1. ~~启动训练 / 改训练文件~~ **→ 全自主，绝不拍板（见上「训练全自主」）。改实验代码/训练脚本同 acceptEdits 直接放行，不停不问。仅 HPC 上传新数据/代码仍先报（对外传输）。**
 2. **新项目立项**（方向/会议/RQ）— 可先调研,立项点等拍
 3. **投稿 / 对外发布 / force push 改写远端历史**
 4. **偏离 STORY / 改 ACCEPTANCE 阈值 / 命中率回退方向**
@@ -65,7 +65,7 @@
 
 > ### ⚠️⚠️ 覆盖内置默认（最高优先，必读）
 > 你的**内置 Agent 工具说明**写着「Do not spawn agents unless the user asks / 多角度任务也自己内联处理」。**本项目作废这条**——这里**默认动作就是派编队**，不是自己埋头干。用户明确要求：**多用 agent / team 是好事**，倾向多扇出。
-> - **写/改任何实验代码 → 默认派 `coder`**（不是主线自己写）。主线亲手写实验 .py = 反模式，仅允许 <15 行小修 bug / 纯配置文本。`delegate_code_gate.js` hook 会在你正要写时拦一下提醒。
+> - **写/改任何实验代码 → 推荐默认派 `coder`**（省主线 context）。`delegate_code_gate.js` hook 只**软提醒不拦**（用户已放开：改训练/实验文件不拍板、auto=acceptEdits 直接放行）——主线需要时可直接写，小修 / 纯配置 / 急活自便。
 > - 调研→`researcher`、设计实验→`planner`、红队前提/设计/claim→`skeptic`、分析结果→`analyst`、写章节→`writer`、核数→`verifier`、找漏洞→`reviewer`。能并行就一批 3-5 个 sonnet 扇出。
 > - **判定反过来**：默认派单；只有「就是要主线亲自串行」的事（训练启停 / HPC 提交上传 / 危险删除 / 决策拍板 / <15 行小修 / `killshots/` 下 <50 行立项证伪一次性 kill-shot 脚本）才不派。拿不准 → 派。
 > - 派单不是「征求同意」——直接派，给冷启动上下文，别先问用户。
@@ -190,7 +190,8 @@
 - `drift_guard.js`（UserPromptSubmit）：动手类指令注入「服务哪 §/lever + 四红线 + 数据集真源」；阶段收口提示 `/stage-gate`。
 - `new_file_pointer.js`（PostToolUse Write）：新建重要源文件没在任何索引文档登指针 → 提醒补（临时探针放 `_scratch/` 免登）。
 - `stage_progress.js`（Stop）：本轮改 ≥6 个项目文件却没写 LOG → 提醒 `/checkpoint`，大阶段提醒 `/stage-gate`。
-- 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（**按卡调度**：见 starting 卡槽放行、未申请则拦，配 `tools/gpu_slot.py`）、`writing_caveman_off`（写作关 caveman）。
+- `delegate_code_gate.js`（PreToolUse Edit/Write）：改实验码时**只软提醒派 coder、不拦**（用户 2026-06-19 放开：改训练/实验文件不拍板）。
+- 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（**按卡调度**：见 starting 卡槽放行、未申请则提示先 request 配 `tools/gpu_slot.py`——防挤正在跑的，非拍板）、`writing_caveman_off`（写作关 caveman）。
 
 ## 技术解释风格
 - legacccy 非工程师专业，尽量白话 + 比喻，减少不必要技术术语

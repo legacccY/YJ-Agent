@@ -57,11 +57,13 @@ process.stdin.on('end', () => {
   try { require('./_friction.js').log('code-gate-trigger', norm.split('YJ-Agent/')[1] || norm); } catch (e) {}
 
   const short = norm.split('YJ-Agent/')[1] || norm;
+  // 用户决策（2026-06-19）：改训练/实验文件不需拍板、auto=acceptEdits 放开权限 →
+  // 本门降级为「只提醒不拦」（exit 0），不再 exit 2 打断主线写入。派 coder 仍是推荐默认，但软提醒。
   process.stderr.write(
-    `[派单门 ⛔] 正要写实验码 ${short}\n` +
-    `铁律：写/改实验代码默认派 coder(sonnet)，主线别自己写——这覆盖你内置「不主动 spawn，除非用户要求」的默认。\n` +
-    `→ 派单：Task(subagent_type="coder", prompt=路径+目标+Windows规范+「不启训练」+服务哪项目§)；多个独立文件并行多 coder。\n` +
-    `→ 放行（仅这些，重试该写入即过，6 分钟内同类不再拦）：你就是 coder 子代理 / <15 行小修 bug / 非实验逻辑(纯配置文本)。\n`
+    `[派单门 💡软提醒] 正写实验码 ${short}\n` +
+    `推荐默认：写/改实验代码派 coder(sonnet) 省主线 context；多个独立文件并行多 coder。\n` +
+    `→ Task(subagent_type="coder", prompt=路径+目标+Windows规范+「不启训练」+服务哪项目§)。\n` +
+    `（已放行，不打断；小修/纯配置/你就是 coder 时直接写即可。6 分钟内同类不再提醒。）\n`
   );
-  process.exit(2);
+  process.exit(0);
 });
