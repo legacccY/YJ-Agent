@@ -6,6 +6,30 @@
 
 ---
 
+## 2026-06-19（会话 48，✅ R1 nafnet fp32 验通 → 铺全量 R1/R3 + 修 R3 OOM + 会场拍板坚持 ACCV）
+
+> 续会话 47。开门核 HPC：R1 nafnet 验证 job **1472609**（fp32 `--no_amp`+non-finite guard+心跳）跑通——ep1 `val_PSNR=31.20 SSIM=0.9117`、心跳 loss finite（-29~-36，PSNRLoss 负值对应 PSNR~31）、`train_PSNR~25-32` 健康爬、`skipped=0`、err 空。**NaN 发散 bug 死透**，待续 #1 绿灯达成 → 铺全量。
+
+### 完成
+- **铺全量 R1/R3**（gpu_slot 把关，绝不挤 selinf 他窗）：
+  - 起跑（HPC 4/4）：restormer-R1 SLURM **1472943**（gpu_slot 2e04820f）+ mirnetv2 SLURM **1472970**（ffc43a2a）。
+  - 排队 4：swinir(7daab447) → uformer(2800531a) → realesrgan(12fd9b23) → R3-restormer(beb2c55f)，release 自动取 NEXT。
+- **修 R3 OOM**（复现零偏离）：R3 restormer micro=2 在 4090 24GB OOM（job **1472946** 死在 frozen B3 oracle 的 batch_norm forward，23.04/23.54 GiB；R3 比 R1 多 DP-Loss 把 oracle 拉进训练图）→ 降单卡 `micro_batch=1 × accum_steps=4`（有效 batch 仍=4=官方值，数学等价，不私降步数/batch）。释放死槽 → NEXT 取出 mirnetv2 提交 → R3 修后重排队尾。
+  - 决策：用户问「显存大可跑多卡」——单卡 micro=1 是最简正解（不需 DDP 改写、4 卡仍各跑一任务吞吐最大），若 micro=1 还 OOM 再上多卡。
+
+### 用户拍板（2026-06-19）
+- **会场坚持 ACCV 2026，认天花板 35-55%**（用户明确目标「80% 稳录用」→ 主线诚实告知 ACCV 结构性天花板 35-55%、80% 是 oral 级共识撑不起、越线凑数=红线 → 提 WACV 2027 客观更优[CORE-A+应用稿 AC 保护护 method novelty 弱轴+45-60%]，用户三选一**选坚持 ACCV**）。→ 把录用概率推到 ACCV 天花板最高处（R1/R3 补强 + 诚实 reframe），不承诺 80%、不越线。
+
+### 待续
+1. **监控 4 running + 队列**：restormer-R1/mirnetv2/nafnet 出心跳确认 micro=2 plain baseline 不 OOM（realesrgan 含 GAN 判别器，micro=2 仍有 OOM 风险，到时盯）；任一 release → 取 NEXT 提交（swinir→uformer→realesrgan→R3）。
+2. R1/R3 全出 → analyst 解读 per-baseline ΔAUC CI + melanoma per-class → verifier 逐 csv 核 → writer 按 fill-spec 填 7 \todo。
+3. 填完 → 砍图卡正文 ≤14p → 脱敏验证 → /pre-submit-check。
+
+### 诚实底线（不变）
+melanoma 净负、全局 triage 不超 Direct、Thm2 局部界全如实留正文带数字带 CI。补强建 C1/C2 正向贡献，reframe 只改 emphasis 不改 truth value。
+
+---
+
 ## 2026-06-19（会话 47，⏳ R1/R3 训练堵关键路径数小时 → 大编队做 rework-safe prep + reviewer 5 修含 #1 blocker）
 
 > 续会话 46。开门核 HPC：**R1 nafnet (job 1471613) 在跑**（17:46 启，~21min 进 50000 iter，数小时出）；r1_restormer (1471977) + r3_restormer (1472058) SLURM PENDING 等卡；HPC 4/4 满。**填数关键路径（7 个 \todo → analyst → verifier）全 gated 在 R1/R3 结果，堵数小时，不造假进度**。趁训练跑派编队做零返工 prep。

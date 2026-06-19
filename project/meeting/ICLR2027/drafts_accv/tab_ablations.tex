@@ -1,0 +1,43 @@
+% =============================================================================
+% tab_ablations.tex --- §7.6 conditioning, fidelity, and speed ablations.
+% Compresses the number-dense §7.6 prose into one ablation table.
+% caveman OFF. All numbers copied verbatim from STORY_FRAMEWORK / ACCEPTANCE
+%   locked rows E1/E8/E9/E12 and the existing §7.6 prose; none recomputed
+%   (red line 4). Sources: results/e1_film_ablation.json (E1),
+%   results/filmabl_diag.json (E8), results/stage2_diag_paired_e9.csv (E9),
+%   results/e12_speed.csv (E12). Single-seed point estimates; paired-bootstrap
+%   2000-sample 95% CIs and McNemar p where stated.
+% \input from main_accv.tex / main_iclr9.tex (path relative to that file).
+% =============================================================================
+\begin{table}[!tbp]
+\centering
+\caption{\textbf{Conditioning, fidelity, and speed ablations.}
+Quality-conditional FiLM is a diagnostic, not a perceptual, mechanism: removing it leaves
+fidelity essentially unchanged ($\le0.4$\,dB PSNR) yet degrades diagnostic preservation on
+every axis. A heavier cross-attention module ($+1.8$M parameters) is statistically
+indistinguishable from FiLM (paired-bootstrap CIs all include zero, McNemar $p{=}0.679$),
+so we keep FiLM on parsimony grounds. The PSNR\,$=32.74$\,dB clears the $30$\,dB
+non-vacuity gate of Lemma~\ref{lem:dp}. Lower is better for $\Delta$AUC magnitude towards
+zero and KL; higher is better for agreement, PSNR, SSIM. Best diagnostic-preservation
+value in bold. Single-seed; the FiLM-vs-cross-attention comparison is on matched
+paired-bootstrap resamples (CIs in text).}
+\label{tab:ablations}
+\vspace{4pt}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lccccc}
+\toprule
+Configuration & $\Delta$AUC & Agreement\,$\uparrow$ & Diag.\ KL\,$\downarrow$ & PSNR (dB)\,$\uparrow$ & Params \\
+\midrule
+With FiLM (ours)        & $\mathbf{-0.033}$ & $\mathbf{0.90}$ & $\mathbf{0.24}$ & $32.74$ & --- \\
+Without FiLM            & $-0.042$          & $0.87$          & $0.35$          & $33.06$ & --- \\
+Cross-attention ($+1.8$M) & \multicolumn{3}{c}{indistinguishable (CIs incl.\ 0, McNemar $p{=}0.679$)} & --- & $+1.8$M \\
+\bottomrule
+\end{tabular}
+\vspace{2pt}
+\footnotesize
+\emph{Deterministic enhancer (per image):} PSNR $32.74$\,dB, SSIM $0.91$ ($n{=}19878$);
+runtime $16.08$\,ms/image (p95 $17.0$).
+\vspace{-4pt}
+\end{table}

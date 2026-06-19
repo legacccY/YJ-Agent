@@ -1,0 +1,2 @@
+n_valid,n_large,n_small,size_threshold_median,large_direction_auroc,small_direction_auroc,direction_diff,large_ci_lo,large_ci_hi,diff_ci_lo,diff_ci_hi,r9_verdict,r9_msg,mde_threshold,g5_epochs,note
+64,32,32,0.21967,0.5488,0.4512,0.0977,0.4114,0.6844,-0.1773,0.3687,GRAY,diff CI 宽=0.546>0.4，功效不足，需扩规模,0.05,5,G5 证伪 5-epoch AE，非全量复现；anomaly_score 仅用于相对排序；size 特征来自官方 GT lesion mask（非 proxy）

@@ -10,8 +10,12 @@
 % caveman OFF. All numbers copied verbatim from STORY locked table + source
 %   drafts (verifier-checked); none invented or recomputed (red line 4).
 %
-% \input tables (paths relative to main_iclr9.tex in ICLR2027/):
-%   table1_e10_sota.tex (tab:e10)  -- used in §7.4.
+% \input tables (paths relative to main_iclr9.tex / main_accv.tex in ICLR2027/):
+%   table1_e10_sota.tex (tab:e10)        -- used in §7.4 (relocated to A28).
+%   drafts_accv/tab_c0_surface.tex (tab:c0-surface) -- §7.1, replaces the
+%       per-dimension reliability/recoverability prose.
+%   drafts_accv/tab_ablations.tex (tab:ablations)   -- §7.6, replaces the
+%       FiLM/cross-attn/PSNR/speed ablation prose.
 % NOT \input here (intentional): table1_main.tex (tab:main, the demoted
 %   calibration table -- footnoted per STORY R13, not part of the C0-C3
 %   diagnosis-preservation experiments) and table2_universality.tex
@@ -32,72 +36,57 @@ confidence interval, and significance means the CI excludes zero.
 
 \subsection{The Reliability\,$\times$\,Recoverability Decision Surface}
 \label{sec:exp-surface}
-We first chart a reliability\,$\times$\,recoverability surface over a $5\times5$ grid
-(five degradation dimensions $\times$ five severity levels, $n=360$/cell). The primary
-axis reports diagnostic AUC under degradation; a second axis reports
-$\Delta_{\text{rec}}=\mathrm{AUC}_{\text{enh}}-\mathrm{AUC}$, asking whether enhancement
-buys the diagnosis back. This AUC-led, per-dimension $\times$ per-severity view is
-distinct from the per-dimension calibration analysis of \citet{ANON-BMVC} (cited, not
-reused), which neither sweeps severity nor includes completeness. \textbf{Reliability:}
-AUC degrades near-monotonically with severity on every axis, but blur is by far the most
-fragile (drop $-0.0911$ from S1 to S5) while contrast looks most robust (only $-0.0153$);
-full per-cell values are in \cref{app:surface}. \textbf{Recoverability:} the surface
-splits into three regimes (\cref{fig:c0-surface}). Enhancement \emph{reliably recovers}
-blur and colour shift from severity S3 onward (CIs excluding zero), is
-\emph{statistically inconclusive} on completeness (every level straddles zero, so we call
-it partially recoverable rather than irreversible), and \emph{significantly hurts}
-exactly one of all $25$ cells: contrast at the extreme level ($\Delta_{\text{rec}}=-0.0355$,
-$95\%$ CI $[-0.0783,-0.0013]$). Contrast thus looks robust yet is recoverable in name
-only, so the gate must be dimension-aware. This single contrast-S5 cell is one
-per-dimension trigger that complements, rather than replaces, the per-class evidence of
-\cref{sec:exp-boundary}; we do \emph{not} generalise to ``enhancement is unsafe under
-severe degradation''.
+We chart the reliability\,$\times$\,recoverability surface introduced in
+\cref{sec:decision-surface} over a $5\times5$ grid ($n=360$/cell; \cref{tab:c0-surface}).
+Reliability degrades near-monotonically with severity, blur being by far the most fragile
+and contrast the most robust, while recoverability splits into three regimes: enhancement
+reliably recovers blur and colour shift from S3 onward, stays statistically inconclusive on
+completeness, and significantly hurts exactly one of all $25$ cells (contrast at the extreme
+level). Contrast thus looks robust yet is recoverable in name only, so the gate must be
+dimension-aware. This single contrast-S5 cell is one per-dimension trigger that complements,
+rather than replaces, the per-class evidence of \cref{sec:exp-boundary}; we do \emph{not}
+generalise to ``enhancement is unsafe under severe degradation''.
+\input{drafts_accv/tab_c0_surface.tex}
 
 \subsection{Diagnostic Preservation}\label{sec:exp-preserve}
 On the moderate band the feature-level diagnosis-preserving model leaves diagnosis
 essentially intact: $\Delta\mathrm{AUC}=-0.012$ (within the $1.5\%$ target),
-$95.8\%$ enhanced-versus-reference agreement, and a McNemar test that finds no
-significant difference between enhanced and reference predictions ($p=0.573$). The
-enhanced inputs are therefore diagnostically interchangeable with their clean
-references on aggregate AUC. Preservation is nonetheless imperfect at the level of
-individual malignant lesions; we treat the residual dangerous flips (\cref{sec:exp-sota})
-as the empirical case for the query-for-retake channel. To forestall a reading of the
-two results as contradictory, we state the scope explicitly: this diagnosis-preserving
-claim is strictly confined to the \emph{moderate-degradation window} measured on
-\emph{aggregate AUC}, whereas the malignant per-class boundary of \cref{sec:exp-boundary}
-is exactly what motivates the query-for-retake gate. Aggregate preservation within the
+$95.8\%$ enhanced-versus-reference agreement, and a McNemar test finding no significant
+difference between enhanced and reference predictions ($p=0.573$). The enhanced inputs
+are therefore diagnostically interchangeable with their clean references on aggregate
+AUC. This claim is strictly confined to the \emph{moderate-degradation window} measured
+on \emph{aggregate AUC}; the malignant per-class boundary of \cref{sec:exp-boundary} is
+exactly what motivates the query-for-retake gate. Aggregate preservation within the
 window and net-negative salvage on the malignant subgroup are therefore not in tension
-but a two-regime division of labour --- enhance where the band holds, re-acquire where
-it does not.
+but a two-regime division of labour --- enhance where the band holds, re-acquire where it
+does not.
 
 \subsection{DP-Loss Ablation and the Mutual-Information Bound}\label{sec:exp-dploss}
 Ablating the diagnosis-preserving objective \eqref{eq:dploss} against an otherwise
 identical enhancer trained without it shows DP-Loss is what preserves diagnosis: on
-matched bootstrap resamples it raises the diagnostic $\Delta\mathrm{AUC}_{\text{enh}}$
-by $+0.0205$ (CI excluding zero), lowers the diagnostic KL by $-0.148$ (CI excluding
-zero), and yields McNemar $p=2.3\times10^{-45}$. This is the empirical counterpart of
-the mutual-information lower bound in Lemma~\ref{lem:dp}: tightening the feature-level
-KL budget measurably raises the diagnostic information retained, the direction the bound
-predicts. Together with the Stage-1 PSNR$\,\geq30$\,dB non-vacuity condition, this
-carries the information-preservation claim of \cref{sec:prop3lemma3}; we do \emph{not}
-rely on a net entropy-reduction claim, which the data do not support.
+matched bootstrap resamples it raises the diagnostic $\Delta\mathrm{AUC}_{\text{enh}}$ by
+$+0.0205$ (CI excluding zero), lowers the diagnostic KL by $-0.148$ (CI excluding zero),
+and yields McNemar $p=2.3\times10^{-45}$. This is the empirical counterpart of the
+mutual-information lower bound in Lemma~\ref{lem:dp}: tightening the feature-level KL
+budget measurably raises the diagnostic information retained, the direction the bound
+predicts. Together with the Stage-1 PSNR$\,\geq30$\,dB non-vacuity condition, this carries
+the information-preservation claim of \cref{sec:prop3lemma3}; we do \emph{not} rely on a
+net entropy-reduction claim, which the data do not support.
 
 \subsection{Comparison with Generic Restoration SOTA}\label{sec:exp-sota}
 Against six off-the-shelf non-diffusion restoration models applied zero-shot,
 \visienhance{} is the only method that both restores fidelity and preserves diagnosis
 (\cref{tab:e10}): every generic model is a significantly worse diagnostic preserver
-(paired $\Delta\mathrm{AUC}$ CIs all excluding zero, McNemar $p<10^{-150}$), and the
-trade-off frontier is plotted in \cref{fig:enhancement}A. This comparison is run under a
-\emph{matched zero-shot protocol}, in which no method --- ours included --- is adapted to the
-degraded dermoscopy distribution; the gap is therefore the diagnostic-preservation gap between the
-objectives, not an artefact of one model having seen the target degradations. To probe whether the
-gap survives when each generic baseline is itself fine-tuned on degraded dermoscopy, we report a
-matched fine-tuned comparison (\todo{R1 核}) in \cref{sec:exp-transfer}; the present claim is
-scoped to the zero-shot protocol. Aggregate preservation does
-not, however, mean every lesion is safe: enhancement still pushes a small subset of
-correctly-called melanomas below the decision threshold --- a \emph{dangerous flip}
-(\cref{fig:enhancement}C) --- which we report transparently as motivation for the
-query-for-retake channel (\cref{sec:agent}).
+(paired $\Delta\mathrm{AUC}$ CIs all excluding zero, McNemar $p<10^{-150}$). This
+comparison is run under a \emph{matched zero-shot protocol} in which no method --- ours
+included --- is adapted to the degraded distribution, so the gap is the
+diagnostic-preservation gap between the objectives, not an artefact of one model having
+seen the target degradations; a matched fine-tuned comparison (\todo{R1 核}) is reported
+in \cref{sec:exp-transfer}, and the present claim is scoped to the zero-shot protocol.
+Aggregate preservation does not, however, mean every lesion is safe: enhancement still
+pushes a small subset of correctly-called melanomas below the decision threshold --- a
+\emph{dangerous flip} (\cref{fig:enhancement}C) --- which we report transparently as
+motivation for the query-for-retake channel (\cref{sec:agent}).
 
 % table1_e10_sota (tab:e10) relocated to Appendix A28 for the 9-page limit; \cref{tab:e10} resolves there.
 
@@ -123,72 +112,51 @@ query-for-retake channel (\cref{sec:agent}).
 % limit; fig:enhancement label lives there, main-text \cref{fig:enhancement} resolves to the appendix.
 
 \subsection{DP-Loss is Transferable}\label{sec:exp-transfer}
-The preceding comparison establishes that \visienhance{} preserves diagnosis better than generic
-restoration, but leaves open whether the advantage comes from the diagnosis-preserving objective
-itself or from our particular network. To separate the two, we graft DP-Loss onto a strong generic
-restoration backbone, leaving its architecture and capacity unchanged, and re-evaluate diagnostic
-preservation under the same protocol; we further fine-tune each generic baseline on degraded
-dermoscopy so that the comparison no longer credits \visienhance{} for adaptation alone
-(\cref{sec:exp-sota}). Concretely, we test whether grafting DP-Loss onto a strong baseline
-restoration backbone reproduces the diagnosis-preserving effect (\todo{R3 核 $\Delta$AUC}, $95\%$ CI
-\todo). If the grafted backbone recovers diagnostic preservation, the diagnosis-preserving behaviour
-is attributable to the objective rather than to our architecture, and DP-Loss is a portable loss any
-restoration backbone can adopt; if instead the grafted backbone does not separate from its
-DP-Loss-free counterpart, the advantage of \visienhance{} is attributable to the diagnosis-preserving
-objective in combination with our architecture rather than to either alone, and we make no
-portability claim. The per-class picture is reported in full and not aggregated away: on the
-malignant subgroup the grafted backbone yields a melanoma salvage of \todo{R3 核} (\todo). Should the
-grafted backbone remain net-negative on melanoma, we attribute the residual failure to the
-restoration boundary itself rather than to any single model, consistent with the per-class evidence
-of \cref{sec:exp-boundary}, which we do not aggregate away. The direction of the effect, and hence
-the verbs above, are fixed only once the runs complete. All quantities in this subsection are pending
-the fine-tuning and grafting runs and are reported only once verified against the result tables
-(\todo{R1/R3 核 — HPC 排队中，未填即占位}).
+To separate the objective from our particular network, we graft DP-Loss onto a strong
+generic restoration backbone with its architecture unchanged, and fine-tune each generic
+baseline on degraded dermoscopy so the comparison no longer credits \visienhance{} for
+adaptation alone (\cref{sec:exp-sota}). The grafting test (\todo{R3 核 $\Delta$AUC}, $95\%$
+CI \todo) decides whether the diagnosis-preserving effect is attributable to the objective
+rather than the architecture; the per-class melanoma picture (\todo{R3 核}, \todo) is
+reported in full and not aggregated away, and should the grafted backbone remain
+net-negative on melanoma we attribute the residual failure to the restoration boundary
+itself, consistent with \cref{sec:exp-boundary}. All quantities here are pending the
+fine-tuning and grafting runs, and the direction of the effect --- and hence the verbs ---
+is fixed only once they complete (\todo{R1/R3 核 — HPC 排队中，未填即占位}).
 
 \subsection{Conditioning, Fidelity, and Speed Ablations}\label{sec:exp-ablations}
-Quality-conditional FiLM is a diagnostic, not a perceptual, mechanism: removing it
-leaves PSNR within $0.4$\,dB ($32.74$ with versus $33.06$ without) yet degrades
-diagnostic preservation on every axis (with FiLM $\Delta\mathrm{AUC}=-0.033$, agreement
-$0.90$, KL $0.24$, versus $-0.042$, $0.87$, $0.35$ without). Replacing FiLM with a
-heavier cross-attention conditioning module ($+1.8$M parameters) is statistically
-indistinguishable on every axis (paired bootstrap CIs all include zero, McNemar
-$p=0.679$), so we keep FiLM on parsimony grounds. The deterministic enhancer attains
-per-image PSNR $32.74$\,dB (SSIM $0.91$, $n=19878$), clearing the $30$\,dB non-vacuity
-gate of Lemma~\ref{lem:dp}, and runs end-to-end at $16.08$\,ms/image, within the
-real-time budget. A per-degradation breakdown (\cref{fig:enhancement}B) confirms the
-enhancer is strongest on brightness and blur but genuinely \emph{harmful} on contrast,
-consistent with the contrast-S5 trigger of \cref{sec:exp-surface}.
+Quality-conditional FiLM is a diagnostic, not a perceptual, mechanism: removing it leaves
+fidelity essentially unchanged yet degrades diagnostic preservation on every axis, while a
+heavier cross-attention module is statistically indistinguishable from it, so we keep FiLM
+on parsimony grounds (\cref{tab:ablations}). A per-degradation breakdown
+(\cref{fig:enhancement}B) confirms the enhancer is strongest on brightness and blur but
+genuinely \emph{harmful} on contrast, consistent with the contrast-S5 trigger of
+\cref{sec:exp-surface}.
+\input{drafts_accv/tab_ablations.tex}
 
 \subsection{The Honest Boundary: When Enhancement Hurts Diagnosis}
 \label{sec:exp-boundary}
-A per-class split (\cref{fig:boundary-agent}A) is where the salvage story collapses. The
-benign and malignant subgroups behave in opposite directions: enhancement salvages most
-degradation-misclassified benign lesions ($75.6\%$, $1809/2392$) while damaging almost
-none, yet on melanoma it salvages only $5.2\%$ and damages far more than it rescues --- a
-\emph{net loss of malignant cases}, helping the benign errors that least need help and
-harming the malignant cases that matter most. We report the two melanoma rates on
-distinct conditional pools by construction: the salvage rate is computed over the
-\emph{salvageable pool} of melanomas already misclassified after degradation
-($n=77$), of which enhancement recovers $4$ ($4/77=5.2\%$), while the damage rate is
-computed over the \emph{at-risk pool} of melanomas still correctly called after
-degradation ($n=274$), of which enhancement pushes $85$ below the decision threshold
-($85/274=31.0\%$); the two denominators differ because the two events are conditioned on
-opposite pre-enhancement outcomes, not because cases were selected. Across all $351$
-melanomas this leaves a net change of $4-85=-81$ correctly-called malignant cases.
-Because the benign subgroup dominates the population, the benign-dominated aggregate
-moderate-band salvage rate ($0.737$) is therefore \emph{not} a meaningful capability
-number, and we deliberately do not report it as one; only the per-class breakdown
-reflects clinical risk. This is not a reconstruction-loss artefact: retraining
-with a mask-weighted objective ($4\times$ lesion weight) leaves melanoma salvage
-unchanged at $5.2\%$ (an honest null; \cref{fig:boundary-agent}A), so the failure mode
-lies beyond what per-pixel $L_1$ can reach. The boundary is sharper still on the severe
-band, where enhancement significantly \emph{lowers} diagnostic AUC
-($\Delta\mathrm{AUC}=-0.0559$, $95\%$ CI $[-0.085,-0.028]$). The agent accordingly routes severe and high-risk inputs to
-query-for-retake rather than enhance, with the retake fraction rising strictly with
-degradation across bands (\cref{fig:boundary-agent}C), realising the threshold-window
-policy of Theorem~\ref{thm:agent-compact}. These per-class, per-severity, and
-per-dimension triggers are the hardest motivation for the gate, but they are
-\emph{local, per-band} statements only; the honest global comparison is in
+A per-class split (\cref{fig:boundary-agent}A, with full denominators in its caption) is
+where the salvage story collapses: the benign and malignant subgroups behave in opposite
+directions, enhancement salvaging most degradation-misclassified benign lesions while
+yielding a \emph{net loss of correctly-called melanomas}. We report the two melanoma rates
+on distinct conditional pools by construction --- salvage over the \emph{salvageable pool}
+already misclassified after degradation, damage over the \emph{at-risk pool} still
+correctly called --- so the two denominators differ because the events are conditioned on
+opposite pre-enhancement outcomes, not because cases were selected. Because the benign
+subgroup dominates the population, the benign-dominated aggregate moderate-band salvage
+rate is therefore \emph{not} a meaningful capability number, and we deliberately do not
+report it as one; only the per-class breakdown reflects clinical risk. This is not a
+reconstruction-loss artefact: retraining with a mask-weighted objective ($4\times$ lesion
+weight) leaves melanoma salvage an honest null (\cref{fig:boundary-agent}A), so the failure
+mode lies beyond what per-pixel $L_1$ can reach. The boundary is sharper still on the
+severe band, where enhancement significantly \emph{lowers} diagnostic AUC
+($\Delta\mathrm{AUC}=-0.0559$, $95\%$ CI $[-0.085,-0.028]$). The agent accordingly routes
+severe and high-risk inputs to query-for-retake rather than enhance, with the retake
+fraction rising strictly with degradation across bands (\cref{fig:boundary-agent}C),
+realising the threshold-window policy of Theorem~\ref{thm:agent-compact}. These per-class,
+per-severity, and per-dimension triggers are the hardest motivation for the gate, but they
+are \emph{local, per-band} statements only; the honest global comparison is in
 \cref{sec:exp-triage}.
 
 \subsection{Cost--Benefit, Decision Curves, and the Global Triage Negative Result}
@@ -196,24 +164,24 @@ per-dimension triggers are the hardest motivation for the gate, but they are
 \label{sec:exp-dca}% upstream \cref{sec:exp-dca} (rem:no-global) resolves here
 On \itb{}-LQ ($n=300$, the worst-case low-quality subset) we run net-benefit
 decision-curve analysis and a confidence-gated triage simulation
-(\cref{fig:boundary-agent}B; cost model in \cref{app:a20}). The triage gate needs only an
-off-the-shelf per-input uncertainty signal; a standard variational information
-bottleneck suffices.\footnote{The quality-conditional variant we also report carries
-\emph{no} method-gain claim; it appears only as the strongest tested configuration, and
-it still does not outperform direct diagnosis.} \textbf{Net benefit does not separate
-the methods}: across the clinically relevant threshold range the maximum net benefit is
-statistically indistinguishable among direct diagnosis and all bottleneck variants
-($0.179$--$0.192$, all $95\%$ CIs overlapping), with the only positive statement being
-that each method stays above the treat-all reference. \textbf{The global triage
-comparison is an honest negative}: at a $20\%$ referral budget direct diagnosis attains
-the \emph{highest} auto-handled sensitivity ($0.818$), the strongest bottleneck variant
-only tracks it ($0.788$, not exceeding it), and under-confident variants collapse.
-Global quality-aware triage therefore does not outperform direct diagnosis, and the
-agent's global risk is not guaranteed to be at most that of direct diagnosis. This is the
-honest global counterpart of the band-local guarantee (Theorem~\ref{thm:agent-compact}
-bounds risk only \emph{within} the moderate window, Remark~\ref{rem:no-global}): it
-delimits where the system should defer to re-acquisition rather than assert a diagnosis.
-The defensible positive reading is narrow: a calibrated posterior supports reliable
-confidence-driven abstention, and closing the band-local-to-global gap by \emph{learning}
-the routing thresholds is left to future work.
+(\cref{fig:boundary-agent}B; cost model in \cref{app:a20}). The gate needs only an
+off-the-shelf per-input uncertainty signal; a standard variational information bottleneck
+suffices.\footnote{The quality-conditional variant we also report carries \emph{no}
+method-gain claim; it appears only as the strongest tested configuration, and it still
+does not outperform direct diagnosis.} \textbf{Net benefit does not separate the methods}:
+across the clinically relevant threshold range the maximum net benefit is statistically
+indistinguishable among direct diagnosis and all bottleneck variants ($0.179$--$0.192$,
+all $95\%$ CIs overlapping), the only positive statement being that each stays above the
+treat-all reference. \textbf{The global triage comparison is an honest negative}: at a
+$20\%$ referral budget direct diagnosis attains the \emph{highest} auto-handled
+sensitivity ($0.818$), the strongest bottleneck variant only tracks it ($0.788$, not
+exceeding it), and under-confident variants collapse. Global quality-aware triage
+therefore does not outperform direct diagnosis, and the agent's global risk is not
+guaranteed to be at most that of direct diagnosis. This is the honest global counterpart
+of the band-local guarantee (Theorem~\ref{thm:agent-compact} bounds risk only
+\emph{within} the moderate window, Remark~\ref{rem:no-global}): it delimits where the
+system should defer to re-acquisition rather than assert a diagnosis. The defensible
+positive reading is narrow: a calibrated posterior supports reliable confidence-driven
+abstention, and closing the band-local-to-global gap by \emph{learning} the routing
+thresholds is left to future work.
 % (DCA/triage figure merged into Fig.~\ref{fig:boundary-agent}B; retake gradient into panel C.)

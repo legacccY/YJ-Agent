@@ -261,9 +261,11 @@ _R3_DP_CONFIG = {
     "lr_ft": 3e-5,         # 与 R1 restormer ft 一致
     "weight_decay": 1e-4,
     "batch_size": 4,
-    # 显存适配 (与 R1 restormer 一致, 保证 R1/R3 唯一变量=DP-Loss, 显存策略相同)
-    "micro_batch": 2,      # 显存适配 micro-batch; micro×accum = batch_size
-    "accum_steps": 2,      # gradient accumulation steps
+    # 显存适配: R3 比 R1 多 DP-Loss 把 frozen B3 oracle 拉进训练图 (enhanced→oracle forward),
+    # micro=2 在 4090 24GB OOM (job1472946 死在 oracle BN forward, 23.04/23.54 GiB).
+    # 降 micro=1 单卡, accum=4 保有效 batch=4=官方值 (数学等价, 守复现零偏离).
+    "micro_batch": 1,      # 显存适配 micro-batch; micro×accum = batch_size=4
+    "accum_steps": 4,      # gradient accumulation steps (1×4=4 官方有效 batch)
     "iterations": 50000,
     "warmup_iters": 0,
 }
@@ -931,6 +933,10 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
                 total_hinge += accum_hinge_sum
                 n += accum_B
 
+            # Heartbeat 值必须在 reset 前捕获 (否则读到清零后的 accumulator = 恒 0.0000, 心跳瞎)
+            hb_loss = accum_loss_sum / max(accum_B, 1)
+            hb_psnr = total_psnr / max(n, 1)
+
             # Reset accum state
             optimizer.zero_grad(set_to_none=True)
             accum_count = 0
@@ -941,8 +947,8 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
 
             # Heartbeat: per-200 optimizer-step 活信号
             if global_step % 200 == 0:
-                print(f"[hb] step={global_step:06d}  loss~{accum_loss_sum/(max(accum_B,1)):.4f}  "
-                      f"skipped={n_skipped}", flush=True)
+                print(f"[hb] step={global_step:06d}  loss~{hb_loss:.4f}  "
+                      f"train_PSNR~{hb_psnr:.2f}  skipped={n_skipped}", flush=True)
 
     # 末尾 partial accum group (epoch 结束时 micro-count 不足 accum_steps)
     # 丢弃不整 group, 保持梯度尺度一致; 最多丢 accum_steps-1 个 micro-batch

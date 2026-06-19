@@ -17,10 +17,9 @@ it, enhancement either does nothing useful or, as our boundary evidence shows
 (\cref{sec:exp-boundary}), harms the diagnosis. The agent therefore does not diagnose: from a
 per-input quality reading it \emph{decides} whether to diagnose directly, to enhance and then
 diagnose, or to ask for a better image. The last channel is the mechanistic contribution of this
-section. Existing reliability mechanisms stop the moment an input is judged unsafe: selective
-prediction \emph{abstains} \citep{geifman2017selective}, learning-to-defer hands the case to a
-human, and the closest agentic medical pipeline, AT-CXR \citep{atcxr2025}, likewise only routes
-to deferral. None of them acts on the cause of the failure --- a recoverably bad acquisition. The
+section. Existing reliability mechanisms (selective prediction, learning-to-defer, and the agentic
+pipeline AT-CXR; \cref{sec:related}) stop the moment an input is judged unsafe, abstaining or
+deferring without acting on the cause of the failure --- a recoverably bad acquisition. The
 query-for-retake channel instead closes a \emph{collection} loop back to the sensor, requesting a
 better image rather than abstaining on or deferring the present one.
 
@@ -46,12 +45,10 @@ and beyond what enhancement can salvage, from one the enhancement pathway can he
 \citep{geifman2017selective} or deferring the case, the agent issues a \emph{re-acquisition
 request} that closes a collection loop around the diagnostic model. Image-quality work that flags
 re-capture \citep{vodrahalli2021teledermatology,jalaboi2023explainable} decouples the flag from the
-diagnostic objective and offers no risk analysis; here, by contrast, the re-acquisition decision is
-made jointly with the diagnostic risk and embedded in the risk-bounded routing policy below. To our
-knowledge, this is the first \emph{risk-bounded re-acquisition loop coupled jointly with the
-diagnostic decision} in this setting --- a scope we delimit deliberately, since image-quality work
-that flags re-capture does exist but decouples the flag from any diagnostic-risk estimate and
-provides no local risk bound. The agent never emits a
+diagnostic objective and offers no risk analysis; here the re-acquisition decision is made jointly
+with the diagnostic risk and embedded in the risk-bounded routing policy below. To our knowledge,
+this is the first \emph{risk-bounded re-acquisition loop coupled jointly with the diagnostic
+decision} in this setting --- a scope we delimit deliberately. The agent never emits a
 diagnosis on its own; each channel hands the original, restored, or re-acquired image to the same
 downstream classifier.
 The uncertainty signal is taken off the shelf, so routing does not depend on any bespoke
@@ -79,13 +76,12 @@ exactly where the band holds, and is silent elsewhere. \textbf{We make no claim 
 dominates direct diagnosis globally.} The within-band gain does not aggregate to a global ordering,
 because the query channel's safety relies on a re-acquisition operator that improves quality only in
 expectation, and the thresholds are fixed by grid search. Consistently, our triage simulation reports
-an honest \emph{negative} global result: at a fixed referral budget direct triage attains the higher
-auto-handled sensitivity, with net benefit statistically indistinguishable across direct diagnosis
-and all variants (overlapping $95\%$ bootstrap CIs; \cref{sec:exp-dca}). We therefore treat the global utility of routing as an open, empirically
-negative question, and leave \emph{learning} the thresholds, rather than fixing them by grid search,
-to future work. The band-local statement is moreover a population result over the salvage-band
-subpopulation; it does \emph{not} certify a per-class reduction, and the malignant subgroup, whose
-net-negative salvage is our hardest boundary evidence (\cref{sec:exp-boundary}), stays in the
-query-for-retake regime rather than the enhance regime.
-% TODO(verifier): small-LM identity (Qwen3-4B per STORY) kept generic pre-deanonymisation.
+an honest \emph{negative} global result (\cref{sec:exp-dca}): at a fixed referral budget direct triage
+attains the higher auto-handled sensitivity, with net benefit statistically indistinguishable across
+variants. We therefore treat the global utility of routing as an open, empirically negative question,
+and leave \emph{learning} the thresholds to future work. The band-local statement is moreover a
+population result over the salvage-band subpopulation; it does \emph{not} certify a per-class
+reduction, and the malignant subgroup, whose net-negative salvage is our hardest boundary evidence
+(\cref{sec:exp-boundary}), stays in the query-for-retake regime rather than the enhance regime.
+% TODO(verifier): small-LM identity kept generic pre-deanonymisation (see internal STORY).
 % All numbers (0.818/0.788, retake 0.889/0.651/0.055, TAU 0.25/0.35/0.50)搬自源稿/ACCEPTANCE, 未重算.

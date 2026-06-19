@@ -1,0 +1,14 @@
+{
+  "status": "done",
+  "start_time": "2026-06-19T21:59:38",
+  "device": "cpu",
+  "smoke": true,
+  "n_total": 33126,
+  "n_pos": 584,
+  "subset_n": 200,
+  "auc_image_level": 0.5789473684210527,
+  "auc_patient_level": 0.38596491228070173,
+  "end_time": "2026-06-19T21:59:52",
+  "r9_verdict": "GRAY",
+  "delta": 0.19298245614035092
+}

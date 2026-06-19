@@ -1,15 +1,14 @@
 \section{Conclusion}\label{sec:conclusion}
-We presented a closed-loop quality-triage system for skin-lesion diagnosis on degraded consumer
-imagery, built on two contributions: a diagnosis-preserving enhancement method, and a query-for-retake
-channel that closes the acquisition loop. Per input, the system decides when to diagnose directly, when
-to apply diagnosis-preserving enhancement, and when to request a retake. Its methodological core is a
-recipe for enhancing \emph{safely} --- a feature-level diagnosis-preserving objective (DP-Loss) whose
-information loss is bounded by a mutual-information lower bound (Lemma~\ref{lem:dp}) and confirmed
-empirically --- around which a four-channel agent routes by a local, per-band conditional risk
-guarantee (Theorem~\ref{thm:agent-compact}); the query-for-retake channel is, to our knowledge, the
-first to request re-acquisition rather than merely abstaining or deferring. We also chart its limits: enhancement turns net-negative on
-extreme contrast loss and on malignant lesions under severe degradation, and global triage does not
-yet beat direct diagnosis --- an honest negative we read as motivation for learned routing thresholds.
-Mapping where degradation-aware enhancement helps, and where it must yield to re-acquisition, is the
-more useful contribution for deploying diagnosis on the quality-varying inputs that curated benchmarks
-exclude by design.
+We presented a closed-loop quality-triage system for skin-lesion diagnosis on degraded
+consumer imagery, built on two contributions: a feature-level diagnosis-preserving
+enhancement objective (DP-Loss) whose information loss is bounded by a mutual-information
+lower bound (Lemma~\ref{lem:dp}) and confirmed empirically, and a query-for-retake channel
+that --- to our knowledge, the first to request re-acquisition rather than merely abstain
+or defer --- closes the acquisition loop under a local, per-band conditional risk guarantee
+(Theorem~\ref{thm:agent-compact}). We also chart its limits: enhancement turns
+net-negative on extreme contrast loss and on malignant lesions under severe degradation,
+and global triage does not yet beat direct diagnosis --- honest negatives we read as
+motivation for learned routing thresholds. Mapping where degradation-aware enhancement
+helps, and where it must yield to re-acquisition, is the more useful contribution for
+deploying diagnosis on the quality-varying inputs that curated benchmarks exclude by
+design.

@@ -34,12 +34,10 @@ loss and decide when enhancement is unsafe.
 \end{quote}
 We cite GradProm as prior evidence of the gap and differentiate on
 \emph{mechanism}, running no head-to-head comparison and claiming no superiority.
-Across these enhancement and restoration families, none \emph{preserves the
-diagnostic signal under a guarantee}: gradient-level repair treats the symptom,
-whereas we bound the information loss (Lemma~\ref{lem:dp}) and route on it.
+Across these families, none \emph{preserves the diagnostic signal under a
+guarantee}: we bound the information loss (Lemma~\ref{lem:dp}) and route on it.
 
 \textbf{Perception--distortion trade-offs.}
-The pull between perceptual quality and a downstream criterion is structural:
 Blau and Michaeli~\citep{blau2018perception} bound the perception--distortion
 trade-off, and Cohen et al.~\citep{cohen2018distribution} show that
 distribution-matching translation can add or remove pathology-bearing features.
@@ -60,21 +58,18 @@ estimate. Our query-for-retake channel closes this gap: the agent
 degraded for enhancement to be safe, requests re-acquisition --- a re-acquisition
 loop that is, to our knowledge, the first to be bounded by a local diagnostic-risk
 guarantee and coupled jointly with the diagnostic decision, rather than triggered by
-a quality flag in isolation. We delimit this claim against adjacent lines of work that
-might appear to subsume it: active perception and next-best-view planning
-choose a sensing action to reduce task uncertainty, active sensing and active feature
-acquisition select which measurements to obtain under a budget, and human-in-the-loop
-recapture asks a clinician to re-photograph; none of these couples the re-acquisition
-decision to a per-input diagnostic-risk estimate with a local risk bound, and so none
-falls within the risk-bounded, diagnosis-coupled routing framework we study here. We
-make no claim that this routing raises net benefit globally; \S\ref{sec:exp-dca}
-reports where it does and does not help.
+a quality flag in isolation. Adjacent lines that might appear to subsume it ---
+active perception and next-best-view planning, active sensing and active feature
+acquisition, and human-in-the-loop recapture --- each select a sensing or measurement
+action, but none couples that decision to a per-input diagnostic-risk estimate with a
+local risk bound, and so none falls within the risk-bounded, diagnosis-coupled routing
+framework we study here. We make no claim that this routing raises net benefit globally;
+\S\ref{sec:exp-dca} reports where it does and does not help.
 
 \textbf{Information bottleneck.}
 The information bottleneck~\citep{tishby2000information} and its variational
-form~\citep[VIB;][]{alemi2017deep} compress an input while retaining
-task-relevant information, the lens for our diagnostic-loss analysis
-(Lemma~\ref{lem:dp}).%
+form~\citep[VIB;][]{alemi2017deep} provide the lens for our diagnostic-loss
+analysis (Lemma~\ref{lem:dp}).%
 \footnote{One variant conditions the variational prior on a per-input quality
 scalar; it yielded no diagnostic advantage over standard VIB, so we do not rely
 on it---any off-the-shelf per-input uncertainty estimate suffices for routing,

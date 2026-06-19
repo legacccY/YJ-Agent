@@ -1,0 +1,2 @@
+auc_image_level,auc_image_ci_lo,auc_image_ci_hi,auc_patient_level,auc_patient_ci_lo,auc_patient_ci_hi,delta_image_minus_patient,delta_ci_lo,delta_ci_hi,n_test_image_level,n_test_patient_level,subset_n,g5_epochs,backbone,mde_threshold,r9_verdict,r9_msg,note
+0.5789,0.4088,0.7551,0.386,0.2076,0.5646,0.193,-0.0342,0.4481,40,43,200,1,efficientnet_b0,0.02,GRAY,delta CI 宽=0.482>0.15，需全量复测,G5 定量 3-epoch EfficientNet-B0 子集; image-level AUC 预期高于 patient-level （patient split 无跨患者泄漏）; delta=image_auc-patient_auc; bootstrap CI 独立对两套 test 各自采样再差分

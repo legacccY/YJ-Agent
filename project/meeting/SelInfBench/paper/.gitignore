@@ -1,0 +1,18 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.toc
+*.synctex.gz
+# temp build logs from compile checks
+b1.log
+b2.log
+b3.log
+build1.log
+build2.log
+build3.log
+bib.log
+bibtex.log

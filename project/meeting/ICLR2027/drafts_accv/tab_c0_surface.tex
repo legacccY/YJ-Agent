@@ -1,0 +1,38 @@
+% =============================================================================
+% tab_c0_surface.tex --- §7.1 reliability x recoverability decision surface.
+% Compresses the per-dimension prose of §7.1 into a single 5-dimension table.
+% caveman OFF. All numbers copied verbatim from STORY_FRAMEWORK locked block
+%   "C0 决策面 (c0_decision_surface.csv, n=360/cell, verifier PASS)" and the
+%   existing §7.1 prose; none recomputed (red line 4). Source:
+%   results/c0_decision_surface.csv (25 rows = 5 axes x 5 severity).
+% \input from main_accv.tex / main_iclr9.tex (path relative to that file).
+% =============================================================================
+\begin{table}[!tbp]
+\centering
+\caption{\textbf{The reliability\,$\times$\,recoverability decision surface.}
+Per-dimension diagnostic AUC over a $5\times5$ degradation\,$\times$\,severity grid
+($n=360$/cell). \emph{Reliability} = AUC drop from the mildest (S1) to the most severe
+(S5) level. \emph{Recoverability} = $\Delta_{\text{rec}}=\mathrm{AUC}_{\text{enh}}-\mathrm{AUC}$
+with a bootstrap $2000$-sample $95\%$ CI; a regime is significant only where the CI
+excludes zero. Exactly one of all $25$ cells significantly \emph{hurts} (contrast at S5,
+$\alpha{=}0.19$), reported transparently; completeness stays statistically inconclusive
+(CI straddles zero, hence \emph{partially recoverable}, not irreversible). Full per-cell
+values in \cref{app:surface}.}
+\label{tab:c0-surface}
+\vspace{4pt}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lccl}
+\toprule
+Dimension & S1$\to$S5 reliability $\Delta$AUC\,$\downarrow$ & S5 severity & Recoverability regime (CI) \\
+\midrule
+Blur          & $-0.0911$ (most fragile) & $\sigma{=}3.5$       & Recovers from S3 ($+0.0634$ at S5, CI excl.\ 0) \\
+Completeness  & $-0.0516$                & crop$=0.515$        & Inconclusive ($+0.0236$ at S5, $[-0.0079,+0.0572]$) \\
+Colour shift  & $-0.0369$                & shift$=0.34$        & Recovers from S3 ($+0.0361$ at S5, CI excl.\ 0) \\
+Brightness    & $-0.0177$                & mult$=0.345$        & Recovers at S4 only ($+0.0186$, CI excl.\ 0) \\
+Contrast      & $\mathbf{-0.0153}$ (most robust) & $\alpha{=}0.19$ & \textbf{Hurts at S5} ($-0.0355$, $[-0.0783,-0.0013]$) \\
+\bottomrule
+\end{tabular}
+\vspace{-4pt}
+\end{table}

@@ -23,7 +23,18 @@
 - **R1 已提交 HPC：SLURM job 1472435 排队中**（用户 `!` 跑 _scratch_selinf_r1_upload.py 上传+sbatch；我 paramiko 被权限分类器拦，且不能自我授权=安全边界，故用户驱动 HPC）。gpu_slot 登记 QUEUED 7724eb16（对应 1472435，NEXT 弹出时只标记不重提）。
 - 论文骨架：paper/main.tex（IEEEtran）+ refs.bib（7 引用，不确定作者标 TODO）+ BUILD_MAP。**§Method（data fission 构造+校正器+Algorithm1）+§Intro+§Related 写完，编译通过 3 页 0 错误引用全解析**。Åkesson 命名订正（旧 Gustafsson/DOI109129 错名 → akesson2024random PMID39096609）。
 
-**下一步**：①R1（1472435）跑完 → 用户报 → 主线拉结果（给拉取命令）→ verifier 核三关键数（ISIC 全 test winner's curse 转正？/A1 bootstrap CI 下界>0？/A2 naive 欠覆盖+df 修回？）②据 R1 定 A3=3/3 或诚实 2/3 边界 → writer 写 §Results+§Discussion+§Conclusion+Abstract ③reviewer 对抗审 → pre-submit 三方对账+脱敏 → 投。⚠️ BIBE DDL 6-24 待用户官方核实（官网查不到）。
+**R1 部分结果（收工时 job 1472435 仍在跑 HAM sweep + bootstrap，log 直读）**：
+- 🎯 **A3 winner's curse 转 3/3 全正**（命门解）：ISIC2020 **+0.0444**（全 test 117 阳性后从旧 −0.0080 翻正，预登记守住=纠 bug 非 p-hack）/ BraTS2021 +0.0234（触顶）/ HAM10000 跑中（历史 +0.0746 强）。
+- 方向检验 g* 比 naive 更接近独立 test：ISIC/BraTS 均 OK。
+- debias_shift 脚本照印（ISIC +0.033/BraTS +0.0022）但**不当证据**（artifact，已弃）。
+- 待 HAM RESULT + bootstrap（A1 HAM CI + A2 三集真数据覆盖率）落盘。
+
+**🛑 收工状态（下窗接力）**：
+1. **R1 job 1472435 仍在 HPC 跑**（HAM sweep + bootstrap，约 1h，gpu4090n3）。gpu_slot 登记 QUEUED `7724eb16`（对应此 job，**未 release**——job 跑完才 release 清账，别误判幽灵）。
+2. 下窗第一步：`python tools/_scratch_selinf_r1_poll.py` 查完成 → 写拉取脚本拉 `results/a3_truthproxy.csv`(更新) + `a3_bootstrap_coverage.csv` + `scores_*.npz` 到本地 → `gpu_slot.py release 7724eb16`。
+3. → verifier 核三关键数（HAM winner's curse + A1 bootstrap CI 下界>0？+ A2 naive 欠覆盖+df 修回？）→ 据全量定 A3 措辞 → writer 写 §Results+§Discussion+§Conclusion+Abstract（main.tex 骨架+§Method+§Intro+§Related 已就位，编译过 3 页）→ reviewer 审 → pre-submit → 投。
+4. ⚠️ BIBE DDL 6-24 待用户官方核实（官网查不到，建议邮件 bibeconference@outlook.com）。
+5. 权限：用户已加 `Bash(python tools/_scratch_selinf_*.py)` 到 settings.local.json → 主线可端到端跑 HPC paramiko（selinf 命名脚本）。
 
 ---
 

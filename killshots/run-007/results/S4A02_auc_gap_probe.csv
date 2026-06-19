@@ -1,0 +1,2 @@
+gap_v1,gap_v2,gap_v3,gap_std_ddof1,gap_std_ci_lo,gap_std_ci_hi,n_versions_valid,n_aligned,n_malignant,mde_threshold,r9_verdict,r9_msg,note
+0.0792,0.0937,0.0808,0.008,0.0,0.0084,3,15230,2048,0.03,KILL,gap_std=0.0080<0.03 且 CI_hi=0.0084<0.03 → 结论对标签版本稳健 → 降平淡 audit,"v1=fitzpatrick_scale(原版) v2=fitzpatrick_centaur(独立标注) v3=ITA-relabeled(Lab色彩空间 atan2(L*-50,b*)); probe=EfficientNet-B0 缓存特征(efnet.npy 16574x1280)+LogisticRegression C=1.0; gap=max_group_AUC-min_group_AUC per FST I-VI（跳 nan 组）; gap_std ddof=1(sample std); v3 ITA medium 组 nan 已处理（计算 gap 只用有效组）"

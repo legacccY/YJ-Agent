@@ -1,0 +1,16 @@
+{
+  "status": "done",
+  "start_time": "2026-06-19T21:59:11",
+  "device": "cpu",
+  "smoke": true,
+  "n_total": 10015,
+  "n_nv": 6705,
+  "n_nv_with_mask": 6705,
+  "ae_train_done": true,
+  "ae_epochs": 5,
+  "n_scored": 64,
+  "end_time": "2026-06-19T21:59:22",
+  "r9_verdict": "GRAY",
+  "large_auroc": 0.5488,
+  "direction_diff": 0.0977
+}

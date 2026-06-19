@@ -67,6 +67,32 @@ A held-out set of $487$ images carries expert quality-control labels used to val
 $\qbar$ assignment; subset boundaries were checked against these labels to ensure that the LQ/Edge/HQ
 strata are perceptually separable and not artefacts of the scorer.
 
+\subsection{Paired Diagnostic Evaluation Split}\label{app:a4-split}
+The paired diagnostic evaluations of \cref{sec:exp} use a fixed train/validation/test split of the
+ISIC-2020 dermoscopic pool. The held-out paired test subset contains $n=3627$ images, of which $117$
+are melanoma-positive; the full test split comprises $6{,}626$ images. The diagnostic backbone is a
+frozen EfficientNet-B3 classifier (B3), held fixed across all evaluations so that any change in
+diagnostic AUC is attributable to the input rather than to retraining. All imagery is public and we
+run no reader study.
+
+\subsection{Degradation Parameters}\label{app:a4-degrade-params}
+The controlled degradations span five physically parameterised dimensions --- blur, brightness,
+completeness, colour shift, and contrast. The main paired-evaluation protocol applies a
+\emph{moderate} tier, while the per-dimension $\times$ per-severity decision surface of
+\cref{sec:decision-surface} sweeps each dimension across five severity levels. The exact parameters
+and the severity grid are fixed and shipped in the released configuration for reproducibility.
+
+\subsection{Metrics}\label{app:a4-metrics}
+We report restoration fidelity as per-image PSNR and SSIM, and diagnostic behaviour as the frozen-B3
+AUC, the enhancement-induced $\Delta\mathrm{AUC}$, the enhanced-vs-reference agreement rate, and the
+feature-level KL divergence controlled by the DP-Loss. Every PSNR, AUC, $\Delta\mathrm{AUC}$, and
+agreement figure carries a bootstrap $2000$-sample $95\%$ confidence interval; paired comparisons add
+a McNemar test, and latency is reported in milliseconds per image.
+
+\subsection{Baseline Fine-Tuning Protocol}\label{app:a4-ft}
+For a fair comparison, each enhancement baseline is additionally fine-tuned on the same degraded
+dermoscopy split under a matched protocol before diagnostic evaluation.\todo{R1 ft 协议}
+
 \subsection{Release and Evaluation Note}\label{app:a4-release}
 The released package provides \texttt{itb\_subsets.csv} (composition above),
 \texttt{itb\_predictions.csv} (pre-computed predictions for the nine baselines of
