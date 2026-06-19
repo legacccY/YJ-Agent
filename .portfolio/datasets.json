@@ -11,7 +11,7 @@
       "name": "Retinal Vessel Seg Collection (DRIVE+CHASE+FIVES+HRF+STARE)",
       "n": "DRIVE 40 + CHASE_DB1 28 + FIVES 800 + HRF 45 + STARE 20",
       "local": "data/vessel/ (kaggle umairinayat/retinal-vessel-segmentation-datasets 解压 1.9G; 子目录 DRIVE/(test,training) CHASE/(images,masks) FIVES/(images,masks) HRF/(images,masks,roi_masks) STARE/(images,masks) + README.md + dataset_info.json)",
-      "hpc": "传输中 (本地 sftp tar 到 /gpfs/work/bio/jiayu2403/gdn2vessel/data/; kaggle.json 传 HPC 被权限拦, 走本地中转)",
+      "hpc": "/gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/ (1.9G, sftp tar 中转已部署验通 2026-06-20: CHASE/DRIVE/FIVES/HRF/STARE; kaggle.json 传 HPC 被权限拦故走本地中转)",
       "source": "Kaggle umairinayat/retinal-vessel-segmentation-datasets (1.79GB, license=other); 原始源: DRIVE=drive.grand-challenge.org / CHASE_DB1=researchdata.kingston.ac.uk/96 (CC-BY) / FIVES=figshare 19688169 / HRF=www5.cs.fau.de/research/data/fundus-images / STARE=cecas.clemson.edu/~ahoover/stare",
       "split": "DRIVE 20/20 固定; CHASE_DB1 20/8; FIVES 600/200; HRF 15/30; STARE 20 LOO",
       "used_by": ["gdn2vessel"],
