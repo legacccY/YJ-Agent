@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const THROTTLE_MS = 30 * 60 * 1000; // 30 分钟内只提醒一次，避免同工作段连写重复噪声
+const THROTTLE_MS = 60 * 60 * 1000; // 60 分钟内只提醒一次，避免同会话同文件连写反复噪声
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -63,7 +63,7 @@ process.stdin.on('end', () => {
     `[派单门 💡软提醒] 正写实验码 ${short}\n` +
     `推荐默认：写/改实验代码派 coder(sonnet) 省主线 context；多个独立文件并行多 coder。\n` +
     `→ Task(subagent_type="coder", prompt=路径+目标+Windows规范+「不启训练」+服务哪项目§)。\n` +
-    `（已放行，不打断；小修/纯配置/你就是 coder 时直接写即可。6 分钟内同类不再提醒。）\n`
+    `（已放行，不打断；小修/纯配置/你就是 coder 时直接写即可。60 分钟内同类不再提醒。）\n`
   );
   process.exit(0);
 });
