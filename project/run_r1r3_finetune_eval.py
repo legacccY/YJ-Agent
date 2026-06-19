@@ -111,12 +111,17 @@ _FT_CONFIG = {
         # 早停: val PSNR 未提升 patience 轮 (官方未明确, 见 NOTE)
         # patch_size=128 官方; 我们 img_size=256 全图无裁 (256^2 可跑 batch=4 on 24GB)
         # NOTE: 官方 fine-tune lr 策略未在 RealDenoising.yml 明确, 降10x 是通行 ft 惯例.
+        # 显存适配 (显存约束下的等价实现, 非私自降 batch/步数):
+        #   官方有效 batch=4; Restormer 重 transformer 24GB 单卡无法装 bs=4 @256
+        #   -> micro_batch=2, accum_steps=2, 有效 batch=2×2=4 (数学等价, 梯度尺度不变)
         "optimizer": "adamw",
         "lr_ft": 3e-5,
         "weight_decay": 1e-4,
         "loss": "l1",
         "use_mixup": False,
-        "batch_size": 4,            # 256x256, Restormer-S memory: ~18GB @bs4
+        "batch_size": 4,            # 官方有效 batch (保持不变)
+        "micro_batch": 2,           # 显存适配 micro-batch; micro×accum = batch_size
+        "accum_steps": 2,           # gradient accumulation steps
         "iterations": 50000,        # ft 缩 50k (原 300k pretrain), 早停兜底
         "warmup_iters": 0,
         # TODO: researcher 未找到官方 Restormer fine-tune iterations 明确值;
@@ -127,6 +132,7 @@ _FT_CONFIG = {
         # AdamW lr=1e-3 -> ft 降 10x = 1e-4 (官方 SIDD->GoPro ft 用 1e-4)
         # PSNRLoss (官方 NAFNet 用 PSNRLoss 非 L1), no flip -> 保留 flip (官方 ft 保留)
         # batch_size=8 @256 (官方 SIDD 用 64@256; ft 降 batch)
+        # 无显存适配: NAFNet 轻量 CNN, bs=8 @256 实测无 OOM, accum_steps=1 保持不变
         "optimizer": "adamw",
         "lr_ft": 1e-4,
         "weight_decay": 0.0,        # 官方 NAFNet weight_decay=0
@@ -134,6 +140,8 @@ _FT_CONFIG = {
         "use_mixup": False,
         "use_flip": True,           # 官方 ft 保留 flip
         "batch_size": 8,
+        "micro_batch": 8,           # 无显存压力, micro=batch, accum=1 (不变)
+        "accum_steps": 1,
         "iterations": 50000,
         "warmup_iters": 0,
         # TODO: researcher 确认 NAFNet ft iterations; 50k 按惯例.
@@ -142,12 +150,17 @@ _FT_CONFIG = {
         # 官方: swz30/MIRNetv2, options/MIRNetv2_LOLv1.yml
         # Adam lr=2e-4 -> ft 降 10x = 2e-5
         # L1Loss (官方 LOL 用 L1)
+        # 显存适配 (显存约束下的等价实现, 非私自降 batch/步数):
+        #   官方有效 batch=4; MIRNetv2 较重 (80ch MRDM), OOM 风险
+        #   -> micro_batch=2, accum_steps=2, 有效 batch=2×2=4 (数学等价)
         "optimizer": "adam",
         "lr_ft": 2e-5,
         "weight_decay": 0.0,
         "loss": "l1",
         "use_mixup": False,
-        "batch_size": 4,            # MIRNetv2 80ch, 256: ~16GB @bs4
+        "batch_size": 4,            # 官方有效 batch (保持不变)
+        "micro_batch": 2,           # 显存适配 micro-batch
+        "accum_steps": 2,           # gradient accumulation steps
         "iterations": 50000,
         "warmup_iters": 0,
         # TODO: researcher 确认 MIRNetv2 ft iterations; 50k 按惯例.
@@ -157,6 +170,9 @@ _FT_CONFIG = {
         # Adam lr=2e-4 -> ft 降 10x = 2e-5
         # CharbonnierLoss eps=1e-9 (官方 SwinIR 用 Charbonnier)
         # EMA=0.999 (官方明确 ema_decay=0.999)
+        # 显存适配 (显存约束下的等价实现, 非私自降 batch/步数):
+        #   官方有效 batch=4; SwinIR 重 transformer (embed=180, depth=6×6), OOM 风险
+        #   -> micro_batch=2, accum_steps=2, 有效 batch=2×2=4 (数学等价)
         "optimizer": "adam",
         "lr_ft": 2e-5,
         "weight_decay": 0.0,
@@ -165,7 +181,9 @@ _FT_CONFIG = {
         "use_ema": True,
         "ema_decay": 0.999,
         "use_mixup": False,
-        "batch_size": 4,
+        "batch_size": 4,            # 官方有效 batch (保持不变)
+        "micro_batch": 2,           # 显存适配 micro-batch
+        "accum_steps": 2,           # gradient accumulation steps
         "iterations": 50000,
         "warmup_iters": 0,
         # TODO: researcher 确认 SwinIR colorDN ft iterations; 50k 按惯例.
@@ -175,6 +193,9 @@ _FT_CONFIG = {
         # AdamW lr=2e-4 -> ft 降 10x = 2e-5
         # CharbonnierLoss eps=1e-3 (官方 Uformer 用 Charbonnier eps=1e-3)
         # warmup 3ep (官方 Uformer warmup 3 epochs)
+        # 显存适配 (显存约束下的等价实现, 非私自降 batch/步数):
+        #   官方有效 batch=4; Uformer-B 重 transformer (LeFF+LeWin), OOM 风险
+        #   -> micro_batch=2, accum_steps=2, 有效 batch=2×2=4 (数学等价)
         "optimizer": "adamw",
         "lr_ft": 2e-5,
         "weight_decay": 1e-4,
@@ -182,7 +203,9 @@ _FT_CONFIG = {
         "charbonnier_eps": 1e-3,
         "use_ema": False,
         "use_mixup": False,
-        "batch_size": 4,
+        "batch_size": 4,            # 官方有效 batch (保持不变)
+        "micro_batch": 2,           # 显存适配 micro-batch
+        "accum_steps": 2,           # gradient accumulation steps
         "iterations": 50000,
         "warmup_iters": 3,          # 官方 warmup_epochs=3 (按 1ep≈iters/total_ep 换算)
         # TODO: researcher 确认 warmup_iters 换算为 iter 的具体值 (官方是 epoch 单位).
@@ -200,6 +223,10 @@ _FT_CONFIG = {
         # 皮肤镜无需两阶段退化 pipeline, 换我们的 EnhanceDataset paired 数据
         # GAN: 简化 UNet-based discriminator (官方用 UNetDiscriminatorSN)
         # NOTE: GAN 训练复杂度高, --no_gan 可关 GAN 只用 L1+Perceptual (对比保守 ft)
+        # 显存适配 (显存约束下的等价实现, 非私自降 batch/步数):
+        #   官方有效 batch=4; RRDBNet (23 RRDB blocks) + VGG perceptual + GAN 显存重
+        #   -> micro_batch=2, accum_steps=2, 有效 batch=2×2=4 (数学等价)
+        #   注: GAN discriminator 仍每 micro step 更新 (GAN 不做 accum, 仅 G 做 accum)
         "optimizer": "adam",
         "lr_ft": 1e-4,
         "weight_decay": 0.0,
@@ -209,7 +236,9 @@ _FT_CONFIG = {
         "use_ema": True,
         "ema_decay": 0.999,
         "use_mixup": False,
-        "batch_size": 4,
+        "batch_size": 4,            # 官方有效 batch (保持不变)
+        "micro_batch": 2,           # 显存适配 micro-batch
+        "accum_steps": 2,           # gradient accumulation steps (generator only)
         "iterations": 50000,
         "warmup_iters": 0,
         # TODO: researcher 确认 Real-ESRGAN ft iterations 明确值 (官方 yml 中的值);
@@ -232,6 +261,9 @@ _R3_DP_CONFIG = {
     "lr_ft": 3e-5,         # 与 R1 restormer ft 一致
     "weight_decay": 1e-4,
     "batch_size": 4,
+    # 显存适配 (与 R1 restormer 一致, 保证 R1/R3 唯一变量=DP-Loss, 显存策略相同)
+    "micro_batch": 2,      # 显存适配 micro-batch; micro×accum = batch_size
+    "accum_steps": 2,      # gradient accumulation steps
     "iterations": 50000,
     "warmup_iters": 0,
 }
@@ -748,12 +780,35 @@ def baseline_forward(method, net, x_low):
 def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
                     mode, cfg_entry, b3=None, dp_cfg=None, perc_fn=None,
                     disc=None, disc_opt=None, no_gan=False, warmup_iters=0,
-                    global_step=0):
-    """单 train epoch. 返回 (metrics_dict, global_step)."""
+                    global_step=0, accum_steps=1):
+    """单 train epoch, 支持 gradient accumulation.
+
+    显存适配设计 (复现零偏离, 有效 batch 不变):
+      - DataLoader 按 micro_batch 构建 (小于官方 batch_size)
+      - 每 accum_steps 个 micro-batch 合并一次 optimizer.step()
+      - loss / accum_steps 保持梯度尺度等价于全 batch 一次 forward
+      - 有效 batch = micro_batch x accum_steps = 官方 batch_size (数学等价)
+      - AMP scaler: 累积 accum_steps 步 backward, 每次 optimizer.step() 前
+        unscale_ + clip_grad, 再 scaler.step + update
+
+    返回 (metrics_dict, global_step).
+    global_step 按 optimizer.step() 次数计 (= 有效 batch 数, 与 max_iters 一致).
+    """
     net.train()
     total_loss = total_l1 = total_psnr = n = 0
     total_dp = total_hinge = 0.0
-    n_skipped = 0  # non-finite loss 被跳过的 batch 计数
+    n_skipped = 0  # non-finite accum 组被跳过的 optimizer.step() 数
+
+    # Grad accum 内部状态
+    accum_count = 0       # 当前已累积的 micro-batch 数
+    accum_loss_sum = 0.0  # 累积 loss.item() * B (for logging)
+    accum_l1_sum = 0.0
+    accum_dp_sum = 0.0
+    accum_hinge_sum = 0.0
+    accum_B = 0           # 累积样本数
+    accum_bad = False     # 本轮 accum 有非 finite loss, 整组丢弃
+
+    optimizer.zero_grad(set_to_none=True)
 
     for batch in loader:
         if len(batch) == 3:
@@ -767,28 +822,24 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
         x_ref = x_ref.to(device, non_blocking=True)
 
         # Warmup lr scaling (Uformer 官方 warmup)
+        # warmup 按 global_step (optimizer.step() 次) 计, 与原语义一致
         if warmup_iters > 0 and global_step < warmup_iters:
             scale = float(global_step + 1) / float(warmup_iters)
             for g in optimizer.param_groups:
                 g["lr"] = cfg_entry["lr_ft"] * scale
 
-        optimizer.zero_grad(set_to_none=True)
+        B = x_low.shape[0]
+        dp_val = hinge_val = 0.0
 
         with autocast(enabled=scaler is not None):
             x_enh = baseline_forward(method, net, x_low).clamp(0, 1)
 
-            # Fix-3: forward NaN 早检 — clamp 不拦 NaN, 提前 warn (实际由 loss guard 抓)
+            # Fix-3: forward NaN 早检
             if not torch.isfinite(x_enh).all():
-                print(f"[warn] non-finite x_enh at step={global_step}, skip batch")
+                print(f"[warn] non-finite x_enh at step={global_step}, micro={accum_count}")
 
             # --- Base loss ---
-            if isinstance(criterion, PSNRLoss):
-                base_loss = criterion(x_enh, x_ref)
-            elif isinstance(criterion, CharbonnierLoss):
-                base_loss = criterion(x_enh, x_ref)
-            else:
-                base_loss = criterion(x_enh, x_ref)  # L1
-
+            base_loss = criterion(x_enh, x_ref)
             loss = base_loss
 
             # --- Perceptual (Real-ESRGAN) ---
@@ -805,7 +856,6 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
                 loss = loss + cfg_entry.get("lambda_gan", 0.1) * g_loss
 
             # --- DP-Loss (R3 only) ---
-            dp_val = hinge_val = 0.0
             if mode == "r3" and b3 is not None and dp_cfg is not None:
                 dp, hinge = dp_feat_loss(b3, x_enh, x_ref, y,
                                          dp_cfg.get("hinge_clamp", 3.0))
@@ -815,63 +865,100 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
                         + dp_cfg.get("lambda_dp", 0.019) * dp
                         + dp_cfg.get("lambda_hinge", 0.04) * hinge)
 
-        # Fix-1: non-finite loss guard — nan/inf loss 绝不写进权重
-        if not torch.isfinite(loss):
-            print(f"[warn] non-finite loss={loss.item()} at step={global_step}, skip batch")
-            optimizer.zero_grad(set_to_none=True)
-            n_skipped += 1
-            global_step += 1
-            continue
+            # Fix-1: non-finite loss guard — 标记本轮 accum 组为 bad
+            if not torch.isfinite(loss):
+                print(f"[warn] non-finite loss={loss.item()} at step={global_step}, "
+                      f"micro={accum_count}, mark accum group bad")
+                accum_bad = True
 
-        if scaler is not None:
-            scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
-            nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-            optimizer.step()
+            # Grad accum: loss / accum_steps 保持梯度尺度与全 batch 等价
+            # 数学等价: sum_{i=1}^{accum_steps}(loss_i/accum_steps) == mean_over_full_batch
+            loss_scaled = loss / accum_steps
 
-        # --- Discriminator update (Real-ESRGAN, after generator step) ---
-        if disc is not None and disc_opt is not None and not no_gan:
+        # Backward (AMP scaler 累积, 不 step)
+        if not accum_bad:
+            if scaler is not None:
+                scaler.scale(loss_scaled).backward()
+            else:
+                loss_scaled.backward()
+
+        # --- Discriminator update (Real-ESRGAN): 每 micro-step 都更新 D ---
+        # GAN discriminator 不做 accum (业界惯例: D 每步跟 G 同频更新, 保持判别力)
+        if disc is not None and disc_opt is not None and not no_gan and not accum_bad:
             disc_opt.zero_grad(set_to_none=True)
             real_pred = disc(x_ref.detach())
-            fake_pred = disc(x_enh.detach())
+            fake_pred_d = disc(x_enh.detach())
             d_loss = (F.binary_cross_entropy_with_logits(real_pred, torch.ones_like(real_pred))
-                      + F.binary_cross_entropy_with_logits(fake_pred, torch.zeros_like(fake_pred))) * 0.5
+                      + F.binary_cross_entropy_with_logits(fake_pred_d, torch.zeros_like(fake_pred_d))) * 0.5
             d_loss.backward()
             disc_opt.step()
 
-        B = x_low.shape[0]
-        total_loss += loss.item() * B
-        total_l1 += base_loss.item() * B
-        total_dp += dp_val * B
-        total_hinge += hinge_val * B
-        # PSNR (batch aggregate, monitoring only)
+        # PSNR (per micro-batch monitoring, 不受 accum 影响)
         with torch.no_grad():
             mse = F.mse_loss(x_enh.detach().float(), x_ref.float()).item()
             total_psnr += (10 * np.log10(1.0 / (mse + 1e-8))) * B
-        n += B
-        global_step += 1
 
-        # Heartbeat: per-200-iter 活信号 (配 python -u 看实时, 防瞎跑一小时无输出)
-        if global_step % 200 == 0:
-            with torch.no_grad():
-                _hb_psnr = 10 * np.log10(1.0 / (F.mse_loss(
-                    x_enh.detach().float(), x_ref.float()).item() + 1e-8))
-            print(f"[hb] step={global_step:06d}  loss={loss.item():.4f}  "
-                  f"train_PSNR~{_hb_psnr:.2f}  skipped={n_skipped}", flush=True)
+        # Accumulate logging values (for this accum group)
+        accum_loss_sum += loss.item() * B
+        accum_l1_sum += base_loss.item() * B
+        accum_dp_sum += dp_val * B
+        accum_hinge_sum += hinge_val * B
+        accum_B += B
+        accum_count += 1
+
+        # --- Optimizer step every accum_steps micro-batches ---
+        if accum_count >= accum_steps:
+            if accum_bad:
+                # 本 accum 组有 non-finite loss, 整组丢弃 (不写进权重)
+                print(f"[warn] accum group at step={global_step} bad, discard optimizer.step()")
+                optimizer.zero_grad(set_to_none=True)
+                if scaler is not None:
+                    scaler.update()  # 维持 scaler 内部状态
+                n_skipped += 1
+            else:
+                if scaler is not None:
+                    scaler.unscale_(optimizer)
+                    nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                    optimizer.step()
+                # 写入 epoch 累计
+                total_loss += accum_loss_sum
+                total_l1 += accum_l1_sum
+                total_dp += accum_dp_sum
+                total_hinge += accum_hinge_sum
+                n += accum_B
+
+            # Reset accum state
+            optimizer.zero_grad(set_to_none=True)
+            accum_count = 0
+            accum_loss_sum = accum_l1_sum = accum_dp_sum = accum_hinge_sum = 0.0
+            accum_B = 0
+            accum_bad = False
+            global_step += 1  # global_step 按 optimizer.step() 计 (对齐 max_iters 语义)
+
+            # Heartbeat: per-200 optimizer-step 活信号
+            if global_step % 200 == 0:
+                print(f"[hb] step={global_step:06d}  loss~{accum_loss_sum/(max(accum_B,1)):.4f}  "
+                      f"skipped={n_skipped}", flush=True)
+
+    # 末尾 partial accum group (epoch 结束时 micro-count 不足 accum_steps)
+    # 丢弃不整 group, 保持梯度尺度一致; 最多丢 accum_steps-1 个 micro-batch
+    if accum_count > 0:
+        optimizer.zero_grad(set_to_none=True)
+        if scaler is not None:
+            scaler.update()  # 维持 scaler 状态
 
     safe_n = max(n, 1)  # 防全 skip 时除 0
     return {
         "loss": total_loss / safe_n,
         "l1": total_l1 / safe_n,
-        "psnr_train": total_psnr / safe_n,
+        "psnr_train": total_psnr / max(n + accum_B, 1),  # psnr 含 partial group
         "dp": total_dp / safe_n,
         "hinge": total_hinge / safe_n,
-        "skipped": n_skipped,  # non-finite loss 被跳过的 batch 数
+        "skipped": n_skipped,  # non-finite accum 组被跳过的 optimizer.step() 数
     }, global_step
 
 
@@ -943,6 +1030,18 @@ def finetune(method, net, train_loader, val_loader, device, cfg_entry,
         warmup_iters = warmup_iters * approx_train_len
         print(f"[warmup] {cfg_entry.get('warmup_iters')} ep -> {warmup_iters} iters")
 
+    # Grad accum: 从 cfg_entry 读, 默认 1 (无 accum, 向后兼容)
+    # accum_steps=1 时等同原始逻辑, 不改行为
+    # smoke 时强制 accum_steps=1 (smoke dataset 只有 2 样本, 无需 accum, 加速 smoke)
+    accum_steps = 1 if smoke else cfg_entry.get("accum_steps", 1)
+    micro_batch = cfg_entry.get("micro_batch", cfg_entry["batch_size"])
+    if accum_steps > 1:
+        print(f"[accum] micro_batch={micro_batch}  accum_steps={accum_steps}  "
+              f"有效 batch={micro_batch * accum_steps}  (官方 batch_size={cfg_entry['batch_size']}, "
+              f"显存适配等价实现, 非私自降 batch/步数)")
+        assert micro_batch * accum_steps == cfg_entry["batch_size"], (
+            f"有效 batch 不匹配: {micro_batch}*{accum_steps} != {cfg_entry['batch_size']}")
+
     best_psnr = -1.0
     best_ckpt = None
     no_improve = 0
@@ -951,7 +1050,7 @@ def finetune(method, net, train_loader, val_loader, device, cfg_entry,
     total_skipped = 0  # Fix-6: smoke assert 用
 
     print(f"[ft] start  method={method}  mode={mode}  max_iters={max_iters}  "
-          f"lr={cfg_entry['lr_ft']}  amp={amp}  smoke={smoke}")
+          f"lr={cfg_entry['lr_ft']}  amp={amp}  smoke={smoke}  accum_steps={accum_steps}")
 
     while global_step < max_iters:
         ep += 1
@@ -961,6 +1060,7 @@ def finetune(method, net, train_loader, val_loader, device, cfg_entry,
             mode=mode, cfg_entry=cfg_entry, b3=b3, dp_cfg=dp_cfg,
             perc_fn=perc_fn, disc=disc, disc_opt=disc_opt, no_gan=no_gan,
             warmup_iters=warmup_iters, global_step=global_step,
+            accum_steps=accum_steps,
         )
         if ema:
             ema.update()
@@ -1355,7 +1455,8 @@ def main():
         cfg_entry = dict(_FT_CONFIG[method])   # copy
         cfg_entry.update({k: v for k, v in _R3_DP_CONFIG.items()
                           if k in ("optimizer", "lr_ft", "weight_decay",
-                                   "batch_size", "iterations", "warmup_iters", "loss")})
+                                   "batch_size", "micro_batch", "accum_steps",
+                                   "iterations", "warmup_iters", "loss")})
         method_tag = f"{method}"
         display_name = f"{method}_dpgraft_r3"
 
@@ -1386,11 +1487,13 @@ def main():
     else:
         b3 = load_b3(paths["b3_ckpt"], device)
 
-    # DataLoaders
-    batch_size = 1 if args.smoke else cfg_entry["batch_size"]
+    # DataLoaders — 用 micro_batch (显存适配), accum_steps 在 finetune() 内处理
+    # smoke 时 batch_size=1; 正常时用 micro_batch (若未设则 fallback 到 batch_size)
+    micro_batch = cfg_entry.get("micro_batch", cfg_entry["batch_size"])
+    dl_batch = 1 if args.smoke else micro_batch
     train_loader, val_loader = build_dataloaders(
         paths=paths,
-        batch_size=batch_size,
+        batch_size=dl_batch,
         num_workers=0 if args.smoke else args.num_workers,
         pin_memory=args.pin_memory and not args.smoke,
         seed=args.seed,
