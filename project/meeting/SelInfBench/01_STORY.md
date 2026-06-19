@@ -45,7 +45,7 @@
 ## 报告习惯文献支撑（K3 已签字关闭，researcher 核，置信 85%）
 
 - Koopmans et al. 2025, "False Promises in Medical Imaging AI? Assessing Validity of Outperformance Claims", arXiv:2505.04720（MICCAI 2023 全量 >80% 报最优、仅 10-13% 做统计检验）。
-- Gustafsson et al. 2024, "Random effects during training: Implications for deep learning-based medical image segmentation", Computers in Biology and Medicine, DOI:10.1016/j.compbiomed.2024.109129（nnU-Net 50-seed，best seed 显著优于 0-76% 其他 seed = seed 选择实测制造统计显著高估）。
+- Åkesson, Töger, Heiberg 2024, "Random effects during training: Implications for deep learning-based medical image segmentation", Computers in Biology and Medicine, 180:108944, PMID 39096609（nnU-Net 50-seed，best seed 显著优于 0-76% 其他 seed = seed 选择实测制造统计显著高估）。**2026-06-19 订正**：旧记「Gustafsson 2024 / DOI 109129」系同一篇错名错号，researcher 核权威引用为 Åkesson（refs.bib 键 akesson2024random）。
 - Sculley et al. 2018, "Winner's Curse? On Pace, Progress, and Empirical Rigor", ICLR 2018 Workshop。
 - Renard et al. 2020, "Variability and reproducibility in deep learning for medical image segmentation", Scientific Reports, PMC7426407（25% 论文不报方差）。
 - caveat：未找到「sweep 后取 max 报告」的精确比率统计，证据多为「不报 std + 不做检验」的侧证——措辞写「主流报告习惯与 winner's curse 一致」，不写「已普查证实取 max」。

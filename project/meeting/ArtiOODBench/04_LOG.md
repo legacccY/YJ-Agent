@@ -31,7 +31,15 @@
 
 **资产**：results/l3_*_heldout.csv 全落 + sanity_samesource_vim.csv（C0-C3）+ analyst 3 图（fig_heldout_insample_delta / fig_heldout_vim_vs_artifact / fig_heldout_heatmap_13x7）。verifier 零 drift。
 
-**待办**：①writer 重写 STORY/ACCEPTANCE 承重口径(留全痕)+05_DRAFT_core.md 失效段 → 新诚实 headline ②skeptic 红队新框架 ③（增益，低优先）补 a1_artifact_auroc 到 7 对全覆盖把 source 距离相关 n=4→7 ④sanity csv note 列含 ASCII 逗号致 resid_auroc 解析偏移，cosmetic 待修。
+**待办**：①writer 重写 STORY/ACCEPTANCE 承重口径(留全痕)+05_DRAFT_core.md 失效段 → 新诚实 headline【✅ writer 已落 v6 三贡献框架】②skeptic 红队新框架【✅ 见下】③（增益，低优先）补 a1_artifact_auroc 到 7 对全覆盖把 source 距离相关 n=4→7 ④sanity csv note 列含 ASCII 逗号致 resid_auroc 解析偏移，cosmetic 待修。
+
+**skeptic v6 红队（1🔴 致命，联网坐实，到拍板点）**：
+- **🔴 致命-1（A-7 framing 撞已知标准协议）**：ViM 原论文（CVPR2022 arXiv:2203.10807 白纸黑字「principal space P 与 α 由 training set 事前确定」）+ OpenOOD v1.5 协议本就强制 **fit-on-train / eval-on-held-out**。即 held-out 不是本文发现的处方，是 ViM/OpenOOD **原始标准协议**；v5 的 in-sample 跑法（feats_test 含 ID 半）是**违反既有标准 = 已知的 estimation leakage 误用**。→ A-7 当前「发现投影类要 held-out 评测陷阱」表述会被审稿人实锤反咬「你们自己跑错又自己改对，非 contribution」。**出路（落稿前必做）**：A-7 claim 收窄为「量化已知 estimation/in-sample leakage 在 **N_id<D underdetermined 跨源 medical 子空间**下被放大到 +0.223 且**精确伪装成完美 source leakage**（骗过投稿前自审）的 cautionary 证据 + 放大机制」——这个 N_id<D 放大角度查下来无人专门发表、有新意，但**绝不能 claim「我们发现 held-out 是对的」**；Related Work 必须正面引 ViM 原文 train-fit 设定 + leakage taxonomy(arXiv:2604.04199)。
+- **🟠 改-2（必做，落稿前）**：source 距离相关 ρ=1.0 仅 n=4，4 点完美单调偶然概率≈8.3% 不算小→补 a1 到 7 对(n=4→7)，「单因子」改「主要因子之一」。
+- **🟠 改-3**：§Discussion 七步时间线从「我们犯两次错」reframe 成「工件能自我证伪=可信度正面证据」+ 前置强调 A-1/A-2 独立于被推翻的几何打分链（artifact-only 手工 AUROC 不经 ViM 子空间，不受 in-sample 灌水）。
+- **🟠 改-1**：headline 三 bullet 改单一叙事弧（污染物→如何伪装→去伪处方）。
+- **🟢 残-2**：§Method 补「N_id=500 是评估子集规模、非 ViM 推荐全训练集（原文 200k）」诚实说明。
+- **skeptic 上交用户**：A-7 收窄后是否仍够当 D&B 主贡献 = venue 适配判断（skeptic 置信中，D&B 对 cautionary/工件类宽容、收窄后配 A-1/A-2/A-6 应够边界带，但建议用户复核）。
 
 ---
 

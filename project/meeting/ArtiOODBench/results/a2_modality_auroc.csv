@@ -1,4 +1,4 @@
 modality,n_pairs,pairs,auroc_mean_of_pairs,auroc_min,auroc_max,A2_pass
-CXR,2,NIH_vs_VinDr|NIH_vs_RSNA_normal,0.7682,0.6401,0.8963,0
+CXR,3,NIH_vs_VinDr|NIH_vs_RSNA_normal|VinDr_CXR_vs_RSNA_normal,0.8146,0.6401,0.9074,0
 BrainMRI,1,BraTS_normal_vs_BrainTumor_normal,0.9997,0.9997,0.9997,1
-Dermoscopy,1,HAM_NV_vs_ISIC2020_benign,0.8157,0.8157,0.8157,1
+Dermoscopy,3,HAM_NV_vs_ISIC2020_benign|HAM_NV_vs_Fitzpatrick_NV|ISIC2020_benign_vs_PAD_UFES_NEV,0.8707,0.8055,0.991,1

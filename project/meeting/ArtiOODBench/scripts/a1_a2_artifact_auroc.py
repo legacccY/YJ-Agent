@@ -13,11 +13,14 @@ lever: L1 artifact 量化
 所有图像统一 resize 224² 灰度再提特征（分辨率红线）。
 
 【数据集对（cross-source 跨机构，对齐判据 A-1/A-2）】
-4 个 cross-source 对（主线，计入 A-1/A-2）:
-  P1 CXR:       NIH ChestX-ray14 (ID)  vs VinDr-CXR (OOD)
-  P2 CXR:       NIH ChestX-ray14 (ID)  vs RSNA_normal (OOD, medianomaly)
-  P3 BrainMRI:  BraTS_normal (ID)      vs BrainTumor_normal (OOD, medianomaly)
-  P4 Derm:      HAM_NV (ID)            vs ISIC2020_benign (OOD)
+7 个 cross-source 对（主线，计入 A-1/A-2）:
+  P1  CXR:       NIH ChestX-ray14 (ID)  vs VinDr-CXR (OOD)
+  P2  CXR:       NIH ChestX-ray14 (ID)  vs RSNA_normal (OOD, medianomaly)
+  P2b CXR:       VinDr_CXR (ID)         vs RSNA_normal (OOD)
+  P3  BrainMRI:  BraTS_normal (ID)      vs BrainTumor_normal (OOD, medianomaly)
+  P4  Derm:      HAM_NV (ID)            vs ISIC2020_benign (OOD)
+  P4b Derm:      HAM_NV (ID)            vs Fitzpatrick_NV (OOD, nevus* ~485 张)
+  P4c Derm:      ISIC2020_benign (ID)   vs PAD_UFES_NEV (OOD, smartphone, 244 张)
 
 Within-source controls（仅入 appendix，subset='within_source_control'）:
   W1 BrainMRI:  BraTS_normal (ID)      vs BraTS_tumor
@@ -63,6 +66,14 @@ RSNA_DIR = Path("D:/YJ-Agent/data/external/medianomaly/RSNA")
 BRAINTUMOR_DIR = Path("D:/YJ-Agent/data/external/medianomaly/BrainTumor")
 ISIC2020_GT_CSV = Path("D:/YJ-Agent/data/raw/isic2020/ISIC_2020_Training_GroundTruth_v2.csv")
 ISIC2020_IMG_DIR = Path("D:/YJ-Agent/data/raw/isic2020/train-image/image")
+# P4b: Fitzpatrick17k NV（cross-source，与 HAM_NV 配对）
+FITZPATRICK_DIR = Path("D:/YJ-Agent/data/raw/fitzpatrick17k")
+FITZPATRICK_IMG_DIR = FITZPATRICK_DIR / "images"
+FITZPATRICK_CSV = FITZPATRICK_DIR / "fitzpatrick17k.csv"
+# P4c: PAD-UFES（cross-source smartphone derm，与 ISIC2020_benign 配对）
+PAD_UFES_DIR = Path("D:/YJ-Agent/data/external/pad_ufes")
+PAD_UFES_IMG_DIR = PAD_UFES_DIR / "PAD-UFES-20" / "Dataset"
+PAD_UFES_META_CSV = PAD_UFES_DIR / "metadata.csv"
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "results"
 OUT_A1 = OUT_DIR / "a1_artifact_auroc.csv"
@@ -383,6 +394,50 @@ def collect_isic2020_benign() -> list:
     return paths
 
 
+def collect_vindr_cxr() -> list:
+    """VinDr-CXR 全量（test + train 子目录），用于 P2b ID 侧。"""
+    return (_glob_images(VINDR_DIR / "test") +
+            _glob_images(VINDR_DIR / "train"))
+
+
+def collect_fitzpatrick_nv() -> list:
+    """Fitzpatrick17k nevus 子集（label 含 'nevus'，~485 张），P4b OOD。
+    路径逻辑直接照搬 extract_frozen_feats.py L336-349。"""
+    if not FITZPATRICK_CSV.exists():
+        print(f"[WARN] fitzpatrick17k CSV not found: {FITZPATRICK_CSV}", file=sys.stderr)
+        return []
+    paths = []
+    with open(FITZPATRICK_CSV, "r", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            label_lower = row.get("label", "").lower()
+            if "nevus" in label_lower:
+                md5 = row.get("md5hash", "").strip()
+                p = FITZPATRICK_IMG_DIR / f"{md5}.jpg"
+                if p.exists():
+                    paths.append(p)
+    if not paths:
+        print(f"[WARN] Fitzpatrick_NV: 0 images resolved from {FITZPATRICK_CSV}", file=sys.stderr)
+    return paths
+
+
+def collect_pad_ufes_nev() -> list:
+    """PAD-UFES-20 diagnostic==NEV（痣），244 张全量，P4c OOD。
+    路径逻辑直接照搬 extract_frozen_feats.py L353-374。"""
+    if not PAD_UFES_META_CSV.exists():
+        print(f"[WARN] PAD-UFES metadata CSV not found: {PAD_UFES_META_CSV}", file=sys.stderr)
+        return []
+    paths = []
+    with open(PAD_UFES_META_CSV, "r", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row.get("diagnostic", "").strip() == "NEV":
+                p = PAD_UFES_IMG_DIR / row.get("img_id", "").strip()
+                if p.exists():
+                    paths.append(p)
+    if not paths:
+        print(f"[WARN] PAD_UFES_NEV: 0 images found in {PAD_UFES_IMG_DIR}", file=sys.stderr)
+    return paths
+
+
 def collect_rsna_pneumonia() -> list:
     """RSNA medianomaly abnormal subset (label '1' = pneumonia)."""
     import json
@@ -544,6 +599,67 @@ def main(smoke_n: int = 0):
                     (r["pair"], r["auroc_mean"]))
     else:
         print("  [SKIP] P4 missing data")
+
+    # ================================================================
+    # Cross-source P2b: CXR -- VinDr_CXR(ID) vs RSNA_normal(OOD)
+    # ================================================================
+    print("\n[P2b] CXR cross-source: VinDr_CXR(ID) vs RSNA_normal(OOD)")
+    vindr_files = collect_vindr_cxr()
+    if not vindr_files:
+        print(f"  [WARN] VinDr_CXR 0 images: {VINDR_DIR}", file=sys.stderr)
+    # rsna_normal_files already collected above for P2
+    if vindr_files and rsna_normal_files:
+        X_vindr_id = load_images(vindr_files, "VinDr_CXR", n_sample=n)
+        X_rsna_p2b = load_images(rsna_normal_files, "RSNA_normal_p2b", n_sample=n)
+        rows_p2b = compute_pair_auroc(X_vindr_id, X_rsna_p2b, "VinDr_CXR_vs_RSNA_normal")
+        all_a1_rows.extend(rows_p2b)
+        for r in rows_p2b:
+            if r["feature_group"] == "all_43dim":
+                modality_records.setdefault("CXR", []).append(
+                    (r["pair"], r["auroc_mean"]))
+    else:
+        print(f"  [SKIP] P2b (vindr={len(vindr_files)} rsna_normal={len(rsna_normal_files)})")
+
+    # ================================================================
+    # Cross-source P4b: Derm -- HAM_NV(ID) vs Fitzpatrick_NV(OOD)
+    # ================================================================
+    print("\n[P4b] Derm cross-source: HAM_NV(ID) vs Fitzpatrick_NV(OOD)")
+    fitz_nv_files = collect_fitzpatrick_nv()
+    if not fitz_nv_files:
+        print(f"  [WARN] Fitzpatrick_NV 0 images: {FITZPATRICK_IMG_DIR}", file=sys.stderr)
+    # ham_nv_files already collected above for P4
+    if ham_nv_files and fitz_nv_files:
+        X_nv_p4b = load_images(ham_nv_files, "HAM_NV_p4b", n_sample=n)
+        X_fitz = load_images(fitz_nv_files, "Fitzpatrick_NV", n_sample=n)
+        rows_p4b = compute_pair_auroc(X_nv_p4b, X_fitz, "HAM_NV_vs_Fitzpatrick_NV")
+        all_a1_rows.extend(rows_p4b)
+        for r in rows_p4b:
+            if r["feature_group"] == "all_43dim":
+                modality_records.setdefault("Dermoscopy", []).append(
+                    (r["pair"], r["auroc_mean"]))
+    else:
+        print(f"  [SKIP] P4b (ham_nv={len(ham_nv_files)} fitz_nv={len(fitz_nv_files)})")
+
+    # ================================================================
+    # Cross-source P4c: Derm -- ISIC2020_benign(ID) vs PAD_UFES_NEV(OOD, 244 全量)
+    # ================================================================
+    print("\n[P4c] Derm cross-source: ISIC2020_benign(ID) vs PAD_UFES_NEV(OOD)")
+    pad_nev_files = collect_pad_ufes_nev()
+    if not pad_nev_files:
+        print(f"  [WARN] PAD_UFES_NEV 0 images: {PAD_UFES_IMG_DIR}", file=sys.stderr)
+    # isic_benign_files already collected above for P4
+    if isic_benign_files and pad_nev_files:
+        X_isic_p4c = load_images(isic_benign_files, "ISIC2020_benign_p4c", n_sample=n)
+        # PAD-UFES_NEV 仅 244 张全量，n_sample=None 不截断
+        X_pad = load_images(pad_nev_files, "PAD_UFES_NEV", n_sample=None)
+        rows_p4c = compute_pair_auroc(X_isic_p4c, X_pad, "ISIC2020_benign_vs_PAD_UFES_NEV")
+        all_a1_rows.extend(rows_p4c)
+        for r in rows_p4c:
+            if r["feature_group"] == "all_43dim":
+                modality_records.setdefault("Dermoscopy", []).append(
+                    (r["pair"], r["auroc_mean"]))
+    else:
+        print(f"  [SKIP] P4c (isic_benign={len(isic_benign_files)} pad_nev={len(pad_nev_files)})")
 
     # ================================================================
     # Within-source controls (appendix only, subset='within_source_control')

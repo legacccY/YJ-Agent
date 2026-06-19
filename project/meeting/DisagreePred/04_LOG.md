@@ -4,6 +4,26 @@
 
 ---
 
+## Entry 7 — 🔴 KILL-1 在 289 cluster 硬 FAIL（2026-06-19，gating 证伪，待拍板封存）
+
+**核心 claim「分歧可从图像预测」在功效足的 289 cluster 数据上崩塌——KILL-1 FAIL，且 95% CI 整条压在 0.50 以下。**
+
+**先解决盲区再重跑（见 Entry 6 末 + 本 entry）**：上一轮 HPC job 1471101 跑 54min stdout 全缓冲看不到 fold/perm 进度，无法辨 hang/慢，用户拍「停+反思+杀+加心跳/无缓冲+2rep 烟测+重跑」。coder 给 kill1_baseline.py + a2_seg_uq.py 加 `state.json` 心跳 + `line_buffering`/`flush`/submit `python -u`+`PYTHONUNBUFFERED`（**零改训练逻辑/超参/foreach=False**）。本地 CPU 烟测验心跳真落盘。重传 HPC + 新 submit。
+
+**烟测意外出真 gating 答案**：HPC 烟测 job 1471647（`--n_perm 2`，但**无 --smoke 截断 = 完整 289 cluster 真 CV**）exit0 + 心跳 done + 产出全落。perm 仅 2 rep（null 无效），但 **CV AUROC 点估计 + bootstrap CI 是真值**：
+- **cv_pooled_auroc = 0.431317**（n=289 cluster / 119 患者，seed 0，patient-level StratifiedGroupKFold 5 折）
+- **95% CI = [0.370409, 0.490820]** ← **CI 上界 0.4908 < 0.50**，整条 CI 低于随机
+- per-fold AUROC = 0.4938 / 0.4127 / 0.5231 / 0.3582 / 0.4181（全 ≤0.52）
+- verdict = FAIL（Bash 核 `results/kill1_cv_auroc.csv` summary 行 + `kill1_cv_summary.json`，红线达标）
+
+**判决**：触发 ACCEPTANCE **KILL-1**（AUROC≤0.60→核心 claim 死，砍）+ **KILL-3**（分歧纯随机不可从图像预测）。**75-scan 的 0.7094 PASS 是小样本假阳**——Entry 5 大编队复核已警「脆，可信度 6/10，CI 下界 0.6031 擦边，top-10 患者贡献 50.7% cluster，fold 方差 0.44~0.84」，翻倍数据（75→150 scan / 75→289 cluster）后崩到低于随机 = 经典回归均值，无真信号。退路档 MedIA/UNSURE/D&B（A1+A2+A3）全押 A1=KILL-1，A1 死 → 退路同灭。**不跑 perm1000**（AUROC 已低于随机，无信号可测，perm 2rep p=1.0 已印证）。gpu_slot c3bdb04c 已 release。
+
+**盲区根治达成（本轮硬资产）**：state.json 心跳 + 无缓冲固化进 kill1/a2 脚本 + 新 submit 模板（`python -u`+`PYTHONUNBUFFERED`+心跳轮询替代盯缓冲 .out）。fmreg 同款「stdout 缓冲看不到 epoch」摩擦 → 该让 optimizer 固化进全项目 submit 模板 + 训练脚本规范。
+
+**🛑 拍板点（stage-gate FAIL，默认不放行写诚实回退）**：KILL-1 gating 证伪 = 项目核心 claim 死。待用户拍板封存 / 多 seed 复核 / pivot framing。**未拍板前不写「砍」入 registry，不动 STORY headline。**
+
+---
+
 ## Entry 6 — 150 scan parse 落地 + A2 管线实现 + KILL-1 rerun 排队（2026-06-19，闪退恢复后大编队续）
 
 闪退恢复，续 Entry 5 大编队。本窗 = DisagreePred（除 ArtiOODBench 外新立项）。

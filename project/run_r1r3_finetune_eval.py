@@ -66,6 +66,7 @@ Windows/HPC 规范:
 import argparse
 import importlib
 import json
+import math
 import os
 import sys
 import time
@@ -315,6 +316,9 @@ class PSNRLoss(nn.Module):
         self.toY = toY
 
     def forward(self, pred, target):
+        # fp32 安全: 上浮后 1e-8 不会在 fp16 下 underflow 成 0 -> log10(0)=-inf
+        pred = pred.float()
+        target = target.float()
         # -10 * log10(MSE) per sample, 均值取负 (minimize = maximize PSNR)
         mse = F.mse_loss(pred, target, reduction="none").mean(dim=[1, 2, 3])
         psnr_val = -10.0 * torch.log10(mse.clamp(min=1e-8))
@@ -329,6 +333,9 @@ class CharbonnierLoss(nn.Module):
         self.eps = eps
 
     def forward(self, pred, target):
+        # fp32 安全: fp16 下 eps*eps 可能 underflow, 上浮后安全
+        pred = pred.float()
+        target = target.float()
         diff = pred - target
         return torch.sqrt(diff * diff + self.eps * self.eps).mean()
 
@@ -744,6 +751,7 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
     net.train()
     total_loss = total_l1 = total_psnr = n = 0
     total_dp = total_hinge = 0.0
+    n_skipped = 0  # non-finite loss 被跳过的 batch 计数
 
     for batch in loader:
         if len(batch) == 3:
@@ -766,6 +774,10 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
 
         with autocast(enabled=scaler is not None):
             x_enh = baseline_forward(method, net, x_low).clamp(0, 1)
+
+            # Fix-3: forward NaN 早检 — clamp 不拦 NaN, 提前 warn (实际由 loss guard 抓)
+            if not torch.isfinite(x_enh).all():
+                print(f"[warn] non-finite x_enh at step={global_step}, skip batch")
 
             # --- Base loss ---
             if isinstance(criterion, PSNRLoss):
@@ -801,6 +813,14 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
                         + dp_cfg.get("lambda_dp", 0.019) * dp
                         + dp_cfg.get("lambda_hinge", 0.04) * hinge)
 
+        # Fix-1: non-finite loss guard — nan/inf loss 绝不写进权重
+        if not torch.isfinite(loss):
+            print(f"[warn] non-finite loss={loss.item()} at step={global_step}, skip batch")
+            optimizer.zero_grad(set_to_none=True)
+            n_skipped += 1
+            global_step += 1
+            continue
+
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
@@ -834,12 +854,14 @@ def run_train_epoch(method, net, loader, criterion, optimizer, scaler, device,
         n += B
         global_step += 1
 
+    safe_n = max(n, 1)  # 防全 skip 时除 0
     return {
-        "loss": total_loss / n,
-        "l1": total_l1 / n,
-        "psnr_train": total_psnr / n,
-        "dp": total_dp / n,
-        "hinge": total_hinge / n,
+        "loss": total_loss / safe_n,
+        "l1": total_l1 / safe_n,
+        "psnr_train": total_psnr / safe_n,
+        "dp": total_dp / safe_n,
+        "hinge": total_hinge / safe_n,
+        "skipped": n_skipped,  # non-finite loss 被跳过的 batch 数
     }, global_step
 
 
@@ -850,16 +872,28 @@ def run_val_epoch(method, net, loader, device):
     """验证 PSNR/SSIM (per-image, monitoring). 早停依据."""
     net.eval()
     psnr_list, ssim_list = [], []
+    n_bad = 0
+    total_imgs = 0
     for batch in loader:
         x_low, x_ref = batch[0], batch[1]
         x_low = x_low.to(device)
         x_ref = x_ref.to(device)
         x_enh = baseline_forward(method, net, x_low).clamp(0, 1)
         for i in range(x_enh.shape[0]):
+            total_imgs += 1
+            # Fix-4: 非 finite 图跳过, 不 cast 成 uint8 垃圾污染 PSNR
+            if not torch.isfinite(x_enh[i]).all():
+                n_bad += 1
+                continue
             r = (x_ref[i].cpu().permute(1, 2, 0).numpy() * 255).astype(np.uint8)
             e = (x_enh[i].cpu().permute(1, 2, 0).numpy() * 255).clip(0, 255).astype(np.uint8)
             psnr_list.append(peak_signal_noise_ratio(r, e, data_range=255))
             ssim_list.append(structural_similarity(r, e, channel_axis=2, data_range=255))
+    if n_bad > 0:
+        print(f"[val] n_bad={n_bad}/{total_imgs} non-finite enhanced images")
+    if len(psnr_list) == 0:
+        # 全坏: 返回 nan 触发 best-save sanity 闸, 不存假 ckpt
+        return float("nan"), float("nan")
     return float(np.mean(psnr_list)), float(np.mean(ssim_list))
 
 
@@ -888,7 +922,8 @@ def finetune(method, net, train_loader, val_loader, device, cfg_entry,
                                         lr=cfg_entry["lr_ft"], weight_decay=0.0)
     criterion = build_criterion(cfg_entry, no_gan=no_gan)
 
-    max_iters = 1 if smoke else cfg_entry["iterations"]
+    # Fix-6: smoke 改 30 步 (fp32) 才能暴露 nan 发散; 原 1 步不足以触发雪崩
+    max_iters = 30 if smoke else cfg_entry["iterations"]
     warmup_iters = cfg_entry.get("warmup_iters", 0)
     # 换算 warmup: Uformer 官方单位是 epoch, 此处已在 _FT_CONFIG 里留了 TODO
     # 如果 warmup_iters 很小 (<5) 认为是 epoch 数, 换算为 iters
@@ -903,6 +938,7 @@ def finetune(method, net, train_loader, val_loader, device, cfg_entry,
     no_improve = 0
     global_step = 0
     ep = 0
+    total_skipped = 0  # Fix-6: smoke assert 用
 
     print(f"[ft] start  method={method}  mode={mode}  max_iters={max_iters}  "
           f"lr={cfg_entry['lr_ft']}  amp={amp}  smoke={smoke}")
@@ -919,14 +955,16 @@ def finetune(method, net, train_loader, val_loader, device, cfg_entry,
         if ema:
             ema.update()
 
+        total_skipped += metrics["skipped"]  # Fix-6: accumulate for smoke assert
         val_psnr, val_ssim = run_val_epoch(method, net, val_loader, device)
+        skipped_info = f"  skipped={metrics['skipped']}" if metrics['skipped'] > 0 else ""
         print(f"ep={ep:03d} iter={global_step:06d}  "
               f"loss={metrics['loss']:.4f}  l1={metrics['l1']:.4f}  "
               f"dp={metrics['dp']:.4f}  hinge={metrics['hinge']:.4f}  "
-              f"val_PSNR={val_psnr:.2f}  val_SSIM={val_ssim:.4f}")
+              f"val_PSNR={val_psnr:.2f}  val_SSIM={val_ssim:.4f}{skipped_info}")
 
-        # Save best
-        if val_psnr > best_psnr:
+        # Save best — Fix-5: val_psnr=nan 时绝不存「best」
+        if math.isfinite(val_psnr) and val_psnr > best_psnr:
             best_psnr = val_psnr
             no_improve = 0
             if not smoke:
@@ -955,6 +993,19 @@ def finetune(method, net, train_loader, val_loader, device, cfg_entry,
 
         if global_step >= max_iters:
             break
+
+    # Fix-6: smoke 结束 assert — ① loss 全 finite (skipped==0) ② 权重全 finite
+    if smoke:
+        if total_skipped > 0:
+            raise AssertionError(
+                f"[smoke FAIL] {total_skipped} batches had non-finite loss in {max_iters} steps "
+                f"— PSNRLoss/Charbonnier fp32 fix may not have taken effect")
+        bad_params = [k for k, v in net.state_dict().items()
+                      if not torch.isfinite(v).all()]
+        if bad_params:
+            raise AssertionError(
+                f"[smoke FAIL] non-finite params after {max_iters} steps: {bad_params[:5]}")
+        print(f"[smoke PASS] {max_iters} steps, skipped=0, all weights finite")
 
     print(f"[ft done] best_val_PSNR={best_psnr:.2f}  ckpt={best_ckpt}")
     return best_ckpt, best_psnr
@@ -1030,11 +1081,18 @@ def collect_eval(method, net, b3, df, device):
 
         ref_np = x_ref.cpu()
         enh_np = x_enh.cpu()
+        _bad_eval = 0
         for i in range(enh_np.shape[0]):
+            # Fix-4: 非 finite 图跳过, 不静默转 0 污染 csv
+            if not torch.isfinite(enh_np[i]).all():
+                _bad_eval += 1
+                continue
             r = (ref_np[i].permute(1, 2, 0).numpy() * 255).astype(np.uint8)
             e = (enh_np[i].permute(1, 2, 0).numpy() * 255).clip(0, 255).astype(np.uint8)
             E_psnr.append(peak_signal_noise_ratio(r, e, data_range=255))
             E_ssim.append(structural_similarity(r, e, channel_axis=2, data_range=255))
+        if _bad_eval > 0:
+            print(f"[eval] {_bad_eval} non-finite enhanced images in batch, skipped")
 
     R = np.concatenate(R)
     D = np.concatenate(D)

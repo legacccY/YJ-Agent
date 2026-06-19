@@ -4,15 +4,29 @@
 
 > **⚠️ v4 Headline reframe（2026-06-19，用户拍板 option ① + skeptic 0 致命放行；留痕，已被 v6 校正）**：原承重命门 L3「去污染后方法排名翻转（actionable so-what）」据实跑出 FAIL（4 对中 3 对可评估，Spearman(orig,C) = 1.0 / 0.857 / 0.286，无一对达预登记 CI 上界<0.7 或 top1 掉出 top3；7 方法 Spearman 经剖析为结构性低功效判据）。v4 重心从「排名翻转」转移到 L1（artifact-only 高 AUROC）+ source-leakage（ViM 在跨机构 normal-vs-normal 对上 AUROC=1.0）。L3 FAIL 不删，连同低功效剖析降级为 negative result / limitation 并当 contribution。**⚠️ v4 的 ViM=1.0 source-leakage 承重数字已被 v6 证为 in-sample 伪迹、held-out 重算后 strict FAIL，见上 v6 块 + `02_ACCEPTANCE.md` A-5 v6 修订记录。**
 
-## Headline（reframe v6 后，承重版）
+## Headline（reframe v6 后 + skeptic 收窄定稿，承重版）
 
-**医学影像 OOD detection 基准受采集 artifact（扫描仪、机构、源域指纹）污染——不读任何病理内容的 artifact-only 手工特征即可高 AUROC 预测 source 身份（跨 3 模态 AUROC 0.64–1.00）；且投影类 OOD 检测器（ViM/Residual）因在 in-sample principal subspace 上拟合产生系统性评估虚高（in-sample 近完美 1.00 → held-out 0.78），held-out 校正后真 source 信号中等且由 source 距离驱动。** 三路独立证据承重（现象 / 机制 / 处方）：
+> **⚠️ skeptic v6 收窄定稿（2026-06-19，04_LOG Entry 11 红队，1🔴+3🟠 全落实；本块为定稿，原三并列 bullet 版留痕于下「原 v6 headline」不删）**：A-7 framing 据 skeptic 致命-1 收窄——held-out 评估是 ViM 原论文（arXiv:2203.10807，principal space P 与 α 由 training set 事前确定）+ OpenOOD 既有强制标准协议，**不能 claim「我们发现投影类需 held-out 评估」**（那是常识，会被反咬）。headline 改为**单一叙事弧**（污染物 → 如何精确伪装 → 去伪处方）。source 距离相关补到 **n=7**（ρ=0.821 / r=0.955），「单因子」改「一个主要驱动因子」。
 
-1. **白盒 artifact 可定位（现象，L1）**：不读任何病理内容的 artifact-only 43 维手工特征即可高 AUROC 区分 source 身份（跨机构命门对 AUROC 0.82–0.9997、含两美国源最弱对 0.64，覆盖 CXR / 脑 MRI / dermoscopy 三模态，A-1/A-2 PASS，verifier 已核）。benchmark 的「OOD 信号」大半是 scanner/机构采集指纹。
-2. **in-sample 评估灌水陷阱（机制，A-7 新贡献）**：投影类 OOD 检测器（ViM/Residual，基于 principal-subspace 残差打分）在常见 in-sample 评估协议下报近完美 AUROC（1.00），但这是 null-space 残差伪迹（N_id<D 致 in-sample ID 残差≈0、完美分离任何 held-out，**与 source 无关**），非真 source 信号。held-out 校正后 ViM 真值 mean 0.777（仅投影类受影响：ViM/Residual 各 −0.223，其余 11 法 |Δ|<0.012）。这是可推广任意 projection-based OOD 法的评测协议陷阱。
-3. **诚实量级的 source leakage（held-out 真值）**：held-out 协议下 source 信号真实可检（ViM 7 对 0.406–0.997 全 >> 同源 held-out chance ≈0.5 的中位）但**中等、由 source 距离单因子驱动**（artifact 可分性 vs held-out ViM 的 Spearman ρ=1.0 / Pearson r=0.9995, p=0.0005, n=4）。含同模态内**诚实负例**：NIH/RSNA 两美国源 artifact=0.64 → held-out ViM=0.406≈chance（证非「普遍/完美 source leakage」，是 source 距离驱动）。
+**叙事弧（single narrative arc）：医学影像 OOD detection 基准被采集 artifact 这一可白盒定位的污染物渗透——不读任何病理内容的 artifact-only 手工特征即可高 AUROC 预测 source 身份（跨 3 模态 AUROC 0.64–0.9997）；这一污染物如何精确伪装成「OOD 信号」，甚至让投影类检测器（ViM/Residual）在一种已知的 in-sample estimation leakage 误用下产生伪完美分离（AUROC=1.00，足以骗过投稿前自审），而 held-out 校正后真 source 信号回落到中等量级（mean 0.777）、由 source 距离驱动、含同模态诚实负例；我们由此给出一套去伪处方——held-out 协议 + cross-source normal-vs-normal sanity baseline + artifact-only 污染上界。**
+
+这条弧的三个环节据实展开（污染物 / 伪装 / 去伪处方）：
+
+1. **污染物：白盒可定位的 artifact（现象，L1）**：不读任何病理内容的 artifact-only 43 维手工特征即可高 AUROC 区分 source 身份（跨机构命门对 AUROC 0.82–0.9997、含两美国源最弱对 0.64，覆盖 CXR / 脑 MRI / dermoscopy 三模态，A-1/A-2 PASS，verifier 已核）。benchmark 的「OOD 信号」大半是 scanner/机构采集指纹。**此环独立于下文被推翻的几何打分链**：artifact-only 是手工特征 AUROC，不经任何 ViM 子空间拟合，不受 in-sample 灌水影响。
+2. **伪装：污染物如何精确伪装成 OOD 信号（机制，A-7 收窄贡献）**：投影类 OOD 检测器（ViM/Residual，基于 principal-subspace 残差打分）在一种**已知的 estimation/in-sample leakage 误用**下报近完美 AUROC（1.00）。本文不 claim 发现「held-out 才对」（那是 ViM/OpenOOD 既有标准协议）；本文量化的是：**这一已知 leakage 在 N_id<D 的 underdetermined 投影子空间 + 跨源 medical benchmark 场景下被放大到 Δ=+0.223，且精确伪装成完美 source-leakage 结论（ViM=1.0，足以骗过投稿前自审）。** 这个 N_id<D 放大效应 + 它如何 masquerade 成可信 benchmark-critique，文献未专门打包过，是 cautionary 方法学贡献。灌水高度局部化（仅投影类 ViM/Residual 各 +0.223，其余 11 法 |Δ|<0.012）。
+3. **去伪：诚实量级的 source leakage + 处方（held-out 真值）**：held-out 协议下 source 信号真实可检（ViM 7 对 0.406–0.997 全 >> 同源 held-out chance ≈0.5 的中位）但**中等、source 距离是一个主要驱动因子**（artifact 可分性 vs held-out ViM 的 Spearman ρ=0.821 / Pearson r=0.955, n=7）。含同模态内**诚实负例**：NIH/RSNA 两美国源 artifact=0.64 → held-out ViM=0.406≈chance（证非「普遍/完美 source leakage」，是 source 距离驱动）。
 
 当 ID 与 OOD 来自不同机构/设备时（绝大多数医学 OOD benchmark 如此），且当评估协议为 in-sample 时，「更强的 OOD 检测器」可能只是「读 in-sample 几何伪迹 + 源域指纹的检测器」。我们给出可操作的评测处方（held-out 协议 + cross-source normal-vs-normal sanity baseline + artifact-only 污染上界，见 § Lever L3'），而非依赖低功效的 7 点 Spearman 排名翻转或被 in-sample 灌水的近完美 AUROC。
+
+### 原 v6 headline（skeptic 收窄前的三并列 bullet 版，留痕勿删）
+
+> 以下为 skeptic v6 红队收窄前的 headline，三并列 bullet 结构（现象/机制/处方）。**A-7 机制 bullet 原写「这是可推广任意 projection-based OOD 法的评测协议陷阱」隐含「发现 held-out 才对」，据 skeptic 致命-1 收窄为上文版；source 相关原 n=4（ρ=1.0/r=0.9995）补到 n=7。保留以诚实呈现收窄过程。**
+>
+> **医学影像 OOD detection 基准受采集 artifact（扫描仪、机构、源域指纹）污染——不读任何病理内容的 artifact-only 手工特征即可高 AUROC 预测 source 身份（跨 3 模态 AUROC 0.64–1.00）；且投影类 OOD 检测器（ViM/Residual）因在 in-sample principal subspace 上拟合产生系统性评估虚高（in-sample 近完美 1.00 → held-out 0.78），held-out 校正后真 source 信号中等且由 source 距离驱动。** 三路独立证据承重（现象 / 机制 / 处方）：
+>
+> 1. **白盒 artifact 可定位（现象，L1）**：不读任何病理内容的 artifact-only 43 维手工特征即可高 AUROC 区分 source 身份（跨机构命门对 AUROC 0.82–0.9997、含两美国源最弱对 0.64，覆盖 CXR / 脑 MRI / dermoscopy 三模态，A-1/A-2 PASS，verifier 已核）。benchmark 的「OOD 信号」大半是 scanner/机构采集指纹。
+> 2. **in-sample 评估灌水陷阱（机制，A-7 新贡献）**：投影类 OOD 检测器（ViM/Residual，基于 principal-subspace 残差打分）在常见 in-sample 评估协议下报近完美 AUROC（1.00），但这是 null-space 残差伪迹（N_id<D 致 in-sample ID 残差≈0、完美分离任何 held-out，**与 source 无关**），非真 source 信号。held-out 校正后 ViM 真值 mean 0.777（仅投影类受影响：ViM/Residual 各 −0.223，其余 11 法 |Δ|<0.012）。这是可推广任意 projection-based OOD 法的评测协议陷阱。
+> 3. **诚实量级的 source leakage（held-out 真值）**：held-out 协议下 source 信号真实可检（ViM 7 对 0.406–0.997 全 >> 同源 held-out chance ≈0.5 的中位）但**中等、由 source 距离单因子驱动**（artifact 可分性 vs held-out ViM 的 Spearman ρ=1.0 / Pearson r=0.9995, p=0.0005, n=4）。含同模态内**诚实负例**：NIH/RSNA 两美国源 artifact=0.64 → held-out ViM=0.406≈chance（证非「普遍/完美 source leakage」，是 source 距离驱动）。
 
 ## 原 headline（reframe 前，留痕勿删）
 
@@ -65,7 +79,8 @@
 5. **v5 报满分（in-sample）**：v5 扩证据后 A-5 ViM raw AUROC = 1.0 全 7/7 对，写入 ACCEPTANCE 为「pre-specified consistent observation」（Entry 9，in-sample 协议）。
 6. **reviewer 攻**：对抗审 05_DRAFT_core.md 列头号 reject 风险 =「ViM=1.0 可能是 trivial 评估伪迹而非真 source covariate」（Entry 10）。
 7. **负对照证伪**：主线写 `scripts/sanity_samesource_vim.py`，C1 同一来源对半切 + in-sample 也给 ViM=1.0（1.0 来自 in-sample 不对称、非 source）、C2 同源 held-out ≈0.5（无信号）、C3 跨源 held-out 真信号但非完美 → **坐实 1.0 是 in-sample 评估协议混杂**（根因：投影类 null-space 残差，N_id<D 致 in-sample ID 残差≈0）。
-8. **held-out 校正 + 承重据实再迁移**：用户拍板 held-out 重算（Entry 11）。held-out ViM 0.406–0.997（mean 0.777，>0.95 仅 2/7）→ A-5 v5 strict 门 **FAIL**，触预登记 FAIL 三档退路 #1。**承重再迁移到三贡献框架**：现象（L1，A-1/A-2 PASS，不变）+ 机制（in-sample 评估灌水陷阱，A-7 新贡献）+ 处方（held-out 协议 + sanity baseline + artifact 上界，A-6）。**in-sample 灌水写成 finding + 方法学贡献（评测协议陷阱），不写成 bug 致歉。** source 信号据实写诚实量级（中等、source 距离驱动、含 NIH/RSNA 0.406 诚实负例），不再写「完美/普遍 source leakage」。**paper 必呈这条「v5 满分→reviewer 攻→负对照证伪→held-out 校正→承重据实迁移」时间线，证非 HARKing。**
+8. **held-out 校正 + 承重据实再迁移**：用户拍板 held-out 重算（Entry 11）。held-out ViM 0.406–0.997（mean 0.777，>0.95 仅 2/7）→ A-5 v5 strict 门 **FAIL**，触预登记 FAIL 三档退路 #1。**承重再迁移到三贡献框架**：现象（L1，A-1/A-2 PASS，不变）+ 机制（A-7，**收窄 framing 见下**）+ 处方（held-out 协议 + sanity baseline + artifact 上界，A-6）。**in-sample 灌水写成 finding + 方法学贡献，不写成 bug 致歉。** source 信号据实写诚实量级（中等、source 距离驱动、含 NIH/RSNA 0.406 诚实负例），不再写「完美/普遍 source leakage」。**paper 必呈这条「v5 满分→reviewer 攻→负对照证伪→held-out 校正→承重据实迁移」时间线，证非 HARKing。**
+   - **【skeptic v6 致命-1 收窄，A-7 framing 定稿】**：held-out 评估**是 ViM 原论文（arXiv:2203.10807，principal space P 与 α 由 training set 事前确定）+ OpenOOD 既有强制标准协议**，不是本文发现的处方。v5 的 in-sample 跑法（`feats_test` 含 ID 半）= 违反既有标准 = **已知的 estimation/in-sample leakage 误用**。故 A-7 **绝不能 claim「我们发现投影类 OOD 需 held-out 评估」**（常识，会被审稿人反咬「自己跑错又改对」）。**A-7 收窄口径**：量化这一**已知的** estimation/in-sample leakage 在 **N_id<D 的 underdetermined 投影子空间 + 跨源 medical benchmark** 场景下被放大到 **Δ=+0.223** 且**精确伪装成完美 source-leakage 结论（ViM=1.0，足以骗过投稿前自审）**——这个 N_id<D 放大效应 + 它如何 masquerade 成可信 benchmark-critique，文献未专门打包过，是 cautionary 方法学贡献。Related Work 必正面引 ViM 原文 train-fit 设定 + leakage taxonomy（arXiv:2604.04199，已知 estimation leakage 在 N>>D 低维下 ΔAUC<0.005），差异化 = 本文证同类 leakage 在 N_id<D 投影子空间下放大到 +0.223 且产生确定性 perfect separation。
 
 ## 诚实边界（防跑偏，v6 校正）
 

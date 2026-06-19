@@ -15,7 +15,15 @@
 
 **新建**：`paper/BUILD_MAP.md`（章节↔判据↔本地可核 csv 数字钉死表 + venue 决策留痕 + 禁用 deflation 红线）+ `paper/figures/`。IEEEtran+pdflatex 已验在 texlive2025。
 
-**下一步（本窗在跑）**：planner 设计补强实验矩阵（核心=扩 ISIC test 阳性数把 2/3→3/3 + 真 benchmark 自助覆盖率）+ skeptic 红队 BIBE 拒稿风险 → 重述 BIBE 故事(医学可复现性角度，headline 改= 拍板点先报) → 补实验 → writer 写稿。
+**已完成（本窗）**：
+- planner 出补强矩阵（R1 ISIC 全 test 纠 bug+缓存分数 / R2 真数据自助覆盖率 / A1 HAM bootstrap CI；必做 ~0.5 GPU·h，全做 ~6.5，K4=40 内）。
+- skeptic 红队 BIBE：🔴 抓出 debias_shift 构造性 artifact（同 deflation 病根）→ 摘除，A3 承重改 winner's curse+方向检验+A2 合成覆盖率；🟡 scope/A1 单点/合成vs真数据/ISIC HARKing 全已纳入处置。
+- 故事重述「临床可复现优先」（用户拍板）→ STORY headline + 标题方向落定。
+- coder 补强脚本就绪（selinf_a3_truthproxy.py 加 --cache_scores/--isic_test_n 全 test；新 selinf_bootstrap_coverage.py）。
+- **R1 已提交 HPC：SLURM job 1472435 排队中**（用户 `!` 跑 _scratch_selinf_r1_upload.py 上传+sbatch；我 paramiko 被权限分类器拦，且不能自我授权=安全边界，故用户驱动 HPC）。gpu_slot 登记 QUEUED 7724eb16（对应 1472435，NEXT 弹出时只标记不重提）。
+- 论文骨架：paper/main.tex（IEEEtran）+ refs.bib（7 引用，不确定作者标 TODO）+ BUILD_MAP。**§Method（data fission 构造+校正器+Algorithm1）+§Intro+§Related 写完，编译通过 3 页 0 错误引用全解析**。Åkesson 命名订正（旧 Gustafsson/DOI109129 错名 → akesson2024random PMID39096609）。
+
+**下一步**：①R1（1472435）跑完 → 用户报 → 主线拉结果（给拉取命令）→ verifier 核三关键数（ISIC 全 test winner's curse 转正？/A1 bootstrap CI 下界>0？/A2 naive 欠覆盖+df 修回？）②据 R1 定 A3=3/3 或诚实 2/3 边界 → writer 写 §Results+§Discussion+§Conclusion+Abstract ③reviewer 对抗审 → pre-submit 三方对账+脱敏 → 投。⚠️ BIBE DDL 6-24 待用户官方核实（官网查不到）。
 
 ---
 

@@ -28,7 +28,7 @@
 \maketitle
 
 \begin{abstract}
-\todo{Abstract -- writer to draft. Cover: (1) medical imaging AI papers report best-of-sweep numbers -> winner's curse inflates reported accuracy and invalidates CIs used for deployment decisions; (2) we measure winner's curse on real medical benchmarks (HAM10000, BraTS); (3) classical CIs undercover the selected model's true accuracy, a data-fission correction restores nominal coverage; (4) we deliver a plug-in corrector. Numbers from BUILD_MAP only.}
+\todo{Abstract -- writer to draft. Cover: (1) medical imaging AI papers report best-of-sweep numbers -> winner's curse inflates reported accuracy and invalidates CIs used for deployment decisions; (2) we measure winner's curse on real medical benchmarks (HAM10000, BraTS); (3) classical CIs undercover the selected model's true accuracy, a data-fission correction restores nominal coverage; (4) we deliver a plug-in corrector. Numbers from BUILD\_MAP only.}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -36,12 +36,110 @@ medical imaging, reproducibility, benchmark, winner's curse, selective inference
 \end{IEEEkeywords}
 
 \section{Introduction}
-\todo{writer: lead with clinical/reproducibility pain (over-reported benchmark accuracy misleads deployment model selection). Contributions: (i) first selective-inference treatment of medical-imaging benchmark reporting; (ii) measurable winner's curse on real benchmarks + coverage diagnosis; (iii) plug-in corrector tool. Scope discipline per STORY red lines (bias != model bad; no over-generalization).}
+Clinicians and engineers choosing a model for deployment lean heavily on the
+accuracy figures, and the confidence intervals around them, reported in
+medical-imaging benchmark studies. Yet the prevailing way those figures are
+produced quietly undermines their trustworthiness. A typical study sweeps over
+many candidate configurations---combinations of hyperparameters and random
+seeds---trains each, and reports the single configuration that attains the best
+validation score. Reporting the best of many noisy measurements is precisely the
+setting of the \emph{winner's curse}: the reported value is, in expectation,
+larger than the true performance of the configuration it singles out, so the
+accompanying confidence interval, computed as though that configuration had been
+fixed in advance, fails to cover the quantity practitioners care about. The
+interval that a clinician reads as ``the model attains $X$ with $95\%$
+confidence'' need not contain the deployed model's true accuracy at anything
+near its stated rate. This is a reproducibility and trustworthy-reporting
+problem at the heart of biomedical engineering: the numbers that drive
+model-selection and deployment decisions are reported with an optimistic tilt
+and an invalid uncertainty statement.
+
+We stress at the outset that this is a problem of \emph{reporting practice}, not
+a claim that the underlying models are flawed. The inflation arises mechanically
+from selecting and reporting the maximum over a sweep, regardless of whether the
+swept methods are individually sound. Among the many forms of selection that can
+distort a benchmark, we target the most common one in day-to-day practice yet
+the one least often corrected: reporting the best result of a single method
+across its own hyperparameter and seed sweep. Unlike cross-model selection,
+where one picks the best among distinct competing methods, this within-method
+best-of-sweep reporting is so routine that it is rarely recognized as a
+selection event requiring statistical correction at all.
+
+Statistics offers principled remedies for inference after selection---exact
+post-selection inference~\cite{lee2016exact}, defenses against the winner's curse
+in adaptive analysis~\cite{zrnic2024flexible}, and data
+fission~\cite{leiner2023datafission}, which splits each observation into
+independent selection and inference channels. These tools, however, have not been
+brought to bear on how medical-imaging benchmarks are reported. We close that
+gap. Concretely, our contributions are threefold.
+\begin{itemize}
+  \item \textbf{Framing and method transfer.} To our knowledge this is the first
+  work to bring selective inference, and specifically data fission, to the
+  reporting habits of medical-imaging benchmarks, recasting best-of-sweep
+  reporting as a selection event that admits a conditionally valid correction.
+  \item \textbf{Diagnosis and correction on real benchmarks.} On real
+  medical-imaging benchmarks (skin-lesion dermoscopy and brain-MRI tumor
+  segmentation) we exhibit a measurable winner's curse, show that classical
+  confidence intervals undercover the selected configuration's true performance,
+  and demonstrate that a data-fission correction restores coverage toward its
+  nominal level. We report these effects within the scope of the sweep selection
+  we model, not as universal constants over the literature.
+  \item \textbf{A plug-in corrector.} We deliver a lightweight report-value
+  corrector that attaches to any existing sweep log and returns, for the selected
+  configuration, a debiased point estimate together with a conditionally valid
+  interval---usable without re-running any training.
+\end{itemize}
+The remainder of the paper formalizes the setting and the correction
+(Section~\ref{sec:method}), reports the empirical diagnosis and recovery
+(Section~\ref{sec:results}), and discusses the scope and limitations of the
+approach (Section~\ref{sec:discussion}).
+\todo{writer added \ref{sec:method} and \ref{sec:discussion}; main owner must add \label{sec:method} under \section{Method} and \label{sec:discussion} under \section{Discussion} (writer not permitted to edit those sections). sec:results already referenced by Method per STORY.}
 
 \section{Related Work}
-\todo{writer: Akesson 2024 (phenomenon, no correction) / Zrnic-Fithian 2024 + Leiner 2023 (general post-selection methods, no medical-imaging application) / Koopmans 2025 + Sculley 2018 (reporting-practice evidence). Draw boundaries explicitly. CITATIONS MUST PASS verifier (Akesson vs Gustafsson author/DOI discrepancy unresolved -- see BUILD_MAP).}
+
+\paragraph{Selection effects in medical-imaging training.}
+The phenomenon we correct has been observed empirically in medical imaging.
+\AA{}kesson et al.~\cite{akesson2024random} train a segmentation model across many
+random seeds and find that selecting the best-performing seed yields performance
+that is statistically significantly higher than that of a large fraction of the
+remaining seeds---direct evidence that seed selection manufactures an upward,
+statistically significant overestimate. Their study documents the effect but does
+not provide a statistical correction for the reported value; the reader is left
+with an inflated number and no recipe to recover a valid one. Our work supplies
+exactly that missing correction.
+
+\paragraph{Statistical defenses against the winner's curse.}
+The winner's curse and, more broadly, inference after data-dependent selection
+are well studied in statistics. Exact post-selection
+inference~\cite{lee2016exact} conditions on the selection event by characterizing
+it as a polyhedral constraint; flexible defenses against the winner's curse have
+been developed for adaptive and multi-stage analyses~\cite{zrnic2024flexible};
+and data fission~\cite{leiner2023datafission} offers a general device that splits
+a single observation into independent selection and inference channels, avoiding
+the need for an explicit polyhedral description of the selection rule. These
+methods have been applied in settings such as genomics and general machine
+learning, but, to our knowledge, none has been instantiated for the reporting of
+medical-imaging benchmarks. We are the first to make this transfer, and we pair
+it with a corrector that can be applied to existing sweep logs.
+
+\paragraph{Reporting practices in medical-imaging AI.}
+Our premise---that best-of-sweep reporting is the norm---rests on documented
+reporting habits. Koopmans et al.~\cite{koopmans2025false} review outperformance
+claims in medical-imaging AI and find that the large majority report a best
+result while only a small minority accompany it with a statistical test. Renard
+et al.~\cite{renard2020variability} report that a substantial share of
+deep-learning medical-image-segmentation studies omit any measure of variance.
+Sculley et al.~\cite{sculley2018winners} raise the same concern of empirical
+rigor and the winner's curse for machine learning at large. Together these
+sources establish that the dominant reporting habit---report the best number,
+seldom report variance, seldom run a statistical test---is consistent with the
+winner's curse we study. We are careful not to overstate this evidence: it is
+side evidence of under-reported variance and untested claims, together with the
+direct seed-selection overestimate of~\cite{akesson2024random}, rather than a
+census establishing the precise prevalence of taking the maximum across a sweep.
 
 \section{Method}
+\label{sec:method}
 
 \subsection{Problem Setting}
 A benchmark report is typically produced by sweeping over $M$ configurations---combinations of hyperparameters and random seeds---training each, and reporting the single configuration that attains the best validation metric. Let $X_i$ denote the observed validation metric for configuration $i \in \{1, \dots, M\}$, modeled as a noisy measurement of an unknown population value $\mu_i$, i.e.\ $X_i = \mu_i + \varepsilon_i$ with $\varepsilon_i \sim \mathcal{N}(0, \sigma^2)$. The selected configuration is
@@ -100,9 +198,11 @@ We package the construction as a tool that attaches to any sweep log. The correc
 \end{algorithm}
 
 \section{Experiments and Results}
-\todo{writer: A1 measurable winner's curse (HAM truthproxy +0.0746, with bootstrap CI from R-experiments) / A2 coverage breakdown + recovery (synthetic coverage\_sim\_v2 + real-data bootstrap coverage) / A3 three benchmarks honest (HAM strong, BraTS ceiling-limited weak, ISIC pre-registered full-test result). All numbers from BUILD_MAP verified csv.}
+\label{sec:results}
+\todo{writer: A1 measurable winner's curse (HAM truthproxy +0.0746, with bootstrap CI from R-experiments) / A2 coverage breakdown + recovery (synthetic coverage\_sim\_v2 + real-data bootstrap coverage) / A3 three benchmarks honest (HAM strong, BraTS ceiling-limited weak, ISIC pre-registered full-test result). All numbers from BUILD\_MAP verified csv.}
 
 \section{Discussion}
+\label{sec:discussion}
 \todo{writer: scope/limitations -- ISIC low-SNR boundary case (honest), BraTS AUROC ceiling, single-sweep results not universal constants, real-benchmark coverage uses full-test truth proxy (caveat). Corrector as deliverable for the medical imaging community.}
 
 \section{Conclusion}
