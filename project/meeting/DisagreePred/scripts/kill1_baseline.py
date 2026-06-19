@@ -357,7 +357,13 @@ def train_fold(
                               num_workers=0, pin_memory=False)
 
     model     = build_model(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    # foreach=False: 绕开 PyTorch 2.7+CUDA 12.6 RTX4070-Laptop(SM8.9) 上
+    # _multi_tensor_adam / torch._foreach_addcdiv_ 触发 CUDA illegal memory access。
+    # foreach=False 退回逐参数循环实现，数学等价（lr/wd/超参不变）。
+    # 根因：75-cluster 时 ~5 batch/epoch 未触发；289-cluster 18+ batch 必炸。
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY, foreach=False
+    )
     criterion = nn.BCEWithLogitsLoss()
 
     best_val_auroc   = -1.0
@@ -617,6 +623,28 @@ def run_kill1_cv(
         })
 
     print(f"\n[output] CSV     -> {OUT_CSV}")
+
+    # ── 持久化 per-cluster OOF 分数（供 A2 残余信息分析配对使用）──────────
+    # 只加落盘，不改任何训练逻辑/超参/折划分。
+    OOF_CSV = RESULTS_DIR / "kill1_oof_scores.csv"
+    oof_fieldnames = ["cluster_id", "patient_id", "disagree_binary", "oof_score", "fold"]
+    # 构建 cluster→fold 映射：每个 test_idx 对应哪一折
+    cluster_to_fold = np.full(len(rows), -1, dtype=np.int32)
+    for fold_i, (_, test_idx) in enumerate(folds):
+        cluster_to_fold[test_idx] = fold_i + 1
+    with open(str(OOF_CSV), "w", newline="", encoding="utf-8") as f_oof:
+        oof_writer = csv.DictWriter(f_oof, fieldnames=oof_fieldnames)
+        oof_writer.writeheader()
+        for i, row in enumerate(rows):
+            oof_writer.writerow({
+                "cluster_id": row["nodule_cluster_id"],
+                "patient_id": row["patient_id"],
+                "disagree_binary": int(row["disagree_binary"]),
+                "oof_score": float(oof_scores[i]),
+                "fold": int(cluster_to_fold[i]),
+            })
+    print(f"[output] OOF CSV -> {OOF_CSV}")
+    # ─────────────────────────────────────────────────────────────────────────
 
     # 写 summary JSON
     summary = {

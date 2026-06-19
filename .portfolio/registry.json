@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-06-18",
+  "updated": "2026-06-19",
   "note": "跨论文协调单一真源。多终端窗口共享此文件 + locks/。规避 context 压缩断链，仿 run-experiment state.json 模式。",
   "projects": {
     "iclr": {
@@ -92,7 +92,7 @@
       "deadline": "TBD (KILL-1 gating: 下 LIDC 后分歧可预测性 baseline 先行)",
       "status": "planning",
       "priority": 7,
-      "phase": "🆕 2026-06-18 立项 spin-off(用户2026-06-17拍板C025+C065)。源=ideation run-002(医学图像×不确定性)G6 立项 C065。RQ=别再把标注者分歧当噪声消除——分歧本身可从图像预测。LIDC-IDRI 4标注者存在性分歧巨大(65.2%被标结节非4/4一致,Armato2011;旧稿margin 0.22用错=Dong2017边缘锐利度评分分歧≠存在性,2026-06-18订正),所有研究用majority-vote当GT把分歧当噪声扔掉,无人问AI能否预测分歧本身;本文把『预测分歧』当建模目标=模型在专家也犹豫处主动犹豫=临床deferral信号。framing新(预测分歧vs消除分歧取GT)+R4 taste48全top+零直接竞品。⚠️须守差异化于 EDUE(2403.16594)/2510.10462(难度估计/disagreement-guided 用分歧辅助别的目标≠本文把预测分歧本身当终极目标)。**✅ KILL-1 PASS(2026-06-18,50-scan)**:零下载分歧分布66.2%≈Armato65.2%先验过→下50scan(4.29GB)CT子集跑patient-level CV(StratifiedGroupKFold5折),CV pooled AUROC(n=75)=0.7094 CI[0.6031,0.8116]下界0.60>0.50,100-rep置换null=0.5063塌回0.50 p=0.0000=零leakage真信号→KILL-1三条全过,claim「分歧可从图像预测」站住。历程:smoke单切15test欠功效(AUROC方差0.30+置换bug0.81假红旗)→analyst诊断非leakage是n太小+置换实现错→改patient-CV+置换只打乱train+100rep。书面 kill criteria KILL-1(AUROC≤0.60→砍,最优先gating)/KILL-2(disagreement-as-target被EDUE系列先发→重定位)/KILL-3(分歧纯随机不可预测→砍)/KILL-4(>50GPU·h无信号→停)。**诚实天花板=核心claim全押KILL-1;退路档MedIA/UNSURE/D&B(A1+A2+A3单集),顶会MICCAI需A4(QUBIQ第二集+deferral临床价值)**。措辞红线:预测分歧≠用分歧辅助训练、可预测须KILL-1通过且有读数才写、分歧源辖域限专家间临床判断不泛化成所有label noise。数据 LIDC-IDRI(TCIA公开免费1018CT 4-annotator,需下载)+QUBIQ备用,已登 datasets.json lidc status=todo。下一步 Gate1:先下LIDC(🛑HPC上传新数据=拍板点先报)→/design-experiment disagree 出KILL-1 baseline矩阵。详 04_LOG Entry1 + G6_charter 立项2。",
+      "phase": "🔬 2026-06-19 大编队复核+A2重设计+扩scan启动:7路编队复核KILL-1 PASS=0致命但脆(可信度6/10,CI下界0.6031擦边/折方差0.44~0.84/top10患者占50.7%/k=1单人标17个边缘锐利度捷径苗头)→投稿framing须诚实降调(写『50-scan量级正向信号』不写『已证稳定可预测』,perm写p<0.01)。KILL-2撞车复查🟢不触发(EDUE/2510.10462分歧当训练信号非目标;related work须切2508.09381皮肤IAA+2604.26288 CheXthought)。verifier核kill1_disagree_auroc.csv perm=0.807=废弃buggy smoke残留,真源kill1_cv_auroc.csv perm=0.506可信✓。A2🔴致命修:malignancy-UQ与存在性耦合→改P1分割不确定性(consensus mask训分割取逐像素entropy前景均值/MC-dropout/ensemble,researcher去风险pylidc.utils.consensus可出+Mehrtash r=0.699),判据改残余信息(reduced vs full logistic残余ΔAUROC配对CI下界>0+三件套)弃单ρ硬门;KILL映射纠正(UQ追平=A2失败/支柱2塌非KILL-2)。ACCEPTANCE已改两处(用户批准)。扩scan75→150:下载后台bt2yuqp0m 100新patient~12GB本地公开数据,parse加k_solo列消融。下一步:下载完→parse150标签→重跑KILL-1(gpu_slot)坐实A1+k=1消融+perm提1000→派coder实现A2。详04_LOG Entry5。 --- 🆕 2026-06-18 立项 spin-off(用户2026-06-17拍板C025+C065)。源=ideation run-002(医学图像×不确定性)G6 立项 C065。RQ=别再把标注者分歧当噪声消除——分歧本身可从图像预测。LIDC-IDRI 4标注者存在性分歧巨大(65.2%被标结节非4/4一致,Armato2011;旧稿margin 0.22用错=Dong2017边缘锐利度评分分歧≠存在性,2026-06-18订正),所有研究用majority-vote当GT把分歧当噪声扔掉,无人问AI能否预测分歧本身;本文把『预测分歧』当建模目标=模型在专家也犹豫处主动犹豫=临床deferral信号。framing新(预测分歧vs消除分歧取GT)+R4 taste48全top+零直接竞品。⚠️须守差异化于 EDUE(2403.16594)/2510.10462(难度估计/disagreement-guided 用分歧辅助别的目标≠本文把预测分歧本身当终极目标)。**✅ KILL-1 PASS(2026-06-18,50-scan)**:零下载分歧分布66.2%≈Armato65.2%先验过→下50scan(4.29GB)CT子集跑patient-level CV(StratifiedGroupKFold5折),CV pooled AUROC(n=75)=0.7094 CI[0.6031,0.8116]下界0.60>0.50,100-rep置换null=0.5063塌回0.50 p=0.0000=零leakage真信号→KILL-1三条全过,claim「分歧可从图像预测」站住。历程:smoke单切15test欠功效(AUROC方差0.30+置换bug0.81假红旗)→analyst诊断非leakage是n太小+置换实现错→改patient-CV+置换只打乱train+100rep。书面 kill criteria KILL-1(AUROC≤0.60→砍,最优先gating)/KILL-2(disagreement-as-target被EDUE系列先发→重定位)/KILL-3(分歧纯随机不可预测→砍)/KILL-4(>50GPU·h无信号→停)。**诚实天花板=核心claim全押KILL-1;退路档MedIA/UNSURE/D&B(A1+A2+A3单集),顶会MICCAI需A4(QUBIQ第二集+deferral临床价值)**。措辞红线:预测分歧≠用分歧辅助训练、可预测须KILL-1通过且有读数才写、分歧源辖域限专家间临床判断不泛化成所有label noise。数据 LIDC-IDRI(TCIA公开免费1018CT 4-annotator,需下载)+QUBIQ备用,已登 datasets.json lidc status=todo。下一步 Gate1:先下LIDC(🛑HPC上传新数据=拍板点先报)→/design-experiment disagree 出KILL-1 baseline矩阵。详 04_LOG Entry1 + G6_charter 立项2。",
       "home": "project/meeting/DisagreePred/",
       "story": "project/meeting/DisagreePred/01_STORY.md",
       "acceptance": "project/meeting/DisagreePred/02_ACCEPTANCE.md",
@@ -100,15 +100,16 @@
     },
     "artioodbench": {
       "name": "ArtiOODBench",
-      "venue": "CVPR 2027 (top, analysis/benchmark-critique) → NeurIPS D&B / MICCAI / TMLR (fallback)",
+      "venue": "NeurIPS Datasets & Benchmarks (主投, 2026-06-19 用户拍板为70中稿) / 退路 CVPR analysis / MICCAI / ICBINB 底线",
       "deadline": "TBD (CVPR2027 ~2026-11)",
       "status": "planning",
       "priority": 5,
-      "phase": "🆕 2026-06-18 ideation run-006 G6 立项（用户拍板:立项C107+并行续C003）。headline=医学影像OOD detection benchmark在测采集artifact非病理异常,artifact-only手工特征顶满OOD→方法排名被scanner指纹混淆。承重L1多benchmark量化+L2去污染协议+L3重排闭环(命门actionable so-what)。**G5 killshot已去风险**:artifact-only 43维(resize224²控分辨率)NIH vs VinDr AUROC=0.9213±0.009(n=1000,results/c107_artifact_ood_killshot.csv)。红队残差:差异化压2D系统化+去污染+重排闭环,Related Work硬对齐OpenMIBOOD(CVPR25)/PMC10532230(3D);0.92<0.95不夸大;命门=去污染后排名真翻转否则降ICBINB。选题轨迹138→C107全留痕project/ideation/runs/2026-06-18_run-006_phenom-medimg-failure/。下一步:researcher对齐先驱锁差异化→/design-experiment Gate1矩阵(≥3 benchmark对A-1+去污染A-3+重排A-4)→ACCEPTANCE阈值冻结(拍板)。详04_LOG Entry1。",
+      "phase": "🔀 2026-06-19 Gate1 跑通+命门 reframe(用户拍板 option ①). L3 排名翻转命门 propensity-caliper 修正后实跑全 FAIL(3 可评估对 Spearman 1.0/0.857/0.286 无一达 CI 上界<0.7;7 法 Spearman 结构性低功效;BraTS n<30 剔). 但 A-1/A-2 PASS(artifact-only 0.82-0.9997)+ViM 跨机构 normal-vs-normal AUROC=1.0(4/4 raw+cleanC,verifier 核实非 bug=源域 virtual-logit 泄漏)铁证. headline reframe→『医学 OOD 基准测的是采集 artifact 非病理』. researcher 撞车 0.35 SURVIVE(近祖 ImageNet-OOD ICLR24 自然图像/黑盒/无去污染闭环;OpenMIBOOD 附带发现). skeptic 0 致命放行+5 加固(ImageNet-OOD 正面定位/评测协议处方补 L3 退场/ViM cleanA 后仍 1.0 disclose/HARKing 时间线免疫/a4 csv verdict 统一). STORY+ACCEPTANCE v4 reframe 落档(留全预登记痕,A-4 降 negative+时间线,新增 A-5 source-leakage/A-6 评测处方,K2 仅 1/3 对非干净触发). venue=CVPR analysis/benchmark-critique 主投(边界带,加固全做才进)/NeurIPS D&B/MICCAI/ICBINB 底线. 待办:Gate1 出图+写 draft 章节+修 a4_rank_flip.py verdict bug(标 PASS 应 FAIL,投稿前 verifier 统一). 历史: Gate1 design frozen (2026-06-19): planner v2 closed skeptic 4 findings + ACCEPTANCE v2 user-frozen (A-4 mainmen=plan-C matched-subset sole arbiter + bootstrap CI upper<0.7 + mechanism-explainable 2nd metric; PR-F1/F2/F3 preregistered; cross-source cross-institution L3; ViM dim=512). K4 collision safe (OpenMIBOOD 0.18 / PMC10532230 only L1-local 3D-limited / L1+L2+L3 closed-loop zero-hit). matrix ~9 run / ~10 GPU-h all local. user picked complete-3-modality-first -> fetch BrainTumor(42MB)+ISIC2018+RSNA(568MB) local. next: coder 5 scripts + data fetch -> run-experiment.",
       "home": "project/meeting/ArtiOODBench/",
       "story": "project/meeting/ArtiOODBench/01_STORY.md",
       "acceptance": "project/meeting/ArtiOODBench/02_ACCEPTANCE.md",
-      "log": "project/meeting/ArtiOODBench/04_LOG.md"
+      "log": "project/meeting/ArtiOODBench/04_LOG.md",
+      "updated": "2026-06-19"
     }
   },
   "training_lock": {

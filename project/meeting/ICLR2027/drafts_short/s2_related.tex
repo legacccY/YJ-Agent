@@ -1,0 +1,70 @@
+% ============================================================
+% §2  Related Work  (S version, ICLR 9-page) -- compressed from
+% drafts/s2_related.tex (1075w -> <=430w). Writer, session (S2 compress).
+% Drift contract (STORY S2 + R-rules):
+%   * GradProm differentiation paragraph PRESERVED verbatim-welded
+%     (MI lower bound + routing vs. gradient repair; R12).
+%   * query-for-retake GAP kept (C2); IB block kept light; QC-VIB one footnote (R13).
+%   * BMVC cited not reused (R10); method names anonymised (R4).
+%   * R1/R2/R5 honoured: derive-style verbs, no overclaim, no leaderboard wording.
+% All \citep keys carried over verbatim from the long draft.
+% ============================================================
+
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Enhancement and the perception--diagnosis gap.}
+Strong deterministic restoration backbones
+(Real-ESRGAN~\citep{wang2021realesrgan}, Restormer~\citep{zamir2022restormer},
+NAFNet~\citep{chen2022simple}, MIRNet-v2~\citep{zamir2022mirnetv2},
+SwinIR~\citep{liang2021swinir}, Uformer~\citep{wang2022uformer}) optimise
+distortion or perceptual fidelity, but high fidelity need not preserve
+diagnosis. Generative super-resolution can even synthesise pigment-network or
+vascular structure that was never present, a dermoscopy safety hazard; we
+therefore use deterministic restoration and analyse this failure mode in
+\S\ref{sec:discussion}. GradProm~\citep{gradprom2025} documents the same
+gap in the skin-lesion (ISIC) domain and repairs gradients during training.
+We share its diagnosis but differ in guarantee and scope:
+\begin{quote}
+Unlike GradProm, which corrects gradients during training, we provide (i) a
+mutual-information lower bound guarantee for diagnosis preservation
+(Lemma~\ref{lem:dp}), and (ii) a routing decision including query-for-retake.
+GradProm treats the symptom by repairing gradients; we bound the information
+loss and decide when enhancement is unsafe.
+\end{quote}
+We cite GradProm as prior evidence of the gap and differentiate on
+\emph{mechanism}, running no head-to-head comparison and claiming no superiority.
+
+\textbf{Perception--distortion trade-offs.}
+The pull between perceptual quality and a downstream criterion is structural:
+Blau and Michaeli~\citep{blau2018perception} bound the perception--distortion
+trade-off, and Cohen et al.~\citep{cohen2018distribution} show that
+distribution-matching translation can add or remove pathology-bearing features.
+We instead make \emph{diagnostic} fidelity the explicitly preserved quantity,
+with a mutual-information lower bound (Lemma~\ref{lem:dp}) characterising the
+moderate-degradation window in which enhancement costs no diagnostic information.
+
+\textbf{Selective prediction, deferral, and the recapture gap.}
+Selective classification abstains below a confidence threshold
+\citep{geifman2017selective,geifman2019selectivenet}, and learning-to-defer
+hands the case to a clinician; both treat the input as fixed. Medical
+image-quality work instead flags poor capture and prompts re-photography
+(teledermatology~\citep{vodrahalli2021teledermatology,jalaboi2023explainable},
+point-of-care ultrasound~\citep{zhao2020lungus}), supplying clinical
+motivation but leaving the retake decision decoupled from any diagnostic-risk
+estimate. Our query-for-retake channel closes this gap: the agent
+(\S\ref{sec:agent}) routes on a quality estimate and, when the image is too
+degraded for enhancement to be safe, requests re-acquisition --- an acquisition
+closed loop absent, to our knowledge, from the selective-prediction, deferral,
+and agentic-medical-AI literature. We make no claim that this routing raises net
+benefit globally; \S\ref{sec:exp-dca} reports where it does and does not help.
+
+\textbf{Information bottleneck.}
+The information bottleneck~\citep{tishby2000information} and its variational
+form~\citep[VIB;][]{alemi2017deep} compress an input while retaining
+task-relevant information, the lens for our diagnostic-loss analysis
+(Lemma~\ref{lem:dp}).%
+\footnote{One variant conditions the variational prior on a per-input quality
+scalar; it yielded no diagnostic advantage over standard VIB, so we do not rely
+on it---any off-the-shelf per-input uncertainty estimate suffices for routing,
+and its derivation is retained in the appendix as framework only.}

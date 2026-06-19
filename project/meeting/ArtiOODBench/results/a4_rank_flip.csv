@@ -1,0 +1,22 @@
+pair,method,subset,raw_auroc,clean_auroc,delta_drop,actual_rank_by_drop,hypothesis_rank,ci1_spearman,ci1_ci_lower,ci1_ci_upper,ci1_upper_lt_0.7,ci1_top1_dropped,ci2_mech_spearman,ci2_mech_match_gte_0.5,a4_verdict
+NIH_vs_VinDr,KNN,cleanC,0.6804,0.5484,0.132,1,2,0.8571,0.3996,1.0,0,0,0.0,0,A-4 FAIL
+NIH_vs_VinDr,Energy,cleanC,0.6026,0.5344,0.0682,2,N/A,0.8571,0.3996,1.0,0,0,0.0,0,A-4 FAIL
+NIH_vs_VinDr,MSP,cleanC,0.6618,0.5943,0.0675,3,4,0.8571,0.3996,1.0,0,0,0.0,0,A-4 FAIL
+NIH_vs_VinDr,ODIN,cleanC,0.6618,0.5943,0.0675,4,N/A,0.8571,0.3996,1.0,0,0,0.0,0,A-4 FAIL
+NIH_vs_VinDr,MDS,cleanC,0.4361,0.4084,0.0277,5,1,0.8571,0.3996,1.0,0,0,0.0,0,A-4 FAIL
+NIH_vs_VinDr,ViM,cleanC,1.0,1.0,0.0,6,3,0.8571,0.3996,1.0,0,0,0.0,0,A-4 FAIL
+NIH_vs_VinDr,GradNorm,cleanC,0.4091,0.4906,-0.0815,7,N/A,0.8571,0.3996,1.0,0,0,0.0,0,A-4 FAIL
+NIH_vs_RSNA_normal,Energy,cleanC,0.7002,0.6464,0.0538,1,N/A,1.0,1.0,1.0,0,0,-0.4,0,A-4 FAIL
+NIH_vs_RSNA_normal,ODIN,cleanC,0.6905,0.6403,0.0502,2,N/A,1.0,1.0,1.0,0,0,-0.4,0,A-4 FAIL
+NIH_vs_RSNA_normal,MSP,cleanC,0.6905,0.6404,0.0501,3,4,1.0,1.0,1.0,0,0,-0.4,0,A-4 FAIL
+NIH_vs_RSNA_normal,MDS,cleanC,0.493,0.4532,0.0398,4,1,1.0,1.0,1.0,0,0,-0.4,0,A-4 FAIL
+NIH_vs_RSNA_normal,ViM,cleanC,1.0,1.0,0.0,5,3,1.0,1.0,1.0,0,0,-0.4,0,A-4 FAIL
+NIH_vs_RSNA_normal,KNN,cleanC,0.3205,0.3832,-0.0627,6,2,1.0,1.0,1.0,0,0,-0.4,0,A-4 FAIL
+NIH_vs_RSNA_normal,GradNorm,cleanC,0.3092,0.373,-0.0638,7,N/A,1.0,1.0,1.0,0,0,-0.4,0,A-4 FAIL
+HAM_NV_vs_ISIC2020_benign,MDS,cleanC,0.7488,0.4981,0.2507,1,1,0.2857,-0.8667,0.9565,0,0,0.8,1,A-4 FAIL
+HAM_NV_vs_ISIC2020_benign,KNN,cleanC,0.7007,0.5314,0.1693,2,2,0.2857,-0.8667,0.9565,0,0,0.8,1,A-4 FAIL
+HAM_NV_vs_ISIC2020_benign,Energy,cleanC,0.5641,0.4879,0.0762,3,N/A,0.2857,-0.8667,0.9565,0,0,0.8,1,A-4 FAIL
+HAM_NV_vs_ISIC2020_benign,MSP,cleanC,0.5464,0.4887,0.0577,4,4,0.2857,-0.8667,0.9565,0,0,0.8,1,A-4 FAIL
+HAM_NV_vs_ISIC2020_benign,ODIN,cleanC,0.5464,0.4888,0.0576,5,N/A,0.2857,-0.8667,0.9565,0,0,0.8,1,A-4 FAIL
+HAM_NV_vs_ISIC2020_benign,ViM,cleanC,1.0,1.0,0.0,6,3,0.2857,-0.8667,0.9565,0,0,0.8,1,A-4 FAIL
+HAM_NV_vs_ISIC2020_benign,GradNorm,cleanC,0.3643,0.5337,-0.1694,7,N/A,0.2857,-0.8667,0.9565,0,0,0.8,1,A-4 FAIL

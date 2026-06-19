@@ -171,13 +171,36 @@ def cmd_dequeue(key):
     return 0
 
 
+STARTING_STALE_MINUTES = 10  # starting 状态无 pid 超过此时长视为死预约
+
+
 def cmd_reap():
-    """清 local active 中 pid 已死的陈旧条目（hpc 不在本机无法验 pid，跳过）。"""
+    """清 local active 中 pid 已死的陈旧条目（hpc 不在本机无法验 pid，跳过）。
+    额外：清理所有 host 中 status==starting 且超过 STARTING_STALE_MINUTES 无 pid 的死预约
+    （training_lock.js 翻 running 前崩溃会留 starting 幽灵，卡住后续调度）。"""
     d = load()
     killed = []
     keep = []
+    now_ts = datetime.now(CN_TZ)
     for j in d["active"]:
         pid = j.get("pid")
+        status = j.get("status", "")
+        # 清 starting 死预约：无 pid 且超时
+        if status == "starting" and not pid:
+            start_ts = j.get("start_ts") or j.get("running_since")
+            stale = True
+            if start_ts:
+                try:
+                    dt = datetime.fromisoformat(start_ts)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=CN_TZ)
+                    stale = (now_ts - dt).total_seconds() > STARTING_STALE_MINUTES * 60
+                except Exception:
+                    pass
+            if stale:
+                killed.append(j)
+                continue
+        # 清 local pid 已死
         if j.get("host") == "local" and pid:
             try:
                 os.kill(int(pid), 0)
@@ -190,11 +213,12 @@ def cmd_reap():
     started = _fits_and_promote(d)
     save(d)
     for k in killed:
-        print(f"REAPED {k.get('id')} {k.get('project')} (pid {k.get('pid')} 已死)")
+        reason = f"pid {k.get('pid')} 已死" if k.get("pid") else f"starting 死预约 (>{STARTING_STALE_MINUTES}min 无 pid)"
+        print(f"REAPED {k.get('id')} {k.get('project')} ({reason})")
     for s in started:
         print(f"NEXT {s.get('id')} {s.get('project')} {s.get('host')} {s.get('gpus')} :: {s.get('note','')}")
     if not killed:
-        print("无陈旧 local 条目")
+        print("无陈旧条目")
     return 0
 
 

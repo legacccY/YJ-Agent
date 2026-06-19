@@ -1,18 +1,24 @@
 """
-download_lidc_subset.py — DisagreePred KILL-1 子集下载脚本
+download_lidc_subset.py — DisagreePred A1 子集下载脚本
 
-服务项目：DisagreePred，lever = KILL-1 gating（LIDC ~50 scan 子集下载）
+服务项目：DisagreePred，lever = A1 扩样坐实（LIDC 子集 50→150 patient）
 禁止：不在此脚本内执行 parse_lidc / 训练；不碰其他项目文件
 
 目标：
-  从 lidc_disagreement_dist.csv 按平衡策略选 ~50 patient，
+  从 lidc_disagreement_dist.csv 按平衡策略选 patient，
   调用 NBIA REST API（免 auth 公开）下载 DICOM zip，解压到 LIDC_subset/，
   并配置 ~/.pylidcrc 供 pylidc 使用。
+
+运行模式（--mode）：
+  fresh   : 首次下载 ~50 patient（原始行为，--n_scans 50）
+  extend  : 扩样模式（默认）—— 检测 dest_root 已有 patient → 跳过已下的
+            → 从剩余候选按平衡策略再选 ~n_new 个新 patient
+            → --dry_run 时只打印新 UID 列表 + 预计大小，不下载
+            → 去掉 --dry_run 后执行真实下载
 
 选 patient 策略：
   优先：同时含 k=4（全一致）和 k<4（分歧）cluster 的 scan → 保证正负样本
   不足时：按 disagree 比例补充 only-disagree / only-agree scan
-  目标 ~50 patient（可配 --n_scans）
 
 NBIA 下载 API（免 auth，公开 collection LIDC-IDRI）：
   getImage: https://services.cancerimagingarchive.net/nbia-api/services/v1/getImage
@@ -25,8 +31,11 @@ pylidc 期望目录结构：
         <SeriesInstanceUID>/
           *.dcm
 
-主线执行命令：
-  python project/meeting/DisagreePred/scripts/download_lidc_subset.py --n_scans 50
+主线执行命令（扩样预览，不下载）：
+  python project/meeting/DisagreePred/scripts/download_lidc_subset.py --mode extend --n_new 100 --dry_run
+
+主线执行命令（确认后真实下载）：
+  python project/meeting/DisagreePred/scripts/download_lidc_subset.py --mode extend --n_new 100
 
 注意：脚本主逻辑 gate 在 __main__。写完只 py_compile，不在此自动下载。
 """
@@ -83,13 +92,17 @@ CHUNK_SIZE = 1024 * 1024    # 1MB 流式 chunk
 # 1. 平衡采样：从 dist.csv 选 ~n_scans 个 patient
 # ─────────────────────────────────────────────────────────────────────────────
 
-def select_balanced_patients(dist_csv: Path, n_scans: int = 50) -> list[str]:
+def select_balanced_patients(dist_csv: Path, n_scans: int = 50,
+                             exclude: set[str] | None = None) -> list[str]:
     """
     从 lidc_disagreement_dist.csv 按平衡策略选 patient list。
 
     策略：
       优先选同时含 k=4（agree=0）和 k<4（disagree=1）cluster 的 scan。
       优先组不足 n_scans 时，按 disagree 比例补充 only-disagree / only-agree。
+
+    参数：
+      exclude: 已下载 patient_id 集合，这些 patient 不再被选中（扩样用）
 
     返回排好序的 patient_id list（LIDC-IDRI-XXXX 格式）。
     """
@@ -107,20 +120,24 @@ def select_balanced_patients(dist_csv: Path, n_scans: int = 50) -> list[str]:
     if not rows:
         raise RuntimeError(f"[select] dist.csv 为空：{dist_csv}")
 
-    # 统计每个 scan 的 cluster 情况
+    exclude_set: set[str] = exclude if exclude is not None else set()
+
+    # 统计每个 scan 的 cluster 情况（排除已下载）
     scan_has_agree: dict[str, bool] = defaultdict(bool)
     scan_has_disagree: dict[str, bool] = defaultdict(bool)
     scan_pids: set[str] = set()
 
     for r in rows:
         pid = r["scan_pid"]
+        if pid in exclude_set:
+            continue   # 跳过已下载
         scan_pids.add(pid)
         if r["disagree_binary"] == "0":
             scan_has_agree[pid] = True
         else:
             scan_has_disagree[pid] = True
 
-    # 分组（排序保证可复现）
+    print(f"[select] dist.csv 候选（排除已下载 {len(exclude_set)} 个后）共 {len(scan_pids)} 个 scan")
     both = sorted([p for p in scan_pids
                    if scan_has_agree[p] and scan_has_disagree[p]])
     only_disagree = sorted([p for p in scan_pids
@@ -128,7 +145,6 @@ def select_balanced_patients(dist_csv: Path, n_scans: int = 50) -> list[str]:
     only_agree = sorted([p for p in scan_pids
                          if scan_has_agree[p] and not scan_has_disagree[p]])
 
-    print(f"[select] dist.csv 中共 {len(scan_pids)} 个 scan")
     print(f"  同时含 agree+disagree clusters：{len(both)}")
     print(f"  仅含 disagree（k<4）clusters ：{len(only_disagree)}")
     print(f"  仅含 agree（k=4）clusters   ：{len(only_agree)}")
@@ -332,9 +348,27 @@ def configure_pylidcrc(lidc_root: Path) -> None:
 # 5. 主流程
 # ─────────────────────────────────────────────────────────────────────────────
 
-def download_subset(n_scans: int = 50, dest_root: Path = LIDC_SUBSET_DIR) -> None:
+def get_already_downloaded(dest_root: Path) -> set[str]:
     """
-    主下载流程：
+    从 dest_root 读取已下载的 patient 目录名（LIDC-IDRI-XXXX 格式）。
+    只要目录存在即认为已下载（不验证内部 dcm 完整性，避免重下误删）。
+    """
+    if not dest_root.exists():
+        return set()
+    return {
+        p.name for p in dest_root.iterdir()
+        if p.is_dir() and p.name.startswith("LIDC-IDRI-")
+    }
+
+
+# ─── 每个 CT scan 平均大小估算（LIDC-IDRI 典型值约 120MB/scan）─────────────
+APPROX_MB_PER_SCAN = 120
+
+
+def download_subset(n_scans: int = 50, dest_root: Path = LIDC_SUBSET_DIR,
+                    dry_run: bool = False) -> None:
+    """
+    主下载流程（fresh 模式）：
       1. 平衡采样选 n_scans 个 patient
       2. 查 pylidc DB 取 series_instance_uid
       3. 逐 patient 下载 DICOM zip → 解压
@@ -342,13 +376,13 @@ def download_subset(n_scans: int = 50, dest_root: Path = LIDC_SUBSET_DIR) -> Non
       5. 报告成功/失败计数 + 总大小
     """
     print("=" * 60)
-    print("  download_lidc_subset — DisagreePred KILL-1")
+    print("  download_lidc_subset — DisagreePred A1 (fresh)")
     print(f"  目标 patient 数：{n_scans}")
     print(f"  下载目标目录  ：{dest_root}")
     print("=" * 60)
 
-    # Step 1：平衡采样
-    patient_ids = select_balanced_patients(DIST_CSV, n_scans)
+    # Step 1：平衡采样（无 exclude）
+    patient_ids = select_balanced_patients(DIST_CSV, n_scans, exclude=None)
 
     # Step 2：查 UID
     uid_map = get_series_uid_map(patient_ids)
@@ -356,6 +390,15 @@ def download_subset(n_scans: int = 50, dest_root: Path = LIDC_SUBSET_DIR) -> Non
     if not uid_map:
         print("[ERROR] 无有效 UID，检查 pylidc 安装和网络连通性。", file=sys.stderr)
         sys.exit(1)
+
+    if dry_run:
+        print("\n[DRY RUN] 以下为将要下载的 patient 列表（未实际下载）：")
+        for pid, uid in sorted(uid_map.items()):
+            print(f"  {pid}  SeriesUID={uid}")
+        approx_gb = len(uid_map) * APPROX_MB_PER_SCAN / 1024
+        print(f"\n[DRY RUN] 预计下载量：~{approx_gb:.1f} GB（按 {APPROX_MB_PER_SCAN} MB/scan 估算）")
+        print("[DRY RUN] 去掉 --dry_run 参数执行真实下载。")
+        return
 
     # Step 3：逐 patient 下载
     dest_root.mkdir(parents=True, exist_ok=True)
@@ -400,28 +443,157 @@ def download_subset(n_scans: int = 50, dest_root: Path = LIDC_SUBSET_DIR) -> Non
     print("=" * 60)
 
 
+def extend_subset(n_new: int = 100, dest_root: Path = LIDC_SUBSET_DIR,
+                  dry_run: bool = True) -> None:
+    """
+    扩样模式（extend）：
+      1. 检测 dest_root 已下载 patient → 生成 exclude 集合
+      2. 从剩余候选按平衡策略选 n_new 个**新** patient
+      3. 查 pylidc DB 取 series_instance_uid
+      4. dry_run=True（默认）：只打印新 UID 列表 + 预计大小，不下载
+      5. dry_run=False：执行真实下载
+
+    注意：已下载的 patient 绝不重下（通过 exclude 集合跳过）。
+    """
+    print("=" * 60)
+    print("  download_lidc_subset — DisagreePred A1 (extend)")
+    print(f"  新增目标 patient 数：{n_new}")
+    print(f"  下载目标目录      ：{dest_root}")
+    print(f"  dry_run            ：{dry_run}")
+    print("=" * 60)
+
+    # Step 1：检测已下载
+    already = get_already_downloaded(dest_root)
+    print(f"\n[extend] 已下载 {len(already)} 个 patient（将跳过）：")
+    for pid in sorted(already):
+        print(f"  {pid}")
+
+    if not already:
+        print("[WARN] dest_root 未发现已下载 patient，建议先跑 --mode fresh --n_scans 50",
+              file=sys.stderr)
+
+    # Step 2：平衡采样（exclude 已下载）
+    new_patients = select_balanced_patients(DIST_CSV, n_new, exclude=already)
+
+    if not new_patients:
+        print("[ERROR] 无新候选 patient 可选，dist.csv 候选已耗尽？", file=sys.stderr)
+        sys.exit(1)
+
+    # Step 3：查 UID
+    uid_map = get_series_uid_map(new_patients)
+
+    if not uid_map:
+        print("[ERROR] 无有效 UID，检查 pylidc 安装。", file=sys.stderr)
+        sys.exit(1)
+
+    # Step 4：预览 / 下载
+    total_after = len(already) + len(uid_map)
+    approx_gb = len(uid_map) * APPROX_MB_PER_SCAN / 1024
+
+    print(f"\n[extend] 新增 {len(uid_map)} 个 patient（已有 {len(already)}，"
+          f"完成后共 ~{total_after} 个）")
+    print(f"[extend] 预计新增下载量：~{approx_gb:.1f} GB（{APPROX_MB_PER_SCAN} MB/scan 估算）")
+    print()
+    print("[extend] 将要下载的新 patient 列表：")
+    for pid, uid in sorted(uid_map.items()):
+        print(f"  {pid}  SeriesUID={uid}")
+
+    if dry_run:
+        print()
+        print("=" * 60)
+        print("  [DRY RUN] 预览完毕，未执行下载。")
+        print("  确认无误后运行（去掉 --dry_run）：")
+        print(f"    python {SCRIPT_DIR / 'download_lidc_subset.py'} "
+              f"--mode extend --n_new {n_new}")
+        print("=" * 60)
+        return
+
+    # 真实下载
+    dest_root.mkdir(parents=True, exist_ok=True)
+    success_list: list[str] = []
+    fail_list: list[str] = []
+
+    total = len(uid_map)
+    for i, (pid, uid) in enumerate(sorted(uid_map.items()), 1):
+        print(f"\n[{i}/{total}] {pid}")
+        ok = download_series(uid, pid, dest_root)
+        if ok:
+            success_list.append(pid)
+        else:
+            fail_list.append(pid)
+
+    configure_pylidcrc(dest_root)
+
+    total_bytes = sum(
+        f.stat().st_size
+        for f in dest_root.rglob("*")
+        if f.is_file()
+    )
+    total_gb_all = total_bytes / 1024 ** 3
+
+    print()
+    print("=" * 60)
+    print("  扩样下载完成 — 摘要")
+    print("=" * 60)
+    print(f"  原有 patient ：{len(already)}")
+    print(f"  新增成功     ：{len(success_list)}")
+    print(f"  新增失败     ：{len(fail_list)}")
+    if fail_list:
+        print(f"  失败列表：{fail_list}")
+    print(f"  dest_root 当前总大小：{total_gb_all:.2f} GB")
+    print(f"  LIDC 子集目录：{dest_root}")
+    print()
+    print("  下一步：")
+    print(f"    python {SCRIPT_DIR}/parse_lidc.py --data_root {dest_root}")
+    print("=" * 60)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 入口（主线执行命令见此）
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # ── 主线执行：python download_lidc_subset.py --n_scans 50 ────────────────
-    print("主线执行：python project/meeting/DisagreePred/scripts/download_lidc_subset.py --n_scans 50")
-
     parser = argparse.ArgumentParser(
-        description="DisagreePred KILL-1：下载 LIDC-IDRI ~50 scan 子集（平衡 agree/disagree）"
+        description=(
+            "DisagreePred A1：下载 LIDC-IDRI 子集（平衡 agree/disagree）\n"
+            "  fresh  模式：首次下载 --n_scans 个 patient\n"
+            "  extend 模式：跳过已下，再下 --n_new 个新 patient（默认 dry_run 预览）"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--mode", type=str, default="extend", choices=["fresh", "extend"],
+        help="运行模式：fresh=首次下载，extend=扩样（默认 extend）"
     )
     parser.add_argument(
         "--n_scans", type=int, default=50,
-        help="目标 patient 数（默认 50，约 6GB）"
+        help="[fresh 模式] 目标 patient 总数（默认 50）"
+    )
+    parser.add_argument(
+        "--n_new", type=int, default=100,
+        help="[extend 模式] 新增 patient 数（默认 100，凑 ~150 total）"
     )
     parser.add_argument(
         "--dest_root", type=str, default=str(LIDC_SUBSET_DIR),
         help=f"DICOM 下载目标目录（默认 {LIDC_SUBSET_DIR}）"
     )
+    parser.add_argument(
+        "--dry_run", action="store_true", default=False,
+        help="[extend 模式] 只打印将下载的 UID 列表 + 预计大小，不执行下载"
+    )
     args = parser.parse_args()
 
-    download_subset(
-        n_scans=args.n_scans,
-        dest_root=Path(args.dest_root),
-    )
+    dest = Path(args.dest_root)
+
+    if args.mode == "fresh":
+        download_subset(
+            n_scans=args.n_scans,
+            dest_root=dest,
+            dry_run=args.dry_run,
+        )
+    else:  # extend
+        extend_subset(
+            n_new=args.n_new,
+            dest_root=dest,
+            dry_run=args.dry_run,
+        )

@@ -270,3 +270,5 @@ state.json：status = "error_major"
 | 相关系数计算 | 纯 numpy 实现 PLCC/SRCC | scipy.stats（与 PyTorch 共享 OpenMP，Windows 报 OMP Error #15） |
 | 后台启动 | `Start-Process powershell` | `Bash(run_in_background=True)`（随 shell 退出被杀） |
 | pin_memory | `false`（Windows spawn workers 不支持） | `true` |
+| 控制台编码（GBK） | Start-Process 启动时带 `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'`；或脚本内 `print` 禁非 ASCII 符号（✓✗等）| 默认 GBK 控制台遇 ✓✗ 等非 ASCII 字符 `UnicodeEncodeError` 崩 |
+| cv2 + torch OpenMP 冲突 | 启动时带 `$env:KMP_DUPLICATE_LIB_OK='TRUE'; $env:OMP_NUM_THREADS='1'` | `libiomp5md` 重复加载 → `exit 139` 零输出（extract/inference 时高发） |

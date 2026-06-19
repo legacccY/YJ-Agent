@@ -1,0 +1,14 @@
+pair,subset,method,rank,auroc
+smoke_NIH_vs_VinDr,raw,ODIN,1,1.0
+smoke_NIH_vs_VinDr,raw,Energy,2,1.0
+smoke_NIH_vs_VinDr,raw,MDS,3,1.0
+smoke_NIH_vs_VinDr,raw,ViM,4,1.0
+smoke_NIH_vs_VinDr,raw,GradNorm,5,1.0
+smoke_NIH_vs_VinDr,raw,Residual,6,1.0
+smoke_NIH_vs_VinDr,raw,SHE,7,1.0
+smoke_NIH_vs_VinDr,raw,DICE,8,1.0
+smoke_NIH_vs_VinDr,raw,ASH,9,1.0
+smoke_NIH_vs_VinDr,raw,MSP,10,0.9688
+smoke_NIH_vs_VinDr,raw,KNN,11,0.4844
+smoke_NIH_vs_VinDr,raw,NNGuide,12,0.125
+smoke_NIH_vs_VinDr,raw,fDBD,13,0.0

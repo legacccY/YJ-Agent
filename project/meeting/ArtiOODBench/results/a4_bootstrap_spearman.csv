@@ -1,0 +1,5 @@
+pair,spearman_point,ci_lower,ci_upper,ci_upper_lt_0.7,top1_orig,top1_cleanC_rank,top1_dropped_from_top3,A4_verdict,n_matched_pairs,common_support_pct,artifact_only_auroc_cleanC,method_mean_auroc_cleanC,smd_max,smd_mean
+NIH_vs_VinDr,0.8571,0.3996,1.0,0,ViM,1,0,A-4 FAIL,156,0.0,0.5668,0.5958,0.128,0.0517
+NIH_vs_RSNA_normal,1.0,1.0,1.0,0,ViM,1,0,A-4 FAIL,382,0.0,0.4975,0.5909,0.1457,0.0453
+BraTS_normal_vs_BrainTumor_normal,nan,nan,nan,-1,ViM,-1,-1,"INSUFFICIENT (n_matched=6, unable to decide)",6,0.0,nan,nan,1.5255,0.3776
+HAM_NV_vs_ISIC2020_benign,0.2857,-0.8667,0.9565,0,ViM,1,0,A-4 FAIL,228,0.0,0.5136,0.5755,0.1959,0.0661

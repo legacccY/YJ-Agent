@@ -6,6 +6,66 @@
 
 ---
 
+## 2026-06-19（会话 46，🔀 转投 ACCV/WACV 决策 + 冲 80% 补强矩阵 + R1/R3 fine-tune 脚本就绪）
+
+> 闪退恢复续 ICLR 大编队。本窗先把 S 版砍到 9 页（见会话 45 续工，正文砍到 ~9.3p：4 writer 紧致 + §4 Prop 挪附录 + 3 图缩 + 2 图 + 表挪附录 A28 + float 收紧，编译 0 断引）。**随后用户拍板转投方向**，9 页 ICLR 路线暂搁，转 ACCV/CV 会议补强路线。
+
+### 用户拍板（2026-06-19）
+- **转投 ACCV 2026**（坚持，非 WACV）+ **目标冲录用率 80%**（守诚实底线，明确「藏负结果/暗示打平=赢 这些不做」）+ **不卡时间、可加实验**。
+
+### 调研结论（3 researcher + skeptic + planner 编队）
+- **ACCV 2026**：双年会，大阪 ddl 7-05（16 天，赶不上等 2028），14 页 LNCS 双栏，双盲，CCF-C/CORE-B，~32%。有 Biomedical topic，皮肤科有先例非主场。
+- **WACV（新事实）**：WACV 2026 已截止；WACV 2027 ddl 预计 ~2026.7，**CORE-A（高于 ACCV）+ Applications track 有 AC overrule 应用稿保护（明文不得仅因算法新颖性不足拒稿）**，皮肤科先例 DermEVAL（WACV 2026 录用），8 页双栏。主线判断：WACV 客观更优（对冲本篇最弱轴 method novelty），但用户定 ACCV；**补强 venue 无关，先做，venue 最终可等补强结果 + WACV 2027 ddl 公布再定，不吃亏**。
+- **skeptic 红队（2🔴）**：① 80% 与 32% 基线 + 论文结构（贡献散 + incremental method + 应用域）结构性矛盾，真实天花板 ACCV 35-55% / WACV 45-60%，80% = oral 级共识撑不起；硬冲会诱导越线 reframe。② ACCV 无 application 保护，venue 错配不可消除（→ WACV）。reframe 安全线 = **改 emphasis（谁当 headline）不改 truth value（负结果变正/打平变赢/聚合掩盖 per-class = 越线）**。补 SOTA 对比公平性陷阱：自家 DP-Loss 用了诊断监督，baseline 没见过诊断 label，直接比不公 → 出路 = R3 把 DP-Loss 接 baseline 证可移植，差异归因 loss 非容量。
+- **planner 补强矩阵**：命门 **R1（6 SOTA 复原模型 fine-tune 后比诊断保持，把 E10 从 zero-shot 升级）+ R3（DP-Loss graft 证可移植）**；加分 R4/R5 跨模态、R6 selective-prediction 对比、R7 retake novelty 表、R8-10 零算力重排。必做集 ~130-220 GPU·h（HPC 4 卡 3-4 天）。
+- **researcher 查齐**6 baseline（Restormer/NAFNet/MIRNetv2/SwinIR/Uformer/Real-ESRGAN）+ SelectiveNet 官方 ft 超参（ft lr 降 10x；Real-ESRGAN 有官方 ft 配方）。
+
+### 完成
+- **R1/R3 统一脚本就绪** `project/run_r1r3_finetune_eval.py`（coder，~650 行，smoke 全过）：R1=baseline 官方配方 fine-tune（task-agnostic），R3=DP-Loss graft 到最强 baseline（task-aware），评测对齐 E7/E10 口径（诊断保持 ΔAUC/agreement/KL/dangerous_flip + **per-class melanoma 拆分** + paired bootstrap 95% CI），复用 run_e10_baseline_hpc.py 管线。公平性设计内嵌（同退化训练集 fine-tune 到收敛、不 cherry-pick、melanoma 净负如实输出）。
+
+### 待续
+1. **补 ft 超参 TODO**（researcher 核或先跑观察早停）：Restormer/NAFNet/MIRNetv2/SwinIR ft iterations（暂按 BasicSR 1/6 惯例 50k）、Real-ESRGAN perceptual_weight + ft iterations、VGG19 conv 层索引、R3 backbone 选择（默认 restormer=PSNR 最高）。
+2. **HPC 跑 R1×6 + R3**（🛑 拍板点：传新代码 run_r1r3_finetune_eval.py = 对外传输 + ~150 GPU·h 大算力）。
+3. **reframe 设计**（提 DP-Loss/retake 当 positive headline，全局 triage 负结果 + melanoma 净负如实降 analysis，不藏不夸）。
+4. **LNCS 14 页重排**（ACCV）或等 venue 最终定。
+
+### 诚实底线（钉死）
+melanoma 净负（−81/v6 null）、全局 triage 不超 Direct、Thm2 局部界 **全部如实留正文带数字**。reframe 只改 emphasis 不改 truth value。补强建立 C1/C2 正向贡献，不触碰任何诚实负结果。
+
+### 命中率/把握
+- 转 CV 会议真实天花板：ACCV 35-55% / WACV 45-60%（补强后）。80% 当方向不当承诺，守诚实做到能做的最高。
+
+---
+
+## 2026-06-19（会话 45，🔀 拍板双版本 + 发现正文超页 3.5x + S 版 9 页全章压缩重写首过）
+
+> 用户要求：先查 ICLR 制度/要求/流程落档 → 针对性优化文章（行文太杂、数据文字穿插乱、标点堆砌、要写人话讲故事）→ 图做高密度组图砍废图配色字体匹配 → 确认 agent 创新点状态。**用户拍板「双版本并行」**：长版（current main.tex）留 TMLR/MedIA，另起 9 页 ICLR 精简版。本窗推流水线 B（S 版正文）。
+
+### 完成
+1. **落档 ICLR 投稿规范**（`ICLR_投稿规范.md`，researcher 联网核官方）：正文 **9 页硬上限超即 desk-reject** / bib+附录不计页 / double-blind / 评分 {2,4,6,8,10} / 「缺 SOTA 不构成拒稿」对 analysis 友好 / 行文+图表+诚实负结果准则。
+2. **诊断致命问题**：当前 main.tex 正文 §1-§9 在 article 格式 ~32 页（附录第 33 页起）；套**官方 ICLR2026 模板**实测正文 ~10.5 页——**远超 9 页硬限，现稿投 ICLR 必秒拒**。用户抱怨「文字杂/图占地方」根因即此肿胀。
+3. **agent 创新点(C2)确认在做且已进稿**：`agent/orchestrator.py`(27KB)+四通道+ReAct+rule fallback，跑出 agent_vs_direct_risk.csv / eval_agent_report.md（低质追问率 59% / 高质 15.5%，引导选择性 PASS），稿 §5+附录 A5 全在。定位=采集闭环新机制（非性能赢，Thm2 已降格，STORY 诚实路线）。
+4. **建 S 版骨架** `main_iclr9.tex`（复用 preamble/appendix/bib/tables，正文在 `drafts_short/`，长版 main.tex+drafts/ 不动）+ `双版本重构蓝图.md`（页面预算+8图→4组图映射+Okabe-Ito 配色字体规范）。
+5. **9 章全压缩重写首过**（§1/§9 主线写，§2-§8 派 7 个 writer 并行，caveman OFF）：人话化（一段一 claim、段首句给结论、只说 trend、数字甩表/图注、清标点堆砌），红线全守（GradProm 焊死段、Thm2 降格、FiLM 不卖 PSNR、E5 melanoma 净负不藏、R10 不搬 BMVC 表、§7 故意不 \input table1_main/table2_universality 避偷渡降级框架+撞 universality 墙）。源稿 §7 实验 5283 词 4 文件 → 合一 ~1050 词。
+6. **套真 ICLR 样式编译干净**：修 natbib option clash（\PassOptionsToPackage round）+ 5 类断引（lem:dp/prop:entropy 由 \input A2_prop3_lemma3_compact 补回、app:benchmark→app:a4、app:ablations→app:surface、sec:agent-routing 补 label、§7 去未含图 fig:dflip/fig:retake-gradient 断引）→ **main_iclr9.tex 全量 39 页（附录起 p13）、0 undef-ref/0 undef-cite/无致命错误**。
+7. **出 Fig1 teaser 概念图提示词**（academic-figure-prompt，Okabe-Ito 配色，四通道+retake 采集闭环高亮）——用户暂缓那张图的提示词已就绪。
+8. **流水线 A 完成（图组合，3 coder 并行）**：8 散图 → 3 张高密度组图（Okabe-Ito 矢量 PDF，复用原脚本逻辑数字不重算）：
+   - `figures/fig2_decision_surface.pdf`（C0：A 可靠性 AUC 曲线 + B 可恢复性 RdBu 热图）
+   - `figures/fig3_enhancement.pdf`（C1：A e10 tradeoff + B 分退化 PSNR + C dflip）
+   - `figures/fig4_boundary_agent.pdf`（C3+C2：A per-class salvage + B DCA/triage + C retake 梯度）
+   - 脚本 `scripts/plot_fig{2,3,4}_composite.py`。**主线 Bash 核关键值全过**（blur drop 0.0911 / contrast delta −0.0355 / contrast PSNR 29.11<32.29 / melanoma salvage 5.2%）。
+9. **组图接进 tex**：§3→fig2、§7 三散图→fig:enhancement+fig:boundary-agent（crefs 改 panel 字母 A/B/C），fig:dca 加别名指 Fig4B（不碰共享附录）。**揪出 benign 74.5%(v6 图) vs 75.6%(原始 E5 正文) 分母不一致**→把图 cref 挪到 v6 句对齐（melanoma 5.2% headline 两版一致）。**重编：0 undef-ref/0 undef-cite/无致命**。
+
+### 待续（S 版收口，差最后一里）
+- **正文 §1-§9 现 ~10.5p（附录 p12）→ 还差 ~1.5p 到 9p**。组图已省 ~1 页；剩余靠**行文紧致 pass + abstract 微删（280w→~180）+ intro 贡献 bullet 收紧 + §4 compact 块只留 Lemma 把 Prop:entropy 全挪附录**。
+- verifier 核 S 版全部数字 → reviewer 十角色对抗审 → 卡 9 页。
+- **[C1.4] R1/R3 统一 fine-tune+评测脚本**：`project/run_r1r3_finetune_eval.py`（coder 写，2026-06-19）。R1=6 baseline 各自皮肤镜 ft（官方配方换数据集），R3=最强 baseline backbone 接 DP-Loss（v5 feature-level cosine+pos-hinge，lambda 沿用 v5 config）。评测对齐 E10 口径（n≈3627, B3 frozen oracle, bootstrap 2000, melanoma per-class 拆分）。主线 HPC 提交前先确认下方 TODO 项。
+- Fig1 teaser 待用户用提示词出图后入稿（§1 顶部）。
+- 脱敏 grep R4（Q-VIB/VisiSkin→通用名）；atcxr2025 待补 bib；小 LM 名脱敏前确认。
+- 流水线 C（长版 TMLR 行文优化）未启。
+
+---
+
 ## 2026-06-18（会话 44，🏁 E1 HPC 恢复 + pre-submit 全绿 + 补图 3→11 → 🏷️ 封存·待最终打磨）
 
 > 🏷️ **本会话末封存为「待最终打磨」**（非 BMVC 式硬封印，稿可改、只暂停推进）。九章合稿 71 页 / 11 图 / 0 硬阻断。**待最终打磨清单**：① framework/架构概念图（需外部 AI 出图工具，用户暂缓）② camera-ready 最终脱敏 grep ③ fairness ECE 张力 rebuttal 预案 ④ VisiScore csv 已落盘。重开按 README 状态行 + 本 entry 读档。DDL abstract 09-22 / full 09-29。

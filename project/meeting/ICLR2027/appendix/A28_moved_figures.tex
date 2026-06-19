@@ -1,0 +1,41 @@
+% =====================================================================
+% A28 — Supplementary main-result figures relocated from the body to meet the
+% ICLR 9-page main-text limit. Both figures are referenced from the main text
+% (\cref{sec:decision-surface}, \cref{sec:exp-sota}); labels are unchanged so all
+% main-text \cref / \ref calls resolve here. Figures and numbers are identical to
+% the body version (verifier-checked, no re-computation). caveman OFF.
+% =====================================================================
+
+\section{Supplementary Main-Result Figures and Tables}\label{app:moved-figs}
+To respect the nine-page main-text limit, two result figures and the SOTA-comparison table referenced
+in the main text are reproduced here in full resolution: the reliability\,$\times$\,recoverability
+decision surface of \cref{sec:decision-surface}, the enhancement-versus-restoration comparison of
+\cref{sec:exp-sota}, and the E10 generic-restoration table (\cref{tab:e10}). The accompanying numbers
+are stated in the main text and in Appendix~\ref{app:a2-prop3} and the cost-benefit appendix; nothing
+here is recomputed.
+
+\input{table1_e10_sota}
+
+% Fig: composite decision surface. (A) reliability AUC curves; (B) recoverability heatmap.
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig2_decision_surface.pdf}
+\caption{\textbf{Reliability~$\times$~recoverability decision surface} over the five-dimension $\times$ five-severity grid ($n=360$/cell). \textbf{(A)} Diagnostic AUC declines monotonically with severity; blur is by far the most fragile dimension ($\Delta=-0.0911$ from S1 to S5). \textbf{(B)} Recoverability $\Delta=\mathrm{AUC}_{\mathrm{enh}}-\mathrm{AUC}$ per cell (diverging scale; starred cells have a bootstrap $95\%$ CI excluding zero): enhancement helps across the moderate window but significantly hurts exactly one of $25$ cells, contrast at S5. Full per-cell values and CIs in Appendix~A5\_2.}
+\label{fig:c0-surface}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/fig3_enhancement.pdf}
+  \caption{\textbf{Diagnosis-preserving enhancement versus generic restoration.}
+  \textbf{(A)} Fidelity\,/\,diagnosis-preservation trade-off: each point is one zero-shot
+  restoration model on identical mixed-severity degraded inputs ($n{=}10{,}881$ paired,
+  $117$ melanomas); \visienhance{} is the only model in the safe corner (high PSNR,
+  $\Delta\mathrm{AUC}\!\approx\!0$), whereas generic restorers sacrifice fidelity or
+  diagnostic preservation. \textbf{(B)} Per-dimension restoration PSNR: enhancement helps
+  brightness and blur but is harmful on contrast ($29.11$\,dB, below the degraded input's
+  own $32.29$\,dB). \textbf{(C)} Residual \emph{dangerous flips}: enhancement still pushes a
+  small subset of correctly-called melanomas below the decision threshold (sources
+  \texttt{results/e10\_*.csv}, \texttt{e2\_perdim.csv}, \texttt{dflip\_persample\_v6.csv}).}
+  \label{fig:enhancement}
+\end{figure}

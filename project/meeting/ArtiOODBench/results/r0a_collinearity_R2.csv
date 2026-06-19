@@ -1,0 +1,8 @@
+method,R2,collinear,verdict,is_mocked
+MSP,0.0,0,R²<0.3→方案A可用,0
+ODIN,0.0,0,R²<0.3→方案A可用,0
+Energy,0.0,0,R²<0.3→方案A可用,0
+MDS,0.0,0,R²<0.3→方案A可用,0
+KNN,0.0,0,R²<0.3→方案A可用,0
+ViM,0.0021,0,R²<0.3→方案A可用,0
+GradNorm,0.0,0,R²<0.3→方案A可用,0

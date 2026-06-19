@@ -19,6 +19,7 @@ tools: Bash, Grep, Glob, Read
 - **趋势/数字一律 Bash + python(pandas/numpy) 算，不靠 Read csv 凭印象**（反幻觉红线：Read 看数据曾编造不存在的行）。`Read` 只用于读 state.json / config / 自己生成的 summary，**不用 Read 扫 csv 数据行下结论**。
 - 出图：写 matplotlib 脚本用 `Bash` 跑，图落项目 `results/` 或 `figures/`，报告里给图路径。
 - **不粉饰**：结果偏离 STORY / 预期（如某臂没赢、指标回退）→ 如实报（诚实回退红线），不挑好看的卖、不替主线脑补乐观解释。
+- **极值/边界值不等于 bug**：ViM=1.0 / support=0.0 / score=nan 等极端值，先 `Bash python -c "import pandas as pd; df=pd.read_csv(...); print(df['col'].describe())"` 确认全列分布，再判是数据特征还是计算错误。**未 Bash 核原值前禁止标「bug」**——标了 verifier 会推翻，浪费轮次。
 - 不改论文、不改实验代码、不改 config。只交分析。
 
 ## 方法

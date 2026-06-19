@@ -1,0 +1,53 @@
+% Page-count probe: same body as main_iclr9.tex but under the official ICLR conference style
+% (iclr2026 as proxy for iclr2027). Measures the TRUE main-body page count for the 9-page limit.
+\PassOptionsToPackage{round}{natbib}
+\documentclass{article}
+\usepackage{iclr2026_conference,times}
+\input{preamble}
+
+\title{Closed-Loop Quality-Triage for Reliable Skin-Lesion Diagnosis\\
+on Quality-Varying Consumer Imagery}
+\author{Anonymous Authors}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a closed-loop quality-triage system for skin-lesion diagnosis on degraded consumer
+imagery, which decides, per input, whether to diagnose directly, to apply diagnosis-preserving
+enhancement, or to query for a retake, instead of passively enhancing every image or blindly
+deferring. The decision is driven by a per-input quality estimate; in our instantiation a five-head
+assessor (\visiscore) scores perceptual quality with PLCC $0.924$ / SRCC $0.895$, though any
+no-reference quality scalar can take its place. Our first contribution is a recipe for enhancing
+\emph{safely}: a feature-level diagnosis-preserving objective (DP-Loss) whose information loss we bound
+by a Pinsker-optimal mutual-information lower bound (Lemma~\ref{lem:dp}). Empirically, within a
+moderate-degradation window enhancement leaves diagnosis essentially unchanged ($\Delta\mathrm{AUC}=
+-0.012$, $95.8\%$ enhanced-versus-reference agreement, McNemar $p=0.57$), and the DP-Loss ablation
+confirms its effect ($\Delta\mathrm{AUC}_{\text{enh}}$ improves by $+0.021$, $95\%$ CI
+$[+0.005,+0.035]$; McNemar $p=2.3\times10^{-45}$). To map \emph{when} enhancement is licensed we chart
+a reliability~$\times$~recoverability decision surface (per-dimension~$\times$~per-severity, AUC-led),
+on which blur is the most fragile dimension ($\Delta\mathrm{AUC}=-0.091$ at the most severe setting)
+and extreme contrast loss is the one regime where enhancement is significantly harmful
+($-0.036$, $95\%$ CI excluding zero). Outside the safe window the system requests a retake --- to our
+knowledge the first re-acquisition channel in this setting, rather than mere abstention --- governed by
+a local, per-band conditional risk guarantee (Theorem~\ref{thm:agent-compact}). We also report,
+rather than hide, an honest negative: under a fixed-threshold policy, global triage does not yet beat
+direct diagnosis on confidence-gated sensitivity ($0.818$ for direct diagnosis versus $0.788$ for the
+strongest variant at a $20\%$ referral budget), which we read as motivation for learned routing
+thresholds. Code and benchmark will be released.
+\end{abstract}
+
+\input{drafts_short/s1_intro}
+\input{drafts_short/s2_related}
+\input{drafts_short/s3_decision_surface}
+\input{drafts_short/s4_c1_enhance}
+\input{drafts_short/s5_c2_agent}
+\input{drafts_short/s6_setup}
+\input{drafts_short/s7_experiments}
+\input{drafts_short/s8_discussion}
+\input{drafts_short/s9_conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,123 @@
+% ICLR 2027 — 9-PAGE SHORT VERSION (S 版). Body sections compressed into drafts_short/.
+% Long version (TMLR/MedIA) remains in main.tex with drafts/. Section order LOCKED to
+% STORY_FRAMEWORK.md §故事弧 (anti-drift rule 6). Reuses preamble/appendix/references/tables.
+% HARD LIMIT: main body §1-§9 must fit <= 9 pages (ICLR desk-reject otherwise).
+% Numbers: only verified FROZEN values; abstract + §1 intro kept from main.tex (already tight).
+\PassOptionsToPackage{round}{natbib}
+\documentclass{article}
+\usepackage{iclr2026_conference,times}  % ICLR submission style (iclr2026 as proxy until iclr2027 released)
+\usepackage[utf8]{inputenc}
+\input{preamble}
+
+% ── 9-page S-version space tightening (isolated to this file; long version untouched) ──
+\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{1pt}
+
+\title{Closed-Loop Quality-Triage for Reliable Skin-Lesion Diagnosis\\
+on Quality-Varying Consumer Imagery}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% LOCKED hook (anti-drift rule 1 / R14): constructive, closed-loop quality-triage.
+We present a closed-loop quality-triage system for skin-lesion diagnosis on degraded consumer
+imagery. Per input, it decides whether to diagnose directly, to apply diagnosis-preserving
+enhancement, or to query for a retake, rather than enhancing every image or deferring blindly. The
+decision is driven by a per-input quality estimate; our instantiation uses a five-head assessor
+(\visiscore, PLCC $0.924$ / SRCC $0.895$), but any no-reference quality scalar suffices. Our first
+contribution is a recipe for enhancing \emph{safely}: a feature-level diagnosis-preserving objective
+(DP-Loss) whose information loss we bound by a Pinsker-optimal mutual-information lower bound
+(Lemma~\ref{lem:dp}). Within a moderate-degradation window, enhancement leaves diagnosis essentially
+unchanged ($\Delta\mathrm{AUC}=-0.012$, $95.8\%$ enhanced-versus-reference agreement, McNemar
+$p=0.57$), and the DP-Loss ablation confirms the effect ($\Delta\mathrm{AUC}_{\text{enh}}$ improves by
+$+0.0205$, $95\%$ CI $[+0.005,+0.035]$; McNemar $p=2.3\times10^{-45}$). To map \emph{when} enhancement
+is licensed, we chart a reliability~$\times$~recoverability decision surface (per-dimension~$\times$~per-severity,
+AUC-led): blur is the most fragile dimension ($\Delta\mathrm{AUC}=-0.091$ at the most severe setting),
+and extreme contrast loss is the one regime where enhancement is significantly harmful ($-0.036$,
+$95\%$ CI excluding zero). Outside the safe window the system requests a retake --- to our knowledge
+the first re-acquisition channel in this setting, rather than mere abstention --- under a local,
+per-band conditional risk guarantee (Theorem~\ref{thm:agent-compact}). We report, rather than hide, an
+honest negative: under a fixed-threshold policy, global triage does not yet beat direct diagnosis on
+confidence-gated sensitivity ($0.818$ versus $0.788$ for the strongest variant at a $20\%$ referral
+budget), which motivates learned routing thresholds. Code and benchmark will be released.
+\end{abstract}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s1_intro}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s2_related}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s3_decision_surface}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s4_c1_enhance}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s5_c2_agent}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s6_setup}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s7_experiments}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s8_discussion}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\input{drafts_short/s9_conclusion}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\section*{Ethics Statement}\label{sec:ethics}
+This work uses only publicly available, de-identified dermatology datasets under their respective
+licences; it does not recruit participants, collect new patient imagery, or run any prospective
+clinical protocol. We make \emph{no} claim of clinician validation: the system is a research
+framework, not a medical device, and production use would require institutional review, regulatory
+clearance, and prospective trials (\cref{sec:discussion}). To mitigate dual-use and over-trust risks,
+the agent includes an explicit refuse channel, enhancement is deterministic and diagnosis-preserving
+rather than generative (avoiding hallucinated structure; \cref{sec:discussion}). Subgroup fairness
+across sex, age, and skin tone is a recognised concern for deployment; a per-subgroup calibration
+analysis is reported in companion work and is not claimed here. Clinical value is assessed only
+through decision-curve analysis and triage simulation, each with
+stated limits (Appendix~\ref{app:a20}); an LLM-as-judge audit is specified as a protocol
+(Appendix~\ref{app:a19}) but its ratings are not yet collected and are deferred to the
+camera-ready, under the disclaimer in Appendix~\ref{app:a23}.
+
+\section*{Reproducibility Statement}\label{sec:repro}
+All theoretical claims are stated with explicit assumptions and full proofs in
+Appendices~\ref{app:a1}--\ref{app:a3}. The benchmark construction (sources, quality scoring,
+degradation tiers, subset definitions, composition) is detailed in Appendix~\ref{app:a4}, and the
+complete environment, data splits, seeds, compute budget, and release artefacts --- including code,
+configurations, checkpoints, and benchmark metadata --- are described in Appendix~\ref{app:a26}. A
+one-command \texttt{reproduce.sh} regenerates the reported figures and statistics.
+
+\appendix
+\input{appendix/A0_notation}
+\input{appendix/A1_qvib}
+\input{appendix/A2_prop3_lemma3}
+\input{appendix/A2_3_theorem2}
+\input{appendix/A3_corollary1}
+\input{appendix/A4_itb_construction}
+\input{appendix/A5_agent_impl}
+\input{appendix/A28_moved_figures}
+\input{appendix/A5_2_c0_surface_ci}
+\input{appendix/A18_failure_modes}
+\input{appendix/A19_llm_judge}
+\input{appendix/A20_cost_benefit}
+\input{appendix/A21_rebuttal}
+\input{appendix/A23_reader_study_disclaimer}
+\input{appendix/A26_reproducibility}
+\input{appendix/A27_generalization_fairness}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

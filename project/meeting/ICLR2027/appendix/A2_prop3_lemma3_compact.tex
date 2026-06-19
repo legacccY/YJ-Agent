@@ -1,27 +1,7 @@
-% Compact statements of Prop 3 + Lemma 3 for the main body (§4.4).
+% Compact statement of Lemma 3 for the main body (§4.3).
+% Proposition 3 (directional entropy) statement + proof live in Appendix A2 (prop:entropy);
+% only the load-bearing mutual-information Lemma is stated in the body to save space (9-page S version).
 % Full proofs: Appendix A2.1 / A2.2 (appendix/A2_prop3_lemma3.tex).
-
-\begin{proposition}[Variance-Driven Entropy Term, Directional]\label{prop:entropy}
-Under Assumptions A1--A4 (quality improvement, calibrated scoring, monotone prior,
-diagnostic preservation), for $x$ in the salvage band and $q'=f_\eta(\Tw(x,q))$, the
-variance-driven component of the expected predictive entropy obeys the directional bound
-\begin{equation}
-\E_{x}\!\big[\Hent(\hat{p}_{\Tw(x,q)})\big] \;\leq\;
-\E_{x}\!\big[\Hent(\hat{p}_x)\big]
-- \tfrac{d}{2}\log\tfrac{\sigma^2(\qbar)}{\sigma^2(\qbar')} + 2\beta\sqrt{\epsilon},
-\label{eq:prop3}
-\end{equation}
-\emph{provided} the unmodelled mean-drift term is non-positive in expectation. The first
-negative term is the \qvib{} variance gap (Lemma~1, since $\qbar'>\qbar \Rightarrow \sigma^2$
-shrinks) and $2\beta\sqrt{\epsilon}$ bounds the magnitude of the diagnostic-preservation slack
-(Lemma~\ref{lem:dp}). We emphasise that the proviso is \textbf{not} empirically supported (a
-quality-conditioned probe finds the net predictive entropy \emph{increases} after enhancement);
-\eqref{eq:prop3} should therefore be read as characterising the sign of the $\sigma^2$-driven
-term, not as a net entropy reduction. The information-preservation role of this result in the
-paper is carried instead by Lemma~\ref{lem:dp} (validated by experiment E7) and the Stage-1
-PSNR$\,\geq 30$\,dB non-emptiness condition; see Appendix~\ref{app:a2-prop3} and the main-text
-Limitations.
-\end{proposition}
 
 \begin{lemma}[Diagnosis-Preserving Mutual-Information Bound]\label{lem:dp}
 Let $q_\theta$ be $\Lq$-Lipschitz in total variation and let the label entropy be

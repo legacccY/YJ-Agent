@@ -3,6 +3,11 @@
 **Deadline**：2026-09-22（abstract）/ 2026-09-29（full paper）
 **当前状态**：⏳ M3 (W9, 2026-07-23) 启动，目前空骨架
 **主指导**：`../../README.md` + `../../STORY_FRAMEWORK.md`
+**投稿规范真源**：[`ICLR_投稿规范.md`](ICLR_投稿规范.md)（页数/双盲/评审/行文/图表/诚实负结果硬约束，2026-06-19 落档）
+**⚠️ 正文超页警报**：当前 main.tex 正文 §1-§9 ≈ 32 页（附录第 33 页起），ICLR 硬上限 9 页 → 投稿前必须砍至 ≤9 页，否则 desk-reject。
+**双版本重构蓝图**：[`双版本重构蓝图.md`](双版本重构蓝图.md)（2026-06-19 拍板：长版投 TMLR/MedIA + 9 页 ICLR 精简版，含页面预算 + 8图→4组图映射 + 配色字体规范）。
+**ACCV/WACV 转投 reframe 蓝图**：[`ACCV_reframe_蓝图.md`](ACCV_reframe_蓝图.md)（2026-06-19，会话 46 转投决策配套：emphasis 重定位 = C1 DP-Loss + C2 query-for-retake 当 positive headline，C0 降动机、C3 降 analysis/limitation；含 claim→证据→位置→weight 对照表 + abstract/§1 reframe 草案 + R1/R3 补强接入 + 诚实自查清单。只改 emphasis 不改 truth value，三铁律负结果如实留正文。**设计文档，主线审过后才动 tex**）。
+**S 版（9 页 ICLR）骨架**：`main_iclr9.tex`（复用 preamble/appendix/bib/tables，正文章节在 `drafts_short/`；长版 main.tex + drafts/ 不动）。
 
 ---
 

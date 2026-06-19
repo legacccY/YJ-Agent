@@ -1,0 +1,52 @@
+% ============================================================
+% §6  Experimental Setup  (S version, 9-page short).
+% Compressed from drafts/s6_setup.tex (716 w -> <=300 w).
+% Drift contract: serves C1 (diagnosis-preserving enhancement) lever; this
+% section is the evaluation substrate, NOT a contribution (benchmark demoted).
+% Full benchmark construction -> Appendix A4.
+% R-rules kept: 6 enhancement baselines, diffusion forbidden (R8), bootstrap
+% 2000-sample 95% CI (R6), BMVC cited not reused (R10), anonymise (R4).
+% Numbers copied verbatim from drafts/s6_setup.tex; none recomputed.
+% ============================================================
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\paragraph{Datasets.}
+We evaluate on dermoscopic skin-lesion imagery from the public ISIC collection
+(ISIC-2020), with a fixed train/validation/test split. Paired diagnostic
+evaluations use the held-out paired subset ($n=3627$, with $117$
+melanoma-positive cases; the full test split has $6{,}626$ images). The
+diagnostic backbone is a frozen EfficientNet-B3 classifier (B3), held fixed
+across all evaluations so that any change in diagnostic AUC is attributable to
+the input rather than to retraining. All imagery is public; we run no reader study.
+
+\paragraph{Degradation protocol.}
+To make quality a known variable, we apply controlled degradations along five
+physically parameterised dimensions: blur, brightness, completeness, colour
+shift, and contrast. The main paired-evaluation protocol applies a
+\emph{moderate} tier; the per-dimension $\times$ per-severity decision surface of
+\S\ref{sec:decision-surface} sweeps each dimension across five severity levels.
+Full parameters and the severity grid are deferred to Appendix~\ref{app:a4}.
+
+\paragraph{Metrics.}
+We report restoration fidelity as per-image PSNR and SSIM, and diagnostic
+behaviour as the frozen-B3 AUC, the enhancement-induced $\Delta\mathrm{AUC}$, the
+enhanced-vs-reference agreement rate, and the feature-level KL divergence
+controlled by the DP-Loss. Every PSNR, AUC, $\Delta\mathrm{AUC}$, and agreement
+figure carries a bootstrap $2000$-sample $95\%$ confidence interval; paired
+comparisons add a McNemar test, and latency is reported in milliseconds per
+image. A companion calibration study reports a complementary per-dimension
+view, which we cite \citep{ANON-BMVC} but do not reuse.
+
+\paragraph{Enhancement baselines.}
+We compare against six publicly available deterministic restoration backbones
+spanning convolutional and transformer designs: Restormer~\citep{zamir2022restormer},
+NAFNet~\citep{chen2022simple}, MIRNet-v2~\citep{zamir2022mirnetv2},
+SwinIR~\citep{liang2021swinir}, Uformer-B~\citep{wang2022uformer}, and
+Real-ESRGAN~\citep{wang2021realesrgan}, each run zero-shot from official weights
+under the identical protocol and frozen B3. We deliberately exclude diffusion and
+other generative restorers: on dermoscopy they can hallucinate diagnostically
+salient structure (invented pigment networks or vessels), a medical-safety hazard
+we analyse in \S\ref{sec:discussion} rather than admit as a baseline.
+

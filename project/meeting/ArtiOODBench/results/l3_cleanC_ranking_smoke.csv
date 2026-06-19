@@ -1,0 +1,14 @@
+pair,subset,method,rank,auroc,n_matched
+smoke_NIH_vs_VinDr,cleanC_INSUF,MSP,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,ODIN,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,Energy,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,MDS,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,KNN,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,ViM,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,GradNorm,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,Residual,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,SHE,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,NNGuide,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,fDBD,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,DICE,-1,nan,0
+smoke_NIH_vs_VinDr,cleanC_INSUF,ASH,-1,nan,0

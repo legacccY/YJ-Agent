@@ -149,15 +149,18 @@
       "name": "MedIAnomaly benchmark (7 集)",
       "n": null,
       "subsets": "RSNA(胸片) / VinDr-CXR(胸片) / BrainTumor(脑MRI) / LAG(眼底) / Camelyon16(病理,有像素mask) / BraTS2021(脑MRI FLAIR,有像素mask) / ISIC2018-Task3(皮镜,nevus=正常)",
-      "local": "BraTS2021 已下: project/meeting/MedAD-FailMap/data/BraTS2021/ (train 4211 / test normal 828 / tumor 1948 / annotation 1948，计数对齐官方✅)；其余 6 集待按需下",
+      "local": "BraTS2021: project/meeting/MedAD-FailMap/data/BraTS2021/ ; BrainTumor(脑MRI): data/external/medianomaly/BrainTumor/ (images/ 2200 jpg + data.json split) ; RSNA(胸片): data/external/medianomaly/RSNA/ (images/ 5851 png + data.json + stage_2_train_labels.csv) ; LAG/VinCXR/Camelyon16 still TODO on Zenodo rec 12677223",
       "hpc": "TODO",
       "source": "Zenodo 分集 tar.gz: https://zenodo.org/api/records/12677223/files/<NAME>.tar.gz/content (BraTS2021 70MB / BrainTumor 42MB / LAG 202MB / RSNA 568MB / VinCXR 620MB / Camelyon16 891MB；注意是分集非单 zip)；codebase github.com/caiyu6666/MedIAnomaly。ISIC2018 不在此 Zenodo→本地 HAM10000 NV(6705图)零下载对接",
       "used_by": [
-        "medad-failmap",
-        "fmreg"
+        "artioodbench",
+        "fmreg",
+        "medad-failmap"
       ],
       "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估(协变量分层用 BraTS test/annotation mask); Phase 0 只用 BraTS2021。【fmreg 复用 BraTS2021 多序列(T1/T2/FLAIR)做同模态可变形配准主战场, 已 ready 免下】",
-      "status": "partial (BraTS2021 ready, 余 todo)"
+      "status": "partial (BraTS2021 ready, 余 todo)",
+      "format": "data.json schema: {\"train\":{\"0\":[normal files]},\"test\":{\"0\":[normal],\"1\":[anomaly]}}; class 0=normal 1=anomaly",
+      "note_artioodbench": "ArtiOODBench cross-source pairs: CXR P1=NIH(ID) vs VinDr(OOD local) / P2=NIH vs RSNA(OOD) ; MRI P3=BraTS2021 normal(ID) vs BrainTumor(OOD) ; derm P4=HAM10000(ID) vs ISIC2020(OOD local). cross-source task label=source-institution not normal/anomaly."
     },
     "vindrcxr_domainB": {
       "name": "Domain-B CXR (vindrcxr)",
@@ -240,8 +243,8 @@
     "lidc_idri": {
       "name": "LIDC-IDRI",
       "n": "1018 CT (4-annotator 结节标注)",
-      "local": "TODO 待下载",
-      "hpc": "TODO (上传新数据=拍板点,先报用户)",
+      "local": "D:/YJ-Agent/project/meeting/DisagreePred/data/LIDC_subset (150 scan/15G,2026-06-19扩);派生件 results/patches 289npy + results/a2_seg_masks 289 + lidc_disagree_labels.csv",
+      "hpc": "/gpfs/work/bio/jiayu2403/disagree/ (2026-06-19传~25M派生件:results/patches 289npy + a2_seg_masks 289 + lidc_disagree_labels_hpc.csv[patch路径改写HPC绝对];非原始DICOM。KILL-1 job1471101)",
       "source": "TCIA 公开免费 https://www.cancerimagingarchive.net/collection/lidc-idri/ ; 全集 1018 CT ~124GB(过大不下,用户拍板); 4 医师独立标注; pylidc cluster_annotations tol默认=slice_thickness(文档写pixel_spacing是bug); 存在性分歧65.2%(2669被标结节仅928获4/4一致,Armato2011 PMC3041807; 旧稿margin0.22=Dong2017边缘评分分歧≠存在性,勿混). 【精简路径(2026-06-18 researcher探,避124GB)】①XML-only<200MB=pylidc无DICOM纯查k分歧标签+坐标(免费,先算分布) https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=1966254 ②DICOM-LIDC-IDRI-Nodules 2.51GB=per-annotator SEG mask(非CT像素) https://www.cancerimagingarchive.net/analysis-result/dicom-lidc-idri-nodules/ ③KILL-1需CT图像patch→NBIA子集下~150-200 scan≈18-30GB(MIC-DKFZ/LIDC-IDRI-processing保per-annotator). ④LUNA16衍生丢标注者身份不可用/QUBIQ无肺结节排除",
       "split": "立项后定 (KILL-1 baseline 先行)",
       "used_by": [

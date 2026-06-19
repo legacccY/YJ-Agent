@@ -4,6 +4,58 @@
 
 ---
 
+## Entry 6 — 150 scan parse 落地 + A2 管线实现 + KILL-1 rerun 排队（2026-06-19，闪退恢复后大编队续）
+
+闪退恢复，续 Entry 5 大编队。本窗 = DisagreePred（除 ArtiOODBench 外新立项）。
+
+**① 数据扩成**：扩 scan 下载（bt2yuqp0m）完成 → 150 patient/15G 本地。`parse_lidc.py` 跑出 **289 cluster**（`parse_lidc_summary.json`：disagree_binary 164/agree 125，率 56.75%；k 分布 4:125/3:48/2:51/1:65；k_solo agree125/multi99/solo65 供 k=1 捷径消融；方案甲只留 k≥1 禁 k=0；skipped_patch_oob 357/vol_load_fail 4）。
+
+**② KILL-1 rerun 排队（GPU 阻塞，未挤）**：289-cluster rerun（perm1000 + Adam `foreach=False` 修 RTX4070 SM8.9 CUDA illegal memory access，`kill1_baseline.py:364`）申请 local 卡槽 → **QUEUED `a1774701`**，排 artioodbench(`bd707938`，另窗 ~10GPU·h frozen-encoder inference) 后。绝不挤正在跑的。⚠️ 早前一次 289 run（13:38，foreach 修前）崩于 `CUDA illegal memory access`，残留 `kill1_cv_summary.json`=FAIL 0.572/n26/60 **是崩溃残值非真结果**，rerun 会覆写。
+
+**③ A2 管线实现（coder，纯写码不跑）**：
+- `scripts/a2_seg_uq.py`（~430 行）：`pylidc.utils.consensus(clevel=0.5)` 出 consensus mask + 2D U-Net(dropout) 训分割 → MC-dropout(T=20 前景熵) + deep ensemble(k=3 前景方差) 出 cluster 级 UQ-proxy → `results/a2_uq_proxy_scores.csv`。folds 复刻 KILL-1 StratifiedGroupKFold(seed0) 保配对合法。
+- `scripts/a2_residual_info.py`（~340 行，纯 CPU）：reduced(仅UQ) vs full(UQ+KILL-1 OOF supervised) logistic OOF → 残余 ΔAUROC 配对 bootstrap(按 patient,≥1000rep)CI + LRT + 三件套联合 verdict。
+- `kill1_baseline.py` 加 OOF 落盘 `results/kill1_oof_scores.csv`（A2 full model 依赖，rerun 一跑双得）。
+- smoke 全过（py_compile + import + UNet forward + AUROC/CI/fold/logistic/LRT mini 测）。
+- **A2 consensus mask 预计算后台跑完**（CPU，exit0，不占卡槽）→ `results/a2_seg_masks/`。
+
+**④ A2 分割超参（用户拍板：社区默认先跑，不核源，投稿前补 TODO）**：U-Net base16/depth3、dropout0.3、seg_lr1e-3、30ep、consensus clevel0.5、MC-dropout T20、ensemble k3。`a2_seg_uq.py` 内标 `# TODO 超参待核源`（复现红线，投稿前过 researcher/verifier）。
+
+**⑤ 转 HPC 跑（用户「HPC」拍板 + CLAUDE.md 改默认 host=hpc 优先）**：local 被 artioodbench 超时占住 → 撤 local 队列（dequeue 时已空，无幽灵）→ 申 HPC 卡槽 GO `8149747f`(hpc 1/4)。**不传 15G DICOM**——只传 ~25M 派生件（tar 2.5M：scripts/*.py + results/patches 289npy + a2_seg_masks 289 + 改写 HPC 路径的 labels csv）到 `/gpfs/work/bio/jiayu2403/disagree/`。写 submit_kill1.sh（env=yjcu124py310 torch2.6+cu124，gpu4090/4gpus/48h walltime，`--n_perm 1000 --seed 0`）→ **sbatch job 1471101 RUNNING**（gpu4090n4，RTX4090，过 fold1 没崩=foreach=False 修生效，上次本地正崩于此）。坑：①Git Bash `/tmp` ≠ Windows python `/tmp` 致 sftp FileNotFound → tar 放项目目录绝对路径 ②patch_path 原为 Windows 绝对路径 → 改写成 HPC 绝对（289 行全改 0 残留）③env CUDA 测在 login 节点显 False 是假警报，计算节点 .out 显 RTX4090 真有卡。
+
+**下一步（HPC job 1471101 跑完后）**：①analyst 判 KILL-1 289 真值 A1 PASS/FAIL（CV pooled AUROC + CI 下界 vs 0.60 + perm1000 p）+ k=1/k_solo 消融（验不靠单人标撑分）②KILL-1 PASS 才上 A2：HPC 跑 a2_seg_uq.py(seg-UQ,需 kill1_oof_scores.csv) → a2_residual_info.py(CPU 残余信息) → analyst 判三件套 ③verifier 核数。FAIL 即砍。job 外部 HPC 需轮询（harness 不通知）。⚠️ KILL-1「PASS」须诚实降调（Entry5：50→现 150scan 量级正向信号，CI 下界擦边，perm p<0.01 不写 0）。
+
+---
+
+## Entry 5 — 大编队复核 KILL-1 PASS + A2 重设计 + 扩 scan 启动（2026-06-19，用户「DisagreePred 大编队推进」）
+
+KILL-1 既过，开大编队（researcher×2 + planner + skeptic + analyst + verifier + coder，7 路）复核「PASS 够不够硬投 A2」并设计 A2。结论：A1 PASS 站得住但脆，A2 原设计有致命缺陷已修，扩 scan 75→150 坐实。
+
+**① KILL-2 撞车复查（researcher）→ 🟢 不触发**：差异化守得住。EDUE(2403.16594)/2510.10462 把分歧当训练信号非预测目标，完全不撞。两个边界工作需 related work 主动切：`2508.09381`（皮肤镜 IAA 预测，最近邻，但「边界 vs 存在性」「回归 vs 分类」「数据集」三点可切）+ `2604.26288` CheXthought（CXR 数据集论文，多模态 demo，可切）。LIDC 域 2024-2026 无人把 4-radiologist 存在性分歧当分类 target。
+
+**② KILL-1「PASS」复核（skeptic + analyst 独立收敛）→ 0 致命但脆（可信度 6/10）**：
+- 数字全核对，与 Entry 4 逐位一致 ✓（CV pooled 0.709402 / CI[0.6031,0.8116] / perm 0.506346 / 折 0.53/0.44/0.84/0.69/0.83）。
+- CI 下界 0.6031 **擦边压 0.60**（Hanley-McNeil 独立估算 0.593 实际跌破，边缘 PASS）。
+- 折方差 0.44~0.84，top-10 患者贡献 50.7% cluster = 方差根因；fold2=0.44 below chance。
+- k=1 单人标（17 个，44% 正样本）混入「分歧」：①边缘锐利度捷径苗头（k=1 grad 0.0063 vs k=4 0.0114，方向性但 n 小不显著）②k=1「存在性争议」与 k=3「共识性分歧」语义混一类。
+- **投稿 framing 须诚实降调**：写「50-scan 量级正向信号」不写「已证稳定可预测」；perm 措辞 p<0.01 不写 p=0.0000。
+
+**③ verifier 核异常**：`kill1_disagree_auroc.csv` perm_mean=0.807（vs cv 版 0.506）= **已废弃早期 buggy smoke 残留**（无脚本引用、5 行同值=bug 特征、对应 Entry 4 记的早期 random-split 实现 bug）。KILL-1 perm 唯一有效真源 = `kill1_cv_auroc.csv` perm=0.506346，PASS 证据可信 ✓。⚠️ `kill1_disagree_auroc.csv` 建议日后归档防误读。
+
+**④ A2 设计 → 🔴 致命已修（skeptic 红队 + 用户拍板重设计）**：
+- 原设计 UQ-proxy 用 malignancy 良恶性模型——与「存在性分歧」在 LIDC 天然耦合，无论结果都测不出「专家分歧 ≠ 模型自身不确定」。且原 LOG 把「UQ-proxy 追平」误映射成 KILL-2(撞车)，实为 A2 失败/支柱2 塌(claim 内部矛盾)。
+- **重设计（planner）**：UQ-proxy 改 **P1=分割不确定性**——majority-vote consensus mask 训分割模型，取逐像素 entropy(前景均值)/MC-dropout/ensemble 像素分歧当 proxy（它建模存在性本身=要对照的模型自身不确定）。判据改 **残余信息**：reduced(仅UQ) vs full(UQ+本文P(disagree)) 两个 logistic，残余 ΔAUROC 配对 bootstrap CI 下界>0 + 三件套联合。弃单一 ρ<0.7 硬门。
+- **硬约束**：现数据无 k=0 负样本纯检测器训不了 → 必走 P1 分割形态，需 parse 补存 consensus mask。
+- **researcher 去风险**：`pylidc.utils.consensus(anns, clevel=0.5, pad=...)` 返回 (cmask, cbbox, masks)，150 cluster 稳定可出；UQ 聚合用前景均值 entropy（Mehrtash structure predictive entropy r=0.699）；ResNet-18 encoder+轻 decoder 公平合理。A2 P1 完全可行。
+
+**ACCEPTANCE 改两处（用户批准，补口径/纠错非改阈值方向）**：A2 加量化口径（解耦分割 UQ + 残余信息三件套）+ KILL-2 辨混注释（UQ-proxy 追平 = A2 失败/支柱2 塌，非 KILL-2 撞车）。
+
+**扩 scan 启动（用户拍板）**：coder 改 download/parse 脚本（extend 模式跳已下 50、parse 加 `k_solo` 列支持 k=1 捷径消融）。dry_run 确认 100 新 patient/~12GB。主线串行启真实下载（后台 bt2yuqp0m，本地公开 TCIA 数据非 HPC 上传）。
+
+**下一步（下载完后）**：① parse 重生成 150 cluster 标签（含 k_solo 列）② 重跑 KILL-1（gpu_slot 申请单卡）坐实 A1：CI 下界从 0.60 擦边推到 ~0.65 + k=1/k≥2 拆开消融 + perm 提到 1000 ③ A1 硬了再派 coder 实现 A2（parse 补 consensus mask + a2_seg_uq.py 分割 UQ + a2_residual.py 残余信息，ensemble 5 成员可并行）④ related work 切 2508.09381 + CheXthought。
+
+---
+
 ## Entry 4 — KILL-1 真跑（2026-06-18，50-scan smoke→诊断→patient-CV，CV pooled AUROC 0.71 provisional PASS 待置换确认）
 
 用户拍板下 ~50 scan(~6GB) CT 子集跑 KILL-1 smoke。全程主线串：

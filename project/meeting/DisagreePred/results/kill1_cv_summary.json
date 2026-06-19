@@ -1,41 +1,41 @@
 {
-  "cv_pooled_auroc": 0.709402,
-  "ci_low": 0.6031,
-  "ci_high": 0.811608,
-  "perm_auroc_mean": 0.506346,
-  "perm_p_value": 0.0,
+  "cv_pooled_auroc": 0.572268,
+  "ci_low": 0.40165,
+  "ci_high": 0.734706,
+  "perm_auroc_mean": null,
+  "perm_p_value": null,
   "perm_n_rep": 100,
-  "kill1_verdict": "PASS",
+  "kill1_verdict": "FAIL",
   "threshold_auroc": 0.6,
   "threshold_ci_low": 0.5,
-  "n_clusters": 75,
-  "n_patients": 35,
+  "n_clusters": 60,
+  "n_patients": 26,
   "n_splits": 5,
   "per_fold": [
     {
       "fold": 1,
-      "n_test_fold": 16,
-      "auroc_fold": 0.53125
+      "n_test_fold": 13,
+      "auroc_fold": 0.625
     },
     {
       "fold": 2,
-      "n_test_fold": 18,
-      "auroc_fold": 0.441558
+      "n_test_fold": 14,
+      "auroc_fold": 0.65
     },
     {
       "fold": 3,
-      "n_test_fold": 10,
-      "auroc_fold": 0.84
+      "n_test_fold": 14,
+      "auroc_fold": 0.577778
     },
     {
       "fold": 4,
       "n_test_fold": 12,
-      "auroc_fold": 0.6875
+      "auroc_fold": 0.5
     },
     {
       "fold": 5,
-      "n_test_fold": 19,
-      "auroc_fold": 0.829545
+      "n_test_fold": 7,
+      "auroc_fold": 0.666667
     }
   ],
   "hyperparams": {
