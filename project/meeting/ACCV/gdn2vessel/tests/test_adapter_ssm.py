@@ -719,6 +719,252 @@ class TestVMUNetForwardAdaptWithMamba:
 
 
 # --------------------------------------------------------------------------- #
+#  Test 13: mm_unet adapter（MM-UNet, Morph Mamba UNet）
+# --------------------------------------------------------------------------- #
+
+class TestMMUNetAdapter:
+    """
+    MM-UNet (mm_unet) adapter 测试。
+    覆盖：
+      - 注册成功（mm_unet 在 MODEL_REGISTRY 中）
+      - validate_attrs 通过（name/kind/source_repo/env_tag 合法）
+      - env_tag='mamba'
+      - kind='architecture'
+      - source_repo 含 liujiawen-jpg
+      - preprocess_cfg 字段完整 + 关键值正确
+      - build_loss 返回 callable（lazy init，不需要 monai 真实安装）
+      - build_model 在缺 mamba_ssm 时抛 RuntimeError（含 'mamba' 字样）
+      - build_optimizer 返回 AdamW（不依赖 mamba_ssm）
+      - build_scheduler 返回 _LinearWarmupCosineAnnealingLR（不依赖 mamba_ssm）
+      - yaml config 关键字段正确
+    """
+
+    def test_mm_unet_registered(self):
+        """mm_unet 在 MODEL_REGISTRY 中。"""
+        from baselines.registry import MODEL_REGISTRY
+        assert "mm_unet" in MODEL_REGISTRY, (
+            f"mm_unet not in MODEL_REGISTRY. Found: {sorted(MODEL_REGISTRY.keys())}"
+        )
+
+    def test_mm_unet_validate_attrs(self):
+        """validate_attrs 不抛（所有必要属性已设）。"""
+        adapter = _get("mm_unet")
+        adapter.validate_attrs()  # 不抛即通过
+
+    def test_mm_unet_env_tag(self):
+        """env_tag='mamba'（需 mamba_venv）。"""
+        adapter = _get("mm_unet")
+        assert adapter.env_tag == "mamba", (
+            f"mm_unet env_tag should be 'mamba', got {adapter.env_tag!r}"
+        )
+
+    def test_mm_unet_kind(self):
+        """kind='architecture'。"""
+        adapter = _get("mm_unet")
+        assert adapter.kind == "architecture", (
+            f"mm_unet kind should be 'architecture', got {adapter.kind!r}"
+        )
+
+    def test_mm_unet_source_repo(self):
+        """source_repo 是 https:// URL，含 liujiawen-jpg。"""
+        adapter = _get("mm_unet")
+        assert adapter.source_repo.startswith("https://"), (
+            f"mm_unet source_repo should be https URL, got: {adapter.source_repo!r}"
+        )
+        assert "liujiawen-jpg" in adapter.source_repo, (
+            f"mm_unet source_repo should contain 'liujiawen-jpg', "
+            f"got: {adapter.source_repo!r}"
+        )
+
+    def test_mm_unet_preprocess_cfg_keys(self):
+        """preprocess_cfg 包含所有必要字段。"""
+        _REQUIRED_KEYS = ["channels", "input_mode", "patch_size", "clahe", "normalize", "extra"]
+        adapter = _get("mm_unet")
+        cfg = adapter.preprocess_cfg()
+        for key in _REQUIRED_KEYS:
+            assert key in cfg, (
+                f"mm_unet preprocess_cfg missing key: {key!r}. "
+                f"Got keys: {sorted(cfg.keys())}"
+            )
+
+    def test_mm_unet_preprocess_cfg_values(self):
+        """preprocess_cfg 关键值正确（3ch RGB, fullimg, ImageNet 归一化）。"""
+        adapter = _get("mm_unet")
+        cfg = adapter.preprocess_cfg()
+        # 3 通道 RGB（MM_Net encoder1=Conv2d(3,64,...)）
+        assert cfg["channels"] == "rgb", (
+            f"mm_unet channels should be 'rgb', got {cfg['channels']!r}"
+        )
+        assert cfg["input_mode"] == "fullimg", (
+            f"mm_unet input_mode should be 'fullimg', got {cfg['input_mode']!r}"
+        )
+        assert cfg["patch_size"] is None
+        assert cfg["clahe"] is False
+        # ImageNet 归一化（官方 config.yml）
+        norm = cfg["normalize"]
+        assert abs(norm["mean"][0] - 0.485) < 1e-6, (
+            f"mm_unet normalize mean[0] should be 0.485, got {norm['mean'][0]}"
+        )
+        assert abs(norm["std"][0] - 0.229) < 1e-6, (
+            f"mm_unet normalize std[0] should be 0.229, got {norm['std'][0]}"
+        )
+        # resize=608 in extra
+        assert "resize" in cfg["extra"], "mm_unet extra should have 'resize' key"
+        assert cfg["extra"]["resize"] == 608, (
+            f"mm_unet resize should be 608 (DRIVE), got {cfg['extra']['resize']}"
+        )
+
+    def test_mm_unet_build_loss_callable(self):
+        """build_loss 返回 callable（lazy init，不需 monai 真实可用）。"""
+        adapter = _get("mm_unet")
+        loss_fn = adapter.build_loss({})
+        assert callable(loss_fn), "mm_unet build_loss should return callable"
+
+    @pytest.mark.skipif(
+        _MAMBA_AVAILABLE,
+        reason="mamba_ssm available — build_model will not raise RuntimeError"
+    )
+    def test_mm_unet_build_model_raises_without_mamba(self):
+        """缺 mamba_ssm 时 build_model 抛 RuntimeError（含 'mamba' 字样）。"""
+        adapter = _get("mm_unet")
+        with pytest.raises(RuntimeError, match="mamba"):
+            adapter.build_model({})
+
+    @pytest.mark.skipif(
+        _MAMBA_AVAILABLE,
+        reason="mamba available, build_model will succeed, different test needed"
+    )
+    def test_mm_unet_build_optimizer_adamw(self):
+        """build_optimizer 返回 AdamW（不依赖 mamba_ssm）。"""
+        adapter = _get("mm_unet")
+        dummy_model = torch.nn.Linear(4, 4)
+        opt = adapter.build_optimizer(dummy_model, {})
+        assert isinstance(opt, torch.optim.AdamW), (
+            f"mm_unet optimizer should be AdamW, got {type(opt)}"
+        )
+
+    @pytest.mark.skipif(
+        _MAMBA_AVAILABLE,
+        reason="mamba available"
+    )
+    def test_mm_unet_build_optimizer_lr(self):
+        """build_optimizer lr=0.001（官方）。"""
+        adapter = _get("mm_unet")
+        dummy_model = torch.nn.Linear(4, 4)
+        opt = adapter.build_optimizer(dummy_model, {"lr": 1e-3})
+        lr = opt.param_groups[0]["lr"]
+        assert abs(lr - 1e-3) < 1e-10, f"mm_unet optimizer lr should be 1e-3, got {lr}"
+
+    @pytest.mark.skipif(
+        _MAMBA_AVAILABLE,
+        reason="mamba available"
+    )
+    def test_mm_unet_build_optimizer_wd(self):
+        """build_optimizer weight_decay=0.05（官方）。"""
+        adapter = _get("mm_unet")
+        dummy_model = torch.nn.Linear(4, 4)
+        opt = adapter.build_optimizer(dummy_model, {})
+        wd = opt.param_groups[0]["weight_decay"]
+        assert abs(wd - 0.05) < 1e-10, f"mm_unet wd should be 0.05, got {wd}"
+
+    @pytest.mark.skipif(
+        _MAMBA_AVAILABLE,
+        reason="mamba available"
+    )
+    def test_mm_unet_build_scheduler_type(self):
+        """build_scheduler 返回 _LinearWarmupCosineAnnealingLR（官方）。"""
+        from baselines.adapters.mm_unet import _LinearWarmupCosineAnnealingLR
+        adapter = _get("mm_unet")
+        dummy_model = torch.nn.Linear(4, 4)
+        opt = adapter.build_optimizer(dummy_model, {})
+        sched = adapter.build_scheduler(opt, {"warmup_epochs": 2, "epochs": 500, "min_lr": 1e-7})
+        assert isinstance(sched, _LinearWarmupCosineAnnealingLR), (
+            f"mm_unet scheduler should be _LinearWarmupCosineAnnealingLR, got {type(sched)}"
+        )
+
+    def test_mm_unet_yaml_name(self):
+        """yaml baseline.name == 'mm_unet'。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        assert yaml_path.exists(), f"mm_unet.yaml not found: {yaml_path}"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert cfg["baseline"]["name"] == "mm_unet", (
+            f"mm_unet.yaml baseline.name should be 'mm_unet', got {cfg['baseline']['name']!r}"
+        )
+
+    def test_mm_unet_yaml_env_tag(self):
+        """yaml baseline.env_tag == 'mamba'。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert cfg["baseline"]["env_tag"] == "mamba", (
+            f"mm_unet.yaml env_tag should be 'mamba', got {cfg['baseline']['env_tag']!r}"
+        )
+
+    def test_mm_unet_yaml_epochs(self):
+        """yaml train.epochs == 500（论文值，TODO-1）。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert cfg["train"]["epochs"] == 500, (
+            f"mm_unet.yaml epochs should be 500 (paper), got {cfg['train']['epochs']}"
+        )
+
+    def test_mm_unet_yaml_lr(self):
+        """yaml train.lr == 1e-3（官方）。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert abs(float(cfg["train"]["lr"]) - 1e-3) < 1e-10, (
+            f"mm_unet.yaml lr should be 1e-3, got {cfg['train']['lr']}"
+        )
+
+    def test_mm_unet_yaml_weight_decay(self):
+        """yaml train.weight_decay == 0.05（官方 config.yml）。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert abs(float(cfg["train"]["weight_decay"]) - 0.05) < 1e-10, (
+            f"mm_unet.yaml weight_decay should be 0.05, got {cfg['train']['weight_decay']}"
+        )
+
+    def test_mm_unet_yaml_min_lr(self):
+        """yaml train.min_lr == 1e-7（官方 config.yml）。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert abs(float(cfg["train"]["min_lr"]) - 1e-7) < 1e-9, (
+            f"mm_unet.yaml min_lr should be 1e-7, got {cfg['train']['min_lr']}"
+        )
+
+    def test_mm_unet_yaml_loss_type(self):
+        """yaml loss.type == 'DiceFocalLoss'（官方）。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert cfg["loss"]["type"] == "DiceFocalLoss", (
+            f"mm_unet.yaml loss.type should be 'DiceFocalLoss', got {cfg['loss']['type']!r}"
+        )
+
+    def test_mm_unet_yaml_license(self):
+        """yaml baseline.license == 'MIT'。"""
+        import yaml
+        yaml_path = _repo_root / "src" / "configs" / "baselines" / "mm_unet.yaml"
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f)
+        assert cfg["baseline"]["license"] == "MIT", (
+            f"mm_unet.yaml license should be 'MIT', got {cfg['baseline']['license']!r}"
+        )
+
+
+# --------------------------------------------------------------------------- #
 #  __main__ guard（Windows spawn 安全）
 # --------------------------------------------------------------------------- #
 

@@ -1,0 +1,121 @@
+# mm_unet.yaml — MM-UNet (Morph Mamba UNet) baseline 配置
+# =======================================================================
+# 超参来源  : github.com/liujiawen-jpg/MM-UNet train.py + config.yml
+#             + arXiv 2511.02193（BASELINE_B_PICK 研究员核实，2026-06-20）
+# 复现红线  : 不得私自修改超参；TODO 字段需 researcher 确认后回填。
+# env_tag   : mamba（需独立 mamba_venv，见 BASELINE_SPEC §3）
+# commit    : 2026-03-09（github.com/liujiawen-jpg/MM-UNet main）
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "mm_unet"
+  kind: "architecture"
+  source_repo: "https://github.com/liujiawen-jpg/MM-UNet"
+  env_tag: "mamba"
+  paper_ref: "arXiv 2511.02193"
+  license: "MIT"
+
+# --------------------------------------------------------------------------
+# 模型超参（官方 MM_Net 默认值）
+# --------------------------------------------------------------------------
+
+model:
+  num_classes: 1                        # 二分类血管/背景
+  num_slices_list: [64, 32, 16, 8]     # 官方 config.yml dkDualNet/MM_Net 默认值
+  out_indices: [0, 1, 2, 3]
+  heads: [1, 2, 4, 4]
+  # ⚠️ MM_Net encoder1 = Conv2d(3, 64, ...)，输入必须 3 通道 RGB（非灰度）
+
+# --------------------------------------------------------------------------
+# 训练超参（官方 train.py，config.yml 核实）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "AdamW"
+  lr: 1.0e-3                  # 官方 config.yml trainer.lr=0.001
+  weight_decay: 0.05          # 官方 config.yml trainer.weight_decay=0.05
+  weight_decay_end: 0.04      # 官方 config.yml trainer.weight_decay_end=0.04
+  betas: [0.9, 0.95]          # 官方 train.py optim_factory betas=(0.9, 0.95)
+  scheduler: "LinearWarmupCosineAnnealingLR"
+  warmup_epochs: 2            # 官方 config.yml trainer.warmup=2
+  # TODO-1: epochs — config.yml=3000 vs 论文（arXiv 2511.02193）=500
+  #         此处以论文 500 为准，需 researcher 核 train.sh 最终确认。
+  epochs: 500                 # TODO-1: 论文=500（config.yml=3000，以论文为准）
+  min_lr: 1.0e-7              # 官方 config.yml trainer.min_lr=0.0000001
+
+# --------------------------------------------------------------------------
+# Batch Size（数据集依赖）
+# --------------------------------------------------------------------------
+
+data:
+  # TODO-3: STARE bs — config.yml=5 vs 论文=2；以论文 2 为准，需确认
+  batch_size_DRIVE: 5         # 官方 config.yml dataset.DRIVE.batch_size=5
+  batch_size_STARE: 2         # TODO-3: 论文=2（config.yml=5，以论文为准）
+
+# --------------------------------------------------------------------------
+# Input（数据集依赖尺寸）
+# --------------------------------------------------------------------------
+
+input:
+  size_DRIVE: 608             # 官方 config.yml dataset.DRIVE.image_size=608
+  size_STARE: 704             # 官方 config.yml dataset.STARE.image_size=704
+  channels: 3                 # RGB 3 通道（encoder1=Conv2d(3,64,...)）
+  # TODO-4: 8GB 显存下 input 608×608 疑 OOM；正式训练走 HPC (RTX4090 24GB)
+
+# --------------------------------------------------------------------------
+# Loss（官方：monai.losses.DiceFocalLoss）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "DiceFocalLoss"               # 官方 train.py loss_functions
+  smooth_nr: 0                         # 官方 DiceFocalLoss(smooth_nr=0, ...)
+  smooth_dr: 1.0e-5                    # 官方 DiceFocalLoss(..., smooth_dr=1e-5, ...)
+  to_onehot_y: false                   # 官方 DiceFocalLoss(..., to_onehot_y=False, ...)
+  sigmoid: true                        # 官方 DiceFocalLoss(..., sigmoid=True)
+  weight: 1.0                          # 官方 loss_weights={'dice_focal_loss': 1.0}
+  # TODO-2: gamma/alpha — 官方未显式传参，使用 monai 默认（gamma≈2.0）
+  #         需确认 monai 版本对应默认值
+
+# --------------------------------------------------------------------------
+# 预处理（官方 config.yml + train.py 核实）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "rgb"                      # 3 通道 RGB（官方 encoder1=Conv2d(3,...)）
+  input_mode: "fullimg"                # 全图推理（官方 SlidingWindowInferer overlap=0.5）
+  patch_size: null
+  clahe: false
+  normalize_mean: [0.485, 0.456, 0.406]  # 官方 config.yml image_mean（ImageNet）
+  normalize_std: [0.229, 0.224, 0.225]   # 官方 config.yml image_std（ImageNet）
+
+# --------------------------------------------------------------------------
+# 数据增强（官方 train.py — 通过 monai transforms，未显式列出具体 aug）
+# --------------------------------------------------------------------------
+
+augment:
+  # TODO: 官方 train.py augmentation transforms 未在 README/paper 中明示；
+  #       需查 github.com/liujiawen-jpg/MM-UNet/src/VesselLoader.py 确认
+
+# --------------------------------------------------------------------------
+# 运行时依赖（BASELINE_SPEC §3 mamba 隔离）
+# --------------------------------------------------------------------------
+
+runtime:
+  env_tag: "mamba"
+  requires:
+    - "mamba-ssm"             # HF torch29-cu126 wheel（见 BASELINE_SPEC §3）
+    - "causal-conv1d"
+    - "timm"
+    - "einops"
+    - "monai"
+    - "accelerate"
+  vendor: "third_party/MM-UNet"   # curl 完成（MIT License）
+  hpc_note: >
+    需在 mamba_venv 中运行（与 vm_unet / mamba_vessel_net 共用 mamba_venv）。
+    TORCH_CUDA_ARCH_LIST="8.9" pip install mamba-ssm --no-build-isolation
+    （RTX4090 sm_89，见 BASELINE_SPEC §3）。
+    TODO-4: input 608×608 8GB VRAM 疑 OOM，必须 HPC 24GB 运行。

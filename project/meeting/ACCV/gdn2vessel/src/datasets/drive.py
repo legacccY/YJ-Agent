@@ -84,17 +84,18 @@ class DRIVEDataset(BaseVesselDataset):
     Split (deterministic, from 20 training images with GT):
       TRAIN_IDS: 21..36  (16 images)
       VAL_IDS:   37..40  (4 images)
-      TEST_IDS:  []      (DRIVE 不做断点 benchmark，见下裁定)
+      TEST_IDS:  1..20   (官方标准 test，主 Dice 表用；需重下官方 test GT)
     """
 
     TRAIN_IDS: List[int] = list(range(21, 37))   # 21..36 (16 images)
     VAL_IDS:   List[int] = list(range(37, 41))   # 37..40 (4 images)
 
-    # ✅ 裁定（用户 2026-06-20）: DRIVE 官方 test(20张)无公开 GT → **DRIVE 不做断点续连
-    #   benchmark**，只做标准分割对照(train16/val4)。断点续连轴走 CHASE(8张官方 held-out
-    #   test GT，见 chase.py TEST_IDS)。故 TEST_IDS 恒空，非 TODO（winD Entry16「重下官方
-    #   test GT」方案作废，CHASE 为准）。
-    TEST_IDS: List[int] = []
+    # ✅ 裁定（用户 2026-06-20，不降质量）: DRIVE **标准 20/20 split 主 Dice 表保留**
+    #   （train 21-40 / test 01-20，与所有 DRIVE 论文同口径，可比 SOTA）→ TEST_IDS=01-20。
+    #   ⚠️ 数据动作: 现 Kaggle pack(umairinayat)缺 test/1st_manual GT，须**重下官方完整包**补
+    #   test GT(原版含 test/1st_manual/*_manual1.gif，见 Entry16 来源)。补前 test 评估不可跑。
+    #   断点续连 benchmark 另走 CHASE(8张官方 held-out test GT)，与本标准 split 正交。
+    TEST_IDS: List[int] = list(range(1, 21))   # 01..20 官方标准 test（需重下 GT）
 
     # ---------------------------------------------------------------------- #
     #  Path helpers

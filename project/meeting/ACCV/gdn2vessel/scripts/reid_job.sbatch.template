@@ -1,0 +1,74 @@
+#!/bin/bash
+#
+# reid_job.sbatch.template — HPC sbatch 模板，gdn2vessel 命门 re-ID 单 run
+#
+# 使用方式：
+#   用 launch_reid_sweep.py 生成的命令替换下方 {PLACEHOLDERS}，
+#   保存为实例化文件（如 reid_chase_memory_seed42.sbatch），
+#   上传 HPC 后提交。
+#
+# HPC 提交 checklist（必过，见 feedback_hpc_submit_checklist + Entry3）：
+#   ① 上传后必须去 CRLF（任选一：`dos2unix <file>.sbatch`
+#                                    或 `sed -i 's/\r$//' <file>.sbatch`）
+#   ② 看 logs/{job-name}_{jobid}.out 产出文件确认真跑，
+#      **别信 jobid**（sbatch 有时会串别人 job 返回别人 jobid）
+#   ③ 关键提交命令单独跑（`sbatch <file>.sbatch`），
+#      **不要批量并发**（入队静默失败难排查）
+#   ④ 提交前确认 benchmark_cache 是否已 precompute：
+#      CHASE 已冻结(Entry14)✓；STARE/HRF/FIVES 需先跑 precompute_benchmark.py
+#
+# Placeholders（{}替换为实际值）：
+#   {ARM}        — 臂名（memory / linear_attn / cnn）
+#   {DATASET}    — 数据集（chase / stare / hrf / fives）
+#   {SEED}       — 种子整数（42 / 1337 / 2024）
+#   {DATA_ROOT}  — 该集 data_root（如 /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/CHASE）
+#   {BENCH_DIR}  — 该集 benchmark_dir（如 {DATA_ROOT}/benchmark_cache）
+#   {OUT_DIR}    — output_dir（如 /gpfs/work/bio/jiayu2403/gdn2vessel/outputs/reid_sweep/{DATASET}_{ARM}_seed{SEED}）
+#   {EPOCHS}     — 训练 epoch 数（默认 300）
+
+# ─── SLURM 头 ────────────────────────────────────────────────────────────────
+#SBATCH --partition=gpu4090
+#SBATCH --account=shuihuawang
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=12:00:00
+#SBATCH --job-name=reid_{DATASET}_{ARM}_s{SEED}
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
+
+# ─── 1. 防 logs 目录缺失静默失败（HPC checklist 必要项）────────────────────
+mkdir -p logs
+
+# ─── 2. Triton / FLA NFS 死锁修复（Entry3 命脉，所有 GDN-2 job 必带）────────
+# 将 triton kernel 缓存重定向到 /tmp（本地磁盘），
+# 避免多 job 同时写 NFS $HOME/.triton/cache 导致 LOCK 死锁。
+export TRITON_CACHE_DIR=/tmp/$USER/triton_cache
+mkdir -p "$TRITON_CACHE_DIR"
+# 清旧 NFS triton cache，防残留 LOCK 文件（安全清除，不影响 /tmp 新缓存）
+rm -rf "$HOME/.triton/cache" 2>/dev/null || true
+
+# ─── 3. 激活 venv ────────────────────────────────────────────────────────────
+source /gpfs/work/bio/jiayu2403/gdn2venv/bin/activate
+
+# ─── 4. 打印环境信息（调试用）────────────────────────────────────────────────
+echo "[job] start: $(date)"
+echo "[job] host: $(hostname)"
+echo "[job] arm={ARM}  dataset={DATASET}  seed={SEED}  epochs={EPOCHS}"
+echo "[job] gpu: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo 'no nvidia-smi')"
+python -c "import torch; print(f'[job] torch={torch.__version__}  cuda={torch.cuda.is_available()}')"
+
+# ─── 5. 主训练命令 ────────────────────────────────────────────────────────────
+python /gpfs/work/bio/jiayu2403/gdn2vessel/src/train_reid_pilot.py \
+    --reid_feat_source {ARM} \
+    --data_root {DATA_ROOT} \
+    --benchmark_dir {BENCH_DIR} \
+    --dataset {DATASET} \
+    --severity Medium \
+    --epochs {EPOCHS} \
+    --seed {SEED} \
+    --output_dir {OUT_DIR}
+
+EXIT_CODE=$?
+echo "[job] done: $(date)  exit_code=$EXIT_CODE"
+exit $EXIT_CODE
