@@ -30,18 +30,21 @@
 
 ## 阶段总览（P0 → P7）
 
+> 状态更新 2026-06-20（Entry18）：**当前在 P4 命门首次真训练（CHASE 三臂 Stage-1）**。P0-P2 全过，P3 已设计就绪但训练未启（先跑 P4 命门=headline 生死线）。粗估实验部分 ~30-35%。
+
 | 阶段 | 目标一句 | 入口 gate | 出口 gate（硬阈值见 ACCEPTANCE） | 状态 | 分计划 |
 |---|---|---|---|---|---|
-| **P0** | 环境 + kill-shot（kernel 烟测 + pilot） | 关 0/1 PASS | 关 2 kernel 通 + 关 3 pilot 不输纯 CNN | 🚧 关 0/1 ✅，关 2/3 待 | [PHASE_0](PHASE_0_killshot_env.md) |
-| **P1** | 数据 + 断点续连 benchmark（杀手锏） | P0 PASS | 协议可复现 + 零泄漏 + re-ID 指标实现 | ⬜ | [PHASE_1](PHASE_1_data_benchmark.md) |
-| **P2** | 核心模型实现 | P1 部分（可并行） | pytest 通 + 不碰 GT + 兜底可跑 | ⬜ | [PHASE_2](PHASE_2_model_impl.md) |
-| **P3** | 主实验 + baseline 全谱同台 | P1+P2 PASS | 拓扑/续连 ≥1 轴赢 SOTA + Dice 不输 | ⬜ | [PHASE_3](PHASE_3_main_experiments.md) |
-| **P4** | 消融超量（≥8-10 组） | P3 跑通 | C/re-ID 干净可归因证 headline | ⬜ | [PHASE_4](PHASE_4_ablation.md) |
-| **P5** | 泛化/跨域/跨器官（全做满） | P3 PASS | ≥10 集 + 跨域不崩 | ⬜ | [PHASE_5](PHASE_5_generalization.md) |
-| **P6** | 可解释性 | P3/P4 有结果 | ≥3 张支撑 headline 图 | ⬜ | [PHASE_6](PHASE_6_interpretability.md) |
-| **P7** | 写作 + 对抗审稿 + 投稿 | 全部实验收口 | 数字 0 偏离 + 0 致命 + 双盲合规 | ⬜ | [PHASE_7](PHASE_7_writing_submit.md) |
+| **P0** | 环境 + kill-shot（kernel 烟测 + pilot） | 关 0/1 PASS | 关 2 kernel 通 + 关 3 pilot 不输纯 CNN | ✅ 关 0/1 PASS + 关 2 kernel 真验（item-1 FLA Dice 0.8159）+ 关 3 pilot 翻案（记忆稳+3.3点） | [PHASE_0](PHASE_0_killshot_env.md) |
+| **P1** | 数据 + 断点续连 benchmark（杀手锏） | P0 PASS | 协议可复现 + 零泄漏 + re-ID 指标实现 | ✅ 10 集上 HPC（Entry11）+ 合成协议 precompute + re-ID 指标（reid_verdict_v2）实现 | [PHASE_1](PHASE_1_data_benchmark.md) |
+| **P2** | 核心模型实现 | P1 部分（可并行） | pytest 通 + 不碰 GT + 兜底可跑 | ✅ unet_gdn2 + A1' 等参臂（numel +0.0000%）+ HPC 真验不发散（Dice 0.8159） | [PHASE_2](PHASE_2_model_impl.md) |
+| **P3** | 主实验 + baseline 全谱同台 | P1+P2 PASS | 拓扑/续连 ≥1 轴赢 SOTA + Dice 不输 | 🟡 设计 done（M 窗）+ 12 adapter 实现（Entry13）+ 就绪中（O 窗）；**训练未启** | [PHASE_3](PHASE_3_main_experiments.md) |
+| **P4** | 消融超量（≥8-10 组） | P3 跑通 | C/re-ID 干净可归因证 headline | 🔵 **正在跑** Stage-1 CHASE 三臂验证（A2✅ ep30 / A1'·A0' 排队等卡）；命门 v2 设计定稿（CDE 判据 + A1' 等参臂） | [PHASE_4](PHASE_4_ablation.md) |
+| **P5** | 泛化/跨域/跨器官（全做满） | P3 PASS | ≥10 集 + 跨域不崩 | ⬜ 未开始 | [PHASE_5](PHASE_5_generalization.md) |
+| **P6** | 可解释性 | P3/P4 有结果 | ≥3 张支撑 headline 图 | ⬜ 未开始 | [PHASE_6](PHASE_6_interpretability.md) |
+| **P7** | 写作 + 对抗审稿 + 投稿 | 全部实验收口 | 数字 0 偏离 + 0 致命 + 双盲合规 | 🟡 §2 RW + §3 method 草起（N 窗）；余未动 | [PHASE_7](PHASE_7_writing_submit.md) |
 
 > P2 可与 P1 后段并行（模型实现不依赖 benchmark 全部就位）。P5/P6 可在 P3 出结果后并行铺。
+> **当前实操顺序偏离原 P3→P4**：先跑 P4 命门（L1 lever，headline 生死线，不过整篇塌），命门 Stage-1 验通 → P4 全量 + 回头铺 P3 主实验训练（baseline 已就绪）。
 
 ---
 
