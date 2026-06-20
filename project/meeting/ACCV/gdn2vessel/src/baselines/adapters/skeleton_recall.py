@@ -5,14 +5,15 @@ BASELINE_SPEC §2.4 loss 类：
   backbone   = UNet(in_ch=1, out_ch=1, base_ch=32)（钉死，与 Ours 同款）
   optimizer  = Adam lr=1e-3（统一）
   scheduler  = ReduceLROnPlateau mode=max factor=0.5 patience=10（统一）
-  loss       = 0.5 BCE+Dice（底座） + 0.5 SkelRecall（变量）
-               混合权重设计：隔离 Skeleton Recall 拓扑增益，与 clDice/cbDice 对称
+  loss       = 1·BCE + 1·Dice + 1·SkelRecall（官方 1:1:1 等权）
+               来源：MIC-DKFZ/Skeleton-Recall compound_losses.py
+                     DC_SkelREC_and_CE_loss: weight_ce=1 weight_dice=1 weight_srec=1
+               baseline-fix 2026-06-20 对齐官方源
 
 超参来源：
   - SoftSkeletonRecallLoss smooth=1.0（官方 smooth=1. default）
-  - 混合权重 weight_srec=1：官方 DC_SkelREC_and_CE_loss 默认值（§2.4 适配为 0.5/0.5）
-    # TODO: 官方使用 weight_ce=1 weight_dice=1 weight_srec=1（三路等权混合）
-    #       loss 类 adapter 统一 0.5 BCE+Dice + 0.5 SkelRecall，researcher 可确认改为三路
+  - 混合权重 1:1:1（CE:Dice:SkelRecall）：官方 DC_SkelREC_and_CE_loss 核实
+    (MIC-DKFZ/Skeleton-Recall, Apache-2.0, ECCV24)
   - Skeleton GT：skimage.morphology.skeletonize（官方 SkeletonTransform 同算法）
   - backbone/optimizer/scheduler：BASELINE_SPEC §2.4 统一配方
 
@@ -72,7 +73,11 @@ def _bce_loss(
 
 class _SkelRecallMixedLoss:
     """
-    混合 loss：0.5 BCE+Dice + 0.5 SkelRecall（§2.4 统一变量隔离设计）。
+    混合 loss：1·BCE + 1·Dice + 1·SkelRecall（官方 1:1:1 等权）。
+
+    来源：MIC-DKFZ/Skeleton-Recall compound_losses.py
+          DC_SkelREC_and_CE_loss: weight_ce=1 weight_dice=1 weight_srec=1
+    baseline-fix 2026-06-20 对齐官方源（原 0.5/0.5 非官方设计）。
 
     signature: loss_fn(logits, target, fov_mask) -> scalar tensor
     """
@@ -91,7 +96,8 @@ class _SkelRecallMixedLoss:
         bce = _bce_loss(logits, target, fov_mask)
         dice = _dice_loss(prob, target, fov_mask)
         srec = self._srec(logits, target, fov_mask)
-        return 0.5 * (0.5 * bce + 0.5 * dice) + 0.5 * srec
+        # 官方 DC_SkelREC_and_CE_loss: weight_ce=1 weight_dice=1 weight_srec=1（1:1:1）
+        return bce + dice + srec
 
 
 @register
@@ -100,7 +106,8 @@ class SkeletonRecallAdapter(BaselineAdapter):
     Skeleton Recall loss baseline（MICCAI 2024, MIC-DKFZ/Skeleton-Recall, Apache-2.0）。
 
     kind='loss'：仅 loss 是变量，backbone + 训练超参统一（§2.4 反向公平）。
-    loss = 0.5 BCE+Dice（底座） + 0.5 SkelRecall（拓扑增益）。
+    loss = 1·BCE + 1·Dice + 1·SkelRecall（官方 DC_SkelREC_and_CE_loss 1:1:1 等权）。
+    impl 已对齐官方比例（baseline-fix 2026-06-20）。
     """
 
     name: str = "skeleton_recall"
@@ -115,7 +122,7 @@ class SkeletonRecallAdapter(BaselineAdapter):
 
     def build_loss(self, cfg: Dict[str, Any]) -> Any:
         """
-        混合 loss：0.5 BCE+Dice + 0.5 SkelRecall。
+        混合 loss：1·BCE + 1·Dice + 1·SkelRecall（官方 1:1:1）。
         signature: loss_fn(logits, target, fov_mask) -> scalar tensor
         """
         return _SkelRecallMixedLoss()

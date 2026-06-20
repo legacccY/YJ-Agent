@@ -358,24 +358,53 @@ class CSNetAdapter(BaselineAdapter):
 
     def preprocess_cfg(self) -> Dict[str, Any]:
         """
-        CS-Net 官方预处理：RGB 三通道，整图 resize 到 512×512，无 CLAHE。
-        mean/std: TODO_researcher — 官方代码未显式指定标准化均值/方差（直接 /255.0）。
+        CS-Net 官方预处理（§7.1 normalize + §7.2 augment，baseline-fix 2026-06-20）：
+          normalize: 仅 ToTensor()（/255→[0,1]），无 mean/std 标准化
+                     源：dataloader/drive.py（§7.1 确认）
+          augment:   rotate randint(-40,40)° 100% · HFlip p0.5 ·
+                     RandomCrop 512×512 100%（STARE scale1=688）·
+                     RandEnhance p0.5 选{Brightness/Color/Contrast/Sharpness}
+                     factor uniform(-2,2)
+                     ⚠ TODO: factor 含负值，PIL ImageEnhance 语义需人工核原行
+                             （官方源码 `random.uniform(-2,2)`，负值区间行为待确认）
+                     test 仅 resize512
+                     源：dataloader/drive.py（§7.2）
+          clahe: False（官方无）
         """
         return {
-            "channels": "rgb",
+            "channels": "rgb",          # RGB 三通道，官方 dataloader/drive.py
             "normalize": {
-                "mean": [0.0, 0.0, 0.0],   # TODO: 官方仅 /255，无显式 mean/std 标准化
-                "std": [1.0, 1.0, 1.0],    # TODO: 官方仅 /255，无显式 mean/std 标准化
+                "method": "divide_255",  # 仅 /255，无 mean/std（§7.1 官方 ToTensor()）
+                "mean": [0.0, 0.0, 0.0],  # 无额外标准化，占位
+                "std": [1.0, 1.0, 1.0],   # 无额外标准化，占位
             },
             "input_mode": "fullimg",
             "patch_size": None,
-            "clahe": False,
+            "clahe": False,             # 官方无 CLAHE（§7.1 确认）
+            "augment": {
+                # 源：iMED-Lab/CS-Net dataloader/drive.py（§7.2）
+                "rotate": {"range": [-40, 40], "p": 1.0},         # 100% 应用
+                "hflip": {"p": 0.5},
+                "random_crop": {"size": 512, "p": 1.0},           # DRIVE; STARE scale1=688
+                "rand_enhance": {
+                    "p": 0.5,
+                    "choices": ["Brightness", "Color", "Contrast", "Sharpness"],
+                    "factor_range": [-2, 2],  # TODO: 负值 PIL ImageEnhance 语义待人工核（§7.2 注）
+                },
+                "test_only": {"resize": 512},
+                "note": (
+                    "CS-Net official augment: rotate 100% + HFlip p0.5 + "
+                    "RandomCrop 512 + RandEnhance p0.5. "
+                    "factor_range=[-2,2] TODO: PIL negative value behavior unconfirmed. "
+                    "Source: iMED-Lab/CS-Net dataloader/drive.py (§7.2)."
+                ),
+            },
             "extra": {
                 "resize": 512,
                 "note": (
                     "CS-Net uses full-image RGB input resized to 512x512. "
-                    "Official repo normalizes by /255 only. "
-                    "Source: iMED-Lab/CS-Net + BASELINE_SPEC §1."
+                    "Official repo normalizes by /255 only (ToTensor). "
+                    "Source: iMED-Lab/CS-Net + BASELINE_SPEC §1 §7.1 §7.2."
                 ),
             },
         }

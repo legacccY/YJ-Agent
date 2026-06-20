@@ -38,18 +38,18 @@
 
 ---
 
-## 节点 impl-verdict（B 窗 · coder）
-**服务**：命门统计工具 / Entry 14 待续3。
-**territory**：`src/reid_verdict_v2.py` + `tests/`。
-**完成线（4 个 settled 项 + 真烟测）**：
-- [ ] 多集路径聚合
-- [ ] image_id 加数据集前缀（防撞）
-- [ ] 平台斜率检查
-- [ ] FIVES 子采样 seed42 固定
-- [ ] 本地真 e2e 烟测（非 mock）跑通 + pytest 绿
-- LMM 加 C(dataset)：**留 TODO 不做**（等 A 窗 design 统计定案）
-**红线**：禁 scipy.stats（OMP），手算残差。
-**停**：4 项 + 烟测过即 `done`。不碰 src 其他文件、不跑 HPC。
+## 节点 impl-verdict（B 窗 · coder）⚠️ 2026-06-20 design 定案后范围更新
+**服务**：命门统计工具，须**严格对齐新 ACCEPTANCE P4 判据2**（design 已把 LMM→ε_β0 配平分层 CDE）。
+**territory**：`src/reid_verdict_v2.py` + `tests/`。读 `ACCEPTANCE_CRITERIA.md` P4 判据1-3 全文照实现。
+**完成线（按新判据2 重写 verdict，非旧 4 项小补）**：
+- [ ] **作废旧 partial_corr + 旧 LMM**（reid_verdict_v2.py:131 旧 LMM 删/弃用，pilot 已证塌 p=0.486）
+- [ ] **主判据(1a/1b)**：三臂 A2>A1'>A0' 每集内 per-image 配对**精确排列检验**（n≥6 枚举 2^n 单侧 p<.05；**n<6 小集特例**=方向为正+最小可达 p）+ 配对 Wilcoxon 同号；跨集一致性 ≥3/4 集
+- [ ] **判据2 = ε_β0 配平分层 CDE**：每集筛 `|ε_β0(A2)−ε_β0(A1')|` 落该集 IQR 内的图子集，子集内重做配对排列 p<.10 单侧
+- [ ] **辅助 TE/NDE/NIE 三件套**（手算 OLS，cluster bootstrap by image_id，仅描述不设门）
+- [ ] 多集路径聚合 + image_id 加数据集前缀（防撞）
+- [ ] 本地真 e2e 烟测（非 mock，造 3 臂×多集假数据）跑通 + pytest 绿
+**红线**：禁 scipy.stats（OMP），排列/Wilcoxon/bootstrap/OLS 全手算（numpy+itertools）。**禁跑完调阈值（HARKing）**。
+**停**：上述全过即 `done`。不碰 src 其他文件、不跑 HPC、不改 ACCEPTANCE。
 
 ---
 
@@ -64,7 +64,31 @@
 
 ---
 
+## 节点 creatis-repro（F 窗 · coder）2026-06-20 拍板生
+**服务**：Claim1「in-model vs post-processing 续连」唯一正面对照 / L6 lever。承 creatis 自复现裁定。
+**territory**：`creatis_postproc` adapter 代码 + `tests/`。**不碰** BASELINE_SPEC（baseline-fix 窗占着）/reid_verdict_v2/drive。
+**完成线**：
+- [ ] 按 arXiv 2404.10506 §3.1 真实现 plug-and-play reco 续连后处理（现 adapter 仅占位）→ 挂统一 backbone 输出后的两段式
+- [ ] 复现零偏离：协议/超参只用 §3.1 官方，查不到标 TODO 不臆想
+- [ ] pytest 绿 + 本地烟测（造小输入跑后处理不崩）
+**停**：实现+烟测过即 `done`。BASELINE_SPEC §5 状态行**不自己改**（交主窗合并，避撞 baseline-fix）。
+
+## 节点 baselineB-pick（G 窗 · researcher）2026-06-20 拍板生
+**服务**：保 ≥12 baseline 超量 / L3 lever。承 MambaVessel++ 降档C 补位裁定。
+**territory**：`reference/`。**不碰** BASELINE_SPEC（baseline-fix 窗占着）。
+**完成线**：
+- [ ] 从档B（SA-UNetv2/MM-UNet/TFFM）查官方 repo，定哪个**有 2D 实现的 SSM/血管 baseline** 能真跑顶替 MambaVessel++
+- [ ] 确认：2D 代码存在可跑 + license + DRIVE/视网膜超参（查不到标 TODO）
+- [ ] 结论写 `reference/` 一个新档或追现有调研档（不碰 BASELINE_SPEC）
+**停**：定出补位 baseline + 核源即 `done`。roster 改交主窗合并进 BASELINE_SPEC。
+
 ## 拍板点（主窗持，各窗碰到就停下报）
-1. **gate-accept**：改 ACCEPTANCE P4 判据2（阈值变更）。
-2. **train**：投正式命门 92 GPU·h（4 集×3 臂×3 seed）+ HPC 上传新代码。
-3. **DRIVE held-out 定义**（impl-drive 内）。
+1. **gate-accept**：改 ACCEPTANCE P4 判据2（阈值变更）。✅ 2026-06-20 用户放行（partial_corr→CDE 分层 + A1' 臂）。
+2. **train**：投正式命门 92 GPU·h（4 集×3 臂×3 seed）+ HPC 上传新代码。⬜ 待 impl-verdict+integrate 过。
+3. **DRIVE held-out**：✅ 2026-06-20 裁定 = **DRIVE 不做断点 benchmark，走 CHASE**（8 张官方 held-out test GT）。DRIVE 只标准分割对照（train16/val4），不进断点轴。drive.py TEST_IDS TODO 据此关。
+
+## P3 baseline 拍板裁定（2026-06-20，winC scout-baseline 翻出 → 用户裁）
+- **creatis 无 LICENSE**：✅ 裁定 = **自己复现协议**（按 arXiv 2404.10506 §3.1 plug-and-play reco 实现，挂统一 backbone 输出后）。→ 下一轮新任务：coder 据 §3.1 真实现 `creatis_postproc` adapter（现仅占位），复现零偏离。法律上自实现绕开 vendor license 问题。
+- **MambaVesselNet++ 只 3D**：✅ 裁定 = **降档 C + 档B 补位**。MambaVessel++ 降档 C（只引文献数字 DRIVE 0.711，标 2D code-unavailable）；从档B（SA-UNetv2/MM-UNet/TFFM）提 1 个有 2D 实现的 SSM/血管 baseline 补位，保 ≥12 全谱。→ 下一轮新任务：researcher 定哪个档B 顶替 + coder 加 adapter。
+
+> 这俩裁定产生**下一轮 2 个新任务**（creatis 自复现 adapter + 档B 补位 baseline），本轮 impl-verdict/baseline-fix 跑完后排。

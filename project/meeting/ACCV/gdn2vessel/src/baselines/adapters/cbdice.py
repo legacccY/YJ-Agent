@@ -5,14 +5,16 @@ BASELINE_SPEC §2.4 loss 类：
   backbone   = UNet(in_ch=1, out_ch=1, base_ch=32)（钉死，与 Ours 同款）
   optimizer  = Adam lr=1e-3（统一）
   scheduler  = ReduceLROnPlateau mode=max factor=0.5 patience=10（统一）
-  loss       = 0.5 BCE+Dice（统一底座） + 0.5 cbDice（变量）
-               混合权重设计：隔离 cbDice 拓扑增益，与 clDice/SkelRecall 对称
+  loss       = 2·BCE + 1·Dice + 1·cbDice（官方 2:1:1 比例）
+               来源：nnUNetTrainer_CE_DC_CBDC.py::_build_loss()
+                     lambda_ce = lambda_dice + lambda_cbdice（CE 刻意加倍）
+                     compound_cbdice_loss.py::forward() 末行实证
+               baseline-fix 2026-06-20 对齐官方源
 
 超参来源：
   - cbDice 核心参数：iter_=10 smooth=1.0（官方 SoftcbDiceLoss 默认值）
-  - 混合权重 0.5/0.5：BASELINE_SPEC §2.4 统一设计（非官方 nnU-Net 训练配方）
-    # TODO: 官方论文/代码使用 DC_SkelREC_and_CE_loss weight_ce=1 weight_dice=1 weight_cbdice=1
-    #       loss 类 adapter 统一用 0.5 BCE+Dice + 0.5 cbDice，如需还原官方混合权重需 researcher 确认
+  - 混合权重 2:1:1（CE:Dice:cbDice）：官方 nnUNetTrainer_CE_DC_CBDC 核实
+    (PengchengShi1220/cbDice, Apache-2.0, MICCAI24 arXiv2407.01517 Table2)
   - backbone/optimizer/scheduler：BASELINE_SPEC §2.4 统一配方
 
 Windows 安全：无 scipy.stats（cbdice_loss.py 用 scipy.ndimage），无 multiprocessing。
@@ -71,7 +73,13 @@ def _bce_loss(
 
 class _CbDiceMixedLoss:
     """
-    混合 loss：0.5 BCE+Dice + 0.5 cbDice（§2.4 统一变量隔离设计）。
+    混合 loss：2·BCE + 1·Dice + 1·cbDice（官方 2:1:1 比例）。
+
+    来源：PengchengShi1220/cbDice nnUNetTrainer_CE_DC_CBDC.py::_build_loss()
+          lambda_ce = lambda_dice + lambda_cbdice → CE 加倍
+          compound_cbdice_loss.py::forward(): weight_ce*ce + weight_dice*dc + weight_cbdice*cbdice
+
+    二值场景 CE ≈ BCE，比例必须对齐官方 2:1:1（baseline-fix 2026-06-20）。
 
     signature: loss_fn(logits, target, fov_mask) -> scalar tensor
     """
@@ -90,7 +98,8 @@ class _CbDiceMixedLoss:
         bce = _bce_loss(logits, target, fov_mask)
         dice = _dice_loss(prob, target, fov_mask)
         cbdice = self._cbdice(logits, target, fov_mask)
-        return 0.5 * (0.5 * bce + 0.5 * dice) + 0.5 * cbdice
+        # 官方 2·CE + 1·Dice + 1·cbDice（lambda_ce = lambda_dice + lambda_cbdice）
+        return 2.0 * bce + dice + cbdice
 
 
 @register
@@ -99,7 +108,8 @@ class CbDiceAdapter(BaselineAdapter):
     cbDice loss baseline（MICCAI 2024, PengchengShi1220/cbDice, Apache-2.0）。
 
     kind='loss'：仅 loss 是变量，backbone + 训练超参统一（§2.4 反向公平）。
-    loss = 0.5 BCE+Dice（底座） + 0.5 cbDice（拓扑增益）。
+    loss = 2·BCE + 1·Dice + 1·cbDice（官方 nnUNetTrainer_CE_DC_CBDC 2:1:1 比例）。
+    impl 已对齐官方比例（baseline-fix 2026-06-20）。
     """
 
     name: str = "cbdice"
@@ -114,7 +124,7 @@ class CbDiceAdapter(BaselineAdapter):
 
     def build_loss(self, cfg: Dict[str, Any]) -> Any:
         """
-        混合 loss：0.5 BCE+Dice + 0.5 cbDice。
+        混合 loss：2·BCE + 1·Dice + 1·cbDice（官方 2:1:1）。
         signature: loss_fn(logits, target, fov_mask) -> scalar tensor
         """
         return _CbDiceMixedLoss()

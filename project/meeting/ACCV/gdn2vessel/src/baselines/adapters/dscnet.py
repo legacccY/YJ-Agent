@@ -230,33 +230,64 @@ class DSCNetAdapter(BaselineAdapter):
 
     def preprocess_cfg(self) -> Dict[str, Any]:
         """
-        DSCNet 官方预处理 (DRIVE):
+        DSCNet 官方预处理（§7.1，baseline-fix 2026-06-20）:
           - 输入: 单通道 (greyscale/green channel)
-          - 预处理: per-image mean/std 归一化（官方 S1_Pre_Getmeanstd.py 计算每图统计）
+          - normalize: z-score (image-mean)/std，mean/std 由
+                       S1_Pre_Getmeanstd.py 对**全训练集**计算后存 .npy；
+                       非 per-image（§7.1 源：S3_Dataloader.py）
+                       label /max 二值化
           - 输入尺寸: 224×224 ROI crop（DRIVE dataset ROI）
           - 无 CLAHE
-
-        NOTE: 官方按每图计算 mean/std 而非数据集级别固定 mean/std。
-              normalize 的 mean/std 在这里填全 0/1 作占位（train_harness 须
-              按官方每图归一化；evaluate.py 统一处理全图推理）。
+          ⚠ mean/std 为全训练集统计值，train_harness 须从 .npy 加载同一组值。
         """
         return {
             "channels": "green_raw",
             "normalize": {
-                "mean": [0.0],
-                "std": [1.0],
-                "per_image": True,  # 官方: per-image mean/std (S1_Pre_Getmeanstd.py)
+                "method": "zscore",              # (image-mean)/std，§7.1
+                "whole_dataset_stats": True,      # 全训练集计算，非 per-image
+                "stats_file": "mean_std.npy",     # S1_Pre_Getmeanstd.py 输出
+                "mean": [0.0],  # 占位，实际值从 .npy 加载
+                "std": [1.0],   # 占位，实际值从 .npy 加载
             },
             "input_mode": "fullimg",   # 全图推理（224 ROI crop）
             "patch_size": None,
             "clahe": False,
+            "augment": {
+                # 源：YaoleiQi/DSCNet S3_Data_Augumentation.py（§7.2）
+                # MONAI dict pipeline，外层 80% 触发（20% pass）
+                "outer_p": 0.8,
+                "transforms": [
+                    {"type": "Orientation", "p": 0.7},
+                    {
+                        "type": "Affine_or_2D_Elastic",  # 70% 二选一
+                        "p": 0.7,
+                        "affine": {
+                            "translate_range": [-30, 30],  # px
+                            "rotate_range": [-0.0873, 0.0873],  # ±π/36
+                            "scale_range": [-0.15, 0.15],
+                        },
+                        "elastic": {
+                            "spacing": 20,
+                            "magnitude": 1,
+                            "translate_range": [10, 20],
+                            "rotate_range": [-0.0873, 0.0873],  # ±π/36
+                        },
+                    },
+                    {"type": "ScaleIntensityRange", "p": 0.5},
+                    {"type": "GaussianNoise_or_Smooth", "p": 0.5, "exclusive": True},
+                ],
+                "note": (
+                    "DSCNet official MONAI augment pipeline (S3_Data_Augumentation.py §7.2). "
+                    "TODO: exact prob thresholds need per-line verification in source. "
+                    "Outer 80% trigger; sub-transforms as listed."
+                ),
+            },
             "extra": {
                 "roi_size": 224,
-                "per_image_normalization": True,
                 "note": (
-                    "Official DSCNet DRIVE uses per-image mean/std normalization "
-                    "(S1_Pre_Getmeanstd.py computes per-image stats). "
-                    "Input is cropped to 224×224 ROI."
+                    "Official DSCNet DRIVE: z-score norm with whole-dataset mean/std "
+                    "computed by S1_Pre_Getmeanstd.py and saved as .npy. "
+                    "Source: S3_Dataloader.py + BASELINE_SPEC §7.1 §7.2."
                 ),
             },
         }

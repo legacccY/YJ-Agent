@@ -169,13 +169,13 @@ researcher 回填官方超参 ─┘
 ### ✅ 12 baseline adapter 实现状态（registry 注册名）
 | adapter | kind | env | 实现 | 残留 TODO |
 |---|---|---|---|---|
-| fr_unet | architecture | main | ✅ 官方 curl 忠实移植 + 滑窗推理 self-contained | normalize mean/std + augment 官方未公开 |
-| cs_net | architecture | main | ✅ 官方 curl 忠实移植 | normalize（官方仅 /255）+ augment |
-| dscnet | architecture | main | ✅ DSConv 纯 PyTorch + cross_loss(BCE) | ✅ **TCLoss 核实闭环（scout-baseline 2026-06-20）**：官方 DRIVE 只 `cross_loss(BCE)`，TCLoss(persistent homology) 仅论文 arXiv2307.08388 描述**未开源** → 忠实走 BCE = 对（**非「变体在另 repo」，是根本未公开**）；augment 已补（§7，MONAI pipeline） |
+| fr_unet | architecture | main | ✅ 官方 curl 忠实移植 + 滑窗推理 self-contained | normalize mean/std 需按训练集自算（占位 mean=0/std=1）；**augment 已补（HFlip/VFlip p0.5 + Fix_RandomRotation 四向等概率，§7.2 对齐，baseline-fix 2026-06-20）** |
+| cs_net | architecture | main | ✅ 官方 curl 忠实移植 | normalize 仅 /255 已标注（§7.1 对）；**augment 已补（rotate 100%+HFlip p0.5+RandomCrop+RandEnhance p0.5，factor_range TODO PIL 负值语义待确认，baseline-fix 2026-06-20）** |
+| dscnet | architecture | main | ✅ DSConv 纯 PyTorch + cross_loss(BCE) | ✅ **TCLoss 核实闭环（scout-baseline 2026-06-20）**：官方 DRIVE 只 `cross_loss(BCE)` = 对；**normalize 修正（whole_dataset_stats z-score，非 per-image，§7.1 baseline-fix 2026-06-20）**；augment MONAI pipeline 已补（§7.2，各 transform prob TODO 需逐行核） |
 | creatis_postproc | architecture(两段式) | main | ✅ 官方 curl + postproc 挂 backbone 输出后 | ⚠️ **LICENSE 核实闭环（scout-baseline 2026-06-20）= 无 LICENSE 文件**（main+master 404，README 无 CeCILL 字样=传言错，arXiv 无 license）→ 默认 All Rights Reserved，**数字/方法引用 OK，但 vendor 代码法律上不允许**，须 issue 作者确认授权（详 §7.4，拍板点）；Stage-2 需 monai + 断点训练数据 |
 | cldice | loss | main | ✅ 官方 soft_dice_cldice α0.5 配统一 backbone | — |
-| cbdice | loss | main | ✅ 官方移植去 monai/nnUNet 依赖 | ⚠️ **权重核源闭环（scout-baseline 2026-06-20）**：现 `0.5BCE+Dice+0.5cbDice` **与官方不符**，官方 `nnUNetTrainer_CE_DC_CBDC` = **2·CE+1·Dice+1·cbDice**（`lambda_ce=lambda_dice+lambda_cbdice`）→ **impl 阶段改成 2:1:1** |
-| skeleton_recall | loss | main | ✅ 官方 SoftSkeletonRecallLoss 移植 | 混合权重同上；skel GT forward 内实时算（略慢） |
+| cbdice | loss | main | ✅ 官方移植去 monai/nnUNet 依赖 | ✅ **impl 已对齐官方比例（baseline-fix 2026-06-20）**：`2·BCE+1·Dice+1·cbDice`（官方 nnUNetTrainer_CE_DC_CBDC lambda_ce=lambda_dice+lambda_cbdice，2:1:1） |
+| skeleton_recall | loss | main | ✅ 官方 SoftSkeletonRecallLoss 移植 | ✅ **impl 已对齐官方比例（baseline-fix 2026-06-20）**：`1·BCE+1·Dice+1·SkelRecall`（官方 DC_SkelREC_and_CE_loss weight_ce=1 weight_dice=1 weight_srec=1，1:1:1）；skel GT forward 内实时算（略慢） |
 | vm_unet | architecture | **mamba** | ✅ vendor + adapter，无 mamba_ssm 时 RuntimeError | wd/normalize/rotation 官方未明示；需 HPC mamba_venv build |
 | u_mamba | architecture | **mamba** | ✅ adapter 占位（nnUNet 命令行路径） | 需 nnUNet 自配置 + mamba_venv |
 | mamba_vessel_net | architecture | **mamba** | ✅ vendor + MVNWrapper2D | ⚠️ vendor 是 3D Conv3d，2D path 不确定→可能降档 C（§3 退路） |

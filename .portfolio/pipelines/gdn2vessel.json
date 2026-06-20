@@ -3,7 +3,7 @@
   "project": "gdn2vessel",
   "template": "experiment",
   "created": "2026-06-20T20:24:25+08:00",
-  "updated": "2026-06-20T20:51:39+08:00",
+  "updated": "2026-06-20T21:06:58+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -130,13 +130,13 @@
       "stage": "写码",
       "agent": "coder",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "reid_verdict_v2升级:多集聚合+image_id集前缀+LMM C(dataset)+平台斜率+FIVES子采样seed42",
-      "out": "",
+      "out": "重写对齐判据2:CDE分层+精确排列+n<6特例+三臂归因,零scipy手算,480passed(检测验过)",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-20T21:06:58+08:00"
     },
     {
       "id": "impl-drive",
@@ -163,6 +163,45 @@
       "out": "",
       "owner": "",
       "ts": "2026-06-20T20:38:40+08:00"
+    },
+    {
+      "id": "baseline-fix",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "据winC §7改adapter: cbDice 0.5:1:0.5→2:1:1, normalize/augment按§7.1/7.2官方表, DSCNet确认BCE。territory=baseline adapters,不碰reid_verdict/drive",
+      "out": "cbDice 2:1:1+SkelRec 1:1:1+normalize/augment§7对齐,433passed(检测cbdice:102实锤)",
+      "owner": "",
+      "ts": "2026-06-20T21:06:58+08:00"
+    },
+    {
+      "id": "creatis-repro",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "据arXiv2404.10506 §3.1真实现creatis_postproc plug-and-play续连(现仅占位),挂统一backbone输出后,复现零偏离。territory=creatis_postproc adapter+tests,不碰BASELINE_SPEC(baseline-fix占)/reid_verdict/drive",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "baselineB-pick",
+      "stage": "调研",
+      "agent": "researcher",
+      "deps": [],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "定档B(SA-UNetv2/MM-UNet/TFFM)哪个有2D实现的SSM/血管baseline顶替降档的MambaVessel++保≥12。查官方repo确认2D可跑+license+超参。territory=reference/,不碰BASELINE_SPEC(baseline-fix占)",
+      "out": "",
+      "owner": "",
+      "ts": ""
     }
   ]
 }

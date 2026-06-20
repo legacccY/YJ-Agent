@@ -351,28 +351,48 @@ class FRUNetAdapter(BaselineAdapter):
 
     def preprocess_cfg(self) -> Dict[str, Any]:
         """
-        FR-UNet 官方预处理：灰度单通道，channel-wise mean/std + minmax 归一化，无 CLAHE。
+        FR-UNet 官方预处理（§7.1 normalize + §7.2 augment，baseline-fix 2026-06-20）：
+          normalize: 两步——①全集 global mean/std Normalize([mean],[std])
+                              ②per-image minmax→[0,1]（预处理阶段 pickle 存盘）
+                     源：data_process.py::normalization()
+                     ⚠ mean/std 需按训练集自算，占位值 mean=0 std=1（minmax 后等价）
+          augment:   HFlip p0.5 · VFlip p0.5 ·
+                     Fix_RandomRotation 等概率选 {-180°,-90°,0°,90°}（各 25%）
+                     image+gt 同 seed 同步；仅 training；无 elastic/无 color
+                     源：dataset.py + utils/helpers.py
+          clahe: False（官方无）
         训练时切 patch 48×48（stride=6），评估时传全图由 forward_adapt 滑窗拼回。
-        mean/std: TODO_researcher — 官方 README/code 未公开具体值，
-                  BASELINE_SPEC 给出 minmax 归一化；此处 mean=0 std=1 为 minmax 后等价占位。
-                  实际训练时需查官方 dataset.py 确认。
         """
         return {
-            "channels": "green_raw",   # 灰度单通道，官方用绿通道或灰度（视网膜场景）
+            "channels": "green_raw",   # 灰度单通道，官方 data_process.py
             "normalize": {
-                "mean": [0.0],         # TODO: 官方未公开精确 mean/std，minmax 后占位
-                "std": [1.0],          # TODO: 官方未公开精确 mean/std，minmax 后占位
+                "step1": "global_mean_std",   # 全集 mean/std，官方 data_process.py
+                "step2": "per_image_minmax",  # per-image minmax→[0,1]
+                "mean": [0.0],  # TODO: 需按训练集自算（data_process.py normalization()）
+                "std": [1.0],   # TODO: 需按训练集自算（data_process.py normalization()）
             },
             "input_mode": "patch",
             "patch_size": self._PATCH_SIZE,
-            "clahe": False,            # 官方无 CLAHE
+            "clahe": False,            # 官方无 CLAHE（§7.1 确认）
+            "augment": {
+                # 源：lseventeen/FR-UNet dataset.py + utils/helpers.py（§7.2）
+                "hflip": {"p": 0.5},
+                "vflip": {"p": 0.5},
+                "fix_random_rotation": {
+                    "choices": [-180, -90, 0, 90],  # 等概率各 25%
+                    "p_each": 0.25,
+                },
+                "sync_seed": True,     # image+gt 同 seed 同步
+                "train_only": True,    # 仅 training
+                "note": "FR-UNet official augment: HFlip/VFlip p0.5 + Fix_RandomRotation 4-way (dataset.py+helpers.py). No elastic/color.",
+            },
             "extra": {
                 "stride": self._STRIDE,
                 "batch_size_train": 512,  # 官方 bs=512 patch/batch
                 "note": (
-                    "FR-UNet trains on grayscale patches 48×48 stride=6. "
+                    "FR-UNet trains on grayscale patches 48x48 stride=6. "
                     "Evaluation: sliding-window inference reassembled to full image. "
-                    "Source: JBHI22 + BASELINE_SPEC §1."
+                    "Source: JBHI22 + BASELINE_SPEC §1 §7.1 §7.2."
                 ),
             },
         }
