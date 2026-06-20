@@ -69,8 +69,12 @@ def load_arm_csv(csv_path: Path | str) -> dict[str, list[dict]]:
     with open(csv_path, newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            ds = row.get('dataset', 'unknown')
+            # 规范小写：train_reid_pilot 写 benchmark 的 sample['dataset']（CHASE/STARE 等大写），
+            # 但 DATASETS 硬编码小写 → 不归一会 n=0 假 FAIL（集成烟测 2026-06-20 逮到，
+            # 同 Entry14 pilot n=0 假 FAIL 类）。strip+lower 对齐 DATASETS。
+            ds = row.get('dataset', 'unknown').strip().lower()
             row = dict(row)
+            row['dataset'] = ds
             # 加前缀防撞
             row['image_id_global'] = f"{ds}__{row['image_id']}"
             row['reid_rate']     = float(row['reid_rate'])

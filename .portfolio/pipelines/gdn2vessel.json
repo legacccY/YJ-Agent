@@ -3,7 +3,7 @@
   "project": "gdn2vessel",
   "template": "experiment",
   "created": "2026-06-20T20:24:25+08:00",
-  "updated": "2026-06-20T21:21:30+08:00",
+  "updated": "2026-06-20T21:29:38+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -58,13 +58,13 @@
         "impl-drive",
         "impl-a1prime"
       ],
-      "status": "blocked",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
-      "out": "集成烟测逮缝:A1'等参臂未在unet_gdn2.py/train_reid_pilot.py实现,三臂A2>A1'>A0'跑不了。CSV契约OK",
+      "out": "真组件胶合烟测:逮到dataset大小写缝(train写CHASE/verdict找chase→n=0假FAIL,Entry14同款)→修reid_verdict_v2:72 .lower()归一。修后配对数据4/4集PASS+STARE n=4特例0.0625 deemed_pass正确,534passed。A2前向需fla留HPC(item-1已真验)",
       "owner": "",
-      "ts": "2026-06-20T21:09:42+08:00"
+      "ts": "2026-06-20T21:29:38+08:00"
     },
     {
       "id": "train",
@@ -183,13 +183,13 @@
       "stage": "写码",
       "agent": "coder",
       "deps": [],
-      "status": "running",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "据arXiv2404.10506 §3.1真实现creatis_postproc plug-and-play续连(现仅占位),挂统一backbone输出后,复现零偏离。territory=creatis_postproc adapter+tests,不碰BASELINE_SPEC(baseline-fix占)/reid_verdict/drive",
       "out": "",
-      "owner": "winF",
-      "ts": "2026-06-20T21:08:40+08:00"
+      "owner": "",
+      "ts": "2026-06-20T21:26:05+08:00"
     },
     {
       "id": "baselineB-pick",
