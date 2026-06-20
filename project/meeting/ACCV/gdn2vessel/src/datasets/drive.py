@@ -84,15 +84,16 @@ class DRIVEDataset(BaseVesselDataset):
     Split (deterministic, from 20 training images with GT):
       TRAIN_IDS: 21..36  (16 images)
       VAL_IDS:   37..40  (4 images)
-      TEST_IDS:  []      (see TODO below)
+      TEST_IDS:  []      (DRIVE 不做断点 benchmark，见下裁定)
     """
 
     TRAIN_IDS: List[int] = list(range(21, 37))   # 21..36 (16 images)
     VAL_IDS:   List[int] = list(range(37, 41))   # 37..40 (4 images)
 
-    # TODO[拍板点]: DRIVE 官方 test(20张) 无公开 GT，held-out benchmark 须从 20 张
-    #   训练图中划定。划分方案(留几张/哪几张/是否与 VAL 复用)待用户拍板，暂空。
-    #   对照: CHASE 有 8 张官方 held-out test GT(见 chase.py TEST_IDS)。
+    # ✅ 裁定（用户 2026-06-20）: DRIVE 官方 test(20张)无公开 GT → **DRIVE 不做断点续连
+    #   benchmark**，只做标准分割对照(train16/val4)。断点续连轴走 CHASE(8张官方 held-out
+    #   test GT，见 chase.py TEST_IDS)。故 TEST_IDS 恒空，非 TODO（winD Entry16「重下官方
+    #   test GT」方案作废，CHASE 为准）。
     TEST_IDS: List[int] = []
 
     # ---------------------------------------------------------------------- #
