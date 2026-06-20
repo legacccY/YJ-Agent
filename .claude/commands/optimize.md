@@ -8,6 +8,7 @@
 
 ## 执行步骤
 
+0. **索引漂移自检**（零 token，先跑）：`python tools/check_registry_pointers.py` — 对账 registry ↔ CLAUDE.md 入口清单，exit 1 说明有新项目漏登读档指针（gdn2vessel 同款断链），按提示补 CLAUDE.md 一行即过。
 1. **先看值不值得跑**（省 token）：`wc -l .portfolio/friction.jsonl`（不存在/0 条且本会话无明显重复纠正 → 直接报"系统健康"，不派 agent）。
 2. 派 `optimizer` agent（sonnet + caveman，冷启动给：本会话主线注意到的反复纠正/坑），让它：
    - 聚类 `.portfolio/friction.jsonl`（≥2 次的）+ `git log --oneline -20` + 上下文摩擦。

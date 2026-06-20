@@ -1,0 +1,202 @@
+[
+  {
+    "name": "BIO201-2526-S1-Genome Expression and Maintenance",
+    "id": "3692",
+    "finalUrl": "/enrol/index.php?id=3692",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO202-2526-S1-Biochemical Methods",
+    "id": "3693",
+    "finalUrl": "/enrol/index.php?id=3693",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO203-2526-S1-Medical Microbiology and Virology",
+    "id": "3694",
+    "finalUrl": "/enrol/index.php?id=3694",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO204-2526-S2-Advanced Genetics",
+    "id": "4934",
+    "finalUrl": "/enrol/index.php?id=4934",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO205-2526-S1-Cell Biology Techniques",
+    "id": "3695",
+    "finalUrl": "/enrol/index.php?id=3695",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO206-2526-S2-Practical Bioinformatics",
+    "id": "4935",
+    "finalUrl": "/enrol/index.php?id=4935",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO207-2526-S1-Proteins in Action",
+    "id": "3696",
+    "finalUrl": "/enrol/index.php?id=3696",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO208-2526-S2-Cell Signalling",
+    "id": "4936",
+    "finalUrl": "/enrol/index.php?id=4936",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO209-2526-S1-Higher Organic Chemistry",
+    "id": "3697",
+    "finalUrl": "/enrol/index.php?id=3697",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO210-2526-S2-Biotechnology",
+    "id": "4937",
+    "finalUrl": "/enrol/index.php?id=4937",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO211-2526-S1-Bioinformatics I",
+    "id": "3698",
+    "finalUrl": "/enrol/index.php?id=3698",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO212-2526-S2-Structure and Dynamics of Biomolecules",
+    "id": "4938",
+    "finalUrl": "/enrol/index.php?id=4938",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO213-2526-S1-Fundamentals of Virology",
+    "id": "3699",
+    "finalUrl": "/enrol/index.php?id=3699",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO214-2526-S2-Bioinformatics II",
+    "id": "4939",
+    "finalUrl": "/enrol/index.php?id=4939",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO215-2526-S1-Bioinformatics Project",
+    "id": "3700",
+    "finalUrl": "/enrol/index.php?id=3700",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO216-2526-S2-Artificial Intelligence for Life Science",
+    "id": "4940",
+    "finalUrl": "/enrol/index.php?id=4940",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO220-2526-S1-Introduction to Computational Biology",
+    "id": "3701",
+    "finalUrl": "/enrol/index.php?id=3701",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO221-2526-S2-Epidemiology",
+    "id": "4941",
+    "finalUrl": "/enrol/index.php?id=4941",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO222-2526-S2-Global Health and Society",
+    "id": "4942",
+    "finalUrl": "/enrol/index.php?id=4942",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": false,
+    "needKey": false
+  },
+  {
+    "name": "BIO223-2526-S1-Communicable and Non-communicable Diseases in Public Health",
+    "id": "3702",
+    "finalUrl": "/enrol/index.php?id=3702",
+    "activities": 0,
+    "onEnrolPage": true,
+    "guest": false,
+    "selfEnrol": true,
+    "needKey": true
+  }
+]

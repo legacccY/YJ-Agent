@@ -21,12 +21,12 @@
     "vessel_pending": {
       "name": "血管/管状待补集 (冠脉/OCTA; STARE+HRF 已随 collection 到)",
       "n": "XCAD 126标注 / DCA1 134 / CHUAC 30 / OCTA-500 500 / ROSE 229",
-      "local": "TODO",
-      "hpc": "TODO",
-      "source": "XCAD=github AISIGSJTU/SSVS(Dropbox) | DCA1=personal.cimat.mx/~ivan.cruz(曾ECONNREFUSED待复查) | CHUAC=figshare 4d24cf3d14bc901a94bf | OCTA-500=ieee-dataport.org/open-access/octa-500(需注册) | ROSE=zenodo.org/records/12775880",
+      "local": "DCA1 ✓ data/vessel_coronary/DCA1_DB_Angiograms_134.zip (9.4MB,268 .pgm,134图+GT) | XCAD ✓ data/vessel_coronary/XCAD.zip (454MB,3502 PNG,train/test images+masks) | CHUAC ✓ data/vessel_coronary/CHUAC/ (figshare 私链 Playwright 下 angiography.rar→bsdtar/libarchive 本地解; Original/30原图(189×189) + Hemotool/30GT(512×512,0/1) + Photoshop/30GT 两套标注; ⚠️原图与mask分辨率不一致需 dataloader resize; CC BY 4.0) | OCTA-500 ⏳ data/vessel_octa/octa500.zip 下载中(kaggle xiefei/octa500,4.47G) | ROSE ✓ data/vessel_octa/ROSE_kaggle/ROSE/ (kaggle snikhilrao/octa-seg-data 50MB,绕开官方申请表; ROSE-1 SVC/DVC/SVC_DVC 117图+gt/thick_gt/thin_gt + ROSE-2 112图 = 229图对上官方; ⚠️kaggle标MIT但原版CC-BY-4.0学术用,发表引 Ma et al. IEEE TMI 2021)",
+      "hpc": "DCA1+XCAD+CHUAC ✓ 已传+解压 /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel_coronary/ (2026-06-20). DCA1/Database_134_Angiograms/ 268 .pgm(134图+134_gt) | XCAD/XCAD/{train/{trainA,trainB,trainC},test/{images,masks}} 3495文件 | CHUAC/{Original,Hemotool,Photoshop}/ 各30 PNG=90文件 | ROSE ✓ /gpfs/.../data/vessel_octa/ROSE/ 731文件(ROSE-1 SVC/DVC/SVC_DVC + ROSE-2) | OCTA-500 下完待传",
+      "source": "XCAD=dropbox dl=1 (github AISIGSJTU/SSVS README, https://www.dropbox.com/s/z0lk5oz6gt9mgd2/XCAD.zip?dl=1 ✓验通) | DCA1=https://www.cimat.mx/~ivan.cruz/DB_Angiograms_files/DB_Angiograms_134.zip ✓(直链恢复) | OCTA-500=kaggle xiefei/octa500 ✓(4.47G;原ieee-dataport需注册) | CHUAC=figshare私链 ✓已下 (item 'Angiographics' figshare.com/s/4d24cf3d14bc901a94bf, ndownloader/files/7573477 经浏览器 session 下 angiography.rar;curl 直下 202/403 须 Playwright 点 Download) | ROSE=✓已下 kaggle snikhilrao/octa-seg-data (绕开官方申请表; 官方 zenodo 12775880 受限需 Request access / imed.nimte.ac.cn/dataofrose.html 申请表, 均 CC-BY-4.0 学术)",
       "used_by": ["gdn2vessel"],
       "purpose": "gdn2vessel 扩展覆盖(超标)+跨域泛化; 许可证逐个确认能否学术发表后纳入",
-      "status": "todo"
+      "status": "near-complete (DCA1+XCAD+CHUAC✓local+HPC / ROSE✓local kaggle绕过申请表待传HPC / OCTA-500下载中~2.8G待传; 10集仅OCTA-500在途)"
     },
     "hippocampus_msd": {
       "name": "MSD Task04 Hippocampus",

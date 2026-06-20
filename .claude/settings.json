@@ -21,6 +21,12 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\iclr_session_start.js\"",
             "timeout": 3,
             "statusMessage": "ICLR project reminder..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\registry_pointer_guard.js\"",
+            "timeout": 3,
+            "statusMessage": "registry pointer drift check..."
           }
         ]
       }

@@ -1,0 +1,2594 @@
+{
+  "BIO102": {
+    "id": "3687",
+    "count": 11,
+    "mods": [
+      {
+        "name": "Coursework 1  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=56745",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 2-group lab report on Experiment 2  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=62420",
+        "hidden": false
+      },
+      {
+        "name": "Week 5  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=47865",
+        "hidden": false
+      },
+      {
+        "name": "Week 6  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=51437",
+        "hidden": false
+      },
+      {
+        "name": "Week 7_lecture 3, tutorial 1 and practical 1  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=54383",
+        "hidden": false
+      },
+      {
+        "name": "Week 8  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=56748",
+        "hidden": false
+      },
+      {
+        "name": "Week 9  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=60216",
+        "hidden": false
+      },
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=7543",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=7544",
+        "hidden": false
+      },
+      {
+        "name": "BigBlueButton virtual classroom",
+        "type": "bigbluebuttonbn",
+        "url": "https://core.xjtlu.edu.cn/mod/bigbluebuttonbn/view.php?id=7545",
+        "hidden": false
+      },
+      {
+        "name": "BIO102_202526_SEM1_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=25162",
+        "hidden": true
+      }
+    ]
+  },
+  "BIO103": {
+    "id": "3688",
+    "count": 35,
+    "mods": [
+      {
+        "name": "Module handbook and other important resources  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=7546",
+        "hidden": false
+      },
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=7547",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=7548",
+        "hidden": false
+      },
+      {
+        "name": "BigBlueButton virtual classroom",
+        "type": "bigbluebuttonbn",
+        "url": "https://core.xjtlu.edu.cn/mod/bigbluebuttonbn/view.php?id=7549",
+        "hidden": false
+      },
+      {
+        "name": "BIO103_202526_SEM1_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=29348",
+        "hidden": true
+      },
+      {
+        "name": "(1) Module Introduction  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=36302",
+        "hidden": false
+      },
+      {
+        "name": "(2) Basic Properties of the Cell and Cell Cycle  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=48172",
+        "hidden": true
+      },
+      {
+        "name": "Cell Biology Tutorial 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=48173",
+        "hidden": true
+      },
+      {
+        "name": "(3) Nuclear process & Cytoskeleton.  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=40313",
+        "hidden": false
+      },
+      {
+        "name": "(4) Endomembrane System and Membrane Transport Mechanism  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=48169",
+        "hidden": true
+      },
+      {
+        "name": "(5) Cell-Cell Communication & Tutorial Class  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=43846",
+        "hidden": true
+      },
+      {
+        "name": "(6) The mitochondria & Ribosome and Tutorial  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=46850",
+        "hidden": true
+      },
+      {
+        "name": "(7) Cell Biology Approach  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=48168",
+        "hidden": true
+      },
+      {
+        "name": "BIO103 Cellular Biology - Summary & Tutorial  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=51533",
+        "hidden": false
+      },
+      {
+        "name": "BIO103 Cellular Biology - Mock MCQs  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=53311",
+        "hidden": false
+      },
+      {
+        "name": "Terminology-Nucleic acid structure and functions  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49466",
+        "hidden": true
+      },
+      {
+        "name": "miRNA video  Mediasite Content",
+        "type": "mediasite",
+        "url": "https://core.xjtlu.edu.cn/mod/mediasite/view.php?id=49472",
+        "hidden": false
+      },
+      {
+        "name": "Week 7_BIO103-Nucleic acids PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49457",
+        "hidden": true
+      },
+      {
+        "name": "Week 7_BIO103_DNA replication PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49458",
+        "hidden": true
+      },
+      {
+        "name": "Week 7 Tutorial Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=46002",
+        "hidden": false
+      },
+      {
+        "name": "Terminology- DNA mutation repair  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49517",
+        "hidden": true
+      },
+      {
+        "name": "Week 8_BIO103_DNA Mutation and Repair PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49520",
+        "hidden": true
+      },
+      {
+        "name": "Week 8-BIO103_Transcription in Prok & Euk PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49522",
+        "hidden": true
+      },
+      {
+        "name": "BIO103 Transcription process video  Mediasite Content",
+        "type": "mediasite",
+        "url": "https://core.xjtlu.edu.cn/mod/mediasite/view.php?id=49585",
+        "hidden": false
+      },
+      {
+        "name": "Week 8 Tutorial Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=46004",
+        "hidden": false
+      },
+      {
+        "name": "Terminology-Control of gene expression  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49606",
+        "hidden": true
+      },
+      {
+        "name": "Week 9-Bio103-Control of Gene Expression PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49604",
+        "hidden": true
+      },
+      {
+        "name": "Week 9 Tutorial Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=46005",
+        "hidden": false
+      },
+      {
+        "name": "Week 10-BIO103-Translation PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49775",
+        "hidden": true
+      },
+      {
+        "name": "Week 10_BIO103-Protein structure  function  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49776",
+        "hidden": true
+      },
+      {
+        "name": "Week 10 Tutorial Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=46006",
+        "hidden": false
+      },
+      {
+        "name": "CW2 Quiz with answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=72495",
+        "hidden": true
+      },
+      {
+        "name": "CW3 Disclosed Essay Questions  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=63223",
+        "hidden": true
+      },
+      {
+        "name": "Coursework 1 Test and Answer - Cellular Biology (LimLW)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=70620",
+        "hidden": true
+      },
+      {
+        "name": "Final Exam Review/Tutorial - Cellular Biology (LimLW)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=70631",
+        "hidden": true
+      }
+    ]
+  },
+  "BIO105": {
+    "id": "3689",
+    "count": 24,
+    "mods": [
+      {
+        "name": "Module handbook and other important resources  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=7550",
+        "hidden": false
+      },
+      {
+        "name": "BIO105 announcement  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=7551",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=7552",
+        "hidden": false
+      },
+      {
+        "name": "BigBlueButton virtual classroom",
+        "type": "bigbluebuttonbn",
+        "url": "https://core.xjtlu.edu.cn/mod/bigbluebuttonbn/view.php?id=7553",
+        "hidden": false
+      },
+      {
+        "name": "BIO105 course work (CW1)  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=41376",
+        "hidden": false
+      },
+      {
+        "name": "BIO105 course work (CW2)  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=50735",
+        "hidden": false
+      },
+      {
+        "name": "BIO105 course work 3 (CW3)  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=60256",
+        "hidden": false
+      },
+      {
+        "name": "BIO105_202526_SEM1_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=50738",
+        "hidden": true
+      },
+      {
+        "name": "How to Prepare for the Final Exam  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=71456",
+        "hidden": true
+      },
+      {
+        "name": "BIO105 lecture 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=30197",
+        "hidden": true
+      },
+      {
+        "name": "BIO105 Lecture 2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=36817",
+        "hidden": true
+      },
+      {
+        "name": "BIO105 Lecture 3  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=39924",
+        "hidden": true
+      },
+      {
+        "name": "BIO105 Lecture 4  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=43467",
+        "hidden": true
+      },
+      {
+        "name": "BIO105 Lecture 5  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=46578",
+        "hidden": true
+      },
+      {
+        "name": "movie  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=46643",
+        "hidden": true
+      },
+      {
+        "name": "BIO105 Lecture 6  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=50005",
+        "hidden": true
+      },
+      {
+        "name": "movie  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=50026",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 7  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=53245",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 8  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=55850",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 9  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=59425",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 10  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=62555",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 11  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=65671",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 12  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=67930",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 13  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=69831",
+        "hidden": true
+      }
+    ]
+  },
+  "BIO107": {
+    "id": "3690",
+    "count": 62,
+    "mods": [
+      {
+        "name": "Module handbook and other important resources  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=7554",
+        "hidden": false
+      },
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=7555",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=7556",
+        "hidden": false
+      },
+      {
+        "name": "BigBlueButton virtual classroom",
+        "type": "bigbluebuttonbn",
+        "url": "https://core.xjtlu.edu.cn/mod/bigbluebuttonbn/view.php?id=7557",
+        "hidden": false
+      },
+      {
+        "name": "BIO107_202526_SEM1_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=31421",
+        "hidden": true
+      },
+      {
+        "name": "test 1  Quiz",
+        "type": "quiz",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "test2  Quiz",
+        "type": "quiz",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "Quiz of Lab assessment",
+        "type": "quiz",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "Lab session grouping  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=22835",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=26430",
+        "hidden": true
+      },
+      {
+        "name": "Lecture-2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=22846",
+        "hidden": true
+      },
+      {
+        "name": "ALC support schedule  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=37796",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 3  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=22847",
+        "hidden": true
+      },
+      {
+        "name": "Lab safety training  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=43981",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 4  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=43832",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 5  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=47416",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 6  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=50426",
+        "hidden": true
+      },
+      {
+        "name": "Lecture-7  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=53571",
+        "hidden": true
+      },
+      {
+        "name": "Practical handbook for lab sessions  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=14880",
+        "hidden": true
+      },
+      {
+        "name": "Tutorial questions -1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=51527",
+        "hidden": true
+      },
+      {
+        "name": "Tutorial questions -2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=51529",
+        "hidden": true
+      },
+      {
+        "name": "Lab 1 material  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=51542",
+        "hidden": true
+      },
+      {
+        "name": "Lab 1 PowerPoint  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=51544",
+        "hidden": true
+      },
+      {
+        "name": "Lab session 1 Class data for morning class  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=55487",
+        "hidden": true
+      },
+      {
+        "name": "Lab session 1 Class data for afternoon class  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=55488",
+        "hidden": true
+      },
+      {
+        "name": "Enzyme catalyst  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=56964",
+        "hidden": true
+      },
+      {
+        "name": "Lab 2 material  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=55512",
+        "hidden": true
+      },
+      {
+        "name": "Lab 2 PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=55513",
+        "hidden": true
+      },
+      {
+        "name": "Gel-Afternoon-Lab2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=58475",
+        "hidden": true
+      },
+      {
+        "name": "Gel-Morning-Lab2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=58472",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 8  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=56307",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 9  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=58343",
+        "hidden": true
+      },
+      {
+        "name": "Lab3 PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=59775",
+        "hidden": true
+      },
+      {
+        "name": "Lab 3 material  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=59776",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 10  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=61158",
+        "hidden": true
+      },
+      {
+        "name": "Lab 4ppt  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=62755",
+        "hidden": true
+      },
+      {
+        "name": "Lab 4 Material  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=62757",
+        "hidden": true
+      },
+      {
+        "name": "Lab 5 material  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=66566",
+        "hidden": true
+      },
+      {
+        "name": "lab 5 PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=66957",
+        "hidden": true
+      },
+      {
+        "name": "Lab 5 Class Data  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=67562",
+        "hidden": true
+      },
+      {
+        "name": "Lab 6 PPT  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=67566",
+        "hidden": true
+      },
+      {
+        "name": "Lab 6 material  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=67567",
+        "hidden": true
+      },
+      {
+        "name": "Lab report-1  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=22060",
+        "hidden": false
+      },
+      {
+        "name": "Lab report-2  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=22122",
+        "hidden": false
+      },
+      {
+        "name": "Lab report-3  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=22123",
+        "hidden": false
+      },
+      {
+        "name": "Lab report-4  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=22124",
+        "hidden": false
+      },
+      {
+        "name": "Lab report-5  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=22125",
+        "hidden": false
+      },
+      {
+        "name": "Lab report-6  Assignment",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=22127",
+        "hidden": false
+      },
+      {
+        "name": "ALC support workshops Guided Self-Study  Scheduler",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=39555",
+        "hidden": false
+      },
+      {
+        "name": "ALC support workshops Guided Self-Study  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=39555",
+        "hidden": false
+      },
+      {
+        "name": "Week 3 ALC support workshops - Vocabulary Building II - Making the Most of Your Lectures with AI help  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=31366",
+        "hidden": false
+      },
+      {
+        "name": "Week 4 Vocabulary Building III - Lexical Density  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=31924",
+        "hidden": false
+      },
+      {
+        "name": "Week 5 Preparing to Write a Report I  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=31926",
+        "hidden": false
+      },
+      {
+        "name": "Week 6 Preparing to Write a Report II  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=31929",
+        "hidden": false
+      },
+      {
+        "name": "Weeks 7-12 Workshops (Week 12 - Exam Prep and Bio101 Quiz 3))  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=31931",
+        "hidden": false
+      },
+      {
+        "name": "Year 3 IGEM sharing  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=54115",
+        "hidden": false
+      },
+      {
+        "name": "Week 13 Mastering BIO vocabulary - mini Lecture  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=70650",
+        "hidden": false
+      },
+      {
+        "name": "Consultations  Scheduler",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=38992",
+        "hidden": false
+      },
+      {
+        "name": "Consultations  Scheduler",
+        "type": "scheduler",
+        "url": "https://core.xjtlu.edu.cn/mod/scheduler/view.php?id=38992",
+        "hidden": false
+      },
+      {
+        "name": "Week 3  Folder",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=42658",
+        "hidden": false
+      },
+      {
+        "name": "Week 3  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=42658",
+        "hidden": false
+      },
+      {
+        "name": "test-1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=38787",
+        "hidden": false
+      }
+    ]
+  },
+  "CPT105": {
+    "id": "3857",
+    "count": 108,
+    "mods": [
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=29622",
+        "hidden": true
+      },
+      {
+        "name": "CPT105_202526_SEM1_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=49034",
+        "hidden": true
+      },
+      {
+        "name": "Revision file - 1",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=64976",
+        "hidden": true
+      },
+      {
+        "name": "[CPT105] Semester Overview Practice: Prepare for Week 12 Quizzes  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=61799",
+        "hidden": true
+      },
+      {
+        "name": "Overview practice answer sheet  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=64956",
+        "hidden": true
+      },
+      {
+        "name": "CPT105 mock SEB mode procedure  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=46527",
+        "hidden": true
+      },
+      {
+        "name": "Questions 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=70425",
+        "hidden": true
+      },
+      {
+        "name": "Lecture notes  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=10246",
+        "hidden": true
+      },
+      {
+        "name": "Lecture example code  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10248",
+        "hidden": false
+      },
+      {
+        "name": "Lab materials  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=10249",
+        "hidden": true
+      },
+      {
+        "name": "Exercise 1 for week 1  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11304",
+        "hidden": false
+      },
+      {
+        "name": "Exercise 1 for week 1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11304",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 1  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11306",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11306",
+        "hidden": false
+      },
+      {
+        "name": "CW1 Week #1 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10251",
+        "hidden": true
+      },
+      {
+        "name": "Lecture notes, Lab materials, Lab solutions and Lecture example codes  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10260",
+        "hidden": false
+      },
+      {
+        "name": "Exercises  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11308",
+        "hidden": false
+      },
+      {
+        "name": "Exercises  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11308",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 2  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11310",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 2  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11310",
+        "hidden": false
+      },
+      {
+        "name": "CW1 Week #2 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10261",
+        "hidden": true
+      },
+      {
+        "name": "Lecture Recording  Diary",
+        "type": "diary",
+        "url": "https://core.xjtlu.edu.cn/mod/diary/view.php?id=10259",
+        "hidden": false
+      },
+      {
+        "name": "CPT105-2526 Lecture 3  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=37109",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 3 In-Class Exercise  JazzQuiz",
+        "type": "jazzquiz",
+        "url": "https://core.xjtlu.edu.cn/mod/jazzquiz/view.php?id=37108",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 3 Recording  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=37110",
+        "hidden": false
+      },
+      {
+        "name": "Lab materials, Lab solutions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10265",
+        "hidden": false
+      },
+      {
+        "name": "Code for assignments after class  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10267",
+        "hidden": false
+      },
+      {
+        "name": "Exercise 1 for week 3  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11314",
+        "hidden": false
+      },
+      {
+        "name": "Exercise 1 for week 3  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11314",
+        "hidden": false
+      },
+      {
+        "name": "CW1_3.1  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11315",
+        "hidden": false
+      },
+      {
+        "name": "CW1_3.1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11315",
+        "hidden": false
+      },
+      {
+        "name": "CW1_3.2  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=37733",
+        "hidden": false
+      },
+      {
+        "name": "CW1 Week 3 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10272",
+        "hidden": true
+      },
+      {
+        "name": "CPT105-2526 Lecture 4  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=41956",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 4 In-Class Exercise  JazzQuiz",
+        "type": "jazzquiz",
+        "url": "https://core.xjtlu.edu.cn/mod/jazzquiz/view.php?id=41954",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 4 Demo Java Source File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=41961",
+        "hidden": true
+      },
+      {
+        "name": "Lecture Example 1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=41964",
+        "hidden": false
+      },
+      {
+        "name": "Lecture Example 2  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=46321",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 4 Recording  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=41957",
+        "hidden": false
+      },
+      {
+        "name": "Lab materials, Lab solutions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10273",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 4  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11318",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 4  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11318",
+        "hidden": false
+      },
+      {
+        "name": "CW1_4.1  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11319",
+        "hidden": false
+      },
+      {
+        "name": "CW1_4.1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11319",
+        "hidden": false
+      },
+      {
+        "name": "CW1_4.2  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=37739",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 4 Video Recordings  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=10276",
+        "hidden": false
+      },
+      {
+        "name": "Lecture Week 4 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10284",
+        "hidden": true
+      },
+      {
+        "name": "Lecture notes, Lab materials, Lab solutions and Lecture example codes  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10285",
+        "hidden": false
+      },
+      {
+        "name": "CW1_5.1  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11323",
+        "hidden": false
+      },
+      {
+        "name": "CW1_5.1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11323",
+        "hidden": false
+      },
+      {
+        "name": "CW1_5.2  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=37749",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 5 Video Recordings  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=10287",
+        "hidden": false
+      },
+      {
+        "name": "Week 5 CW Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10288",
+        "hidden": true
+      },
+      {
+        "name": "Lecture notes, Lab materials, Lab solutions and Lecture example codes  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10293",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 6 Video Recordings  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=54627",
+        "hidden": false
+      },
+      {
+        "name": "CW Week 6 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10295",
+        "hidden": true
+      },
+      {
+        "name": "Exercises for week 6  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11340",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 6  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11340",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 6  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11326",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 6  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11326",
+        "hidden": false
+      },
+      {
+        "name": "week 8 slides  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=10302",
+        "hidden": true
+      },
+      {
+        "name": "lecture recording  Diary",
+        "type": "diary",
+        "url": "https://core.xjtlu.edu.cn/mod/diary/view.php?id=10303",
+        "hidden": false
+      },
+      {
+        "name": "lecture codes  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=10304",
+        "hidden": true
+      },
+      {
+        "name": "Lab materials, Lab solutions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10305",
+        "hidden": false
+      },
+      {
+        "name": "CW Week 8 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10306",
+        "hidden": true
+      },
+      {
+        "name": "Exercises for week 8  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11341",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 8  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11341",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 8  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11329",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 8  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11329",
+        "hidden": false
+      },
+      {
+        "name": "week 9 lecture slides  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=10313",
+        "hidden": true
+      },
+      {
+        "name": "lecture codes  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=10315",
+        "hidden": true
+      },
+      {
+        "name": "Lab materials, Lab solutions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10316",
+        "hidden": false
+      },
+      {
+        "name": "lecture recording  Diary",
+        "type": "diary",
+        "url": "https://core.xjtlu.edu.cn/mod/diary/view.php?id=10314",
+        "hidden": false
+      },
+      {
+        "name": "CW Week 9 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10317",
+        "hidden": true
+      },
+      {
+        "name": "Exercises for week 9  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11343",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 9  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11343",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 9  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11332",
+        "hidden": false
+      },
+      {
+        "name": "Coursework 1 for week 9  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11332",
+        "hidden": false
+      },
+      {
+        "name": "Lecture Note  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=61994",
+        "hidden": true
+      },
+      {
+        "name": "Lecture Code  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=61406",
+        "hidden": true
+      },
+      {
+        "name": "Lab materials and solutions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=61409",
+        "hidden": false
+      },
+      {
+        "name": "Lecture Recording  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10323",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 10  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11346",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 10  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11346",
+        "hidden": false
+      },
+      {
+        "name": "CW1_10.1  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=43168",
+        "hidden": false
+      },
+      {
+        "name": "CW1_10.1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=43168",
+        "hidden": false
+      },
+      {
+        "name": "CW1-week10  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=61410",
+        "hidden": true
+      },
+      {
+        "name": "Lecture Recording  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=63646",
+        "hidden": false
+      },
+      {
+        "name": "Lab materials, Lab solutions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10324",
+        "hidden": false
+      },
+      {
+        "name": "Lecture Note  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=64794",
+        "hidden": true
+      },
+      {
+        "name": "Week 11 lecture recording  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10326",
+        "hidden": false
+      },
+      {
+        "name": "CW Week 11 Discussion Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=10325",
+        "hidden": true
+      },
+      {
+        "name": "No new exercises - please refer to week 10  Diary",
+        "type": "diary",
+        "url": "https://core.xjtlu.edu.cn/mod/diary/view.php?id=11348",
+        "hidden": false
+      },
+      {
+        "name": "No coursework 1 for week 11  Diary",
+        "type": "diary",
+        "url": "https://core.xjtlu.edu.cn/mod/diary/view.php?id=11337",
+        "hidden": false
+      },
+      {
+        "name": "Lecture Code  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=64796",
+        "hidden": true
+      },
+      {
+        "name": "Lecture Note  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=67618",
+        "hidden": true
+      },
+      {
+        "name": "Lecture Code  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=67619",
+        "hidden": true
+      },
+      {
+        "name": "Lab materials, Lab solutions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10327",
+        "hidden": false
+      },
+      {
+        "name": "Lecture recording  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=10329",
+        "hidden": false
+      },
+      {
+        "name": "No new exercises - please refer to week 10  Diary",
+        "type": "diary",
+        "url": "https://core.xjtlu.edu.cn/mod/diary/view.php?id=11347",
+        "hidden": false
+      },
+      {
+        "name": "CW1_12.1  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=43169",
+        "hidden": false
+      },
+      {
+        "name": "CW1_12.1  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=43169",
+        "hidden": false
+      },
+      {
+        "name": "CW1_12.2  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11339",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 12  Quiz",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11350",
+        "hidden": false
+      },
+      {
+        "name": "Exercises for week 12  Quiz",
+        "type": "quiz",
+        "url": "https://core.xjtlu.edu.cn/mod/quiz/view.php?id=11350",
+        "hidden": false
+      },
+      {
+        "name": "Wrap-up the course  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=67659",
+        "hidden": true
+      },
+      {
+        "name": "Overview recording  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=70320",
+        "hidden": false
+      },
+      {
+        "name": "The past exam papers  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=67660",
+        "hidden": false
+      }
+    ]
+  },
+  "ALC-Science": {
+    "id": "4358",
+    "count": 2,
+    "mods": [
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=11860",
+        "hidden": true
+      },
+      {
+        "name": "Important documents  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=27884",
+        "hidden": false
+      }
+    ]
+  },
+  "BIO109": {
+    "id": "4931",
+    "count": 59,
+    "mods": [
+      {
+        "name": "Module handbook and other important resources  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=76678",
+        "hidden": false
+      },
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=76679",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=76680",
+        "hidden": false
+      },
+      {
+        "name": "BigBlueButton virtual classroom",
+        "type": "bigbluebuttonbn",
+        "url": "https://core.xjtlu.edu.cn/mod/bigbluebuttonbn/view.php?id=76681",
+        "hidden": false
+      },
+      {
+        "name": "BIO109_202526_SEM2_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=98067",
+        "hidden": true
+      },
+      {
+        "name": "Class operations.  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=98070",
+        "hidden": true
+      },
+      {
+        "name": "Week 1: Definitions  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=100725",
+        "hidden": true
+      },
+      {
+        "name": "Week 2: Inheritance I  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=103398",
+        "hidden": true
+      },
+      {
+        "name": "Week 2 Inheritance I practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=104877",
+        "hidden": true
+      },
+      {
+        "name": "Week 2 Inheritance I answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=104879",
+        "hidden": true
+      },
+      {
+        "name": "Week 2 Tutorial (Inheritance I)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=104881",
+        "hidden": true
+      },
+      {
+        "name": "Vote on Quiz question selection process.  Choice",
+        "type": "choice",
+        "url": "https://core.xjtlu.edu.cn/mod/choice/view.php?id=104695",
+        "hidden": false
+      },
+      {
+        "name": "Week 3: Inheritance II  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=107100",
+        "hidden": true
+      },
+      {
+        "name": "Week 3 Inheritance II practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=107940",
+        "hidden": true
+      },
+      {
+        "name": "Week 3 Inheritance II answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=107942",
+        "hidden": true
+      },
+      {
+        "name": "Week 3 Tutorial (Inheritance II)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=108295",
+        "hidden": true
+      },
+      {
+        "name": "Week 3 Bonus answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=108328",
+        "hidden": true
+      },
+      {
+        "name": "Week 4: Sex-linked, pedigrees  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=110970",
+        "hidden": true
+      },
+      {
+        "name": "Week 4 Pedigree practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111042",
+        "hidden": true
+      },
+      {
+        "name": "Week 4 Pedigree answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111043",
+        "hidden": true
+      },
+      {
+        "name": "Week 4 Tutorial (Pedigree)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111441",
+        "hidden": true
+      },
+      {
+        "name": "Week 4 Bonus answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111442",
+        "hidden": true
+      },
+      {
+        "name": "Week 5: Genetic linkage  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=114413",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 1 answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=115841",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 1 questions  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=119558",
+        "hidden": true
+      },
+      {
+        "name": "Week 6 Linkage practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=118066",
+        "hidden": true
+      },
+      {
+        "name": "Week 6 Linkage answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=118070",
+        "hidden": true
+      },
+      {
+        "name": "Week 6 Tutorial (Linkage)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=118079",
+        "hidden": true
+      },
+      {
+        "name": "Week 6 Bonus questions  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=119556",
+        "hidden": true
+      },
+      {
+        "name": "Week 6 Bonus answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=119567",
+        "hidden": true
+      },
+      {
+        "name": "Week 7: DNA replication  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=120589",
+        "hidden": true
+      },
+      {
+        "name": "Week 7 DNA replication practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=121458",
+        "hidden": true
+      },
+      {
+        "name": "Week 7 DNA replication answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=121459",
+        "hidden": true
+      },
+      {
+        "name": "Week 7 Tutorial (DNA replication)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=121462",
+        "hidden": true
+      },
+      {
+        "name": "Week 7 Bonus answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=121948",
+        "hidden": true
+      },
+      {
+        "name": "Week 8: Mutations, PCR  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=123688",
+        "hidden": true
+      },
+      {
+        "name": "Week 8 Mutations, PCR practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=124625",
+        "hidden": true
+      },
+      {
+        "name": "Week 8 Mutations, PCR practice problem answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=124627",
+        "hidden": true
+      },
+      {
+        "name": "Week 8 Tutorial (Mutations, PCR)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=124651",
+        "hidden": true
+      },
+      {
+        "name": "Week 8 Bonus answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=125196",
+        "hidden": true
+      },
+      {
+        "name": "Week 9: Transcription  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=126977",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 2 answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=128654",
+        "hidden": true
+      },
+      {
+        "name": "Week 10 Transcription practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=130246",
+        "hidden": true
+      },
+      {
+        "name": "Week 10 Transcription answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=130247",
+        "hidden": true
+      },
+      {
+        "name": "VOTE about next week's Bonus.  Choice",
+        "type": "choice",
+        "url": "https://core.xjtlu.edu.cn/mod/choice/view.php?id=130802",
+        "hidden": false
+      },
+      {
+        "name": "Week 10 Bonus answers.  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=132302",
+        "hidden": true
+      },
+      {
+        "name": "Week 11: Epigenetics, kinetics (UPDATED)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=132938",
+        "hidden": true
+      },
+      {
+        "name": "Week 11 Kinetics practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133752",
+        "hidden": true
+      },
+      {
+        "name": "Week 11 Kinetics answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133818",
+        "hidden": true
+      },
+      {
+        "name": "Week 11 Tutorial (Kinetics)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133754",
+        "hidden": true
+      },
+      {
+        "name": "Week 11 Bonus answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136274",
+        "hidden": true
+      },
+      {
+        "name": "Week 12: Translation  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135420",
+        "hidden": true
+      },
+      {
+        "name": "Week 12 Translation practice problems  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135979",
+        "hidden": true
+      },
+      {
+        "name": "Week 12 Translation answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135982",
+        "hidden": true
+      },
+      {
+        "name": "Week 12 Bonus answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136334",
+        "hidden": true
+      },
+      {
+        "name": "Week 13: Population genetics  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137614",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 3 questions (5/26)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=138569",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 3 questions (5/27)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=138570",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 3 answers  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=138572",
+        "hidden": true
+      }
+    ]
+  },
+  "BIO110": {
+    "id": "4932",
+    "count": 40,
+    "mods": [
+      {
+        "name": "Module handbook and other important resources  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=76682",
+        "hidden": false
+      },
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=76683",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=76684",
+        "hidden": false
+      },
+      {
+        "name": "BIO110_202526_SEM2_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=126973",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 1 (March 5)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=102253",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 2 (March 12)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=105936",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 3 (March 26)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=112919",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 4 (Apr 9)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=119295",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 5 (Apr 23)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=123402",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 6 (May 7)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=131112",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 7 (May 21)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136833",
+        "hidden": true
+      },
+      {
+        "name": "Quiz 7 Solution  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136834",
+        "hidden": true
+      },
+      {
+        "name": "Coursework 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=127538",
+        "hidden": true
+      },
+      {
+        "name": "Coursework 1 PDF  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136837",
+        "hidden": true
+      },
+      {
+        "name": "Coursework 2 PDF  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136838",
+        "hidden": true
+      },
+      {
+        "name": "Coursework 3 PDF  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=139358",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 1a. Introduction  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=100021",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 1b. Units  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=100022",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 2. Biomolecules  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=104417",
+        "hidden": true
+      },
+      {
+        "name": "Sample readings  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=105714",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 3. Kinematics  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=108054",
+        "hidden": true
+      },
+      {
+        "name": "ALC support booking link  URL",
+        "type": "url",
+        "url": "https://core.xjtlu.edu.cn/mod/url/view.php?id=109386",
+        "hidden": false
+      },
+      {
+        "name": "Tutorial Materials  Folder",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=109397",
+        "hidden": false
+      },
+      {
+        "name": "Tutorial Materials  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=109397",
+        "hidden": false
+      },
+      {
+        "name": "ICTs Task Sheet  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=122563",
+        "hidden": false
+      },
+      {
+        "name": "ICT practice questions and tips  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=124615",
+        "hidden": false
+      },
+      {
+        "name": "ALC Support Materials  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=118571",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 4. Force and Energy  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111714",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 5. Action  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=115069",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 6  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=117838",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 7  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=120902",
+        "hidden": true
+      },
+      {
+        "name": "Thermodynamics 2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=123182",
+        "hidden": true
+      },
+      {
+        "name": "PDF file",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=123184",
+        "hidden": true
+      },
+      {
+        "name": "Second law  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=126655",
+        "hidden": true
+      },
+      {
+        "name": "Second Law  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=126656",
+        "hidden": true
+      },
+      {
+        "name": "Free energy  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=129673",
+        "hidden": true
+      },
+      {
+        "name": "Free energy  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=129676",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 11. Revisit FE  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133523",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 12. FE in action  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135972",
+        "hidden": true
+      },
+      {
+        "name": "Supplementary Sample Questions  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=138309",
+        "hidden": false
+      }
+    ]
+  },
+  "BIO113": {
+    "id": "4933",
+    "count": 38,
+    "mods": [
+      {
+        "name": "Module handbook and other important resources  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=76686",
+        "hidden": false
+      },
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=76687",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=76688",
+        "hidden": false
+      },
+      {
+        "name": "BigBlueButton virtual classroom",
+        "type": "bigbluebuttonbn",
+        "url": "https://core.xjtlu.edu.cn/mod/bigbluebuttonbn/view.php?id=76689",
+        "hidden": false
+      },
+      {
+        "name": "BIO113 Lab session 4 handbook  File",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137269",
+        "hidden": true
+      },
+      {
+        "name": "BIO113 Lab session 4 handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137269",
+        "hidden": true
+      },
+      {
+        "name": "BIO113 Lab session 4 presentation revised  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137270",
+        "hidden": true
+      },
+      {
+        "name": "2 WB video  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137272",
+        "hidden": true
+      },
+      {
+        "name": "Handbook of BIO113 lab session 3  File",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135803",
+        "hidden": true
+      },
+      {
+        "name": "Handbook of BIO113 lab session 3  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135803",
+        "hidden": true
+      },
+      {
+        "name": "BIO113 lecture notes for BIO113 session 3  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136404",
+        "hidden": true
+      },
+      {
+        "name": "Wednesday's groups: assignment - session 3",
+        "type": "assign",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "Gel pictures from Wednesday's groups  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=136556",
+        "hidden": true
+      },
+      {
+        "name": "Friday's groups: assignment - session 3",
+        "type": "assign",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "Gel pictures from Friday's groups  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137138",
+        "hidden": true
+      },
+      {
+        "name": "Lab handbook of session 2  File",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133218",
+        "hidden": true
+      },
+      {
+        "name": "Lab handbook of session 2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133218",
+        "hidden": true
+      },
+      {
+        "name": "Lecture notes on session 2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=134150",
+        "hidden": true
+      },
+      {
+        "name": "For Wednesday's group - online quiz on session 2",
+        "type": "quiz",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "For Friday's group - online quiz on session 2",
+        "type": "quiz",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "BIO113 Practical Laboratory Information!  File",
+        "type": "subsection",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=128527",
+        "hidden": true
+      },
+      {
+        "name": "BIO113 Practical Laboratory Information!  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=128527",
+        "hidden": true
+      },
+      {
+        "name": "Lecture notes for BIO113 lab session 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=130810",
+        "hidden": true
+      },
+      {
+        "name": "For Wednesday group: online quiz-session 1",
+        "type": "quiz",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "For Wednesday group: assignment-session 1",
+        "type": "assign",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "Gel pictures from Wednesday's group  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=131004",
+        "hidden": true
+      },
+      {
+        "name": "For Friday group: online quiz-session 1",
+        "type": "quiz",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "For Friday group: assignment-session 1",
+        "type": "assign",
+        "url": "",
+        "hidden": false
+      },
+      {
+        "name": "Gel pictures from Friday's groups  File",
+        "type": "resource",
+        "url": "",
+        "hidden": true
+      },
+      {
+        "name": "Notes for lecture 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=101054",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 2 Gene Cloning part 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=104775",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 3. Gene Cloning part 2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=104781",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 4. Vectors.  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111630",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 5. PCR.  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111631",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 6 DNA sequencing  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=117479",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 7 DNA libraries  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=122057",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 8 Recombinant Protein Technology  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=124471",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 9 Genetically-Modified Organisms (GMO)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=128238",
+        "hidden": true
+      }
+    ]
+  },
+  "INT102": {
+    "id": "5241",
+    "count": 43,
+    "mods": [
+      {
+        "name": "Module handbook and other important resources  Folder",
+        "type": "folder",
+        "url": "https://core.xjtlu.edu.cn/mod/folder/view.php?id=77943",
+        "hidden": false
+      },
+      {
+        "name": "Announcements  Forum",
+        "type": "forum",
+        "url": "https://core.xjtlu.edu.cn/mod/forum/view.php?id=77944",
+        "hidden": true
+      },
+      {
+        "name": "General question and answer forum  Moodleoverflow",
+        "type": "moodleoverflow",
+        "url": "https://core.xjtlu.edu.cn/mod/moodleoverflow/view.php?id=77945",
+        "hidden": false
+      },
+      {
+        "name": "BigBlueButton virtual classroom",
+        "type": "bigbluebuttonbn",
+        "url": "https://core.xjtlu.edu.cn/mod/bigbluebuttonbn/view.php?id=77946",
+        "hidden": false
+      },
+      {
+        "name": "INT102_202526_SEM2_Module_Handbook  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=95692",
+        "hidden": true
+      },
+      {
+        "name": "week1-lecture 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=99772",
+        "hidden": true
+      },
+      {
+        "name": "week1-lecture 2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=99771",
+        "hidden": true
+      },
+      {
+        "name": "week2-lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=103787",
+        "hidden": true
+      },
+      {
+        "name": "week2-tutorial1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=103790",
+        "hidden": true
+      },
+      {
+        "name": "week2-tutorial1-sol  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=109017",
+        "hidden": true
+      },
+      {
+        "name": "week3-lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=107744",
+        "hidden": true
+      },
+      {
+        "name": "week3-lecture2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=109031",
+        "hidden": true
+      },
+      {
+        "name": "week4-lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=111443",
+        "hidden": true
+      },
+      {
+        "name": "week4-tutorial1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=112787",
+        "hidden": true
+      },
+      {
+        "name": "week4-tutorial1-solution  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=114405",
+        "hidden": true
+      },
+      {
+        "name": "week5-lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=114401",
+        "hidden": true
+      },
+      {
+        "name": "Min-Heap-data-structure-week 5  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=114406",
+        "hidden": true
+      },
+      {
+        "name": "Greedy-Methods-week5  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=114407",
+        "hidden": true
+      },
+      {
+        "name": "week5-lecture2 (1)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=115933",
+        "hidden": true
+      },
+      {
+        "name": "week5-lecture2 (2)  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=115932",
+        "hidden": true
+      },
+      {
+        "name": "week6-lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=117433",
+        "hidden": true
+      },
+      {
+        "name": "week6-tutorial3  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=117438",
+        "hidden": true
+      },
+      {
+        "name": "Dynamic Programming-6  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=117441",
+        "hidden": true
+      },
+      {
+        "name": "INT102-Assignment 1",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=117931",
+        "hidden": false
+      },
+      {
+        "name": "week6-tutorial3 solution  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=120628",
+        "hidden": true
+      },
+      {
+        "name": "week8-lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=124286",
+        "hidden": true
+      },
+      {
+        "name": "week8-lecture2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=124287",
+        "hidden": true
+      },
+      {
+        "name": "Week9- Lecture  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=127549",
+        "hidden": true
+      },
+      {
+        "name": "Week 9-Tutorial  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=127548",
+        "hidden": true
+      },
+      {
+        "name": "Week9-ttl-Sol  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=127551",
+        "hidden": true
+      },
+      {
+        "name": "Week10-Lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=129595",
+        "hidden": true
+      },
+      {
+        "name": "Week10-Lecture2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=129596",
+        "hidden": true
+      },
+      {
+        "name": "Example  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=129598",
+        "hidden": true
+      },
+      {
+        "name": "Lecture1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133101",
+        "hidden": true
+      },
+      {
+        "name": "Week11-ttl-1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133104",
+        "hidden": true
+      },
+      {
+        "name": "Week11-ttl-Sol  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=133106",
+        "hidden": true
+      },
+      {
+        "name": "Assignment 2",
+        "type": "assign",
+        "url": "https://core.xjtlu.edu.cn/mod/assign/view.php?id=135261",
+        "hidden": false
+      },
+      {
+        "name": "Lecture 1  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135836",
+        "hidden": true
+      },
+      {
+        "name": "Lecture 2  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=135838",
+        "hidden": true
+      },
+      {
+        "name": "Review Lecture  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137898",
+        "hidden": true
+      },
+      {
+        "name": "Tutorial  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137899",
+        "hidden": true
+      },
+      {
+        "name": "Exam Paper  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137901",
+        "hidden": true
+      },
+      {
+        "name": "ttl-sol  File",
+        "type": "resource",
+        "url": "https://core.xjtlu.edu.cn/mod/resource/view.php?id=137902",
+        "hidden": true
+      }
+    ]
+  }
+}

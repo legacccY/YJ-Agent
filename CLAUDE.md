@@ -25,9 +25,17 @@
 3. 用户定了 → 写 `.portfolio/locks/<project>.claim` 认领 → 再按该项目入口深读档 → 开工。
 
 进**具体某项目**动手前，再按其入口读档：
+- **gdn2vessel / ACCV 2026**（cwd 含 `meeting/ACCV/gdn2vessel/` 或任务含 GDN/血管/vessel/续连/reconnection）：`project/meeting/ACCV/gdn2vessel/00_README.md`（**自带完整读档顺序**：00_README → `PLAN/MASTER_PLAN.md` → `STORY_FRAMEWORK.md` → `ACCEPTANCE_CRITERIA.md` → `DATA_INVENTORY.md` → `PROJECT_LOG.md` 最新 entry → 动手阶段对应 `PLAN/PHASE_x_*.md`）。**铁律：遇计划外问题先问用户，不盲跑。**
 - **ICLR 2027**（cwd 含 `project/` 或任务含 ICLR）：`project/README.md` → `STORY_FRAMEWORK.md` → `ACCEPTANCE_CRITERIA.md` → `DATA_INVENTORY.md` → `PROJECT_LOG.md` 最新 entry
 - **NCA-JEPA**：`project/meeting/Med-NCA/NCA-JEPA/README.md` → `01_创新计划` + `02_理论框架` → `03_pilot` → `registry.json`
 - **BMVC**：🔒 已封印，`meeting/BMVC/SUBMITTED.md`（不再改，pre_edit hook 会拦）
+- **medad-failmap / MedAD-FailMap**（任务含 MedAD/FailMap/失败可预测/外推判据；status=retreat-MICCAI）：`project/meeting/MedAD-FailMap/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
+- **fmreg / FMReg**（任务含 FMReg/形变配准/flow matching/registration；status=planning Gate1）：`project/meeting/FMReg/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
+- **selinf / SelInfBench**（任务含 SelInf/selective inference/winner's curse/报告值高估；status=active BIBE）：`project/meeting/SelInfBench/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
+- **artioodbench / ArtiOODBench**（任务含 ArtiOOD/artifact OOD/伪迹 benchmark；status=planning D&B）：`project/meeting/ArtiOODBench/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
+- **🗄️ 已封存（shelved，开窗只读不开工，复活需拍板）**：`nca-phasemap`（`project/meeting/NCA-PhaseMap/`）、`disagree`（`project/meeting/DisagreePred/`）——各自 `00_README → 01_STORY → 02_ACCEPTANCE → 04_LOG` 读封存原因即可。
+
+> 统一规律：除 ICLR/NCA-JEPA/BMVC 三个历史特例，其余项目入口一律 `<home>/00_README.md`（自带读档顺序）→ `01_STORY` → `02_ACCEPTANCE` →（有则 `DATA_INVENTORY`/`PLAN/`）→ `04_LOG`/`PROJECT_LOG` 最新 entry。新项目 `/spin-off-paper` 建档后**必须回此清单补一行入口**，否则新窗口选它会断链（2026-06-20 gdn2vessel 踩坑根因）。
 
 按需读档：写 tex/数字→该项目 STORY+ACCEPTANCE；跑实验→DATA_INVENTORY + 对应 plan；HPC→`project/HPC_WORKFLOW.md`。
 
@@ -180,6 +188,7 @@
 ---
 
 ## 🚨 反跑偏红线（全项目通用）
+- **🔍 设计/决策必先大量联网调研（刨根问底，不许自以为是）**：任何涉及**设计、选型、立项、实验矩阵、方法/架构/超参决策、claim 逻辑、headline 定稿、技术路线对比**的内容，**一律先上网查大量资料**（firecrawl / WebSearch / 官方源码 / 近年顶会 paper），多源交叉验证后才下结论或动手——**绝不靠记忆/直觉拍脑袋**。调研要派 `researcher`（能并行扇出 3-5 个查不同角度）或主线自查；查不到的点**显式标 TODO/盲区，不许糊弄掩盖**。原则：宁可多查不可臆断，主动暴露不确定性，拒绝 AI 的过度自信和掩盖盲区。
 - **数字一律 Bash/Grep 核 csv，不信 Read**（曾幻觉编造不存在的 csv，险踩红线）；数字入 tex 前过 `verifier`
 - **复现零偏离**：完全按官方，禁私加裁剪/降 lr/改步数/换实现凑收敛
 - **超参禁臆想**：backbone/lr/增强/架构联网查官方源，查不到标 TODO，绝不照搬别库

@@ -48,7 +48,10 @@ PASS → 自动：①旧阶段归档 ②从 STORY/ACCEPTANCE 预填下阶段 suc
    - `ACCEPTANCE_CRITERIA.md`（二元 PASS/FAIL 验收，lever 分解 + 命中率）
    - `PROJECT_LOG.md` / `04_LOG.md`（时间倒序单一日志真源）
    - `DATA_INVENTORY.md`（本项目数据细目，路径指向共享真源）
-2. **登记 registry**：写入 `.portfolio/registry.json`（name/venue/deadline/status/priority/home/story/log）。
+2. **登记双索引**（一个动作两处都写，缺一即断链 — 2026-06-20 gdn2vessel 踩坑：只登 registry 没登 CLAUDE.md，新窗口选它读不到阶段档）：
+   - a. `.portfolio/registry.json` 的 `projects`（name/venue/deadline/status/priority/home/story/acceptance/log）— 给 SessionStart hook 报进度用。
+   - b. **`CLAUDE.md`「进具体某项目动手前」入口清单补一行** — 给新窗口读档用，格式：`- **<key> / <Name>**（任务含 <关键词>；status=<x>）：<home>/00_README.md → 01_STORY → 02_ACCEPTANCE → 04_LOG 最新 entry`。**registry 报进度 ≠ 报读档；读档指令真源是这张清单，登 registry 时必同步登它。**
+   - c. 跑 `python tools/check_registry_pointers.py` 自检：registry 与 CLAUDE.md 入口清单一一对齐才算建档完成。
 3. **关联数据集**：项目用到的数据集进 `.portfolio/datasets.json`（本地+HPC+source+状态），脚本只引此真源，不硬编码。
 4. **认领**：写 `.portfolio/locks/<project>.claim`。
 5. **首条 LOG**：记立项决策（方向/会议/RQ/边界）。

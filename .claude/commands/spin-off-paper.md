@@ -28,20 +28,25 @@
 - 如果 status = running：警告 GPU 冲突，新实验须排队
 - 如果 status != running：可立即规划
 
-### Step 3：创建子论文目录结构
+### Step 3：创建项目目录结构（对齐组合台真实 schema）
+
+新项目一律建在 `project/meeting/<Name>/`，用标准 00_README schema（与 gdn2vessel/FMReg/SelInfBench 等一致）：
 
 ```
-papers/sub_{topic}/
-├── INFO.md                     # 核心要素（Step 1 的答案）
-├── main.tex                    # 从模板初始化
-├── references.bib              # 独立参考文献（不共享主论文的 .bib）
-├── submission_state.json       # 投稿状态追踪
+project/meeting/<Name>/
+├── 00_README.md                # ★入口：一句话 + 铁律 + 读档顺序（自带）+ 双核心贡献
+├── 01_STORY.md                 # 反跑偏主文：核心 Claim + 章节弧 + 防御写法 R-rules
+├── 02_ACCEPTANCE.md            # 二元 PASS/FAIL 验收：lever 分解 + 每阶段硬阈值 + 红线
+├── 04_LOG.md                   # 时间倒序单一日志真源（首条 = 立项决策）
+├── DATA_INVENTORY.md           # 本项目数据细目，路径只指向 .portfolio/datasets.json 真源
+├── PLAN/                       # （可选）分阶段计划 MASTER_PLAN + PHASE_x
 ├── figures/                    # 独立图表目录（不共享主论文路径）
-└── scripts/
-    └── gen_figures.py          # 独立生成脚本（从主论文脚本复制，不是引用）
+└── src/ + tests/               # 实验代码 + pytest
 ```
 
-**关键原则**：所有文件独立存储，不用软链接指向主论文目录。防止主论文修改影响子论文。
+复制 `project/templates/` 骨架起步；`00_README.md` 必须自带「读档顺序」段（00_README → 01_STORY → 02_ACCEPTANCE → DATA_INVENTORY → 04_LOG → 阶段 PLAN），新窗口靠它一跳读全。
+
+**关键原则**：所有文件独立存储，不用软链接指向主论文目录；数字/数据集只引共享真源（`.portfolio/registry.json` / `.portfolio/datasets.json`），不硬编码、不软链。
 
 ### Step 4：初始化 submission_state.json
 
@@ -100,11 +105,18 @@ papers/sub_{topic}/
 
 ### Step 7：登记组合台真源（强制，对齐 PROJECT_LIFECYCLE）
 
-子论文也是组合台一员，必须登记，否则 session_start / 多窗口协调看不到：
-1. 写入 `.portfolio/registry.json` 的 `projects`：`{name, venue, deadline, status:"planning", priority, home, story, log}`。
-2. 用到的数据集进 `.portfolio/datasets.json`（本地+HPC+source+状态）；脚本只引此真源，不硬编码。
-3. 写 `.portfolio/locks/<project>.claim` 认领本窗。
-4. 立项决策（方向/会议/RQ/边界）记入该项目 LOG 首条 entry。
+子论文也是组合台一员，必须登记，否则 session_start / 多窗口协调 / 新窗口读档看不到。**登「双索引」——缺一即断链**（2026-06-20 gdn2vessel 踩坑：只登 registry 没登 CLAUDE.md，新窗口选它读不到阶段档）：
+
+1. **registry**（报进度用）：写入 `.portfolio/registry.json` 的 `projects`：`{name, venue, deadline, status:"planning", priority, home, story, acceptance, log}`。
+2. **CLAUDE.md 入口清单**（读档用，**别漏**）：在 `CLAUDE.md`「进具体某项目动手前」清单补一行，格式：
+   ```
+   - **<key> / <Name>**（cwd 含 <home> 或任务含 <关键词>；status=planning）：<home>/00_README.md → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
+   ```
+   > registry 只让 hook 报进度；**读哪些档的指令真源是 CLAUDE.md 这张清单**。两处必须同时写。
+3. **数据集**：用到的进 `.portfolio/datasets.json`（本地+HPC+source+状态）；脚本只引此真源，不硬编码。
+4. **认领**：写 `.portfolio/locks/<project>.claim` 认领本窗。
+5. **首条 LOG**：立项决策（方向/会议/RQ/边界）记入该项目 `04_LOG.md` 首条 entry。
+6. **自检兜底**：跑 `python tools/check_registry_pointers.py`，registry 与 CLAUDE.md 入口清单一一对齐才算建档完成（drift guard，不靠记性）。
 
 > 立项点（方向/会议/核心 RQ）是**拍板点**：先问用户定，不自作主张。详见 `project/PROJECT_LIFECYCLE.md`。
 
