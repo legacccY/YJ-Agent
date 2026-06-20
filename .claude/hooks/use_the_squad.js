@@ -36,6 +36,11 @@ process.stdin.on('end', () => {
     }
   }
 
+  // 协调/多窗/排活/集成缝类 → 用 Conductor，禁止手搓方案（冷窗口防再造轮子）
+  if (/(多.*窗|一篇.*窗|多个窗|协同|分工|怎么.*(组织|安排|协调|编排)|多阶段|谁先谁后|阶段.*(排|安排|顺序)|集成.*(缝|没.*测|怎么不.*崩)|pytest.*(真验|hpc|不够)|并行.*(干|做|推).*(一篇|同.*项目))/i.test(p)) {
+    out += '[用 Conductor 别手搓] 协调/多窗/多阶段/集成缝 = Conductor 已建的职责。第一动作：`python tools/pipeline.py list` 看在跑的图 → `next/status <project>` 续，没有且活够大就 `/conductor <project>` 建图。**禁止从零手工设计协调方案**（memory [[reference_conductor_pipeline]]，正是它要替代的）。集成缝→模板自带 integrate 真烟测闸。问「怎么用」就真用一次，别再画架构。\n';
+  }
+
   // 设计实验类 → planner
   if (/(设计.*实验|实验.*设计|消融|ablation|实验矩阵|跑哪些实验|该跑什么|怎么验证|验证.*claim|baseline 选|对照组|实验方案)/i.test(p)) {
     out += '[派 planner] 设计实验别主线串行拍脑袋 → 派 planner(opus) 出实验矩阵（对齐 ACCEPTANCE 判据），或一键 /design-experiment <project>。\n';

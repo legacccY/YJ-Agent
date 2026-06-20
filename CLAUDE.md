@@ -129,6 +129,13 @@
 
 ## 🪟 多窗口并行协调（多终端各跑一篇时）
 
+> ### ⚠️ 协调 = Conductor 职责，禁止手工重设计（铁律，冷窗口必读）
+> **任何「多阶段排活 / 一篇多窗分工 / 怎么协同 / 谁先谁后 / 集成怎么不踩缝」的需求，先用已建的 Conductor，绝不从零手搓协调方案。**
+> 工具已存在（最近 commit 建、memory 有 `[[reference_conductor_pipeline]]`、`/conductor` skill + `tools/pipeline.py`）。冷窗口遇到协调需求第一动作：
+> 1. `python tools/pipeline.py list` 看有没有在跑的图 → 有就 `next <project>` 续跑、`status` 看全貌。
+> 2. 没有且活够大（≥半天 + ≥2 独立并行块）→ `/conductor <project>` 建图驱动；小活/顺序活直接内联干（self-gating，别为小事建图）。
+> **反模式（这场踩过）**：用户问「怎么用 / 一篇多窗怎么办」时跑去手设计多窗方案 = 正是 Conductor 要替代的事。问「怎么用」→ 真的用一次给看，不是再画一遍架构。**先看工具，再说话。**
+
 状态真源 = `.portfolio/registry.json` + `.portfolio/locks/`（详见 `.portfolio/README.md`）。
 1. **开窗即认领**：写某项目前认领 `.portfolio/locks/<project>.claim`；他窗已认领则提示，避免并写同项目 / 并写 PORTFOLIO.md。
 2. **训练按卡调度（非全局互斥）**：任何本地 `Start-Process` 训练 / HPC `sbatch` 前，先 `python tools/gpu_slot.py request <project> <host> <gpus>` 申请卡槽（真源 `.portfolio/locks/training.lock` schema v2；容量 local=1 / hpc=4 卡）。`GO`→启（`training_lock.js` hook 见 starting 条目自动翻 running 放行）；`QUEUED`→卡满已排队别裸启。多任务同 host 不同卡可共存，**绝不挤正在跑的**。完成 `gpu_slot.py release <id>` 清账，自动取出排队任务。详见 `tools/gpu_slot.py` 头注 + `.portfolio/README.md`。

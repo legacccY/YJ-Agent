@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "project": "gdn2vessel",
+  "template": "experiment",
+  "created": "2026-06-20T18:36:32+08:00",
+  "updated": "2026-06-20T18:36:33+08:00",
+  "from_phase": "P3/P4 命门re-ID可归因",
+  "nodes": [
+    {
+      "id": "design",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "出实验矩阵，对齐判据",
+      "out": "Entry10 planner v2 设计闸",
+      "owner": "",
+      "ts": "2026-06-20T18:36:32+08:00"
+    },
+    {
+      "id": "redteam",
+      "stage": "红队",
+      "agent": "skeptic",
+      "deps": [
+        "design"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "攻设计致命伤（0 致命即过）",
+      "out": "Entry10 skeptic 2致命→拍A分层诚实",
+      "owner": "",
+      "ts": "2026-06-20T18:36:32+08:00"
+    },
+    {
+      "id": "implement",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "redteam"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "实现各 run 脚本/config，自测 pytest",
+      "out": "Entry10/14 coder 433passed reid头+benchmark+datasets",
+      "owner": "",
+      "ts": "2026-06-20T18:36:32+08:00"
+    },
+    {
+      "id": "integrate",
+      "stage": "集成烟测",
+      "agent": "主线",
+      "deps": [
+        "implement"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
+      "out": "Entry14 真跑踩5缝全修+e2e烟测433passed n_images=8非mock",
+      "owner": "",
+      "ts": "2026-06-20T18:36:33+08:00"
+    },
+    {
+      "id": "train",
+      "stage": "跑",
+      "agent": "主线",
+      "deps": [
+        "integrate"
+      ],
+      "status": "running",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-20T18:36:33+08:00"
+    },
+    {
+      "id": "analyze",
+      "stage": "分析",
+      "agent": "analyst",
+      "deps": [
+        "train"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "读结果出趋势/图/对判据",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "verify",
+      "stage": "核数",
+      "agent": "verifier",
+      "deps": [
+        "analyze"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "关键数字三方对账 + 写 LOG",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "p3_todo",
+      "stage": "调研",
+      "agent": "researcher",
+      "deps": [],
+      "status": "pending",
+      "gate": false,
+      "group": "parallel_now",
+      "desc": "清P3 baseline TODO:creatis LICENSE404/cbDice权重1:1:1/DSCNet TCLoss/normalize+augment官方源(只碰reference/+BASELINE_SPEC,禁碰src/)",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    }
+  ]
+}
