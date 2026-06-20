@@ -536,6 +536,219 @@ class TestCreatisForwardAdapt:
             adapter.forward_adapt(model, x, device)
 
 
+# =========================================================================== #
+#  creatis _PonderatedDiceloss 官方三元组接口测试
+# =========================================================================== #
+
+class TestCreatisPonderatedDicelossRaw:
+    """
+    直接测 _PonderatedDiceloss（未经 wrapper），验证官方三元组返回。
+    不依赖 monai。
+    """
+
+    def _get_loss(self):
+        from baselines.adapters.creatis_postproc import _PonderatedDiceloss
+        return _PonderatedDiceloss(eps=1e-6)
+
+    def test_forward_returns_tuple3(self):
+        """官方 forward 返回 (total, dice_1, dice_2) 三元组。"""
+        loss_fn = self._get_loss()
+        prob = torch.sigmoid(torch.zeros(2, 1, 32, 32))  # (B,1,H,W) 概率
+        target = torch.zeros(2, 1, 32, 32)
+        mask = torch.ones(2, 1, 32, 32)
+        out = loss_fn(prob, target, mask)
+        assert isinstance(out, tuple), f"Expected tuple, got {type(out)}"
+        assert len(out) == 3, f"Expected 3-tuple (total, d1, d2), got len={len(out)}"
+
+    def test_forward_all_scalars(self):
+        """total / dice_1 / dice_2 均为 0-dim 标量张量。"""
+        loss_fn = self._get_loss()
+        prob = torch.rand(2, 1, 32, 32)
+        target = (torch.rand(2, 1, 32, 32) > 0.5).float()
+        mask = torch.ones(2, 1, 32, 32)
+        total, d1, d2 = loss_fn(prob, target, mask)
+        for name, v in [("total", total), ("dice_1", d1), ("dice_2", d2)]:
+            assert v.ndim == 0, f"{name} should be scalar, got shape {v.shape}"
+            assert torch.isfinite(v), f"{name} not finite: {v}"
+
+    def test_total_equals_d1_plus_d2(self):
+        """total == dice_1 + dice_2（官方定义）。"""
+        loss_fn = self._get_loss()
+        prob = torch.rand(2, 1, 16, 16)
+        target = (torch.rand(2, 1, 16, 16) > 0.5).float()
+        mask = (torch.rand(2, 1, 16, 16) > 0.3).float()
+        total, d1, d2 = loss_fn(prob, target, mask)
+        assert abs((total - (d1 + d2)).item()) < 1e-5, (
+            f"total({total.item()}) != d1({d1.item()}) + d2({d2.item()})"
+        )
+
+    def test_gradient_flows(self):
+        """梯度可回传（用于 Stage-2 训练）。"""
+        loss_fn = self._get_loss()
+        logits = torch.randn(1, 1, 16, 16, requires_grad=True)
+        prob = torch.sigmoid(logits)
+        target = (torch.rand(1, 1, 16, 16) > 0.5).float()
+        mask = torch.ones(1, 1, 16, 16)
+        total, _, _ = loss_fn(prob, target, mask)
+        total.backward()
+        assert logits.grad is not None, "Gradient did not flow back through _PonderatedDiceloss"
+        assert torch.isfinite(logits.grad).all(), "Gradient contains inf/nan"
+
+
+# =========================================================================== #
+#  creatis wrapper 接口测试（harness 兼容）
+# =========================================================================== #
+
+class TestCreatisLossWrapper:
+    """_CreatisLossWrapper: harness signature (logits, target, fov) → scalar。"""
+
+    def _get_wrapper(self):
+        adapter = _get_creatis()
+        return adapter.build_loss({})
+
+    def test_wrapper_is_nn_module(self):
+        w = self._get_wrapper()
+        assert isinstance(w, torch.nn.Module)
+
+    def test_wrapper_callable_returns_scalar(self):
+        w = self._get_wrapper()
+        logits = torch.zeros(2, 1, 32, 32)
+        target = torch.zeros(2, 1, 32, 32)
+        fov = torch.ones(2, 1, 32, 32)
+        val = w(logits, target, fov)
+        assert val.ndim == 0, f"Wrapper should return scalar, got shape {val.shape}"
+        assert torch.isfinite(val), f"Wrapper loss not finite: {val}"
+
+    def test_wrapper_positive_with_mismatch(self):
+        """logits=0, target=1 → loss > 0。"""
+        w = self._get_wrapper()
+        logits = torch.zeros(1, 1, 8, 8)
+        target = torch.ones(1, 1, 8, 8)
+        fov = torch.ones(1, 1, 8, 8)
+        val = w(logits, target, fov)
+        assert val.item() > 0.0, f"Loss should be > 0 for mismatched target, got {val.item()}"
+
+    def test_wrapper_gradient_flows(self):
+        """梯度能从 wrapper 回传到 logits。"""
+        w = self._get_wrapper()
+        logits = torch.randn(1, 1, 16, 16, requires_grad=True)
+        target = (torch.rand(1, 1, 16, 16) > 0.5).float()
+        fov = torch.ones(1, 1, 16, 16)
+        val = w(logits, target, fov)
+        val.backward()
+        assert logits.grad is not None, "Gradient did not flow through _CreatisLossWrapper"
+        assert torch.isfinite(logits.grad).all(), "Gradient contains inf/nan"
+
+
+# =========================================================================== #
+#  disconnect.create_disconnections 测试
+# =========================================================================== #
+
+class TestCreatisDisconnect:
+    """disconnect.create_disconnections 断点生成协议验证。不依赖 monai/GPU。"""
+
+    def _get_small_gt(self, H: int = 64, W: int = 64) -> np.ndarray:
+        """造一条简单横向血管 GT（uint8 {0,255}）。"""
+        gt = np.zeros((H, W), dtype=np.uint8)
+        gt[H // 2 - 2 : H // 2 + 2, 5 : W - 5] = 255  # 水平带状血管
+        return gt
+
+    def test_output_shapes(self):
+        from baselines.third_party.creatis_postproc.disconnect import create_disconnections
+        gt = self._get_small_gt(64, 64)
+        rng = np.random.default_rng(42)
+        inp_art, pos_mask = create_disconnections(gt, nb_disconnection=3, size_max=6, rng=rng)
+        assert inp_art.shape == (64, 64), f"input_with_art shape: {inp_art.shape}"
+        assert pos_mask.shape == (64, 64), f"pos_mask shape: {pos_mask.shape}"
+
+    def test_output_dtype_uint8(self):
+        from baselines.third_party.creatis_postproc.disconnect import create_disconnections
+        gt = self._get_small_gt(64, 64)
+        rng = np.random.default_rng(0)
+        inp_art, pos_mask = create_disconnections(gt, nb_disconnection=2, size_max=6, rng=rng)
+        assert inp_art.dtype == np.uint8, f"input_with_art dtype: {inp_art.dtype}"
+        assert pos_mask.dtype == np.uint8, f"pos_mask dtype: {pos_mask.dtype}"
+
+    def test_output_binary_values(self):
+        """输出值应在 {0, 255}。"""
+        from baselines.third_party.creatis_postproc.disconnect import create_disconnections
+        gt = self._get_small_gt(64, 64)
+        rng = np.random.default_rng(1)
+        inp_art, pos_mask = create_disconnections(gt, nb_disconnection=2, size_max=6, rng=rng)
+        unique_art = set(np.unique(inp_art).tolist())
+        unique_pos = set(np.unique(pos_mask).tolist())
+        assert unique_art <= {0, 255}, f"input_with_art has unexpected values: {unique_art}"
+        assert unique_pos <= {0, 255}, f"pos_mask has unexpected values: {unique_pos}"
+
+    def test_disconnection_reduces_foreground(self):
+        """断点操作后前景像素数 <= 原始（断点只删不加）。"""
+        from baselines.third_party.creatis_postproc.disconnect import create_disconnections
+        gt = self._get_small_gt(64, 64)
+        rng = np.random.default_rng(7)
+        inp_art, _ = create_disconnections(gt, nb_disconnection=5, size_max=8, rng=rng)
+        original_fg = (gt > 0).sum()
+        art_fg = (inp_art > 0).sum()
+        assert art_fg <= original_fg, (
+            f"After disconnection fg should not increase: orig={original_fg}, art={art_fg}"
+        )
+
+    def test_pos_mask_nonzero_when_break_exists(self):
+        """若确实产生了断点，pos_mask 应有非零区域。"""
+        from baselines.third_party.creatis_postproc.disconnect import create_disconnections
+        gt = self._get_small_gt(128, 128)  # 更大的图，断点更可能落在血管上
+        rng = np.random.default_rng(99)
+        inp_art, pos_mask = create_disconnections(gt, nb_disconnection=10, size_max=8, rng=rng)
+        original_fg = (gt > 0).sum()
+        art_fg = (inp_art > 0).sum()
+        if art_fg < original_fg:
+            # 确实有像素被删 → pos_mask 应非零
+            assert pos_mask.max() > 0, (
+                f"Disconnection removed {original_fg - art_fg} pixels but pos_mask is all zero"
+            )
+
+    def test_empty_gt_returns_original(self):
+        """全黑 GT → 警告 + 返回原图 + 全零 mask。"""
+        from baselines.third_party.creatis_postproc.disconnect import create_disconnections
+        gt = np.zeros((32, 32), dtype=np.uint8)
+        with pytest.warns(UserWarning):
+            inp_art, pos_mask = create_disconnections(gt, nb_disconnection=3, size_max=6)
+        assert inp_art.sum() == 0
+        assert pos_mask.sum() == 0
+
+
+# =========================================================================== #
+#  image_utils.normalize_image 测试
+# =========================================================================== #
+
+class TestCreatisNormalizeImage:
+    """image_utils.normalize_image 语义验证（uint8{0,255} → [0,1] float32）。"""
+
+    def test_max_val_1_gives_unit_range(self):
+        from baselines.third_party.creatis_postproc.image_utils import normalize_image
+        img = np.array([[0, 127, 255]], dtype=np.uint8)
+        out = normalize_image(img, 1)
+        assert out.dtype == np.float32
+        assert abs(out[0, 0] - 0.0) < 1e-5
+        assert abs(out[0, 2] - 1.0) < 1e-5
+
+    def test_binary_stays_binary(self):
+        from baselines.third_party.creatis_postproc.image_utils import normalize_image
+        img = np.array([[0, 255, 0, 255]], dtype=np.uint8)
+        out = normalize_image(img, 1)
+        # 255 位置应映射到约 1.0
+        high_vals = out[out > 0.9]
+        assert len(high_vals) == 2, f"Expected 2 high-val pixels, got {len(high_vals)}"
+        assert all(abs(v - 1.0) < 1e-5 for v in high_vals.tolist()), (
+            f"Expected ~1.0, got {high_vals}"
+        )
+
+    def test_output_shape_preserved(self):
+        from baselines.third_party.creatis_postproc.image_utils import normalize_image
+        img = np.zeros((64, 64), dtype=np.uint8)
+        out = normalize_image(img, 1)
+        assert out.shape == (64, 64)
+
+
 # --------------------------------------------------------------------------- #
 #  __main__ guard
 # --------------------------------------------------------------------------- #

@@ -386,8 +386,8 @@ class ReIDReadoutHead(nn.Module):
         breakpoint_source: str = 'gt_skeleton',  # ablation A2/A4 (informational)
     ):
         super().__init__()
-        assert feat_source in ('memory', 'cnn'), (
-            f"feat_source must be 'memory' or 'cnn'; got {feat_source!r}"
+        assert feat_source in ('memory', 'cnn', 'linear_attn'), (
+            f"feat_source must be 'memory', 'cnn', or 'linear_attn'; got {feat_source!r}"
         )
         assert breakpoint_source in ('gt_skeleton', 'pred_skeleton'), (
             f"breakpoint_source must be 'gt_skeleton' or 'pred_skeleton'; "
@@ -864,6 +864,308 @@ class GDN2MemoryModule(nn.Module):
 
 
 # --------------------------------------------------------------------------- #
+#  A1' — Stateless Linear Attention Module (iso-parametric ablation arm)
+# --------------------------------------------------------------------------- #
+
+class LinearAttnModule(nn.Module):
+    """
+    A1' iso-parametric stateless linear attention module (ablation arm).
+
+    **Purpose (ACCEPTANCE_CRITERIA P4, pre-registered 2026-06-20)**:
+    Isolates the contribution of the *stateful delta-rule associative memory*
+    in GDN2MemoryModule (A2) from the contribution of merely adding an
+    attention-like module with the same parameter budget.
+
+    **Structural invariant**:
+    This module is a strict mirror of GDN2MemoryModule w.r.t. all learnable
+    parameters:
+      - q/k/v/out projections (identical shapes)
+      - write / erase / g gate projections (identical shapes)
+      - LayerNorm (identical d_model)
+      - DifferentiableFrangi (identical config, identical channel_reduce)
+      - alpha_w / alpha_e learnable scalars
+    Thus full-model trainable numel(A1') == numel(A2) (difference = 0, well
+    within the ≤±5% ACCEPTANCE threshold).
+
+    **The only difference vs GDN2MemoryModule**:
+    The GDN-2 kernel (naive_chunk_gated_delta_rule) performs a *stateful*
+    recurrent delta-rule update:
+        S_t = diag(g_t) * S_{t-1} + beta_t * (v_t - S_{t-1} k_t) outer k_t
+        o_t = S_t @ q_t
+    This maintains and evolves an explicit associative memory state S across
+    the sequence — the defining mechanism of Claim 2 (vessel identity memory).
+
+    A1' replaces this with *stateless* cumulative linear attention:
+        A_t = sum_{s<=t} phi(k_s)^T v_s          (prefix sum of outer products)
+        b_t = sum_{s<=t} phi(k_s)                 (prefix sum of keys)
+        o_t = phi(q_t) @ A_t / (phi(q_t) . b_t + eps)
+
+    where phi(x) = elu(x) + 1 (standard ELU feature map from
+    Katharopoulos et al. 2020, "Transformers are RNNs", ICML 2020).
+    This is the stateless degenerate case of the delta-rule:
+    - No recursive state S_t carried across tokens.
+    - No delta (error-correction) update term.
+    - Each token's output is a normalised weighted sum of all prior tokens'
+      v vectors, weighted by key-query similarity — no vessel identity is
+      'stored' across disconnected vessel segments.
+
+    **Choice justification**: ELU+1 linear attention is the most widely used
+    stateless linear attention variant (Katharopoulos 2020), making A1'
+    a canonical "attention capacity without memory" baseline.  The kernel is
+    implemented in pure PyTorch (no FLA dependency), which also avoids any
+    hardware-side confound.  As the delta-rule kernel degenerates to standard
+    linear attention when the delta-update term is zeroed, A1' is the
+    mathematically minimal change from A2.
+
+    **Insert depth**: identical to GDN2MemoryModule — applied at the bottleneck
+    (after DoubleConv, spatial resolution H/16 × W/16 ≤ 1024 tokens).
+
+    **Scan / multi-direction**: same _get_scan_permutations / _invert_permutation
+    helpers as GDN2MemoryModule; output is averaged across directions.
+
+    Args:
+        d_model:       channel dimension of input feature map (must match in_ch)
+        d_head:        head dimension for key/query/value
+        n_heads:       number of attention heads
+        max_seq_len:   maximum sequence length (spatial H*W).  Assert enforced.
+        directions:    1, 2, or 4 scan directions (default=1)
+        use_frangi:    True = Frangi gate modulation active (same as A2)
+        frangi_scales: Gaussian σ values for DifferentiableFrangi
+        frangi_beta1:  anisotropy param (Frangi 1998 default=0.5)
+        frangi_beta2:  structure param (heuristic default=15.0)
+    """
+
+    MAX_SEQ_LEN = 1024
+
+    def __init__(
+        self,
+        d_model: int,
+        d_head: int = 64,
+        n_heads: int = 1,
+        max_seq_len: int = MAX_SEQ_LEN,
+        directions: int = 1,
+        use_frangi: bool = True,
+        frangi_scales: Tuple[float, ...] = (0.5, 1.0, 1.5),
+        frangi_beta1: float = 0.5,    # SOURCE: Frangi 1998 eq.(13)
+        frangi_beta2: float = 15.0,   # TODO: researcher confirm for feature-map domain
+    ):
+        super().__init__()
+        assert d_head % n_heads == 0, "d_head must be divisible by n_heads"
+        assert directions in (1, 2, 4), f"directions must be 1, 2 or 4; got {directions}"
+        dh = d_head
+        nh = n_heads
+
+        self.d_model = d_model
+        self.d_head = d_head
+        self.n_heads = n_heads
+        self.max_seq_len = max_seq_len
+        self.directions = directions
+        self.use_frangi = use_frangi
+
+        # -- Q/K/V projections: identical to GDN2MemoryModule --
+        self.proj_q = nn.Linear(d_model, dh * nh, bias=False)
+        self.proj_k = nn.Linear(d_model, dh * nh, bias=False)
+        self.proj_v = nn.Linear(d_model, dh * nh, bias=False)
+
+        # -- Gate projections: identical to GDN2MemoryModule (same param count) --
+        # write gate kept for Frangi modulation parity (not fed to stateful kernel)
+        self.proj_write = nn.Linear(d_model, nh, bias=False)
+        # erase gate kept for parity (not used in stateless attn; iso-param req)
+        self.proj_erase = nn.Linear(d_model, nh, bias=False)
+        # g (decay) gate kept for parity (not used in stateless attn; iso-param req)
+        self.proj_g = nn.Linear(d_model, nh, bias=False)
+
+        # -- Frangi modulation: identical to GDN2MemoryModule --
+        if use_frangi:
+            self.alpha_w = nn.Parameter(torch.tensor(0.5))
+            self.alpha_e = nn.Parameter(torch.tensor(0.5))
+            self.frangi = DifferentiableFrangi(
+                scales=list(frangi_scales),
+                beta1=frangi_beta1,
+                beta2=frangi_beta2,
+                in_channels=d_model,
+            )
+        else:
+            self.alpha_w = None
+            self.alpha_e = None
+            self.frangi = None
+
+        # -- Output projection + norm: identical to GDN2MemoryModule --
+        self.proj_out = nn.Linear(dh * nh, d_model, bias=False)
+        self.norm = nn.LayerNorm(d_model)
+
+    @staticmethod
+    def _elu_feature_map(x: torch.Tensor) -> torch.Tensor:
+        """ELU+1 feature map φ(x) = elu(x) + 1 ≥ 0 (Katharopoulos 2020)."""
+        return F.elu(x) + 1.0
+
+    def _run_linear_attn_one_dir(
+        self,
+        tokens: torch.Tensor,          # (B, T, C)
+        perm: torch.Tensor,            # (T,)
+        inv_perm: torch.Tensor,        # (T,)
+    ) -> torch.Tensor:
+        """
+        Run stateless causal linear attention on reordered tokens, un-reorder output.
+
+        Formula (causal / prefix-sum form, Katharopoulos 2020 §3.1):
+            phi_k_t = phi(k_t),  phi_q_t = phi(q_t)
+            A_t = sum_{s=1..t} phi_k_s^T v_s    (B, nh, dh, dh) outer product sum
+            b_t = sum_{s=1..t} phi_k_s            (B, nh, dh) key normaliser
+            o_t = phi_q_t @ A_t / (phi_q_t . b_t + eps)   (B, nh, dh)
+
+        No memory state S_t, no delta-correction, no recurrent update.
+        Implemented as sequential scan for numerical correctness (no Triton).
+
+        Returns:
+            o_orig: (B, T, nh, dh)  — output in original (un-permuted) token order
+        """
+        B, T, C = tokens.shape
+        nh = self.n_heads
+        dh = self.d_head
+
+        # Reorder
+        t_perm = tokens[:, perm, :]                     # (B, T, C)
+
+        # Q, K, V
+        q = self.proj_q(t_perm).view(B, T, nh, dh)     # (B, T, nh, dh)
+        k = self.proj_k(t_perm).view(B, T, nh, dh)
+        v = self.proj_v(t_perm).view(B, T, nh, dh)
+
+        # ELU+1 feature maps (Katharopoulos 2020)
+        phi_q = self._elu_feature_map(q)                 # (B, T, nh, dh)
+        phi_k = self._elu_feature_map(k)                 # (B, T, nh, dh)
+
+        # Causal linear attention via sequential prefix-sum scan.
+        # A = cumulative outer product sum (B, nh, dh, dh)
+        # b = cumulative key sum            (B, nh, dh)
+        # Both are updated token-by-token (causal = each position uses 1..t).
+        A = torch.zeros(B, nh, dh, dh, device=tokens.device, dtype=tokens.dtype)
+        b = torch.zeros(B, nh, dh,    device=tokens.device, dtype=tokens.dtype)
+        o_list: List[torch.Tensor] = []
+
+        for t in range(T):
+            k_t = phi_k[:, t, :, :]    # (B, nh, dh)
+            v_t = v[:, t, :, :]        # (B, nh, dh)
+            q_t = phi_q[:, t, :, :]    # (B, nh, dh)
+
+            # Update cumulative stats: A += k_t^T outer v_t
+            # A shape: (B, nh, dh, dh); einsum b h d, b h e -> b h d e
+            A = A + torch.einsum('bhd,bhe->bhde', k_t, v_t)  # (B, nh, dh, dh)
+            b = b + k_t                                        # (B, nh, dh)
+
+            # Output: normalised retrieval
+            # numerator:   (B, nh, dh) = einsum('bhd, bhde->bhe', q_t, A)
+            numer = torch.einsum('bhd,bhde->bhe', q_t, A)    # (B, nh, dh)
+            # denominator: (B, nh) = (q_t * b).sum(d)
+            denom = (q_t * b).sum(dim=-1, keepdim=True)      # (B, nh, 1)
+            o_t = numer / (denom + 1e-6)                      # (B, nh, dh)
+
+            o_list.append(o_t)
+
+        # Stack: (B, T, nh, dh)
+        o_perm = torch.stack(o_list, dim=1)                   # (B, T, nh, dh)
+
+        # Un-reorder
+        o_orig = o_perm[:, inv_perm, :, :]                   # (B, T, nh, dh)
+        return o_orig
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        return_memory: bool = False,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, List[Optional[torch.Tensor]]]]:
+        """
+        Args:
+            x: (B, C, H, W)  input feature map — must have C == d_model
+               NOTE: same signature as GDN2MemoryModule.forward (drop-in).
+            return_memory: included for API parity with GDN2MemoryModule.
+               Always returns states_list = [None, ...] (no stateful memory).
+
+        Returns:
+            return_memory=False → out: (B, C, H, W)
+            return_memory=True  → (out, states_list)
+                states_list: List[None] length=directions (no state in A1')
+                self._last_o_seq: (B, T, nh*d_head) in raster order (for ReIDReadoutHead)
+        """
+        B, C, H, W = x.shape
+        assert C == self.d_model, f"Expected C={self.d_model}, got {C}"
+        T = H * W
+        assert T <= self.max_seq_len, (
+            f"Sequence length {T} (H={H}, W={W}) exceeds LinearAttnModule limit "
+            f"{self.max_seq_len}.  Use a smaller spatial resolution."
+        )
+
+        # Flatten: (B, C, H, W) → (B, T, C)
+        tokens = x.permute(0, 2, 3, 1).reshape(B, T, C)
+
+        # Frangi vesselness (same path as GDN2MemoryModule — parity for gate calcs)
+        # Note: gate tensors are computed identically to A2 for iso-param parity,
+        # but only alpha_w / Frangi path is actually used (write_gate applied below
+        # to scale v, maintaining the Frangi-modulated vessel signal as in A2).
+        # proj_erase and proj_g are kept for parameter parity; not used in forward.
+        if self.use_frangi:
+            vesselness = self.frangi(x)                             # (B, 1, H, W)
+            v_flat = vesselness.permute(0, 2, 3, 1).reshape(B, T, 1)  # (B, T, 1)
+            alpha_w = torch.sigmoid(self.alpha_w)
+            raw_write = torch.sigmoid(self.proj_write(tokens))     # (B, T, nh)
+            write_gate = raw_write * (1.0 + alpha_w * v_flat)      # (B, T, nh)
+            write_gate = write_gate.clamp(0.0, 1.0)
+            # Keep alpha_e / proj_erase / proj_g in compute graph for iso-param parity.
+            # Multiply by zero so they receive gradients without affecting output.
+            # This is the minimal intervention to keep numel identical to A2.
+            alpha_e = torch.sigmoid(self.alpha_e)
+            _dummy_erase = torch.sigmoid(self.proj_erase(tokens)) * alpha_e * 0.0
+            _dummy_g     = F.logsigmoid(self.proj_g(tokens)) * 0.0
+        else:
+            write_gate   = torch.ones(B, T, self.n_heads, device=x.device, dtype=x.dtype)
+            _dummy_erase = torch.zeros(B, T, self.n_heads, device=x.device, dtype=x.dtype)
+            _dummy_g     = torch.zeros(B, T, self.n_heads, device=x.device, dtype=x.dtype)
+
+        # Multi-direction scan (same Engineering A as GDN2MemoryModule)
+        perms     = _get_scan_permutations(H, W, self.directions, device=x.device)
+        inv_perms = [_invert_permutation(p) for p in perms]
+
+        o_list: List[torch.Tensor] = []
+        for perm, inv_perm in zip(perms, inv_perms):
+            # Run stateless linear attn on this direction's token ordering
+            o_dir = self._run_linear_attn_one_dir(tokens, perm, inv_perm)
+            o_list.append(o_dir)                                    # (B, T, nh, dh)
+
+        # Average across directions (same merge as GDN2MemoryModule)
+        o = torch.stack(o_list, dim=0).mean(dim=0)                 # (B, T, nh, dh)
+
+        # Merge heads → (B, T, nh*dh)
+        nh, dh = self.n_heads, self.d_head
+        o_seq = o.reshape(B, T, nh * dh)                           # (B, T, nh*dh)
+        # Expose for ReIDReadoutHead (same API as GDN2MemoryModule)
+        self._last_o_seq = o_seq
+
+        # Output projection + residual + norm (identical to GDN2MemoryModule)
+        out_tokens = self.proj_out(o_seq)                           # (B, T, C)
+        out_tokens = self.norm(tokens + out_tokens)                 # residual
+
+        # Reshape back
+        out = out_tokens.reshape(B, H, W, C).permute(0, 3, 1, 2)  # (B, C, H, W)
+
+        # Apply write_gate as a channel-wise scaling on the output feature map
+        # to keep the Frangi modulation signal active in the forward pass
+        # (parity with A2's Frangi-modulated write gate influencing output).
+        # write_gate: (B, T, nh) → reduce to (B, T, 1) → (B, C, H, W) broadcast
+        gate_map = write_gate.mean(dim=-1).reshape(B, H, W).unsqueeze(1)  # (B,1,H,W)
+        out = out * gate_map
+
+        # Absorb dummy tensors into output so autograd tracks them (parity grads)
+        dummy_sum = (_dummy_erase.sum() + _dummy_g.sum()) * 0.0
+        out = out + dummy_sum
+
+        if return_memory:
+            states_list = [None] * self.directions
+            return out, states_list
+        return out
+
+
+# --------------------------------------------------------------------------- #
 #  UNet + GDN-2
 # --------------------------------------------------------------------------- #
 
@@ -886,7 +1188,13 @@ class UNetGDN2(nn.Module):
         base_ch:         base channel width (same as UNet)
         d_head:          GDN-2 head dim
         n_heads:         GDN-2 number of heads
-        use_memory:      True = GDN-2 active; False = degrade to pure CNN (= UNet)
+        use_memory:      True = GDN-2 active; False = degrade to pure CNN (= UNet).
+                         Deprecated in favour of memory_mode; kept for backward compat.
+        memory_mode:     'delta_rule'   → A2: GDN2MemoryModule (stateful, default)
+                         'linear_attn'  → A1': LinearAttnModule (stateless iso-param)
+                         'cnn'          → A0': no attention module (pure CNN)
+                         Overrides use_memory when set (use_memory is ignored if
+                         memory_mode is explicitly passed).
         backend:         'naive' | 'chunk' (see GDN2MemoryModule)
         directions:      1, 2, or 4 scan directions for ablation (default=1)
         use_frangi:      True = Frangi gate modulation (Mechanism B); False = off
@@ -896,7 +1204,7 @@ class UNetGDN2(nn.Module):
                          'dec3' (default, H/4 res, 4b channels) or 'dec2' (H/2).
                          Ablation superparameter — dec3 balances context+resolution.
         reid_d_id:       identity embedding dimension in ReIDReadoutHead
-        reid_feat_source: 'memory' | 'cnn' (ablation A2/A0')
+        reid_feat_source: 'memory' | 'linear_attn' | 'cnn' (ablation A2/A1'/A0')
         reid_detach_memory_train: bool (ablation A3; MUST be True in non-ablation)
         reid_breakpoint_source:   'gt_skeleton' | 'pred_skeleton' (ablation A2/A4)
     """
@@ -909,6 +1217,7 @@ class UNetGDN2(nn.Module):
         d_head: int = 64,
         n_heads: int = 1,
         use_memory: bool = True,
+        memory_mode: Optional[str] = None,  # A1': 'delta_rule'|'linear_attn'|'cnn'
         backend: str = BACKEND,
         directions: int = 1,
         use_frangi: bool = True,
@@ -917,16 +1226,29 @@ class UNetGDN2(nn.Module):
         use_reid_head: bool = False,
         dec_feat_layer: str = 'dec3',        # 'dec3' (H/4, 4b ch) or 'dec2' (H/2, 2b ch)
         reid_d_id: int = 64,
-        reid_feat_source: str = 'memory',    # ablation A2/A0'
+        reid_feat_source: str = 'memory',    # ablation A2/A1'/A0'
         reid_detach_memory_train: bool = True,  # ablation A3 — MUST be True normally
         reid_breakpoint_source: str = 'gt_skeleton',  # ablation A2/A4
     ):
         super().__init__()
         b = base_ch
-        self.use_memory = use_memory
         self.use_reid_head = use_reid_head
         self.d_head = d_head
         self.n_heads = n_heads
+
+        # -- Resolve memory_mode (A1' / A2 / A0' ablation arm selector) --
+        # memory_mode overrides use_memory when provided.
+        if memory_mode is not None:
+            assert memory_mode in ('delta_rule', 'linear_attn', 'cnn'), (
+                f"memory_mode must be 'delta_rule', 'linear_attn', or 'cnn'; "
+                f"got {memory_mode!r}"
+            )
+            self.memory_mode = memory_mode
+        else:
+            # Backward-compat: derive memory_mode from use_memory
+            self.memory_mode = 'delta_rule' if use_memory else 'cnn'
+        # For backward compat, expose use_memory as property of delta_rule arm
+        self.use_memory = (self.memory_mode == 'delta_rule')
 
         assert dec_feat_layer in ('dec3', 'dec2'), (
             f"dec_feat_layer must be 'dec3' or 'dec2'; got {dec_feat_layer!r}"
@@ -944,8 +1266,11 @@ class UNetGDN2(nn.Module):
         # Bottleneck
         self.bottleneck = Down(b * 8, b * 16)
 
-        # ---------- GDN-2 Memory (at bottleneck features: b*16 channels) ----------
-        if use_memory:
+        # ---------- Bottleneck attention module (ablation arm selector) ----------
+        # A2  (delta_rule):   GDN2MemoryModule  — stateful delta-rule associative memory
+        # A1' (linear_attn):  LinearAttnModule   — stateless linear attention, iso-param
+        # A0' (cnn):          None               — pure CNN, no attention module
+        if self.memory_mode == 'delta_rule':
             self.memory = GDN2MemoryModule(
                 d_model=b * 16,
                 d_head=d_head,
@@ -956,8 +1281,22 @@ class UNetGDN2(nn.Module):
                 use_frangi=use_frangi,
                 frangi_scales=frangi_scales,
             )
+            self.linear_attn = None
+        elif self.memory_mode == 'linear_attn':
+            self.memory = None               # A2 path disabled
+            self.linear_attn = LinearAttnModule(
+                d_model=b * 16,
+                d_head=d_head,
+                n_heads=n_heads,
+                max_seq_len=LinearAttnModule.MAX_SEQ_LEN,
+                directions=directions,
+                use_frangi=use_frangi,
+                frangi_scales=frangi_scales,
+            )
         else:
-            self.memory = None  # pure CNN path (degrade flag)
+            # A0' — pure CNN, no attention module
+            self.memory = None
+            self.linear_attn = None
 
         # ---------- Decoder (identical to UNet) ----------
         self.dec4 = Up(b * 16, b * 8, b * 8)
@@ -1015,14 +1354,21 @@ class UNetGDN2(nn.Module):
         # GDN-2 Memory (optional)
         o_seq = None
         memory_states = None
-        if self.memory is not None:
+        if self.memory_mode == 'delta_rule' and self.memory is not None:
+            # A2: GDN-2 stateful delta-rule associative memory
             if return_reid_ctx:
-                # Request final states for re-ID head
                 bot, memory_states = self.memory(bot, return_memory=True)
-                # Retrieve o_seq stored by GDN2MemoryModule.forward
                 o_seq = self.memory._last_o_seq   # (B, T, nh*d_head)
             else:
                 bot = self.memory(bot)
+        elif self.memory_mode == 'linear_attn' and self.linear_attn is not None:
+            # A1': stateless linear attention (iso-parametric ablation arm)
+            if return_reid_ctx:
+                bot, memory_states = self.linear_attn(bot, return_memory=True)
+                o_seq = self.linear_attn._last_o_seq  # (B, T, nh*d_head)
+            else:
+                bot = self.linear_attn(bot)
+        # A0' (memory_mode == 'cnn'): no attention module — bot unchanged
 
         # Decoder
         d4 = self.dec4(bot, e4)

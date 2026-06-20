@@ -907,20 +907,31 @@ def build_model(args) -> nn.Module:
     """
     Build UNetGDN2 with re-ID head wired for the specified ablation arm.
 
-    A2  (memory): use_memory=True,  reid_feat_source='memory', detach=True
-    A0' (cnn):    use_memory=False, reid_feat_source='cnn',    detach=True
+    A2  (memory):       memory_mode='delta_rule',  reid_feat_source='memory', detach=True
+    A1' (linear_attn):  memory_mode='linear_attn', reid_feat_source='linear_attn', detach=True
+    A0' (cnn):          memory_mode='cnn',          reid_feat_source='cnn',    detach=True
     A3  ablation: detach_memory_train=False (args.no_detach_memory)
     A4  ablation: reid_breakpoint_source='pred_skeleton'
     """
     from models.unet_gdn2 import UNetGDN2
 
     reid_feat_source = args.reid_feat_source
-    # A0' (cnn arm): CNN-only — GDN-2 disabled, re-ID head still active
-    use_memory = (reid_feat_source == 'memory')
+
+    # Map reid_feat_source → memory_mode (arm selector for UNetGDN2)
+    _source_to_mode = {
+        'memory':       'delta_rule',   # A2: stateful GDN-2 associative memory
+        'linear_attn':  'linear_attn',  # A1': iso-param stateless linear attention
+        'cnn':          'cnn',          # A0': pure CNN, no attention module
+    }
+    memory_mode = _source_to_mode[reid_feat_source]
+
     # A3: detach control
     detach_mem = not args.no_detach_memory
     # A4: breakpoint source
     bp_source = args.reid_breakpoint_source
+
+    # Frangi is active for both A2 and A1' (both have the module for iso-param parity)
+    use_frangi = (memory_mode in ('delta_rule', 'linear_attn'))
 
     model = UNetGDN2(
         in_ch=1,
@@ -928,10 +939,10 @@ def build_model(args) -> nn.Module:
         base_ch=args.base_ch,
         d_head=args.d_head,
         n_heads=args.n_heads,
-        use_memory=use_memory,
+        memory_mode=memory_mode,
         backend=args.backend,
         directions=1,
-        use_frangi=use_memory,          # Frangi only makes sense with memory
+        use_frangi=use_frangi,
         use_reid_head=True,
         dec_feat_layer='dec3',
         reid_d_id=args.reid_d_id,
@@ -949,6 +960,9 @@ def build_model(args) -> nn.Module:
     if model.memory is not None:
         sig = inspect.signature(model.memory.forward)
         assert 'gt' not in sig.parameters, "GDN2MemoryModule.forward must not accept 'gt'"
+    if model.linear_attn is not None:
+        sig = inspect.signature(model.linear_attn.forward)
+        assert 'gt' not in sig.parameters, "LinearAttnModule.forward must not accept 'gt'"
 
     return model
 
@@ -975,8 +989,9 @@ def parse_args():
 
     # ---- Training mode ----
     p.add_argument('--reid_feat_source', default='memory',
-                   choices=['memory', 'cnn'],
-                   help='A2=memory (headline), A0\\u2019=cnn (zero-hypothesis)')
+                   choices=['memory', 'linear_attn', 'cnn'],
+                   help="A2=memory (headline), A1'=linear_attn (iso-param ablation), "
+                        "A0'=cnn (zero-hypothesis)")
     p.add_argument('--reid_breakpoint_source', default='gt_skeleton',
                    choices=['pred_skeleton', 'gt_skeleton'],
                    help='A4=pred_skeleton (封泄漏); default=gt_skeleton (A2)')
@@ -1066,7 +1081,12 @@ def main():
     csv_path    = output_dir / 'reid_results.csv'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    arm_label = ('A2(memory)' if args.reid_feat_source == 'memory' else "A0'(cnn)")
+    _arm_labels = {
+        'memory':       'A2(memory)',
+        'linear_attn':  "A1'(linear_attn)",
+        'cnn':          "A0'(cnn)",
+    }
+    arm_label = _arm_labels.get(args.reid_feat_source, args.reid_feat_source)
     print(f'[train_reid_pilot] device={device}  arm={arm_label}  '
           f'detach_memory={not args.no_detach_memory}  '
           f'bp_source={args.reid_breakpoint_source}  seed={args.seed}')

@@ -89,40 +89,114 @@ from baselines.registry import register
 
 class _PonderatedDiceloss(nn.Module):
     """
-    Ponderated Dice loss: 联合计算整体 Dice + 片段化 Dice，
-    用于训练 creatis 续连模型（官方 train.py PonderatedDiceloss）。
+    Ponderated Dice loss — 官方 train.py PonderatedDiceloss 忠实复刻。
 
-    官方逻辑（忠实复刻）:
-      - dice_loss: standard Dice on full binary seg
-      - frag_dice_loss: Dice on fragmented (disconnected) regions only
-      - combined = dice + frag_dice
+    官方 forward(input, target, mask) 接受概率（sigmoid 已在外部施加）；
+    此处 adapter 接受 logits，内部先 sigmoid（注释保留）。
 
-    Adapter 接口 signature: loss_fn(logits, target, fov_mask)
-    - logits  : (B,1,H,W) raw logits
-    - target  : (B,1,H,W) binary {0,1}
-    - fov_mask: (B,1,H,W) FOV mask — used to restrict loss to valid region
+    官方公式（train.py）:
+      dice_1: 全图 Dice
+        intersection_1 = sum(input * target)
+        union_1        = sum(input) + sum(target)
+        dice_1         = mean(1 - (2*inter + eps) / (union + eps))
 
-    NOTE: 官方 PonderatedDiceloss 原始 forward(pred, label, mask) 接受概率；
-          此处 adapter 接受 logits，内部先 sigmoid。
+      dice_2: mask（断点膨胀图 pos_i）区域 Dice
+        target_2       = target * mask
+        intersection_2 = sum(input * mask * target_2)
+        union_2        = sum(input * mask) + sum(target_2)
+        dice_2         = mean(1 - (2*inter + eps) / (union + eps))
+
+      return (dice_1 + dice_2, dice_1, dice_2)  ← 三元组，官方如此
+
+    mask 真源:
+      官方 disconnect.py: pos = binary_dilation(fragments, disk(2)) → pos_{i}.png
+      即断点区域的膨胀 mask，由 Stage-2 训练 dataloader 的 "mask" 列提供。
+
+      ⚠️ TODO_harness: 现有 harness 接口 loss_fn(logits, target, fov_mask) 传 FOV mask，
+        不是断点膨胀 mask。二者语义不同，不可互用。
+        精确复现须 Stage-2 训练 dataloader 提供 pos_i 列传入此处。
+        _CreatisLossWrapper 目前透传 fov_mask 作为 mask 占位；
+        当断点 mask 接好后，替换调用侧传参即可（无需改此类）。
+
+    forward 签名:
+        input  : (B,1,H,W) 概率（adapter wrapper 层做 sigmoid，此处接概率）
+        target : (B,1,H,W) binary {0,1}
+        mask   : (B,1,H,W) 断点膨胀 mask（Stage-2 dataloader pos_i；
+                  harness 未接好时由 wrapper 传 fov_mask 占位）
+
+    Returns:
+        (total, dice_1, dice_2) — 三元组，官方 train.py 如此，勿改为标量
     """
 
-    def __init__(self, smooth: float = 1e-6):
+    def __init__(self, eps: float = 1e-6):
         super().__init__()
-        self.smooth = smooth
+        self.eps = eps
 
-    def _dice(
+    def forward(
         self,
-        pred_prob: torch.Tensor,
+        input: torch.Tensor,
         target: torch.Tensor,
         mask: torch.Tensor,
-    ) -> torch.Tensor:
-        """Standard soft Dice in [0,1] range."""
-        eps = self.smooth
-        p = (pred_prob * mask).reshape(pred_prob.shape[0], -1)
-        t = (target * mask).reshape(target.shape[0], -1)
-        inter = (p * t).sum(1)
-        denom = p.sum(1) + t.sum(1)
-        return 1.0 - ((2 * inter + eps) / (denom + eps)).mean()
+    ):
+        """
+        Args:
+            input  : (B,1,H,W) 概率（sigmoid 已在 wrapper 施加）
+            target : (B,1,H,W) binary float {0,1}
+            mask   : (B,1,H,W) 断点膨胀 mask（pos_i）
+
+        Returns:
+            (total, dice_1, dice_2): tuple[Tensor, Tensor, Tensor]
+              total 为标量，dice_1/dice_2 均为标量。
+        """
+        eps = self.eps
+        dims = list(range(1, input.dim()))  # 对 spatial+channel 维求和
+
+        # --- dice_1: 全图 Dice ---
+        intersection_1 = torch.sum(input * target, dim=dims)
+        union_1 = (
+            torch.sum(input, dim=dims)
+            + torch.sum(target, dim=dims)
+        )
+        dice_1 = torch.mean(
+            1.0 - (2.0 * intersection_1 + eps) / (union_1 + eps)
+        )
+
+        # --- dice_2: mask 区域（断点膨胀图）Dice ---
+        # 官方: target_2 = target * mask; inter_2 = sum(input*mask*target_2)
+        target_2 = target * mask
+        intersection_2 = torch.sum(input * mask * target_2, dim=dims)
+        union_2 = (
+            torch.sum(input * mask, dim=dims)
+            + torch.sum(target_2, dim=dims)
+        )
+        dice_2 = torch.mean(
+            1.0 - (2.0 * intersection_2 + eps) / (union_2 + eps)
+        )
+
+        return dice_1 + dice_2, dice_1, dice_2
+
+
+class _CreatisLossWrapper(nn.Module):
+    """
+    Harness 兼容包装层：loss_fn(logits, target, fov_mask) → scalar。
+
+    供 build_loss 返回，让 harness 透明调用（harness 期望标量返回）。
+    内部步骤：
+      1. sigmoid(logits) → prob
+      2. 调用 _PonderatedDiceloss.forward(prob, target, mask)
+         mask = fov_mask（占位，见 TODO_harness）
+      3. 取 total（三元组[0]）返回标量
+
+    TODO_harness: mask 参数应为 Stage-2 dataloader 提供的 pos_i 断点膨胀图，
+      不是 FOV mask。当 Stage-2 训练管线接好断点 mask 列时，
+      调用侧须替换 fov_mask 为实际 pos_i 张量，此 wrapper 无需改动。
+      在此之前，dice_2 项计算的是「GT∩FOV 区域的 Dice」而非「断点区域 Dice」，
+      与官方训练语义有差异——此为已知保真缺口，须训练管线提供 pos_i 后才消除。
+    """
+
+    def __init__(self, loss_fn: _PonderatedDiceloss):
+        super().__init__()
+        self.loss_fn = loss_fn
 
     def forward(
         self,
@@ -130,18 +204,10 @@ class _PonderatedDiceloss(nn.Module):
         target: torch.Tensor,
         fov_mask: torch.Tensor,
     ) -> torch.Tensor:
-        pred_prob = torch.sigmoid(logits)
-        dice = self._dice(pred_prob, target, fov_mask)
-
-        # Fragmented Dice: inverted target as proxy for fragmented region
-        # Official uses a generated disconnected dataset mask; here we use
-        # (1 - target) as approximation for background/fragment region.
-        # TODO_researcher: 官方 train.py 用训练时生成的断点图 ("mask" 列),
-        #   此处用 (1-target) 作 frag_region 近似；如需精确复现需配套断点生成脚本。
-        frag_region = (1.0 - target) * fov_mask
-        frag_dice = self._dice(pred_prob, target, frag_region + 1e-9)
-
-        return dice + frag_dice
+        # logits → prob（官方原始 forward 接概率；此处 adapter 接 logits 内部转）
+        prob = torch.sigmoid(logits)
+        total, _d1, _d2 = self.loss_fn(prob, target, fov_mask)
+        return total
 
 
 # --------------------------------------------------------------------------- #
@@ -226,12 +292,19 @@ class CreatisPostprocAdapter(BaselineAdapter):
     #  build_loss
     # ---------------------------------------------------------------------- #
 
-    def build_loss(self, cfg: Dict[str, Any]) -> _PonderatedDiceloss:
+    def build_loss(self, cfg: Dict[str, Any]) -> _CreatisLossWrapper:
         """
-        PonderatedDiceloss（官方 train.py 忠实复刻）。
-        signature: loss_fn(logits, target, fov_mask) → scalar
+        PonderatedDiceloss（官方 train.py 忠实复刻）+ harness 兼容包装。
+
+        Returns:
+            _CreatisLossWrapper: loss_fn(logits, target, fov_mask) → scalar (total Dice)
+              内部调用 _PonderatedDiceloss(prob, target, mask)，返回三元组取 total。
+
+        NOTE — TODO_harness: fov_mask 在 Stage-2 训练时须替换为 pos_i 断点膨胀 mask。
+          详见 _CreatisLossWrapper 和 _PonderatedDiceloss docstring。
         """
-        return _PonderatedDiceloss(smooth=float(cfg.get("loss_smooth", 1e-6)))
+        inner = _PonderatedDiceloss(eps=float(cfg.get("loss_smooth", 1e-6)))
+        return _CreatisLossWrapper(inner)
 
     # ---------------------------------------------------------------------- #
     #  build_optimizer

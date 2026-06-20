@@ -3,7 +3,7 @@
   "project": "gdn2vessel",
   "template": "experiment",
   "created": "2026-06-20T20:24:25+08:00",
-  "updated": "2026-06-20T21:06:58+08:00",
+  "updated": "2026-06-20T21:21:30+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -55,15 +55,16 @@
       "agent": "主线",
       "deps": [
         "impl-verdict",
-        "impl-drive"
+        "impl-drive",
+        "impl-a1prime"
       ],
-      "status": "pending",
+      "status": "blocked",
       "gate": false,
       "group": "",
       "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
-      "out": "",
+      "out": "集成烟测逮缝:A1'等参臂未在unet_gdn2.py/train_reid_pilot.py实现,三臂A2>A1'>A0'跑不了。CSV契约OK",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-20T21:09:42+08:00"
     },
     {
       "id": "train",
@@ -182,26 +183,39 @@
       "stage": "写码",
       "agent": "coder",
       "deps": [],
-      "status": "pending",
+      "status": "running",
       "gate": false,
       "group": "",
       "desc": "据arXiv2404.10506 §3.1真实现creatis_postproc plug-and-play续连(现仅占位),挂统一backbone输出后,复现零偏离。territory=creatis_postproc adapter+tests,不碰BASELINE_SPEC(baseline-fix占)/reid_verdict/drive",
       "out": "",
-      "owner": "",
-      "ts": ""
+      "owner": "winF",
+      "ts": "2026-06-20T21:08:40+08:00"
     },
     {
       "id": "baselineB-pick",
       "stage": "调研",
       "agent": "researcher",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "定档B(SA-UNetv2/MM-UNet/TFFM)哪个有2D实现的SSM/血管baseline顶替降档的MambaVessel++保≥12。查官方repo确认2D可跑+license+超参。territory=reference/,不碰BASELINE_SPEC(baseline-fix占)",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-20T21:15:43+08:00"
+    },
+    {
+      "id": "impl-a1prime",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "在unet_gdn2.py加A1'等参臂(保留q/k/v/out+LN+Frangi门+同插入深度,delta-rule换stateless linear attn,numel差≤±5%)+train_reid_pilot.py加arm flag",
+      "out": "A1'等参臂(ELU+1 linear attn,Katharopoulos2020):核实A2==A1'numel 7,983,171 +0.0000%绝对等参(stub fla验),512passed.dead-param0.01%脚注",
+      "owner": "",
+      "ts": "2026-06-20T21:21:30+08:00"
     }
   ]
 }

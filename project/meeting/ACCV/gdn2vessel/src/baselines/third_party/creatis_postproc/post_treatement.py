@@ -18,6 +18,9 @@ import torch
 import json
 from pathlib import Path
 
+# 官方 image_utils.normalize_image — 见 image_utils.py TODO_researcher 注释
+from baselines.third_party.creatis_postproc.image_utils import normalize_image
+
 
 # --------------------------------------------------------------------------- #
 #  Official model architecture (monai UNet) — must match pre-trained weights
@@ -137,8 +140,10 @@ def apply_postproc_iterations(
         image = image.astype(np.uint8)
 
     for i in range(1, iterations + 1):
-        # Official normalize: scale to [0, 1]
-        normalized = image.astype(np.float32) / 255.0
+        # 官方: image = image_utils.normalize_image(image, 1)
+        # → normalize_image(uint8{0,255}, max_val=1) = image/255.0 → [0,1] float32
+        # TODO_researcher: normalize_image 第二参数语义见 image_utils.py 注释，须核官方
+        normalized = normalize_image(image, max_val=1)  # (H,W) float32 [0,1]
         # Build tensor (1, 1, H, W)
         img_tensor = torch.from_numpy(normalized).unsqueeze(0).unsqueeze(0)
         # Run sliding window inference
