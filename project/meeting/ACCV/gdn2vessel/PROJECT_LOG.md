@@ -1,5 +1,32 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 13 — 2026-06-20 P3 Baseline adapter 全实现（5 coder 2 波，14 adapter 注册=12 baseline 达标）
+
+承 Entry 8。用户「多上网查越结实越好」→ 各 adapter curl 官方源忠实移植（复现零偏离），非凭记忆重写。
+
+### 5 coder 并行（连接掉线 4 个→补派 3 个收口）
+第一波 5 coder 同发，coder A 完成，B/C/D/E「Connection closed mid-response」返 0 token——但磁盘查实大部分已写（不信 agent 自报、查文件系统+pytest 真跑 [[feedback_debug_silent_failure]]）。补派 3 coder 收口 B/C/E。
+- **datasets/ 撞车化解**：我 coder D 与别窗 Entry 10 coder-C 都建 dataset loader → 实况查 `datasets/` 已是别窗 base_vessel 派生（chase/fives/stare/hrf 一致协同），evaluate.py 的 chase/fives/stare dispatch 已落地。**不重复造，defer 别窗 base_vessel 为 canonical**，我只留 baseline adapter territory。
+
+### 14 adapter 注册 = 12 baseline（≥12 达标）+ backbone_unet 基建 + ours_gdn2
+- **architecture(main)**：fr_unet（滑窗推理 self-contained）/cs_net/dscnet/creatis_postproc/nnunet/pasc_net
+- **loss(配统一 backbone)**：cldice(α0.5)/cbdice/skeleton_recall
+- **architecture(mamba env)**：vm_unet/u_mamba/mamba_vessel_net（vendor+RuntimeError 占位，待 HPC mamba_venv）
+- 全官方 curl 忠实移植（GitHub raw 被 GFW 拦→走 jsdelivr CDN 成功）。**pytest 349 passed/10 skipped[runtime]/1 xfail[HPC FLA]**，零跨 coder 破损。
+
+### ⚠️ 残留 TODO（落 BASELINE_SPEC §5 状态表）
+- **creatis LICENSE 404**（CeCILL 据 README）→ 未确认不纳入发表红线，researcher 核或联系作者。
+- **cbDice/SkelRecall 混合权重**：现 0.5BCE+Dice+0.5topo，官方 nnUNet 1:1:1 三路等权 → researcher/拍板定（影响复现零偏离）。
+- **DSCNet TCLoss**：官方 DRIVE 代码只 cross_loss(BCE) 无 TCLoss（变体在另 repo）→ 现忠实按 DRIVE 官方走 BCE，标注。
+- **MambaVesselNet++ 2D**：vendor 是 3D Conv3d，2D path 不确定 → 可能降档 C。
+- **nnUNet/PASC-Net**：走 nnUNetv2 命令行非 train_harness，evaluate.py 接 predict 输出待拍板。
+- normalize/augment 多个官方未公开 → TODO_researcher。
+
+### 下一步
+🛑 真训 gate 在 P1+P2 真验 PASS（别窗在做）+ HPC 上传新代码（拍板）。待 gate 过：HPC build mamba_venv + 装 nnUNetv2 → batch-1（DRIVE 全 baseline seed42 校准）拍板 → 跑 → analyst+verifier 对 ACCEPTANCE P3。残留 license/权重 TODO 先清。
+
+---
+
 ## Entry 12 — 2026-06-20 §2 付费墙原文攻坚闭环（主线 Playwright 机构访问，TA-Mamba+MVM-UNet 全文数字）
 
 承 Entry 7/9（§2 RW + SOTA 调研窗）。用户要「一定扎实」→ 主线 Playwright 下两篇付费墙原文，盲区清零。

@@ -162,9 +162,27 @@ researcher 回填官方超参 ─┘
 | harness 骨架（base_adapter/registry/evaluate.py/2 示例 adapter/configs/tests，复用 metrics.py+tools_topology.py） | **coder** | ✅ **完成**（10 新文件，pytest 24 通+回归 12 通；TODO hook=滑窗推理占位、AUC FOV 口径、evaluate 仅 DRIVE loader） |
 | 回填 §1 TODO 超参 + mamba cu126 兼容矩阵 | **researcher** | ✅ **完成**（DSCNet/PASC-Net/cbDice/clDice/MambaVesselNet++ 齐，mamba HF cu126 wheel 命中） |
 | 红队 §2.4 反向公平 + mamba 诚实 + OCTAMamba 主表 | **skeptic** | ✅ **完成**（1🔴 creatis 已修，0 剩余致命，放行） |
-| 各 baseline adapter 实现（FR-UNet/CS-Net/DSCNet/nnU-Net/PASC-Net/clDice/cbDice/SkelRecall/creatis + 3 SSM）+ 滑窗推理 + 多数据集 loader | **coder**（多 sonnet 并行，无文件冲突） | ⬜ **下一波**（超参已齐可即派） |
+| 各 baseline adapter 实现（12 个）+ 滑窗推理 + 多数据集 loader | **coder**（5 sonnet 并行，2 波，4 连接掉线后补派） | ✅ **完成**（14 adapter 注册=12 baseline+infra+ours；349 passed/10 skipped[runtime]/1 xfail[HPC FLA]；curl 走 jsdelivr CDN 绕 GFW；datasets/ 与别窗 base_vessel 协同） |
 | 训练（batch 分批拍板） | **主线串行** gpu_slot | 🛑 gate P1+P2 PASS |
 | 跑后聚合三轴 + 核数对 ACCEPTANCE | **analyst + verifier** | ⬜ |
+
+### ✅ 12 baseline adapter 实现状态（registry 注册名）
+| adapter | kind | env | 实现 | 残留 TODO |
+|---|---|---|---|---|
+| fr_unet | architecture | main | ✅ 官方 curl 忠实移植 + 滑窗推理 self-contained | normalize mean/std + augment 官方未公开 |
+| cs_net | architecture | main | ✅ 官方 curl 忠实移植 | normalize（官方仅 /255）+ augment |
+| dscnet | architecture | main | ✅ DSConv 纯 PyTorch + cross_loss(BCE) | ⚠️ 官方 DRIVE 代码**只有 cross_loss(BCE) 无 TCLoss**（TCLoss 变体在另 repo），现忠实按 DRIVE 官方走 BCE；augment 未公开 |
+| creatis_postproc | architecture(两段式) | main | ✅ 官方 curl + postproc 挂 backbone 输出后 | ⚠️ **LICENSE 404**（CeCILL 据 README，未确认不纳入发表红线→researcher 核或联系作者）；Stage-2 需 monai + 断点训练数据 |
+| cldice | loss | main | ✅ 官方 soft_dice_cldice α0.5 配统一 backbone | — |
+| cbdice | loss | main | ✅ 官方移植去 monai/nnUNet 依赖 | ⚠️ 混合权重：现 0.5BCE+Dice+0.5cbDice，官方 nnUNet 是 1:1:1 三路等权→researcher/拍板定 |
+| skeleton_recall | loss | main | ✅ 官方 SoftSkeletonRecallLoss 移植 | 混合权重同上；skel GT forward 内实时算（略慢） |
+| vm_unet | architecture | **mamba** | ✅ vendor + adapter，无 mamba_ssm 时 RuntimeError | wd/normalize/rotation 官方未明示；需 HPC mamba_venv build |
+| u_mamba | architecture | **mamba** | ✅ adapter 占位（nnUNet 命令行路径） | 需 nnUNet 自配置 + mamba_venv |
+| mamba_vessel_net | architecture | **mamba** | ✅ vendor + MVNWrapper2D | ⚠️ vendor 是 3D Conv3d，2D path 不确定→可能降档 C（§3 退路） |
+| nnunet | architecture | main | ✅ adapter 占位（nnUNetv2 命令行） | 需 nnUNetv2 安装 + DRIVE 转格式；evaluate.py 接 nnUNetv2_predict 输出待拍板 |
+| pasc_net | architecture | main | ✅ adapter 占位（PASCTrainer，loss 权重已记） | 同 nnunet；preprint 状态标注 |
+
+> **代码骨架/接口全就位，本地 pytest 接口层全绿**。真训需：mamba 系 HPC build mamba_venv；nnUNet 系装 nnUNetv2 + 转格式（走命令行非 train_harness，evaluate 接入待拍板）；creatis license 核实。这些是 runtime/HPC 事项，gate 在 P1+P2 真验 + batch-1 拍板。
 
 ### skeptic 红队裁决（2026-06-20，1 致命已修）
 - 🔴**已修**：creatis plug-and-play 漏比关键竞品（headline 对立面却不比 = reject 红线）→ 已纳入档 A A12（postproc 续连），OCTAMamba 移 P5。连锁两件一起改完，档 A 回 ≥12。
