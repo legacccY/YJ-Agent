@@ -1,5 +1,64 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 16 — 2026-06-20 impl-drive 棒：drive.py 迁 base_vessel canonical + 挖出 gif 静默全零 bug + held-out 拍板=重下官方 test GT（winD）
+
+承 Entry 14 待续4。winD 窗认领 `pipeline.py claim gdn2vessel impl-drive winD`，派 coder 迁移，只碰 src/datasets/drive.py。
+
+### ✅ drive.py 迁 canonical
+- `DRIVEDataset` 改为 `BaseVesselDataset` 子类，签名/契约对齐 chase/stare/fives。删 7 处冗余重造（`apply_clahe`/`pad_to_multiple`/`_augment`/`_random_crop`/`_center_pad`/`__getitem__`/`_load_sample`，全继承基类，消 drift 风险），只留 DRIVE 特有 path helper（`training/images/{sid}_training.tif`、`training/1st_manual/{sid}_manual1.gif`、`training/mask/{sid}_training_mask.gif`）。
+- pytest **433 passed / 10 skipped / 1 xfailed = 与 Entry14 精确吻合，零回退**。本地真数据 smoke PASS（GT/FOV unique=[0,1]，`__getitem__`→(1,512,512) f32，id=21）。
+
+### 🐞 挖出真 bug：cv2 读 DRIVE .gif = 静默全零（比 None 更阴）
+- `cv2.imread(gif, IMREAD_GRAYSCALE)` 读 DRIVE 的 `.gif` GT/FOV **不返回 None，返回全零数组**——基类 `assert not None` 拦不住。PIL 读同文件 unique=[0,255] 正确。
+- 修：DRIVEDataset override `_load_gt`/`_load_fov` 强制 PIL 优先、cv2 兜底，docstring+module 注释标注。
+- ⚠️ **待查旁注**：若早前有窗用旧 drive.py + 本地 cv2 跑过 DRIVE，GT 可能被读成全零。Entry4 pilot Dice 0.8085 是 HPC 跑的（cv2 build 不同，未必中招），不阻本棒，列待查。
+
+### 🛑 held-out 拍板点 = 用户定「重下官方 test GT」（Entry14 待续4）
+- 现状：本 Kaggle pack（umairinayat 合集，源自 andrewmvd）DRIVE `test/` 只有 images+mask，**缺 1st_manual GT**（已知 Kaggle 上传漏 GT 目录，见 orobix/retina-unet#76）。`drive.py` 暂留 `TEST_IDS=[]` + TODO。
+- **用户拍板**：重下原版补 test GT → 用标准官方 20/20 split（train 21-40 / test 01-20），与所有 DRIVE 论文同口径，主 Dice 表可比。
+- researcher 核源结论：原版 DRIVE 发行的 test 集**确含 `test/1st_manual/*_manual1.gif` + `2nd_manual`**（命名 01-20，test 编号 01-20、train 21-40）；现 grand-challenge 官网已隐去 test GT 走提交制，但论文都是拿原始完整包离线评的。**可下完整包来源**：
+  - FR-UNet 官方 Dropbox（作者给复现者，最可信）：`https://www.dropbox.com/sh/z4hbbzqai0ilqht/AAARqnQhjq3wQcSVFNR__6xNa?dl=0`
+  - 候选 Kaggle slug（GT 齐全性需下后实测）：`zhz638/drive-dataset`、`zionfuo/drive2004`
+  - TODO：上述链接 test/1st_manual 实际齐全性须下载后 `ls test/` 实证，绝不臆断。
+
+### 待续（下一棒，新拍板点 = HPC 上传新数据）
+1. 下载含 test GT 的完整 DRIVE（先验 FR-UNet Dropbox / 候选 Kaggle 的 test/1st_manual 齐全）→ 本地核 `ls DRIVE/test/1st_manual/`。
+2. 补 `drive.py`：`TRAIN_IDS=21-40`（官方全 train，VAL 从中切）、`TEST_IDS=01-20`（官方 test held-out），_img/_gt/_mask path 适配 test/ 子目录。
+3. 🛑 传 HPC（对外传输，拍板点）覆盖/补 DRIVE test GT。
+4. 更新 `.portfolio/datasets.json` DRIVE 条目（标注 test GT 补全来源）。
+
+### 工具/状态
+src/datasets/drive.py 迁 canonical（433 passed）；pipeline `impl-drive` done ✓（解锁 redteam+impl-verdict 可并行）；held-out 数据 re-source 列待续棒。
+
+---
+
+## Entry 15 — 2026-06-20 Conductor scout-baseline 棒：researcher×4 核源闭环 P3 baseline 残留 5 TODO（winC）
+
+承 Entry 13 尾巴残留 TODO。Conductor DAG `scout-baseline` 节点（winC 认领），desc=「P3 baseline 残留 TODO: creatis LICENSE / cbDice 权重 / DSCNet TCLoss / normalize+augment 官方 / MambaVesselNet 2D」。派 researcher×4 并行查官方源（复现零偏离红线②，查不到标 TODO），只碰 BASELINE_SPEC.md（reference/ 未需动）。
+
+### 5 TODO 全核源闭环（每条带官方源文件出处）
+1. **creatis A12 LICENSE**：repo **无 LICENSE 文件**（main+master HTTP 404，GitHub API `license:None`，子目录亦无），README **全文无 CeCILL 字样**（Entry 13「CeCILL 据 README」= 传言错/误记），arXiv 2404.10506 仅 repo URL 无 license → 默认 **All Rights Reserved**。**数字/方法引用 OK，vendor 代码法律上不允许** → 🛑 issue 作者授权（拍板点）。退路=只本地跑不入公开 repo。
+2. **cbDice 权重**：官方 `nnUNetTrainer_CE_DC_CBDC.py::_build_loss()` = `lambda_ce=lambda_dice+lambda_cbdice` → **2·CE+1·Dice+1·cbDice**（`compound_cbdice_loss.py::forward()` 末行实证）。**现 adapter `0.5BCE+Dice+0.5cbDice` 与官方不符 → impl 阶段改 2:1:1**。
+3. **DSCNet TCLoss**：官方 DRIVE 2D 纯 `cross_loss(BCE)`，TCLoss(persistent homology) 仅 arXiv2307.08388 正文描述 **官方代码未开源**（git tree recursive 全搜无 topology/hausdorff）→ 忠实走 BCE = 现 adapter 对。**旧表述「TCLoss=CE+Hausdorff 一体」更正**（是根本未公开，非「另 repo」）。
+4. **normalize+augment**：FR-UNet（global mean/std+per-image minmax 灰度，HFlip/VFlip/Fix_RandomRotation{-180,-90,0,90}）/CS-Net（仅 ToTensor /255 RGB，rotate±40+flip0.5+crop512+enhance0.5）/DSCNet（z-score .npy，MONAI pipeline 80%触发）/VM-UNet（myNormalize z-score，flip+rot 全套）/U-Mamba（nnU-Net z-score+DA5，AMP→nan 须无AMP）全拿确切配置带源文件 → 写 §7.1/§7.2 全表。
+5. **MambaVesselNet++ 2D**：repo `mvn.py` 全 Conv3d **无 2D path**，`train.py` patch_size=(64,64,64) 纯 3D；arXiv2507.19931 §4.3 只写「2D ep200 bs16」无 input size/normalize/augment，论文 §3.4 声称 2D/3D adaptive 切换 repo 未实现 → **代码与 claim 不一致，复现零偏离下不自补 2D，建议降档 C 或 issue 作者**（拍板点）。
+
+### 写入 BASELINE_SPEC.md
+- §1 TODO 槽位回填 + DSCNet/cbDice 更正 + §58 超参表 DSCNet loss 列改 `cross_loss(BCE)`
+- §0 A12 + §5 表 creatis_postproc/cldice/cbdice/dscnet 残留 TODO cell 更新
+- 新增 **§7 scout-baseline 闭环**（§7.1 normalize 全表 / §7.2 augment 全表 / §7.3 cbDice+DSCNet loss / §7.4 creatis license 裁决），每条带官方源文件出处。
+
+### 剩 3 个真 TODO（runtime 实测层，不阻塞）
+CS-Net RandEnhance factor 区间（`uniform(-2,2)` 含负值 PIL 语义需核原行）；DSCNet MONAI augment 各 transform 确切 prob 逐行；VM-UNet/MambaVesselNet++ DRIVE normalize（官方无 DRIVE 条目，自算 mean/std 或 [0,1]，拍板）；U-Mamba `custom_transforms/` 是否覆盖 DA5。
+
+### 2 拍板点（留用户，非阻塞本棒）
+① creatis license 起草 issue 问作者授权？② MambaVesselNet++ 2D 降档 C 还是 issue 要 2D 配置？
+
+### Conductor 状态
+`scout-baseline` done ✓（pipeline 2/11）→ 解锁 impl-verdict(coder)。辖域守纪律：只改 BASELINE_SPEC.md，MASTER_PLAN/drive.py/WINDOW_TASKS = 别窗工作未越界。
+
+---
+
 ## Entry 14 — 2026-06-20 P2 出口 HPC 真验：item-1 真 FLA PASS + 命门 5 缝攻坚（多窗收口后首次真 GPU 验）
 
 承 Entry 10/13。用户「传，跑」放行 HPC 上传新码 + 跑 P2 待 HPC 真验两条（Entry 10 列）。**这是多窗收工后第一次真 GPU 验——彻底坐实开局警示的「pytest 绿 ≠ HPC 真验」**。

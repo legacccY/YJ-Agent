@@ -1,15 +1,15 @@
 """
-DRIVE retinal vessel dataset.
+DRIVE retinal vessel dataset — BaseVesselDataset subclass.
 
 Standard preprocessing (common in FR-UNet / SA-UNet papers on DRIVE):
   - Green channel extraction: retinal vessels have highest contrast in G channel
   - CLAHE (Contrast Limited Adaptive Histogram Equalization): standard for fundus images
   - Normalise to [0, 1] then ImageNet-style standardise (mean/std over green channel)
-  - Only compute loss / metrics inside FOV mask
+  - Only compute loss / metrics inside FOV mask (FOV mask is a .gif file)
 
 Typical DRIVE usage:
   - 20 training images (with GT + FOV mask) → split 16/4 train/val by default.
-  - 20 test images have no public GT; not used here.
+  - 20 test images have NO public GT; not used here (see TEST_IDS TODO below).
 
 Super-param note:
   - patch_size=512, patch_stride=512 (full-image crop after pad) is common.
@@ -18,129 +18,82 @@ Super-param note:
     (32×32 = 1024 tokens) stays at the ≤1K GDN-2 sequence limit.
   - CLAHE clip_limit=2.0, tile_grid_size=8 — standard for retinal fundus
     (Zhuang et al., 2019; FR-UNet ref).
+
+Directory layout (standard DRIVE download):
+    data_root/
+        training/
+            images/       <id>_training.tif   (RGB .tif, read via cv2)
+            1st_manual/   <id>_manual1.gif     (binary GT, read via PIL — cv2 returns
+                                                silent all-zeros for this .gif; confirmed
+                                                2026-06-20 with local data)
+            mask/         <id>_training_mask.gif  (FOV mask, same PIL requirement)
+        test/
+            images/       <id>_test.tif
+            mask/         <id>_test_mask.gif   (no GT available publicly)
+
+NOTE on .gif loading:
+    cv2.imread reads DRIVE .gif files without error but returns an all-zeros
+    array (confirmed locally 2026-06-20: cv2 GT/mask unique = {0} despite
+    valid vessel annotations).  PIL reads them correctly (unique = {0, 255}).
+    DRIVEDataset therefore overrides _load_gt and _load_fov to use PIL.
+
+HPC root:  /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/DRIVE/
+Local root: D:/YJ-Agent/data/vessel/DRIVE/
+(True root from .portfolio/datasets.json key='vessel_collection_kaggle')
 """
 
 from __future__ import annotations
 
-import os
-import random
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List
 
 import cv2
 import numpy as np
-import torch
-from torch.utils.data import Dataset
+
+try:
+    from PIL import Image as PILImage
+    _HAS_PIL = True
+except ImportError:
+    _HAS_PIL = False
+
+from datasets.base_vessel import BaseVesselDataset, apply_clahe, GREEN_MEAN, GREEN_STD
+
 
 # --------------------------------------------------------------------------- #
-#  Constants (DRIVE-specific, verified from image inspection)
+#  DRIVE-specific image dimension (informational only; not enforced at runtime)
 # --------------------------------------------------------------------------- #
 DRIVE_IMG_H = 584
 DRIVE_IMG_W = 565
 
-# Green-channel statistics (approximate; recomputed per training set is ideal)
-# TODO: confirm exact per-dataset mean/std via offline sweep; these are common
-#       values used in FR-UNet / SA-UNet DRIVE experiments
-GREEN_MEAN = 0.5
-GREEN_STD = 0.1
-
 
 # --------------------------------------------------------------------------- #
-#  Preprocessing helpers
+#  DRIVEDataset
 # --------------------------------------------------------------------------- #
 
-def apply_clahe(green_channel: np.ndarray,
-                clip_limit: float = 2.0,
-                tile_grid_size: int = 8) -> np.ndarray:
-    """CLAHE on uint8 green channel.  Standard retinal fundus preprocessing."""
-    assert green_channel.dtype == np.uint8
-    clahe = cv2.createCLAHE(clipLimit=clip_limit,
-                             tileGridSize=(tile_grid_size, tile_grid_size))
-    return clahe.apply(green_channel)
-
-
-def pad_to_multiple(img: np.ndarray, multiple: int = 32) -> Tuple[np.ndarray, Tuple]:
-    """Zero-pad H and W to nearest multiple of `multiple`.
-    Returns padded array and (pad_top, pad_left) for inverse crop.
+class DRIVEDataset(BaseVesselDataset):
     """
-    h, w = img.shape[:2]
-    pad_h = (multiple - h % multiple) % multiple
-    pad_w = (multiple - w % multiple) % multiple
-    if img.ndim == 2:
-        padded = np.pad(img, ((0, pad_h), (0, pad_w)), mode='constant')
-    else:
-        padded = np.pad(img, ((0, pad_h), (0, pad_w), (0, 0)), mode='constant')
-    return padded, (0, 0, pad_h, pad_w)  # top, left, bottom, right
+    DRIVE retinal vessel segmentation dataset — BaseVesselDataset subclass.
 
+    All pipeline logic (CLAHE, pad/crop, augmentation, __getitem__, __len__,
+    get_tiles) is inherited from BaseVesselDataset.  This subclass only
+    provides DRIVE-specific:
+      - TRAIN_IDS / VAL_IDS / TEST_IDS class attrs
+      - _img_path / _gt_path / _mask_path path helpers
+      - _load_gt / _load_fov overrides (PIL required — cv2 reads .gif silently wrong)
 
-# --------------------------------------------------------------------------- #
-#  Dataset
-# --------------------------------------------------------------------------- #
-
-class DRIVEDataset(Dataset):
-    """
-    DRIVE retinal vessel segmentation dataset.
-
-    Directory layout (standard DRIVE download):
-        data_root/
-            training/
-                images/       <id>_training.tif
-                1st_manual/   <id>_manual1.gif
-                mask/         <id>_training_mask.gif
-            test/
-                images/       <id>_test.tif
-                mask/         <id>_test_mask.gif   (no GT available publicly)
-
-    Args:
-        data_root:   Path to DRIVE root (contains training/ and test/)
-        split:       'train' | 'val' | 'all'
-                     'train'/'val' index into training/ (20 images).
-                     Indices 0..15 → train (16 images), 16..19 → val (4 images).
-        patch_size:  Square patch side for random crop training.  None = no crop.
-        augment:     Apply random flip/rotation (train split only).
-        clahe_clip:  CLAHE clip limit. Default 2.0.
-        pad_multiple: Pad image to multiple of this before crop.
+    Split (deterministic, from 20 training images with GT):
+      TRAIN_IDS: 21..36  (16 images)
+      VAL_IDS:   37..40  (4 images)
+      TEST_IDS:  []      (see TODO below)
     """
 
-    TRAINING_IDS = list(range(21, 41))  # 21..40
-    # Default 16/4 train/val split (deterministic, fixed)
-    TRAIN_IDS = list(range(21, 37))   # 21..36
-    VAL_IDS = list(range(37, 41))     # 37..40
+    TRAIN_IDS: List[int] = list(range(21, 37))   # 21..36 (16 images)
+    VAL_IDS:   List[int] = list(range(37, 41))   # 37..40 (4 images)
 
-    def __init__(
-        self,
-        data_root: str,
-        split: str = 'train',
-        patch_size: Optional[int] = 512,
-        augment: bool = False,
-        clahe_clip: float = 2.0,
-        pad_multiple: int = 32,
-    ):
-        super().__init__()
-        self.data_root = Path(data_root)
-        self.split = split
-        self.patch_size = patch_size
-        self.augment = augment
-        self.clahe_clip = clahe_clip
-        self.pad_multiple = pad_multiple
-
-        if split == 'train':
-            self.ids = self.TRAIN_IDS
-        elif split == 'val':
-            self.ids = self.VAL_IDS
-        elif split == 'all':
-            self.ids = self.TRAINING_IDS
-        else:
-            raise ValueError(f"split must be 'train'/'val'/'all', got {split!r}")
-
-        # Verify paths exist
-        for sid in self.ids:
-            img_path = self._img_path(sid)
-            gt_path = self._gt_path(sid)
-            if not img_path.exists():
-                raise FileNotFoundError(f"DRIVE image not found: {img_path}")
-            if not gt_path.exists():
-                raise FileNotFoundError(f"DRIVE GT not found: {gt_path}")
+    # TODO[拍板点]: DRIVE 官方 test(20张) 无公开 GT，held-out benchmark 须从 20 张
+    #   训练图中划定。划分方案(留几张/哪几张/是否与 VAL 复用)待用户拍板，暂空。
+    #   对照: CHASE 有 8 张官方 held-out test GT(见 chase.py TEST_IDS)。
+    TEST_IDS: List[int] = []
 
     # ---------------------------------------------------------------------- #
     #  Path helpers
@@ -156,114 +109,57 @@ class DRIVEDataset(Dataset):
         return self.data_root / 'training' / 'mask' / f'{sid}_training_mask.gif'
 
     # ---------------------------------------------------------------------- #
-    #  Core loading + preprocessing
+    #  Override _load_gt and _load_fov: DRIVE GT/mask are .gif files.
+    #
+    #  cv2.imread reads DRIVE .gif without error but silently returns an
+    #  all-zeros array (confirmed locally 2026-06-20: all pixel values = 0
+    #  regardless of actual content).  PIL.Image reads them correctly.
+    #  These overrides use PIL with cv2 as a last-resort fallback.
     # ---------------------------------------------------------------------- #
 
-    def _load_sample(self, sid: int):
-        """Load one DRIVE sample, apply green-channel + CLAHE preprocessing."""
-        # --- image ---
-        img_bgr = cv2.imread(str(self._img_path(sid)))  # BGR uint8
-        assert img_bgr is not None, f"cv2 failed to read {self._img_path(sid)}"
-        green = img_bgr[:, :, 1]  # green channel (index 1 in BGR)
-        green_clahe = apply_clahe(green, clip_limit=self.clahe_clip)
+    def _load_gt(self, sid: int) -> np.ndarray:
+        """Load DRIVE GT mask (.gif) → (H,W) uint8 {0,1}.
+        PIL is required: cv2.imread returns silent all-zeros for DRIVE .gif files
+        (confirmed 2026-06-20; cv2 unique={0}, PIL unique={0,255}).
+        """
+        gt_path = self._gt_path(sid)
 
-        # Normalise: [0,255] → float32 → standardise
-        img_f = green_clahe.astype(np.float32) / 255.0
-        img_f = (img_f - GREEN_MEAN) / GREEN_STD  # (H, W)
+        if _HAS_PIL:
+            gt_arr = np.array(PILImage.open(str(gt_path)).convert('L'))
+            return (gt_arr > 127).astype(np.uint8)
 
-        # --- GT ---
-        gt_pil = cv2.imread(str(self._gt_path(sid)), cv2.IMREAD_GRAYSCALE)
-        assert gt_pil is not None
-        gt = (gt_pil > 127).astype(np.uint8)  # {0,1}
+        # Fallback to cv2 (may silently return all-zeros for .gif — documented risk)
+        gt_raw = cv2.imread(str(gt_path), cv2.IMREAD_GRAYSCALE)
+        assert gt_raw is not None, (
+            f"cv2 failed to read DRIVE GT {gt_path}. "
+            "Install Pillow (pip install Pillow) for reliable .gif support."
+        )
+        return (gt_raw > 127).astype(np.uint8)
 
-        # --- FOV mask ---
+    def _load_fov(self, sid: int) -> np.ndarray:
+        """Load DRIVE FOV mask (.gif) → (H,W) uint8 {0,1}.
+        PIL is required: same cv2/.gif issue as _load_gt.
+        Fallback to all-ones (full image) if mask file is missing.
+        """
         mask_path = self._mask_path(sid)
-        if mask_path.exists():
-            mask_raw = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-            fov_mask = (mask_raw > 127).astype(np.uint8)
-        else:
-            fov_mask = np.ones_like(gt, dtype=np.uint8)
 
-        return img_f, gt, fov_mask
+        if not mask_path.exists():
+            # No FOV mask: use full image as valid region
+            img_bgr = cv2.imread(str(self._img_path(sid)))
+            assert img_bgr is not None, f"cv2 failed to read DRIVE image {self._img_path(sid)}"
+            h, w = img_bgr.shape[:2]
+            return np.ones((h, w), dtype=np.uint8)
 
-    # ---------------------------------------------------------------------- #
-    #  Augmentation
-    # ---------------------------------------------------------------------- #
+        if _HAS_PIL:
+            mask_arr = np.array(PILImage.open(str(mask_path)).convert('L'))
+            return (mask_arr > 127).astype(np.uint8)
 
-    def _augment(self, img, gt, mask):
-        """Random H-flip, V-flip, 90° rotation."""
-        if random.random() > 0.5:
-            img = np.fliplr(img).copy()
-            gt = np.fliplr(gt).copy()
-            mask = np.fliplr(mask).copy()
-        if random.random() > 0.5:
-            img = np.flipud(img).copy()
-            gt = np.flipud(gt).copy()
-            mask = np.flipud(mask).copy()
-        k = random.randint(0, 3)
-        if k > 0:
-            img = np.rot90(img, k).copy()
-            gt = np.rot90(gt, k).copy()
-            mask = np.rot90(mask, k).copy()
-        return img, gt, mask
+        # Fallback to cv2 (may silently return all-zeros for .gif — documented risk)
+        mask_raw = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+        if mask_raw is not None:
+            return (mask_raw > 127).astype(np.uint8)
 
-    # ---------------------------------------------------------------------- #
-    #  Patch extraction
-    # ---------------------------------------------------------------------- #
-
-    def _random_crop(self, img, gt, mask, size):
-        h, w = img.shape[:2]
-        if h < size or w < size:
-            # pad first
-            pad_h = max(0, size - h)
-            pad_w = max(0, size - w)
-            img = np.pad(img, ((0, pad_h), (0, pad_w)), mode='reflect')
-            gt = np.pad(gt, ((0, pad_h), (0, pad_w)), mode='constant')
-            mask = np.pad(mask, ((0, pad_h), (0, pad_w)), mode='constant')
-            h, w = img.shape[:2]
-        y0 = random.randint(0, h - size)
-        x0 = random.randint(0, w - size)
-        return (img[y0:y0+size, x0:x0+size],
-                gt[y0:y0+size, x0:x0+size],
-                mask[y0:y0+size, x0:x0+size])
-
-    def _center_pad(self, img, gt, mask):
-        """Pad to pad_multiple boundary for full-image inference."""
-        img_p, _ = pad_to_multiple(img, self.pad_multiple)
-        gt_p, _ = pad_to_multiple(gt, self.pad_multiple)
-        mask_p, _ = pad_to_multiple(mask, self.pad_multiple)
-        return img_p, gt_p, mask_p
-
-    # ---------------------------------------------------------------------- #
-    #  __len__ / __getitem__
-    # ---------------------------------------------------------------------- #
-
-    def __len__(self):
-        return len(self.ids)
-
-    def __getitem__(self, idx):
-        sid = self.ids[idx]
-        img, gt, fov_mask = self._load_sample(sid)
-
-        if self.augment:
-            img, gt, fov_mask = self._augment(img, gt, fov_mask)
-
-        if self.patch_size is not None:
-            img, gt, fov_mask = self._random_crop(img, gt, fov_mask, self.patch_size)
-        else:
-            img, gt, fov_mask = self._center_pad(img, gt, fov_mask)
-
-        # --- to tensor ---
-        # img: (H, W) → (1, H, W)   float32
-        # gt:  (H, W) → (1, H, W)   float32 {0,1}
-        # fov: (H, W) → (1, H, W)   float32 {0,1}
-        img_t = torch.from_numpy(img).unsqueeze(0)          # (1, H, W)
-        gt_t = torch.from_numpy(gt.astype(np.float32)).unsqueeze(0)
-        fov_t = torch.from_numpy(fov_mask.astype(np.float32)).unsqueeze(0)
-
-        return {
-            'image': img_t,    # (1, H, W)  normalised green channel
-            'gt': gt_t,        # (1, H, W)  {0,1}
-            'fov': fov_t,      # (1, H, W)  {0,1} FOV mask
-            'id': sid,
-        }
+        # If cv2 returns None (not all-zeros), use full-image fallback
+        img_bgr = cv2.imread(str(self._img_path(sid)))
+        h, w = img_bgr.shape[:2]
+        return np.ones((h, w), dtype=np.uint8)

@@ -2,9 +2,9 @@
   "schema_version": 1,
   "project": "gdn2vessel",
   "template": "experiment",
-  "created": "2026-06-20T18:36:32+08:00",
-  "updated": "2026-06-20T18:36:33+08:00",
-  "from_phase": "P3/P4 命门re-ID可归因",
+  "created": "2026-06-20T20:24:25+08:00",
+  "updated": "2026-06-20T20:51:39+08:00",
+  "from_phase": "",
   "nodes": [
     {
       "id": "design",
@@ -15,9 +15,9 @@
       "gate": false,
       "group": "",
       "desc": "出实验矩阵，对齐判据",
-      "out": "Entry10 planner v2 设计闸",
+      "out": "planner+skeptic 0🔴: A1'等参臂+判据2改CDE分层,写进ACCEPTANCE+PHASE_4",
       "owner": "",
-      "ts": "2026-06-20T18:36:32+08:00"
+      "ts": "2026-06-20T20:51:39+08:00"
     },
     {
       "id": "redteam",
@@ -30,9 +30,9 @@
       "gate": false,
       "group": "",
       "desc": "攻设计致命伤（0 致命即过）",
-      "out": "Entry10 skeptic 2致命→拍A分层诚实",
+      "out": "skeptic三轮0🔴 (随design)",
       "owner": "",
-      "ts": "2026-06-20T18:36:32+08:00"
+      "ts": "2026-06-20T20:51:39+08:00"
     },
     {
       "id": "implement",
@@ -41,28 +41,29 @@
       "deps": [
         "redteam"
       ],
-      "status": "done",
+      "status": "skipped",
       "gate": false,
       "group": "",
       "desc": "实现各 run 脚本/config，自测 pytest",
-      "out": "Entry10/14 coder 433passed reid头+benchmark+datasets",
+      "out": "拆4并行块",
       "owner": "",
-      "ts": "2026-06-20T18:36:32+08:00"
+      "ts": "2026-06-20T20:25:10+08:00"
     },
     {
       "id": "integrate",
       "stage": "集成烟测",
       "agent": "主线",
       "deps": [
-        "implement"
+        "impl-verdict",
+        "impl-drive"
       ],
-      "status": "done",
+      "status": "pending",
       "gate": false,
       "group": "",
       "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
-      "out": "Entry14 真跑踩5缝全修+e2e烟测433passed n_images=8非mock",
+      "out": "",
       "owner": "",
-      "ts": "2026-06-20T18:36:33+08:00"
+      "ts": ""
     },
     {
       "id": "train",
@@ -71,13 +72,13 @@
       "deps": [
         "integrate"
       ],
-      "status": "running",
+      "status": "pending",
       "gate": true,
       "group": "",
       "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
       "out": "",
       "owner": "",
-      "ts": "2026-06-20T18:36:33+08:00"
+      "ts": ""
     },
     {
       "id": "analyze",
@@ -110,17 +111,58 @@
       "ts": ""
     },
     {
-      "id": "p3_todo",
-      "stage": "调研",
-      "agent": "researcher",
+      "id": "gate-accept",
+      "stage": "拍板",
+      "agent": "主线",
+      "deps": [
+        "redteam"
+      ],
+      "status": "done",
+      "gate": true,
+      "group": "",
+      "desc": "改ACCEPTANCE P4判据2: partial_corr→双判据(排列+中介直接效应)",
+      "out": "用户往下走=放行ACCEPTANCE判据2改动",
+      "owner": "",
+      "ts": "2026-06-20T20:51:39+08:00"
+    },
+    {
+      "id": "impl-verdict",
+      "stage": "写码",
+      "agent": "coder",
       "deps": [],
       "status": "pending",
       "gate": false,
-      "group": "parallel_now",
-      "desc": "清P3 baseline TODO:creatis LICENSE404/cbDice权重1:1:1/DSCNet TCLoss/normalize+augment官方源(只碰reference/+BASELINE_SPEC,禁碰src/)",
+      "group": "",
+      "desc": "reid_verdict_v2升级:多集聚合+image_id集前缀+LMM C(dataset)+平台斜率+FIVES子采样seed42",
       "out": "",
       "owner": "",
       "ts": ""
+    },
+    {
+      "id": "impl-drive",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "drive.py迁base_vessel canonical API(held-out定义=拍板点)",
+      "out": "drive.py→BaseVessel子类验过,逮cv2 gif全零bug改PIL,held-out TEST_IDS留TODO拍板",
+      "owner": "",
+      "ts": "2026-06-20T20:51:39+08:00"
+    },
+    {
+      "id": "scout-baseline",
+      "stage": "调研",
+      "agent": "researcher",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "P3 baseline残留TODO:creatis LICENSE/cbDice权重/DSCNet TCLoss/normalize+augment官方/MambaVesselNet 2D",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-20T20:38:40+08:00"
     }
   ]
 }

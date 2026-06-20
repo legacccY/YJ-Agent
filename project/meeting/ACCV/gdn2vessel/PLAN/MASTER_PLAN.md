@@ -51,6 +51,7 @@
 - 验收硬阈值 → [`../ACCEPTANCE_CRITERIA.md`](../ACCEPTANCE_CRITERIA.md)
 - 数据/脚本/baseline 全景 → [`../DATA_INVENTORY.md`](../DATA_INVENTORY.md)
 - P3 baseline 全谱准备规格（roster/官方超参/harness 设计） → [`BASELINE_SPEC.md`](BASELINE_SPEC.md)
+- 多窗任务 + 各节点完成线 DoD（承 Entry 14 待续，配 Conductor 图） → [`WINDOW_TASKS.md`](WINDOW_TASKS.md)
 - 进度日志 → [`../PROJECT_LOG.md`](../PROJECT_LOG.md)
 - 批准 plan（GDN-2 选型链） → `~/.claude/plans/d-yj-agent-project-meeting-accv-2024-acc-keen-pony.md`
 - 数据集真源 → `.portfolio/datasets.json`

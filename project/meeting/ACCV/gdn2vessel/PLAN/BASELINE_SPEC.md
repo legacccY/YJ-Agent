@@ -26,7 +26,7 @@
 | A9 | **VM-UNet** | architecture(SSM) | github.com/JCruan519/VM-UNet | Apache-2.0 | **mamba** | 通用 Mamba baseline；无 DRIVE 官方数字需自训 |
 | A10 | **U-Mamba** | architecture(SSM) | github.com/bowang-lab/U-Mamba | Apache-2.0 | **mamba** | nnUNet+Mamba |
 | A11 | **MambaVesselNet++** | architecture(SSM) | github.com/CC0117/MambaVesselNet | MIT | **mamba** | DRIVE Dice 0.711 = 通用模型真实代价非 bug（已核） |
-| A12 | **creatis plug-and-play** | **postproc 续连** | github.com/creatis-myriad/plug-and-play-reco-regularization | （核 license TODO） | main | ★skeptic 🔴 必补：headline 唯一正面对照（learned post-processing 续连，挂统一 backbone 输出后），坐实 Claim 1「in-model vs post-processing」；含 2D STARE 训练流程可比 |
+| A12 | **creatis plug-and-play** | **postproc 续连** | github.com/creatis-myriad/plug-and-play-reco-regularization | ⚠️**无 LICENSE**（默认 All Rights Reserved，详 §7.4） | main | ★skeptic 🔴 必补：headline 唯一正面对照（learned post-processing 续连，挂统一 backbone 输出后），坐实 Claim 1「in-model vs post-processing」；含 2D STARE 训练流程可比 |
 
 → **档 A = 12 个**，达 ≥12。A9-A11 mamba 依赖（cu126 兼容已查可行，见 §3）。**A12 creatis 是 skeptic 红队补的续连赛道唯一直接对手（原 OCTAMamba 因 OCTA 域不对口移 P5 跨域，见 §5 风险裁决）。**留余量见档 B。
 
@@ -55,7 +55,7 @@
 |---|---|---|---|---|---|---|---|---|
 | FR-UNet | Adam wd1e-5 | 1e-4 | CosineAnneal T=40 | 40 | 512 | **patch 48×48 stride6** | BCELoss | **灰度**+minmax，无 CLAHE |
 | CS-Net | Adam wd5e-4 | 1e-4 | PolyLR p=0.9 | 1000 | 8 | 整图 512（resize） | MSE+Dice | RGB，无 CLAHE |
-| DSCNet | AdamW betas(.9,.95) | 1e-4 | ReduceLROnPlateau | 400(val@ep200) | 1 | ROI 224 | TCLoss=CE+Hausdorff **一体无独立权重** | ROI crop |
+| DSCNet | AdamW betas(.9,.95) | 1e-4 | ReduceLROnPlateau | 400(val@ep200) | 1 | ROI 224 | **`cross_loss`(BCE)**（官方 DRIVE 实测；TCLoss 未开源，见 §7.3） | ROI crop |
 | nnU-Net | SGD m0.99 nesterov wd3e-5 | 1e-2 | PolyLR | 1000 | 自动 | 自动 patch | DC+CE 深监督 | 自动流水线 |
 | PASC-Net | nnU-Net(自配置) | nnU-Net | nnU-Net | 300 | 自动(~2) | 512（FIVES 2048 裁） | 0.7·DC_CE+0.1·con1+0.1·con3+0.1·clDice | nnU-Net |
 | clDice(loss) | 配 backbone | — | — | — | — | — | soft-clDice **α=0.5（repo default 确认）** | 随 backbone |
@@ -69,12 +69,12 @@
 **档 B 补充超参**：SA-UNetv2 = Adam lr1e-3，0.5BCE+0.5MCC，DropBlock0.15/bs7，epochs150+early stop，整图 592（DRIVE）。MM-UNet = AdamW lr0.001 warmup2+cosine min1e-7，bs5(DRIVE)/2(STARE)，epochs500，input608/704，loss TODO。TFFM = AdamW lr1e-3 bs10 epochs500 input512，Tversky+soft-clDice λ0.5，backbone=UNet++ +EfficientNet-B0。
 
 **TODO 槽位**（researcher 二轮已回填大部，下为状态）：
-- ✅ DSCNet：AdamW betas(.9,.95)/lr1e-4/bs1/ROI224/400ep（直读 GitHub raw `S0_Main.py`+`S3_Train_Process.py`）。TCLoss=CE+Hausdorff 一体无独立权重（源码 `cross_loss`）。
+- ✅ DSCNet：AdamW betas(.9,.95)/lr1e-4/bs1/ROI224/400ep（直读 GitHub raw `S0_Main.py`+`S3_Train_Process.py`）。**⚠️ 旧表述「TCLoss=CE+Hausdorff 一体」更正（scout-baseline 复核 2026-06-20）**：官方 DRIVE 2D 训练代码 `S3_Train_Process.py` = `from S3_Loss import cross_loss; criterion=cross_loss()` **纯 BCE**，`S3_Loss.py` 全文只有 `crossentry`/`cross_loss`(BCE)/`Dropoutput_Layer`（另一论文变体），**无 TCLoss/无 Hausdorff/无 topology loss**（git tree recursive 全搜无对应文件）。TCLoss（persistent homology）只在论文 arXiv 2307.08388 正文描述，官方代码未开源 → **复现忠实走 BCE，不自补 TCLoss（复现零偏离）**。现 adapter `cross_loss(BCE)` 写法 = 对。
 - ✅ PASC-Net：300ep（`nnUNetTrainer.py num_epochs=300`）+ loss=0.7·DC_CE+0.1·con1+0.1·con3+0.1·clDice（train_step 实测）。
-- ✅ cbDice：DRIVE 2D = nnU-Net V2 20ep/bs2/β0.5（arXiv2407.01517 Table 2）。
+- ✅ cbDice **权重已核源更正（scout-baseline 2026-06-20）**：官方 `nnUNetTrainer_CE_DC_CBDC.py::_build_loss()` = `lambda_ce = lambda_dice + lambda_cbdice` → **`2.0·CE + 1.0·Dice + 1.0·cbDice`**（CE 刻意加倍维持 CE 与拓扑 loss 总量对齐，`compound_cbdice_loss.py::forward()` 末行实证）。**现 adapter 写 `0.5·BCE + Dice + 0.5·cbDice` 与官方不符 → impl 阶段须改成 2:1:1（CE:Dice:cbDice），官方用 RobustCrossEntropyLoss 多类 CE，二值近似 BCE 但比例必须对齐**。训练设置 DRIVE 2D=nnU-Net V2 20ep/bs2/β0.5（arXiv2407.01517 Table 2）。
 - ✅ clDice：α=0.5（repo `cldice.py` default）；loss 类配统一 backbone 无需官方 DRIVE 训练设置。
-- ✅ MambaVesselNet++：Dice 0.711 = 通用多模态模型真实代价（非 bug、非 metric 异，标准 2GP/(G+P)），200ep/bs16/Adam+Cosine。
-- ⬜ 剩余真 TODO：clDice 官方 DRIVE lr/optimizer（appendix E 403，repo 无训练脚本——loss 类用统一 backbone 不阻塞）；MambaVesselNet++ 2D input size（repo train.py 是 3D，arXiv 2D 分支未同步，用时以 arXiv 配置为准或 issue 作者）；DSCNet TCLoss Hausdorff 实现细节（运行时实测）；各 SSM augmentation。
+- ✅ MambaVesselNet++：Dice 0.711 = 通用多模态模型真实代价（非 bug、非 metric 异，标准 2GP/(G+P)），200ep/bs16/Adam+Cosine。**⚠️ 2D 复现裁决（scout-baseline 2026-06-20）**：repo `model_mvn/mvn.py` 全 Conv3d **无 2D path**，`train.py` patch_size=(64,64,64) 纯 3D 脑血管 CT；arXiv 2507.19931 §4.3 只写「2D epoch=200 bs=16」**无 input size/无 normalize/无 augment**，论文 §3.4 声称的 2D/3D adaptive 切换 repo 未实现 → **代码与论文 claim 不一致，复现零偏离下不自补 2D 实现，建议降档 C（不进 L3 同框架对比，仅引文献数字标 unavailable）或 issue 作者**。拍板点。
+- ⬜ 剩余真 TODO：clDice 官方 DRIVE lr/optimizer（appendix E 403，repo 无训练脚本——loss 类用统一 backbone 不阻塞）；CS-Net RandEnhance factor 区间（源码 `random.uniform(-2,2)` 含负值，PIL ImageEnhance 语义需人工核原行）；DSCNet MONAI augment 各 transform 确切 prob 阈值（摘要版 0.3/0.5，需逐行核 `prob=`）；VM-UNet/MambaVesselNet++ DRIVE normalize（官方无 DRIVE 条目，自算训练集 mean/std 或 [0,1]，拍板）；U-Mamba `custom_transforms/` 目录内容（需 clone 确认是否覆盖 nnU-Net DA5 默认）。
 
 ---
 
@@ -171,10 +171,10 @@ researcher 回填官方超参 ─┘
 |---|---|---|---|---|
 | fr_unet | architecture | main | ✅ 官方 curl 忠实移植 + 滑窗推理 self-contained | normalize mean/std + augment 官方未公开 |
 | cs_net | architecture | main | ✅ 官方 curl 忠实移植 | normalize（官方仅 /255）+ augment |
-| dscnet | architecture | main | ✅ DSConv 纯 PyTorch + cross_loss(BCE) | ⚠️ 官方 DRIVE 代码**只有 cross_loss(BCE) 无 TCLoss**（TCLoss 变体在另 repo），现忠实按 DRIVE 官方走 BCE；augment 未公开 |
-| creatis_postproc | architecture(两段式) | main | ✅ 官方 curl + postproc 挂 backbone 输出后 | ⚠️ **LICENSE 404**（CeCILL 据 README，未确认不纳入发表红线→researcher 核或联系作者）；Stage-2 需 monai + 断点训练数据 |
+| dscnet | architecture | main | ✅ DSConv 纯 PyTorch + cross_loss(BCE) | ✅ **TCLoss 核实闭环（scout-baseline 2026-06-20）**：官方 DRIVE 只 `cross_loss(BCE)`，TCLoss(persistent homology) 仅论文 arXiv2307.08388 描述**未开源** → 忠实走 BCE = 对（**非「变体在另 repo」，是根本未公开**）；augment 已补（§7，MONAI pipeline） |
+| creatis_postproc | architecture(两段式) | main | ✅ 官方 curl + postproc 挂 backbone 输出后 | ⚠️ **LICENSE 核实闭环（scout-baseline 2026-06-20）= 无 LICENSE 文件**（main+master 404，README 无 CeCILL 字样=传言错，arXiv 无 license）→ 默认 All Rights Reserved，**数字/方法引用 OK，但 vendor 代码法律上不允许**，须 issue 作者确认授权（详 §7.4，拍板点）；Stage-2 需 monai + 断点训练数据 |
 | cldice | loss | main | ✅ 官方 soft_dice_cldice α0.5 配统一 backbone | — |
-| cbdice | loss | main | ✅ 官方移植去 monai/nnUNet 依赖 | ⚠️ 混合权重：现 0.5BCE+Dice+0.5cbDice，官方 nnUNet 是 1:1:1 三路等权→researcher/拍板定 |
+| cbdice | loss | main | ✅ 官方移植去 monai/nnUNet 依赖 | ⚠️ **权重核源闭环（scout-baseline 2026-06-20）**：现 `0.5BCE+Dice+0.5cbDice` **与官方不符**，官方 `nnUNetTrainer_CE_DC_CBDC` = **2·CE+1·Dice+1·cbDice**（`lambda_ce=lambda_dice+lambda_cbdice`）→ **impl 阶段改成 2:1:1** |
 | skeleton_recall | loss | main | ✅ 官方 SoftSkeletonRecallLoss 移植 | 混合权重同上；skel GT forward 内实时算（略慢） |
 | vm_unet | architecture | **mamba** | ✅ vendor + adapter，无 mamba_ssm 时 RuntimeError | wd/normalize/rotation 官方未明示；需 HPC mamba_venv build |
 | u_mamba | architecture | **mamba** | ✅ adapter 占位（nnUNet 命令行路径） | 需 nnUNet 自配置 + mamba_venv |
@@ -218,3 +218,44 @@ researcher 回填官方超参 ─┘
 档 A：FR-UNet(github.com/lseventeen/FR-UNet, MIT, JBHI22 DRIVE F1 0.8316) · CS-Net(github.com/iMED-Lab/CS-Net, MIT) · DSCNet(github.com/YaoleiQi/DSCNet, MIT, ICCV23 DRIVE Dice 82.06) · nnU-Net(github.com/MIC-DKFZ/nnUNet, Apache) · PASC-Net(github.com/IPMI-NWU/PASC-Net, Apache, FIVES 91.83, preprint 2507.04008) · clDice(github.com/jocpae/clDice, MIT, CVPR21) · cbDice(github.com/PengchengShi1220/cbDice, Apache, MICCAI24 DRIVE Dice 82.5) · Skeleton Recall(github.com/MIC-DKFZ/Skeleton-Recall, Apache, ECCV24 DRIVE Dice 80.99) · VM-UNet(github.com/JCruan519/VM-UNet, Apache) · U-Mamba(github.com/bowang-lab/U-Mamba, Apache) · MambaVesselNet++(github.com/CC0117/MambaVesselNet, MIT, TOMM25) · OCTAMamba(github.com/zs1314/octamamba, Apache, ICASSP25)
 
 档 C：HM-Mamba(Entropy25, PMC12385817) · VFGS-Net(arXiv2602.10978) · SCS-Net(MedIA21) · TopoMamba(arXiv2604.25545)
+
+---
+
+## 7. scout-baseline 闭环（2026-06-20，researcher×4 核源回填）
+
+> 服务 conductor `scout-baseline` 棒，清 Entry 13 残留 5 TODO。**复现零偏离**：全表官方源码直读为证，查不到显式标 TODO 绝不臆想。仅碰 reference/ + 本文件。
+
+### 7.1 官方 normalize（预处理层，尊重官方配方）
+
+| 方法 | 图像模式 | normalize | 源文件 |
+|---|---|---|---|
+| FR-UNet | 灰度单通道 | **两步**：①全集 global mean/std `Normalize([mean],[std])` ②per-image minmax→[0,1]（预处理阶段 pickle 存盘，无 CLAHE） | `data_process.py::normalization()` |
+| CS-Net | RGB 三通道 | **仅 `ToTensor()`（/255→[0,1]），无 mean/std** | `dataloader/drive.py` |
+| DSCNet | 灰度单通道 | **z-score**：`(image-mean)/std`，mean/std 由 `S1_Pre_Getmeanstd.py` 全训练集计算存 `.npy`（非固定常数）；label `/max` | `S3_Dataloader.py` |
+| VM-UNet | RGB 三通道 | 自定义 `myNormalize` 按数据集预算 mean/std 后 z-score 再 rescale→[0,255]。**⚠️ 官方无 DRIVE 条目**（只 ISIC/Synapse）→ DRIVE 需自算 mean/std 或 [0,1]（TODO 拍板） | `utils.py::myNormalize` |
+| U-Mamba | 继承 nnU-Net v2 | nnU-Net 自动：CT=[0.5,99.5]百分位裁剪+全集 z-score；其他模态=per-patient z-score | `nnUNetv2_plan_and_preprocess`（无覆盖） |
+
+### 7.2 官方 augmentation（尊重官方配方；查不到标 TODO）
+
+| 方法 | augment（transform + 参数 + 概率） | 源文件 |
+|---|---|---|
+| FR-UNet | HFlip p0.5 · VFlip p0.5 · `Fix_RandomRotation` 等概率选 {-180°,-90°,0°,90°}（各25%）。image+gt 同 seed 同步。仅 training。**无 elastic/无 color** | `dataset.py` + `utils/helpers.py` |
+| CS-Net | rotate `randint(-40,40)`° 100% · HFlip p0.5 · RandomCrop 512×512 100%（STARE scale1=688）· RandEnhance p0.5 选{Brightness/Color/Contrast/Sharpness} factor `uniform(-2,2)`（**TODO 负值区间 PIL 语义需人工核原行**）。test 仅 resize512 | `dataloader/drive.py` |
+| DSCNet | **MONAI dict pipeline**，外层 80% 触发（20% pass）：Orientation 70% · Affine或2D-Elastic 70%二选一（Affine: trans±30px/rot±π/36/scale±0.15；Elastic: spacing20/mag1/trans10-20/rot±π/36）· ScaleIntensityRange 50% · GaussianNoise或Smooth 50%互斥。**TODO 各 transform 确切 prob 逐行核** | `S3_Data_Augumentation.py` |
+| VM-UNet | HFlip p0.5 · VFlip p0.5 · rot[0,360]° p0.5 · rot90(k0-3) p0.5 · ±20° p0.5 · resize→256 bicubic。无 elastic/color | `configs/config_setting.py` + `datasets/dataset.py` |
+| U-Mamba | nnU-Net v2 默认 DA5（裁剪/旋转/缩放/镜像/高斯噪声+模糊/亮度对比/低分模拟/gamma）。**⚠️ AMP→Mamba nan，须用无 AMP trainer**（官方 README）。**TODO `custom_transforms/` 是否覆盖默认需 clone 确认** | nnU-Net 框架默认 |
+
+### 7.3 cbDice 权重 / DSCNet TCLoss（loss 核源，已并入 §1 TODO 槽位）
+
+- **cbDice**：官方 `2.0·CE + 1.0·Dice + 1.0·cbDice`（`nnUNetTrainer_CE_DC_CBDC.py::_build_loss()` 显式 `lambda_ce=lambda_dice+lambda_cbdice`；`compound_cbdice_loss.py::forward()` 末行 `weight_ce*ce+weight_dice*dc+weight_cbdice*cbdice`）。现 adapter `0.5BCE+Dice+0.5cbDice` **错→ impl 改 2:1:1**。
+- **DSCNet TCLoss**：官方 DRIVE 2D **纯 BCE**（`cross_loss`），TCLoss(persistent homology) 仅 arXiv2307.08388 正文描述、**官方代码未实现/未公开**，git tree 全搜无 topology/hausdorff 文件 → **忠实走 BCE，不自补**。现 adapter 对。
+
+### 7.4 ⚠️ creatis (A12) LICENSE 裁决（拍板点，影响发表合规）
+
+**核实闭环**：repo 无 LICENSE/COPYING 文件（main+master HTTP 404，GitHub API `license:None`，子目录亦无），**README 全文无 CeCILL 字样**（Entry 13「CeCILL 据 README」=传言错/误记），arXiv 2404.10506 代码可用性声明仅含 repo URL 无 license 术语。
+- **法律性质** = 无 license 文件 = 默认 **All Rights Reserved**（中/法/美法域：公开不等于授权使用/修改/再分发）[choosealicense.com/no-permission]。
+- **可做**：论文里作 baseline 跑实验 + cite 两篇论文 + 引用方法/数字 = 学术引用，风险低。
+- **不可做**：**vendor 其代码进我们公开 repo = 代码再分发，无授权法律上不允许**。
+- **行动（拍板点）**：① GitHub issue 问作者授权（"What license? want to use as baseline in academic publication + include in supplementary repo"）；② 退路=只本地跑不在公开 repo 含其代码（风险极低）；③ 若作者确认 CeCILL-B(类BSD,保留attribution即可vendor)/CeCILL-C(类LGPL,仅改动文件传染)/CeCILL(全copyleft,衍生须同license)→按变体定 vendor 策略。**A12 是 skeptic 红队补的 headline 唯一正面对照，license 不清前不在公开 repo vendor 代码**。
+
+**关键引用（scout-baseline）**：cbDice `nnUNetTrainer_CE_DC_CBDC.py`/`compound_cbdice_loss.py` · DSCNet `S3_Loss.py`/`S3_Train_Process.py`(BCE) + arXiv2307.08388(TCLoss未开源) · FR-UNet `data_process.py`/`dataset.py`/`helpers.py` · CS-Net `dataloader/drive.py` · DSCNet `S3_Dataloader.py`/`S3_Data_Augumentation.py` · VM-UNet `config_setting.py`/`utils.py`/`datasets/dataset.py` · U-Mamba README + nnUNet discussion#2363 · MambaVesselNet++ `mvn.py`(纯3D)+arXiv2507.19931§4.3 · creatis GitHub API(license:None)+arXiv2404.10506+CeCILL(Wikipedia/TLDRLegal)+choosealicense.com/no-permission

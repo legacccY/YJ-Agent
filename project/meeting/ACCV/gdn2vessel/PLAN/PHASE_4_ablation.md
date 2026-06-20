@@ -14,7 +14,32 @@ P3 跑通（主实验 + benchmark 有结果）。
 5. **reorder 多向数扫**（2/4/8 向）
 6. **flatten 序列长度扫**（256/512/1K/2K，看检索衰减——对应容量约束）
 7. **记忆插入深度扫**
-8. **delta-rule vs 普通线性 attn**（证 delta-rule 关联记忆必要性）
+8. **delta-rule vs 等参普通线性 attn（= 命门 A1' 臂，升格进 re-ID 可归因预登记表）**
+   —— 证「re-ID 增益来自 delta-rule 关联记忆机制，非加注意力模块的容量」。
+   - **A1' 定义（等参非 delta-rule 线性注意力臂）**：保留 GDN2MemoryModule 的
+     proj_q/k/v/out 投影、LayerNorm、同一插入深度、同 Frangi 门信号通路与训练预算，
+     **唯一改动** = 把有状态的 gated delta-rule 关联更新（FLA gated_delta_rule，
+     含 erase/write delta 项 v−Sk 与衰减状态 S_t）替换为**无状态普通线性注意力**
+     聚合（softmax-free linear attention，o = φ(q)·Σφ(k)ᵀv 形式，无 S 状态传递、
+     无 erase/write 门对记忆的读写）。
+   - **等参定义（预登记，阈值写死）**：A1' 与 A2 的**可训练参数总量差 ≤ ±5%**
+     （以 `sum(p.numel() for p in module.parameters() if p.requires_grad)` 为准，
+     全模型口径）。delta-rule 算子无额外可训练参数，A1' 用同投影集 → 参数量预期 ≈0% 差。
+     若替换后 numel 差 >5% → coder 必须报回 planner 重对齐，**禁默许超阈**。
+     三臂 numel 实测值写进论文表脚注（留痕）。
+   - **归因链目标**：A2 > A1' > A0'。
+       - A2 > A1'：证 **stateful associative memory 整体（delta-rule 更新 + 递推状态 S_t）**
+         vs **stateless linear attention** 的净贡献。注：S_t 是激活态存储不计入 numel，
+         但属机制本身、与 A1' 绑定不可再细分——**不单 claim「delta 更新公式这一行算子」
+         的贡献**，claim 的是「有状态关联记忆」这一整体机制。
+       - A1' > A0'：证「加注意力模块（容量）」本身的贡献（A0' = 无任何记忆/注意力模块的纯 CNN）。
+   - **与命门关系**：本项即 re-ID 可归因预登记表的 A1' 臂，**不另起 run**，与 A0'/A2
+     同 seed/split/超参三臂同跑（见 ACCEPTANCE 预登记表），避免与该消融重复跑。
+   - **🟠 coder 实现规范（写进交接，不改设计骨架）**：
+       - A1' 中 proj_write/proj_erase/proj_g **不得变成死参**——须真接入无状态注意力计算图
+         （如门信号作用在 linear-attn 输出/聚合权重上），保持与 A2 同投影集且参与前向。
+       - **跑后审计**：训完审计 A1' 这三组投影的梯度 ≠ 0（grad norm 写附录留痕）。
+         给不出此审计 = 等参对照不成立（死参≠等参），该缺陷升 🔴。
 9. **记忆 state 维度扫**
 10. **续连率/re-ID 率 vs 断点 severity 曲线**
 
