@@ -1,5 +1,44 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 22 — 2026-06-20→21 主窗 HPC 发起命门 Stage-1：真跑逮 5 集成 bug 全修 → A2 完成 + A1' 验通（收工）
+
+承 Entry 18。用户连续放行（跑/起/放行 HPC）→ 主窗串行走 HPC 链发起正式命门。**这是命门 v2 首次真 GPU 训练**，全程检测验收（不信窗自报，git diff/stub-fla/真 HPC 核）。
+
+### 前置收口（M/N/O 三并行窗，主窗检测验过）
+- **p3-baseline-ready(O)**：12 adapter 构建烟测 91 测试 / 652 passed + baseline_job.sbatch.template（含 --qos）+ BASELINE_ENV_READINESS.md（mamba cu126/sm89 wheel 调研）+ config 2:1:1。
+- **p3-prep(M)**：PHASE_3_MATRIX.md（P3 主实验矩阵，对齐 L3/L6，诚实标 train_harness.py 缺=命脉）。
+- **writing-rw(N)**：§2 RW + §3 method 草（**零臆造数字全 \TODO placeholder**，GDKVM 时序 vs 空间硬区分）。
+- **拍板裁定**：HRF18 子采样（守预登记 n50 防 HARKing，主线补 SUBSAMPLE_N dict，J 窗末写曾覆盖→重应用）；creatis 自复现；DRIVE held-out=CHASE + 标准 20/20 主 Dice 表保留（重下 GT）。
+
+### ★HPC 真跑逮 5 集成 bug 全修（pytest 全绿照不到，会让命门崩/假 FAIL）
+gpu_slot GO（hpc 1 卡）→ 上传 23 文件 → recon + 真跑逐个暴露：
+1. **env gdn2venv** 误判不存在 → 真身在 root 级 `/gpfs/.../gdn2venv/`（fla✓ torch2.9+cu126，对上 Entry14），模板 env 正确。
+2. **benchmark_dir 路径**：launcher per-set `data/vessel/<DS>/benchmark_cache` 错 → 实际扁平 `data/benchmark_cache`（CHASE 8NPZ+manifest 在那），改 BENCH_CACHE_DIR 共享。
+3. **sbatch 缺 `--qos=4gpus`** → Invalid qos specification，加上才提交成功。
+4. **HRF loader** 只试 `.jpg/.tif` 漏大写 `.JPG`（实际 `01_dr.JPG`）→ precompute 全 HRF 读不到，改多扩展名鲁棒 `_first_existing`，HPC 验 `06_dr.JPG`✓。
+5. **A1' None memory_state**（headline 关键）：linear_attn 无状态给含 None 的 list，`reid_head.forward:458 s.detach()` 撞 None → A1' 崩。**unit 测试没覆盖 reid_head+memory_state 路径（又真跑才暴露）**。修=list comp guard None，下游不再用 memory_state（只为未来 KV detach），pytest 652。
+> 监控自身 glob bug：`reid_chase_linear_attn_*.err` 混新旧 job 读了旧崩日志误报"又崩"，scope 到单 job 1478871 才确认修复生效。
+
+### 命门 Stage-1 结果（收工时）
+- **A2(memory) COMPLETED**（job 1478836，59min 早停 ep80，CSV 65 行=8 evals×8 图）。健康：reid_rate 0.24→0.59 微升、ε_β0 530→29 降（续连随训练变好）、零 NaN。**memory 臂 + 全链完整验通**。
+- **A1'(linear_attn) 修复后真跑出 eval**（job 1478871，ep10 reid_rate 0.41/0.47）= None 修复确证 + 新等参臂 HPC 跑通。
+- **A0'(cnn) 排队**（1478872）。
+- precompute n50：chase8✓ stare4✓ **hrf 修后生成中（→18）** fives 待。
+
+### 待续（下轮起点）
+1. **A1'/A0' 跑完** → `reid_verdict_v2` 喂三臂 CSV 出命门 verdict（A2>A1'>A0' 精确排列 + CDE 分层）。**⚠️ 留意效应量**：ep10 A1'(0.41-0.47) 与 A2 同区间——若 final A2≈A1' 则 headline 弱（接 Entry18 待续6 出彩度）。
+2. **precompute 补齐 n50**（hrf→18 完成 + fives→20）。
+3. **batch-1 全 12**（4 集×3 臂×1 seed，等 precompute 齐）→ 干净 → 全 36（92 GPU·h）。
+4. ⭐ **出彩度严格红队**（Entry18 待续6）：A2 vs A1' 真实差距出来后派 skeptic + researcher。
+5. gpu_slot 仍占（A1'/A0' 跑着，未 release）；DRIVE test GT 重下（数据任务）；train_harness.py 建（P3 命脉，Entry M 矩阵标的）。
+
+### 教训（反跑偏）
+- **真跑 >> pytest 三度坐实**：本轮 5 集成 bug（路径/qos/HRF扩展名/A1'None/env误判）全 pytest 绿照不到，靠 HPC recon + 真跑逐个暴露。→ 新代码上 HPC 前 recon 现状（env/路径/数据命名）+ 真跑前几分钟盯崩。
+- **监控覆盖要 scope 准**：glob 混新旧 job 日志 → 误报。盯单次运行要锁 jobid。
+- **HRF18 多窗竞态**：主线改窗 territory 文件被窗末写覆盖 → 窗 done 后再改 + 立即 commit 抢。
+
+---
+
 ## Entry 21 — 2026-06-20 写作棒：§2 Related Work + §3 Method 首版草稿（writer，数字全占位待 verifier）
 
 writer 派单写 §2/§3。territory 只碰 paper 草稿，不动 src/实验/数字。新建 `paper/sections/`，产出两个 standalone LNCS section（可 `\input` 进 main）：

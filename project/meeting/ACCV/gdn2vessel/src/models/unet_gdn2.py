@@ -454,10 +454,12 @@ class ReIDReadoutHead(nn.Module):
         # ------------------------------------------------------------------- #
         if memory_state is not None:
             if isinstance(memory_state, (list, tuple)):
-                # Per-direction states: detach each individually
+                # Per-direction states: detach each individually.
+                # A1'(linear_attn 无状态) 给的是含 None 元素的 list（无递推 state S_t）→
+                # 必须 guard None（HPC 真跑 2026-06-20 逮：A1' s=None 撞 .detach，unit 测试没覆盖此路径）。
                 memory_state = [
-                    s.detach() if self.detach_memory_train else s   # ★detach2
-                    for s in memory_state
+                    (s.detach() if self.detach_memory_train else s) if s is not None else None
+                    for s in memory_state   # ★detach2
                 ]
             else:
                 if self.detach_memory_train:
