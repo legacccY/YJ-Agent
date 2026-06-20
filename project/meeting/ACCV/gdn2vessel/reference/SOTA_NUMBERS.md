@@ -28,6 +28,7 @@
 | **VFGS-Net** | 2026-02/arXiv 2602.10978 | **Dice** | **0.8323** | 核实 ✓ |
 | HREFNet | 2025/arXiv 2504.13553 | F1/Dice / **clDice** / AUC | 0.8214 / **0.8240** / 0.9856 | 罕见报 clDice |
 | **TA-Mamba** | 2025/Multimedia Systems (preprint rs-5164628) | Dice / **clDice** / AUC / IOU / SE / SP | 0.8248 / **0.8321** / 0.9864 / 0.7021 / 0.8476 / 0.9882 | **主流簇 + 报 clDice（拓扑直接竞品，clDice>HREFNet）**，preprint 全文已核 ✓ |
+| **MVM-UNet** | 2025/BSPC Vol112 Art108435 | Dice / mIoU / Acc / Sp / Se | 0.8184 / 0.6926 / 0.9683 / 0.9786 / 0.8547 | 主流簇；不报 clDice；ScienceDirect 全文已核 ✓ |
 | ⚠️ MM-UNet | 2025/arXiv 2511.02193 | F1/Dice (Se) | 0.8959 (0.8933) | **高簇·协议不可比**（Table I，绝对值已核）|
 | ⚠️ RV-GAN | MICCAI 2021/arXiv 2101.00535 | Dice / AUC | 0.8690 / 0.9887 | **高簇·协议不可比**（Dice 来自 benchmarking 2406.14994 Table 2 Dice 列，AUC 另列；原文 headline 只报 AUC）|
 
@@ -48,6 +49,7 @@
 | VFGS-Net | 2026-02 | Dice | 0.8143 |
 | HREFNet | 2025 | F1/Dice / **clDice** / AUC | 0.8046 / **0.8293** / 0.9878 |
 | **TA-Mamba** | 2025/preprint rs-5164628 | Dice / **clDice** / ACC / AUC | 0.8168 / **0.8448** / 0.9769 / 0.9899 | preprint 核 ✓ |
+| **MVM-UNet** | 2025/BSPC Art108435 | Dice / mIoU / Acc | 0.8146 / 0.6872 / 0.9762 | 全文核 ✓ |
 
 **CHASE Dice 天花板 ≈ 0.82–0.85**（EFDG-UNet 0.8469 最高）。
 
@@ -63,6 +65,7 @@
 | HREFNet | 2025 | F1/Dice / clDice | 0.7629 / 0.8030 | STARE 偏低，疑 split 差异 |
 | FA-Net (Universal) | 2025/arXiv 2502.06987 | Dice / **clDice** | 0.8357 / **0.8763** | 多模态 |
 | **TA-Mamba** | 2025/preprint rs-5164628 | Dice / **clDice** / ACC | 0.8159 / **0.8515** / 0.9738 | split=前10训/后10测；preprint 核 ✓ |
+| **MVM-UNet** | 2025/BSPC Art108435 | Dice / mIoU / Acc | 0.8242 / 0.7010 / 0.9778 | 全文核 ✓（另一对比表 Table4=0.8112，不同组/split）|
 | ⚠️ MM-UNet | 2025/arXiv 2511.02193 | F1/Dice | 0.9177 | **高簇·协议不可比**（Table I）|
 
 **STARE Dice 天花板（主流簇）≈ 0.85**（FSG-Net 0.8510 可核 / MDFI-Net 0.8581 LOO 待谨慎）。MM-UNet 0.9177 属高簇协议不可比，不当天花板。**原 STORY 锁定表 STARE 83.21（VFGS-Net）偏低，已上修。**
@@ -109,9 +112,10 @@
 - ✅ **MM-UNet 绝对值已获**：DRIVE 0.8959 / STARE 0.9177（arXiv 2511.02193 Table I）→ 高簇协议不可比。
 - ✅ **MDFI-Net split 核实**：DRIVE 官方 20/20 + STARE leave-one-out（split 干净，非自切漏数据；STARE LOO 方差大谨慎引）。
 - ✅ **TA-Mamba 全文数字攻下**（Playwright 下 ResearchSquare 免费 preprint PDF rs-5164628）：DRIVE Dice 0.8248/clDice 0.8321、CHASE 0.8168/0.8448、STARE 0.8159/0.8515（split 前10训后10测）。**是主流簇 + 报 clDice 的拓扑直接竞品**。
-- ✅ **Birmingham「Multi-scale Vision Mamba-UNet」定位**：BSPC Vol112 Art108435, DOI 10.1016/j.bspc.2025.108435（无 arXiv），MVSS+DMFII，测 DRIVE/CHASE/STARE/HRF。
+- ✅ **Birmingham MVM-UNet 全文数字攻下**（Playwright + 用户机构认证 + 手动过 captcha 下 ScienceDirect 全文）：DRIVE 0.8184 / CHASE 0.8146 / STARE 0.8242，全主流簇，**不报 clDice**。BSPC Vol112 Art108435（无 arXiv）。
 
 **仍未攻下**：
-- **Birmingham MVSS-UNet 具体 F1/AUC**：ScienceDirect 全文需 captcha 人机验证（2026-06-20 用户认证后仍弹 captcha，待人工过验后重抽）。
+- **MVM-UNet HRF 数字**：摘要称测 HRF，但 8 个主表未含 HRF（可能正文/附录），未单独提取。
+- **TA-Mamba 原"未攻下"已闭环**（preprint 全文）；高簇 MM-UNet/RV-GAN 数字已核（协议不可比）。
 - **FIVES split 标准化**：PASC-Net vs benchmarking 论文 split 不同，建可比表需人工对齐。
 - **VFGS-Net 完整表已核**：DRIVE 0.8323 / CHASE 0.8143 / STARE 0.8321 / HRF 0.8560。
