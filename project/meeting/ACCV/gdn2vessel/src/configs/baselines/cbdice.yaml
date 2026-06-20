@@ -42,20 +42,19 @@ train:
   batch_size: 2
 
 # --------------------------------------------------------------------------
-# Loss（cbDice：0.5 BCE+Dice 底座 + 0.5 cbDice 拓扑增益）
+# Loss（cbDice：官方 nnUNetTrainer_CE_DC_CBDC = 2·CE + 1·Dice + 1·cbDice，2:1:1）
 # --------------------------------------------------------------------------
 
 loss:
   type: "CbDiceMixed"
-  # 混合权重（§2.4 隔离设计）
-  weight_base: 0.5        # BCE+Dice 底座权重
-  weight_cbdice: 0.5      # cbDice 拓扑增益权重
-  # cbDice 内部参数
+  # ⚠️ 真源 = adapter `src/baselines/adapters/cbdice.py:102` 硬编码官方 2:1:1（2·BCE+Dice+cbDice），
+  #    build_loss(cfg) 无视 cfg。下方 weight_* 为【已废弃死字段】（无代码读，留作文档）。
+  #    🔒 loss 权重唯一真源 = adapter.build_loss()，train_harness/cfg 不得覆盖（PHASE_3_MATRIX §7 🟠-1）。
+  # weight_base: 0.5      # 【废弃】旧 0.5/0.5 对称混合 = 复现偏离官方 2:1:1，已被 adapter 硬编码替代
+  # weight_cbdice: 0.5    # 【废弃】同上
+  # cbDice 内部参数（这些 adapter 仍可能读，保留）
   iter_: 10               # SoftSkeletonize num_iter=10（官方 SoftcbDiceLoss 默认）
   smooth: 1.0             # 官方 smooth=1.
-
-  # TODO_researcher: 官方 nnU-Net 训练配方使用 weight_ce=1 weight_dice=1 weight_cbdice=1（三路等权）
-  # 当前用 0.5/(0.5+0.5) 对称混合；是否改为官方三路待确认
 
 # --------------------------------------------------------------------------
 # 预处理（BASELINE_SPEC §2.4 loss 类统一预处理，与 Ours 一致）

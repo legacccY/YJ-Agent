@@ -1,5 +1,43 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 21 — 2026-06-20 写作棒：§2 Related Work + §3 Method 首版草稿（writer，数字全占位待 verifier）
+
+writer 派单写 §2/§3。territory 只碰 paper 草稿，不动 src/实验/数字。新建 `paper/sections/`，产出两个 standalone LNCS section（可 `\input` 进 main）：
+- **`paper/sections/related_work.tex`**（§2，四块：血管/管状分割 CNN+Mamba 家族 / 拓扑连通性 clDice·Betti·DSCNet·creatis / 线性注意力 DeltaNet 谱系 + ★GDKVM R3 逐字硬区分★ / 可微 vesselness Frangi-Net 区分）。
+- **`paper/sections/method.tex`**（§3.1 架构 / §3.2 GDN-2 记忆做身份记忆=Claim1 / §3.3 空间 re-ID 机制+A0'A1'A2 三臂归因+ε_β0 配平分层 CDE=Claim2 / §3.4 可微 Frangi 解耦门 kernel 外双门近似=Claim3 / §3.5 标准 2D scan 明写 not a contribution）。
+
+防御写法自查：R1 续连写「degrades with break severity/sequence length」无 universal/always；R2 全程 design/motivated by 无 prove/theorem；R3 GDKVM 逐字模板原样植入 §2.3；R4 scan 两处明写 not a contribution；R5 分层声明（backbone/memory/Frangi=input-derived never GT topology；re-ID 头=synthetic-break 弱监督+stop-gradient 隔离，禁称无监督）；R6 统计占位；R7 CV 贡献先行医学=validation。
+
+**数字状态**：性能数字全留占位——method.tex 仅 1 处 `\TODO{ref to ablation}`（指向消融衰减曲线小节号），SOTA 数字一律未写进正文（只在 §2 定性描述竞品，绝不抄 SOTA_NUMBERS 当我们的）。citation key 为占位待对 .bib。无 drift 停顿。
+
+**下一步**：verifier 核（暂无数字可核，待主实验 csv 出后回填消融小节引用）；reviewer 十角色审成稿；§1 Intro / §4 Benchmark / §5 Experiments 待写。
+
+## Entry 20 — 2026-06-20 precompute-prep 棒：benchmark precompute 支持 STARE/HRF/FIVES 三集（DEP-2 解卡，本地烟测过）（winJ）
+
+承 sweep-launcher DEP-2。winJ 认领 `precompute-prep`，派 coder 验/修 `src/datasets/precompute_benchmark.py`。只碰 precompute_benchmark.py + tests，不碰 loader/train/sweep。不真跑 HPC（本地小集烟测）。
+
+### 诊断 + 修 2 真 bug（precompute 之前只对 CHASE 跑过）
+- **bug-1：FIVES 被静默 SKIP**。`precompute_one` 调 `ds.get_test_ids()` 返**类属性** `TEST_IDS`，但 FIVESDataset `__init__` 扫盘把 ids 填到**实例 `self.ids`** 后 finally-block 复原类属性为空 → `get_test_ids()` 对 FIVES 返 `[]` → 跳过。**修=改用 `list(ds.ids)`**（split='test' 构造时 ds.ids 即 test ids，对 CHASE/STARE/HRF/DRIVE 全等价不破，FIVES 正确取 200）。
+- **bug-2：FIVES 200 张未子采样**（命门设计 FIVES20）。在 precompute 内加 `FIVES_SUBSAMPLE_N=20` + `np.random.RandomState(42)` 确定性子采样到 20（只对 fives），打印选中 id。**seed42 两次运行一致 = True**，20 id 固定。
+
+### 本地三集真烟测（非 mock，本地 data/vessel 数据）
+各集 severity=Medium 真生成 NPZ，schema 与 CHASE 同（主线独立核 15 个 NPZ）：
+| 集 | shape | image dtype | n_gaps | 全 9 键 |
+|---|---|---|---|---|
+| STARE(4) | 605×700 | float32 | 231-299 | ✓ |
+| HRF(30) | 2336×3504 | float32 | 304 | ✓ |
+| FIVES(20) | 2048×2048 | float32 | 93 | ✓ |
+9 键 = mask_broken/vessel_segment_map/gap_records_json/**image(float32 非None)**/image_id/dataset/severity/seed_used/original_shape。`image` 字段在（Entry14 命门 eval 自包含关键，旧 schema 缺它崩过）。
+pytest **561 passed** 未破绿。
+
+### ⚠️ HRF 张力 TODO（拍板点，本棒未擅自决定）
+HRF loader `TEST_IDS=30`（15 dr+15 glaucoma）vs Entry14 命门设计预登记 `HRF18`，差 12 张。precompute **按 ds.ids=30 全生成不子采样**（territory 只 precompute，不动 loader/eval 选择层）。码内 TODO 标三选项待主线/planner 裁：①认同 HRF30 改设计 n50→n62；②eval 层（sweep runner）过滤取 18；③授权 precompute 加 HRF18 子采样。**别在 train 拍板前糊过去**。
+
+### 状态
+benchmark precompute 三集本地验通，DEP-2 解卡。pipeline `precompute-prep` done ✓。HPC 全集全 severity 预计算（HRF 3504×2336 单张 ~30-60s，30×4 sev = 长任务建议 HPC 跑）= dep3-fix 棒第 1 步（gpu_slot 申卡→HPC 跑 precompute）。本窗 DoD 达线即停，不冲 dep3-fix/train。
+
+---
+
 ## Entry 19 — 2026-06-20 sweep-launcher 棒：命门批量提交脚本 + sbatch 模板（dry-run 验过，未真提交）（winH）
 
 承 train 关键路径。winH 认领 `sweep-launcher`，派 coder 写命门启动器。只碰 `scripts/`（新建），不碰 model/reid_verdict/adapters/train_reid_pilot。**未真提交 HPC**（主线串行+拍板点）。

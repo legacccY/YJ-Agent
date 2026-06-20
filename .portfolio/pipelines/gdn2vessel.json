@@ -3,7 +3,7 @@
   "project": "gdn2vessel",
   "template": "experiment",
   "created": "2026-06-20T20:24:25+08:00",
-  "updated": "2026-06-20T22:26:18+08:00",
+  "updated": "2026-06-20T23:34:08+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -255,9 +255,9 @@
       "gate": false,
       "group": "",
       "desc": "验/修 precompute_benchmark.py 支持STARE/HRF/FIVES三集(现仅CHASE冻结),本地小集烟测确认各集能生成benchmark_cache NPZ结构对(image字段960*999等)。territory=precompute_benchmark.py+tests",
-      "out": "precompute支持5集,逮2 FIVES bug(get_test_ids返空/200→20子采样)+主线补HRF30→18子采样(用户裁定守预登记n50),561passed",
+      "out": "",
       "owner": "",
-      "ts": "2026-06-20T22:26:17+08:00"
+      "ts": "2026-06-20T22:31:41+08:00"
     },
     {
       "id": "dep3-fix",
@@ -284,6 +284,45 @@
       "out": "DRIVE官方完整包重下方案核源出(datasets.json+reference)",
       "owner": "",
       "ts": "2026-06-20T22:26:18+08:00"
+    },
+    {
+      "id": "p3-prep",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "设计P3主实验矩阵:12 baseline全谱×数据集×三轴指标(Dice/clDice/Betti)。出baseline训练sbatch模板+config+harness对接(复用reid_job模板加--qos=4gpus+gdn2venv/mamba_venv)。独立命门(P4)。territory=PLAN/+configs/,不碰命门src/scripts",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-20T23:10:04+08:00"
+    },
+    {
+      "id": "writing-rw",
+      "stage": "写章",
+      "agent": "writer",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "草§2 related work(reference/SOTA_NUMBERS+RELATED_WORK_MATERIAL已备)+§3 method骨架(A1'等参臂+CDE判据+空间re-ID机制定稿)。caveman OFF,数字过verifier。territory=paper tex/草稿,不碰src/实验",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-20T23:00:27+08:00"
+    },
+    {
+      "id": "p3-baseline-ready",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "P3 baseline训练就绪:12 adapter本地build烟测全过(mamba系标需mamba_venv,nnUNet系标需nnUNetv2)+各baseline训练config(复用统一backbone harness)+HPC env就绪清单(哪些需建mamba_venv/装nnUNetv2)。喂P3主实验。territory=src/baselines/configs+BASELINE_SPEC §就绪,不碰命门reid/sweep/HPC提交",
+      "out": "12 adapter build smoke 91测试+652passed,baseline job模板(qos+checklist+env dispatch),BASELINE_ENV_READINESS.md(mamba cu126/sm89调研),config比例对齐",
+      "owner": "",
+      "ts": "2026-06-20T23:34:08+08:00"
     }
   ]
 }

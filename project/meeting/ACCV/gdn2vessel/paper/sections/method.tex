@@ -1,0 +1,229 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% Section 3 — Method  (gdn2vessel, ACCV 2026)
+% Standalone draft. Intended to be \input into main.tex.
+% Defensive-writing rules R1--R7 enforced (see STORY_FRAMEWORK.md).
+%   R1: no "universal"/"always"; reconnection degrades with severity/length.
+%   R2: no "we prove"/"theorem"/"uniqueness"; "we design / motivated by".
+%   R3: GDKVM distinction handled in related_work.tex (kept consistent here).
+%   R4: scan/reorder is a standard engineering choice, NOT a contribution.
+%   R5: layered supervision honesty — backbone/memory/Frangi gate are
+%       input-derived (never GT topology); re-ID head is synthetic-break weak
+%       supervision, stop-gradient isolated, never relabelled as unsupervised.
+%   R6: connectivity/re-ID numbers carry statistics (placeholders here).
+%   R7: CV-method contribution first; medical datasets are validation.
+% All performance numbers are placeholders (\TODO) pending verifier csv checks.
+% =====================================================================
+
+\section{Method}
+\label{sec:method}
+
+We design a single end-to-end segmentation model that augments a convolutional
+U-Net with a delta-rule associative memory placed in the deep encoder, and reads
+that memory out to re-identify the two sides of a vessel break. We first give the
+overall architecture (Section~\ref{sec:method:arch}), then describe how the GDN-2
+matrix state acts as a vessel-identity memory that supports in-model spatial
+reconnection (Section~\ref{sec:method:memory}, Claim~1), the explicit spatial
+re-identification mechanism and its supervision (Section~\ref{sec:method:reid},
+Claim~2), the differentiable Frangi decoupled gate that modulates the memory
+(Section~\ref{sec:method:frangi}, Claim~3), and finally the standard 2D scan that
+turns the spatial feature map into the sequence consumed by the memory
+(Section~\ref{sec:method:scan}).
+
+% ---------------------------------------------------------------------
+\subsection{Overall Architecture}
+\label{sec:method:arch}
+
+The backbone is a standard convolutional U-Net encoder--decoder. At a deep encoder
+stage, where the spatial resolution is low and the receptive field already spans
+local vessel context, we insert a GDN-2 associative-memory module. Let
+$F \in \mathbb{R}^{C \times H \times W}$ be the bottleneck feature map. We flatten
+$F$ into a token sequence $(x_1, \dots, x_L)$ with $L = H \cdot W$ using a standard
+scan order (Section~\ref{sec:method:scan}); we keep $L \lesssim 1\mathrm{K}$ by
+placing the module at a sufficiently downsampled stage. The memory module processes
+this sequence, producing a memory-augmented feature map that is folded back into the
+encoder tensor and passed to the decoder, so the whole model remains a single
+forward pass.
+
+In parallel, a lightweight differentiable Frangi layer consumes \emph{only} the
+input image and produces a vesselness map that is downsampled to the bottleneck
+resolution. This map is the external control signal for the memory's erase/write
+gates (Section~\ref{sec:method:frangi}); it is never used as a label or as a
+segmentation output. Finally, a re-identification read-out head takes pairs of
+memory states sampled at candidate break endpoints and predicts whether they belong
+to the same vessel (Section~\ref{sec:method:reid}). The segmentation decoder and the
+re-identification head share the encoder and the memory features, but, as detailed
+below, the re-identification supervision is stop-gradient isolated so that it updates
+only the matching head and does not flow back into the memory or the encoder.
+
+% ---------------------------------------------------------------------
+\subsection{GDN-2 Associative Memory as Vessel-Identity Memory}
+\label{sec:method:memory}
+
+\paragraph{Mechanism.}
+We use the recurrent matrix state of GDN-2 as a vessel-identity memory. As the
+module scans the flattened bottleneck sequence, it writes per-token key--value
+pairs into a matrix state $S_t$ and updates it with the gated delta rule. Writing
+the per-token query, key and value as $q_t, k_t, v_t$ (obtained from $x_t$ via
+learned projections), the state update follows the gated delta-rule recurrence
+\begin{equation}
+  S_t = S_{t-1}\,\mathrm{diag}(g_t)\;-\;\beta_t\,\bigl(S_{t-1} k_t - v_t\bigr)\,k_t^{\top},
+  \qquad
+  o_t = S_t\, q_t ,
+  \label{eq:gdn2}
+\end{equation}
+where $g_t$ is a (channel-wise) decay/erase signal that controls how much of the
+existing memory is retained, and $\beta_t$ is a write strength that controls how
+strongly the current key--value pair overwrites the state. The output $o_t$
+retrieves, for the current query, the value previously associated with similar keys.
+Intuitively, while the scan traverses a vessel, the module writes that vessel's
+appearance into $S_t$ under a key that encodes its local geometry; when the scan
+reaches the far side of a low-contrast or occluded break, a query with a similar key
+retrieves the earlier value, continuing the same structure in feature space rather
+than starting a new one.
+
+This is an \emph{in-model, end-to-end} reconnection mechanism. It differs from a
+topological loss such as clDice (a global regulariser applied to the prediction),
+from graph-based post-processing, and from learned post-processing that operates on
+an already produced mask~\cite{creatis}: here the reconnection is realised inside the
+forward pass through the evolving memory state, and its parameters are trained by the
+segmentation objective end to end.
+
+\paragraph{Scope of the claim (R1).}
+We do \emph{not} claim universal or guaranteed reconnection. The memory has finite
+capacity and the retrieval signal weakens as the break becomes more severe (wider
+gap, thinner vessel) and as the number of intervening tokens between the two sides of
+the break grows along the scan. We therefore characterise reconnection as a
+capability that \emph{degrades with break severity and with sequence length}, and we
+report this degradation explicitly as severity and length curves in our experiments
+(Section~\TODO{ref to ablation}); we do not present a single headline number as if
+reconnection were unconditional. The memory keys are derived purely from the input
+features and the Frangi gate (Section~\ref{sec:method:frangi}); they never read
+ground-truth topology, which keeps the Claim~1 reconnection ability
+ground-truth-topology-free.
+
+% ---------------------------------------------------------------------
+\subsection{Spatial Re-Identification Mechanism}
+\label{sec:method:reid}
+
+Existing reconnection metrics, such as the normalised connected-component error
+$\varepsilon_{\beta_0}$~\cite{creatis}, quantify only whether a gap has been
+\emph{filled}; they do not test whether the filler is the continuation of the
+\emph{same} vessel. We make this distinction explicit with a re-identification
+read-out head and a corresponding re-identification rate metric, defined and
+evaluated in Section~\ref{sec:bench}. Motivated by the identity-aware association
+logic of multi-object tracking (e.g. IDF1), and following prior use of such
+tracking-style measures for vessel tracing~\cite{snaketracker}, we score a
+reconnection as correct only when the two sides of a break are matched to the same
+underlying vessel, not merely connected.
+
+\paragraph{Re-identification head.}
+Given two candidate endpoints across a break, we sample their memory-augmented
+features and feed the pair to a small matching head that predicts a same-vessel
+score. At inference, the head decides, for each gap, whether the bridging belongs to
+the same vessel, which yields the re-identification rate.
+
+\paragraph{Supervision scope (R5, honest layering).}
+The matching head is trained with \emph{synthetic-break weak supervision}. Because we
+generate the breaks ourselves with a controlled procedure
+(Section~\ref{sec:bench}), we know by construction which two sides originate from the
+same vessel, and we use this as the same-vessel label for the head. This is the same
+plug-and-play regime as the learned post-processing of Corvo~\emph{et
+al.}~\cite{creatis}, which likewise does not claim to be annotation-free; we make no
+unsupervised claim for the matching head. Critically, this weak supervision is
+\emph{stop-gradient isolated}: the memory-augmented features fed to the head are
+detached, so the same-vessel loss updates \emph{only} the matching head and does not
+back-propagate into the memory or the encoder. Consequently the reconnection ability
+of Claim~1 remains driven by the segmentation objective and the input-derived signals
+alone, and is not learned from ground-truth topology. The novelty here is the
+\emph{mechanism} (an associative memory repurposed for spatial re-identification) and
+the \emph{benchmark}, not annotation-free learning.
+
+\paragraph{Attribution design (pre-registered).}
+To attribute the re-identification gain to the \emph{stateful} delta-rule memory
+rather than to the extra capacity of adding an attention block, we pre-register a
+three-arm comparison, all arms sharing the same seeds ($\geq 3$), splits,
+hyper-parameters, and training budget, and differing only in the bottleneck feature
+source feeding the same re-identification head:
+\begin{itemize}
+  \item \textbf{A0$'$ (null arm).} A plain CNN bottleneck with no memory and no
+        attention module (\texttt{use\_memory=False}); the floor with neither
+        capacity nor mechanism.
+  \item \textbf{A1$'$ (iso-parameter arm).} A parameter-matched plain linear-attention
+        module that keeps the same query/key/value/output projections,
+        LayerNorm, insertion depth, and Frangi-gate pathway, but replaces the
+        stateful delta-rule memory with a \emph{stateless} linear attention; the total
+        number of trainable parameters is matched to A2 within $\pm 5\%$ (the measured
+        counts are reported in a table footnote). This isolates the contribution of the
+        added attention capacity.
+  \item \textbf{A2 (full).} The GDN-2 stateful delta-rule associative memory, with the
+        delta update and the recurrent state $S_t$; this is our full model.
+\end{itemize}
+We further include A3, which detaches the memory during training to separate the
+contribution of the head from that of training the memory, and a leakage-control arm
+A4 (in Section~\ref{sec:bench}) that supervises the head with \emph{predicted} rather
+than ground-truth skeleton breaks. The headline attribution is the ordering
+$\text{A2} > \text{A1}' > \text{A0}'$ in re-identification rate, with paired
+significance reported per dataset; if A2 does not exceed the iso-parameter A1$'$, the
+gain would be attributable to capacity rather than to the stateful associative memory,
+and we report this honestly.
+
+\paragraph{Re-identification beyond filling: a controlled direct effect.}
+A natural concern is that a higher re-identification rate is merely a by-product of
+better gap filling (lower $\varepsilon_{\beta_0}$). We treat $\varepsilon_{\beta_0}$
+as a \emph{mediator} on the causal path
+$\text{memory} \rightarrow \text{better filling} \rightarrow \text{re-identification}$,
+not as a confounder; conditioning on a mediator would induce over-control bias, so we
+do \emph{not} regress re-identification on memory while controlling for
+$\varepsilon_{\beta_0}$. Instead we estimate a \emph{controlled direct effect} on a
+filling-matched subset: because A2 and A1$'$ are naturally paired on the same image, we
+retain only the images for which the two arms achieve comparable filling quality
+(those whose $|\varepsilon_{\beta_0}(\mathrm{A2}) -
+\varepsilon_{\beta_0}(\mathrm{A1}')|$ falls within the per-dataset
+$\varepsilon_{\beta_0}$ inter-quartile range) and re-run the paired comparison within
+that subset. If A2 still re-identifies more accurately when filling quality is matched,
+the re-identification gain is a direct effect of the memory rather than a by-product of
+$\varepsilon_{\beta_0}$. We additionally report an exploratory mediation decomposition
+(total, natural direct, and natural indirect effects) for completeness; this
+decomposition is descriptive only and is not used as a pass/fail criterion, since the
+natural direct effect is expected to be attenuated when the mediating path is cut.
+Statistical tests use exact paired sign/permutation procedures and bootstrap
+confidence intervals implemented by hand (R6); we avoid relying on heavy library
+defaults.
+
+% ---------------------------------------------------------------------
+\subsection{Differentiable Frangi Decoupled Gate}
+\label{sec:method:frangi}
+
+The GDN-2 memory exposes two control signals in Eq.~\eqref{eq:gdn2}: the decay/erase
+signal $g_t$ and the write strength $\beta_t$. We design a \emph{decoupled} gate that
+modulates these from an input-derived vesselness cue, so that along a vessel the model
+is encouraged to retain its identity memory (suppress erase) and at fresh vessel
+evidence it is encouraged to write (raise write). The modulating signal is the output
+of a differentiable Frangi layer that consumes only the input image; it is never the
+segmentation prediction or the ground truth, which keeps the gate input-derived and
+avoids a chicken-and-egg dependence on the very segmentation we are producing.
+
+\paragraph{Kernel-external modulation (R3/R4 honesty).}
+The general gated delta-rule kernel we build on exposes a single write strength
+$\beta$. We therefore realise the decoupled erase/write behaviour as a
+\emph{kernel-external} modulation layer: the Frangi gate produces a write correction
+that raises $\beta_t$ at vessel evidence and an additive decay correction that lowers
+the erase of $g_t$ along a continuing vessel. We are explicit that this is a
+\emph{two-gate approximation} layered on top of the single-$\beta$ kernel; we do
+\emph{not} rewrite the kernel to implement two strictly independent gates, and we do
+not claim exact equivalence to a true decoupled-kernel implementation. The
+contribution is the associative-memory mechanism and its input-derived vesselness
+modulation, not low-level kernel/scan engineering.
+
+% ---------------------------------------------------------------------
+\subsection{2D Scan and Multi-Directional Merge}
+\label{sec:method:scan}
+
+To apply a fundamentally sequential memory to a 2D feature map, we flatten the
+bottleneck with a standard reorder and, as is common in vision SSM/linear-attention
+backbones, run the memory over a small set of complementary scan directions and merge
+their outputs. We adopt a standard scan-and-merge implementation; the contribution of
+this paper is the associative memory and the spatial re-identification it enables, not
+the scan ordering (R4). The number of directions is a design choice we ablate rather
+than promote, and we make no claim that the particular reorder is novel.

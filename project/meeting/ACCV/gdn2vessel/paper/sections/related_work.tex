@@ -1,0 +1,139 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% Section 2 — Related Work  (gdn2vessel, ACCV 2026)
+% Standalone draft. Intended to be \input into main.tex.
+% Defensive-writing rules R1--R7 enforced (see STORY_FRAMEWORK.md).
+% All quantitative SOTA numbers are placeholders (\TODO) — do NOT present
+% any borrowed number as ours; values to be filled after verifier checks csv.
+% Citation keys are placeholders to be reconciled with the .bib file.
+% Double-blind: no author/institution/identifiable repository self-citation.
+% =====================================================================
+
+\section{Related Work}
+\label{sec:related}
+
+We organise prior work into four threads that our method intersects:
+tubular/vessel segmentation backbones, topology- and connectivity-oriented
+objectives, linear-attention and delta-rule sequence models, and
+differentiable vesselness priors. Throughout, we emphasise that none of these
+threads performs \emph{in-model spatial re-identification of the same vessel
+across a break}, which is the locus of our contribution.
+
+% ---------------------------------------------------------------------
+\subsection{Vessel and Tubular Structure Segmentation}
+\label{sec:related:vessel}
+
+\paragraph{CNN backbones.}
+Curvilinear and tubular structure segmentation has been driven by encoder--decoder
+CNNs. Beyond U-Net and its variants (UNet++, Attention U-Net), specialised designs
+target the thin, elongated geometry of vessels: IterNet~\cite{iternet}, SA-UNet,
+CS$^2$-Net~\cite{csnet}, SCS-Net, and FR-UNet~\cite{frunet} refine multi-scale
+context, attention, or iterative refinement. These models improve the per-pixel
+delineation of vessels but treat each forward pass as a single bottom-up labelling
+problem; they carry no explicit notion of vessel \emph{identity} that could be
+retrieved across a low-contrast or occluded gap.
+
+\paragraph{State-space (Mamba) backbones.}
+A recent line replaces or augments convolutional context with selective
+state-space models (SSMs). Generic medical backbones include VM-UNet~\cite{vmunet},
+U-Mamba~\cite{umamba}, and Swin-UMamba~\cite{swinumamba}. Vessel- and
+tubular-specific SSM designs are more directly comparable: HM-Mamba couples
+hierarchical multi-scale tubular convolution with frequency-domain gating;
+VFGS-Net~\cite{vfgsnet} introduces a frequency-guided bidirectional scan;
+MM-UNet~\cite{mmunet} adds morphological deformable sampling;
+MambaVesselNet++~\cite{mambavesselpp} targets 3D vessels with bifocal fusion;
+and TA-Mamba combines serpentine spatial convolution with frequency-aware gated
+Mamba while reporting topology-aware scores. A separate group emphasises the
+\emph{scan ordering} itself, e.g. the serpentine scan of Serp-Mamba~\cite{serpmamba}
+on wide-field fundus and the diagonal scan of TopoMamba~\cite{topomamba}. These
+methods establish strong segmentation baselines and we compare against them
+directly. Crucially, the recurrent state in these SSM backbones aggregates
+\emph{context} along a fixed scan; it is not used as an addressable
+key--value memory that stores and retrieves a specific vessel's identity.
+We adopt a standard reorder for 2D scanning and explicitly do \emph{not}
+claim the scan as a contribution (R4); our contribution is the associative
+memory operating on the scanned sequence, not the scan itself.
+
+% ---------------------------------------------------------------------
+\subsection{Topology- and Connectivity-Oriented Methods}
+\label{sec:related:topo}
+
+A complementary body of work enforces connectivity through dedicated objectives
+or architectural priors rather than through per-pixel overlap. clDice~\cite{cldice}
+and its radius-aware extension cbDice~\cite{cbdice} provide differentiable
+soft-skeleton losses; persistent-homology objectives such as
+TopoLoss~\cite{topoloss}, Betti Matching~\cite{bettimatching}, and the warping
+loss~\cite{warpingloss} penalise topological discrepancies; Skeleton
+Recall~\cite{skeletonrecall} offers a lightweight CPU skeleton objective; and
+Topograph~\cite{topograph} encodes a component graph. On the architectural side,
+DSCNet~\cite{dscnet} adapts the receptive field to curved tubular shapes,
+DconnNet~\cite{dconnnet} decouples directional connectivity subspaces, and
+PASC-Net~\cite{pascnet} couples plug-and-play shape convolutions with hierarchical
+topological constraints.
+
+These approaches share two properties that distinguish them from ours. First, the
+loss-based methods (clDice, cbDice, Betti/persistent-homology, Skeleton Recall) act
+as global differentiable \emph{regularisers}: they push the prediction toward the
+correct global topology but do not localise a break or carry an in-model record of
+which structure should be continued. Second, the architectural priors model
+directional or shape context within a single feed-forward pass and likewise hold no
+cross-gap identity state. Most directly related, the learned post-processing model
+of Corvo~\emph{et al.}~\cite{creatis} restores connectivity by training a residual
+U-Net that operates on the \emph{segmentation mask} produced by an upstream
+segmenter; it is an explicit two-stage, post-hoc reconstruction without end-to-end
+gradients into the segmentation backbone and without an associative memory. We adopt
+its synthetic-break generation protocol for our reconnection benchmark
+(Section~\ref{sec:bench}), but our reconnection mechanism is fundamentally different:
+it is performed \emph{inside} the forward pass of a single end-to-end model via a
+delta-rule matrix state, rather than as a downstream correction of a mask.
+
+% ---------------------------------------------------------------------
+\subsection{Linear Attention and Delta-Rule Sequence Models}
+\label{sec:related:delta}
+
+Linear-attention and delta-rule models replace softmax attention with a recurrent
+matrix-valued state that is updated in linear time. DeltaNet~\cite{deltanet}
+introduces a delta update rule with a parallel Householder formulation; gated linear
+attention (GLA)~\cite{gla} and Mamba-2~\cite{mamba2} add data-dependent gating and
+unify SSMs with attention; RWKV~\cite{rwkv} and test-time training~\cite{ttt}
+explore matrix-valued or gradient-updated hidden states. Gated DeltaNet
+(GDN-1)~\cite{gatedeltanet} unifies the delta update with a scalar decay gate.
+Our memory module is built on its successor, Gated DeltaNet-2
+(GDN-2)~\cite{gdn2}, which decouples the gating into a channel-wise erase gate
+on the key side and a write gate on the value side, with GDN-1 recovered as a
+degenerate special case. To the best of our knowledge, delta-rule associative
+memory of this kind has so far been evaluated only on language modelling and
+long-context retrieval; it has not previously been applied to visual or
+segmentation tasks.
+
+\paragraph{Distinction from GDKVM.}
+The closest neighbour to our use of gated delta memory is GDKVM~\cite{gdkvm}.
+Unlike GDKVM [ICCV25] which uses gated delta KV memory across echo video frames
+(temporal), we operate within a single image (spatial) and add explicit
+same-vessel re-identification. Concretely, GDKVM stores a key--value memory and
+builds \emph{inter-frame} associations to segment cardiac chambers in
+echocardiography \emph{video}, where the memory is indexed by time; our setting
+has no temporal axis. We index the memory along a spatial scan of a single fundus
+image and read it out to decide whether the two sides of a break belong to the
+\emph{same} vessel. We are not aware of any prior method that uses delta-rule
+associative memory to perform in-model reconnection of vessel breaks, which
+positions our work as a distinct point in this space.
+
+% ---------------------------------------------------------------------
+\subsection{Differentiable Vesselness Priors}
+\label{sec:related:frangi}
+
+Hessian-based vesselness filters (e.g. Frangi's measure) are classical
+input-derived cues for tubular structures. Frangi-Net~\cite{frangiNet}
+reformulates the 2D Frangi filter as a trainable network so that the Frangi
+\emph{weights themselves are learned to perform segmentation} -- there the Frangi
+computation is the backbone. Other works use vesselness as a preprocessing or
+pseudo-labelling signal: as a self-supervised pretext~\cite{frangiPretext} or as a
+filtered input channel fused with the image~\cite{frangiFusion}. Our use is
+orthogonal to all of these: we keep a differentiable Frangi layer as a side-branch
+that consumes only the input image, and we use its \emph{output as an external gate
+signal that modulates the erase/write strength} of the GDN-2 associative memory
+(Section~\ref{sec:method:frangi}). The vesselness is never used as a label, a
+segmentation prediction, or a backbone; it is a derived, input-only control signal
+for the memory. We are not aware of prior work that couples a Hessian vesselness
+measure into the gating of a linear-attention memory in this way.

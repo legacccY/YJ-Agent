@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+# baseline_job.sbatch.template — gdn2vessel P3 baseline 全谱 single-run 模板
+# （复用 scripts/reid_job.sbatch.template 骨架；调 train_harness.py 统一训练台，非 train_reid_pilot.py）
+#
+# ⚠️ 设计模板，不真提交。实例化后主线串行 gpu_slot 申请 + 分批拍板再跑（见 PHASE_3_MATRIX.md §6）。
+# ⚠️ 放 PLAN/ 而非 scripts/（scripts/ = 命门 P4 辖域）。真跑前由主线/coder 移到 scripts/ 或就地实例化。
+#
+# 接口约定（train_harness.py 须按此建，coder 实现依据）：
+#   python src/train_harness.py --config <baseline yaml> --base_eval src/configs/_base_eval.yaml \
+#       --baseline <name> --data_root <root> --dataset <NAME> --seed <int> \
+#       --epochs <int> --output_dir <dir>
+#   内部：读 config → 按 baseline.name 从 registry 取 adapter → adapter 给 model/loss/optim/preprocess
+#         → 统一训练循环 → 存 best.pth + state.json。
+#   🔒 loss 权重唯一真源 = adapter.build_loss()，cfg 不得覆盖 loss 内部权重（PHASE_3_MATRIX §7 🟠-1）。
+#   评估接 evaluate.py（接口已存在）。
+#
+# 使用方式：
+#   1. 用 launch 脚本（待建）把下方 {PLACEHOLDERS} 替换为实际值，
+#      保存为实例（如 base_dscnet_DRIVE_s42.sbatch）。
+#   2. 上传 HPC → 去 CRLF → sbatch。
+#
+# HPC 提交 checklist（必过，feedback_hpc_submit_checklist + reid_job 同款）：
+#   (1) 上传后去 CRLF：dos2unix <file>.sbatch  或  sed -i 's/\r$//' <file>.sbatch
+#   (2) 看 logs/{job-name}_{jobid}.out 确认真跑，别信 jobid（可能串别人 job）
+#   (3) 关键 sbatch 单独跑，不批量并发（入队静默失败难排查）
+#   (4) mamba 系提交前确认 mamba_venv 已 build + python -c "from mamba_ssm import Mamba" 烟测过
+#   (5) batch-1 = 只 DRIVE × seed42 main 8 run + 1 FIVES 探针（见 PHASE_3_MATRIX §6），绝不裸铺全量
+#
+# Placeholders（{}替换为实际值）：
+#   {BASELINE}   — registry 注册名（fr_unet / cs_net / dscnet / creatis_postproc /
+#                  cldice / cbdice / skeleton_recall / vm_unet / mm_unet / ours_gdn2）
+#                  ⚠️ nnunet / pasc_net / u_mamba 走 nnUNetv2 命令行，不用此模板（另出）
+#   {DATASET}    — 数据集（DRIVE / CHASE / FIVES / STARE）
+#   {SEED}       — 种子整数（42 / 1 / 2）
+#   {CONFIG}     — baseline config 相对路径（src/configs/baselines/<name>.yaml）
+#   {DATA_ROOT}  — 该集 data_root（如 /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/DRIVE）
+#   {OUT_DIR}    — output_dir（如 /gpfs/work/bio/jiayu2403/gdn2vessel/outputs/p3/{DATASET}_{BASELINE}_seed{SEED}）
+#   {ENV_TAG}    — main | mamba（决定激活哪个 venv，须与 config 的 baseline.env_tag 一致）
+#   {EPOCHS}     — 训练 epoch 数（取 config train.epochs；loss 类与 Ours 对齐）
+
+# ─── SLURM 头（reid_job 同款）────────────────────────────────────────────────
+#SBATCH --partition=gpu4090
+#SBATCH --account=shuihuawang
+#SBATCH --qos=4gpus
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=12:00:00
+#SBATCH --job-name=p3_{DATASET}_{BASELINE}_s{SEED}
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
+
+# ─── 1. 防 logs 目录缺失静默失败（HPC checklist 必要项）────────────────────
+mkdir -p logs
+
+# ─── 2. Triton / FLA NFS 死锁修复（reid_job 命脉，所有 GDN-2 job 必带）────────
+# triton kernel 缓存重定向 /tmp（本地磁盘），避免多 job 写 NFS $HOME/.triton/cache 致 LOCK 死锁。
+export TRITON_CACHE_DIR=/tmp/$USER/triton_cache
+mkdir -p "$TRITON_CACHE_DIR"
+rm -rf "$HOME/.triton/cache" 2>/dev/null || true
+
+# ─── 3. 激活 venv（按 {ENV_TAG} 切换；main=gdn2venv / mamba=mamba_venv）────────
+if [ "{ENV_TAG}" = "mamba" ]; then
+    source /gpfs/work/bio/jiayu2403/mamba_venv/bin/activate
+    # mamba 系 RTX4090(sm_89) 须无 AMP（U-Mamba README: AMP→Mamba nan）；
+    # train_harness 须据 env_tag=mamba 自动关 AMP（接口约定，coder 实现）。
+else
+    source /gpfs/work/bio/jiayu2403/gdn2venv/bin/activate
+fi
+
+# ─── 4. 打印环境信息（调试用）────────────────────────────────────────────────
+echo "[job] start: $(date)"
+echo "[job] host: $(hostname)"
+echo "[job] baseline={BASELINE}  dataset={DATASET}  seed={SEED}  env={ENV_TAG}  epochs={EPOCHS}"
+echo "[job] config={CONFIG}"
+echo "[job] gpu: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo 'no nvidia-smi')"
+python -c "import torch; print(f'[job] torch={torch.__version__}  cuda={torch.cuda.is_available()}')"
+# mamba 系额外烟测（装不上即早失败，别浪费 12h walltime）
+if [ "{ENV_TAG}" = "mamba" ]; then
+    python -c "from mamba_ssm import Mamba; print('[job] mamba_ssm OK')" || { echo "[job] FATAL mamba_ssm import failed"; exit 90; }
+fi
+
+# ─── 5. 训练（统一训练台 train_harness.py，model/loss/optim 从 config 取）──────
+GDN2_ROOT=/gpfs/work/bio/jiayu2403/gdn2vessel
+python $GDN2_ROOT/src/train_harness.py \
+    --config $GDN2_ROOT/{CONFIG} \
+    --base_eval $GDN2_ROOT/src/configs/_base_eval.yaml \
+    --baseline {BASELINE} \
+    --data_root {DATA_ROOT} \
+    --dataset {DATASET} \
+    --seed {SEED} \
+    --epochs {EPOCHS} \
+    --output_dir {OUT_DIR}
+
+TRAIN_EXIT=$?
+if [ $TRAIN_EXIT -ne 0 ]; then
+    echo "[job] FATAL train_harness exit=$TRAIN_EXIT"; exit $TRAIN_EXIT
+fi
+
+# ─── 6. 评估（统一三轴 → csv；input_mode/seeds/threshold 由 _base_eval 量尺锁定）─
+# evaluate.py 接口已存在（--adapter/--ckpt/--data_root/--dataset/--split/--seed/--output_csv）。
+# split=val（DRIVE test GT 缺，PHASE_3_MATRIX §0.2；最终汇报跑 all）。
+python $GDN2_ROOT/src/evaluate.py \
+    --adapter {BASELINE} \
+    --ckpt {OUT_DIR}/best.pth \
+    --data_root {DATA_ROOT} \
+    --dataset {DATASET} \
+    --split val \
+    --seed {SEED} \
+    --device cuda \
+    --output_csv {OUT_DIR}/p3_{DATASET}_{BASELINE}_s{SEED}.csv
+
+EXIT_CODE=$?
+echo "[job] done: $(date)  train_exit=$TRAIN_EXIT  eval_exit=$EXIT_CODE"
+exit $EXIT_CODE
+
+# ─── 注：creatis_postproc 两段式（Stage-1 分割 + Stage-2 断点续连 postproc）─────
+#   可能需 train_harness 内部识别 kind 走两段，或单独两段实例化。
+#   coder 建 train_harness 时须确认 creatis adapter 训练入口（PHASE_3_MATRIX §1/件3 TODO）。

@@ -184,6 +184,8 @@ researcher 回填官方超参 ─┘
 | pasc_net | architecture | main | ✅ adapter 占位（PASCTrainer，loss 权重已记） | 同 nnunet；preprint 状态标注 |
 
 > **代码骨架/接口全就位，本地 pytest 接口层全绿**。真训需：mamba 系 HPC build mamba_venv；nnUNet 系装 nnUNetv2 + 转格式（走命令行非 train_harness，evaluate 接入待拍板）；creatis license 核实。这些是 runtime/HPC 事项，gate 在 P1+P2 真验 + batch-1 拍板。
+>
+> **HPC env 就绪清单（p3-baseline-ready 2026-06-20）**：`BASELINE_ENV_READINESS.md`（项目根，每条 baseline → env_tag → 需装什么 → 现状 ✅/⬜/🛑）。烟测结果：502 passed / 7 skipped；build smoke 91 passed / 2 skipped（mamba 3 个 RuntimeError 正确，nnUNet 2 个 RuntimeError 正确）。
 
 ### skeptic 红队裁决（2026-06-20，1 致命已修）
 - 🔴**已修**：creatis plug-and-play 漏比关键竞品（headline 对立面却不比 = reject 红线）→ 已纳入档 A A12（postproc 续连），OCTAMamba 移 P5。连锁两件一起改完，档 A 回 ≥12。

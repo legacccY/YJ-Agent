@@ -1,5 +1,8 @@
 # PHASE 3 — 主实验 + baseline 全谱同台
 
+> 📐 **精确可执行 run 矩阵 + 4 卡编排 + 分批拍板 + L3/L6 判据对齐** → [`PHASE_3_MATRIX.md`](PHASE_3_MATRIX.md)（p3-prep 升格，skeptic 0🔴）。
+> 🖥️ baseline 训练 sbatch 模板 → [`baseline_job.sbatch.template`](baseline_job.sbatch.template)。
+
 ## ① 目标（锁定）
 主集深做 + ≥12 baseline 同框架公平比，三轴指标全算，确立「拓扑/续连维度赢 SOTA、裸 Dice 持平不输」的胜负点。
 

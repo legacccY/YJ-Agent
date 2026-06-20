@@ -138,6 +138,24 @@
 4. 干净 + dep3-fix done → 全 36（92 GPU·h）→ reid_verdict_v2 出命门 verdict
 5. 完成 `gpu_slot.py release` + `pipeline.py done train`
 
+## 节点 p3-prep（M 窗 · planner）2026-06-20，命门训练时并行
+**服务**：P3 主实验（独立命门 P4）/ L3/L6 lever。
+**territory**：`PLAN/`（实验矩阵设计）+ `src/configs/`（baseline config）。**不碰** 命门 src/scripts/reid*。
+**完成线**：
+- [ ] 设计 P3 主实验矩阵：12 baseline 全谱 × 数据集 × 三轴指标（Dice/IoU/AUC + clDice/Betti/SkelRecall + ε_β0/SR）
+- [ ] baseline 训练 sbatch 模板（复用 reid_job 模板：`--qos=4gpus` + gdn2venv，mamba 系用 mamba_venv）+ 各 config
+- [ ] 对齐 ACCEPTANCE L3/L6 判据（拓扑/续连 ≥1 轴赢 SOTA + Dice 不输）
+**停**：矩阵+模板设计出即 `done`。不真提交（主线串行）。
+
+## 节点 writing-rw（N 窗 · writer）2026-06-20，命门训练时并行
+**服务**：§2/§3 章节 / L9 lever。设计已定稿可写。
+**territory**：paper tex/草稿。**不碰** src/实验/数字（数字过 verifier 才入）。caveman OFF。
+**完成线**：
+- [ ] §2 related work 草（reference/SOTA_NUMBERS + RELATED_WORK_MATERIAL 已备，硬区分 GDKVM 时序/空间）
+- [ ] §3 method 骨架（A1' 等参臂 + ε_β0 配平分层 CDE 判据 + 空间 re-ID 机制 + 可微 Frangi 门，全定稿）
+- [ ] 防御写法 R-rules（先读 STORY+ACCEPTANCE）
+**停**：两节草稿出即 `done`。数字占位待 verifier 核。
+
 ## 拍板点（主窗持，各窗碰到就停下报）
 1. **gate-accept**：改 ACCEPTANCE P4 判据2（阈值变更）。✅ 2026-06-20 用户放行（partial_corr→CDE 分层 + A1' 臂）。
 2. **train**：投正式命门 92 GPU·h（4 集×3 臂×3 seed）+ HPC 上传新代码。⬜ 待 impl-verdict+integrate 过。
