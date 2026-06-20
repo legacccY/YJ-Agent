@@ -1,5 +1,28 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 12 — 2026-06-20 §2 付费墙原文攻坚闭环（主线 Playwright 机构访问，TA-Mamba+MVM-UNet 全文数字）
+
+承 Entry 7/9（§2 RW + SOTA 调研窗）。用户要「一定扎实」→ 主线 Playwright 下两篇付费墙原文，盲区清零。
+
+### 攻下（reference/SOTA_NUMBERS.md + RELATED_WORK_MATERIAL.md 更新）
+- **TA-Mamba**（ResearchSquare 免费 preprint rs-5164628 全文 PDF）：DRIVE Dice 0.8248/clDice 0.8321、CHASE 0.8168/0.8448、STARE 0.8159/0.8515（split 前10训后10测）。
+- **MVM-UNet=Birmingham Multi-scale Vision Mamba-UNet**（ScienceDirect 全文，用户机构认证+手动过 captcha）：DRIVE 0.8184/CHASE 0.8146/STARE 0.8242，全主流簇，**不报 clDice**。
+
+### ⚠️ 战略修正（影响 headline 定位，重要）
+TA-Mamba **报 clDice 且 > HREFNet** + 声张 topo connectivity = **拓扑直接竞品** → Entry 7/8「clDice 报告者极少=取胜空白」**修正**：clDice 轴不再真空。**真正无人占的是断点续连 ε_β0/SR/re-ID 轴 + 模型内记忆机制**，headline 必须压杀手锏 benchmark，clDice 当「持平不输强竞品」非唯一胜负点。已落 SOTA_NUMBERS 战略观察 #2。
+
+### 工具纪律收获
+- 付费墙原文：免费 preprint(ResearchSquare/arXiv) 永远先试；ScienceDirect/Elsevier 即使机构认证仍弹 captcha（人机门控，主线不自动解，截图请用户手动过）。
+- PDF 抽数字：本机无 pdftoppm/pdftotext，Read PDF 失败 → 用 `python pypdf` extract_text 正则筛指标行可靠。
+
+### 剩非阻塞尾巴
+MVM-UNet HRF 数字（不在 8 主表）、FIVES 跨论文 split 对齐。标 TODO，不阻投稿。
+
+### 本窗（§2 RW+SOTA）任务状态 = 彻底闭环
+reference 双档核源全 + 天花板上修 + 两簇坐实 + SR/re-ID 方法学定案（用户拍 SR 两者都上）+ 付费墙清零。下一步交 P3 窗据 BASELINE_SPEC + reference 选 baseline。
+
+---
+
 ## Entry 11 — 2026-06-20 数据穿线收尾：10 集全上 HPC（数据窗，与 P1/P2 窗并行）
 
 本窗 = 纯数据线（不碰 src/，避开 P1/P2 窗）。开窗时 5 视网膜 + 冠脉 DCA1/XCAD 本地。本窗补齐：
