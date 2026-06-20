@@ -82,6 +82,26 @@
 - [ ] 结论写 `reference/` 一个新档或追现有调研档（不碰 BASELINE_SPEC）
 **停**：定出补位 baseline + 核源即 `done`。roster 改交主窗合并进 BASELINE_SPEC。
 
+## 节点 sweep-launcher（H 窗 · coder）2026-06-20 加，train 关键路径
+**服务**：正式命门启动器 / L1 lever。train 拍板点等它。
+**territory**：`scripts/`（批量提交脚本 + sbatch 模板）。**不碰** model/reid_verdict/adapters。
+**完成线**：
+- [ ] 写命门批量提交脚本：4 集(CHASE/STARE/HRF/FIVES)×3 臂(memory/linear_attn/cnn)×3 seed = 36 组合，各自独立 output_dir
+- [ ] 支持 **batch-1 模式**（3 臂×4 集×1 seed = 12 run 先验）
+- [ ] 末尾自动调 reid_verdict_v2 聚合三臂 CSV 出 verdict
+- [ ] HPC checklist：sbatch 模板含 `mkdir -p logs/`、提交前去 CRLF、看产出文件不信 jobid（[[feedback_hpc_submit_checklist]]）
+- [ ] 本地 dry-run（不真提交，打印 36 条命令确认参数对）
+**停**：脚本写完 + dry-run 验过即 `done`。**不真提交 HPC**（主线串行 + 拍板点）。
+
+## 节点 impl-mmunet（I 窗 · coder）2026-06-20 加，P3 baseline 补位
+**服务**：保 ≥12 baseline / L3 lever。承 baselineB-pick 选定 MM-UNet。
+**territory**：`mm_unet` adapter + `third_party/`。**不碰** BASELINE_SPEC 主表（交主窗合并）/其他 adapter。
+**完成线**：
+- [ ] vendor MM-UNet（github.com/liujiawen-jpg/MM-UNet，MIT，commit 2026-03-09）+ 写 adapter 顶替降档的 MambaVessel++
+- [ ] 复现零偏离：超参用官方 `config.yml`（DRIVE/STARE），查不到标 TODO（见 BASELINE_B_PICK §跑前TODO）
+- [ ] pytest 绿 + 本地 build 烟测（mamba 依赖缺时 RuntimeError 占位，对齐其他 SSM adapter）
+**停**：vendor+adapter+烟测过即 `done`。
+
 ## 拍板点（主窗持，各窗碰到就停下报）
 1. **gate-accept**：改 ACCEPTANCE P4 判据2（阈值变更）。✅ 2026-06-20 用户放行（partial_corr→CDE 分层 + A1' 臂）。
 2. **train**：投正式命门 92 GPU·h（4 集×3 臂×3 seed）+ HPC 上传新代码。⬜ 待 impl-verdict+integrate 过。

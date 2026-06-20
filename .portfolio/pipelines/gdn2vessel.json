@@ -3,7 +3,7 @@
   "project": "gdn2vessel",
   "template": "experiment",
   "created": "2026-06-20T20:24:25+08:00",
-  "updated": "2026-06-20T21:29:38+08:00",
+  "updated": "2026-06-20T21:39:32+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -71,7 +71,8 @@
       "stage": "跑",
       "agent": "主线",
       "deps": [
-        "integrate"
+        "integrate",
+        "sweep-launcher"
       ],
       "status": "pending",
       "gate": true,
@@ -216,6 +217,34 @@
       "out": "A1'等参臂(ELU+1 linear attn,Katharopoulos2020):核实A2==A1'numel 7,983,171 +0.0000%绝对等参(stub fla验),512passed.dead-param0.01%脚注",
       "owner": "",
       "ts": "2026-06-20T21:21:30+08:00"
+    },
+    {
+      "id": "sweep-launcher",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "integrate"
+      ],
+      "status": "running",
+      "gate": false,
+      "group": "",
+      "desc": "写命门批量提交脚本:4集x3臂x3seed=36组合各自output_dir+末尾reid_verdict_v2聚合三臂CSV。支batch-1(12=1seed)先验。HPC checklist:mkdir logs去CRLF。territory=scripts,不碰model/verdict",
+      "out": "",
+      "owner": "winH",
+      "ts": "2026-06-20T21:38:10+08:00"
+    },
+    {
+      "id": "impl-mmunet",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [],
+      "status": "running",
+      "gate": false,
+      "group": "",
+      "desc": "vendor MM-UNet(liujiawen-jpg/MM-UNet MIT)+写adapter顶替降档MambaVessel++。据reference/BASELINE_B_PICK.md。复现零偏离config.yml官方超参。territory=mm_unet adapter+third_party",
+      "out": "",
+      "owner": "winI",
+      "ts": "2026-06-20T21:39:32+08:00"
     }
   ]
 }
