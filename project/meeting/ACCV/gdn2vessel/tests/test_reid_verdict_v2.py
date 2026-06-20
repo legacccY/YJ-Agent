@@ -98,6 +98,37 @@ def _make_rows(image_ids: list[str],
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 0. 回归：dataset 大小写归一（集成烟测 2026-06-20 逮到的假 FAIL 缝）
+#    train_reid_pilot 写 sample['dataset']（CHASE/STARE 大写），DATASETS 硬编码小写，
+#    不归一 → n=0 空集 → 假 FAIL（Entry14 pilot n=0 同款，会烧 92 GPU·h）。
+#    现有测试默认 dataset='chase' 小写故漏掉此缝；本测试锁大写输入必被归一。
+# ─────────────────────────────────────────────────────────────────────────────
+class TestDatasetCaseNormalization:
+
+    def test_uppercase_dataset_normalized_to_lower(self, tmp_path):
+        # train 真写大写 'CHASE'
+        rows = _make_rows(['i0', 'i1'], [0.5, 0.6], [100.0, 110.0],
+                          dataset='CHASE', arm='memory')
+        csv_p = _write_csv(tmp_path, rows, 'upper.csv')
+        by_ds = load_arm_csv(csv_p)
+        # key 必归一小写，对齐 DATASETS=['chase',...]，否则 n=0 假 FAIL
+        assert 'chase' in by_ds, f"大写 CHASE 未归一小写 → 会假 FAIL，得到 keys={list(by_ds)}"
+        assert 'CHASE' not in by_ds
+        assert len(by_ds['chase']) == 2
+        # row 内 dataset 字段也归一（mediation dummies 一致性）
+        assert all(r['dataset'] == 'chase' for r in by_ds['chase'])
+
+    def test_mixed_case_dataset_collapses(self, tmp_path):
+        rows = (_make_rows(['a0'], [0.5], [100.0], dataset='STARE')
+                + _make_rows(['a1'], [0.6], [110.0], dataset='stare'))
+        csv_p = _write_csv(tmp_path, rows, 'mixed.csv')
+        by_ds = load_arm_csv(csv_p)
+        # STARE 与 stare 必合并为同一集，不裂成两 key
+        assert 'stare' in by_ds and len(by_ds['stare']) == 2
+        assert 'STARE' not in by_ds
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 1. 精确排列检验
 # ─────────────────────────────────────────────────────────────────────────────
 

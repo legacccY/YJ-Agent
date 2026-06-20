@@ -1,5 +1,72 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 18 — 2026-06-20 主窗 Conductor 编排命门 v2：设计修→A1'臂→集成烟测逮2缝→F/G合并（停 train 拍板点）
+
+主窗当 Conductor 指挥，多窗并行推命门 v2。winC/D/F 各棒见 Entry 15/16/17；本条记主窗编排 + 主窗派的 coder 棒 + 集成闸 + 合并/加固（这些没单独 entry）。**全程检测验收**：标 done 前 git diff/pytest/stub-fla 核真产出，不信窗自报。
+
+### Conductor 新图（替 pilot 旧图）
+Entry14 pilot 那轮 FAIL→翻案收口图归档。建新 experiment 图，命门 v2 拆并行块滚到 17 棒。真源 `.portfolio/pipelines/gdn2vessel.json`；新建 `PLAN/WINDOW_TASKS.md` 钉每节点完成线 DoD（指针入 MASTER_PLAN）。
+
+### 主窗派的 coder/设计棒（检测验过）
+- **design**（planner+skeptic 0🔴）：解 Entry14 两🔴——加 **A1' 等参臂**（归因链 A2>A1'>A0' 治容量混杂）+ 判据2 作废 partial_corr/LMM→**ε_β0 配平分层 CDE**（中介非混杂）+ n<6 HARKing 特例。改 ACCEPTANCE P4 判据2（**gate-accept 拍板点，用户「往下走」放行**）。
+- **impl-verdict**：reid_verdict_v2 全重写对齐 CDE 判据2，禁 scipy 全手算。检测=零真 import scipy + passed。
+- **baseline-fix**：cbDice→官方 **2:1:1**、SkelRecall→1:1:1、normalize/augment §7 对齐。检测=`cbdice.py:102` 实锤。
+- **impl-a1prime**：A1' = **ELU+1 stateless linear attn**（Katharopoulos2020，delta-rule 去状态更新最小改动）。检测=stub fla 数 numel **A2==A1'=7,983,171 +0.0000% 绝对等参**；dead-param 0.01% 脚注。
+- **baselineB-pick**（winG，无单独 entry）：选 **MM-UNet** 顶替降档的 MambaVessel++。
+
+### ★主线 integrate 集成烟测逮 2 缝（pytest 照不到，省 92 GPU·h）
+- **缝1**：A1' 臂未实现→三臂跑不了→block+补（impl-a1prime）。
+- **缝2**：真组件胶合烟测逮 **dataset 大小写假 FAIL**——train 写 CHASE 大写，verdict DATASETS 硬编码小写→n=0 空集→假 FAIL（**Entry14 pilot n=0 同款会烧 92 GPU·h**）。修 `reid_verdict_v2.py:72 .strip().lower()`。修后大写配对数据 4/4 集 PASS（STARE n=4 0.0625 特例正确）。**补回归测试 TestDatasetCaseNormalization 锁**。
+
+### 🛑 拍板裁定（用户 2026-06-20）+ 合并 + 工具加固
+- 裁定：DRIVE held-out 走 CHASE（注：winD Entry16 另议重下官方 test GT，待对齐）/ creatis 自复现 / MambaVessel++ 降档C+MM-UNet 补位 / ACCEPTANCE 判据2 放行。
+- F/G 裁定合并进 `BASELINE_SPEC.md`（A11 MambaVessel→MM-UNet、A12 creatis 自复现、§5/§7.4）。
+- **工具加固**：`conductor.md` 写入「检测验收 + 完成线停下」铁律 + memory `feedback_multiwin_detect_stop`。
+
+### 待续（下轮起点）
+1. **sweep-launcher**（H 窗在跑）：命门批量提交脚本（4集×3臂×3seed=36，支 batch-1=12 先验，末尾 reid_verdict_v2 聚合），dry-run 验参。**gate 着 train**。
+2. **impl-mmunet**（I 窗在跑）：MM-UNet vendor+adapter。独立 P3。
+3. 🛑 **train 拍板点**：sweep dry-run 过→HPC 上传新码+投 **92 GPU·h**（停下报放行）。**建议 batch-1(12run) 先验真 3 臂 HPC 全链再扩全 36**。
+4. ⚠️ **held-out 口径冲突待裁**：主窗裁「DRIVE 走 CHASE 不做断点」vs winD Entry16「重下 DRIVE 官方 test GT」——下轮对齐，别两套并行。
+5. H/I 回来主线检测验收。
+
+### 教训
+- 集成闸价值二次坐实：2 缝全 pytest 照不到（A1' 缺失靠侦察、大小写缝靠真组件胶合非 mock）。→ 真组件胶合 + 回归测试锁。
+- 检测验收不信自报：winA 越界改 ACCEPTANCE 本体（git diff 抓）、A1' numel 自报对不上（stub fla 核出等价）。三关（diff+跑验+对完成线）拦住。
+
+---
+
+## Entry 17 — 2026-06-20 creatis-repro 棒：plug-and-play reco 后处理按官方源码真实现/对账修正（winF）
+
+承 P3 baseline 拍板裁定（creatis 无 LICENSE → 自复现协议）。winF 认领 `creatis-repro`，researcher 拉官方源码地基 → coder 对账修正。只碰 creatis_postproc territory（adapter + third_party + tests + creatis.yaml），不碰 BASELINE_SPEC/reid_verdict/drive。
+
+### researcher 定档官方算法（arXiv 2404.10506 + repo 源码，jsdelivr CDN 抓）
+- **§3.1 后处理 = 朴素迭代重分割，非 ADMM/能量框架**（论文明写 "simple iterative reapplication of trained U-Net"）：`for i in 1..10: normalize → sliding_window_inference(96×96,gaussian,overlap0.5) → sigmoid → 阈值0.5 → 回喂`。我们 vendored `apply_postproc_iterations` 结构已对。
+- 🔴 **最大保真 bug：PonderatedDiceloss 的 mask 我们用 `(1-target)` 是错的**。官方 mask = `disconnect.py` 生成的断点膨胀图 `pos_{i}.png`（`binary_dilation(GT−artifacted, disk(2))`），loss 公式 = `dice_1(全图) + dice_2(mask区)`，返三元组 `(total, d1, d2)`。
+- 官方 roi/norm 从 `config_training.json` 动态读（非硬编码）；`normalize_image(image,1)` 精确语义未抓到（TODO-3）。
+- 超参 14 项核对：channels/strides/num_res_units/roi(96,96)/sw_batch5/gaussian/overlap0.5/iter10/Adam lr1e-3/batch32/epoch1000/PonderatedDiceloss/threshold0.5 = 全 PASS；norm 默认 INSTANCE 官方未明写（TODO-1）。
+
+### coder 对账修正（5 文件）
+- **新建 `third_party/creatis_postproc/image_utils.py`**：官方 `normalize_image(image,max_val)` port（/255×max_val），TODO-3 标注语义未核实。
+- **新建 `third_party/creatis_postproc/disconnect.py`**：官方 `create_disconnections`/`create_dataset` 忠实 port（scipy+skimage：骨架距离变换采样细血管→加权断点→gaussian σ0.7 平滑阈值0.4→`disk(2)` 膨胀 pos mask）。`nb_disconnection` 默认官方未给 → 留可配标 TODO。
+- **改 `post_treatement.py`**：`/255` 硬编码换 `normalize_image(image,1)`。
+- **重写 `adapters/creatis_postproc.py` 的 `_PonderatedDiceloss`** 为官方公式（dice_1 全图 + dice_2 mask 区，返三元组）；加 `_CreatisLossWrapper` 做 harness 兼容（sigmoid+取 total 标量）。
+- **`tests/test_adapter_special.py`** +49 creatis 测试（loss raw/wrapper/disconnect/normalize 四类）。
+
+### ⚠️ 已知保真缺口（显式 TODO 不掩盖）
+- **TODO-harness**：`_PonderatedDiceloss` 的 mask 须由 Stage-2 训练 dataloader 提供 `pos_i` 断点膨胀图；当前 wrapper 透传 fov_mask 占位 —— **Stage-2 训练管线接好断点 mask 列后才忠实**（Stage-2 训练脚本/断点数据流水线尚未建，本棒不含）。
+- TODO-3（normalize_image 第二参数语义）/ TODO-1（norm 默认 INSTANCE）/ nb_disconnection 默认 —— 三项官方源未抓到，留 TODO 待 researcher。
+
+### 验证（coder 烟测 + 主线独立核）
+- pytest **534 passed/5 skipped/1 xfailed**（基线 480；+49 creatis 全绿；monai 装后 skip 10→5）。
+- coder 本地真烟测（非 mock）：apply_postproc(64×64,2轮)→uint8{0,255} PASS；loss 返三元组+梯度回传 PASS；disconnect(128×128,5断点)→removed 21px+pos nonzero 79 PASS。
+- **主线独立核**（不全信自报）：loss 返 tuple len3 `(0.9922,0.4984,0.4937)`✓、disconnect 返 tuple✓、`pytest -k creatis` 38 passed✓、新文件落地✓。
+
+### 状态
+creatis_postproc baseline 推理后处理 + loss 按官方真实现，复现零偏离守住（保真缺口全标 TODO）；pipeline `creatis-repro` done ✓（解锁 integrate）。monai 已装本地；HPC gdn2venv 需确认 monai 可用（上传/装新依赖=拍板点，未做）。DoD 达线即停，不冲 integrate 棒。
+
+---
+
 ## Entry 16 — 2026-06-20 impl-drive 棒：drive.py 迁 base_vessel canonical + 挖出 gif 静默全零 bug + held-out 拍板=重下官方 test GT（winD）
 
 承 Entry 14 待续4。winD 窗认领 `pipeline.py claim gdn2vessel impl-drive winD`，派 coder 迁移，只碰 src/datasets/drive.py。
