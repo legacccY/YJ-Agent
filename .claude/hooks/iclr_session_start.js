@@ -27,6 +27,40 @@ process.stdin.on('end', () => {
     if (brief) lines.push('在跑：' + brief + '。');
   } catch (e) {}
 
+  // 本窗口归属推断 + 项目读档清单（claim-aware，省得 agent 漏读档）
+  // 取最近修改的 *.claim（排除归档/training.lock）→ 映射该项目入口读档链 → 直接注入确切路径。
+  try {
+    const locksDir = path.join(root, '.portfolio', 'locks');
+    const reg = JSON.parse(fs.readFileSync(path.join(root, '.portfolio', 'registry.json'), 'utf8'));
+    const projHome = {};
+    Object.keys(reg.projects || {}).forEach(k => { projHome[k] = (reg.projects[k].home || '').replace(/\/$/, ''); });
+
+    // 历史特例读档链（其余走标准 schema）
+    const SPECIAL = {
+      gdn2vessel: h => [`${h}/00_README.md`, `${h}/STORY_FRAMEWORK.md`, `${h}/ACCEPTANCE_CRITERIA.md`, `${h}/PLAN/MASTER_PLAN.md`, `${h}/PROJECT_LOG.md（最新 entry）`],
+      iclr: h => [`${h}/README.md`, `${h}/STORY_FRAMEWORK.md`, `${h}/ACCEPTANCE_CRITERIA.md`, `${h}/PROJECT_LOG.md（最新 entry）`],
+      'nca-jepa': h => [`${h}/README.md`, `${h}/01_创新计划`, `${h}/02_理论框架`, `${h}/04_LOG.md（最新 entry）`],
+      bmvc: () => ['🔒 BMVC 已封印：只读 meeting/BMVC/SUBMITTED.md，不动手'],
+    };
+    const standard = h => [`${h}/00_README.md`, `${h}/01_STORY.md`, `${h}/02_ACCEPTANCE.md`, `${h}/04_LOG.md（最新 entry）`];
+
+    const claims = fs.readdirSync(locksDir)
+      .filter(f => f.endsWith('.claim') && !f.startsWith('_archived'))
+      .map(f => ({ proj: f.replace(/\.claim$/, ''), mtime: fs.statSync(path.join(locksDir, f)).mtimeMs }))
+      .filter(c => projHome[c.proj] != null)   // 只认 registry 里有的项目
+      .sort((a, b) => b.mtime - a.mtime);
+
+    if (claims.length) {
+      const top = claims[0];
+      const h = projHome[top.proj];
+      const buildList = SPECIAL[top.proj] || standard;
+      const readlist = buildList(h);
+      const others = claims.slice(1, 4).map(c => c.proj).join(', ');
+      lines.push(`📂 本窗口大概率=${top.proj}（最近认领的 claim）。**先确认归属，再立即按此链读档**：${readlist.join(' → ')}。`);
+      if (others) lines.push(`   （其他活跃 claim：${others}——若本窗其实做别篇，读那篇的 00_README 链。）`);
+    }
+  } catch (e) {}
+
   // 训练锁
   try {
     const lock = JSON.parse(fs.readFileSync(path.join(root, '.portfolio', 'locks', 'training.lock'), 'utf8'));
@@ -34,6 +68,33 @@ process.stdin.on('end', () => {
   } catch (e) {
     lines.push('训练锁空闲。');
   }
+
+  // 在跑的 Conductor 阶段 DAG（每窗必报，不靠关键词——最可靠的续跑触发）
+  try {
+    const pdir = path.join(root, '.portfolio', 'pipelines');
+    const pfiles = fs.readdirSync(pdir).filter(f => f.endsWith('.json'));
+    const briefs = [];
+    pfiles.forEach(f => {
+      try {
+        const dag = JSON.parse(fs.readFileSync(path.join(pdir, f), 'utf8'));
+        const ns = dag.nodes || [];
+        const done = ns.filter(n => n.status === 'done' || n.status === 'skipped').length;
+        const doneIds = new Set(ns.filter(n => n.status === 'done' || n.status === 'skipped').map(n => n.id));
+        const ready = ns.filter(n => n.status === 'pending' && (n.deps || []).every(d => doneIds.has(d)));
+        const running = ns.filter(n => n.status === 'running');
+        let head;
+        if (ready.some(n => n.gate)) head = `🛑拍板点 ${ready.filter(n => n.gate)[0].id}`;
+        else if (ready.length) head = '下一棒 ' + ready.map(n => `${n.id}(${n.agent})`).join(',');
+        else if (running.length) head = '在跑 ' + running.map(n => `${n.id}@${n.owner || '?'}`).join(',');
+        else if (done === ns.length) head = '✓ 全完成→可收尾清扫(归档图+清_scratch)';
+        else head = '查 pipeline.py next';
+        briefs.push(`${dag.project} ${done}/${ns.length} → ${head}`);
+      } catch (e) {}
+    });
+    if (briefs.length) {
+      lines.push('🎼 在跑阶段 DAG（Conductor）：' + briefs.join(' ｜ ') + '。续跑=说人话「推进<项目>」我读图接着干（状态在 .portfolio/pipelines/，不靠 context）。一篇多窗→各窗认领不同节点(claim)，汇到 integrate 集成烟测才放行训练。');
+    }
+  } catch (e) {}
 
   lines.push('规则：进项目先读其 00_README/STORY+ACCEPTANCE；数字 Bash/Grep 核 csv 不信 Read；BMVC 封印。');
   lines.push('Caveman 仅内部沟通/对话；写 tex/正文/rebuttal 一律 OFF（hook 会提醒）。');

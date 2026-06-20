@@ -51,11 +51,6 @@ process.stdin.on('end', () => {
   // 记时间戳（先写，避免重试时再次拦）
   try { fs.writeFileSync(statePath, JSON.stringify({ last_block_ts: now }, null, 2)); } catch (e) {}
 
-  // friction 记账（best-effort）
-  // 注意：hook 无法区分主线 vs subagent 写入（Claude hook schema 无 agent 标识字段）。
-  // 用 code-gate-trigger 而非 main-writes-code，避免 optimizer 误把 coder 的写入当主线违规聚类。
-  try { require('./_friction.js').log('code-gate-trigger', norm.split('YJ-Agent/')[1] || norm); } catch (e) {}
-
   const short = norm.split('YJ-Agent/')[1] || norm;
   // 用户决策（2026-06-19）：改训练/实验文件不需拍板、auto=acceptEdits 放开权限 →
   // 本门降级为「只提醒不拦」（exit 0），不再 exit 2 打断主线写入。派 coder 仍是推荐默认，但软提醒。

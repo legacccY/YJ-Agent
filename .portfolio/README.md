@@ -12,6 +12,10 @@
   - schema：`{"schema_version":2,"capacity":{"local":1,"hpc":4},"active":[{"id","project","host","gpus","status":"starting|running","start_ts","note"}],"queue":[{"id","project","host","gpus","enqueued_ts","note"}]}`
 - `locks/<project>.claim` — 窗口认领。哪个终端在写哪篇，防两窗并写同项目 / 并写 PORTFOLIO.md。
   - 格式：`{"window_id","project","ts","heartbeat"}`
+- `pipelines/<project>.json` — **Conductor 阶段编排 DAG（持久任务图）**。单项目多阶段工作的依赖图：每棒一节点（agent/deps/status/gate），跑完一棒自动解锁下游，到 gate 棒（训练/HPC/投稿）停。仿 state.json 写文件不靠 context，任何窗口 `/conductor <project>` 读图续跑。
+  - 不手改 JSON，全走 `python tools/pipeline.py {init|ready|next|start|done|block|skip|add|status|list|rm}`（头注有用法）。
+  - 与 gpu_slot 正交：pipeline 管「干哪棒/谁先谁后」，gpu_slot 管「训练有没有空卡」；train 棒走 gpu_slot。
+  - skill 入口 = `/conductor`（`.claude/commands/conductor.md`）。旧 `.archive/` 存归档图。
 
 ## 规则
 

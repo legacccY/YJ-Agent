@@ -454,9 +454,14 @@ class TestPrecomputeBenchmark:
         )
 
         sample = load_benchmark_sample(str(npz_path))
+        # 'image' key present in all samples (None for legacy NPZs missing the field)
         required = {'mask_broken', 'vessel_segment_map', 'gaps',
-                    'image_id', 'dataset', 'severity', 'seed_used', 'original_shape'}
+                    'image', 'image_id', 'dataset', 'severity', 'seed_used', 'original_shape'}
         assert set(sample.keys()) == required
+        # Legacy NPZ (no 'image' saved): key present but value is None
+        assert sample['image'] is None, (
+            "Legacy NPZ should return image=None; got non-None value"
+        )
         assert sample['mask_broken'].shape == (H, W)
         assert len(sample['gaps']) == 1
         assert sample['gaps'][0]['gap_id'] == 0

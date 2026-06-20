@@ -3,6 +3,9 @@
 // 注入提醒派对应 agent（planner/coder/analyst）。直击"低效惯性"——把 CLAUDE.md 已写的
 // 并行规矩变成每次自动触发。静默除非命中；纯提醒，exit 0。
 
+const fs = require('fs');
+const path = require('path');
+
 let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', c => { input += c; });
@@ -11,15 +14,26 @@ process.stdin.on('end', () => {
   try { data = JSON.parse(input); } catch (e) { process.exit(0); }
   const cwd = (data.cwd || '').replace(/\\/g, '/');
   if (!cwd.includes('YJ-Agent')) process.exit(0);
+  const root = cwd.slice(0, cwd.indexOf('YJ-Agent') + 'YJ-Agent'.length);
 
   const p = String(data.prompt || '');
   let out = '';
 
   // 泛指令（无关键词的"开始工作/继续/干活"）→ 提醒主线按项目状态自动路由流水线，别串行单干
-  const vagueStart = /^(\s*)(开始(工作|干活|吧)?|继续|接着(干|做)|干活(吧)?|推进(一下)?|开工|往下走|往前推|go|start|继续推进|接着来)(\s|$|，|。|！|\.|!)/i.test(p)
-    || /(开始工作|继续干|接着干|干活吧|推进一下|往下推进)/i.test(p);
+  const vagueStart = /^(\s*)(开始(工作|干活|吧)?|继续|接着(干|做)|干活(吧)?|推进(一下)?|开工|往下走|往前推|go|start|继续推进|接着来|往下做|接着推)(\s|$|，|。|！|\.|!)/i.test(p)
+    || /(开始工作|继续干|接着干|干活吧|推进一下|往下推进|把这篇.*(推|做|干).*(下去|完)|往下做|接着推)/i.test(p);
   if (vagueStart && p.length < 40) {
-    out += '[自动路由] 泛指令 → 别主线埋头串行。先读 registry.phase + 项目 LOG 最新 entry + log/experiment_state.json 定位流水线当前棒 → 主动派对应 agent/skill（researcher/planner/skeptic/coder/analyst/writer/reviewer 或 /paper-scout、/design-experiment、/experiment-cycle、/analyze-results、/stage-gate）→ 拍板点停。默认动作=派编队不是自己干。\n';
+    // 有现成 pipeline DAG → 优先续跑 conductor（状态在文件里，抗 context 压缩/跨窗）
+    let pipes = [];
+    try {
+      pipes = fs.readdirSync(path.join(root, '.portfolio', 'pipelines'))
+        .filter(f => f.endsWith('.json')).map(f => f.replace('.json', ''));
+    } catch (e) {}
+    if (pipes.length) {
+      out += `[自动路由→conductor] 在跑的阶段 DAG：${pipes.join(', ')}。泛指令=续跑编排器别另起：\`python tools/pipeline.py next <project>\` 看卡哪棒 → 按 /conductor 驱动（ready→派编队→done 解锁→gate 停）。状态在 .portfolio/pipelines/，跨窗/压缩照样续。\n`;
+    } else {
+      out += '[自动路由] 泛指令 → 别主线埋头串行。多阶段连续推进 → 起 /conductor <project>（读 phase 建持久 DAG，自动一棒接一棒派编队、拍板点停、可恢复）。单棒活按状态派对应 agent/skill（researcher/planner/skeptic/coder/analyst/writer/reviewer 或 /paper-scout、/design-experiment、/experiment-cycle、/analyze-results、/stage-gate）→ 拍板点停。默认=派编队不是自己干。\n';
+    }
   }
 
   // 设计实验类 → planner

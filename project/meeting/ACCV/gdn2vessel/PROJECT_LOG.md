@@ -1,5 +1,36 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 14 — 2026-06-20 P2 出口 HPC 真验：item-1 真 FLA PASS + 命门 5 缝攻坚（多窗收口后首次真 GPU 验）
+
+承 Entry 10/13。用户「传，跑」放行 HPC 上传新码 + 跑 P2 待 HPC 真验两条（Entry 10 列）。**这是多窗收工后第一次真 GPU 验——彻底坐实开局警示的「pytest 绿 ≠ HPC 真验」**。
+
+### 多窗冲突复检（开窗任务）
+git 干净线性无 merge；5 个 16:29–16:47 收工 commit = 同窗堆叠非冲突；无真冲突标记（`=======` 全是代码注释分隔线）。Entry 10-13 辖域切干净（P1/P2 窗碰 src/models、数据窗只 datasets.json、§2 窗只 reference/、P3 窗只 baselines/adapter），唯一准撞点 datasets/ loader 窗内自己 defer base_vessel 让路。**踏实度**：`PYTHONPATH=src pytest tests/` = 378 passed 精确吻合 LOG 声称。
+
+### ✅ item-1（P2 验·真 Triton FLA 全链）= 真 PASS
+关3 PASS 当初是**本地 naive 后端 + 14:32 旧码**跑的（FLA 纯 pytorch naive，非 Triton kernel）。本次跑**新 P1/P2 码 + backend=chunk 真 Triton FLA**（job 1478580 gpu4090n4）：epoch1=88.8s（Triton JIT 编译）后 4s/epoch，best val Dice **0.8159**（早停 ep56 rc=0），与 naive 0.8181 一致 → 真 FLA kernel 训练正确 + 不发散 + 新码没破 memory 模块。
+
+### 命门（P2 Claim2 致命-2·re-ID 可归因 A2 vs A0'）= 攻下 5 处跨窗集成缝，eval 真 HPC 跑通，两臂在跑
+P1/P2/P3 代码 pytest 全绿，但**真跑暴露 5 处缝**（每处 pytest 因 mock 接口漏掉，[[feedback_debug_silent_failure]]）：
+1. **单-NPZ harness**：train_reid_pilot 读单文件，precompute 写逐图 → 偏相关只 1 点。coder 修读 --benchmark_dir + manifest 聚合 n≥20。
+2. **gdn2venv 缺 scipy/scikit-image**（synth_breaks 用）→ 用户拍板装（HPC pip，scipy1.15.3+skimage0.25.2，连带 pillow/imageio/tifffile）。
+3. **DRIVE 无 test-GT**（HPC test/ 仅 images+mask，1st_manual NONE，官方 test GT 不公开）→ 断点 benchmark 没法在 DRIVE test 做。**改走 CHASE**（8 张官方 held-out test GT，base_vessel canonical API）。
+4. **train_reid_pilot 训练集硬编码 DRIVEDataset** → coder 改 registry 按 --dataset 选（DRIVE/CHASE 同签名，425 passed，CHASE TRAIN16/VAL4/TEST8 互斥）。
+5. **benchmark-eval 两 bug（碰 STORY 一致性，用户拍板修+本地真烟测再上）**：(a) 喂 `mask_broken` 二值掩膜当输入，但训练吃视网膜图像 = 域错配；(b) 整图 960×999→bottleneck 3720>max_seq_len1024 崩。诊断：第一轮两臂（1478590/91）epoch10 eval 全崩 n_images=0 reid_rate=0 = **bug 产物非 Claim2 证伪**，已停两臂释卡未让产假数据。coder 修=**frozen benchmark 自包含**（precompute 存预处理源图入 NPZ `image` 字段）+ eval 读图 + 512 滑窗 tiled 推理（对齐 STORY §4/R5）+ **真 e2e 烟测**（640×640 tiling 不崩 n_images=1 非 mock，433 passed）。
+
+**重跑（1478621 A2-memory / 1478622 A0'-cnn，CHASE）**：precompute --force 重生 8 NPZ 带 image 字段（960×999 f32）→ A2 epoch10 **eval 真 HPC 跑通 n_images=8 reid_rate=0.5463 ε_β0=169.31 SR=0.5838**（ep10 欠训数字，仅证不崩）。A0' (Resources) 排队 ~18:26 自动起（gpu4090 全校共享满负荷，非 bug）。
+
+### 待续（命门 verdict 未出）
+- 两臂跑完（A2~19:00/A0'~19:30）→ `--partial_corr_only` 出 A2 vs A0' re-ID 率差 + re-ID vs ε_β0 偏相关 → 判致命-2（ACCEPTANCE P4 预登记阈值）。**这才是 Claim2 生死,现仍未测出**。
+- ⚠️ **LOW power**：n_images=8 < 10/臂，偏相关统计力不足 → 需补 severity（Easy/Hard/Extreme）或改 per-gap 聚合提 n。
+- ε_β0=169 偏大需 analyst 训练收敛后核（ep10 欠训 + 全图 tiled）。
+- DRIVE benchmark 留待：DRIVE 无 test-GT，须定 held-out 划分（碰防泄漏，拍板点）；drive.py 迁 base_vessel canonical。
+
+### 环境/工具变更
+HPC gdn2venv +scipy+scikit-image；CHASE benchmark_cache 8 NPZ 冻结（自包含含 image）；新增 src/train_reid_pilot.py + tests/test_reid_pilot_harness.py + test_reid_eval_e2e.py。
+
+---
+
 ## Entry 13 — 2026-06-20 P3 Baseline adapter 全实现（5 coder 2 波，14 adapter 注册=12 baseline 达标）
 
 承 Entry 8。用户「多上网查越结实越好」→ 各 adapter curl 官方源忠实移植（复现零偏离），非凭记忆重写。

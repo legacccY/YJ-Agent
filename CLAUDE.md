@@ -99,7 +99,7 @@
 
 **⚡ 泛指令自动路由（铁律）**：用户实际只会说「开始工作 / 继续 / 接着干 / 干活吧 / 推进一下」这种**不带关键词的泛指令**，不会点名「设计实验/写码/分析」。主线必须**按项目状态自动定位流水线当前棒、主动派对应 agent/skill，绝不退回主线串行单干、绝不等用户给关键词**：
 > 1. 读 `registry.phase` + 项目 LOG 最新 entry + `log/experiment_state.json` → 判当前卡在哪一棒。
-> 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；要设计实验→`planner`/`/design-experiment`；设计完动手前/立项前/headline 定稿前→`skeptic` 红队（0 致命即过）；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。
+> 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；要设计实验→`planner`/`/design-experiment`；设计完动手前/立项前/headline 定稿前→`skeptic` 红队（0 致命即过）；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。**泛指令「接着干/继续/把这篇推下去」要跨多阶段自动协调 → 上 `/conductor <project>`**（读 phase 建持久 DAG，自动一棒接一棒派编队、拍板点停、可跨窗恢复），别主线手动逐棒串。
 > 3. 训练经卡槽调度器有空卡即自启（一行回报，不卡拍板）；到真拍板点（投稿/立项/HPC 上传新数据…）停下报，其余自主推进。
 > 判据：能并行扇出就扇出，能一键 skill 就用 skill——**默认动作是「派编队」不是「自己埋头干」**。
 
@@ -172,7 +172,8 @@
 | 新论文 | `/spin-off-paper`（建标准 schema + 登记 registry；新方向建议先走 `/ideate`） |
 | 探路调研 | `/paper-scout`（researcher×4 + reviewer 扇出） |
 | 设计实验 | `/design-experiment <project>`（planner 出实验矩阵，对齐判据） |
-| 跑一轮完整实验 | `/experiment-cycle <project>`（planner→coder→🛑拍板→跑→analyst→verifier 全自动串） |
+| 跑一轮完整实验 | `/experiment-cycle <project>`（planner→coder→🛑拍板→跑→analyst→verifier 全自动串，**固定线性 6 棒**） |
+| 多阶段自动编排 | `/conductor <project> [paper\|experiment\|scout\|writing]`（**通用 DAG 编排器**：读 phase 建持久任务图→查就绪棒自动派编队→独立棒并行扇出→跑完解锁下一棒→拍板点停。状态写 `.portfolio/pipelines/<project>.json` 抗 context 压缩，任何窗口续跑。是 experiment-cycle 的超集——要 DAG/并行/可恢复/自定义阶段时用。引擎 `tools/pipeline.py`，不手改 JSON） |
 | 分析结果 | `/analyze-results <project>`（analyst 趋势/出图/对判据 + 建议，训练 done 后 hook 会提醒） |
 | 出图 | `/validate-figures` + `academic-figure-prompt` skill。**含数字/比例的图 coder 交付后，主线必派 verifier（或自己 Bash）核 ≥2 个关键值与稿/csv 一致再接稿**（防分母不一致/双标矛盾/AUC 算错类一致性 bug）。**ICLR 图路径规范**：图存 `project/meeting/ICLR2027/figures/<name>.pdf`（或既有 `project/report/figures/`）；`\includegraphics` 从 main.tex（在 ICLR2027/）算——同目录用 `figures/<name>`、report 目录用 `../../report/figures/<name>`。派 coder 出图必在 prompt 带此路径约定。 |
 | 阶段切换 | `/phase-transition` |
