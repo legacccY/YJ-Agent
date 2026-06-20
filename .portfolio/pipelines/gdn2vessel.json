@@ -3,7 +3,7 @@
   "project": "gdn2vessel",
   "template": "experiment",
   "created": "2026-06-20T20:24:25+08:00",
-  "updated": "2026-06-20T22:00:08+08:00",
+  "updated": "2026-06-20T22:26:18+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -251,39 +251,39 @@
       "stage": "写码",
       "agent": "coder",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "验/修 precompute_benchmark.py 支持STARE/HRF/FIVES三集(现仅CHASE冻结),本地小集烟测确认各集能生成benchmark_cache NPZ结构对(image字段960*999等)。territory=precompute_benchmark.py+tests",
-      "out": "",
+      "out": "precompute支持5集,逮2 FIVES bug(get_test_ids返空/200→20子采样)+主线补HRF30→18子采样(用户裁定守预登记n50),561passed",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-20T22:26:17+08:00"
     },
     {
       "id": "dep3-fix",
       "stage": "写码",
       "agent": "coder",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "修DEP-3多seed聚合粒度:concat各seed CSV时image_id加seed前缀(seed42__chase__img01)防同图多行epoch300碰撞,使每seed每图独立配对。改launch_reid_sweep聚合+确认reid_verdict_v2配对支持。territory=launch_reid_sweep.py聚合段+reid_verdict_v2+tests",
-      "out": "",
+      "out": "DEP-3多seed聚合:concat加seed前缀(seed{s}__img)使image_id_global唯一+select_last_epoch加多行WARNING守卫,561passed",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-20T22:26:17+08:00"
     },
     {
       "id": "drive-testgt",
       "stage": "调研",
       "agent": "researcher",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "定位重下DRIVE官方完整包(含test/1st_manual GT,现Kaggle pack缺)给标准20/20主Dice表。查官方源+镜像+license,出下载方案(实际下载+HPC上传=主线拍板)。territory=reference/+datasets.json",
-      "out": "",
+      "out": "DRIVE官方完整包重下方案核源出(datasets.json+reference)",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-20T22:26:18+08:00"
     }
   ]
 }

@@ -16,6 +16,7 @@
       "split": "DRIVE 20/20 固定; CHASE_DB1 20/8; FIVES 600/200; HRF 15/30; STARE 20 LOO",
       "used_by": ["gdn2vessel"],
       "purpose": "gdn2vessel 核心血管分割主集 (DRIVE/CHASE/FIVES 撑 headline+断点续连 benchmark)",
+      "drive_testgt_gap": "⚠️ 此 pack 的 DRIVE/test/ 只有 images+mask，缺 test/1st_manual GT（grand-challenge 官方包本就不含 test GT，在线提交评分）→ 标准 DRIVE 20/20 主 Dice 表需补 test GT。重下方案核源见 project/meeting/ACCV/gdn2vessel/reference/DRIVE_TESTGT_PLAN.md（候选完整包 Kaggle zhz638/aifahim，待主线拍板下载+校验后回填 local 路径）",
       "status": "downloading(local) / todo(hpc)"
     },
     "vessel_pending": {

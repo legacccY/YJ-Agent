@@ -87,8 +87,39 @@ def load_arm_csv(csv_path: Path | str) -> dict[str, list[dict]]:
 
 
 def select_last_epoch(rows: list[dict]) -> list[dict]:
-    """每个 image_id_global 取最后 epoch（最终评估状态）。"""
+    """每个 image_id_global 取最后 epoch（最终评估状态）。
+
+    防御：若同一 image_id_global 出现多行相同最大 epoch（说明调用方 concat 时
+    未加 seed 前缀，多 seed 数据错误合并），打印 WARNING 提示。
+    多 seed 正确做法：concat 前给每 seed 的 image_id 加 seed 前缀
+    （seed{seed}__{image_id}），使每 seed 每图 image_id_global 唯一。
+    """
+    import sys
     latest: dict[str, dict] = {}
+    # 先收集各 key 的最大 epoch
+    max_epoch: dict[str, int] = {}
+    for r in rows:
+        k = r['image_id_global']
+        ep = r['epoch']
+        if k not in max_epoch or ep > max_epoch[k]:
+            max_epoch[k] = ep
+
+    # 检测同一 key 是否有多行命中最大 epoch（= 没加 seed 前缀时多 seed 误合并）
+    count_at_max: dict[str, int] = {}
+    for r in rows:
+        k = r['image_id_global']
+        if r['epoch'] == max_epoch[k]:
+            count_at_max[k] = count_at_max.get(k, 0) + 1
+    duplicates = [k for k, c in count_at_max.items() if c > 1]
+    if duplicates:
+        print(
+            f"[select_last_epoch WARNING] {len(duplicates)} image_id_global "
+            f"各有多行命中最大 epoch（如 {duplicates[:3]!r}）。"
+            f"可能原因：多 seed concat 时未加 seed 前缀，导致 seed 信息被吞。"
+            f"正确做法：concat 前给 image_id 加 seed 前缀（seed{{seed}}__image_id）。",
+            file=sys.stderr,
+        )
+
     for r in rows:
         k = r['image_id_global']
         if k not in latest or r['epoch'] > latest[k]['epoch']:

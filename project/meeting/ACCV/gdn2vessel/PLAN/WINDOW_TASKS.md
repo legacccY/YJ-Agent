@@ -109,7 +109,8 @@
 - [ ] 验/修 precompute_benchmark.py 支持 STARE/HRF/FIVES 三集（现仅 CHASE 冻结）
 - [ ] 本地小集烟测：各集能生成 benchmark_cache NPZ，结构对（含 image 字段、severity Medium、与 CHASE 同 schema）
 - [ ] FIVES 子采样 seed42 固定（Entry14）核对在脚本内
-**停**：三集本地烟测过即 `done`。不真跑 HPC（主线串行）。
+- [ ] **HRF 子采样到 18（seed42，镜像 FIVES 逻辑）** ✅裁定（用户 2026-06-20）：loader TEST_IDS=30 但 Entry14 预登记=HRF18，**守预登记取 18**（防 HARKing 红线，CHASE8+STARE4+HRF18+FIVES20=n50）。不改预登记成 30。
+**停**：三集（含 HRF18 子采样）本地烟测过即 `done`。不真跑 HPC（主线串行）。
 
 ## 节点 dep3-fix（K 窗 · coder）2026-06-20 加，全 36 前置（batch-1 不需）
 **服务**：多 seed 聚合正确性 / L1 lever。sweep launcher DEP-3 标的粒度 bug。

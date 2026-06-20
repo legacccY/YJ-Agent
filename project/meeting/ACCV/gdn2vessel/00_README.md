@@ -27,6 +27,7 @@
 - [`reference/SOTA_NUMBERS.md`](reference/SOTA_NUMBERS.md) — 视网膜血管 SOTA 数字表（核源版，含 split 陷阱 + RV-GAN 禁用）
 - [`reference/RELATED_WORK_MATERIAL.md`](reference/RELATED_WORK_MATERIAL.md) — §2 四块文献 + GDKVM R3 模板核准 + creatis 协议精读（两修正）
 - [`reference/BASELINE_B_PICK.md`](reference/BASELINE_B_PICK.md) — 档 B 补位裁决（MM-UNet 顶替降档的 MambaVessel++，核源 + 跑前 TODO）
+- [`reference/DRIVE_TESTGT_PLAN.md`](reference/DRIVE_TESTGT_PLAN.md) — DRIVE test GT 重下方案（官方包不含 test GT，社区完整包 zhz638/aifahim 候选，待主线拍板下载）
 
 ## 🎯 双硬核贡献（skeptic 收敛 + 2026-06-20 调研升级）
 

@@ -20,7 +20,9 @@ launch_reid_sweep.py — 命门批量启动器（正式命门扫矩阵，ACCV202
 DEPENDENCY 汇总（见各处注释，主线需确认）：
   [DEP-1] A1' 臂（linear_attn）的 UNetGDN2 linear_attn 模块实现状态未确认
   [DEP-2] STARE/HRF/FIVES benchmark_cache 需先 precompute_benchmark.py 生成
-  [DEP-3] 多 seed 聚合至 reid_verdict_v2 的 CSV 行粒度待确认
+  [DEP-3] 多 seed 聚合行粒度——已解决：concat 时给每 seed 的 image_id 加 seed 前缀，
+          使 image_id_global = dataset__seed{seed}__image_id，每 seed 每图成独立配对单元，
+          select_last_epoch 不再吞 seed，配对数 = seed × 图（每集）。
 """
 from __future__ import annotations
 
@@ -169,36 +171,41 @@ def make_verdict_commands(batch1: bool = False) -> str:
       每臂把该臂所有集+所有seed的 reid_results.csv 纵向 concat 成一个该臂总 CSV，
       再喂 reid_verdict_v2.py --csv_a2/a1p/a0p。
 
-    DEPENDENCY [DEP-3]: 多 seed 时 concat 方法——reid_verdict_v2 的 select_last_epoch
-      按 image_id_global（dataset__image_id）取最后 epoch。多 seed 同一 image_id_global
-      会有多行（各 seed 各有一行 epoch=300）。目前 select_last_epoch 不感知 seed，
-      多 seed concat 后同 image_id_global 存在多个 epoch=300 行，取哪个不确定。
-      推荐做法：concat 前给各 seed 的 CSV image_id 加 seed 前缀
-      （如 seed42__chase__img01），使每 seed 每图成独立配对对象，
-      但需确认 reid_verdict_v2 的配对逻辑是否支持此方式。
-      拿不准前，batch-1（单 seed）聚合是安全路径，全量聚合方式标 TODO 待主线确认。
+    DEP-3 已解决：concat 时给每个 seed 的 CSV 行加 seed 前缀。
+      具体：读每个 (dataset, arm, seed) 的 reid_results.csv 时，把该行的 image_id
+      改写为 "seed{seed}__{原image_id}"（例 seed42__img01）。
+      load_arm_csv 再拼成 image_id_global = "dataset__seed{seed}__image_id"
+      （如 chase__seed42__img01），每 seed 每图唯一，select_last_epoch 不再吞 seed，
+      配对数 = seed × 图（每集），与 per_dataset 分组（按 dataset 列）完全兼容。
 
-    此处模板使用 HPC 端路径，假设 concat 脚本 (concat_arm_csvs.py) 已生成各臂总 CSV。
+    此处模板使用 HPC 端路径；inline python -c 完成带 seed 前缀的 concat，无额外依赖。
     """
     verdict_root = f"{HPC_PROJECT_ROOT}/outputs/reid_verdict"
     seeds = [BATCH1_SEED] if batch1 else SEEDS
 
     # Step 1: concat 各臂 CSV（按臂收集所有 dataset × seed 的 reid_results.csv）
-    step1_lines = ["# ── Step 1: 各臂 concat CSV（纵向合并所有集+seed）──"]
+    # DEP-3 已修：每个 seed 的行在读取时给 image_id 加 seed 前缀（seed{seed}__image_id），
+    # 使 image_id_global = dataset__seed{seed}__image_id，每 seed 每图独立配对单元。
+    step1_lines = ["# ── Step 1: 各臂 concat CSV（纵向合并所有集+seed，带 seed 前缀）──"]
     for arm in ARMS:
-        csv_files = []
+        # 构造 (path, seed) 对列表，供 inline python 逐文件读取时注入 seed 前缀
+        src_seed_pairs = []
         for dataset in DATASETS:
             for seed in seeds:
                 out_dir = make_output_dir(dataset, arm, seed)
-                csv_files.append(f"{out_dir}/reid_results.csv")
+                src_seed_pairs.append((f"{out_dir}/reid_results.csv", seed))
         arm_out_csv = f"{verdict_root}/arm_{arm}_all.csv"
-        # concat 用 Python 一行（无额外依赖）
+        # concat 用 Python 一行（无额外依赖）：
+        # 读每个 (csv_path, seed) 时把 image_id 改写为 seed{seed}__{image_id}
+        pairs_repr = repr(src_seed_pairs)
         concat_cmd = (
             f"python -c \""
             f"import csv, pathlib; "
-            f"srcs=[{', '.join(repr(p) for p in csv_files)}]; "
-            f"rows=[]; header=None; "
-            f"[[[rows.append(r) for r in csv.DictReader(open(p))] or True for p in srcs if pathlib.Path(p).exists()]]; "
+            f"pairs={pairs_repr}; "
+            f"rows=[]; "
+            f"[([(r.__setitem__('image_id', 'seed'+str(s)+'__'+r['image_id']), rows.append(dict(r)))"
+            f" for r in csv.DictReader(open(p))])"
+            f" for p,s in pairs if pathlib.Path(p).exists()]; "
             f"pathlib.Path('{verdict_root}').mkdir(parents=True, exist_ok=True); "
             f"w=csv.DictWriter(open('{arm_out_csv}','w',newline=''), fieldnames=rows[0].keys()) if rows else None; "
             f"w and (w.writeheader(), [w.writerow(r) for r in rows])"
@@ -211,7 +218,7 @@ def make_verdict_commands(batch1: bool = False) -> str:
     step2_lines = [
         "",
         "# ── Step 2: reid_verdict_v2 三臂对比 ──",
-        "# TODO [DEP-3]: 多 seed 聚合前须确认 image_id_global 配对粒度（见 DEP-3 说明）",
+        "# 已修：seed 前缀使每 seed 每图独立配对，配对数 = seed × 图（每集），select_last_epoch 不吞 seed",
         f"python {HPC_PROJECT_ROOT}/src/reid_verdict_v2.py \\",
         f"  --csv_a2  {verdict_root}/arm_memory_all.csv \\",
         f"  --csv_a1p {verdict_root}/arm_linear_attn_all.csv \\",
@@ -282,8 +289,9 @@ def dry_run(runs: List[dict], batch1: bool) -> None:
     print("          train_reid_pilot.py 参数已支持，但模型实现须验完整前向不报错")
     print("  [DEP-2] STARE/HRF/FIVES benchmark_cache 需先 precompute_benchmark.py 生成")
     print("          CHASE 已冻结(Entry14)可直接跑；其余三集先跑 precompute 再提交")
-    print("  [DEP-3] 多 seed 聚合 CSV 行粒度：reid_verdict_v2 select_last_epoch 不感知 seed")
-    print("          batch-1(单seed) 聚合安全；全量多 seed 聚合方式需主线确认")
+    print("  [DEP-3] 已解决：concat 时给 image_id 加 seed 前缀（seed{seed}__image_id），")
+    print("          image_id_global = dataset__seed{seed}__image_id，每 seed 每图独立配对，")
+    print("          配对数 = seed × 图（每集），select_last_epoch 不再吞 seed")
     print()
     print("── Verdict 聚合命令（所有 run done 后执行）──────────────────────────")
     print(make_verdict_commands(batch1=batch1))

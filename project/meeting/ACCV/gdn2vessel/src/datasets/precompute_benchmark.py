@@ -73,6 +73,18 @@ from benchmark.synth_breaks import apply_breaks, SEVERITY_GRID
 # --------------------------------------------------------------------------- #
 BASE_SEED = 42  # reproducible benchmark seed
 
+# FIVES test split = 200 images; benchmark design (Entry14 planner) requires 20.
+# Subsample with seed42 for deterministic reproducibility.
+# Subsampling is here (precompute layer) — not in the loader — to keep loader
+# clean and avoid affecting any training/val splits.
+FIVES_SUBSAMPLE_N = 20  # Entry14 命门设计 FIVES20（Entry14 planner），seed42 固定可复现
+
+# TODO (主线/planner 裁定): HRF loader TEST_IDS=30 (15 dr + 15 glaucoma)，
+# 但 Entry14 命门设计写 HRF=18，差 12 张。precompute 对 HRF 按 ds.ids=30 全生成，
+# 不在此子采样 HRF（eval 选择层/sweep runner 的事，不在本棒 territory）。
+# 主线需决定：① 认同 HRF30（改设计 n50→n62）；② eval 层取 18 张；
+# ③ 在 precompute 加 HRF 子采样（需主线明确授权，本棒不擅自做）。
+
 
 def severity_seed(base: int, severity_name: str) -> int:
     """Derive per-severity seed from base seed. Matches apply_breaks_all_severities."""
@@ -130,10 +142,25 @@ def precompute_one(
         print(f'  SKIP {dataset_name}/{severity}: cannot load dataset: {e}')
         return []
 
-    test_ids = ds.get_test_ids()
+    # bug-1 fix: use ds.ids (instance attr set by __init__ from disk scan) instead of
+    # ds.get_test_ids() which returns class attr TEST_IDS.  FIVESDataset resets class
+    # attr TEST_IDS=[] in its __init__ finally-block, so get_test_ids() returns [] for
+    # FIVES even though ds.ids is correctly populated.  Using ds.ids is equivalent for
+    # all loaders (CHASE/STARE/HRF/DRIVE have class-level TEST_IDS == ds.ids on split='test').
+    test_ids = list(ds.ids)
     if not test_ids:
         print(f'  SKIP {dataset_name}/{severity}: no test IDs (data not present)')
         return []
+
+    # bug-2 fix: FIVES test=200, benchmark design (Entry14) specifies FIVES20.
+    # Subsample to FIVES_SUBSAMPLE_N with seed42 — deterministic, same 20 every run.
+    # Only FIVES is subsampled here; HRF/STARE/CHASE/DRIVE are NOT (see TODO above).
+    if dataset_name == 'fives' and len(test_ids) > FIVES_SUBSAMPLE_N:
+        rng = np.random.RandomState(42)  # seed42, same source as BASE_SEED; deterministic
+        idx = sorted(rng.choice(len(test_ids), FIVES_SUBSAMPLE_N, replace=False))
+        test_ids = [test_ids[i] for i in idx]
+        print(f'  FIVES subsampled {FIVES_SUBSAMPLE_N}/{len(ds.ids)} test ids (seed42):')
+        print(f'    {test_ids}')
 
     manifest_entries = []
 

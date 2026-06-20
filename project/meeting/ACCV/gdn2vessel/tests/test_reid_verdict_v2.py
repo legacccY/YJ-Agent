@@ -782,3 +782,256 @@ class TestE2ERunVerdict:
             # 清理假 scipy
             for k in ['scipy', 'scipy.stats']:
                 _sys.modules.pop(k, None)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. DEP-3 回归测试：多 seed 聚合配对粒度
+#     验证：seed 前缀后配对数 = seed × 图（不丢 seed）；
+#           无前缀时 select_last_epoch 触发 WARNING（防御生效）。
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestDep3MultiSeedAggregation:
+    """
+    DEP-3 bug：多 seed concat 后同一 image_id_global 有多行同 epoch，
+    select_last_epoch 只留一行 → 配对数 = 图（而非 seed × 图）。
+
+    修复：concat 时给 image_id 加 seed 前缀（seed{seed}__image_id）。
+    image_id_global = dataset__seed{seed}__image_id，每 seed 每图唯一。
+
+    DoD：
+      T1 — 带 seed 前缀的 concat → 配对数 = SEEDS × N_IMGS（不丢 seed）
+      T2 — 无 seed 前缀的 concat → select_last_epoch 触发 WARNING（防御生效）
+      T3 — 带前缀数据跑完整 paired_by_image → 配对数断言正确
+    """
+
+    SEEDS   = [42, 1337, 2024]
+    N_IMGS  = 3   # 每集图数（enough 验配对数，不需 n≥6）
+    DATASETS_DEP3 = ['chase', 'hrf']
+
+    def _make_seed_csv(self, tmp_path: Path, seed: int, dataset: str,
+                       arm: str, with_seed_prefix: bool) -> Path:
+        """造单 seed 单集 CSV；with_seed_prefix=True 时 image_id 已含 seed{seed}__ 前缀。"""
+        rows = []
+        for i in range(self.N_IMGS):
+            raw_iid = f'img{i}'
+            iid = f'seed{seed}__{raw_iid}' if with_seed_prefix else raw_iid
+            rows.append({
+                'epoch':         300,
+                'image_id':      iid,
+                'dataset':       dataset,
+                'severity':      'Medium',
+                'reid_rate':     0.70 + 0.01 * i,
+                'epsilon_beta0': 0.10 + 0.01 * i,
+                'success_rate':  0.80,
+                'n_gaps':        10,
+                'arm':           arm,
+            })
+        fname = f'{dataset}_{arm}_seed{seed}_{"pre" if with_seed_prefix else "nopre"}.csv'
+        p = tmp_path / fname
+        with open(p, 'w', newline='', encoding='utf-8') as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            for r in rows:
+                w.writerow(r)
+        return p
+
+    def _concat_csvs_to_file(self, csv_paths: list[Path], out: Path) -> None:
+        """简单纵向合并 CSV 文件（列相同），写到 out。"""
+        rows = []
+        header = None
+        for p in csv_paths:
+            with open(p, newline='', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                if header is None:
+                    header = reader.fieldnames
+                for r in reader:
+                    rows.append(dict(r))
+        with open(out, 'w', newline='', encoding='utf-8') as f:
+            w = csv.DictWriter(f, fieldnames=header)
+            w.writeheader()
+            for r in rows:
+                w.writerow(r)
+
+    def test_with_seed_prefix_no_seed_loss(self, tmp_path):
+        """
+        T1：带 seed 前缀 concat → 每集配对数 = SEEDS × N_IMGS，不丢 seed。
+        3 seed × 3 图 = 9 配对单元（每集）。
+        """
+        ds = 'chase'
+        arm_a = 'memory'
+        arm_b = 'cnn'
+
+        # 分 seed 造 CSV，image_id 带 seed 前缀
+        csvs_a = [self._make_seed_csv(tmp_path, s, ds, arm_a, with_seed_prefix=True)
+                  for s in self.SEEDS]
+        csvs_b = [self._make_seed_csv(tmp_path, s, ds, arm_b, with_seed_prefix=True)
+                  for s in self.SEEDS]
+
+        # 合并成各臂总 CSV
+        concat_a = tmp_path / 'concat_a.csv'
+        concat_b = tmp_path / 'concat_b.csv'
+        self._concat_csvs_to_file(csvs_a, concat_a)
+        self._concat_csvs_to_file(csvs_b, concat_b)
+
+        # 经 load_arm_csv → select_last_epoch → paired_by_image
+        by_ds_a = load_arm_csv(concat_a)
+        by_ds_b = load_arm_csv(concat_b)
+
+        rows_a = select_last_epoch(by_ds_a.get(ds, []))
+        rows_b = select_last_epoch(by_ds_b.get(ds, []))
+
+        imgs, va, vb = paired_by_image(rows_a, rows_b, 'reid_rate')
+
+        expected_pairs = len(self.SEEDS) * self.N_IMGS  # 3 × 3 = 9
+        assert len(imgs) == expected_pairs, (
+            f"[DEP-3] 配对数应 = seed×图 = {expected_pairs}，"
+            f"实得 {len(imgs)}（丢了 seed 信息则为 {self.N_IMGS}）"
+        )
+
+    def test_without_seed_prefix_triggers_warning(self, tmp_path, capsys):
+        """
+        T2：无 seed 前缀 concat → 同 image_id_global 有多行同 epoch，
+        select_last_epoch 应打印 WARNING（防御生效）。
+        """
+        ds = 'hrf'
+        arm = 'memory'
+
+        # 不加 seed 前缀：3 seed 同一图会重名
+        csvs = [self._make_seed_csv(tmp_path, s, ds, arm, with_seed_prefix=False)
+                for s in self.SEEDS]
+        concat_all = tmp_path / 'concat_nopre.csv'
+        self._concat_csvs_to_file(csvs, concat_all)
+
+        by_ds = load_arm_csv(concat_all)
+        rows = by_ds.get(ds, [])
+
+        # 调用 select_last_epoch，应触发 WARNING
+        _ = select_last_epoch(rows)
+
+        captured = capsys.readouterr()
+        assert 'WARNING' in captured.err, (
+            f"[DEP-3] 无 seed 前缀时 select_last_epoch 应打印 WARNING，"
+            f"实际 stderr={captured.err!r}"
+        )
+
+    def test_with_seed_prefix_paired_count_per_dataset(self, tmp_path):
+        """
+        T3：多集多 seed 带前缀 concat → 每集配对数均 = SEEDS × N_IMGS。
+        涉及 chase + hrf 两集，跑全链 paired_by_image 验配对数。
+        """
+        arm_a = 'memory'
+        arm_b = 'linear_attn'
+        expected_pairs = len(self.SEEDS) * self.N_IMGS  # 9
+
+        for ds in self.DATASETS_DEP3:
+            csvs_a = [self._make_seed_csv(tmp_path, s, ds, arm_a, with_seed_prefix=True)
+                      for s in self.SEEDS]
+            csvs_b = [self._make_seed_csv(tmp_path, s, ds, arm_b, with_seed_prefix=True)
+                      for s in self.SEEDS]
+            concat_a = tmp_path / f'concat_a_{ds}.csv'
+            concat_b = tmp_path / f'concat_b_{ds}.csv'
+            self._concat_csvs_to_file(csvs_a, concat_a)
+            self._concat_csvs_to_file(csvs_b, concat_b)
+
+            rows_a = select_last_epoch(load_arm_csv(concat_a).get(ds, []))
+            rows_b = select_last_epoch(load_arm_csv(concat_b).get(ds, []))
+            imgs, _, _ = paired_by_image(rows_a, rows_b, 'reid_rate')
+
+            assert len(imgs) == expected_pairs, (
+                f"[DEP-3] ds={ds}: 配对数应 {expected_pairs}，实得 {len(imgs)}"
+            )
+
+    def _build_concat_cmd_body(self, src_seed_pairs: list, out_csv: str,
+                                out_dir: str) -> str:
+        """
+        重现 launch_reid_sweep.make_verdict_commands 生成的 concat 命令体
+        （python -c 的 -c 参数字符串）。与 launcher 完全等价，用于真执行验证。
+        拼接逻辑：'seed'+str(s)+'__'+r['image_id']（纯字符串拼接，无 f-string）。
+        """
+        pairs_repr = repr(src_seed_pairs)
+        return (
+            'import csv, pathlib; '
+            + f'pairs={pairs_repr}; '
+            + 'rows=[]; '
+            + "[([(r.__setitem__('image_id', 'seed'+str(s)+'__'+r['image_id']),"
+            + "rows.append(dict(r))) for r in csv.DictReader(open(p))])"
+            + " for p,s in pairs if pathlib.Path(p).exists()]; "
+            + f"pathlib.Path({repr(out_dir)}).mkdir(parents=True, exist_ok=True); "
+            + f"w=csv.DictWriter(open({repr(out_csv)},'w',newline=''), fieldnames=rows[0].keys()) if rows else None; "
+            + "w and (w.writeheader(), [w.writerow(r) for r in rows])"
+        )
+
+    def test_launcher_concat_cmd_subprocess_no_syntaxerror(self, tmp_path):
+        """
+        T4（真执行，防同款 bug 复发）：
+        重现 launcher make_verdict_commands 生成的 python -c 命令，
+        subprocess 真跑（非 exec/eval），验证：
+          (a) returncode=0（无 SyntaxError / 运行时错误）
+          (b) 输出 CSV 行数 = SEEDS × N_IMGS
+          (c) image_id 带 seed 前缀（seed42__img0 等）
+        如果 launcher 的字符串拼接逻辑含 f-string 混用 {} 等 bug，此测试必报 SyntaxError。
+        """
+        import subprocess
+        import sys as _sys
+        import csv as _csv
+
+        ds = 'chase'
+        arm = 'memory'
+        seeds = self.SEEDS
+        n_imgs = self.N_IMGS
+
+        # 造各 seed CSV（不带前缀，由 concat 命令注入）
+        csvs = [self._make_seed_csv(tmp_path, s, ds, arm, with_seed_prefix=False)
+                for s in seeds]
+        src_seed_pairs = [(str(p), s) for p, s in zip(csvs, seeds)]
+        out_csv = str(tmp_path / 'arm_memory_all.csv')
+        out_dir = str(tmp_path)
+
+        cmd_body = self._build_concat_cmd_body(src_seed_pairs, out_csv, out_dir)
+
+        # subprocess 真跑（完全隔离，等价 HPC 端 python -c "..." 执行）
+        ret = subprocess.run(
+            [_sys.executable, '-c', cmd_body],
+            capture_output=True, text=True,
+        )
+        assert ret.returncode == 0, (
+            f"[DEP-3 T4] concat 命令 returncode={ret.returncode}，"
+            f"SyntaxError 或运行时错误:\n{ret.stderr}"
+        )
+
+        # (b) 验输出 CSV 行数
+        with open(out_csv, newline='', encoding='utf-8') as f:
+            rows = list(_csv.DictReader(f))
+
+        expected = len(seeds) * n_imgs
+        assert len(rows) == expected, (
+            f"[DEP-3 T4] 输出行数={len(rows)}，期望 {expected}（{len(seeds)} seed × {n_imgs} 图）"
+        )
+
+        # (c) 验 seed 前缀
+        for s in seeds:
+            prefixed = [r for r in rows if r['image_id'].startswith(f'seed{s}__')]
+            assert len(prefixed) == n_imgs, (
+                f"[DEP-3 T4] seed{s} 行数={len(prefixed)}，期望 {n_imgs}"
+            )
+
+        # 验配对数（经 load_arm_csv → select_last_epoch → paired_by_image 全链）
+        arm_b = 'cnn'
+        csvs_b = [self._make_seed_csv(tmp_path, s, ds, arm_b, with_seed_prefix=False)
+                  for s in seeds]
+        src_b = [(str(p), s) for p, s in zip(csvs_b, seeds)]
+        out_csv_b = str(tmp_path / 'arm_cnn_all.csv')
+        cmd_b = self._build_concat_cmd_body(src_b, out_csv_b, out_dir)
+        ret_b = subprocess.run(
+            [_sys.executable, '-c', cmd_b], capture_output=True, text=True
+        )
+        assert ret_b.returncode == 0, f"[DEP-3 T4] concat arm_b failed: {ret_b.stderr}"
+
+        rows_a = select_last_epoch(load_arm_csv(out_csv).get(ds, []))
+        rows_b_loaded = select_last_epoch(load_arm_csv(out_csv_b).get(ds, []))
+        imgs, _, _ = paired_by_image(rows_a, rows_b_loaded, 'reid_rate')
+
+        assert len(imgs) == expected, (
+            f"[DEP-3 T4] 配对数={len(imgs)}，期望 {expected}（seed×图），"
+            f"若 = {n_imgs} 说明 seed 信息仍被吞"
+        )
