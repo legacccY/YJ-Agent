@@ -1,0 +1,27 @@
+{
+  "checkpoint_rule": "each arm last eval epoch (A2=80, A0=40)",
+  "n_images": 8,
+  "per_image_delta": {
+    "test_01": 0.019011,
+    "test_02": 0.09782599999999997,
+    "test_03": 0.01904800000000001,
+    "test_04": 0.029303999999999997,
+    "test_05": 0.028113,
+    "test_06": 0.013605999999999951,
+    "test_07": 0.03187299999999993,
+    "test_08": 0.028455000000000008
+  },
+  "mean_delta": 0.03340449999999998,
+  "a2_wins": 8,
+  "permutation_p_onesided": 0.00390625,
+  "wilcoxon_p_onesided": 0.00390625,
+  "rank_biserial_r": 1.0,
+  "lmm_memory_coef": 0.005706795783384853,
+  "lmm_memory_p": 0.485710916515265,
+  "lmm_note": "",
+  "pre_registered_criterion": "(perm p<0.05 AND r>0.5) AND (LMM coef>0 AND p<0.05)",
+  "main_pass": true,
+  "lmm_pass": false,
+  "overall_verdict": "FAIL",
+  "power_note": "n=8 LOW power; PASS is preliminary, confirm on expanded set"
+}

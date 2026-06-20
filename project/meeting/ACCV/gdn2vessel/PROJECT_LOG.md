@@ -20,14 +20,35 @@ P1/P2/P3 代码 pytest 全绿，但**真跑暴露 5 处缝**（每处 pytest 因
 
 **重跑（1478621 A2-memory / 1478622 A0'-cnn，CHASE）**：precompute --force 重生 8 NPZ 带 image 字段（960×999 f32）→ A2 epoch10 **eval 真 HPC 跑通 n_images=8 reid_rate=0.5463 ε_β0=169.31 SR=0.5838**（ep10 欠训数字，仅证不崩）。A0' (Resources) 排队 ~18:26 自动起（gpu4090 全校共享满负荷，非 bug）。
 
-### 待续（命门 verdict 未出）
-- 两臂跑完（A2~19:00/A0'~19:30）→ `--partial_corr_only` 出 A2 vs A0' re-ID 率差 + re-ID vs ε_β0 偏相关 → 判致命-2（ACCEPTANCE P4 预登记阈值）。**这才是 Claim2 生死,现仍未测出**。
-- ⚠️ **LOW power**：n_images=8 < 10/臂，偏相关统计力不足 → 需补 severity（Easy/Hard/Extreme）或改 per-gap 聚合提 n。
-- ε_β0=169 偏大需 analyst 训练收敛后核（ep10 欠训 + 全图 tiled）。
-- DRIVE benchmark 留待：DRIVE 无 test-GT，须定 held-out 划分（碰防泄漏，拍板点）；drive.py 迁 base_vessel canonical。
+### 命门两臂跑完 → verdict v1 FAIL → 翻盘成 artifact → 翻案双判据仍 FAIL（但性质变了）
+**两臂结局**：A2(memory) ep87 早停 best Dice 0.8212；A0'(cnn) ep46 best 0.7982。eval 路径全程稳（每轮 n_images=8 不崩，两臂 rc=0）。
+**verdict v1（partial_corr）= FAIL**：r=0.0393, CI=[-0.167,0.258], n=96，阈值 r>0.2&CI_lower>0 → FAIL。**第一反应「Claim2 塌」——但派 analyst 诊断翻盘**：
+- analyst：FAIL 是 **pilot 设计缺陷产物非 memory 无贡献**。①n=96 是 8 图×多 epoch **伪重复**（Hurlbert 1984），真独立单元仅 8 图，统计无效；②A2 ep40 在欠训谷底却被池进比较，A0' ep40 早停恰在高位 → 系统性稀释 A2；③干净比（各取 best-ckpt 8 图配对）**A2 赢 A0' 8/8，p=0.008**；④ε_β0 22-412 像绝对差需核。
+- 用户「多去网上找，应该能解决」→ researcher×2 调研：(A) 伪重复正解 = **per-image 配对精确排列检验**（n=8→256 枚举）+ **LMM `reid_rate~memory_on+ε_β0+(1|image_id)`** 随机截距处理重复测量；预承诺双判据防 HARKing。(B) ε_β0 核源：creatis(2404.10506 §3.1) 明确 = |β0−β0gt|/β0gt **比值**，且 creatis 自己 Table1 就 96~132（重断连下比值天然大）→ **22-412 不是 bug**。
+- 主线核 metrics.py:189 `abs(b0_pred-b0_gt)/max(b0_gt,1)` = **比值，对齐 STORY+creatis，确证非 bug**。
+- 建 `src/reid_verdict_v2.py`（正确统计，重判现有数据不重训）：**主判据 PASS**（A2 8/8 全赢，mean delta +0.0334，精确排列 p=0.0039，配对 Wilcoxon p=0.0039，rank-biserial r=1.0）；**副判据 LMM FAIL**（memory_on coef=+0.0057 **p=0.486** + ConvergenceWarning MLE boundary）→ **n=8 组 LMM 退化，不是「证无独立贡献」是「测不出」**。预承诺双判据 = 仍 FAIL，**但性质从「记忆没用」变成「记忆稳定+3.3 点但独立性 n=8 答不了」**。
+
+### 设计正式命门（planner）→ 红队拦下（skeptic 2🔴，省 62 GPU·h 白烧）
+**planner 设计**：4 集各 in-dist 训评（CHASE8+STARE4+HRF18+FIVES20=n50）治伪重复、epochs100→300 治欠训、3 seed、单 severity(Medium) 防伪重复、LMM 加 C(dataset)、第一波只 A0'/A2（24run~62GPU·h）、A4 第二波。
+**skeptic 红队 = 2 致命伤，裁决「别裸投 62 GPU·h」**：
+- 🔴**致命-A 容量混杂**：A0'(use_memory=False) 砍掉**整个 GDN2MemoryModule**（QKV+Frangi+门+LayerNorm+~13万参），非单切「关联记忆」变量 → re-ID 增益可能来自容量/加模块，**证不到 headline 的「关联记忆机制」**（STORY R4「换模块」陷阱重演）。**修=加 A1' 等参非 delta-rule attn 臂**，A2>A1' 才是干净归因（PHASE_4 第8项本有，planner 漏没提进命门）。
+- 🔴**致命-B over-control**：ε_β0 在自己因果故事里是**中介非混杂**（memory→续更好→才认出同根），LMM 控制中介 = over-control bias 可能抹真效应 + 「mediator 当 confounder」审稿硬伤。**修=改中介直接效应分解 或 ε_β0 配平子集分层**，删「控制混杂」措辞。
+- 🟠×3（不阻断）：跨集 pool 改每集内配对看一致性（防 FIVES 带跑）；HARKing 暴露面要写预承诺留痕进论文（换的是**加严**判据方向没错）；单 severity 命门 OK 但 headline 衰减曲线 P4 补。
+**用户拍板：先收工落档，明天修设计再投。**
+
+### 待续（明天起点）
+1. 🔴 回 planner/coder 修命门设计两条：①加 A1'（等参非 delta-rule 线性 attn）臂，三臂 A2>A1'>A0' ②统计改中介直接效应/ε_β0 配平分层（删 over-control）。改 ACCEPTANCE P4 判据 2（作废 partial_corr→双判据，**拍板点**）。
+2. 修完 skeptic 复核 0🔴 → 投正式命门算力（~62→约 92 GPU·h 含 A1'，4 集×3 臂×3 seed）。
+3. coder 升级 reid_verdict_v2：多集路径聚合 + image_id 加集前缀 + LMM 加 C(dataset) + 平台斜率检查 + FIVES 子采样 seed42 固定。
+4. DRIVE benchmark 留待（无 test-GT 须定 held-out，拍板点）；drive.py 迁 base_vessel canonical。
+
+### 教训（反跑偏，写进方法论）
+- **「pytest 绿 ≠ 真能跑」彻底坐实**：5 处跨窗集成缝全靠真 HPC/真 e2e 才暴露，mock smoke 全漏。→ 新脚本必本地端到端真烟测（非 mock）再上 HPC（用户拍板的「修+本地真烟测再上」顺序一把过）。
+- **FAIL 先别认，查是真信号还是 pilot 缺陷**：verdict v1 FAIL 险误判「Claim2 塌」，analyst 一查是伪重复 artifact。数字异常先怀疑统计/工具不怀疑假设（[[feedback_diagnose_single_value]]）。
+- **烧算力前必 skeptic 红队**：62 GPU·h 设计被 2🔴 拦下，红队成本 << 算力全损。
 
 ### 环境/工具变更
-HPC gdn2venv +scipy+scikit-image；CHASE benchmark_cache 8 NPZ 冻结（自包含含 image）；新增 src/train_reid_pilot.py + tests/test_reid_pilot_harness.py + test_reid_eval_e2e.py。
+HPC gdn2venv +scipy+scikit-image（+pillow/imageio/tifffile）；CHASE benchmark_cache 8 NPZ 冻结（自包含含 image 字段 960×999 f32，--force 重生）；新增 src/train_reid_pilot.py + src/reid_verdict_v2.py + tests/test_reid_pilot_harness.py + test_reid_eval_e2e.py；results/reid_pilot_chase_20260620/（两臂 csv+state+verdict_v1/v2+fig1/2/3）。item-1 真 FLA chunk 全链 Dice 0.8159 PASS（job 1478580）。
 
 ---
 

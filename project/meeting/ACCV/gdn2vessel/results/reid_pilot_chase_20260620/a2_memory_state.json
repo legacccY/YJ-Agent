@@ -1,0 +1,8 @@
+{
+  "epoch": 87,
+  "train_loss": 0.20563,
+  "val_dice": 0.786656,
+  "best_dice": 0.821174,
+  "status": "done",
+  "reid_feat_source": "memory"
+}
