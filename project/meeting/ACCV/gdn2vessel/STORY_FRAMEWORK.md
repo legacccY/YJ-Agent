@@ -71,7 +71,7 @@
 
 §4 Disconnection-Reconnection Benchmark（杀手锏）
 ├── §4.1 合成断点协议（对齐 creatis plug-and-play，半径分布+gap 参数）
-├── §4.2 续连指标 ε_β0 / SR + 自定义 re-ID 率
+├── §4.2 续连指标：ε_β0 + 自定义 SR(写公式,novel metric) + 标准 APLS/Betti-err 交叉印证 + 自定义 re-ID 率(借 MOT IDF1,先例 2107.09049)
 └── §4.3 防泄漏设计（测试集 held-out，记忆不碰 GT）
 
 §5 Experiments
@@ -110,7 +110,8 @@
 > 基调：**裸 Dice 已饱和**（各集 0.84–0.92），胜负压拓扑(clDice/Betti)/续连(ε_β0/SR/re-ID)轴；裸 Dice 持平不输即可，禁调参作弊凑赢。
 > **战略空白**：clDice/拓扑指标报告者极少（仅 HREFNet/PASC-Net/FA-Net/TFFM），主流强作 FSG-Net/HM-Mamba/EFDG-UNet 全不报 clDice，续连/re-ID 轴更无人占——这是我们的取胜窗口。
 > ⚠️ **两簇协议不可比**：DRIVE/STARE 报告值分主流簇(~0.83–0.85)+高簇(RV-GAN 0.8690/MM-UNet 0.8959/0.9177，协议差异非真实力)。**天花板只用主流簇，高簇引用必标"协议不同"**（RV-GAN 由"禁引"修正为：指标确是 Dice，但高簇协议不可比）。
-> ⚠️ creatis 协议两修正（见 reference）：原文**无 boundary blur、无 SR 指标**（只 DSC/ASSD/ε_β0 三指标，无 AUC）。**SR 裁决：血管续连领域无标准 SR → 须自定义写公式 or 换标准指标（APLS/Conn/Betti-err，待拍）**。re-ID 借 MOT IDF1 有先例（Deep Open Snake Tracker arXiv 2107.09049），合法锚点。
+> ⚠️ creatis 协议两修正（见 reference）：原文**无 boundary blur、无 SR 指标**（只 DSC/ASSD/ε_β0 三指标，无 AUC）。
+> ✅ **SR 拍板（2026-06-20 用户拍「两者都上」）**：主指标 = **自定义 SR 写公式**（SR=正确续连断裂对/GT 全部断裂对，标 novel metric）+ **附标准 APLS/Betti-err 交叉印证**（防审稿质疑自定义指标自卖自夸）。re-ID 借 MOT IDF1 有先例（Deep Open Snake Tracker arXiv 2107.09049）合法锚点。
 
 ---
 

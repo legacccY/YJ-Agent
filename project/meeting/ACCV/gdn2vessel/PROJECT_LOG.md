@@ -20,8 +20,8 @@
 ### 仍未攻下（已穷尽 ResearchSquare/Springer/SemanticScholar/PMC）
 TA-Mamba + Birmingham 绝对 Dice（付费墙）→ related work 走定性不报数字，不阻投稿。主线可试 XJTLU 机构 Playwright 下原文（待用户定值不值）。
 
-### 待用户拍板（设计点，不擅改 STORY 定义）
-**SR 指标**：自定义写公式 vs 换标准指标（APLS/Conn/Betti-err）——影响 §4.2 + P1 benchmark 实现，归 STORY/§4 设计权，停下报。
+### ✅ 用户拍板（2026-06-20）：SR 指标「两者都上」
+主指标 = **自定义 SR 写公式**（SR=正确续连断裂对/GT 全部断裂对，标 novel metric）+ **附标准 APLS/Betti-err 交叉印证**（防审稿质疑自定义指标自卖自夸）。已落 STORY §4.2 + 防御注。**给别窗 P1**：metrics.py 的 SR 按此自定义实现 + 加 APLS/Betti-err 两标准指标。
 
 ---
 
