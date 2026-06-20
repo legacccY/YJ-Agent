@@ -39,36 +39,40 @@ from typing import List
 # HPC 数据根（集级根目录，每集一个子目录）
 DATA_ROOT_BASE = "/gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel"
 
+# ✅ benchmark_cache 真实路径修正（主线 HPC recon 2026-06-20 逮）：
+#   实际是**扁平单目录** /gpfs/work/bio/jiayu2403/gdn2vessel/data/benchmark_cache，
+#   含 manifest.json + 全集 <ds>_<severity>_id<id>_seed42.npz（非 per-set 子目录）。
+#   train_reid_pilot --benchmark_dir 读该目录 manifest.json 按 --dataset+--severity 过滤。
+#   原 per-set 路径 data/vessel/<DS>/benchmark_cache 是 bug（会找不到 cache 假 SKIP）。
+BENCH_CACHE_DIR = "/gpfs/work/bio/jiayu2403/gdn2vessel/data/benchmark_cache"
+
 # 数据集名（小写，与 train_reid_pilot.py 的 --dataset 参数对齐）
 DATASETS: List[str] = ["chase", "stare", "hrf", "fives"]
 
-# 各集的 data_root 和 benchmark_cache 路径
-# NOTE: benchmark_cache 按集分目录，路径为 <data_root_for_ds>/benchmark_cache
-# DEPENDENCY [DEP-2]: 已知 CHASE benchmark_cache 8 NPZ 冻结好（Entry14）；
-#   STARE/HRF/FIVES benchmark cache **可能尚未 precompute** → 跑前需先执行
-#   precompute_benchmark.py 生成各集 benchmark_cache。路径如下参数化，
-#   确认 precompute 完成后再真提交对应集的 run。
+# 各集的 data_root（per-set）+ 共享扁平 benchmark_dir
+# DEPENDENCY [DEP-2]: CHASE benchmark 8 NPZ+manifest 冻结好（Entry14，recon 确认）；
+#   STARE/HRF/FIVES 需先跑 precompute_benchmark.py（--cache_dir 指 BENCH_CACHE_DIR 扁平目录）。
 DATASET_CONFIG = {
     "chase": {
         "data_root":      f"{DATA_ROOT_BASE}/CHASE",
-        "benchmark_dir":  f"{DATA_ROOT_BASE}/CHASE/benchmark_cache",
-        # CHASE benchmark_cache 已冻结（Entry14），可直接跑 ✓
+        "benchmark_dir":  BENCH_CACHE_DIR,
+        # CHASE benchmark 已冻结（Entry14），可直接跑 ✓
     },
     "stare": {
         "data_root":      f"{DATA_ROOT_BASE}/STARE",
-        "benchmark_dir":  f"{DATA_ROOT_BASE}/STARE/benchmark_cache",
-        # DEPENDENCY [DEP-2]: STARE benchmark_cache 需先 precompute_benchmark.py 生成
+        "benchmark_dir":  BENCH_CACHE_DIR,
+        # DEPENDENCY [DEP-2]: STARE 需先 precompute_benchmark.py 生成
     },
     "hrf": {
         "data_root":      f"{DATA_ROOT_BASE}/HRF",
-        "benchmark_dir":  f"{DATA_ROOT_BASE}/HRF/benchmark_cache",
-        # DEPENDENCY [DEP-2]: HRF benchmark_cache 需先 precompute_benchmark.py 生成
+        "benchmark_dir":  BENCH_CACHE_DIR,
+        # DEPENDENCY [DEP-2]: HRF 需先 precompute_benchmark.py 生成（子采样 18）
     },
     "fives": {
         "data_root":      f"{DATA_ROOT_BASE}/FIVES",
-        "benchmark_dir":  f"{DATA_ROOT_BASE}/FIVES/benchmark_cache",
-        # DEPENDENCY [DEP-2]: FIVES benchmark_cache 需先 precompute_benchmark.py 生成
-        # 注：FIVES 子采样 seed42 固定（Entry14），train_reid_pilot 内部处理
+        "benchmark_dir":  BENCH_CACHE_DIR,
+        # DEPENDENCY [DEP-2]: FIVES 需先 precompute_benchmark.py 生成
+        # 注：FIVES 子采样 seed42 固定（Entry14），precompute 内部处理
     },
 }
 

@@ -96,30 +96,33 @@ class HRFDataset(BaseVesselDataset):
     VAL_IDS:   List[str] = _HEALTHY_IDS[12:]        # 13_h, 14_h, 15_h
     TEST_IDS:  List[str] = _DR_IDS + _GLAUCOMA_IDS  # 30 held-out
 
+    @staticmethod
+    def _first_existing(folder: Path, stems, exts) -> Path:
+        """返回 folder 下第一个匹配 {stem}{ext} 的存在文件（大小写+多扩展名鲁棒）。
+        都不存在则返回第一个候选（让下游报清晰的 FileNotFound/assert）。"""
+        for stem in stems:
+            for ext in exts:
+                p = folder / f'{stem}{ext}'
+                if p.exists():
+                    return p
+        return folder / f'{stems[0]}{exts[0]}'
+
+    # ✅ HPC recon 确认（2026-06-20）：HRF 实际文件 01_dr.JPG（大写 JPG）/ 01_g.jpg /
+    #   01_h.jpg（小写）。原 loader 只试 .jpg/.tif 漏掉大写 .JPG → precompute 全 HRF 读不到。
+    #   下面对 image/GT/mask 全用多扩展名+大小写鲁棒匹配。
+    _IMG_EXTS = ('.JPG', '.jpg', '.jpeg', '.tif', '.tiff', '.png')
+    _GT_EXTS  = ('.tif', '.tiff', '.png', '.gif', '.bmp')
+
     def _img_path(self, sid: str) -> Path:
-        # TODO: confirm extension (.jpg vs .tif) after HPC ls
-        jpg = self.data_root / 'images' / f'{sid}.jpg'
-        tif = self.data_root / 'images' / f'{sid}.tif'
-        if jpg.exists():
-            return jpg
-        return tif
+        return self._first_existing(self.data_root / 'images', [sid], self._IMG_EXTS)
 
     def _gt_path(self, sid: str) -> Path:
-        # TODO: confirm GT extension (.tif vs .png) after HPC ls
-        tif = self.data_root / 'masks' / f'{sid}.tif'
-        png = self.data_root / 'masks' / f'{sid}.png'
-        if tif.exists():
-            return tif
-        return png
+        return self._first_existing(self.data_root / 'masks', [sid], self._GT_EXTS)
 
     def _mask_path(self, sid: str) -> Path:
-        # HRF official FOV masks in roi_masks/ as .tif
-        # TODO: confirm exact filename pattern after HPC ls
-        tif = self.data_root / 'roi_masks' / f'{sid}_mask.tif'
-        tif2 = self.data_root / 'roi_masks' / f'{sid}.tif'
-        if tif.exists():
-            return tif
-        return tif2
+        # FOV mask: 试 {sid}_mask 与 {sid} 两种 stem，多扩展名
+        return self._first_existing(self.data_root / 'roi_masks',
+                                    [f'{sid}_mask', sid], self._GT_EXTS)
 
     def _load_gt(self, sid: str) -> np.ndarray:
         """Load HRF GT tif → (H,W) uint8 {0,1}."""
