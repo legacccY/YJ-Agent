@@ -77,13 +77,10 @@ BASE_SEED = 42  # reproducible benchmark seed
 # Subsample with seed42 for deterministic reproducibility.
 # Subsampling is here (precompute layer) — not in the loader — to keep loader
 # clean and avoid affecting any training/val splits.
-FIVES_SUBSAMPLE_N = 20  # Entry14 命门设计 FIVES20（Entry14 planner），seed42 固定可复现
-
-# TODO (主线/planner 裁定): HRF loader TEST_IDS=30 (15 dr + 15 glaucoma)，
-# 但 Entry14 命门设计写 HRF=18，差 12 张。precompute 对 HRF 按 ds.ids=30 全生成，
-# 不在此子采样 HRF（eval 选择层/sweep runner 的事，不在本棒 territory）。
-# 主线需决定：① 认同 HRF30（改设计 n50→n62）；② eval 层取 18 张；
-# ③ 在 precompute 加 HRF 子采样（需主线明确授权，本棒不擅自做）。
+# ✅ 主线授权（用户 2026-06-20，选项③）：守 Entry14 预登记 n50（CHASE8+STARE4+HRF18+
+# FIVES20）防 HARKing → precompute 层子采样 FIVES20 + HRF18（seed42，不污染 loader/train/val）。
+# HRF loader TEST_IDS=30，取 18 对齐预登记（不改成 30）。CHASE/STARE/DRIVE 不在表内不动。
+SUBSAMPLE_N = {'fives': 20, 'hrf': 18}  # Entry14 命门预登记 n；seed42 固定可复现
 
 
 def severity_seed(base: int, severity_name: str) -> int:
@@ -152,14 +149,14 @@ def precompute_one(
         print(f'  SKIP {dataset_name}/{severity}: no test IDs (data not present)')
         return []
 
-    # bug-2 fix: FIVES test=200, benchmark design (Entry14) specifies FIVES20.
-    # Subsample to FIVES_SUBSAMPLE_N with seed42 — deterministic, same 20 every run.
-    # Only FIVES is subsampled here; HRF/STARE/CHASE/DRIVE are NOT (see TODO above).
-    if dataset_name == 'fives' and len(test_ids) > FIVES_SUBSAMPLE_N:
+    # 子采样到 Entry14 预登记 n（FIVES20 / HRF18），seed42 固定可复现。
+    # 守预登记防 HARKing（用户 2026-06-20 授权 HRF18）。CHASE/STARE/DRIVE 不在表内不动。
+    _sub_n = SUBSAMPLE_N.get(dataset_name)
+    if _sub_n is not None and len(test_ids) > _sub_n:
         rng = np.random.RandomState(42)  # seed42, same source as BASE_SEED; deterministic
-        idx = sorted(rng.choice(len(test_ids), FIVES_SUBSAMPLE_N, replace=False))
+        idx = sorted(rng.choice(len(test_ids), _sub_n, replace=False))
         test_ids = [test_ids[i] for i in idx]
-        print(f'  FIVES subsampled {FIVES_SUBSAMPLE_N}/{len(ds.ids)} test ids (seed42):')
+        print(f'  {dataset_name.upper()} subsampled {_sub_n}/{len(ds.ids)} test ids (seed42):')
         print(f'    {test_ids}')
 
     manifest_entries = []
