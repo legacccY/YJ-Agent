@@ -104,20 +104,39 @@ U-Net / UNet++ / AttU-Net / IterNet (AAAI20) / SA-UNet (2020) / CS²-Net / FR-UN
 
 **⚠️ 修正 1**：**原文无 boundary blur / 高斯模糊步骤**——直接像素移除。我们 P1 的「Gaussian 边界 blur」是**自设增量，非 creatis 协议**，写作必须如实区分（不能写成「对齐 creatis 含 blur」）。
 
-**⚠️ 修正 2**：**原文无 SR (Success Rate) 指标**——creatis 用 `ε_β0`、DSC、ASSD、AUC 四指标。**SR 不来自 creatis**。STORY 多处写「ε_β0/SR」，SR 来源待澄清（自定义 or 另文）——P1 实现需确认 SR 定义出处，否则标自定义。
+**⚠️ 修正 2**：**原文无 SR (Success Rate) 指标**——creatis 只用 DSC、ASSD、ε_β0 **三指标**（**也无 AUC**，之前误列）。**SR 不来自 creatis**，详见下方 SR 裁决。
 
 **ε_β0 精确定义**：`ε_β0 = |β₀ - β₀_gt| / β₀_gt`（归一化连通分量数相对误差，越小越好）。
 
 **架构/训练**：residual U-Net (G_reco)，Adam lr=1e-3，2D 1000ep/3D 3000ep，weighted Dice loss，**输入是分割器输出 mask 非原图**（= 两阶段后处理，区分句素材）。
 **数据**：训练 STARE(20)+OpenCCO 合成树(20)，测试 DRIVE(40 2D)/Bullitt(33 3D)。
 
-**re-ID 指标盲区**：血管续连领域**无直接借鉴 MOT IDF1 的发表工作**——我们的 re-ID 率确属自定义新指标（novelty 加分，但需自圆其说，无现成文献撑）。
+---
+
+## ⚖️ SR 指标裁决 + 续连/连通性指标全景（2026-06-20 攻坚）
+
+**SR 裁决**：穷尽 creatis / CAPE(2504.00753) / CoANet / Skeleton-Recall / TLTS / APLS——**血管/曲线续连领域无名为 SR 的标准指标**。最接近的「merge success rate」在 connectomics（Berman MIDL2022 arXiv 2112.02039 = 正确合并对数/全部正确对数），非血管主流。
+→ **STORY 里「ε_β0/SR」的 SR 必须二选一**：①论文中**自定义并写公式**（标 "novel metric proposed in this work"，如 SR = 正确续连断裂对/GT 全部断裂对），或 ②**换已确立标准指标**（下表，推荐 APLS / Conn / Betti-err）。**不可当"标准指标"裸引**。
+
+**续连/连通性指标全景（§4.2 选型参照）**：
+| 指标 | 定义 | 出处 | 量身份 or 量填上 |
+|---|---|---|---|
+| ε_β0 | \|β0-β0_gt\|/β0_gt 归一化连通分量数误差 | creatis 2404.10506 | 填上 |
+| β0/β1-Err | \|β-β_gt\| 绝对差 | Skeleton Recall 2404.03010 / clDice | 填上 |
+| clDice | 软骨架 F1 (Tprec·Tsens) | CVPR21 2003.07311 | 填上 |
+| APLS | 控制点对最短路径长度差，缺路罚1，0-1 | SpaceNet 2018, CosmiQ/apls | 路由连通 |
+| TLTS | 端点对路径长偏差<阈(5%)的比例 | ECCV20 1911.12467 | 路径保真 |
+| Conn (CoANet) | 无断点 segment 数/GT 总 segment 数 | IEEE TIP21 CoANet | 填上(segment级) |
+| ARI / VOI | connectomics 实例聚类相似/条件熵 | connectomics 标准 | **量身份** |
+| MOTA / IDF1 | track 检测+关联综合 / 轨迹级一致率 | MOT 标准 | **量身份** |
+
+**★ re-ID 借 MOT IDF1 有先例（推翻"无先例"）**：**Deep Open Snake Tracker for Vessel Tracing (arXiv 2107.09049)** 已把 MOTA/IDF1/IDS 引入**血管追踪**评估连接误差。→ 我们 re-ID 率借 MOT 框架**有合法引用锚点**；novelty 在「模型内关联记忆做单图空间 re-ID + 指标应用到 2D 眼底续连」，不在"首次借 MOT"。
 
 ---
 
-## 盲区 / TODO 汇总
-- TA-Mamba / MM-UNet 绝对 Dice 未获（付费墙）。
+## 盲区 / TODO 汇总（攻坚后）
+- TA-Mamba / Birmingham MVSS-UNet (BSPC Vol112 Art108435, 无 arXiv) 绝对 Dice 未获（付费墙）→ related work 定性描述不报数字，不阻投稿。
 - KDA 无独立 arXiv（引 GDN-2 时标 "cited in [GDN-2]"）。
-- Multi-scale Vision Mamba-UNet (Birmingham) arXiv id 未定位。
-- SR 指标来源待澄清（非 creatis）。
-- creatis boundary blur 为我方自设（非协议），P1 写作勿误称对齐。
+- **SR 裁决已出**：无标准 SR → 自定义写公式 or 换标准指标（用户拍）。
+- creatis boundary blur + SR 均为我方自设（非 creatis 协议），P1 写作勿误称"对齐 creatis"含此二者。
+- ε_β0 修正：creatis 只 DSC/ASSD/ε_β0 三指标，无 AUC。

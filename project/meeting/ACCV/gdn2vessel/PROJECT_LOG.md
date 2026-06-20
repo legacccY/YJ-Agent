@@ -1,5 +1,30 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 9 — 2026-06-20 §2 调研盲区攻坚收口（researcher×2，扎实化 Entry 7 的 TODO）
+
+承 Entry 7。用户要求「一定扎实」——派 2 researcher 穷尽开放渠道攻盲区，几处反转/坐实落档 reference 双档 + STORY。
+
+### 数字攻坚（reference/SOTA_NUMBERS.md 更新）
+- **RV-GAN 裁决反转**：86.90/89.57 不是指标混用，是 **Dice**（benchmarking 2406.14994 Table 2 Dice 列，AUC 另列 98.87/99.14）。从"禁引"改判**高簇协议不可比**。
+- **两簇现象坐实**：DRIVE/STARE 报告值分主流簇(~0.83–0.85，FSG/HM-Mamba/VFGS/FR-UNet 一致)+高簇(RV-GAN 0.8690 / MM-UNet 0.8959/0.9177)，差 0.04–0.06=评估协议差异非真实力。**天花板只用主流簇**，我们自评须钉死统一协议(FOV/像素集/split)。
+- **MM-UNet 绝对值已获**：DRIVE 0.8959 / STARE 0.9177（arXiv 2511.02193 Table I）。
+- **MDFI-Net split 干净**：DRIVE 官方 20/20 + STARE LOO（非自切；STARE LOO 方差大谨慎引）。
+- **Birmingham「Multi-scale Vision Mamba-UNet」定位**：BSPC Vol112 Art108435（无 arXiv），测 DRIVE/CHASE/STARE/HRF。数字付费墙未获。
+
+### 方法学攻坚（reference/RELATED_WORK_MATERIAL.md 更新）
+- **SR 裁决出**：血管/曲线续连领域**无标准 SR 指标**（穷尽 creatis/CAPE/CoANet/TLTS/APLS/SkelRecall）→ STORY「ε_β0/SR」的 SR 须**自定义写公式 or 换标准指标**（候选 APLS/Conn/Betti-err，待用户拍）。
+- **re-ID 借 MOT 有先例（推翻 Entry 7「无先例」）**：Deep Open Snake Tracker (arXiv 2107.09049) 已把 MOTA/IDF1/IDS 引入血管 tracing → 合法引用锚点；novelty 在机制+2D 眼底应用，非"首次借 MOT"。
+- **ε_β0 修正**：creatis 只 DSC/ASSD/ε_β0 三指标，**无 AUC**（Entry 7 误列）；ε_β0=|β₀-β₀_gt|/β₀_gt 归一化（区别 SkelRecall 用绝对差）。
+- 续连/连通性指标全景表落档（8 指标 + 量身份 vs 量填上 标注）供 §4.2 选型。
+
+### 仍未攻下（已穷尽 ResearchSquare/Springer/SemanticScholar/PMC）
+TA-Mamba + Birmingham 绝对 Dice（付费墙）→ related work 走定性不报数字，不阻投稿。主线可试 XJTLU 机构 Playwright 下原文（待用户定值不值）。
+
+### 待用户拍板（设计点，不擅改 STORY 定义）
+**SR 指标**：自定义写公式 vs 换标准指标（APLS/Conn/Betti-err）——影响 §4.2 + P1 benchmark 实现，归 STORY/§4 设计权，停下报。
+
+---
+
 ## Entry 8 — 2026-06-20 P3 Baseline 全谱准备（3 researcher+1 planner 扇出 → BASELINE_SPEC.md）
 
 本窗任务 = Baseline 全谱准备（lever L3，P3 前置工程，不抢跑——真训 gate 在 P1+P2 真验后）。4 agent 并行综合落档 `PLAN/BASELINE_SPEC.md`（canonical 真源，已登 DATA_INVENTORY+MASTER_PLAN 指针）。
@@ -23,8 +48,13 @@
 ### ⚠️ 与别窗 Entry 7 对账（SOTA 真源 = reference/SOTA_NUMBERS.md）
 别窗上修 SOTA：STARE ~0.85（FSG-Net 0.8510，非旧 83.21）、HRF ~0.86、DRIVE ~0.84（EFDG-UNet 0.8412）。BASELINE_SPEC §6 已标指向别窗真源。clDice 报告者极少 = 拓扑轴取胜窗口（cbDice/clDice/SkelRecall 是我们拓扑-loss baseline，正好量这条轴）。
 
+### 第二波（skeptic 红队 + 超参回填 + 骨架，3 agent 并行）
+- **skeptic = 1 致命 🔴 已修**：creatis plug-and-play [2404.10506] 后处理续连 baseline 漏比——它是 STORY ≥4 处引为 headline 对立面（Claim 1「区别于 learned post-processing 如 2404.10506」）却不在 roster，整个续连后处理赛道 0 直接对手 = reject 红线。修法=纳入档 A A12（挂统一 backbone 输出后做后处理），OCTAMamba 移 P5。0 剩余致命，放行。🟡反向公平点写作时 §5.1 写 rationale+表格分组。
+- **超参回填齐**：DSCNet（AdamW betas(.9,.95)/lr1e-4/bs1/in224/400ep，TCLoss=CE+Hausdorff 一体无独立权重）、PASC-Net（300ep，0.7DCCE+0.1con1+0.1con3+0.1clDice）、cbDice（20ep/bs2/β0.5）、clDice（α0.5）、MambaVesselNet++（Dice0.711 通用模型真实代价非 bug）。**mamba cu126：HF kernels `torch29-cu126` wheel 命中 HPC，sm_89 需 TORCH_CUDA_ARCH_LIST=8.9 源码 build，独立 mamba_venv**。
+- **骨架就位**：coder 10 新文件（base_adapter/registry/evaluate/ours+backbone 示例 adapter/configs/tests），pytest 24 通+回归 12 通=36 绿。TODO hook=滑窗推理占位、AUC FOV 口径、evaluate 仅 DRIVE loader。
+
 ### 下一步派单
-harness 骨架（coder，可即起不 gate P1/P2）+ 超参 TODO 回填（researcher，并行）→ adapter 实现（coder）→ skeptic 红队反向公平点 → 🛑batch-1 校准拍板 → 跑 → analyst+verifier。
+超参+骨架+红队齐 → **coder 多 sonnet 并行实现各 baseline adapter**（FR-UNet/CS-Net/DSCNet/nnU-Net/PASC-Net/clDice/cbDice/SkelRecall/creatis + 3 SSM）+ 滑窗推理 + CHASE/FIVES/STARE loader → 🛑 P1+P2 真验 PASS 后 batch-1（DRIVE 全 baseline seed42）校准拍板 → 跑 → analyst+verifier。
 
 ---
 
