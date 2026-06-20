@@ -1,0 +1,96 @@
+# pascnet.yaml — PASC-Net baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/IPMI-NWU/PASC-Net + arXiv 2507.04008
+#             + BASELINE_SPEC §1（researcher 二轮核实，2026-06-20：
+#               epochs=300 via nnUNetTrainer.py num_epochs=300;
+#               loss=0.7DC_CE+0.1con1+0.1con3+0.1clDice via train_step 实测）
+# 复现红线  : 继承 nnU-Net 自配置，仅 loss 权重和 epochs 有别于 nnU-Net 默认；
+#             禁止手动覆盖其他 nnU-Net 自动超参（零偏离红线）。
+# env_tag   : main（需 nnunetv2 + PASC-Net trainer）
+# ⚠️ 状态   : arXiv preprint (2507.04008)，引用时需标注
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "pasc_net"
+  kind: "architecture"
+  source_repo: "https://github.com/IPMI-NWU/PASC-Net"
+  env_tag: "main"
+  paper_ref: "arXiv 2507.04008 (preprint)"
+  license: "Apache-2.0"
+  status: "preprint"             # ⚠️ 引用时标注 preprint 状态
+
+# --------------------------------------------------------------------------
+# 模型配置（基于 nnU-Net + 自定义 PASCTrainer）
+# --------------------------------------------------------------------------
+
+model:
+  framework: "nnunetv2"
+  trainer: "PASCTrainer"         # PASC-Net 自定义 trainer
+  configuration: "2d"            # 2D 视网膜血管任务
+
+# --------------------------------------------------------------------------
+# 训练超参（官方 BASELINE_SPEC §1 核实）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "SGD"               # 继承 nnU-Net 默认
+  lr: 1.0e-2                     # 继承 nnU-Net 默认
+  momentum: 0.99                 # 继承 nnU-Net 默认
+  nesterov: true                 # 继承 nnU-Net 默认
+  weight_decay: 3.0e-5           # 继承 nnU-Net 默认
+  scheduler: "PolyLR"            # 继承 nnU-Net 默认
+  epochs: 300                    # ⭐ PASC-Net 自定义：300（非 nnU-Net 默认 1000）
+                                 #    Source: nnUNetTrainer.py num_epochs=300（researcher 核实）
+
+# --------------------------------------------------------------------------
+# Loss（官方 PASC-Net 复合 loss，researcher 核实）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "PASC_Composite"
+  # 以下权重来源：BASELINE_SPEC §1 + PASC-Net train_step 源码实测
+  weight_dc_ce: 0.7              # Dice+CE 主 loss 权重（官方）
+  weight_con1: 0.1               # Contour loss (scale 1) 权重（官方）
+  weight_con3: 0.1               # Contour loss (scale 3) 权重（官方）
+  weight_cldice: 0.1             # clDice loss 权重（官方）
+
+# --------------------------------------------------------------------------
+# 预处理（继承 nnU-Net 自配置）
+# --------------------------------------------------------------------------
+
+preprocess:
+  framework: "nnunetv2"
+  configuration: "2d"
+  fives_resize: 512              # FIVES 2048px → 512px 裁（官方 FIVES 处理）
+
+# --------------------------------------------------------------------------
+# 性能参照（官方论文数字，非本项目复现值）
+# --------------------------------------------------------------------------
+
+reference_performance:
+  note: "以下为官方论文 reported 数字（非本项目复现值）"
+  FIVES_Dice: 0.9183             # 官方 FIVES SOTA Dice（BASELINE_SPEC §6）
+  # DRIVE/CHASE/STARE 数字需自跑（官方无现成数字）
+
+# --------------------------------------------------------------------------
+# 运行时依赖（BASELINE_SPEC env_tag='main'）
+# --------------------------------------------------------------------------
+
+runtime:
+  env_tag: "main"
+  requires:
+    - "nnunetv2"               # pip install nnunetv2
+    - "pasc-net"               # pip install -e . (from github.com/IPMI-NWU/PASC-Net)
+  hpc_commands:
+    preprocess: "nnUNetv2_plan_and_preprocess -d <dataset_id> --verify_dataset_integrity"
+    train: "nnUNetv2_train <dataset_id> 2d 0 --tr PASCTrainer"
+    predict: "nnUNetv2_predict -i <input> -o <output> -d <dataset_id> -c 2d --tr PASCTrainer"
+  hpc_note: >
+    ⚠️ PASC-Net arXiv preprint 状态，代码可能更新，使用前需核对 repo 当前状态。
+    FIVES 训练集 2048px 图需先 resize/crop 到 512px 再转 nnU-Net 格式。
+    evaluate.py 接 nnUNetv2_predict 输出 mask，接入方式待 BASELINE_SPEC §4 拍板。
+    见 github.com/IPMI-NWU/PASC-Net + BASELINE_SPEC §4 HPC 编排。

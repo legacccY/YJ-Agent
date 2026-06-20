@@ -18,6 +18,18 @@ Tests:
      - ASSD known-value case (disjoint shifted masks)
      - epsilon_beta0 perfect case == 0.0
      - epsilon_beta0 extra component case
+
+  3. Betti-err (Entry 9, L2/L6 cross-validation)
+     - solid disk: β1=0, β0=1
+     - ring/donut: β1=1, β0=1
+     - two components: β0=2, β1=0
+     - betti_error perfect case = 0
+     - betti_error ring-vs-solid detects β1 difference
+
+  4. APLS (Entry 9, L2/L6 cross-validation)
+     - identical masks → APLS near 1.0
+     - empty pred → APLS = 0.0
+     - APLS ∈ [0, 1]
      - compute_all_metrics keys present
 """
 
@@ -46,7 +58,10 @@ from benchmark.metrics import (
     dice_coefficient,
     assd,
     count_components,
+    count_loops,
     epsilon_beta0,
+    betti_error,
+    apls,
     success_rate,
     reid_rate,
     compute_all_metrics,
@@ -386,3 +401,152 @@ class TestComputeAllMetrics:
         result = apply_breaks(gt, gap_size=8, nb_deco=50, seed=99)
         metrics = compute_all_metrics(gt, gt, result, compute_assd=False)
         assert metrics['n_gaps'] == len(result.gaps)
+
+    def test_betti_keys_present(self):
+        """compute_all_metrics must include betti_err and apls keys."""
+        gt = _make_horizontal_line_mask(H=32, W=32)
+        result = apply_breaks(gt, gap_size=8, nb_deco=5, seed=0)
+        metrics = compute_all_metrics(gt, gt, result, compute_assd=False, compute_apls=False)
+        for key in ('betti_err_total', 'beta0_err', 'beta1_err',
+                    'beta1_pred', 'beta1_gt', 'apls'):
+            assert key in metrics, f"Missing key: {key}"
+
+
+# ===========================================================================
+#  8. Betti-err — topological error (Entry 9, L2/L6 cross-validation)
+# ===========================================================================
+
+class TestBettiError:
+
+    def _solid_square(self, H=20, W=20, pad=3) -> np.ndarray:
+        """Solid filled square: β0=1, β1=0."""
+        m = np.zeros((H, W), dtype=np.uint8)
+        m[pad:H-pad, pad:W-pad] = 1
+        return m
+
+    def _ring(self) -> np.ndarray:
+        """Donut / ring: β0=1, β1=1 (one hole)."""
+        m = np.zeros((20, 20), dtype=np.uint8)
+        m[2:18, 2:18] = 1
+        m[6:14, 6:14] = 0   # punch hole
+        return m
+
+    def test_solid_has_zero_loops(self):
+        """Solid square: β1 = 0."""
+        sq = self._solid_square()
+        assert count_loops(sq) == 0
+
+    def test_ring_has_one_loop(self):
+        """Ring / donut: β1 = 1 (one enclosed hole)."""
+        ring = self._ring()
+        assert count_loops(ring) == 1
+
+    def test_two_components_b0(self):
+        """Two isolated pixels → β0=2, β1=0."""
+        m = np.zeros((10, 20), dtype=np.uint8)
+        m[5, 2] = 1
+        m[5, 17] = 1
+        assert count_components(m) == 2
+        assert count_loops(m) == 0
+
+    def test_betti_error_perfect(self):
+        """betti_error(pred==gt) → all errors = 0."""
+        sq = self._solid_square()
+        be = betti_error(sq, sq)
+        assert be['beta0_err'] == 0
+        assert be['beta1_err'] == 0
+        assert be['betti_err_total'] == 0
+
+    def test_betti_error_ring_vs_solid(self):
+        """
+        GT = ring (β1=1), pred = solid (β1=0) → β1_err=1, betti_err_total≥1.
+        Both have β0=1 so β0_err=0.
+        """
+        ring = self._ring()
+        solid = self._solid_square()
+        be = betti_error(solid, ring)   # pred=solid, gt=ring
+        assert be['beta0_err'] == 0, "Both are 1 component"
+        assert be['beta1_err'] == 1, f"Expected β1_err=1, got {be['beta1_err']}"
+        assert be['betti_err_total'] == 1
+
+    def test_betti_error_extra_component(self):
+        """pred has extra component → β0_err ≥ 1."""
+        m = np.zeros((10, 30), dtype=np.uint8)
+        m[5, 2] = 1
+        m[5, 27] = 1   # two components
+        single = np.zeros((10, 30), dtype=np.uint8)
+        single[5, 2] = 1   # one component
+        be = betti_error(m, single)   # pred=two, gt=one
+        assert be['beta0_err'] == 1
+        assert be['betti_err_total'] >= 1
+
+    def test_empty_masks(self):
+        """Both empty → β0=0, β1=0, errors=0."""
+        empty = np.zeros((10, 10), dtype=np.uint8)
+        be = betti_error(empty, empty)
+        assert be['betti_err_total'] == 0
+
+    def test_betti_error_returns_dict_keys(self):
+        sq = self._solid_square()
+        be = betti_error(sq, sq)
+        for k in ('beta0_pred', 'beta0_gt', 'beta0_err',
+                  'beta1_pred', 'beta1_gt', 'beta1_err', 'betti_err_total'):
+            assert k in be, f"Missing key: {k}"
+
+
+# ===========================================================================
+#  9. APLS — Average Path Length Similarity (Entry 9, L2/L6 cross-validation)
+# ===========================================================================
+
+class TestAPLS:
+
+    def test_identical_masks_near_one(self):
+        """
+        APLS(pred==gt) should be 1.0 (zero path-length difference).
+        """
+        gt = _make_horizontal_line_mask(H=32, W=64, row=16, thickness=1)
+        result = apls(gt, gt, min_path_length=5.0, control_node_stride=3)
+        assert result == pytest.approx(1.0, abs=1e-5), (
+            f"APLS(identical) expected 1.0, got {result}"
+        )
+
+    def test_empty_gt_returns_zero(self):
+        """Empty GT skeleton → APLS = 0.0 (undefined)."""
+        gt   = np.zeros((20, 20), dtype=np.uint8)
+        pred = _make_horizontal_line_mask(H=20, W=20)
+        result = apls(pred, gt, min_path_length=5.0)
+        assert result == pytest.approx(0.0)
+
+    def test_empty_pred_returns_zero(self):
+        """Empty pred skeleton → all paths missing → APLS = 0.0."""
+        gt   = _make_horizontal_line_mask(H=20, W=20)
+        pred = np.zeros((20, 20), dtype=np.uint8)
+        result = apls(pred, gt, min_path_length=5.0)
+        assert result == pytest.approx(0.0)
+
+    def test_apls_in_range(self):
+        """APLS must be in [0, 1]."""
+        gt   = _make_horizontal_line_mask(H=32, W=64, row=16, thickness=1)
+        pred = _make_horizontal_line_mask(H=32, W=64, row=16, thickness=2)
+        result = apls(pred, gt, min_path_length=5.0, control_node_stride=5)
+        assert 0.0 <= result <= 1.0, f"APLS out of range: {result}"
+
+    def test_apls_compute_disabled(self):
+        """compute_all_metrics with compute_apls=False → apls=nan."""
+        import math
+        gt = _make_horizontal_line_mask(H=32, W=32)
+        result = apply_breaks(gt, gap_size=8, nb_deco=5, seed=0)
+        metrics = compute_all_metrics(gt, gt, result,
+                                      compute_assd=False, compute_apls=False)
+        assert math.isnan(metrics['apls']), "Expected nan when compute_apls=False"
+
+    def test_apls_compute_enabled(self):
+        """compute_all_metrics with compute_apls=True → apls is a float in [0,1]."""
+        gt = _make_horizontal_line_mask(H=32, W=64, row=16, thickness=1)
+        result = apply_breaks(gt, gap_size=8, nb_deco=5, seed=0)
+        metrics = compute_all_metrics(gt, gt, result,
+                                      compute_assd=False, compute_apls=True,
+                                      apls_min_path_length=3.0,
+                                      apls_control_stride=3)
+        val = metrics['apls']
+        assert 0.0 <= val <= 1.0, f"APLS out of range: {val}"

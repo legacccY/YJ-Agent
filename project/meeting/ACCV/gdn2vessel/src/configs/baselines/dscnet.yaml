@@ -1,0 +1,82 @@
+# dscnet.yaml — DSCNet 2D baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/YaoleiQi/DSCNet (MIT)
+#             S0_Main.py (parser defaults) + S3_Train_Process.py + S3_Loss.py
+#             main branch, fetched 2026-06-20
+# 复现红线  : 不得私自修改超参；TODO 字段需 researcher 确认后回填。
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "dscnet"
+  kind: "architecture"
+  source_repo: "https://github.com/YaoleiQi/DSCNet"
+  env_tag: "main"
+  paper_ref: "ICCV 2023"
+  license: "MIT (Copyright (c) 2025 Yaolei Qi)"
+
+# --------------------------------------------------------------------------
+# 模型超参（官方 S0_Main.py argparse defaults）
+# --------------------------------------------------------------------------
+
+model:
+  in_ch: 1                  # 灰度单通道
+  out_ch: 1                 # 二分类 (binary segmentation)
+  kernel_size: 9            # DSConv kernel size (official: 9 → 1×9 / 9×1)
+  extend_scope: 1.0         # DSConv extend scope (official default: 1.0)
+  if_offset: true           # Enable deformation (official: True)
+  n_basic_layer: 16         # Basic channel count (official: --n_basic_layer default=16)
+  dim: 1                    # Multi-template dim (official: --dim default=1)
+  device: "cpu"             # 建模时 cpu；train_harness 会 .to(device)
+
+# --------------------------------------------------------------------------
+# 训练超参（官方 S3_Train_Process.py）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "AdamW"
+  lr: 1.0e-4                         # 官方 --lr default=1e-4
+  betas: [0.9, 0.95]                 # 官方 AdamW(lr, betas=(0.9, 0.95))
+  scheduler: null                    # 官方 scheduler.step(loss) 被注释掉 → 未生效
+  use_scheduler: false               # 复现零偏离：不启用 scheduler
+  epochs: 400                        # 官方 --n_epochs default=400
+  start_verify_epoch: 200            # 官方 --start_verify_epoch default=200
+  batch_size: 1                      # 官方 --batch_size default=1
+
+# --------------------------------------------------------------------------
+# Loss（官方: S3_Loss.py cross_loss = BCE）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "cross_loss"         # 官方 S3_Loss.py cross_loss (BCE with log-smooth)
+  loss_smooth: 1.0e-6        # log(y_pred + smooth) 稳定项
+  # NOTE: BASELINE_SPEC §1 注释了 "TCLoss=CE+Hausdorff 一体"。
+  # 官方 DRIVE 代码实际只用 cross_loss (BCE)，无 Hausdorff 项。
+  # TODO_researcher: 如需复现 TCLoss 拓扑约束版本（来自 TIP2021 paper
+  #   https://ieeexplore.ieee.org/abstract/document/9611074），需确认对应代码仓库
+  #   (github.com/YaoleiQi/Examinee-Examiner-Network) 中的 loss 文件。
+
+# --------------------------------------------------------------------------
+# 预处理（官方: 单通道，per-image mean/std 归一化，224×224 ROI crop）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_raw"      # 灰度单通道（DRIVE 取绿通道）
+  input_mode: "fullimg"      # 整图推理（224 ROI crop）
+  patch_size: null
+  clahe: false               # 官方无 CLAHE
+  normalize_per_image: true  # 官方按每图计算 mean/std（S1_Pre_Getmeanstd.py）
+  roi_size: 224              # 官方 DRIVE ROI crop 224×224
+
+# --------------------------------------------------------------------------
+# 数据增强（官方未在 README/论文明示 → 标 TODO）
+# --------------------------------------------------------------------------
+
+augment:
+  strategy: "TODO_researcher_dscnet_augment"
+  # TODO_researcher: DSCNet 官方数据增强策略未在 S0_Main.py/S3_Train_Process.py
+  #   中明示（Dataloader 文件未随 DRIVE Code 一并发布）。
+  #   需查 github.com/YaoleiQi/DSCNet S3_Dataloader.py 确认具体增强操作。

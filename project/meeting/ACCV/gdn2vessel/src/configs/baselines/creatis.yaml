@@ -1,0 +1,113 @@
+# creatis.yaml — creatis plug-and-play reconnecting post-processing baseline
+# =======================================================================
+# 超参来源  : github.com/creatis-myriad/plug-and-play-reco-regularization
+#             sources/source_2D/train.py + post_treatement.py
+#             main branch, fetched 2026-06-20
+# 作用      : BASELINE_SPEC §0 A12 — skeptic 🔴 补的续连后处理 baseline
+#             Claim1「in-model vs post-processing」唯一正面对照
+# 复现红线  : 不得私自修改超参；TODO 字段需 researcher 确认后回填。
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "creatis_postproc"
+  kind: "architecture"          # two-stage: backbone + learned reconnecting postproc
+  two_stage: true               # 标记 two-stage 特殊评估路径
+  source_repo: "https://github.com/creatis-myriad/plug-and-play-reco-regularization"
+  env_tag: "main"
+  paper_refs:
+    - "Carneiro-Esteves et al., Neurocomputing 2024"
+    - "Carneiro-Esteves et al., TGI3 MICCAI Workshop 2024"
+  license: "CeCILL (http://www.cecill.info)"
+  license_note: |
+    French free software license, compatible with LGPL/GPL.
+    Academic/research use PERMITTED.
+    Publishing REQUIRES citing both papers [1][2] above.
+    No LICENSE file found in official repo root (curl 404, 2026-06-20);
+    CeCILL noted in official README and vendor/__init__.py.
+    TODO_researcher: confirm license file location with repo maintainers.
+
+# --------------------------------------------------------------------------
+# 模型超参（官方 sources/source_2D/train.py）
+# --------------------------------------------------------------------------
+
+model:
+  # monai UNet architecture — DO NOT CHANGE (must match pre-trained weights)
+  norm: "INSTANCE"           # 官方 config_training.json norm 字段默认值
+  channels: [16, 32, 64, 128]   # 官方固定架构
+  strides: [2, 2, 2]            # 官方固定
+  num_res_units: 2               # 官方固定
+  # 预训练权重目录（None = 从头训练；填路径后 build_model 自动加载）
+  model_dir: null                # e.g. "checkpoints/creatis_stare/"
+  # TODO: 若官方提供预训练权重，填写路径；否则需自训练后填入
+
+# --------------------------------------------------------------------------
+# Stage 2 推理超参（官方 post_treatement.py / monai_predict_image）
+# --------------------------------------------------------------------------
+
+inference:
+  roi_size: [96, 96]    # 官方滑窗 patch 大小 (default: (96,96))
+  sw_batch_size: 5      # 官方 sw_batch_size=5
+  mode: "gaussian"      # 官方 mode="gaussian"（滑窗重叠混合方式）
+  overlap: 0.5          # 官方 overlap=0.5
+  iterations: 10        # 官方 post_treatement 默认 iterations=10
+  threshold: 0.5        # 二值化阈值（标准 0.5）
+
+# --------------------------------------------------------------------------
+# Stage 2 训练超参（官方 train.py）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "Adam"
+  lr: 1.0e-3            # 官方 train() 函数 lr=1e-3
+  scheduler: null       # 官方无 scheduler（复现零偏离）
+  epochs: 1000          # 官方 max_epochs=1000
+  batch_size: 32        # 官方 batch_size=32
+  # Windows 安全修复（vs 官方）:
+  num_workers: 0        # 官方: 1；改为 0（Windows spawn 规范）
+  pin_memory: false     # 官方: True；改为 False（spawn worker 不支持）
+
+# --------------------------------------------------------------------------
+# Loss（官方: PonderatedDiceloss）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "PonderatedDiceloss"    # 官方 train.py PonderatedDiceloss
+  loss_smooth: 1.0e-6
+  # NOTE: 官方 loss 结合整体 Dice + 片段化 Dice（frag_dice）
+  # TODO_researcher: 官方 PonderatedDiceloss 的 frag_dice 使用训练时生成的断点图 mask，
+  #   adapter 目前用 (1-target) 近似替代；精确复现需配套 sources/source_2D/disconnect.py
+  #   的断点生成流程（训练数据预处理阶段）。
+
+# --------------------------------------------------------------------------
+# Stage 1 (backbone) 配置（统一 backbone_unet）
+# --------------------------------------------------------------------------
+
+stage1:
+  backbone: "backbone_unet"     # 统一 backbone（BASELINE_SPEC §2.4 受控变量）
+  # Stage-1 输出 logits 直接传入 forward_adapt 作为 Stage-2 输入
+
+# --------------------------------------------------------------------------
+# 预处理（继承 backbone_unet 预处理 + Stage-2 二值化）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_clahe"       # 继承 backbone_unet（CLAHE 绿通道）
+  input_mode: "fullimg"
+  patch_size: null
+  clahe: true
+  # Stage-2: backbone 输出 → sigmoid → 二值化 → /255 normalize
+  stage2_normalize: "binary_div255"   # 官方 post_treatement.py: /255.0
+
+# --------------------------------------------------------------------------
+# 数据（Stage-2 训练用人工断点数据）
+# --------------------------------------------------------------------------
+
+data:
+  stage2_train_source: "generated_disconnected"
+  # TODO: 官方 train.py 使用 sources/source_2D/disconnect.py 生成断点数据集。
+  # 如需 Stage-2 自训练，需先用 disconnect.py 生成断点图+GT 对。
+  # 现有血管数据集位置见 .portfolio/datasets.json。

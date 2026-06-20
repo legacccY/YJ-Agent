@@ -715,26 +715,38 @@ def compute_all_metrics(
     gt_mask: np.ndarray,
     break_result: BreakResult,
     compute_assd: bool = True,
+    compute_apls: bool = False,
+    apls_min_path_length: float = 10.0,
+    apls_control_stride: int = 5,
 ) -> dict:
     """
     Compute the full metric suite for a single prediction.
 
-    creatis metrics (DSC / ASSD / ε_β0) + this-paper metrics (SR / re-ID).
+    Metric groups:
+      creatis protocol  — DSC / ASSD / ε_β0  (arXiv 2404.10506)
+      standard cross-   — Betti-err (β0_err + β1_err) / APLS  (Entry 9, L2/L6)
+      this paper custom — SR (gap-closure rate) / re-ID rate
 
     Args:
-        pred_mask:    (H, W) predicted binary mask after reconnection
-        gt_mask:      (H, W) original GT mask (no breaks; used as reference)
-        break_result: BreakResult containing gap metadata + vessel_segment_map
-        compute_assd: if False, skip ASSD (slow on large images; default True)
+        pred_mask:           (H, W) predicted binary mask after reconnection
+        gt_mask:             (H, W) original GT mask (no breaks; used as reference)
+        break_result:        BreakResult containing gap metadata + vessel_segment_map
+        compute_assd:        if False, skip ASSD (slow on large images). Default True.
+        compute_apls:        if False, skip APLS (skeleton graph, slow). Default False.
+                             Enable for final benchmark evaluation; disable for training.
+        apls_min_path_length: min GT path length for APLS evaluation (default 10.0 px).
+        apls_control_stride: stride for GT control node sampling in APLS (default 5).
 
     Returns:
         dict with keys:
-          creatis metrics — 'dsc', 'assd', 'epsilon_beta0'
-          this paper      — 'success_rate' (SR), 'reid_rate'
-          auxiliary       — 'beta0_pred', 'beta0_gt', 'n_gaps',
-                            'n_gaps_closed', 'n_gaps_reidentified'
+          creatis           — 'dsc', 'assd', 'epsilon_beta0'
+          standard cross    — 'betti_err_total', 'beta0_err', 'beta1_err',
+                               'beta1_pred', 'beta1_gt', 'apls'
+          this paper custom — 'success_rate', 'reid_rate'
+          auxiliary         — 'beta0_pred', 'beta0_gt', 'n_gaps',
+                               'n_gaps_closed', 'n_gaps_reidentified'
 
-    NOTE: SR and re-ID rate are this paper's custom metrics, not from creatis.
+    NOTE: SR and re-ID rate are this paper's custom metrics, not from creatis or SpaceNet.
     """
     # --- DSC (creatis metric #1) ---
     dsc = dice_coefficient(pred_mask, gt_mask)
@@ -744,8 +756,20 @@ def compute_all_metrics(
 
     # --- ε_β0 (creatis metric #3) ---
     b0_pred = count_components(pred_mask)
-    b0_gt = count_components(gt_mask)
-    eps_b0 = abs(b0_pred - b0_gt) / max(b0_gt, 1)
+    b0_gt   = count_components(gt_mask)
+    eps_b0  = abs(b0_pred - b0_gt) / max(b0_gt, 1)
+
+    # --- Betti-err (standard cross-validation, Entry 9) ---
+    be = betti_error(pred_mask, gt_mask)
+    # be already contains beta0_pred, beta0_gt (redundant but consistent with be dict)
+
+    # --- APLS (standard cross-validation, Entry 9) ---
+    apls_val = (
+        apls(pred_mask, gt_mask,
+             min_path_length=apls_min_path_length,
+             control_node_stride=apls_control_stride)
+        if compute_apls else float('nan')
+    )
 
     # --- SR and re-ID (this paper's custom gap-level metrics) ---
     gaps = break_result.gaps
@@ -764,17 +788,24 @@ def compute_all_metrics(
     rr = n_reidentified / n_gaps if n_gaps > 0 else 1.0
 
     return {
-        # creatis three-metric protocol
-        'dsc': dsc,
-        'assd': assd_val,
-        'epsilon_beta0': eps_b0,
-        # this paper's custom gap-level metrics
-        'success_rate': sr,    # SR: gap-closure rate (not a creatis metric)
-        'reid_rate': rr,       # re-ID: same-vessel reconnection (not a creatis metric)
+        # creatis three-metric protocol (arXiv 2404.10506)
+        'dsc':            dsc,
+        'assd':           assd_val,
+        'epsilon_beta0':  eps_b0,
+        # standard cross-validation metrics (Entry 9, L2/L6)
+        'betti_err_total': be['betti_err_total'],
+        'beta0_err':       be['beta0_err'],
+        'beta1_err':       be['beta1_err'],
+        'beta1_pred':      be['beta1_pred'],
+        'beta1_gt':        be['beta1_gt'],
+        'apls':            apls_val,
+        # this paper's custom gap-level metrics (NOT creatis / NOT SpaceNet)
+        'success_rate':   sr,    # gap-closure rate
+        'reid_rate':      rr,    # same-vessel reconnection
         # auxiliary
-        'beta0_pred': b0_pred,
-        'beta0_gt': b0_gt,
-        'n_gaps': n_gaps,
-        'n_gaps_closed': n_closed,
+        'beta0_pred':     b0_pred,
+        'beta0_gt':       b0_gt,
+        'n_gaps':         n_gaps,
+        'n_gaps_closed':  n_closed,
         'n_gaps_reidentified': n_reidentified,
     }

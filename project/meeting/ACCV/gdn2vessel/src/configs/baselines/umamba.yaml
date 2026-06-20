@@ -1,0 +1,82 @@
+# umamba.yaml — U-Mamba baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/bowang-lab/U-Mamba + nnU-Net 框架默认值
+#             + BASELINE_SPEC §1（researcher 二轮核实，2026-06-20）
+# 复现红线  : U-Mamba 继承 nnU-Net 全部自配置，超参由框架自动决定；
+#             禁止手动覆盖 nnU-Net 自动超参（零偏离红线）。
+# env_tag   : mamba（需 mamba_venv + nnunetv2）
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "u_mamba"
+  kind: "architecture"
+  source_repo: "https://github.com/bowang-lab/U-Mamba"
+  env_tag: "mamba"
+  paper_ref: "arXiv 2401.04722"
+  license: "Apache-2.0"
+
+# --------------------------------------------------------------------------
+# 模型配置（nnU-Net 自配置，无手动超参）
+# --------------------------------------------------------------------------
+
+model:
+  framework: "nnunetv2"          # 完全继承 nnU-Net 框架
+  # nnU-Net 通过 dataset fingerprint 自动决定：
+  #   - 模型深度/宽度
+  #   - patch size
+  #   - batch size
+  #   - normalization 参数
+
+# --------------------------------------------------------------------------
+# 训练超参（继承 nnU-Net 默认值，禁止手动覆盖）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "SGD"               # nnU-Net 默认
+  lr: 1.0e-2                     # nnU-Net 默认 lr=1e-2
+  momentum: 0.99                 # nnU-Net 默认 momentum=0.99
+  nesterov: true                 # nnU-Net 默认 nesterov=True
+  weight_decay: 3.0e-5           # nnU-Net 默认 wd=3e-5
+  scheduler: "PolyLR"            # nnU-Net 内置 PolyLR
+  epochs: 1000                   # nnU-Net 默认 1000 epochs
+
+# --------------------------------------------------------------------------
+# Loss（继承 nnU-Net：DC+CE Deep Supervision）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "DC_CE_DeepSupervision"  # nnU-Net 框架内置
+
+# --------------------------------------------------------------------------
+# 预处理（nnU-Net 自动流水线）
+# --------------------------------------------------------------------------
+
+preprocess:
+  framework: "nnunetv2"          # 全自动（dataset fingerprint）
+  configuration: "2d"            # 2D 视网膜血管任务
+  channels: "green_raw"          # nnU-Net 自动选通道
+  clahe: false
+
+# --------------------------------------------------------------------------
+# 运行时依赖（BASELINE_SPEC §3 mamba 隔离）
+# --------------------------------------------------------------------------
+
+runtime:
+  env_tag: "mamba"
+  requires:
+    - "mamba-ssm"             # HF torch29-cu126 wheel
+    - "causal-conv1d"
+    - "nnunetv2"
+  hpc_commands:
+    preprocess: "nnUNetv2_plan_and_preprocess -d <dataset_id> --verify_dataset_integrity"
+    train: "nnUNetv2_train <dataset_id> 2d 0 --tr nnUNetTrainer"
+    predict: "nnUNetv2_predict -i <input> -o <output> -d <dataset_id> -c 2d"
+  hpc_note: >
+    需在 mamba_venv 中运行（mamba-ssm + nnunetv2 共存）。
+    训练通过 nnUNetv2_train 命令行，推理通过 nnUNetv2_predict。
+    evaluate.py 接 predict 输出 mask（接入方式待 BASELINE_SPEC §4 拍板）。
+    见 BASELINE_SPEC §3/§4 + github.com/bowang-lab/U-Mamba。

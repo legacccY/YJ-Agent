@@ -1,0 +1,104 @@
+# mambavesselnet.yaml — MambaVesselNet++ baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/CC0117/MambaVesselNet + arXiv 2411.11946 (TOMM25)
+#             + BASELINE_SPEC §1（researcher 二轮核实，2026-06-20）
+# 复现红线  : 不得私自修改超参；TODO 字段需 researcher 确认后回填。
+# env_tag   : mamba（需 mamba_venv + monai）
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "mamba_vessel_net"
+  kind: "architecture"
+  source_repo: "https://github.com/CC0117/MambaVesselNet"
+  env_tag: "mamba"
+  paper_ref: "TOMM 2025 / arXiv 2411.11946"
+  license: "MIT"
+
+# --------------------------------------------------------------------------
+# 模型超参（官方 mvnNet 默认值）
+# --------------------------------------------------------------------------
+
+model:
+  in_chans: 1                    # 灰度单通道
+  out_chans: 1                   # 二分类血管/背景
+  feature_dims: [48, 96, 192, 384, 768]  # 官方 mvnNet 默认
+  # ⚠️ 注意：vendor mvn.py 是 3D（Conv3d），2D 分支通过 spatial_dims=2 适配
+  # TODO_researcher: 2D 适配是否可行需 HPC mamba_venv 实测；
+  #                  若不可行，降档 C 引文献 Dice=0.711
+
+# --------------------------------------------------------------------------
+# 训练超参（官方 BASELINE_SPEC §1，TOMM25）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "Adam"
+  lr: 1.0e-4                     # 官方 lr=1e-4（BASELINE_SPEC §1）
+  scheduler: "CosineAnnealingLR"
+  min_lr: 1.0e-7                 # 官方 min_lr=1e-7（BASELINE_SPEC §1）
+  epochs: 200                    # 官方 200 epochs（BASELINE_SPEC §1）
+  batch_size: 16                 # 官方 bs=16（BASELINE_SPEC §1）
+
+# --------------------------------------------------------------------------
+# Input（2D 视网膜，尺寸待确认）
+# --------------------------------------------------------------------------
+
+input:
+  # TODO_researcher: 2D input_size 未在官方 repo train.py 中明示
+  #                  （repo train.py 是 3D；arXiv 2D 章节 input_size 未同步）。
+  #                  需查 arXiv 2411.11946 正文或 issue 作者确认。
+  #                  暂用 256×256（与 VM-UNet 对齐）作为占位。
+  size: 256                      # TODO_researcher: 待确认
+
+# --------------------------------------------------------------------------
+# Loss（官方：Dice + CE）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "DiceCE"                 # 官方 criterion.py: Dice + CE（等权重）
+
+# --------------------------------------------------------------------------
+# 预处理（官方 3D train.py；2D 分支待确认）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_raw"          # 灰度
+  input_mode: "fullimg"          # 全图 resize
+  patch_size: null
+  clahe: false
+  # TODO_researcher: 官方 normalize mean/std 未明示；2D 分支待确认
+  normalize_mean: [0.0]          # TODO_researcher: 占位
+  normalize_std: [1.0]           # TODO_researcher: 占位
+
+# --------------------------------------------------------------------------
+# 性能参照（官方论文数字，非我们复现值）
+# --------------------------------------------------------------------------
+
+reference_performance:
+  note: "以下为官方论文 reported 数字（非本项目复现值）"
+  DRIVE_Dice: 0.711              # BASELINE_SPEC §1 核实：通用多模态模型代价，非 bug
+  # ⚠️ Dice=0.711 是通用多模态设计的真实代价（非错误/metric 异），
+  #    引用时标注（BASELINE_SPEC §5）
+
+# --------------------------------------------------------------------------
+# 运行时依赖（BASELINE_SPEC §3 mamba 隔离）
+# --------------------------------------------------------------------------
+
+runtime:
+  env_tag: "mamba"
+  requires:
+    - "mamba-ssm"             # HF torch29-cu126 wheel
+    - "causal-conv1d"
+    - "monai"
+  vendor: "third_party/MambaVesselNet"  # curl 完成（MIT）
+  fallback: >
+    若 2D 适配失败（mvn.py 固定 Conv3d 不可绕过），
+    降档 C：引文献 DRIVE Dice=0.711，诚实标「非同框架复现」。
+    见 BASELINE_SPEC §3 退路。
+  hpc_note: >
+    需在 mamba_venv 中运行。
+    pip install mamba-ssm causal-conv1d monai
+    实测 mvnNet spatial_dims=2 是否可行后更新此配置。

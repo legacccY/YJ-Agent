@@ -1,0 +1,87 @@
+# nnunet.yaml — nnU-Net baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/MIC-DKFZ/nnUNet + Nature Methods 2021
+#             + BASELINE_SPEC §1（researcher 二轮核实，2026-06-20）
+# 复现红线  : nnU-Net 超参由框架自配置，禁止手动覆盖（零偏离红线）。
+#             下方记录的超参为 nnU-Net 框架已知默认值，仅供参考。
+# env_tag   : main（pip install nnunetv2）
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "nnunet"
+  kind: "architecture"
+  source_repo: "https://github.com/MIC-DKFZ/nnUNet"
+  env_tag: "main"
+  paper_ref: "Nature Methods 2021"
+  license: "Apache-2.0"
+  role: "公平主干（Fair Backbone）— P3 architecture-class 基准线"
+
+# --------------------------------------------------------------------------
+# 模型配置（nnU-Net 全自动，无手动超参）
+# --------------------------------------------------------------------------
+
+model:
+  framework: "nnunetv2"
+  configuration: "2d"            # 2D 视网膜血管任务
+
+# --------------------------------------------------------------------------
+# 训练超参（nnU-Net 框架默认值，仅记录，不手动传入框架）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "SGD"               # nnU-Net 默认
+  lr: 1.0e-2                     # nnU-Net 默认 lr=1e-2
+  momentum: 0.99                 # nnU-Net 默认 momentum=0.99
+  nesterov: true                 # nnU-Net 默认 nesterov=True
+  weight_decay: 3.0e-5           # nnU-Net 默认 wd=3e-5
+  scheduler: "PolyLR"            # nnU-Net 内置 PolyLR
+  epochs: 1000                   # nnU-Net 默认 1000 epochs
+
+# --------------------------------------------------------------------------
+# Loss（nnU-Net 框架内置）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "DC_CE_DeepSupervision"  # nnU-Net DC+CE Deep Supervision
+
+# --------------------------------------------------------------------------
+# 预处理（nnU-Net 全自动，dataset fingerprint 决定）
+# --------------------------------------------------------------------------
+
+preprocess:
+  framework: "nnunetv2"
+  configuration: "2d"
+  # nnU-Net 自动决定：
+  #   - z-score normalization（基于 dataset 统计）
+  #   - patch size（基于 GPU 显存 + dataset 分辨率）
+  #   - batch size
+  #   - 数据增强策略
+
+# --------------------------------------------------------------------------
+# 运行时依赖（BASELINE_SPEC env_tag='main'）
+# --------------------------------------------------------------------------
+
+runtime:
+  env_tag: "main"
+  requires:
+    - "nnunetv2"               # pip install nnunetv2
+  env_vars:
+    nnUNet_raw: "/path/to/nnUNet_raw"        # TODO: HPC 实际路径（见 DATA_INVENTORY.md）
+    nnUNet_preprocessed: "/path/to/nnUNet_preprocessed"
+    nnUNet_results: "/path/to/nnUNet_results"
+  hpc_commands:
+    convert: >
+      nnUNetv2_convert_MSD_dataset -i <msd_task_path>
+      # 或手动建 Dataset<ID>_<Name>/ 目录结构
+    preprocess: "nnUNetv2_plan_and_preprocess -d <dataset_id> --verify_dataset_integrity"
+    train: "nnUNetv2_train <dataset_id> 2d 0"
+    predict: "nnUNetv2_predict -i <input_folder> -o <output_folder> -d <dataset_id> -c 2d"
+  hpc_note: >
+    nnU-Net 数据集格式：Dataset001_DRIVE/ imagesTr/ imagesTs/ labelsTr/ dataset.json。
+    各血管数据集（DRIVE/CHASE/STARE/FIVES）需分别建 nnU-Net Dataset。
+    TODO: DATA_INVENTORY.md 中 nnU-Net 数据集 ID 分配待主线统一规划（见 BASELINE_SPEC §4）。
+    evaluate.py 接 nnUNetv2_predict 输出 mask（PNG），接入方式待 §4 拍板。

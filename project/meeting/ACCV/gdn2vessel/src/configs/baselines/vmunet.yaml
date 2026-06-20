@@ -1,0 +1,101 @@
+# vmunet.yaml — VM-UNet baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/JCruan519/VM-UNet train.py + arXiv 2402.02491
+#             + BASELINE_SPEC §1（researcher 二轮核实，2026-06-20）
+# 复现红线  : 不得私自修改超参；TODO 字段需 researcher 确认后回填。
+# env_tag   : mamba（需独立 mamba_venv，见 BASELINE_SPEC §3）
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "vm_unet"
+  kind: "architecture"
+  source_repo: "https://github.com/JCruan519/VM-UNet"
+  env_tag: "mamba"
+  paper_ref: "arXiv 2402.02491"
+  license: "Apache-2.0"
+
+# --------------------------------------------------------------------------
+# 模型超参（官方 VM-UNet 默认值）
+# --------------------------------------------------------------------------
+
+model:
+  input_channels: 1          # 灰度单通道（官方内部 repeat×3）
+  num_classes: 1             # 二分类血管/背景
+  depths: [2, 2, 9, 2]      # 官方 encoder depths
+  depths_decoder: [2, 9, 2, 2]  # 官方 decoder depths
+  drop_path_rate: 0.2        # 官方默认 drop_path_rate=0.2
+  load_ckpt_path: null       # 预训练权重路径（可选，null=不用预训练）
+
+# --------------------------------------------------------------------------
+# 训练超参（官方 train.py，BASELINE_SPEC §1 核实）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "AdamW"
+  lr: 1.0e-3                  # 官方 lr=1e-3
+  weight_decay: 1.0e-2        # TODO: 官方 AdamW weight_decay 未明示；
+                               #       PyTorch AdamW default=1e-2，需核 train.py
+  scheduler: "CosineAnnealingLR"
+  min_lr: 1.0e-5              # 官方 min_lr=1e-5
+  epochs: 300                 # 官方 300 epochs
+  batch_size: 32              # 官方 bs=32
+
+# --------------------------------------------------------------------------
+# Input（官方：256×256 resize）
+# --------------------------------------------------------------------------
+
+input:
+  size: 256                   # 官方 input=256×256
+
+# --------------------------------------------------------------------------
+# Loss（官方：BceDice = BCE + Dice）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "BceDice"             # 官方 loss = BCE + Dice（各权重 1.0 加和）
+
+# --------------------------------------------------------------------------
+# 预处理
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_raw"       # 灰度（官方内部 if x.size()[1]==1: repeat×3）
+  input_mode: "fullimg"       # 全图 resize 到 256×256
+  patch_size: null
+  clahe: false
+  # TODO: 官方 normalize mean/std 未在 README/paper 中明示；
+  #       需查 github.com/JCruan519/VM-UNet/datasets/dataset_DRIVE.py 确认
+  normalize_mean: [0.0]       # TODO_researcher: 占位
+  normalize_std: [1.0]        # TODO_researcher: 占位
+
+# --------------------------------------------------------------------------
+# 数据增强（官方：flip + rotation）
+# --------------------------------------------------------------------------
+
+augment:
+  horizontal_flip: true       # 官方 train.py RandomHorizontalFlip
+  vertical_flip: true         # 官方 train.py RandomVerticalFlip
+  random_rotation: true       # 官方 train.py RandomRotation
+  # TODO: rotation angle range 未在 paper/README 中明示；需查 train.py 参数
+  rotation_degrees: 90        # TODO_researcher: 待查 train.py 确认角度范围
+
+# --------------------------------------------------------------------------
+# 运行时依赖（BASELINE_SPEC §3 mamba 隔离）
+# --------------------------------------------------------------------------
+
+runtime:
+  env_tag: "mamba"
+  requires:
+    - "mamba-ssm"             # HF torch29-cu126 wheel（见 BASELINE_SPEC §3）
+    - "causal-conv1d"
+    - "timm"
+    - "einops"
+  vendor: "third_party/VM-UNet"   # curl 完成（Apache-2.0）
+  hpc_note: >
+    需在 mamba_venv 中运行。
+    TORCH_CUDA_ARCH_LIST="8.9" pip install mamba-ssm --no-build-isolation
+    （RTX4090 sm_89，见 BASELINE_SPEC §3）

@@ -1,0 +1,76 @@
+# cldice.yaml — clDice loss baseline 配置（BASELINE_SPEC §2.4 loss 类）
+# =======================================================================
+# 超参来源  : github.com/jocpae/clDice (MIT) + CVPR 2021
+#             + BASELINE_SPEC §2.4 统一 backbone/optimizer/scheduler
+# 复现红线  : loss 类 adapter backbone/optimizer/scheduler 由代码强制钉死
+#             (backbone_unet.py 统一常量)；此 yaml 记录为文档用途。
+#             TODO 字段需 researcher 确认后回填。
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "cldice"
+  kind: "loss"
+  source_repo: "https://github.com/jocpae/clDice"
+  env_tag: "main"
+  paper_ref: "CVPR 2021"
+
+# --------------------------------------------------------------------------
+# 模型超参（BASELINE_SPEC §2.4 loss 类统一 backbone，不得修改）
+# --------------------------------------------------------------------------
+
+model:
+  in_ch: 1            # 绿通道 CLAHE 单通道
+  out_ch: 1           # 二值血管/背景
+  base_ch: 32         # 统一 base_ch=32（代码强制，yaml 记录对齐）
+
+# --------------------------------------------------------------------------
+# 训练超参（BASELINE_SPEC §2.4 loss 类统一，代码强制）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "Adam"
+  lr: 1.0e-3                     # 统一 lr=1e-3（代码强制）
+  scheduler: "ReduceLROnPlateau"
+  scheduler_mode: "max"
+  scheduler_factor: 0.5
+  scheduler_patience: 10
+  scheduler_min_lr: 1.0e-6
+  epochs: 100                    # 与 Ours 主实验对齐
+  batch_size: 2
+
+# --------------------------------------------------------------------------
+# Loss（clDice 官方：(1-α)*SoftDice + α*clDice）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "ClDiceLoss"
+  alpha: 0.5          # 官方 repo default α=0.5（BASELINE_SPEC §1 确认）
+  # iter_: 3          # SoftSkeletonize iter（官方 soft_dice_cldice 内嵌 iter_=3）
+  # smooth: 1.0       # 官方 smooth=1.0
+
+# --------------------------------------------------------------------------
+# 预处理（BASELINE_SPEC §2.4 loss 类统一预处理，与 Ours 一致）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_clahe"    # 绿通道 + CLAHE（与 Ours 同）
+  input_mode: "fullimg"      # 全图推理
+  patch_size: null
+  clahe: true
+  clahe_clip: 2.0
+  normalize_mean: [0.5]
+  normalize_std: [0.1]
+  pad_multiple: 32            # 填充为 32 倍数（U-Net 下采样对齐）
+
+# --------------------------------------------------------------------------
+# 数据增强（BASELINE_SPEC §2.4 loss 类统一增强策略，与 Ours 一致）
+# --------------------------------------------------------------------------
+
+augment:
+  strategy: "unified_loss_class"
+  # 统一增强：随机水平/垂直翻转 + 随机旋转 90°（与 Ours 对齐）
+  # TODO: 确认 Ours 精确增强策略后对齐
