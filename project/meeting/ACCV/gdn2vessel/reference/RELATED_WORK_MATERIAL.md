@@ -25,7 +25,7 @@ U-Net / UNet++ / AttU-Net / IterNet (AAAI20) / SA-UNet (2020) / CS²-Net / FR-UN
 | **MM-UNet** | arXiv 2511.02193, 2025-11 IEEE | DRIVE/STARE | Morph Mamba Conv 形变采样 + RSSG | 贡献=形变采样；无关联记忆 |
 | **MambaVesselNet++** | arXiv 2507.19931, ACM TOMM 2025 | PH2/IXI(3D 脑血管)，非眼底主 | Hi-Encoder + bifocal fusion | 任务广，非眼底；无 KV 续连 |
 | **Swin-UMamba** | arXiv 2402.03302, MICCAI24 | Abdomen/Endo/Micro，无眼底血管 | Mamba + ImageNet 预训练 | 通用 backbone baseline |
-| **TA-Mamba** | Multimedia Systems 2025, DOI 10.1007/s00530-025-01671-2 (无 arXiv) | DRIVE/CHASE/STARE | serpentine spatial conv + 频率 attn + topo connectivity | **声张 topo connectivity（撞车中危）**；无显式断点续连检索；具体 Dice 未获(付费墙 TODO) |
+| **TA-Mamba** | Multimedia Systems 2025, DOI 10.1007/s00530-025-01671-2 (preprint rs-5164628 全文已核) | DRIVE/CHASE/STARE，基于 DSCNet | serpentine spatial conv + 高低频 attn Mamba + tubular-aware gated conv + 方向特征融合 | **声张 topo connectivity + 报 clDice（撞车高危↑）**；DRIVE clDice 0.8321/CHASE 0.8448/STARE 0.8515 = **直接拓扑竞品，clDice 比 HREFNet 高**；但无模型内断点续连检索/无 re-ID，无关联记忆 |
 
 **补查建议**（防漏比）：COMMA (arXiv 2503.02332, 3D 血管 Mamba) / Multi-scale Vision Mamba-UNet (Birmingham, 专做 retinal, arXiv id TODO) / TFFM (arXiv 2601.19136, 拓扑方向)。
 
