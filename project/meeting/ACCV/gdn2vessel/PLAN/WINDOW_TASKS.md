@@ -102,6 +102,41 @@
 - [ ] pytest 绿 + 本地 build 烟测（mamba 依赖缺时 RuntimeError 占位，对齐其他 SSM adapter）
 **停**：vendor+adapter+烟测过即 `done`。
 
+## 节点 precompute-prep（J 窗 · coder）2026-06-20 加，train DEP-2
+**服务**：命门 sweep 数据前置 / L1 lever。主线在 HPC 跑它前必须脚本就绪。
+**territory**：`src/datasets/precompute_benchmark.py` + `tests/`。
+**完成线**：
+- [ ] 验/修 precompute_benchmark.py 支持 STARE/HRF/FIVES 三集（现仅 CHASE 冻结）
+- [ ] 本地小集烟测：各集能生成 benchmark_cache NPZ，结构对（含 image 字段、severity Medium、与 CHASE 同 schema）
+- [ ] FIVES 子采样 seed42 固定（Entry14）核对在脚本内
+**停**：三集本地烟测过即 `done`。不真跑 HPC（主线串行）。
+
+## 节点 dep3-fix（K 窗 · coder）2026-06-20 加，全 36 前置（batch-1 不需）
+**服务**：多 seed 聚合正确性 / L1 lever。sweep launcher DEP-3 标的粒度 bug。
+**territory**：`scripts/launch_reid_sweep.py` 聚合段 + `src/reid_verdict_v2.py` + `tests/`。
+**完成线**：
+- [ ] 修多 seed 聚合：concat 各 seed CSV 时 image_id 加 seed 前缀（`seed42__chase__img01`）防同图多行 epoch=300 碰撞，使每 seed 每图独立配对单元
+- [ ] 确认 reid_verdict_v2 配对逻辑支持此粒度（select_last_epoch 不再吞 seed）
+- [ ] 回归测试：多 seed 假数据聚合 → verdict 配对数 = seed×图 不丢
+**停**：修+测过即 `done`。禁 scipy 手算红线不变。
+
+## 节点 drive-testgt（L 窗 · researcher）2026-06-20 加，标准 Dice 表
+**服务**：DRIVE 标准 20/20 主 Dice 表（可比 SOTA，不降质量）/ L3 lever。
+**territory**：`reference/` + `.portfolio/datasets.json`。
+**完成线**：
+- [ ] 定位重下 DRIVE 官方完整包（含 `test/1st_manual` GT，现 Kaggle umairinayat pack 缺）
+- [ ] 查官方源 + 镜像 + license，出可执行下载方案（URL/工具/校验）
+- [ ] 写 reference/ 下载方案档（实际下载 + HPC 上传 = 主线拍板，本窗只出方案不下载大文件）
+**停**：方案核源出即 `done`。不真下载大文件/不传 HPC（主线串行+拍板点）。
+
+## 主窗串行链（放行后，绝不外包给窗）
+> train 拍板点放行后主线亲自串行（HPC/训练红线）：
+1. 等 precompute-prep done → `gpu_slot.py request gdn2vessel hpc 1` → HPC 跑 precompute_benchmark STARE/HRF/FIVES
+2. HPC 上传所有新码（drive/A1'臂/verdict/adapters/sweep/mm_unet）= 拍板点
+3. **batch-1（12 run，seed42）**先验真 3 臂 HPC 全链（绕开 DEP-3）→ verdict 不假 FAIL
+4. 干净 + dep3-fix done → 全 36（92 GPU·h）→ reid_verdict_v2 出命门 verdict
+5. 完成 `gpu_slot.py release` + `pipeline.py done train`
+
 ## 拍板点（主窗持，各窗碰到就停下报）
 1. **gate-accept**：改 ACCEPTANCE P4 判据2（阈值变更）。✅ 2026-06-20 用户放行（partial_corr→CDE 分层 + A1' 臂）。
 2. **train**：投正式命门 92 GPU·h（4 集×3 臂×3 seed）+ HPC 上传新代码。⬜ 待 impl-verdict+integrate 过。
