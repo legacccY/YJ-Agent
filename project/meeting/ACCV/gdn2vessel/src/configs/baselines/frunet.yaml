@@ -1,0 +1,76 @@
+# frunet.yaml — FR-UNet baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/lseventeen/FR-UNet (MIT) + JBHI 2022
+#             + BASELINE_SPEC §1（researcher 二轮核实，2026-06-20）
+# 复现红线  : 不得私自修改超参；TODO 字段需 researcher 确认后回填。
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "fr_unet"
+  kind: "architecture"
+  source_repo: "https://github.com/lseventeen/FR-UNet"
+  env_tag: "main"
+  paper_ref: "JBHI 2022"
+
+# --------------------------------------------------------------------------
+# 模型超参（官方 fr_unet.py 默认值）
+# --------------------------------------------------------------------------
+
+model:
+  in_ch: 1             # 灰度单通道（官方: num_channels=1）
+  out_ch: 1            # 二分类血管/背景
+  num_classes: 1
+  num_channels: 1
+  feature_scale: 2     # filters=[32,64,128,256,512]（官方默认 feature_scale=2）
+  dropout: 0.2         # 官方默认 dropout=0.2
+  fuse: true           # feature_fuse 多尺度融合（官方默认 True）
+  out_ave: true        # 5 个输出头平均（官方默认 True）
+
+# --------------------------------------------------------------------------
+# 训练超参（官方: JBHI22 + BASELINE_SPEC §1 核实）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "Adam"
+  lr: 1.0e-4                    # 官方 lr=1e-4
+  weight_decay: 1.0e-5          # 官方 wd=1e-5
+  scheduler: "CosineAnnealingLR"
+  scheduler_T_max: 40           # 官方 T_max=40（等于 epochs）
+  epochs: 40                    # 官方 epochs=40
+  batch_size: 512               # 官方 bs=512（patch 模式下 patch/batch）
+  amp: true                     # 官方使用 AMP fp16
+
+# --------------------------------------------------------------------------
+# Loss（官方: BCELoss）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "BCELoss"    # binary_cross_entropy_with_logits（adapter 内 FOV 掩码版）
+
+# --------------------------------------------------------------------------
+# 预处理（官方: 灰度，minmax 归一化，无 CLAHE）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_raw"      # 灰度单通道（视网膜场景取绿通道）
+  input_mode: "patch"        # 训练时 patch 切割
+  patch_size: 48             # 官方 patch=48×48
+  stride: 6                  # 官方 stride=6（评估滑窗同）
+  clahe: false               # 官方无 CLAHE
+  # TODO: 官方 mean/std — 官方 README 未公开具体值，仅描述 minmax 归一化
+  # mean/std 以 minmax 后等价 [0,1] 范围表示
+  normalize_mean: [0.0]      # TODO_researcher: 官方 dataset.py 中精确值待确认
+  normalize_std: [1.0]       # TODO_researcher: 官方 dataset.py 中精确值待确认
+
+# --------------------------------------------------------------------------
+# 数据增强（官方: 未在论文中明示；BASELINE_SPEC 无记录 → 标 TODO）
+# --------------------------------------------------------------------------
+
+augment:
+  strategy: "TODO_researcher_frunet_augment"
+  # TODO_researcher: FR-UNet 官方 augmentation 策略未在 BASELINE_SPEC 中明示
+  # 需查 github.com/lseventeen/FR-UNet dataset.py 确认具体增强操作

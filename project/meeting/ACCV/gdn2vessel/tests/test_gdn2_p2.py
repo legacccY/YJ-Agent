@@ -426,18 +426,22 @@ class TestSeqLen:
 
 
 # ===========================================================================
-# 7. Re-ID head stub — must raise NotImplementedError, no GT param
+# 7. Re-ID head (Phase-3 implemented) — contract tests
+#    Stub is now replaced; test the implemented interface here.
+#    Detailed gradient-isolation tests live in test_reid_p3.py.
 # ===========================================================================
 
-class TestReIDStub:
+class TestReIDHeadContract:
 
-    def test_raises_not_implemented(self):
-        """ReIDReadoutHead.forward must raise NotImplementedError (stub)."""
-        head = ReIDReadoutHead(d_head=8, n_heads=1)
-        dummy_state = torch.zeros(1, 1, 8, 8)
-        dummy_pos   = torch.zeros(1, 2, 2, dtype=torch.long)
-        with pytest.raises(NotImplementedError):
-            head(dummy_state, dummy_pos)
+    def _make_head(self, d_head=8, n_heads=1, dec_ch=16, d_id=8):
+        return ReIDReadoutHead(
+            d_head=d_head, n_heads=n_heads, dec_ch=dec_ch, d_id=d_id
+        )
+
+    def test_instantiable(self):
+        """ReIDReadoutHead must instantiate without error."""
+        head = self._make_head()
+        assert head is not None
 
     def test_no_gt_in_forward_signature(self):
         """ReIDReadoutHead.forward must not accept GT."""
@@ -447,7 +451,35 @@ class TestReIDStub:
         """ReIDReadoutHead.__init__ must not accept GT."""
         _check_no_gt(ReIDReadoutHead, '__init__')
 
-    def test_placeholder_param_exists(self):
-        """Stub should be instantiable without error and have _placeholder."""
-        head = ReIDReadoutHead(d_head=16, n_heads=2)
-        assert hasattr(head, '_placeholder')
+    def test_forward_returns_logits_tensor(self):
+        """forward must return a (B, K, K) tensor."""
+        B, K, T, nh, dh, dec_ch = 1, 3, 16, 1, 8, 16
+        head = self._make_head(d_head=dh, n_heads=nh, dec_ch=dec_ch, d_id=8)
+        head.eval()
+        o_seq    = torch.randn(B, T, nh * dh)
+        dec_feat = torch.randn(B, dec_ch, 8, 8)
+        pos      = torch.rand(B, K, 2) * 7   # positions in [0, 7)
+        with torch.no_grad():
+            logits = head(o_seq, dec_feat, pos)
+        assert isinstance(logits, torch.Tensor), f"Expected Tensor, got {type(logits)}"
+        assert logits.shape == (B, K, K), f"Expected ({B},{K},{K}), got {logits.shape}"
+
+    def test_diagonal_is_neg_inf(self):
+        """Diagonal of logits must be -inf (self-match excluded)."""
+        B, K, T, nh, dh, dec_ch = 1, 4, 16, 1, 8, 16
+        head = self._make_head(d_head=dh, n_heads=nh, dec_ch=dec_ch, d_id=8)
+        head.eval()
+        o_seq    = torch.randn(B, T, nh * dh)
+        dec_feat = torch.randn(B, dec_ch, 8, 8)
+        pos      = torch.rand(B, K, 2) * 7
+        with torch.no_grad():
+            logits = head(o_seq, dec_feat, pos)
+        diag = torch.diagonal(logits[0])
+        assert torch.all(diag == float('-inf')), f"Diagonal not -inf: {diag}"
+
+    def test_detach_memory_train_default_true(self):
+        """detach_memory_train must default to True (gradient isolation active)."""
+        head = self._make_head()
+        assert head.detach_memory_train is True, (
+            "detach_memory_train should default to True — gradient isolation red line"
+        )

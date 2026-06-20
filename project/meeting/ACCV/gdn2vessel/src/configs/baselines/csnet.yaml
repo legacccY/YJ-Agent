@@ -1,0 +1,71 @@
+# csnet.yaml — CS-Net / CS2-Net baseline 配置（BASELINE_SPEC §1 官方超参）
+# =======================================================================
+# 超参来源  : github.com/iMED-Lab/CS-Net (MIT) + BASELINE_SPEC §1
+#             (researcher 二轮核实，2026-06-20)
+# 复现红线  : 不得私自修改超参；TODO 字段需 researcher 确认后回填。
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "cs_net"
+  kind: "architecture"
+  source_repo: "https://github.com/iMED-Lab/CS-Net"
+  env_tag: "main"
+  paper_ref: "CS-Net / CS2-Net (iMED-Lab)"
+
+# --------------------------------------------------------------------------
+# 模型超参（官方 csnet.py 默认值）
+# --------------------------------------------------------------------------
+
+model:
+  in_ch: 3        # RGB 三通道（官方: channels=3）
+  out_ch: 1
+  classes: 1      # 二分类
+  channels: 3     # RGB
+
+# --------------------------------------------------------------------------
+# 训练超参（官方: BASELINE_SPEC §1 核实）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "Adam"
+  lr: 1.0e-4              # 官方 lr=1e-4
+  weight_decay: 5.0e-4    # 官方 wd=5e-4
+  scheduler: "PolyLR"
+  scheduler_poly_p: 0.9   # 官方 PolyLR power=0.9
+  epochs: 1000            # 官方 epochs=1000
+  batch_size: 8           # 官方 bs=8（整图 512×512）
+
+# --------------------------------------------------------------------------
+# Loss（官方: MSE + Dice，等权）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "MSE+Dice"
+  # 官方无显式权重系数，MSE 和 Dice 直接相加（见 adapter _MSEDiceLoss）
+
+# --------------------------------------------------------------------------
+# 预处理（官方: RGB，resize 512×512，无 CLAHE）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "rgb"
+  input_mode: "fullimg"
+  patch_size: null         # 整图模式，无 patch
+  clahe: false             # 官方无 CLAHE
+  resize: 512              # 官方整图 resize 到 512×512
+  # TODO: 官方仅做 /255 归一化，未使用 ImageNet mean/std
+  normalize_mean: [0.0, 0.0, 0.0]   # TODO_researcher: 官方仅 /255，无显式 mean/std
+  normalize_std: [1.0, 1.0, 1.0]    # TODO_researcher: 官方仅 /255，无显式 mean/std
+
+# --------------------------------------------------------------------------
+# 数据增强（官方: 未在 BASELINE_SPEC 中明示 → TODO）
+# --------------------------------------------------------------------------
+
+augment:
+  strategy: "TODO_researcher_csnet_augment"
+  # TODO_researcher: CS-Net 官方 augmentation 策略未在 BASELINE_SPEC 中明示
+  # 需查 github.com/iMED-Lab/CS-Net data_process/ 确认具体增强操作

@@ -51,7 +51,7 @@ from __future__ import annotations
 
 import math
 import os
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -267,79 +267,264 @@ class DifferentiableFrangi(nn.Module):
 
 
 # --------------------------------------------------------------------------- #
-#  Re-ID Readout Head (Claim 2 interface stub — NOT YET IMPLEMENTED)
+#  Re-ID Readout Head (Claim 2 — planner+skeptic design, 2026-06-20)
 # --------------------------------------------------------------------------- #
+
+def _gather_tokens_at(
+    o_seq: torch.Tensor,
+    positions: torch.Tensor,
+    H: int,
+    W: int,
+) -> torch.Tensor:
+    """
+    Gather memory-output tokens at breakpoint positions via raster-order index lookup.
+
+    Args:
+        o_seq:     (B, T, D)  — flat token sequence (raster order H-major)
+        positions: (B, K, 2)  — (h, w) coordinates in [0, H) x [0, W)
+                               float or long; fractional coords are floored.
+        H, W:      spatial dimensions matching raster order
+    Returns:
+        gathered:  (B, K, D)
+    """
+    B, K, _ = positions.shape
+    # Convert (h, w) → flat token index in raster order
+    h_idx = positions[..., 0].long().clamp(0, H - 1)   # (B, K)
+    w_idx = positions[..., 1].long().clamp(0, W - 1)   # (B, K)
+    flat_idx = h_idx * W + w_idx                        # (B, K)
+
+    # Expand index for gather: (B, K, D)
+    D = o_seq.shape[-1]
+    idx_exp = flat_idx.unsqueeze(-1).expand(B, K, D)   # (B, K, D)
+    gathered = o_seq.gather(1, idx_exp)                 # (B, K, D)
+    return gathered
+
+
+def _grid_sample_at(
+    feat: torch.Tensor,
+    positions: torch.Tensor,
+) -> torch.Tensor:
+    """
+    Bilinear-sample decoder feature map at (h, w) breakpoint positions.
+
+    Args:
+        feat:      (B, C, H, W)  — decoder feature map
+        positions: (B, K, 2)     — (h, w) in pixel coords [0, H) x [0, W)
+    Returns:
+        sampled:   (B, K, C)
+    """
+    B, C, H, W = feat.shape
+    K = positions.shape[1]
+
+    # Normalise to [-1, 1] for grid_sample (x=W-axis, y=H-axis)
+    h_norm = (positions[..., 0] / (H - 1)) * 2.0 - 1.0   # (B, K)
+    w_norm = (positions[..., 1] / (W - 1)) * 2.0 - 1.0   # (B, K)
+    # grid_sample expects grid shape (B, Hout, Wout, 2) with (x, y) = (w, h)
+    grid = torch.stack([w_norm, h_norm], dim=-1)           # (B, K, 2)
+    grid = grid.unsqueeze(2)                               # (B, K, 1, 2)
+
+    # Sample: (B, C, K, 1)
+    sampled = F.grid_sample(feat, grid, mode='bilinear',
+                            align_corners=True, padding_mode='border')
+    sampled = sampled.squeeze(-1).permute(0, 2, 1)        # (B, K, C)
+    return sampled
+
 
 class ReIDReadoutHead(nn.Module):
     """
-    Spatial re-identification readout head (Claim 2 — stub / TODO).
+    Spatial re-identification readout head (Claim 2).
 
-    INTERFACE CONTRACT (finalise after planner+skeptic design session):
+    Headline mechanism: GDN-2 associative memory encodes vessel identity.
+    Given K breakpoint candidate positions, this head reads out per-position
+    identity embeddings from memory + local decoder features, then computes
+    pairwise same-vessel matching logits.
 
-    Input:
-      memory_state: (B, nh, d_head, d_head)  — final GDN-2 memory matrix S
-                    (the associative memory that has "seen" the whole sequence)
-      breakpoint_positions: (B, K, 2)  — spatial coordinates (h, w) of K
-                            candidate breakpoint locations (derived from
-                            input features, NOT GT topology)
+    Supervision: synthetic-break weak supervision (apply_breaks knows two sides
+    of the same cut → same-root label).  Supervised signal stays OUTSIDE the
+    main model via three stop-gradient barriers — the weak supervision ONLY
+    updates this head's projection layers, never the memory / encoder / Frangi.
+    This preserves Claim 1 (GT-topology-free associative memory).
 
-    Output:
-      match_logits: (B, K, K)  — pairwise same-vessel matching logits.
-                   match_logits[b, i, j] > 0 means position i and j belong
-                   to the same vessel branch according to the memory.
+    THREE detach barriers (致命-1 红线, planner+skeptic 2026-06-20):
+      ★detach1: o_seq.detach()         — memory output side
+      ★detach2: memory_state.detach()  — explicit memory state (if provided)
+      ★detach3: dec_feat.detach()      — decoder feature side
 
-    Planned mechanism (TODO — needs planner+skeptic sign-off):
-      1. Read memory at breakpoint positions: project spatial coords to query q_i,
-         retrieve from S the associated value v_i = S^T q_i.
-      2. Compute pairwise similarity logits: v_i · v_j / sqrt(d_head).
-      3. Symmetric — logits[i,j] == logits[j,i].
-      4. Supervised by same-vessel labels from synthetic breakpoint benchmark
-         (breakpoint benchmark in STORY §4; GT used ONLY as supervision signal,
-         NOT as input to the head at inference — the head reads memory+positions only).
-
-    Why stub:
-      This is the headline mechanism (Claim 2).  Implementing it incorrectly
-      could create GT leakage or invalidate the novelty argument.
-      Design must pass planner+skeptic before code is written.
+    Ablation flags (Block D):
+      feat_source   : 'memory' (A2, default) | 'cnn' (A0' — CNN-only baseline;
+                      same head, but id_vec comes from a parallel CNN bottleneck
+                      feature NOT flowing through GDN-2, i.e. skip memory path).
+                      NOTE: A0' wiring lives in UNetGDN2 which passes appropriate
+                      o_seq; this flag just labels the arm.
+      detach_memory_train : bool (A3 — ablate gradient isolation: if False, no
+                      detach → gradients can flow into memory; use ONLY for ablation
+                      to show the detach is load-bearing).  Default=True (MUST be
+                      True in all non-ablation runs — red line).
+      breakpoint_source : 'gt_skeleton' (A2) | 'pred_skeleton' (A4 — removes
+                      GT-topology dependency on breakpoint detection side).
+                      This flag is informational here; actual source is determined
+                      upstream in the training loop.
 
     Args:
-        d_head: head dimension of GDN-2 memory (must match GDN2MemoryModule.d_head)
-        n_heads: number of attention heads
+        d_head:     GDN-2 head dimension (must match GDN2MemoryModule.d_head)
+        n_heads:    number of GDN-2 attention heads
+        dec_ch:     decoder feature channels (must match selected decoder layer)
+        d_id:       identity embedding dimension (default 64)
+        feat_source: ablation arm label (see above)
+        detach_memory_train: True = enforce gradient isolation (default, red line)
+        breakpoint_source:   ablation arm label (informational)
     """
 
-    def __init__(self, d_head: int, n_heads: int):
+    def __init__(
+        self,
+        d_head: int,
+        n_heads: int,
+        dec_ch: int,
+        d_id: int = 64,
+        feat_source: str = 'memory',            # ablation A2/A0'
+        detach_memory_train: bool = True,        # ablation A3 — MUST be True in non-ablation
+        breakpoint_source: str = 'gt_skeleton',  # ablation A2/A4 (informational)
+    ):
         super().__init__()
+        assert feat_source in ('memory', 'cnn'), (
+            f"feat_source must be 'memory' or 'cnn'; got {feat_source!r}"
+        )
+        assert breakpoint_source in ('gt_skeleton', 'pred_skeleton'), (
+            f"breakpoint_source must be 'gt_skeleton' or 'pred_skeleton'; "
+            f"got {breakpoint_source!r}"
+        )
         self.d_head = d_head
         self.n_heads = n_heads
-        # TODO: implement after planner+skeptic design — see docstring above.
-        # Placeholder parameter to keep the module non-empty (avoids PyTorch warnings).
-        self._placeholder = nn.Linear(d_head * n_heads, d_head * n_heads, bias=False)
+        self.dec_ch = dec_ch
+        self.d_id = d_id
+        self.feat_source = feat_source
+        self.detach_memory_train = detach_memory_train
+        self.breakpoint_source = breakpoint_source
+
+        # Memory-side projection: (nh * d_head) → d_id
+        self.mem_proj = nn.Linear(d_head * n_heads, d_id, bias=False)
+        # Local decoder projection: dec_ch → d_id
+        self.loc_proj = nn.Linear(dec_ch, d_id, bias=False)
+        # Fusion: concat(mem, loc) → d_id
+        self.fuse = nn.Linear(2 * d_id, d_id, bias=False)
+        # Learnable log-temperature (initialised at 0 → temp=1.0)
+        self.log_temp = nn.Parameter(torch.zeros(1))
 
     def forward(
         self,
-        memory_state: torch.Tensor,
+        o_seq: torch.Tensor,
+        dec_feat: torch.Tensor,
         breakpoint_positions: torch.Tensor,
+        memory_state: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
-        Stub — raises NotImplementedError until design is finalised.
+        Compute pairwise same-vessel matching logits for K breakpoint positions.
+
+        The three detach barriers below are the critical gradient isolation
+        (planner+skeptic 2026-06-20 致命-1 red line).  Do NOT remove them.
+        Ablation A3 (detach_memory_train=False) is the only allowed exception.
 
         Args:
-            memory_state:         (B, nh, d_head, d_head)
-            breakpoint_positions: (B, K, 2)  integer (h, w) coords
+            o_seq:                (B, T, nh*d_head)  — memory output sequence
+                                  (raster order, T = H_bot * W_bot at bottleneck)
+            dec_feat:             (B, dec_ch, H_dec, W_dec)  — decoder feature map
+                                  (spatial resolution of selected decoder layer)
+            breakpoint_positions: (B, K, 2)  — (h, w) in dec_feat pixel coords
+                                  Float or long; h in [0, H_dec), w in [0, W_dec).
+            memory_state:         Optional (B, nh, d_head, d_head) or
+                                  list of such tensors (per-direction final states).
+                                  Not used in current forward (reserved for future
+                                  explicit key-value retrieval variant).
 
         Returns:
-            match_logits: (B, K, K)
-
-        Raises:
-            NotImplementedError: always, until implementation is complete.
+            logits: (B, K, K)  — pairwise matching logits, symmetric, diagonal=-inf.
+                    logits[b,i,j] > 0 → positions i and j likely same vessel.
         """
-        # TODO: implement same-vessel pairwise matching via memory retrieval.
-        #   See class docstring for planned mechanism.
-        #   Implementation blocked on planner+skeptic design session.
-        raise NotImplementedError(
-            "ReIDReadoutHead is a stub.  Implementation pending planner+skeptic "
-            "design sign-off (see class docstring)."
-        )
+        # ------------------------------------------------------------------- #
+        # ★ detach1 — memory output: weak supervision must NOT flow into memory
+        # ------------------------------------------------------------------- #
+        if self.detach_memory_train:
+            mem_ctx = o_seq.detach()          # ★detach1
+        else:
+            # A3 ablation only — gradient allowed (demonstrates detach is load-bearing)
+            mem_ctx = o_seq
+
+        # ------------------------------------------------------------------- #
+        # ★ detach2 — explicit memory state (future key-value retrieval path)
+        # ------------------------------------------------------------------- #
+        if memory_state is not None:
+            if isinstance(memory_state, (list, tuple)):
+                # Per-direction states: detach each individually
+                memory_state = [
+                    s.detach() if self.detach_memory_train else s   # ★detach2
+                    for s in memory_state
+                ]
+            else:
+                if self.detach_memory_train:
+                    memory_state = memory_state.detach()             # ★detach2
+
+        # ------------------------------------------------------------------- #
+        # ★ detach3 — decoder features: weak supervision must NOT flow into encoder
+        # ------------------------------------------------------------------- #
+        if self.detach_memory_train:
+            loc = dec_feat.detach()           # ★detach3
+        else:
+            loc = dec_feat
+
+        # ------------------------------------------------------------------- #
+        # Gather identity embeddings at breakpoint positions
+        # ------------------------------------------------------------------- #
+        B, K, _ = breakpoint_positions.shape
+        H_dec, W_dec = loc.shape[-2], loc.shape[-1]
+
+        # Memory side: gather raster-order tokens from o_seq
+        # o_seq has bottleneck spatial resolution (H_bot, W_bot);
+        # breakpoint_positions are in dec_feat resolution → need to scale down.
+        # NOTE: we scale positions to bottleneck token space for token gather.
+        # Bottleneck spatial dims inferred from o_seq length T = H_bot * W_bot.
+        T = mem_ctx.shape[1]
+        # Heuristic: assume square bottleneck (valid for square patches).
+        H_bot = W_bot = int(T ** 0.5)
+        if H_bot * W_bot != T:
+            # Non-square bottleneck fallback: gather by nearest flat index
+            # (use bilinear-equivalent scaling along T-dim)
+            # This case is unlikely given 512×512 → 32×32 bottleneck.
+            H_bot = T
+            W_bot = 1
+
+        # Scale positions from dec_feat res → bottleneck res
+        scale_h = H_bot / H_dec
+        scale_w = W_bot / W_dec
+        pos_bot = breakpoint_positions.float().clone()
+        pos_bot[..., 0] = pos_bot[..., 0] * scale_h
+        pos_bot[..., 1] = pos_bot[..., 1] * scale_w
+
+        id_vec = _gather_tokens_at(mem_ctx, pos_bot, H_bot, W_bot)  # (B, K, nh*d_head)
+
+        # Local decoder side: bilinear-sample dec_feat at breakpoint positions
+        loc_vec = _grid_sample_at(loc, breakpoint_positions.float())  # (B, K, dec_ch)
+
+        # ------------------------------------------------------------------- #
+        # Project + fuse → normalised identity embedding e ∈ R^{d_id}
+        # ------------------------------------------------------------------- #
+        e_mem = self.mem_proj(id_vec)    # (B, K, d_id)
+        e_loc = self.loc_proj(loc_vec)   # (B, K, d_id)
+        e = F.normalize(
+            self.fuse(torch.cat([e_mem, e_loc], dim=-1)),   # (B, K, d_id)
+            dim=-1,
+        )   # L2-normalised embedding
+
+        # ------------------------------------------------------------------- #
+        # Pairwise cosine logits scaled by learnable temperature
+        # ------------------------------------------------------------------- #
+        # (B, K, K): e[b,i] · e[b,j] (cosine since e is normalised)
+        logits = torch.bmm(e, e.transpose(1, 2)) * self.log_temp.exp()
+
+        # Mask diagonal (self-matching is trivially "same vessel" → exclude)
+        diag_mask = torch.eye(K, dtype=torch.bool, device=logits.device)
+        logits = logits.masked_fill(diag_mask.unsqueeze(0), float('-inf'))
+
+        return logits   # (B, K, K), symmetric, diagonal=-inf
 
 
 # --------------------------------------------------------------------------- #
@@ -497,26 +682,34 @@ class GDN2MemoryModule(nn.Module):
 
     def _run_one_direction(
         self,
-        tokens: torch.Tensor,       # (B, T, C)
-        perm: torch.Tensor,         # (T,) index permutation
-        inv_perm: torch.Tensor,     # (T,) inverse permutation
-        write_gate: torch.Tensor,   # (B, T, nh) — already Frangi-modulated
-        erase_gate: torch.Tensor,   # (B, T, nh) — already Frangi-modulated
-        g: torch.Tensor,            # (B, T, nh) log-space decay
-    ) -> torch.Tensor:
+        tokens: torch.Tensor,           # (B, T, C)
+        perm: torch.Tensor,             # (T,) index permutation
+        inv_perm: torch.Tensor,         # (T,) inverse permutation
+        write_gate: torch.Tensor,       # (B, T, nh) — already Frangi-modulated
+        erase_gate: torch.Tensor,       # (B, T, nh) — already Frangi-modulated
+        g: torch.Tensor,                # (B, T, nh) log-space decay
+        output_final_state: bool = False,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, Optional[torch.Tensor]]]:
         """
         Run one GDN-2 pass on reordered tokens, un-reorder output.
 
         Args:
-            tokens:      (B, T, C) — full-sequence tokens (un-permuted)
-            perm:        index permutation (T,)
-            inv_perm:    inverse permutation (T,)
-            write_gate:  (B, T, nh) — write β (already modulated)
-            erase_gate:  (B, T, nh) — erase modifier (already modulated)
-            g:           (B, T, nh) — baseline log-decay
+            tokens:             (B, T, C) — full-sequence tokens (un-permuted)
+            perm:               index permutation (T,)
+            inv_perm:           inverse permutation (T,)
+            write_gate:         (B, T, nh) — write β (already modulated)
+            erase_gate:         (B, T, nh) — erase modifier (already modulated)
+            g:                  (B, T, nh) — baseline log-decay
+            output_final_state: if True, also return the final memory state S
+                                (B, nh, d_head, d_head).  The FLA naive kernel
+                                supports this via output_final_state=True kwarg.
+                                Falls back to None if the kernel does not support it.
 
         Returns:
-            o_orig: (B, T, nh, dh) — output in original (un-permuted) order
+            output_final_state=False → o_orig: (B, T, nh, dh)
+            output_final_state=True  → (o_orig, final_state)
+                where final_state is (B, nh, d_head, d_head) or None if kernel
+                does not expose it.
         """
         B, T, C = tokens.shape
         nh = self.n_heads
@@ -543,20 +736,55 @@ class GDN2MemoryModule(nn.Module):
         g_combined = gd - eg.abs()                     # (B, T, nh), log-space
 
         # GDN-2 kernel call (FLA convention: β=write gate, g=log-decay)
-        res = self._gdn2_fn(q, k, v, beta=wg, g=g_combined)
-        o_perm = res[0] if isinstance(res, tuple) else res   # (B, T, nh, dh)
+        # Try to request final_state from the kernel when needed.
+        final_state = None
+        if output_final_state:
+            try:
+                res = self._gdn2_fn(q, k, v, beta=wg, g=g_combined,
+                                    output_final_state=True)
+                # naive_chunk_gated_delta_rule returns (o, final_state)
+                o_perm = res[0]
+                final_state = res[1]   # (B, nh, d_head, d_head) or None
+            except TypeError:
+                # Kernel does not support output_final_state kwarg — fallback
+                res = self._gdn2_fn(q, k, v, beta=wg, g=g_combined)
+                o_perm = res[0] if isinstance(res, tuple) else res
+                final_state = None
+        else:
+            res = self._gdn2_fn(q, k, v, beta=wg, g=g_combined)
+            o_perm = res[0] if isinstance(res, tuple) else res   # (B, T, nh, dh)
 
         # Un-reorder output to original spatial order
         o_orig = o_perm[:, inv_perm, :, :]             # (B, T, nh, dh)
+
+        if output_final_state:
+            return o_orig, final_state
         return o_orig
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        return_memory: bool = False,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, List[Optional[torch.Tensor]]]]:
         """
         Args:
             x: (B, C, H, W)  input feature map — must have C == d_model
                NOTE: this is a feature map derived from input images, NEVER GT.
+            return_memory: if True, also return per-direction final memory states
+               as a list of length n_dirs.  Each element is either
+               (B, nh, d_head, d_head) if the FLA kernel exposes final_state,
+               or None if the kernel does not support it.
+               States are NOT merged across directions (merging states is
+               theoretically unsound — L413 red line preserved).
+
         Returns:
-            out: (B, C, H, W)  same shape, memory-enhanced features
+            return_memory=False → out: (B, C, H, W)
+            return_memory=True  → (out, states_list)
+                out:         (B, C, H, W)
+                states_list: List[Optional[Tensor]] length=n_dirs,
+                             each (B, nh, d_head, d_head) or None
+                Also exposes: self._last_o_seq (B, T, nh*d_head) — memory
+                output sequence in raster order, used by ReIDReadoutHead.
         """
         B, C, H, W = x.shape
         assert C == self.d_model, f"Expected C={self.d_model}, got {C}"
@@ -599,24 +827,39 @@ class GDN2MemoryModule(nn.Module):
         perms = _get_scan_permutations(H, W, self.directions, device=x.device)
         inv_perms = [_invert_permutation(p) for p in perms]
 
-        o_list = []
+        o_list: List[torch.Tensor] = []
+        states_list: List[Optional[torch.Tensor]] = []
         for perm, inv_perm in zip(perms, inv_perms):
-            o_dir = self._run_one_direction(tokens, perm, inv_perm,
-                                            write_gate, erase_gate, g)
+            if return_memory:
+                o_dir, s_dir = self._run_one_direction(
+                    tokens, perm, inv_perm, write_gate, erase_gate, g,
+                    output_final_state=True,
+                )
+                states_list.append(s_dir)
+            else:
+                o_dir = self._run_one_direction(
+                    tokens, perm, inv_perm, write_gate, erase_gate, g,
+                    output_final_state=False,
+                )
             o_list.append(o_dir)                       # each (B, T, nh, dh)
 
         # Merge: average outputs across directions (states are NOT merged)
         o = torch.stack(o_list, dim=0).mean(dim=0)     # (B, T, nh, dh)
 
         # Merge heads → (B, T, nh*dh)
-        o = o.reshape(B, T, nh * self.d_head)
+        o_seq = o.reshape(B, T, nh * self.d_head)      # (B, T, nh*d_head)
+        # Store for external access (ReIDReadoutHead may read this)
+        self._last_o_seq = o_seq
 
         # Output projection + residual + norm
-        out_tokens = self.proj_out(o)                  # (B, T, C)
+        out_tokens = self.proj_out(o_seq)              # (B, T, C)
         out_tokens = self.norm(tokens + out_tokens)    # residual connection
 
         # Reshape back: (B, T, C) → (B, C, H, W)
         out = out_tokens.reshape(B, H, W, C).permute(0, 3, 1, 2)
+
+        if return_memory:
+            return out, states_list
         return out
 
 
@@ -632,17 +875,30 @@ class UNetGDN2(nn.Module):
     spatial resolution H/16 × W/16 (deepest encoder).  For patch_size=512
     this gives 32×32 = 1024 tokens — exactly at the ≤1K limit.
 
+    Re-ID head (Claim 2) is optionally attached via use_reid_head=True.
+    The head reads memory output (o_seq) + a selected decoder feature map,
+    computes pairwise matching logits for K breakpoint positions.
+    Three detach barriers isolate weak supervision — see ReIDReadoutHead.
+
     Args:
-        in_ch:          input channels (1 for green-channel DRIVE)
-        out_ch:         output channels (1 for binary seg)
-        base_ch:        base channel width (same as UNet)
-        d_head:         GDN-2 head dim
-        n_heads:        GDN-2 number of heads
-        use_memory:     True = GDN-2 active; False = degrade to pure CNN (= UNet)
-        backend:        'naive' | 'chunk' (see GDN2MemoryModule)
-        directions:     1, 2, or 4 scan directions for ablation (default=1)
-        use_frangi:     True = Frangi gate modulation (Mechanism B); False = off
-        frangi_scales:  σ values for DifferentiableFrangi
+        in_ch:           input channels (1 for green-channel DRIVE)
+        out_ch:          output channels (1 for binary seg)
+        base_ch:         base channel width (same as UNet)
+        d_head:          GDN-2 head dim
+        n_heads:         GDN-2 number of heads
+        use_memory:      True = GDN-2 active; False = degrade to pure CNN (= UNet)
+        backend:         'naive' | 'chunk' (see GDN2MemoryModule)
+        directions:      1, 2, or 4 scan directions for ablation (default=1)
+        use_frangi:      True = Frangi gate modulation (Mechanism B); False = off
+        frangi_scales:   σ values for DifferentiableFrangi
+        use_reid_head:   True = attach ReIDReadoutHead; False = skip (pilot default)
+        dec_feat_layer:  which decoder layer to sample for re-ID local features.
+                         'dec3' (default, H/4 res, 4b channels) or 'dec2' (H/2).
+                         Ablation superparameter — dec3 balances context+resolution.
+        reid_d_id:       identity embedding dimension in ReIDReadoutHead
+        reid_feat_source: 'memory' | 'cnn' (ablation A2/A0')
+        reid_detach_memory_train: bool (ablation A3; MUST be True in non-ablation)
+        reid_breakpoint_source:   'gt_skeleton' | 'pred_skeleton' (ablation A2/A4)
     """
 
     def __init__(
@@ -657,10 +913,28 @@ class UNetGDN2(nn.Module):
         directions: int = 1,
         use_frangi: bool = True,
         frangi_scales: Tuple[float, ...] = (0.5, 1.0, 1.5),
+        # Re-ID head configuration
+        use_reid_head: bool = False,
+        dec_feat_layer: str = 'dec3',        # 'dec3' (H/4, 4b ch) or 'dec2' (H/2, 2b ch)
+        reid_d_id: int = 64,
+        reid_feat_source: str = 'memory',    # ablation A2/A0'
+        reid_detach_memory_train: bool = True,  # ablation A3 — MUST be True normally
+        reid_breakpoint_source: str = 'gt_skeleton',  # ablation A2/A4
     ):
         super().__init__()
         b = base_ch
         self.use_memory = use_memory
+        self.use_reid_head = use_reid_head
+        self.d_head = d_head
+        self.n_heads = n_heads
+
+        assert dec_feat_layer in ('dec3', 'dec2'), (
+            f"dec_feat_layer must be 'dec3' or 'dec2'; got {dec_feat_layer!r}"
+        )
+        self.dec_feat_layer = dec_feat_layer
+        # Channel count for selected decoder layer
+        _dec_ch_map = {'dec3': b * 4, 'dec2': b * 2}
+        self._dec_ch = _dec_ch_map[dec_feat_layer]
 
         # ---------- Encoder (identical to UNet) ----------
         self.enc1 = DoubleConv(in_ch, b)
@@ -693,13 +967,43 @@ class UNetGDN2(nn.Module):
         # Head
         self.head = nn.Conv2d(b, out_ch, 1)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # ---------- Re-ID Readout Head (Claim 2) ----------
+        if use_reid_head:
+            self.reid_head = ReIDReadoutHead(
+                d_head=d_head,
+                n_heads=n_heads,
+                dec_ch=self._dec_ch,
+                d_id=reid_d_id,
+                feat_source=reid_feat_source,
+                detach_memory_train=reid_detach_memory_train,
+                breakpoint_source=reid_breakpoint_source,
+            )
+        else:
+            self.reid_head = None
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        return_reid_ctx: bool = False,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict]]:
         """
         Args:
             x: (B, in_ch, H, W)  — input image (normalised green channel)
                NOTE: GT is NOT passed to this module or any submodule.
+            return_reid_ctx: if True, additionally return a dict with context
+               tensors for the re-ID head.  Default False (backward-compatible).
+
         Returns:
-            logits: (B, out_ch, H, W)
+            return_reid_ctx=False → logits: (B, out_ch, H, W)
+            return_reid_ctx=True  → (logits, reid_ctx)
+                reid_ctx is a dict:
+                  'o_seq':       (B, T, nh*d_head) — memory output sequence
+                                 (raster order, T = H_bot * W_bot)
+                  'memory_state': List[Optional[Tensor]] — per-direction final
+                                  memory states (each (B,nh,d_head,d_head) or None)
+                  'dec_feat':    (B, dec_ch, H_dec, W_dec) — selected decoder feature
+                  'H_bot':       int — bottleneck H spatial dim
+                  'W_bot':       int — bottleneck W spatial dim
         """
         # Encoder
         e1 = self.enc1(x)
@@ -709,12 +1013,36 @@ class UNetGDN2(nn.Module):
         bot = self.bottleneck(e4)
 
         # GDN-2 Memory (optional)
+        o_seq = None
+        memory_states = None
         if self.memory is not None:
-            bot = self.memory(bot)
+            if return_reid_ctx:
+                # Request final states for re-ID head
+                bot, memory_states = self.memory(bot, return_memory=True)
+                # Retrieve o_seq stored by GDN2MemoryModule.forward
+                o_seq = self.memory._last_o_seq   # (B, T, nh*d_head)
+            else:
+                bot = self.memory(bot)
 
         # Decoder
         d4 = self.dec4(bot, e4)
         d3 = self.dec3(d4, e3)
         d2 = self.dec2(d3, e2)
         d1 = self.dec1(d2, e1)
-        return self.head(d1)
+        logits = self.head(d1)
+
+        if return_reid_ctx:
+            # Select decoder feature according to dec_feat_layer config
+            dec_feat = d3 if self.dec_feat_layer == 'dec3' else d2
+            H_bot = bot.shape[-2]
+            W_bot = bot.shape[-1]
+            reid_ctx: Dict = {
+                'o_seq': o_seq,               # (B, T, nh*d_head) or None if no memory
+                'memory_state': memory_states, # List or None
+                'dec_feat': dec_feat,          # (B, dec_ch, H_dec, W_dec)
+                'H_bot': H_bot,
+                'W_bot': W_bot,
+            }
+            return logits, reid_ctx
+
+        return logits

@@ -1,0 +1,80 @@
+# _base_eval.yaml — 统一评估配置（BASELINE_SPEC §2.1）
+# ============================================================
+# ⚠️ 评估量尺层：所有 baseline 必须遵守以下配置，不得 override。
+# 只有「炼丹配方」（训练超参、预处理策略）在各 baseline yaml 中定制。
+# ============================================================
+
+# --------------------------------------------------------------------------
+# 评估统一项（🔒 量尺，禁止在 baselines/*.yaml 中 override）
+# --------------------------------------------------------------------------
+
+eval:
+  # 数据 split（引 datasets.json 固定 split，测试集 held-out 零泄漏）
+  splits: [val]                  # 评估用 split，主实验 = val；最终汇报跑 all
+
+  # FOV-masked 评估（血管图标准，DRIVE/CHASE/STARE 均有 FOV mask）
+  fov_masked: true
+
+  # 二值化阈值
+  threshold: 0.5
+
+  # 评估模式：强制全图推理（patch 模型走滑窗拼回）
+  input_mode: fullimg
+
+  # 随机种子（≥3 seed 平均，主实验三种子）
+  seeds: [42, 1, 2]
+
+  # 续连轴断点 benchmark 协议（原图无 gap → n_gaps=0 → SR/reID 跳过/NaN）
+  # 断点集单独传 break_results，不在此 yaml 配置
+  reconnection_bench: null       # 占位；实际 run 时由 evaluate.py --break_results 传入
+
+  # 三轴指标
+  metrics:
+    # 轴1 重叠轴（纯 numpy，无 scipy.stats）
+    overlap: [dice, iou, auc, se, sp]
+    # 轴2 拓扑轴（tools_topology.py，graceful fallback to skimage）
+    topology: [cldice, betti_b0_err, betti_b1_err, skeleton_recall]
+    # 轴3 续连轴（metrics.py，需 break_result）
+    reconnection: [epsilon_beta0, success_rate, reid_rate, n_gaps]
+
+  # topo_source 列策略（verifier 一眼查全列同值 = 同一来源）
+  topo_source_policy: "all_same"   # 禁混用 official/fallback（verifier 红线）
+
+# --------------------------------------------------------------------------
+# CSV schema（BASELINE_SPEC §2.5）
+# --------------------------------------------------------------------------
+
+csv:
+  fieldnames:
+    - dataset
+    - baseline
+    - kind
+    - seed
+    - split
+    - img_id
+    - dice
+    - iou
+    - auc
+    - se
+    - sp
+    - cldice
+    - betti_b0_err
+    - betti_b1_err
+    - skeleton_recall
+    - topo_source
+    - epsilon_beta0
+    - success_rate
+    - reid_rate
+    - n_gaps
+    - ckpt_path
+    - eval_input_mode
+    - threshold
+    - git_commit
+
+# --------------------------------------------------------------------------
+# 口径 TODO（researcher 核实后回填）
+# --------------------------------------------------------------------------
+
+todos:
+  auc_scope: "TODO_researcher: AUC 在 FOV 内 vs 全图 — 核主流 vessel paper 口径"
+  # 当前实现 = FOV 内；若主流用全图需改 evaluate.py _compute_overlap_metrics

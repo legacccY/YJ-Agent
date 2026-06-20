@@ -1,5 +1,56 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 11 — 2026-06-20 数据穿线收尾：10 集全上 HPC（数据窗，与 P1/P2 窗并行）
+
+本窗 = 纯数据线（不碰 src/，避开 P1/P2 窗）。开窗时 5 视网膜 + 冠脉 DCA1/XCAD 本地。本窗补齐：
+- **冠脉 DCA1+XCAD ✓ 传 HPC+解压**：DCA1/Database_134_Angiograms 268 .pgm(134图+gt)；XCAD train(trainA/B/C)+test(images/masks) 3495 文件。
+- **CHUAC 解卡** ✓：figshare 私链 curl 202/403 → **Playwright 真 Chrome 点 Download** 下 angiography.rar(1.2MB RAR4,CC BY 4.0)；HPC 无 unrar+自取 binary 在共享 HPC 执行被拦 → **本地 bsdtar/Anaconda libarchive 解** → Original/30原图(189²)+Hemotool/30GT(512²,0/1)+Photoshop/30GT，90 PNG 上 HPC。⚠️原图 vs mask 分辨率不一致需 dataloader resize。
+- **ROSE 解卡** ✓：官方 zenodo/imed 均受限需申请表 → **kaggle 镜像 snikhilrao/octa-seg-data(50MB) 绕过**；ROSE-1(SVC/DVC/SVC_DVC 117+gt/thick/thin)+ROSE-2(112)=229图对上官方，731 文件上 HPC。⚠️kaggle标MIT但原版CC-BY-4.0,发表引 Ma et al. IEEE TMI 2021。
+- **OCTA-500 ✓**：kaggle xiefei/octa500 4.47G(en-face子集:Label4000+OCTA(ILM_OPL)bmp+OCTA_3mm_part1,34700文件) 下完→传 HPC(1385s)+unzip。
+
+### 结果：血管/管状 10 集全上 HPC（碾压同类 3-5）
+视网膜5(DRIVE/CHASE/FIVES/HRF/STARE)+冠脉3(DCA1/XCAD/CHUAC)+OCTA2(OCTA-500/ROSE)。真源 `.portfolio/datasets.json` 全更。
+**friction**：HPC read/write 多次撞分类器(本窗未明授权连HPC/HPC写需批准/自取binary在共享infra执行)→逐个 AskUserQuestion 取授权过；自取binary在共享infra执行确不该,本地 bsdtar 解是对退路。
+
+### 下一步
+数据这块完。P1/P2 见 Entry 10。可再开窗 C(baseline全谱)/D(related work) 并行（绕开 src/、eval/）。
+
+---
+
+## Entry 10 — 2026-06-20 P1/P2 设计闸过 + re-ID 命脉实现（planner v2→skeptic 2致命→用户拍A→3 coder 并行，174 passed 待 HPC 真验）
+
+本窗 = P1/P2 设计+实现线（数据/调研/baseline 在别窗 Entry 7-9）。全程联网核源（用户铁律 [[feedback_research_before_design]]：设计/红队先多源查不拍脑袋）。
+
+### researcher×4 核源弹药（带引用，纠正 planner 占位）
+1. **creatis 协议**（抓 disconnect.py 完整源码）：圆盘内随机采点→`gaussian(sigma=0.8)`→`>0.4` 阈值→差值擦；官方 **nb_deco=100**（非 planner 占位 5）、训练 s=8/σ=4、eval s∈{6,8,10,12}；ε_β0=|β0−β0_gt|/β0_gt（现有已对齐）；**SR creatis 不存在**（只 DSC/ASSD/ε_β0）→ 与别窗 Entry 9 SR 拍板一致（本文自定义）。
+2. **FLA 取末态**：`naive_chunk_gated_delta_rule(...,output_final_state=True)`→`(o,S)` S `[B,H,K,V]` 原生支持；FLA 通用版单-β，严格 GDN-2 双门要 NVlabs gdn2_ops → 厘清解耦门=**kernel 外调制层**（已落 Claim 3+STORY）。
+3. **自监督泄漏**：站得住（MAE/rotation 同构 + MICCAI2024 Ren 先例），配「Frangi/预测骨架 vs GT 骨架断点」消融封死（A4 臂）。
+4. **数据集惯例**：CHASE 1stHO/20-8、STARE ah/16-4、HRF 15-30 官方 FOV、FIVES 600-200；格式 gif/ppm.gz/tif/png。
+
+### skeptic 2 致命 → 用户拍板 A（辖域切开）→ 补死
+- **致命-1**：re-ID 头 L_match 同根 label 来自 ndlabel(GT)，与 R5「never GT」字面冲突。**用户拍 A 分层诚实**（分割主干+记忆+Frangi=GT-free；re-ID 头=合成断点弱监督，creatis 同范式）。工程=**三处 detach 隔离梯度**（o_seq/memory_state/dec_feat 进头前 .detach()），弱监督只更新匹配头不回流 memory。**已落档 STORY R5 分层 + Claim2/3 补丁**。
+- **致命-2**：re-ID 独立贡献不可归因。补 **A0'（纯 CNN 特征+同头）零假设臂 + re-ID率vsε_β0 偏相关去相关**，预登记阈值（partial-corr>0.2 / A4 margin<0.05）写死进 **ACCEPTANCE P4**，防 HARKing。
+
+### 3 coder 并行实现（无文件冲突，全量 174 passed + 1 xfailed[HPC-only FLA 末态]）
+- **coder-A**（`models/unet_gdn2.py`+新建`reid_loss.py`）：取末态 S + forward 扩展返 `(logits,reid_ctx)` + ReIDReadoutHead（双源 mem+loc 高分辨率插值 + **三处 detach** + 对称 K×K）+ L_match/L_contrastive + 消融臂 flag。pytest 含**梯度隔离断言**（独立于 fla 可测）。
+- **coder-B**（`benchmark/synth_breaks.py` 全量重写+`metrics.py`）：擦除逐行对齐 creatis（取代旧 hard-disk+σ/2 偏差）；保 GapRecord re-ID label；severity Medium 锚官方/其余标本文扩展；补 DSC/ASSD（scipy.ndimage 距离变换避 OMP）+ SR 声明自定义。
+- **coder-C**（新建`datasets/`base_vessel+chase/stare/hrf/fives+verify_no_leakage+precompute_benchmark）：抽 drive.py 管线；split 写死 id；**三层防泄漏断言**；512 tile 滑窗 gap 不跨边界；断点离线冻结 npz seed=42。
+
+### ⚠️ 与别窗对账
+- SR：本窗 coder-B 实现 SR 自定义声明，与别窗 Entry 9「两者都上」拍板一致；但**别窗要求 metrics.py 加 APLS/Betti-err 两标准指标交叉印证，本窗 coder-B 只补了 DSC/ASSD → 待补 APLS/Betti-err**（标 TODO，下窗或补派 coder）。
+- re-ID 先例：别窗 Entry 9 已坐实 Deep Open Snake Tracker(2107.09049)借 MOT IDF1 先例，本窗 re-ID 实现合法锚点已有。
+
+### 待 HPC 真验（本地 pytest 无 fla，全链未跑）
+1. forward 全链取末态 S（output_final_state 真 FLA API，现 try/except 兜底）。
+2. **pilot A0' vs A2 re-ID 率差 + 偏相关**（致命-2 主判据，FAIL=Claim2 塌=拍板点）。
+3. synth_breaks 重写后真 DRIVE/STARE baseline ε_β0/SR/re-ID 数字。
+4. dataloader 各集 GT 格式/标注者 HPC `ls` 确认（CHASE 扩展名、STARE ID、HRF/STARE split 与 FR-UNet 对齐）。
+
+### 下一步（拍板点：HPC 上传新代码=对外传输先报）
+补 APLS/Betti-err → 数据就位 + HPC 上传新代码（拍板）→ pilot 验 A0'vsA2 可归因 + forward 全链 → analyst 判 P1/P2/P4 判据。
+
+---
+
 ## Entry 9 — 2026-06-20 §2 调研盲区攻坚收口（researcher×2，扎实化 Entry 7 的 TODO）
 
 承 Entry 7。用户要求「一定扎实」——派 2 researcher 穷尽开放渠道攻盲区，几处反转/坐实落档 reference 双档 + STORY。

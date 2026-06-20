@@ -1,0 +1,86 @@
+# _template.yaml — 单 baseline 配置模板（BASELINE_SPEC §2.2）
+# ============================================================
+# 使用方式：cp _template.yaml <baseline_name>.yaml，填充非 TODO 项。
+# TODO_researcher_* 字段留空直到 researcher 回填官方超参。
+# ⚠️ 「量尺」项（见 _base_eval.yaml）不在此文件 override。
+# ============================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据（必填）
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "TODO_fill_baseline_name"         # adapter.name，对应 @register name=
+  kind: "TODO_fill_architecture_or_loss"  # 'architecture' | 'loss'
+  source_repo: "TODO_fill_official_repo_url"
+  env_tag: "main"                         # 'main' | 'mamba'（mamba 依赖标 mamba）
+  paper_ref: "TODO_fill_venue_year"       # 例 "JBHI 2022"
+
+# --------------------------------------------------------------------------
+# 模型超参（🟢 尊重官方配方 — 由 researcher 从官方源码核实后填入）
+# --------------------------------------------------------------------------
+
+model:
+  # 公共
+  in_ch: 1
+  out_ch: 1
+  # 各 baseline 专有超参（从官方 repo 核实）
+  base_ch: "TODO_researcher_base_channels"
+  # 例 FR-UNet: base_ch=32; CS-Net: 用 RGB in_ch=3
+
+# --------------------------------------------------------------------------
+# 训练超参（🟢 尊重官方配方）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "TODO_researcher_optimizer"           # 例 "Adam" / "SGD"
+  lr: "TODO_researcher_lr"                         # 例 1e-4
+  weight_decay: "TODO_researcher_weight_decay"     # 例 1e-5
+  momentum: "TODO_researcher_momentum"             # SGD 时填；Adam 无此项
+  scheduler: "TODO_researcher_scheduler"           # 例 "CosineAnneal" / "PolyLR"
+  scheduler_T_max: "TODO_researcher_T_max"         # CosineAnneal 用
+  scheduler_poly_p: "TODO_researcher_poly_p"       # PolyLR 用
+  epochs: "TODO_researcher_epochs"                 # 例 40 / 1000 / 300
+  batch_size: "TODO_researcher_batch_size"         # 例 2 / 8 / 32
+
+# --------------------------------------------------------------------------
+# Loss 超参（architecture 类填各方法官方 loss；loss 类填外挂 topo loss 参数）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "TODO_researcher_loss_type"       # 例 "BCELoss" / "Dice+CE" / "clDice"
+  # loss 类额外参数
+  alpha: "TODO_researcher_loss_alpha"     # clDice α（约 0.5）
+  beta: "TODO_researcher_loss_beta"       # cbDice β（约 0.5）
+  weight_srec: "TODO_researcher_srec_w"  # SkelRecall 权重
+
+# --------------------------------------------------------------------------
+# 预处理（🟢 尊重官方；由 preprocess_cfg() 申报）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "TODO_researcher_channels"    # 'green_clahe' | 'rgb' | 'green_raw'
+  input_mode: "TODO_researcher_input"     # 'fullimg' | 'patch'
+  patch_size: "TODO_researcher_patch"     # patch 模型填；fullimg 填 null
+  clahe: "TODO_researcher_clahe"          # true / false
+  normalize_mean: "TODO_researcher_mean"  # 例 [0.5] 或 [0.485, 0.456, 0.406]
+  normalize_std: "TODO_researcher_std"    # 例 [0.1]  或 [0.229, 0.224, 0.225]
+
+# --------------------------------------------------------------------------
+# 数据增强（🟢 尊重官方）
+# --------------------------------------------------------------------------
+
+augment:
+  strategy: "TODO_researcher_augment"    # 例 "flip+rotation" / "none" / "flip_only"
+
+# --------------------------------------------------------------------------
+# loss 类专用：统一 backbone 锁定说明（kind=loss 时填）
+# --------------------------------------------------------------------------
+
+# ⚠️ loss 类 adapter 必须使用 BackboneUNetAdapter 定义的统一超参（见 backbone_unet.py）
+# 此节只记录「与统一 backbone 的差异 = 只有 loss」，供 reviewer/verifier 核查。
+loss_class_backbone_lock:
+  backbone: "UNet(in_ch=1, out_ch=1, base_ch=32)"
+  optimizer: "Adam lr=1e-3"              # 钉死
+  scheduler: "ReduceLROnPlateau"         # 钉死
+  variable: "loss function only"         # 变量仅此一项
