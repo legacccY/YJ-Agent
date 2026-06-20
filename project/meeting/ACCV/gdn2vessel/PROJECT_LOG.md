@@ -26,7 +26,12 @@ gpu_slot GO（hpc 1 卡）→ 上传 23 文件 → recon + 真跑逐个暴露：
 - precompute n50：chase8✓ stare4✓ **hrf 修后生成中（→18）** fives 待。
 
 ### 待续（下轮起点）
-1. **A1'/A0' 跑完** → `reid_verdict_v2` 喂三臂 CSV 出命门 verdict（A2>A1'>A0' 精确排列 + CDE 分层）。**⚠️ 留意效应量**：ep10 A1'(0.41-0.47) 与 A2 同区间——若 final A2≈A1' 则 headline 弱（接 Entry18 待续6 出彩度）。
+1. **🔴 三臂 verdict（CHASE Stage-1）已出 = FAIL（2026-06-21，关键结果，影响 headline 生死）**：三臂全 COMPLETED（A2/A0' 65行 ep80，A1' 1478871 修复后跑完 COMPLETED），reid_verdict_v2 自动跑出 `outputs/reid_verdict/chase_stage1_verdict.json`。
+   - **判据1a（A2>A1'）= FAIL**：chase n=8，**mean_delta = 2.35e-05（≈0）**，n_positive=4/8，perm_p=0.5，wilcoxon_p=0.64。→ **A2(delta-rule 关联记忆) ≈ A1'(等参无状态 linear attn)**，re-ID 增益**不来自关联记忆机制，来自模块容量**。
+   - 判据2 CDE FAIL；CLAIM2 总 FAIL（缺 A4）。
+   - **正中 Entry18 待续6 出彩度疑虑（效应量小/A2≈A1' headline 弱）实锤化**。
+   - ⚠️**别现在下死结论**（用户先别管）：CHASE 单集 n=8 非全命门（4集×3seed）；Entry14 pilot 干净配对曾 A2 8/8 赢 A0'（但那是 A2 vs A0' 两臂，A1' 等参臂是这次新加的更严对照）。**下轮必须**：①全 4 集×3 seed 跑完看跨集一致性（单集 n=8 perm 最小 p=0.0039 但要真有 delta）②A2 vs A0' 也算（看是否 A2>A0' 但 A2≈A1'=容量贡献非记忆）③若全量坐实 A2≈A1' → **headline 必须重构**（记忆机制非卖点 → 转杀手锏 benchmark/续连指标/可解释图，或换 framing）。**这是项目战略级拍板点，接出彩度红队。**
+   - 冗余 cnn 重提 1478872 已 scancel（保护 A0' 数据）。
 2. **precompute 补齐 n50**（hrf→18 完成 + fives→20）。
 3. **batch-1 全 12**（4 集×3 臂×1 seed，等 precompute 齐）→ 干净 → 全 36（92 GPU·h）。
 4. ⭐ **出彩度严格红队**（Entry18 待续6）：A2 vs A1' 真实差距出来后派 skeptic + researcher。
