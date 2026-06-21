@@ -126,6 +126,7 @@ def make_run_command(dataset: str, arm: str, seed: int) -> str:
     cmd = (
         f"python {TRAIN_SCRIPT}"
         f" --reid_feat_source {arm}"
+        f" --no_use_loc_feat"           # A-v2 M-A: memory-only head, 三臂一致施加
         f" --data_root {cfg['data_root']}"
         f" --benchmark_dir {cfg['benchmark_dir']}"
         f" --dataset {dataset}"

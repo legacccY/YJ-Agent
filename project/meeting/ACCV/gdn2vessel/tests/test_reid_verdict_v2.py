@@ -60,7 +60,8 @@ from reid_verdict_v2 import (
 # ─────────────────────────────────────────────────────────────────────────────
 
 _CSV_HEADER = ['epoch', 'image_id', 'dataset', 'severity',
-               'reid_rate', 'epsilon_beta0', 'success_rate', 'n_gaps', 'arm']
+               'reid_rate', 'reid_rate_head', 'reid_idf1',
+               'epsilon_beta0', 'success_rate', 'n_gaps', 'arm']
 
 
 def _write_csv(tmp_path: Path, rows: list[dict], fname: str) -> Path:
@@ -79,20 +80,34 @@ def _make_rows(image_ids: list[str],
                eps_beta0s:  list[float],
                dataset: str = 'chase',
                epoch: int = 80,
-               arm: str = 'test') -> list[dict]:
-    """合成一批 reid_results 行。"""
+               arm: str = 'test',
+               reid_rate_head: float | None = None,
+               headless: bool = False) -> list[dict]:
+    """
+    合成一批 reid_results 行。
+    reid_rate_head: None → 与 reid_rate 相同（有头臂默认）
+    headless=True  → reid_rate_head='nan'（A0' 无 re-ID 头场景）
+    """
     rows = []
-    for iid, rr, eb in zip(image_ids, reid_rates, eps_beta0s):
+    for i, (iid, rr, eb) in enumerate(zip(image_ids, reid_rates, eps_beta0s)):
+        if headless:
+            rh = 'nan'
+        elif reid_rate_head is not None:
+            rh = reid_rate_head if not isinstance(reid_rate_head, list) else reid_rate_head[i]
+        else:
+            rh = rr  # 默认与 reid_rate 相同
         rows.append({
-            'epoch':        epoch,
-            'image_id':     iid,
-            'dataset':      dataset,
-            'severity':     'Medium',
-            'reid_rate':    rr,
-            'epsilon_beta0': eb,
-            'success_rate': 0.8,
-            'n_gaps':       10,
-            'arm':          arm,
+            'epoch':          epoch,
+            'image_id':       iid,
+            'dataset':        dataset,
+            'severity':       'Medium',
+            'reid_rate':      rr,
+            'reid_rate_head': rh,
+            'reid_idf1':      rr * 0.9,  # 辅助指标，随意给个值
+            'epsilon_beta0':  eb,
+            'success_rate':   0.8,
+            'n_gaps':         10,
+            'arm':            arm,
         })
     return rows
 
@@ -330,19 +345,31 @@ class TestCrossDatasetConsistency:
 
 class TestCDEStratifiedTest:
 
-    def _make_rows_local(self, iids, reids, eps, ds='chase', epoch=80, arm='test'):
-        return [
-            {
+    def _make_rows_local(self, iids, reids, eps, ds='chase', epoch=80, arm='test',
+                         reid_rate_head=None):
+        """
+        reid_rate_head=None → 与 reid_rate 相同（有头臂默认）
+        reid_rate_head='nan' → A0' headless 场景
+        """
+        rows = []
+        for i in range(len(iids)):
+            if reid_rate_head is None:
+                rh = reids[i]
+            elif isinstance(reid_rate_head, (list, tuple)):
+                rh = reid_rate_head[i]
+            else:
+                rh = reid_rate_head
+            rows.append({
                 'image_id': iids[i],
                 'image_id_global': f'{ds}__{iids[i]}',
                 'dataset': ds,
                 'reid_rate': reids[i],
+                'reid_rate_head': rh,
                 'epsilon_beta0': eps[i],
                 'epoch': epoch,
                 'arm': arm,
-            }
-            for i in range(len(iids))
-        ]
+            })
+        return rows
 
     def test_subset_filters_large_delta_eps(self):
         """
@@ -399,8 +426,9 @@ class TestMediationOLS:
     def _make_rows_mediation(self, n_per_arm=20, seed=0):
         """
         造两组行（A2 memory_on=1, A1' memory_on=0）。
-        A2 的 reid_rate 约 0.7，A1' 约 0.5 → TE ≈ 0.2。
+        A2 的 reid_rate_head 约 0.9，A1' 约 0.7 → TE ≈ 0.2。
         ε_β0 两组相近。
+        mediation_ols 现结局量 = reid_rate_head，所以必须提供该字段。
         """
         rng = np.random.default_rng(seed)
         rows_a2  = []
@@ -410,15 +438,17 @@ class TestMediationOLS:
             rows_a2.append({
                 'image_id_global': iid,
                 'dataset': 'chase',
-                'reid_rate': 0.7 + rng.normal(0, 0.05),
-                'epsilon_beta0': 0.1 + rng.normal(0, 0.02),
+                'reid_rate':      0.7 + rng.normal(0, 0.05),
+                'reid_rate_head': 0.9 + rng.normal(0, 0.05),  # 新指标
+                'epsilon_beta0':  0.1 + rng.normal(0, 0.02),
                 'epoch': 80,
             })
             rows_a1p.append({
                 'image_id_global': iid,
                 'dataset': 'chase',
-                'reid_rate': 0.5 + rng.normal(0, 0.05),
-                'epsilon_beta0': 0.12 + rng.normal(0, 0.02),
+                'reid_rate':      0.5 + rng.normal(0, 0.05),
+                'reid_rate_head': 0.7 + rng.normal(0, 0.05),  # 新指标
+                'epsilon_beta0':  0.12 + rng.normal(0, 0.02),
                 'epoch': 80,
             })
         return rows_a2, rows_a1p
@@ -479,10 +509,17 @@ class TestMediationOLS:
 
 class TestA4Leakage:
 
-    def _make_rows(self, iids, reids, ds='chase'):
+    def _make_rows(self, iids, reids, ds='chase', rh_offset=0.0):
+        """
+        rh_offset: reid_rate_head = reid_rate + rh_offset（模拟 A4 与 A2 的微小偏差）。
+        a4_leakage_test 现用 reid_rate_head，所以 _make_rows 必须提供该字段。
+        """
         return [
             {'image_id_global': f'{ds}__{iid}',
-             'reid_rate': rr, 'epsilon_beta0': 0.1, 'epoch': 80}
+             'reid_rate':      rr,
+             'reid_rate_head': rr + rh_offset,  # 有头臂均提供 reid_rate_head
+             'epsilon_beta0':  0.1,
+             'epoch':          80}
             for iid, rr in zip(iids, reids)
         ]
 
@@ -571,11 +608,11 @@ class TestE2ERunVerdict:
 
     def _make_verdict_csvs(self, tmp_path: Path, seed: int = 0) -> dict[str, Path]:
         """
-        造 4 集×3 臂 CSV。
-        A2 reid_rate ~ 0.75 + noise
-        A1' reid_rate ~ 0.65 + noise
-        A0' reid_rate ~ 0.55 + noise
-        A4  reid_rate ~ 0.76 + noise（与 A2 接近，|delta| < 0.05）
+        造 4 集×3 臂 CSV（含新列 reid_rate_head、reid_idf1）。
+        A2  reid_rate_head ~ 0.93 + noise（有头，高）
+        A1' reid_rate_head ~ 0.70 + noise（有头，低）
+        A0' reid_rate_head = 'nan'（headless，无 re-ID 头）
+        A4  reid_rate_head ~ 0.94 + noise（与 A2 接近，|delta| < 0.05）
         """
         rng = np.random.default_rng(seed)
         rows_a2  = []
@@ -585,45 +622,58 @@ class TestE2ERunVerdict:
 
         for ds in self.DATASETS:
             n = self.N_IMG
-            # 保证方向可靠：使用固定差距，加小 noise
-            base_r_a2  = 0.75
-            base_r_a1p = 0.63
-            base_r_a0p = 0.50
+            base_r_a2      = 0.75
+            base_r_a1p     = 0.63
+            base_r_a0p     = 0.50
+            # reid_rate_head（新指标）有更大差距，确保判据1a清晰通过
+            base_rh_a2     = 0.93
+            base_rh_a1p    = 0.70
 
             for i in range(n):
                 iid = f'img{i}'
                 eps = 0.12 + rng.normal(0, 0.01)
-                # A2
+                # A2（有 re-ID 头）
+                rh_a2 = base_rh_a2 + rng.uniform(0.00, 0.02)
                 rows_a2.append({
                     'epoch': 80, 'image_id': iid, 'dataset': ds,
                     'severity': 'Medium',
-                    'reid_rate':     base_r_a2  + rng.uniform(0.00, 0.02),
-                    'epsilon_beta0': eps - 0.01,
-                    'success_rate':  0.85, 'n_gaps': 10, 'arm': 'a2',
+                    'reid_rate':      base_r_a2  + rng.uniform(0.00, 0.02),
+                    'reid_rate_head': rh_a2,
+                    'reid_idf1':      rh_a2 * 0.9,
+                    'epsilon_beta0':  eps - 0.01,
+                    'success_rate':   0.85, 'n_gaps': 10, 'arm': 'a2',
                 })
-                # A1'
+                # A1'（有 re-ID 头）
+                rh_a1p = base_rh_a1p + rng.uniform(0.00, 0.02)
                 rows_a1p.append({
                     'epoch': 80, 'image_id': iid, 'dataset': ds,
                     'severity': 'Medium',
-                    'reid_rate':     base_r_a1p + rng.uniform(0.00, 0.02),
-                    'epsilon_beta0': eps + 0.01,  # 与 A2 相近（Δε 小→进 CDE 子集）
-                    'success_rate':  0.75, 'n_gaps': 10, 'arm': 'a1p',
+                    'reid_rate':      base_r_a1p + rng.uniform(0.00, 0.02),
+                    'reid_rate_head': rh_a1p,
+                    'reid_idf1':      rh_a1p * 0.9,
+                    'epsilon_beta0':  eps + 0.01,  # 与 A2 相近（Δε 小→进 CDE 子集）
+                    'success_rate':   0.75, 'n_gaps': 10, 'arm': 'a1p',
                 })
-                # A0'
+                # A0'（headless，无 re-ID 头）
                 rows_a0p.append({
                     'epoch': 80, 'image_id': iid, 'dataset': ds,
                     'severity': 'Medium',
-                    'reid_rate':     base_r_a0p + rng.uniform(0.00, 0.02),
-                    'epsilon_beta0': eps + 0.02,
-                    'success_rate':  0.65, 'n_gaps': 10, 'arm': 'a0p',
+                    'reid_rate':      base_r_a0p + rng.uniform(0.00, 0.02),
+                    'reid_rate_head': 'nan',  # headless
+                    'reid_idf1':      'nan',
+                    'epsilon_beta0':  eps + 0.02,
+                    'success_rate':   0.65, 'n_gaps': 10, 'arm': 'a0p',
                 })
-                # A4（与 A2 接近）
+                # A4（有 re-ID 头，与 A2 接近）
+                rh_a4 = base_rh_a2 + rng.uniform(-0.01, 0.01)
                 rows_a4.append({
                     'epoch': 80, 'image_id': iid, 'dataset': ds,
                     'severity': 'Medium',
-                    'reid_rate':     base_r_a2 + rng.uniform(-0.01, 0.01),
-                    'epsilon_beta0': eps,
-                    'success_rate':  0.84, 'n_gaps': 10, 'arm': 'a4',
+                    'reid_rate':      base_r_a2 + rng.uniform(-0.01, 0.01),
+                    'reid_rate_head': rh_a4,
+                    'reid_idf1':      rh_a4 * 0.9,
+                    'epsilon_beta0':  eps,
+                    'success_rate':   0.84, 'n_gaps': 10, 'arm': 'a4',
                 })
 
         csv_a2  = _write_csv(tmp_path, rows_a2,  'a2_reid.csv')

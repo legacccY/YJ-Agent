@@ -603,6 +603,99 @@ def _get_git_commit() -> str:
 
 
 # --------------------------------------------------------------------------- #
+#  M2: re-ID head forward helper
+# --------------------------------------------------------------------------- #
+
+def _compute_reid_head_metrics(
+    model: Any,
+    img_t: "torch.Tensor",
+    break_result: Any,
+    orig_h: int,
+    orig_w: int,
+    device: "torch.device",
+) -> Tuple[float, float]:
+    """
+    Run the re-ID head forward with held-out break positions and return
+    (reid_rate_head, reid_idf1).
+
+    Design (M2, drift-契约：裁判=GT，head 只出离散 argmax):
+      1. Extract gap centres from break_result.gaps.
+      2. Scale to dec_feat coordinate space (same logic as train_reid_pilot:682-686).
+      3. Call model(img_t, return_reid_ctx=True) → reid_ctx with o_seq / dec_feat.
+      4. Call model.reid_head(o_seq, dec_feat, positions) → (1, K, K) logits.
+      5. Squeeze logits to (K, K) numpy, call reid_rate_head() from metrics.py.
+
+    A1' guard: memory_state from ctx may be list-of-None (stateless) —
+    handled correctly by ReIDReadoutHead.forward (detach guards already handle it).
+
+    Args:
+        model:        UNetGDN2 with use_reid_head=True (checked by caller).
+        img_t:        (1, 1, H_pad, W_pad) float32 tensor on device.
+        break_result: BreakResult with .gaps list.
+        orig_h, orig_w: original (un-padded) image dimensions.
+        device:       torch.device.
+
+    Returns:
+        (reid_rate_head_float, reid_idf1_float) — both in [0,1] or nan.
+    """
+    from benchmark.metrics import reid_rate_head as _rrh
+
+    gaps = break_result.gaps
+    K = len(gaps)
+    if K == 0:
+        return float('nan'), float('nan')
+
+    model.eval()
+    with torch.no_grad():
+        logits_out, reid_ctx = model(img_t, return_reid_ctx=True)
+
+    o_seq = reid_ctx.get('o_seq')
+    dec_feat = reid_ctx.get('dec_feat')
+    memory_state = reid_ctx.get('memory_state')
+
+    if o_seq is None or dec_feat is None:
+        return float('nan'), float('nan')
+
+    # dec_feat resolution (may differ from padded img due to stride)
+    H_dec = dec_feat.shape[-2]
+    W_dec = dec_feat.shape[-1]
+    H_pad = img_t.shape[-2]
+    W_pad = img_t.shape[-1]
+
+    # Build breakpoint_positions in dec_feat coordinate space.
+    # Gap centres are in original (un-padded) pixel space.
+    # Scale: orig → padded → dec_feat (two stages, aligned with train_reid_pilot:682-686).
+    positions = torch.zeros(1, K, 2, dtype=torch.float32, device=device)
+    for idx, g in enumerate(gaps[:K]):
+        cy, cx = g.center_yx
+        # Scale orig → padded (pad only adds bottom/right, so orig ≤ padded)
+        cy_pad = cy  # no shift (padding is zero-padded at end)
+        cx_pad = cx
+        # Scale padded → dec_feat (integer division, same as encoder stride)
+        cy_dec = cy_pad * H_dec / H_pad
+        cx_dec = cx_pad * W_dec / W_pad
+        positions[0, idx, 0] = float(cy_dec)
+        positions[0, idx, 1] = float(cx_dec)
+
+    # Clamp to valid dec_feat range
+    positions[..., 0].clamp_(0, H_dec - 1)
+    positions[..., 1].clamp_(0, W_dec - 1)
+
+    with torch.no_grad():
+        reid_logits = model.reid_head(
+            o_seq              = o_seq,
+            dec_feat           = dec_feat,
+            breakpoint_positions = positions,
+            memory_state       = memory_state,
+        )   # (1, K, K)
+
+    logits_np = reid_logits[0].cpu().numpy().astype(np.float32)  # (K, K)
+
+    result = _rrh(logits_np, gaps[:K])
+    return result['reid_rate_head'], result['reid_idf1']
+
+
+# --------------------------------------------------------------------------- #
 #  主评估函数
 # --------------------------------------------------------------------------- #
 
@@ -703,6 +796,11 @@ def evaluate_adapter(
         topo_source = topo.get("betti_source", "unknown")
 
         # --- 轴3 续连轴 ---
+        # M2: 额外计算 reid_rate_head/reid_idf1（使用 re-ID head 的 (K,K) logits）。
+        # 旧 reid_rate (seg-mask) 仍保留双报（不删）。
+        reid_rate_head_val = float("nan")
+        reid_idf1_val = float("nan")
+
         if break_results is not None and i < len(break_results):
             br = break_results[i]
             conn = compute_all_metrics(pred_bin, gt, br)
@@ -710,6 +808,23 @@ def evaluate_adapter(
             sr = conn["success_rate"]
             rr = conn["reid_rate"]
             n_gaps = conn["n_gaps"]
+
+            # M2: re-ID head 前向 — 仅当 model 有 reid_head 且有 gaps 时执行
+            if (hasattr(model, 'use_reid_head') and model.use_reid_head
+                    and hasattr(model, 'reid_head') and model.reid_head is not None
+                    and len(br.gaps) > 0):
+                try:
+                    reid_rate_head_val, reid_idf1_val = _compute_reid_head_metrics(
+                        model=model,
+                        img_t=img_t,
+                        break_result=br,
+                        orig_h=orig_h,
+                        orig_w=orig_w,
+                        device=device,
+                    )
+                except Exception as _e:
+                    # 非关键路径：reid head 前向失败不应停整个 eval
+                    print(f"[evaluate] reid_head forward failed for img {img_id}: {_e}")
         else:
             # 原图无 break → 续连轴跳过，填 NaN/0
             # epsilon_beta0 仍可算（不依赖 break_result）
@@ -739,11 +854,14 @@ def evaluate_adapter(
             "betti_b1_err": topo.get("betti_b1_err", float("nan")),
             "skeleton_recall": topo.get("skeleton_recall", float("nan")),
             "topo_source": topo_source,
-            # 轴3 续连
+            # 轴3 续连（旧 seg-mask reid_rate 保留双报）
             "epsilon_beta0": eps_b0,
             "success_rate": sr,
             "reid_rate": rr,
             "n_gaps": n_gaps,
+            # 轴3 续连（M2 新增：re-ID head logit 直评）
+            "reid_rate_head": reid_rate_head_val,
+            "reid_idf1": reid_idf1_val,
             # 追踪
             "ckpt_path": str(ckpt_path),
             "eval_input_mode": "fullimg",
@@ -762,6 +880,7 @@ def evaluate_adapter(
             "dice", "iou", "auc", "se", "sp",
             "cldice", "betti_b0_err", "betti_b1_err", "skeleton_recall", "topo_source",
             "epsilon_beta0", "success_rate", "reid_rate", "n_gaps",
+            "reid_rate_head", "reid_idf1",   # M2: re-ID head logit direct eval
             "ckpt_path", "eval_input_mode", "threshold", "git_commit",
         ]
         with open(output_csv, "w", newline="", encoding="utf-8") as f:

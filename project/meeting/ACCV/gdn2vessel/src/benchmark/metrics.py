@@ -707,6 +707,228 @@ def reid_rate(
 
 
 # --------------------------------------------------------------------------- #
+#  3b. reid_rate_head — Head-logit-driven re-ID rate (Claim 2 measurement fix)
+# --------------------------------------------------------------------------- #
+#
+#  Distinct from reid_rate() (which reads seg mask):
+#    - Input: raw (K,K) pairwise logits from the re-ID head (numpy, detached).
+#    - Decision: discrete argmax over j≠i; logit>0 to accept match.
+#    - Correctness judged by GT segment IDs (Y[i,j]) — head only picks j.
+#    - Reports reid_rate_head + reid_idf1 (IDF1 aligned to MOT metric).
+#
+#  Crtiical design (skeptic 🔴-1 guard):
+#    - GT Y matrix is the sole judge. Head logit values are NEVER compared
+#      against a continuous threshold for scoring — only argmax choice of j.
+#    - This prevents "self-proving" loops where a better-calibrated head
+#      could inflate metrics by logit magnitude alone.
+
+def _build_gt_same_root(gaps: List["GapRecord"]) -> np.ndarray:
+    """
+    Build GT same-root label matrix Y (K, K) for a set of K gaps.
+
+    Y[i, j] = 1  iff  gaps i and j share at least one vessel segment:
+      {seg_left_i, seg_right_i} ∩ {seg_left_j, seg_right_j} ≠ ∅
+
+    Mirrors the same-root logic in train_reid_pilot.py:622-631 exactly.
+    Isolated gaps (no valid segment IDs: both == -1) are assigned segs=set()
+    and will therefore match nothing (no false positives injected).
+
+    Args:
+        gaps: list of GapRecord objects (K items)
+
+    Returns:
+        Y: (K, K) float32 {0.0, 1.0} — symmetric, diagonal=0
+    """
+    K = len(gaps)
+    Y = np.zeros((K, K), dtype=np.float32)
+    seg_sets: List[set] = []
+    for g in gaps:
+        s: set = set()
+        if g.segment_id_left >= 0:
+            s.add(g.segment_id_left)
+        if g.segment_id_right >= 0:
+            s.add(g.segment_id_right)
+        seg_sets.append(s)
+
+    for i in range(K):
+        for j in range(K):
+            if i == j:
+                continue
+            if seg_sets[i] and seg_sets[j] and (seg_sets[i] & seg_sets[j]):
+                Y[i, j] = 1.0
+    return Y
+
+
+def reid_rate_head(
+    reid_logits: np.ndarray,
+    gaps: List["GapRecord"],
+    gap_k: Optional[np.ndarray] = None,
+    k_thresh: Optional[float] = None,
+) -> Dict[str, float]:
+    """
+    Compute re-ID rate and IDF1 using the re-ID head's pairwise logits.
+
+    Unlike reid_rate() (which reads seg mask pixels), this function uses the
+    head's discrete argmax decisions and judges them against GT segment IDs.
+
+    Args:
+        reid_logits: (K, K) numpy float32.  Diagonal should be -inf or will be
+                     set to -inf inside.  logits[i, j] = matching score(i, j).
+        gaps:        list of K GapRecord objects (with segment_id_left/right).
+        gap_k:       optional (K,) array of per-gap k values (state-crowding;
+                     from benchmark.crowding.compute_k_per_gap).  When provided
+                     together with k_thresh, computes high/low-crowding subsets.
+        k_thresh:    float threshold for crowding stratification (preregistered
+                     median from crowding_manifest.json).
+                     Ignored if gap_k is None.
+
+    Returns:
+        dict with keys:
+          'reid_rate_head'       — overall (all gaps, candidate pool = full K)
+          'reid_idf1'            — 2·IDTP / (2·IDTP + IDFP + IDFN), MOT IDF1
+          'n_gaps'               — K (total gaps)
+          'n_gaps_with_partner'  — gaps with ≥1 true same-root partner (denom)
+
+          When gap_k and k_thresh are provided, also:
+          'reid_rate_head_high'  — reid_rate_head on high-crowding subset (k≥k_thresh)
+          'reid_rate_head_low'   — reid_rate_head on low-crowding subset (k<k_thresh)
+          'n_high'               — n gaps in high-crowding subset (with partner)
+          'n_low'                — n gaps in low-crowding subset (with partner)
+          'r_chance_high'        — 1 / (mean candidate count in high subset)
+          'r_chance_low'         — 1 / (mean candidate count in low subset)
+          'k_thresh_used'        — k_thresh value applied
+
+    Design:
+        - Y[i,j] is the sole judge of correctness.  Head provides only j*(i).
+        - Gap i's match: j*(i) = argmax_{j≠i} logits[i, j] if max logit > 0,
+          else no-match (i considered to find no same-root partner).
+        - Isolated gaps (no same-root partner: sum_j Y[i,j]==0) excluded from
+          reid_rate_head denominator (they cannot be "correct" by design).
+        - Candidate pool = full K for ALL gaps (no artificial hard-neg / distance gate).
+          A-v2 preregistration: full K pool, no human-imposed restriction.
+        - IDF1 counts: IDTP = correct matches (head matched correct j),
+                       IDFP = wrong matches (head matched wrong j),
+                       IDFN = missed matches (head said no-match for a gap
+                              that has a true partner).
+        All from discrete decisions, no continuous thresholding of logit values
+        for score calculation.
+        - r_chance = 1 / (K-1) because each gap has K-1 non-self candidates;
+          high/low subsets share the same global K-1 denominator (candidate pool
+          is always the full K, not restricted to the subset).
+
+    No scipy.  Hand-computed.  OMP-safe.
+    """
+    K = len(gaps)
+    if K == 0:
+        return {
+            'reid_rate_head': float('nan'),
+            'reid_idf1': float('nan'),
+            'n_gaps': 0,
+            'n_gaps_with_partner': 0,
+        }
+
+    assert reid_logits.shape == (K, K), (
+        f"reid_logits must be (K, K)=({K},{K}), got {reid_logits.shape}"
+    )
+
+    # --- Step 1: Build GT same-root matrix Y (K, K) ---
+    Y = _build_gt_same_root(gaps)  # (K, K) float32 {0,1}
+
+    # --- Step 2: Head decisions ---
+    # For each i, argmax over j≠i.  Set diagonal to -inf to exclude self.
+    L = reid_logits.astype(np.float64)
+    np.fill_diagonal(L, -np.inf)
+
+    # j_star[i] = argmax_{j≠i} L[i, j]
+    j_star = np.argmax(L, axis=1)        # (K,)
+    # max_logit[i] = L[i, j_star[i]]  (could be -inf if K==1)
+    max_logit = L[np.arange(K), j_star]  # (K,)
+
+    # Head declares a match for gap i iff max_logit[i] > 0.
+    # (Threshold=0 is the natural decision boundary for unnormalised logits;
+    #  logit>0 → prob>0.5 under sigmoid.  This threshold is NOT used for scoring —
+    #  only for binary match/no-match decision.)
+    head_declares_match = (max_logit > 0)  # (K,) bool
+
+    # --- Step 3: Per-gap correctness ---
+    # Gap i has a same-root partner if row i of Y has at least one 1.
+    has_partner = (Y.sum(axis=1) > 0)  # (K,) bool
+
+    # Correct: head declared a match AND chose the correct j.
+    # correct[i] = head_declares_match[i] AND Y[i, j_star[i]] == 1
+    correct = np.zeros(K, dtype=bool)
+    for i in range(K):
+        if head_declares_match[i] and Y[i, j_star[i]] == 1:
+            correct[i] = True
+
+    # --- Step 4: reid_rate_head (denominator = gaps with partner) ---
+    n_with_partner = int(has_partner.sum())
+    if n_with_partner == 0:
+        reid_rate_h = float('nan')  # all isolated — metric undefined
+    else:
+        n_correct = int(correct[has_partner].sum())
+        reid_rate_h = n_correct / n_with_partner
+
+    # --- Step 5: IDF1 (MOT-aligned) ---
+    # IDTP: correctly matched same-root pairs (head matched correct j AND Y[i,j*]=1)
+    IDTP = int(correct.sum())
+    # IDFP: head declared a match but wrong j (head_declares_match AND not correct)
+    IDFP = int((head_declares_match & ~correct).sum())
+    # IDFN: head failed to match a gap that has a true partner
+    #        (has_partner AND NOT head_declares_match) OR (has_partner AND wrong j)
+    #        = has_partner AND NOT correct
+    IDFN = int((has_partner & ~correct).sum())
+
+    denom_idf1 = 2 * IDTP + IDFP + IDFN
+    reid_idf1 = (2.0 * IDTP / denom_idf1) if denom_idf1 > 0 else float('nan')
+
+    # r_chance = 1 / (K - 1): each gap has K-1 non-self candidates in the full pool.
+    # Same denominator for both high/low subsets — candidate pool is always full K.
+    r_chance_all = (1.0 / (K - 1)) if K > 1 else float('nan')
+
+    out: Dict[str, float] = {
+        'reid_rate_head':      float(reid_rate_h),
+        'reid_idf1':           float(reid_idf1),
+        'n_gaps':              K,
+        'n_gaps_with_partner': n_with_partner,
+    }
+
+    # --- Step 6: Crowding stratification (M-B B-2, A-v2) ---
+    # Computed only when gap_k and k_thresh are provided.
+    # Algorithm unchanged (GT-argmax, full K pool, no artificial gate);
+    # only the REPORTING is stratified.
+    if gap_k is not None and k_thresh is not None and not np.isnan(float(k_thresh)):
+        k_arr = np.asarray(gap_k, dtype=np.float64)
+        if k_arr.shape != (K,):
+            raise ValueError(
+                f'gap_k must have shape ({K},), got {k_arr.shape}'
+            )
+        high_mask = k_arr >= float(k_thresh)   # (K,) bool
+        low_mask  = ~high_mask
+
+        def _subset_rate(mask: np.ndarray) -> Tuple[float, int]:
+            """Reid rate and n_with_partner for a boolean subset mask."""
+            sub_with_partner = int((has_partner & mask).sum())
+            if sub_with_partner == 0:
+                return float('nan'), 0
+            sub_correct = int((correct & mask).sum())
+            return sub_correct / sub_with_partner, sub_with_partner
+
+        rate_high, n_high = _subset_rate(high_mask)
+        rate_low,  n_low  = _subset_rate(low_mask)
+
+        out['reid_rate_head_high'] = float(rate_high)
+        out['reid_rate_head_low']  = float(rate_low)
+        out['n_high']              = n_high
+        out['n_low']               = n_low
+        out['r_chance_high']       = r_chance_all   # same pool, same chance
+        out['r_chance_low']        = r_chance_all
+        out['k_thresh_used']       = float(k_thresh)
+
+    return out
+
+
+# --------------------------------------------------------------------------- #
 #  Convenience: compute full metric suite at once
 # --------------------------------------------------------------------------- #
 

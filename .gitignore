@@ -78,6 +78,7 @@ homework/
 project/meeting/Med-NCA/NCA-JEPA/ijepa/
 # 草稿/临时探针脚本
 _scratch/
+_scratch_*.py
 project/meeting/Med-NCA/NCA-JEPA/_scratch/
 tools/_scratch_*
 

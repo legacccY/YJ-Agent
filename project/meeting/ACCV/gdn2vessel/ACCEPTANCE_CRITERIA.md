@@ -88,6 +88,57 @@
 
 > 阈值（A2−A1' 主判据 >0 + p<.05，小集特例；分层 CDE p<.10 单侧；A4 0.05）= 设计阶段预登记下限，**禁跑完上下调**。等参 ±5% = numel 对齐上限。判据2 唯一门 = ε_β0 配平分层 CDE，NDE 三件套仅辅助不设门（禁逻辑或择优放假阳）。所有统计禁 scipy.stats（OMP 红线），手算实现。
 
+#### 🔒🔒 命门方向 A 预登记（2026-06-21 写死，planner 设计 + skeptic 红队 0 致命过 + 用户拍方向 A；跑前留痕，禁 HARKing）
+
+**背景**：CHASE Stage-1 命门初跑 A2(delta-rule 有状态记忆)≈A1'(等参 stateless linear attn)≈A0'(纯CNN)≈0.50 随机（旧 seg-mask `reid_rate`）。**根因 = 测量管道断裂（代码层硬事实）**：`evaluate.py:708` 的 `reid_rate` 纯读 seg mask（`compute_all_metrics(pred_bin,...)`，`metrics.py:679` 只看分割掩膜是否覆盖 gap 两段），**从不调 re-ID 头的 K×K 配对 logits**；而 re-ID 头被 `reid_loss.py` 三道 detach 屏障隔离、其输出 eval 从不用 → claim 的机制（memory→头→同根匹配）结构性够不到 headline 指标。叠加 A1' 死参（`unet_gdn2.py:1120` proj_erase/proj_g/alpha_e ×0.0 零梯度，等参对照无效）+ 机制窗口窄（raster scan 同根 token 隔 1-3，delta-rule 短程 tied 文献预期）。**非真 null，是测量错位。**
+
+**机制性假说 H（单一，跑前写死）**：A2≈A1' 源于「测量指标不对齐机制 + A1' 死参 + 检索窗口窄」三处工程缺陷。修后预测 **A2 > A1' 在对齐指标 `reid_rate_head` 上成立**（有状态 delta-rule 关联记忆有超出 stateless linear attn 的净贡献）。
+
+**唯一指标变更（修测量非松阈值）**：判据 1a/1b/2/A4 中「re-ID率」从旧 seg-mask `reid_rate` 换成新 `reid_rate_head`（由 re-ID 头**离散 argmax 配对决策**判，**裁判 = GT vessel_segment_map 同根标签 Y，head 只贡献「选哪个伙伴」，连续 logit 仅作 match/no-match 门不进打分** → 切开「用被 L_match 训练的头判头」自证循环，skeptic 🔴-1）。**判据阈值数字一字不动**（1a p<0.05、CDE p<0.10、A4 0.05、跨集 ≥3/4、小集特例全冻结）。旧 seg-mask `reid_rate` **并列报但不作判据**（反 HARKing 诚实留痕，论文写明代码层指标错位证据）。
+
+**分阶段修复（skeptic 🟢-6 采纳，做根因拆分）**：
+- **Stage-1a（先做）= M1 新指标 + M4 修死参，不动 scan**：跑 CHASE 单集×3seed。若 `reid_rate_head` 上已 A2>A1'（判据 1a 过）→ 证根因 = 测量错位，**M3 骨架 scan 不必做**（省 R4 撞 Serp-Mamba 风险）。
+- **Stage-1b（条件触发）= 上 M3 骨架 scan**（Frangi input-derived 导序，**禁 GT skeleton**，三臂一致施加，scan 当标准工程不当贡献 R4）：仅当 Stage-1a 仍 A2≈A1' 才做，给 delta-rule 检索窗口后重跑 CHASE。
+- **全命门（过 CHASE 才跑）= 4 集×3 臂(+A4)×3 seed**，一次成型。
+
+**一次验证（禁 p-hack）**：配置本地真烟测通过后冻结，每 stage 跑**一次**，**禁反复调 scan 参数/阈值/lambda 直到 A2>A1' 出现**。
+
+**硬退出判据（写死，这是 Claim2 记忆机制最后一次修复机会）**：Stage-1a+1b 全做完、全命门仍 `reid_rate_head` 上 A2≈A1'（判据 1a FAIL + 持平子集 CDE FAIL，跨集方向不一致/pooled 不显著）→ **真 null 坐实，Claim2 记忆机制不再救** → headline 转 benchmark-led（杀手锏断点 benchmark + 续连指标 ε_β0/SR + 可解释图 + 诚实报告 delta-rule 在 ≤1K 容量下不超 stateless）→ stage-gate FAIL 拍板点停下报用户。**禁再找新缺陷续命。**
+
+**留痕审计（PHASE_4 ⑧）**：A1' 修死参后审计 proj_erase/proj_g/alpha_e grad norm ≠ 0（已实测 3.04/0.831/0.526）+ 三臂 numel 差 ≤±5%，写论文附录。
+
+> **A-I 结果（2026-06-21 跑完）**：CHASE Stage-1a M1+M4 跑出 → 对齐指标 `reid_rate_head` 跳到 0.94（旧 seg-mask 0.46，证头真学会匹配、老指标测错东西），**但 A2(0.9437)≈A1'(0.9401) 仍平**。二诊（researcher+analyst 收敛 90%+）：测量已对齐，但 **re-ID 头融合架构让 dec_feat(decoder 局部 128×128) 抄近路压没 memory(o_seq 32×32)**——头 ep10 即靠局部空间邻近解任务，delta-rule 没机会。非真 null。→ 触发 A-v2。
+
+#### 🔒🔒🔒 命门方向 A-v2 预登记（2026-06-21 写死；planner 设计 + skeptic 红队 2🔴 修 + 复核 0 致命 + researcher 理论锚核实 + 用户拍 Option A；**Claim2 记忆机制最后一次设计调整**）
+
+**机制性假说 H（单一，跑前写死）**：A2≈A1' 源于「① re-ID 头局部近路（dec_feat 高分辨率压没 memory）+ ② 评估未在 delta-rule 理论占优区度量」。delta-rule 相对 stateless linear attn 的净优势**理论上只发生在 state crowding（同一感受野内同时竞争写入有限状态维 d 的身份数 k 大）处**，避免 catastrophic overwriting / key collision；low-crowding 处两臂本就该 tied。修后预测 **A2−A1' 的 `reid_rate_head` delta 随 crowding 单调上升：high-crowding 子集 A2>A1' 显著，low-crowding 子集 tied**（剂量-反应，非单点）。**判据轴 = state-crowding（关联密度 k），不是 gap 距离/序列长度**（距离是两臂共享维度分不开，STORY L37-42 铁律）。
+
+**理论锚（researcher 2026-06-21 核实坚实，写论文用）**：Schlag 2021（ICML，形式界：状态维 d 个正交关联上限，超之检索出错）+ DeltaNet arXiv 2406.06484 §2.2（"key collisions when L>d"）+ VLA arXiv 2605.11196 §5.2/§6.5/Prop.3（对照实验解耦 K 关联数 vs T 序列长度，证 **K 是驱动因素非距离**，per-head 容量 = d_h）。⚠️外推边界：MQAR key 离散近正交，血管 feature 连续、碰撞率无直接实验对应——论文须显式声明此外推。（2602.04852 不支撑此命题，禁引。）
+
+**两处修复（三臂一致施加，测量/架构修复非自变量）**：
+- **M-A memory-only 头**：`ReIDReadoutHead` 加 `use_loc_feat=False`，砍 dec_feat 路、头只吃 memory `o_seq`。三臂一致。detach 三屏障不动。
+- **M-B state-crowding 子集判据**：k(i)=query i 局部窗口（半径 R_win=bottleneck 感受野按 stride 算定的架构常量，input-derived）内**不同 vessel segment id 去重数**。判据在 high-crowding 子集(k≥k_thresh) vs low-crowding 子集上分别算 `reid_rate_head`。**子集从无 hard-neg 的标准主 benchmark 自然分布筛**（单图~100 gap 天然含高 crowding 区），候选池**全 K 无人工门**。**不注入 hard negative**（删，防构造性 cherry-pick + 保命门 benchmark = P3 主续连 benchmark 可比）。
+
+**跑前写死数值**：k 度量=窗口去重 seg id 数 / R_win=stride 算定理论感受野 / k_thresh=各集自然 k 分布**中位数**（+ 均值 + 60 分位稳健性并报方向须一致）/ 候选池全 K / hard neg=删 / 判据阈值 1a p<0.05·CDE p<0.10·A4 0.05·跨集≥3/4·小集特例（A-I 一字不动）/ r_chance=该子集 1÷平均候选数（每集每子集分算）/ epochs 300 / severity Medium。
+
+**主判据（dose-response 交互，skeptic 裁决一，关死循环+强化 headline）**：不是「high-crowding A2>A1'」单点，而是 **「A2−A1' delta 随 crowding 单调上升：high-crowding 子集 per-image 配对 A2>A1' 显著(p<0.05 小集特例) + low-crowding 子集 tied(方向不显著)」的联合交互模式**。只 high 显著 low 也显著 → 非 crowding 特异 → 归因存疑。bonus 并报 top-quartile crowding 方向（不设门）。
+
+**(a)/(b) 归因切分（描述性读数，skeptic 🟠-2，不设 PASS/FAIL 门）**：high-crowding 子集同报 A1' 与 A2 各自相对 r_chance 位置——A1' 塌到 ≈r_chance(|·|<0.05)=被动垫底=容量复发=归因弱；A1' 显著>r_chance 只是<A2=delta-rule 主动优=headline 强。**承重门始终是 A2>A1' per-image 配对检验（r_chance 在配对中约掉）**；(a)/(b) 仅描述归因强度，不设门（同 v1 NDE 三件套纪律）。r_chance 跨集不可比，只比同集同子集配对 delta。
+
+**判据 1b 容量排除（必报）**：A2>A1'(1a 过) 且 A1'≈A0'(1b 方向不显著) = 增益全在 delta-rule、容量本身没用 = 最强 headline（STORY L74）。memory-only 下 A0' headless→reid_rate_head NaN→1b 回退 seg-mask。
+
+**k 的 R5 辖域声明（skeptic 🟠-1）**：k 用 GT vessel_segment_map 计数，但**仅作评估时难度分层、三臂共享同一 k 划分、不回流任何臂的训练/前向/memory**（合法「按难度分桶报指标」，与「GT 监督机制」正交）。论文须显式声明。可选鲁棒性对照：用 input-derived crowding 代理（Frangi 局部峰数/骨架分叉密度）重算验证子集划分高度重合。
+
+**指标**：判据结局量 = `reid_rate_head`（high/low-crowding 子集，memory-only 头，标准 benchmark）。旧 seg-mask `reid_rate` + 全 gap reid_rate_head + 距离切子集 reid_rate_head **三者并列报不作判据**（诚实留痕，距离仅次要刻画）。
+
+**一次验证（禁 p-hack）**：本地真 e2e 烟测通过+各集 k_thresh/R_win/r_chance/high-crowding 子集 n(≥4) 落档后冻结。CHASE 先验(3臂×3seed)跑一次→过 dose-response 主判据→全命门(4集×3臂(+A4)×3seed)一次成型。**禁反复调 R_win/k_thresh/子集设计直到 A2>A1' 出现。**
+
+**🔒🔒 无条件铁闸（skeptic 🟠-3，与上方 A-I 硬退出判据合并为唯一退出门，最高优先）**：**A-v2 是 Claim2 记忆机制绝对最后一次设计调整。全命门跑完，若 high-crowding 子集 `reid_rate_head` 上仍 A2≈A1'（dose-response 不成立 / 配对方向不一致 / pooled 不显著）→ 真 null 坐实 → 无条件转 benchmark-led**（杀手锏断点 benchmark + 续连指标 ε_β0/SR + reid_rate_head 指标本身作贡献 + 可解释图 + 诚实报告 delta-rule 在 ≤1K 容量/k 下不超 stateless）→ stage-gate FAIL 拍板点停下报。**四点名红线（机械判定，禁绕）：FAIL 后禁换轴、禁换指标、禁换子集定义、禁扩 seed 凑显著。禁再找新缺陷续命。**
+
+**留痕审计**：① 三臂 memory-only 头 numel ≤±5%；② A1' 死参 grad≠0（A-I 实测沿用）；③ R_win/k_thresh(中位数+均值+60分位)/r_chance/各集 high+low-crowding 子集 n + (a)/(b) 读数 + dose-response 曲线写论文附录。
+
+**算力**：CHASE 先验 9 run ≈23 GPU·h（门控）→ 全命门 36+12(A4) run ≈125 GPU·h。CHASE benchmark cache **无须重生**（删 hard neg 用自然分布，cache 不变）。
+
 ### P5 泛化/跨域/跨器官
 - [ ] 冠脉(XCAD/DCA1/CHUAC) + OCTA(OCTA-500/ROSE) + 跨域(Crack500/Roads 附录)
 - [ ] 跨域协议 FIVES→{DRIVE,STARE,CHASE,HRF} + DRIVE→CHASE/STARE

@@ -1,5 +1,83 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 24 — 2026-06-21 re-ID 容量 framing 三次坐实真 null → headline 战略分岔（收工，下次二选一）
+
+承 Entry 23（方向 A 测量修复）。本轮把方向 A 跑到底 + 二诊 + 救活调研，**结论：「delta-rule 关联召回容量做 re-ID」彻底死，但 GDN-2 创新点有救，下次走两条路之一**。
+
+### 本轮做完（A-I 跑完 + A-v2 实现跑 + 救活调研）
+1. **A-I（measurement fix）真跑 CHASE**：对齐指标 `reid_rate_head` 跳 0.94（旧 seg-mask 0.46 随机，证头真学会、老指标测错东西=硬资产），**但 A2(memory)≈A1'(stateless) 仍平**（0.9437 vs 0.9401）。
+2. **二诊（researcher+analyst 90%+）**：① re-ID 头 dec_feat 局部抄近路压没 memory ② 评估没在 delta-rule 占优区。
+3. **A-v2（用户拍 Option A）**：planner 设计 state-crowding 轴（skeptic 逮 2🔴 距离轴选错/hard neg 循环 → 改 k 轴 + dose-response + 删 hard neg + 无条件铁闸；researcher 核理论锚坚实）→ coder 实现 memory-only 头 + crowding 分层（702 pytest）。
+4. **🔴 crowding 预算（模型无关，1min，零训练）= showstopper**：CHASE 每图**总血管身份数(连通分量) = 1-4**，GDN-2 状态维 **d=64**。**k=1-4 << d=64，crowding 区根本够不着** → delta-rule 容量优势理论上触发不了。
+5. **memory-only 头真跑 CHASE 复验**：A2(0.913→0.926) ≈ A1'(0.919→0.921)，**去掉近路也平** → 第三次坐实。
+6. **救活调研（researcher×3，创新点不动找可解法）**：
+   - token 数(1024)≠crowding（VLA 实证 T 大但 n 小不 crowded，容量看 distinct 身份数）→ 我「token 级 crowded」的希望破，原 null 结论站得住。
+   - **delta-rule 容量 framing 死**：n=1-4 << d，empirical+理论双死。
+
+### 🔱 下次开窗：headline 战略二选一（用户 2026-06-21 拍：收工，下次走两路之一）
+> **A-v2 无条件铁闸已触发**（k<<d 真 null）。按预登记本该转 benchmark-led，但用户要保 GDN-2 创新点 → 不转 benchmark-led，下次在以下两条**保创新点**的路里选一条。
+
+**路 1 = 换对的机制 + 对的难度轴（数据不变，CHASE/视网膜）**
+- 把 headline 从「delta-rule 关联召回 re-ID」**校正**到「**门控保留跨遮挡续连**」——GDN-2 真正强项是 gating(遗忘门) 把 gap 前血管状态跨噪声 patch 保留到 gap 后（S-NIAH，A1' stateless 无遗忘门会被噪声稀释，GSA NeurIPS2024 实证）。
+- 难度轴 = **gap 长度 × 噪声密度**（S-NIAH 照搬），预测 gap 越长噪声越密 A2 越拉开 A1'。先例 **RoadTracer(CVPR2018,junction recall 0.58 vs 0.40)/Flood-Filling Net(Nature Methods2018)** 证状态保留胜 feedforward。
+- **牺牲**：Claim2 re-ID 整条死（双核心→单核心）；delta-rule 特异性稀释成「门控记忆」(Mamba2 也有，要 A2 vs DeltaNet 无门臂消融救)；撞 GDKVM 区分弱+novelty 降（RoadTracer/FFN 早证 memory 帮 tracing）；天花板 CVPR/ICCV→MICCAI/ACCV；**不保证赢**（1024 token retention 优势可能小，加难度有 HARKing 嫌疑）。
+
+**路 2 = 按原创新计划（delta-rule re-ID 容量不动）换更适合数据集**
+- 原 re-ID 容量 framing 对，错的是数据——视网膜每图身份太少(1-4)。换**身份密的血管数据集**让 n 逼近 d=64-128 触发 crowding：OCTA 微血管 / 冠脉造影（DCA1/XCAD/CHUAC 已在 HPC，见 .portfolio/datasets.json）/ 或视网膜按**分支段粒度**(每图~100-200 段，sknw 骨架图 input-derived 可算，researcher 证)。
+- **风险（researcher 警告）**：n>>d 时 **DeltaNet 自己也崩**（VLA 实证 n=24<d=32 DeltaNet→0.010），delta-rule 优势窗口窄（n=4 强、n=8 衰、n>>d 全崩）。要精确落 n≈d 的甜区，**得先模型无关预算各候选数据集/粒度的身份数 vs d**（同本轮 crowding 预算，1min 便宜验，别盲跑）。
+- **牺牲**：换数据集偏离「视网膜主战场」，主 Dice 表可比性变；分支段粒度 re-ID 无直接先例（novel 但需立 well-defined）。
+
+### 硬资产（两路都带走）
+`reid_rate_head` head-based 指标(发现旧 seg-mask 测错东西，方法学贡献) + 诚实负结果(GDN-2 视觉首用 + delta-rule 在低身份 2D 血管不超 stateless，预登记证伪) + 断点 benchmark + Frangi 门 + 10 集 + 12 baseline + 全套 A-v2 代码(memory-only 头/crowding.py/dose-response verdict)。
+
+### 待续（下次起点）
+1. **用户拍路 1 还是路 2**（headline 战略分岔，拍板点）。
+2. 路 2 必先跑「候选数据集/粒度 身份数 vs d=64 模型无关预算」（OCTA/冠脉/分支段，挑 n≈64 甜区），别盲跑。
+3. 路 1 派 coder 搭 gap×噪声 retention benchmark + 改判据测保留 + A2 vs A1'(+DeltaNet 无门臂消融)。
+4. crowding.py 有 manifest schema bug（KeyError 'path'，真 manifest 用 'npz' 键）待修（若走路 2 容量预算要用）。
+5. ACCEPTANCE「命门方向 A-v2 预登记」块是本轮诚实退出记录，保留；下次定路后据选路重写 STORY headline。
+
+### 教训
+- **模型无关预算先于烧算力**：crowding 预算 1min 零训练就证 k<<d，省了 23+125 GPU·h 跑必平的实验。下结论前先算「机制理论占优区数据够不够得着」。
+- **红队/分析诚实暴露 ≠ 出问题**：连续难看结果是项目真实状态（机制-任务错配），不是 pipeline bug；红队起作用了。
+- **过度设计迭代教训**：本轮在 design/red-team 上绕太久（v1→skeptic→v2→skeptic→researcher×多轮），用户两次催「在干什么用这么久」。下次少绕、早跑、快出经验数。
+
+---
+
+## Entry 23 — 2026-06-21 命门 FAIL 复查：根因=测量管道断裂非真 null → 方向 A 测量修复实现完（M1/M2/M4/M5，缓 M3）
+
+承 Entry 22 命门 Stage-1 FAIL（A2≈A1'）。用户「先看能否解决 Stage-1，相信能解决，多调研」→ 派 skeptic+analyst+researcher 三路红队复查 → **确诊根因 = 测量管道断裂，非真 null**。
+
+### ★三层根因（全本地实锤，全可修）
+1. **设计断裂（最深）**：`evaluate.py:708` 的 reid_rate 纯读 seg mask（`pred_bin=sigmoid(logits)>thr`），**从不用 re-ID 头的 K×K 配对 logits**。re-ID 头被 `reid_loss.py` 三道 detach 屏障隔离 + 输出 eval 从不消费 → claim 的机制（memory→头→同根匹配）**结构性够不到 headline 指标**。
+2. **机制窗口窄**：memory 插 bottleneck T=1024 但每 gap 只跨 1-3 token。researcher 文献实锤 delta-rule vs linear attn 在 **T=64 tied、T=512 才开口** → 经分割质量路 A2≈A1' 是数学预期。
+3. **A1' 死参 bug**：`unet_gdn2.py:1120-1121` proj_erase/proj_g/alpha_e 全 ×0.0 零梯度，旧 A1' 等参对照本身无效。
+> 主线 Bash 核实：A2 mean reid_rate=0.5002 / A0' 0.4998 = **三臂都≈0.50 随机**。Entry14「+3.3点 8/8 赢」是 A2@ep80 vs A0@ep40 checkpoint 拣选假象。
+
+### 用户拍方向 A（对齐机制与指标）→ planner 设计 → skeptic 红队 0 致命过
+- planner 预登记：reid_rate 改由 re-ID 头配对决定（新指标 reid_rate_head+IDF1）+ 骨架 scan(M3) + 修死参(M4) + held-out 冻结断点(M2b) + 一次验证 + 硬退出判据。
+- skeptic：唯一 🔴-1（循环论证）经核 planner §4 本就 GT 外部裁判 → 0 真致命放行。采纳：①裁判只吃 {head argmax, GT} 连续 logit 仅辅助门 ②并报旧指标 ③**🟢-6：先只上 M1+M4 跑 CHASE 做根因拆分**，指标对齐单独够翻盘则 M3 不必做。
+- **预登记留痕**：已写进 ACCEPTANCE P4「命门方向 A 预登记」块（假说 H + 阈值全冻结 + 分阶段 + 硬退出=真 null 转 benchmark-led 不再救）。
+
+### coder 实现 M1+M2+M2b+M4+M5（缓 M3），pytest 673 passed + 本地真烟测过
+- M1（`metrics.py`）：`reid_rate_head()`，**Y(GT) 唯一裁判 head 只出 argmax**（主线核实非循环）+IDF1，旧 reid_rate 双报。
+- M2（`evaluate.py`）：轴3 接 reid 头前向 + csv 加 reid_rate_head/reid_idf1，旧列不删。
+- M2b（新建 `frozen_breaks.py`）：固定 seed 冻结 held-out 断点，三臂三seed 共用。
+- M4（`unet_gdn2.py:1116-1162`）：删 ×0.0，三投影真接 stateless 图，**主线核实仍 stateless 无 S_t**，grad norm 3.04/0.831/0.526 全>0。
+- M5（新建 `audit_iso_param.py`）：审计 grad≠0 + numel ≤±5%。
+
+### 待续（下一步起点）
+1. 🛑 **拍板点：HPC 上传新码 + 跑 CHASE Stage-1a 重验**（M1+M4，3 臂×3seed，gpu_slot 申卡）。看 `reid_rate_head` 上 A2 是否 >A1'。
+2. 过 → 仍 A2≈A1' 则上 M3 骨架 scan(Stage-1b)；CHASE 过判据 1a → 全命门 4 集×3seed。
+3. 到底仍 A2≈A1' → 真 null 坐实 → 转 benchmark-led（ACCEPTANCE 退出判据已写死）。
+4. M3 尚未实现（缓，条件触发）；wall-time 待 analyst 校准定全命门算力。
+
+### 教训
+- **FAIL 先查测量再认命**：险被当「记忆塌」，一查是 reid_rate 根本没测 re-ID 头（测量错位）+ 三臂全随机=信号上游断。数字异常先怀疑工具不怀疑假设（[[feedback_diagnose_single_value]]）。
+- **换指标≠HARKing 边界**：旧指标测错东西→换对齐指标是修测量；防御=并报旧指标+阈值一字不动+跑前预登记假说/退出判据留痕。
+
+---
+
 ## Entry 22 — 2026-06-20→21 主窗 HPC 发起命门 Stage-1：真跑逮 5 集成 bug 全修 → A2 完成 + A1' 验通（收工）
 
 承 Entry 18。用户连续放行（跑/起/放行 HPC）→ 主窗串行走 HPC 链发起正式命门。**这是命门 v2 首次真 GPU 训练**，全程检测验收（不信窗自报，git diff/stub-fla/真 HPC 核）。

@@ -384,6 +384,7 @@ class ReIDReadoutHead(nn.Module):
         feat_source: str = 'memory',            # ablation A2/A0'
         detach_memory_train: bool = True,        # ablation A3 — MUST be True in non-ablation
         breakpoint_source: str = 'gt_skeleton',  # ablation A2/A4 (informational)
+        use_loc_feat: bool = True,               # A-v2 M-A: False = memory-only head
     ):
         super().__init__()
         assert feat_source in ('memory', 'cnn', 'linear_attn'), (
@@ -400,13 +401,22 @@ class ReIDReadoutHead(nn.Module):
         self.feat_source = feat_source
         self.detach_memory_train = detach_memory_train
         self.breakpoint_source = breakpoint_source
+        self.use_loc_feat = use_loc_feat         # A-v2 M-A flag
 
         # Memory-side projection: (nh * d_head) → d_id
         self.mem_proj = nn.Linear(d_head * n_heads, d_id, bias=False)
-        # Local decoder projection: dec_ch → d_id
-        self.loc_proj = nn.Linear(dec_ch, d_id, bias=False)
-        # Fusion: concat(mem, loc) → d_id
-        self.fuse = nn.Linear(2 * d_id, d_id, bias=False)
+
+        if use_loc_feat:
+            # Local decoder projection: dec_ch → d_id
+            self.loc_proj = nn.Linear(dec_ch, d_id, bias=False)
+            # Fusion: concat(mem, loc) → d_id
+            self.fuse = nn.Linear(2 * d_id, d_id, bias=False)
+        else:
+            # M-A memory-only path: no loc_proj / fuse needed.
+            # Register None to keep state_dict structure distinguishable.
+            self.loc_proj = None  # type: ignore[assignment]
+            self.fuse     = None  # type: ignore[assignment]
+
         # Learnable log-temperature (initialised at 0 → temp=1.0)
         self.log_temp = nn.Parameter(torch.zeros(1))
 
@@ -503,18 +513,26 @@ class ReIDReadoutHead(nn.Module):
 
         id_vec = _gather_tokens_at(mem_ctx, pos_bot, H_bot, W_bot)  # (B, K, nh*d_head)
 
-        # Local decoder side: bilinear-sample dec_feat at breakpoint positions
-        loc_vec = _grid_sample_at(loc, breakpoint_positions.float())  # (B, K, dec_ch)
-
         # ------------------------------------------------------------------- #
         # Project + fuse → normalised identity embedding e ∈ R^{d_id}
+        # M-A (A-v2): use_loc_feat=False → memory-only path, skip dec_feat route
         # ------------------------------------------------------------------- #
         e_mem = self.mem_proj(id_vec)    # (B, K, d_id)
-        e_loc = self.loc_proj(loc_vec)   # (B, K, d_id)
-        e = F.normalize(
-            self.fuse(torch.cat([e_mem, e_loc], dim=-1)),   # (B, K, d_id)
-            dim=-1,
-        )   # L2-normalised embedding
+
+        if not self.use_loc_feat:
+            # Memory-only: head only eats memory o_seq.
+            # dec_feat (loc) is NOT accessed here — the shortcut that let
+            # dec_feat overpower memory in A-I is eliminated.
+            # ★ detach1/2/3 barriers are preserved (mem_ctx already detached above).
+            e = F.normalize(e_mem, dim=-1)   # (B, K, d_id), L2-normalised
+        else:
+            # Local decoder side: bilinear-sample dec_feat at breakpoint positions
+            loc_vec = _grid_sample_at(loc, breakpoint_positions.float())  # (B, K, dec_ch)
+            e_loc = self.loc_proj(loc_vec)   # (B, K, d_id)
+            e = F.normalize(
+                self.fuse(torch.cat([e_mem, e_loc], dim=-1)),   # (B, K, d_id)
+                dim=-1,
+            )   # L2-normalised embedding
 
         # ------------------------------------------------------------------- #
         # Pairwise cosine logits scaled by learnable temperature
@@ -1101,28 +1119,48 @@ class LinearAttnModule(nn.Module):
         # Flatten: (B, C, H, W) → (B, T, C)
         tokens = x.permute(0, 2, 3, 1).reshape(B, T, C)
 
-        # Frangi vesselness (same path as GDN2MemoryModule — parity for gate calcs)
-        # Note: gate tensors are computed identically to A2 for iso-param parity,
-        # but only alpha_w / Frangi path is actually used (write_gate applied below
-        # to scale v, maintaining the Frangi-modulated vessel signal as in A2).
-        # proj_erase and proj_g are kept for parameter parity; not used in forward.
+        # Frangi vesselness + gate computation (M4: proj_erase/proj_g/alpha_e now
+        # truly enter the compute graph — no ×0.0 dummies, stateless design preserved).
+        #
+        # Gate roles in A1' stateless linear attn (mirroring A2 semantics):
+        #   write_gate  — amplified at vessel pixels (Frangi, alpha_w)
+        #   erase_gate  — suppresses write_gate at vessel pixels (alpha_e),
+        #                 reducing write strength where erase signal is strong.
+        #                 Combined: actual_gate = write_gate * (1 - erase_gate)
+        #   g_out       — per-token output gate (logsigmoid → sigmoid applied below),
+        #                 scales the linear-attn output o_seq before projection.
+        #
+        # This gives proj_erase/proj_g/alpha_e real gradient paths while remaining
+        # strictly stateless (no S_t recurrence introduced — A1' identity preserved).
         if self.use_frangi:
-            vesselness = self.frangi(x)                             # (B, 1, H, W)
-            v_flat = vesselness.permute(0, 2, 3, 1).reshape(B, T, 1)  # (B, T, 1)
+            vesselness = self.frangi(x)                              # (B, 1, H, W)
+            v_flat = vesselness.permute(0, 2, 3, 1).reshape(B, T, 1)   # (B, T, 1)
             alpha_w = torch.sigmoid(self.alpha_w)
-            raw_write = torch.sigmoid(self.proj_write(tokens))     # (B, T, nh)
-            write_gate = raw_write * (1.0 + alpha_w * v_flat)      # (B, T, nh)
-            write_gate = write_gate.clamp(0.0, 1.0)
-            # Keep alpha_e / proj_erase / proj_g in compute graph for iso-param parity.
-            # Multiply by zero so they receive gradients without affecting output.
-            # This is the minimal intervention to keep numel identical to A2.
             alpha_e = torch.sigmoid(self.alpha_e)
-            _dummy_erase = torch.sigmoid(self.proj_erase(tokens)) * alpha_e * 0.0
-            _dummy_g     = F.logsigmoid(self.proj_g(tokens)) * 0.0
+
+            # Write gate (same Frangi-boost as A2)
+            raw_write = torch.sigmoid(self.proj_write(tokens))      # (B, T, nh)
+            write_gate = raw_write * (1.0 + alpha_w * v_flat)       # (B, T, nh)
+            write_gate = write_gate.clamp(0.0, 1.0)
+
+            # Erase gate (Frangi-suppressed, mirrors A2's suppression semantics)
+            # M4: proj_erase truly enters graph — no ×0.0
+            raw_erase = torch.sigmoid(self.proj_erase(tokens))      # (B, T, nh)
+            erase_gate = raw_erase * (1.0 - alpha_e * v_flat)       # (B, T, nh)
+            erase_gate = erase_gate.clamp(min=0.0)
+
+            # Combined write: suppress write where erase is strong (stateless logic)
+            actual_gate = write_gate * (1.0 - erase_gate)           # (B, T, nh)
+            actual_gate = actual_gate.clamp(0.0, 1.0)
+
+            # Output gate: M4: proj_g truly enters graph — no ×0.0
+            # logsigmoid(.) < 0; exp(.) → (0,1) — acts as per-position output weight
+            g_out = F.logsigmoid(self.proj_g(tokens))               # (B, T, nh)
         else:
-            write_gate   = torch.ones(B, T, self.n_heads, device=x.device, dtype=x.dtype)
-            _dummy_erase = torch.zeros(B, T, self.n_heads, device=x.device, dtype=x.dtype)
-            _dummy_g     = torch.zeros(B, T, self.n_heads, device=x.device, dtype=x.dtype)
+            actual_gate  = torch.ones(B, T, self.n_heads, device=x.device, dtype=x.dtype)
+            erase_gate   = torch.zeros(B, T, self.n_heads, device=x.device, dtype=x.dtype)
+            g_out        = torch.zeros(B, T, self.n_heads, device=x.device, dtype=x.dtype)
+            write_gate   = actual_gate  # kept for gate_map below
 
         # Multi-direction scan (same Engineering A as GDN2MemoryModule)
         perms     = _get_scan_permutations(H, W, self.directions, device=x.device)
@@ -1139,7 +1177,14 @@ class LinearAttnModule(nn.Module):
 
         # Merge heads → (B, T, nh*dh)
         nh, dh = self.n_heads, self.d_head
-        o_seq = o.reshape(B, T, nh * dh)                           # (B, T, nh*dh)
+        o_seq_raw = o.reshape(B, T, nh * dh)                       # (B, T, nh*dh)
+
+        # M4: output gate g_out truly enters graph (no ×0.0).
+        # g_out: (B, T, nh); take mean across heads → (B, T, 1) → broadcast to (B, T, nh*dh)
+        # sigmoid(g_out) ∈ (0,1) — scales each token's output (stateless, no S_t recurrence).
+        g_gate = torch.sigmoid(g_out).mean(dim=-1, keepdim=True)   # (B, T, 1)
+        o_seq = o_seq_raw * g_gate                                  # (B, T, nh*dh)
+
         # Expose for ReIDReadoutHead (same API as GDN2MemoryModule)
         self._last_o_seq = o_seq
 
@@ -1150,16 +1195,11 @@ class LinearAttnModule(nn.Module):
         # Reshape back
         out = out_tokens.reshape(B, H, W, C).permute(0, 3, 1, 2)  # (B, C, H, W)
 
-        # Apply write_gate as a channel-wise scaling on the output feature map
-        # to keep the Frangi modulation signal active in the forward pass
-        # (parity with A2's Frangi-modulated write gate influencing output).
-        # write_gate: (B, T, nh) → reduce to (B, T, 1) → (B, C, H, W) broadcast
-        gate_map = write_gate.mean(dim=-1).reshape(B, H, W).unsqueeze(1)  # (B,1,H,W)
+        # M4: actual_gate (write suppressed by erase) applied as channel-wise scaling.
+        # This keeps both write_gate and erase_gate in the forward path.
+        # actual_gate: (B, T, nh) → mean → (B,1,H,W)
+        gate_map = actual_gate.mean(dim=-1).reshape(B, H, W).unsqueeze(1)  # (B,1,H,W)
         out = out * gate_map
-
-        # Absorb dummy tensors into output so autograd tracks them (parity grads)
-        dummy_sum = (_dummy_erase.sum() + _dummy_g.sum()) * 0.0
-        out = out + dummy_sum
 
         if return_memory:
             states_list = [None] * self.directions
@@ -1209,6 +1249,8 @@ class UNetGDN2(nn.Module):
         reid_feat_source: 'memory' | 'linear_attn' | 'cnn' (ablation A2/A1'/A0')
         reid_detach_memory_train: bool (ablation A3; MUST be True in non-ablation)
         reid_breakpoint_source:   'gt_skeleton' | 'pred_skeleton' (ablation A2/A4)
+        reid_use_loc_feat:        A-v2 M-A: True=fuse(mem,loc), False=memory-only head
+                                  (命门 A-v2: False 砍 dec_feat 近路，头只吃 o_seq)
     """
 
     def __init__(
@@ -1231,6 +1273,7 @@ class UNetGDN2(nn.Module):
         reid_feat_source: str = 'memory',    # ablation A2/A1'/A0'
         reid_detach_memory_train: bool = True,  # ablation A3 — MUST be True normally
         reid_breakpoint_source: str = 'gt_skeleton',  # ablation A2/A4
+        reid_use_loc_feat: bool = True,       # A-v2 M-A: False=memory-only head
     ):
         super().__init__()
         b = base_ch
@@ -1318,6 +1361,7 @@ class UNetGDN2(nn.Module):
                 feat_source=reid_feat_source,
                 detach_memory_train=reid_detach_memory_train,
                 breakpoint_source=reid_breakpoint_source,
+                use_loc_feat=reid_use_loc_feat,   # A-v2 M-A: False=memory-only
             )
         else:
             self.reid_head = None

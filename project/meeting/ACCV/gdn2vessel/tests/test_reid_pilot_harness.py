@@ -819,7 +819,7 @@ class TestMultiNpzBenchmarkAggregation:
         import train_reid_pilot as _hrn
 
         call_log = []
-        def _fake_eval(model, device, npz_path, reid_feat_source):
+        def _fake_eval(model, device, npz_path, reid_feat_source, **kwargs):
             idx = call_log.__len__()
             call_log.append(npz_path)
             return {
@@ -855,27 +855,32 @@ class TestMultiNpzBenchmarkAggregation:
         """
         import train_reid_pilot as _hrn
 
-        def _fake_eval(model, device, npz_path, reid_feat_source):
+        def _fake_eval(model, device, npz_path, reid_feat_source, **kwargs):
             return {
-                'image_id':      Path(npz_path).stem,
-                'dataset':       'mock',
-                'severity':      'Medium',
-                'reid_rate':     0.5,
-                'epsilon_beta0': 0.1,
-                'success_rate':  0.9,
-                'n_gaps':        4,
+                'image_id':       Path(npz_path).stem,
+                'dataset':        'mock',
+                'severity':       'Medium',
+                'reid_rate':      0.5,
+                'reid_rate_head': float('nan'),
+                'reid_idf1':      float('nan'),
+                'epsilon_beta0':  0.1,
+                'success_rate':   0.9,
+                'n_gaps':         4,
             }
         monkeypatch.setattr(_hrn, '_eval_single_npz', _fake_eval)
 
         npz_paths = [str(tmp_path / f'fake{i}.npz') for i in range(3)]
         csv_path  = tmp_path / 'reid_results.csv'
 
-        # Write header first (matches production flow)
+        # Write header first (matches production flow; updated for new columns)
         with open(csv_path, 'w', newline='', encoding='utf-8') as cf:
             import csv as _csv
             w = _csv.writer(cf)
             w.writerow(['epoch', 'image_id', 'severity', 'dataset',
-                        'reid_rate', 'epsilon_beta0', 'success_rate', 'n_gaps', 'arm'])
+                        'reid_rate', 'reid_rate_head', 'reid_idf1',
+                        'epsilon_beta0', 'success_rate', 'n_gaps',
+                        'reid_rate_head_high', 'reid_rate_head_low',   # A-v2 M-B
+                        'arm'])
 
         model  = _TrivialModel()
         device = torch.device('cpu')
@@ -915,7 +920,7 @@ class TestMultiNpzBenchmarkAggregation:
         import train_reid_pilot as _hrn
 
         call_count = {'n': 0}
-        def _fake_eval_with_error(model, device, npz_path, reid_feat_source):
+        def _fake_eval_with_error(model, device, npz_path, reid_feat_source, **kwargs):
             i = call_count['n']
             call_count['n'] += 1
             if i == 1:

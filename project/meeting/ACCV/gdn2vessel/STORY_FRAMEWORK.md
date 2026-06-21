@@ -27,6 +27,26 @@
 > **必须写**：记忆是 **end-to-end 模型内机制**（区别于拓扑损失 clDice / 后处理图算法 / learned post-processing 如 arXiv 2404.10506）。
 > **绝对禁止**："universal reconnection" / "always reconnects"。续连能力随断点 severity / 序列长度衰减，必须如实呈现衰减曲线。
 
+#### 🧭 双层动机 ↔ 三臂消融（2026-06-21 出彩度定位拍板，写 §1/§3 必按此分层，禁混为单层）
+
+GDN-2 给血管带来**两个独立优势**，各自只解释三臂消融里的**一段**对照，绝不能混成笼统一句「记忆做续连」（旧单层写法）：
+
+| 对照 | 谁有 / 谁没有 | 隔离的优势 | 动机层（写进 §1） |
+|---|---|---|---|
+| A2 / A1' **>** A0'(CNN) | A2、A1' 都有全局序列建模，CNN 没有 | **长程**（全局感受野沿血管关联远点） | 为什么选血管 + 为什么打 CNN（Serp-Mamba/HM-Mamba 证 SSM>CNN） |
+| A2 **>** A1'(等参) | A2 有 delta 擦写状态更新，A1' 是无状态纯加性 | **干扰消解**（有限状态里多血管身份互不串扰） | **headline 的唯一理由** |
+
+**关键铁律**：
+- **长程是 A2 与 A1' 共享的**（A1' 普通 linear attn 也全局）→ 长程**解释不了** A2>A1'。能把这俩分开的**只有 delta-rule 干扰消解**。所以 headline（A2>A1'）的动机**必须**落在「干扰/容量」，不能落在「长程记忆」。
+- **干扰动机的理论锚**（写 §1/§3 引）：DeltaNet 原文 collision 条件 = **L>d（实体数超状态维），非绝对长序列**（arXiv 2406.06484 §2.2）；GDN-2 原文 "interference among many compressed associations"（arXiv 2605.22791）；Hopfield 容量 ∝ 模式数/正交性非长度（ICLR2021）。短序列也成立 → 反「短序列 memory 没用」质疑。
+- **承重前提（地基，未核实前 §1/§3 headline 不定稿）**：① A2>A1' 实证须真成立（另窗 HPC 核 verdict；若 A2≈A1' → 跌回 backbone 迁移，headline 塌）；② k vs d 前提——单图竞争血管身份数 k 须逼近状态维 d，否则干扰动机经验不成立（红队中）。
+
+#### 🛣️ 问题重表述定位（2026-06-21 用户拍板 = 问题重表述框，非 backbone 框）
+
+headline **不框成**「GDN-2 关联记忆做血管分割」（= backbone 迁移，venue 先例天花板 MICCAI/ACCV），**框成**「把**连通性重表述为模型内跨断点身份检索问题** + 自造断点 benchmark + 同根 re-ID 指标；GDN-2 记忆是新**使能机制**」（= 新问题+新赛道+新指标，冲 CVPR/ICCV poster）。
+- **四条现有路径硬区分**（related work 必逐条点名划界，否则秒拒）：① 拓扑损失(clDice/cbDice/Betti/Skeleton Recall) ② 后处理/learned post-proc(creatis 2404.10506) ③ scan/SSM 架构 ④ **GNN/recurrent tracing（VGN 1806.02279 / Trexplorer MICCAI2024 / TopoVST 2603.14909）已在模型内做连通性**。我们的精确差异 = **跨断点身份一致性检索**（非 tracing 要显式起点、非图损失外在约束、非 scan）。**禁 claim「首个 in-model 连通性」**（④ 已占）。
+- re-ID 是**干扰动机的证据放大器**（直接度量身份绑定成没成），非独立第二卖点。
+
 ### Claim 2（核心 2 = 空间 re-identification）：续连不止「填上」，而是「认出同根」
 
 > 现有续连指标（ε_β0/SR）只量「gap 是否被填充」，不量「填充者是否是同一条血管的延伸」。我们把断点两侧的 re-identification 做成显式机制 + 自定义 **re-ID 率**指标（借 MOT IDF1 逻辑：正确同根匹配 / 全部 gap）。

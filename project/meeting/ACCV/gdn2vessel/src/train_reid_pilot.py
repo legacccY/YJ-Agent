@@ -28,7 +28,10 @@ Evaluation (held-out benchmark NPZ batch, frozen seed=42):
 
 Results written to state.json (real-time) and reid_results.csv.
   reid_results.csv columns:
-    epoch, image_id, severity, dataset, reid_rate, epsilon_beta0, success_rate, n_gaps, arm
+    epoch, image_id, severity, dataset, reid_rate, reid_rate_head, reid_idf1,
+    epsilon_beta0, success_rate, n_gaps, arm
+  reid_rate_head / reid_idf1: re-ID head logit-driven metrics (NaN if head not active
+    or no gaps with same-root partner visible in eval tile).
 
 Partial-correlation tool (standalone callable):
   python src/train_reid_pilot.py --partial_corr_only \\
@@ -305,6 +308,169 @@ def load_benchmark_npz_list(
 #  Benchmark-based re-ID evaluation (held-out NPZ batch, never training data)
 # --------------------------------------------------------------------------- #
 
+def _reid_head_forward_on_tile(
+    model: nn.Module,
+    device: torch.device,
+    image: np.ndarray,
+    gaps: list,
+    tile_size: int = 512,
+    gap_k: Optional[np.ndarray] = None,
+    k_thresh: Optional[float] = None,
+) -> Dict[str, float]:
+    """
+    Run re-ID head on a single 512×512 crop centred on the gaps' centroid.
+
+    Design (mirrors evaluate.py:_compute_reid_head_metrics, adapted for tiled eval):
+      - Full-res images (e.g. CHASE 960×999) cannot go through the model whole:
+        bottleneck H/16 × W/16 would exceed max_seq_len=1024.
+      - Solution: extract one 512×512 tile centred on the centroid of all gaps
+        (clamped to image bounds). 512 → 32×32 = 1024 tokens (exactly at limit).
+      - Only gaps whose centre falls inside the tile are evaluated; others are
+        out-of-view for this tile and are excluded (their logits would be noise).
+      - Breakpoint positions are expressed in dec_feat (H/4 = 128×128) coordinates
+        relative to the tile.
+
+    A-v2 M-B B-3: if gap_k and k_thresh are provided, also computes
+    reid_rate_head_high / reid_rate_head_low (crowding-stratified subsets).
+    gap_k must correspond to the *full* gap list (same index as `gaps`); the
+    function handles subsetting to gaps_in_tile internally.
+
+    Args:
+        model:     UNetGDN2 (checked by caller for use_reid_head / reid_head).
+        device:    torch.device
+        image:     (H, W) float32 preprocessed image.
+        gaps:      list of GapRecord (full-image coordinates).
+        tile_size: side length of crop (default 512 to respect max_seq_len=1024).
+        gap_k:     optional (len(gaps),) array of per-gap k values (crowding;
+                   from benchmark.crowding.compute_k_per_gap). Aligned with `gaps`.
+        k_thresh:  float — preregistered k_thresh from crowding manifest (median).
+
+    Returns:
+        dict with keys: reid_rate_head, reid_idf1
+        (plus reid_rate_head_high, reid_rate_head_low, n_high, n_low, r_chance_high
+         when gap_k and k_thresh are provided and not nan).
+
+    Nan values returned when:
+      - No gaps provided.
+      - No gaps fall inside the selected tile.
+      - model.reid_head is None / use_reid_head is False.
+      - reid_ctx missing o_seq / dec_feat (A0' cnn arm with no attention).
+    """
+    from benchmark.metrics import reid_rate_head as _rrh
+
+    _nan_dict: Dict[str, float] = {'reid_rate_head': float('nan'),
+                                    'reid_idf1': float('nan')}
+
+    if not gaps:
+        return _nan_dict
+    if not (hasattr(model, 'use_reid_head') and model.use_reid_head
+            and hasattr(model, 'reid_head') and model.reid_head is not None):
+        return _nan_dict
+
+    H_img, W_img = image.shape
+
+    # --- Compute tile bounds centred on gaps centroid ---
+    cy_all = [g.center_yx[0] for g in gaps]
+    cx_all = [g.center_yx[1] for g in gaps]
+    cy_c = int(np.mean(cy_all))
+    cx_c = int(np.mean(cx_all))
+
+    half = tile_size // 2
+    y0 = max(0, min(cy_c - half, H_img - tile_size))
+    x0 = max(0, min(cx_c - half, W_img - tile_size))
+    # If image is smaller than tile_size, use the whole image (pad below)
+    y0 = max(0, y0)
+    x0 = max(0, x0)
+    y1 = min(H_img, y0 + tile_size)
+    x1 = min(W_img, x0 + tile_size)
+
+    # Crop + pad to exactly (tile_size, tile_size) if image is smaller
+    crop = image[y0:y1, x0:x1]
+    ch, cw = crop.shape
+    if ch < tile_size or cw < tile_size:
+        pad_img = np.zeros((tile_size, tile_size), dtype=np.float32)
+        pad_img[:ch, :cw] = crop
+        crop = pad_img
+
+    # --- Filter gaps to those whose centre falls inside the tile ---
+    # Also track original indices so gap_k can be subsetted accordingly.
+    gaps_in_tile = []
+    gap_orig_indices = []   # indices into the original `gaps` list
+    local_cy = []
+    local_cx = []
+    for orig_idx, g in enumerate(gaps):
+        gy, gx = g.center_yx
+        if y0 <= gy < y1 and x0 <= gx < x1:
+            gaps_in_tile.append(g)
+            gap_orig_indices.append(orig_idx)
+            local_cy.append(gy - y0)
+            local_cx.append(gx - x0)
+
+    if not gaps_in_tile:
+        return _nan_dict
+
+    K = len(gaps_in_tile)
+
+    # --- Subset gap_k to tile gaps ---
+    gap_k_tile: Optional[np.ndarray] = None
+    if gap_k is not None and k_thresh is not None:
+        gap_k_arr = np.asarray(gap_k, dtype=np.float64)
+        if gap_k_arr.shape[0] == len(gaps):
+            gap_k_tile = gap_k_arr[gap_orig_indices]  # (K,) subset
+
+    # --- Forward with reid_ctx ---
+    inp = torch.tensor(crop, dtype=torch.float32
+                       ).unsqueeze(0).unsqueeze(0).to(device)   # (1,1,tile,tile)
+    model.eval()
+    with torch.no_grad():
+        out = model(inp, return_reid_ctx=True)
+
+    # model may return (logits, reid_ctx) or just logits
+    if isinstance(out, tuple) and len(out) == 2:
+        _, reid_ctx = out
+    else:
+        return _nan_dict
+
+    o_seq = reid_ctx.get('o_seq')
+    dec_feat = reid_ctx.get('dec_feat')
+    memory_state = reid_ctx.get('memory_state')
+
+    if o_seq is None or dec_feat is None:
+        # A0' cnn arm: o_seq may be None (no memory). reid_rate_head = NaN.
+        return _nan_dict
+
+    H_dec = dec_feat.shape[-2]   # tile_size / 4 = 128 for 512-tile
+    W_dec = dec_feat.shape[-1]
+
+    # Build breakpoint_positions in dec_feat coordinate space
+    # tile coords → dec_feat coords (proportional)
+    positions = torch.zeros(1, K, 2, dtype=torch.float32, device=device)
+    for idx in range(K):
+        cy_dec = local_cy[idx] * H_dec / tile_size
+        cx_dec = local_cx[idx] * W_dec / tile_size
+        positions[0, idx, 0] = float(cy_dec)
+        positions[0, idx, 1] = float(cx_dec)
+
+    positions[..., 0].clamp_(0, H_dec - 1)
+    positions[..., 1].clamp_(0, W_dec - 1)
+
+    with torch.no_grad():
+        reid_logits = model.reid_head(
+            o_seq=o_seq,
+            dec_feat=dec_feat,
+            breakpoint_positions=positions,
+            memory_state=memory_state,
+        )   # (1, K, K)
+
+    logits_np = reid_logits[0].detach().cpu().numpy().astype(np.float32)  # (K, K)
+
+    # Pass gap_k_tile and k_thresh for crowding stratification (M-B B-3).
+    result = _rrh(logits_np, gaps_in_tile,
+                  gap_k=gap_k_tile,
+                  k_thresh=k_thresh)
+    return result
+
+
 def _tiled_inference(
     model: nn.Module,
     device: torch.device,
@@ -376,6 +542,8 @@ def _eval_single_npz(
     reid_feat_source: str,
     tile_size: int = 512,
     overlap: int = 64,
+    gap_k: Optional[np.ndarray] = None,
+    k_thresh: Optional[float] = None,
 ) -> Dict:
     """
     Run model on one benchmark NPZ.  Returns per-image metric dict.
@@ -453,15 +621,46 @@ def _eval_single_npz(
     eps = epsilon_beta0(pred_bin, gt_mask)
     sr  = success_rate(pred_bin, break_result)
 
-    return {
-        'image_id':      image_id,
-        'dataset':       ds_name,
-        'severity':      sev,
-        'reid_rate':     rr,
-        'epsilon_beta0': eps,
-        'success_rate':  sr,
-        'n_gaps':        len(gaps),
+    # --- M-B B-3: per-image gap_k computation (crowding, A-v2) ---
+    # Compute k per gap from vessel_segment_map (for evaluation stratification only;
+    # never flows into model forward or training).
+    # If k_thresh is None/nan, reid_rate_head_high/low will not be computed.
+    per_gap_k: Optional[np.ndarray] = None
+    if k_thresh is not None and not (isinstance(k_thresh, float) and np.isnan(k_thresh)):
+        try:
+            from benchmark.crowding import compute_k_per_gap, R_WIN
+            k_dict = compute_k_per_gap(gaps, R_win=R_WIN)
+            per_gap_k = np.array([k_dict.get(i, 0) for i in range(len(gaps))],
+                                  dtype=np.float64)
+        except Exception as _ke:
+            print(f'  [crowding] WARNING: k computation failed: {_ke}')
+            per_gap_k = None
+
+    # Re-ID head eval: run reid_head on a 512×512 crop centred on gaps centroid.
+    # Returns dict with reid_rate_head, reid_idf1, and (when gap_k provided)
+    # reid_rate_head_high, reid_rate_head_low, n_high, n_low, r_chance_high.
+    # Returns NaN when: no gaps, model has no reid_head, or o_seq is None (A0' cnn).
+    head_result = _reid_head_forward_on_tile(
+        model, device, image_f, gaps,
+        gap_k=per_gap_k if per_gap_k is not None else gap_k,
+        k_thresh=k_thresh,
+    )
+
+    row: Dict = {
+        'image_id':       image_id,
+        'dataset':        ds_name,
+        'severity':       sev,
+        'reid_rate':      rr,
+        'reid_rate_head': head_result.get('reid_rate_head', float('nan')),
+        'reid_idf1':      head_result.get('reid_idf1',      float('nan')),
+        'epsilon_beta0':  eps,
+        'success_rate':   sr,
+        'n_gaps':         len(gaps),
+        # crowding-stratified (nan when gap_k/k_thresh not provided or A0' headless)
+        'reid_rate_head_high': head_result.get('reid_rate_head_high', float('nan')),
+        'reid_rate_head_low':  head_result.get('reid_rate_head_low',  float('nan')),
     }
+    return row
 
 
 def evaluate_on_benchmark(
@@ -472,6 +671,7 @@ def evaluate_on_benchmark(
     csv_path: Optional[Path] = None,
     epoch: int = 0,
     arm: str = 'memory',
+    k_thresh: Optional[float] = None,
 ) -> Dict[str, float]:
     """
     Run model on a list of benchmark NPZ files, accumulate per-image metrics,
@@ -480,6 +680,9 @@ def evaluate_on_benchmark(
     Arguments:
       npz_paths      — list of NPZ paths (from load_benchmark_npz_list).
                        Single-element list = backward-compat single-file mode.
+      k_thresh       — A-v2 M-B: preregistered crowding threshold (median from
+                       crowding_manifest.json). When provided, also computes
+                       reid_rate_head_high / reid_rate_head_low per image.
       csv_path       — if not None, append per-image rows to this CSV.
       epoch          — current training epoch (written to CSV).
       arm            — reid_feat_source string for CSV 'arm' column.
@@ -504,7 +707,8 @@ def evaluate_on_benchmark(
 
     for npz_path in npz_paths:
         try:
-            row = _eval_single_npz(model, device, npz_path, reid_feat_source)
+            row = _eval_single_npz(model, device, npz_path, reid_feat_source,
+                                   k_thresh=k_thresh)
             per_image_rows.append(row)
         except Exception as exc:
             print(f'  [benchmark] SKIP {Path(npz_path).name}: {exc}')
@@ -529,7 +733,31 @@ def evaluate_on_benchmark(
     sr_mean  = float(np.mean([r['success_rate']  for r in per_image_rows]))
     n_gaps   = int(sum(r['n_gaps']               for r in per_image_rows))
 
+    def _nanmean_list(key: str) -> float:
+        """nanmean over a named column; nan if all nan."""
+        vals = [r.get(key, float('nan')) for r in per_image_rows]
+        arr  = np.array(vals, dtype=np.float64)
+        return float(np.nanmean(arr)) if not np.all(np.isnan(arr)) else float('nan')
+
+    # Aggregate reid_rate_head / reid_idf1 (ignore NaN rows — nanmean)
+    rrh_mean        = _nanmean_list('reid_rate_head')
+    ridf1_mean      = _nanmean_list('reid_idf1')
+    # A-v2 M-B: crowding-stratified aggregates
+    rrh_high_mean   = _nanmean_list('reid_rate_head_high')
+    rrh_low_mean    = _nanmean_list('reid_rate_head_low')
+
+    def _safe_round(v: float, ndigits: int = 6) -> object:
+        """Round finite float; return 'nan' string for NaN (csv-safe)."""
+        import math
+        return round(v, ndigits) if math.isfinite(v) else float('nan')
+
     # Append per-image rows to CSV (production mode)
+    # Columns: epoch, image_id, severity, dataset,
+    #          reid_rate, reid_rate_head, reid_idf1,
+    #          epsilon_beta0, success_rate, n_gaps,
+    #          reid_rate_head_high, reid_rate_head_low,  ← A-v2 M-B new columns
+    #          arm
+    # CRITICAL: header (written in main()) must match this column order exactly.
     if csv_path is not None:
         with open(csv_path, 'a', newline='', encoding='utf-8') as cf:
             writer = csv.writer(cf)
@@ -539,10 +767,14 @@ def evaluate_on_benchmark(
                     row['image_id'],
                     row['severity'],
                     row['dataset'],
-                    round(row['reid_rate'],     6),
-                    round(row['epsilon_beta0'], 6),
-                    round(row['success_rate'],  6),
+                    _safe_round(row['reid_rate'],                           6),
+                    _safe_round(row.get('reid_rate_head',       float('nan')), 6),
+                    _safe_round(row.get('reid_idf1',            float('nan')), 6),
+                    _safe_round(row['epsilon_beta0'],                       6),
+                    _safe_round(row['success_rate'],                        6),
                     row['n_gaps'],
+                    _safe_round(row.get('reid_rate_head_high',  float('nan')), 6),
+                    _safe_round(row.get('reid_rate_head_low',   float('nan')), 6),
                     arm,
                 ])
 
@@ -550,11 +782,15 @@ def evaluate_on_benchmark(
         print(f'  [benchmark] {errors} NPZ(s) skipped due to errors (of {len(npz_paths)} total).')
 
     return {
-        'reid_rate':      rr_mean,
-        'epsilon_beta0':  eps_mean,
-        'success_rate':   sr_mean,
-        'n_gaps':         n_gaps,
-        'n_images':       n_images,
+        'reid_rate':            rr_mean,
+        'reid_rate_head':       rrh_mean,
+        'reid_idf1':            ridf1_mean,
+        'reid_rate_head_high':  rrh_high_mean,
+        'reid_rate_head_low':   rrh_low_mean,
+        'epsilon_beta0':        eps_mean,
+        'success_rate':         sr_mean,
+        'n_gaps':               n_gaps,
+        'n_images':             n_images,
     }
 
 
@@ -763,11 +999,23 @@ def write_state(path: Path, epoch: int, train_loss: float, val_dice: float,
         'reid_feat_source': reid_feat_source,
     }
     if benchmark_metrics is not None:
-        state['reid_rate']      = round(float(benchmark_metrics.get('reid_rate', 0.0)), 6)
-        state['epsilon_beta0']  = round(float(benchmark_metrics.get('epsilon_beta0', 0.0)), 6)
-        state['success_rate']   = round(float(benchmark_metrics.get('success_rate', 0.0)), 6)
-        state['n_gaps']         = int(benchmark_metrics.get('n_gaps', 0))
-        state['n_images']       = int(benchmark_metrics.get('n_images', 0))
+        import math as _math
+        def _rnd(v, nd=6):
+            """Round finite float; pass through NaN as-is (json will write null)."""
+            try:
+                f = float(v)
+                return round(f, nd) if _math.isfinite(f) else None
+            except (TypeError, ValueError):
+                return None
+        state['reid_rate']            = _rnd(benchmark_metrics.get('reid_rate', 0.0))
+        state['reid_rate_head']       = _rnd(benchmark_metrics.get('reid_rate_head',      float('nan')))
+        state['reid_idf1']            = _rnd(benchmark_metrics.get('reid_idf1',           float('nan')))
+        state['reid_rate_head_high']  = _rnd(benchmark_metrics.get('reid_rate_head_high', float('nan')))
+        state['reid_rate_head_low']   = _rnd(benchmark_metrics.get('reid_rate_head_low',  float('nan')))
+        state['epsilon_beta0']        = _rnd(benchmark_metrics.get('epsilon_beta0', 0.0))
+        state['success_rate']         = _rnd(benchmark_metrics.get('success_rate', 0.0))
+        state['n_gaps']               = int(benchmark_metrics.get('n_gaps', 0))
+        state['n_images']             = int(benchmark_metrics.get('n_images', 0))
     if partial_corr_result is not None:
         state['partial_corr'] = {k: round(float(v), 6) if isinstance(v, float) else v
                                   for k, v in partial_corr_result.items()}
@@ -929,6 +1177,8 @@ def build_model(args) -> nn.Module:
     detach_mem = not args.no_detach_memory
     # A4: breakpoint source
     bp_source = args.reid_breakpoint_source
+    # A-v2 M-A: memory-only head (use_loc_feat=False) or fuse head (use_loc_feat=True)
+    use_loc_feat = getattr(args, 'use_loc_feat', True)
 
     # Frangi is active for both A2 and A1' (both have the module for iso-param parity)
     use_frangi = (memory_mode in ('delta_rule', 'linear_attn'))
@@ -949,6 +1199,7 @@ def build_model(args) -> nn.Module:
         reid_feat_source=reid_feat_source,
         reid_detach_memory_train=detach_mem,
         reid_breakpoint_source=bp_source,
+        reid_use_loc_feat=use_loc_feat,   # A-v2 M-A
     )
 
     # Assertions to guard red-lines (R5, detach)
@@ -998,6 +1249,20 @@ def parse_args():
     p.add_argument('--no_detach_memory', action='store_true',
                    help='A3 ablation: disable detach (default: detach=True, MUST be '
                         'True in non-ablation runs)')
+    p.add_argument('--use_loc_feat', action='store_true', default=True,
+                   help='A-v2 M-A: include dec_feat in re-ID head (default True). '
+                        'Pass --no_use_loc_feat for memory-only head (命门 A-v2 三臂).')
+    p.add_argument('--no_use_loc_feat', dest='use_loc_feat', action='store_false',
+                   help='A-v2 M-A: memory-only head (砍 dec_feat 近路).')
+    p.add_argument('--k_thresh', type=float, default=None,
+                   help='A-v2 M-B: preregistered crowding threshold k_thresh '
+                        '(median, from crowding_manifest.json). When provided, '
+                        'also outputs reid_rate_head_high / reid_rate_head_low. '
+                        'If omitted, loads from crowding_manifest.json in '
+                        '--benchmark_dir (if exists); otherwise crowding cols = NaN.')
+    p.add_argument('--crowding_manifest', type=str, default=None,
+                   help='Path to crowding_manifest.json (default: '
+                        '<benchmark_dir>/crowding_manifest.json).')
 
     p.add_argument('--data_root', type=str, required=False,
                    help='Path to dataset root directory (e.g. .../CHASE for --dataset chase, '
@@ -1175,12 +1440,49 @@ def main():
     else:
         print('[train_reid_pilot] No benchmark NPZ specified; skipping held-out eval.')
 
-    # CSV header — per-image schema (new columns: image_id, severity, dataset)
+    # --- A-v2 M-B: resolve k_thresh from manifest or CLI arg ---
+    # k_thresh is preregistered before training (not derived from results).
+    # Priority: --k_thresh CLI > crowding_manifest.json in benchmark_dir.
+    _k_thresh: Optional[float] = getattr(args, 'k_thresh', None)
+    if _k_thresh is None:
+        # Try to load from crowding_manifest.json
+        _bench_dir = getattr(args, 'benchmark_dir', None)
+        _manifest_path_arg = getattr(args, 'crowding_manifest', None)
+        _manifest_src = _manifest_path_arg or (
+            str(Path(_bench_dir) / 'crowding_manifest.json') if _bench_dir else None
+        )
+        if _manifest_src and Path(_manifest_src).exists():
+            try:
+                from benchmark.crowding import load_k_manifest, get_k_thresh_for_dataset
+                _cmanifest = load_k_manifest(str(Path(_manifest_src).parent))
+                _ds_for_k = getattr(args, 'dataset', None) or 'chase'
+                _k_thresh = get_k_thresh_for_dataset(_cmanifest, _ds_for_k)
+                if not (isinstance(_k_thresh, float) and _k_thresh == _k_thresh):
+                    _k_thresh = None
+                else:
+                    print(f'[train_reid_pilot] k_thresh loaded from manifest: '
+                          f'{_k_thresh:.1f} (dataset={_ds_for_k})')
+            except Exception as _ke:
+                print(f'[train_reid_pilot] WARNING: could not load k_thresh from manifest: {_ke}')
+                _k_thresh = None
+        else:
+            print('[train_reid_pilot] No crowding_manifest.json found; '
+                  'reid_rate_head_high/low will be NaN (run crowding.py first).')
+    else:
+        print(f'[train_reid_pilot] k_thresh from --k_thresh arg: {_k_thresh:.1f}')
+
+    # CSV header — per-image schema.
+    # A-v2 M-B: added reid_rate_head_high, reid_rate_head_low (crowding-stratified).
+    # CRITICAL: column order here MUST match the writerow() call in
+    #           evaluate_on_benchmark() — any divergence causes header/data mismatch
+    #           (blood-lesson from A-I integration, 2026-06-20).
     with open(csv_path, 'w', newline='', encoding='utf-8') as cf:
         writer = csv.writer(cf)
         writer.writerow([
             'epoch', 'image_id', 'severity', 'dataset',
-            'reid_rate', 'epsilon_beta0', 'success_rate', 'n_gaps',
+            'reid_rate', 'reid_rate_head', 'reid_idf1',
+            'epsilon_beta0', 'success_rate', 'n_gaps',
+            'reid_rate_head_high', 'reid_rate_head_low',   # A-v2 M-B crowding cols
             'arm',
         ])
 
@@ -1222,6 +1524,7 @@ def main():
                     csv_path=csv_path,
                     epoch=epoch,
                     arm=args.reid_feat_source,
+                    k_thresh=_k_thresh,   # A-v2 M-B crowding stratification
                 )
                 print(f'  [benchmark] n_images={bench_metrics["n_images"]}  '
                       f'reid_rate={bench_metrics["reid_rate"]:.4f}  '
