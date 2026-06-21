@@ -56,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import tempfile
 import json
 import math
 import sys
@@ -715,7 +716,7 @@ def train_one_zoology_config(spec: dict, device: torch.device) -> dict:
         test_configs=[test_cfg],
         batch_size=(batch_size, batch_size // 4),  # (train_bs, test_bs)
         seed=seed,
-        cache_dir=None,       # no disk cache (avoids parallel write race)
+        cache_dir=tempfile.mkdtemp(prefix='zoocache_'),  # unique per-config dir (Zoology DataConfig requires str; avoids parallel write race)
         force_cache=False,
     )
 
