@@ -3,6 +3,8 @@
 **适用范围**：任何 Claude / Sonnet / Opus 会话写 gdn2vessel 内容（tex / 正文 / rebuttal / 实验设计 claim）前必读。
 **最后更新**：2026-06-20（立项 + 顶会亮度计划成型）
 
+> ⚠️ **理论地基已更新（2026-06-21）**：本文部分 claim 被纯数学推导修正（re-ID 头无 loss 绑身份=致命 / §3.4「双门近似」措辞错 / §1§3「interference」短序列锚误用）。**定 headline / 写 §1/§3 前先读 [`reference/THEORY_FOUNDATION.md`](reference/THEORY_FOUNDATION.md)（理论主文档）+ §6 待改清单**，再回本文。两者冲突以 THEORY_FOUNDATION 为准。
+
 > 如果用户描述的任务与本文件冲突 → **停下来澄清**，不要按用户描述硬干（用户可能忘了已有约束）。铁律：计划外岔路先问，不盲跑。
 
 ---
