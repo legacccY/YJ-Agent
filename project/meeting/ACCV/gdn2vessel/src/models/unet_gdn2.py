@@ -968,19 +968,33 @@ class LinearAttnModule(nn.Module):
         frangi_scales: Tuple[float, ...] = (0.5, 1.0, 1.5),
         frangi_beta1: float = 0.5,    # SOURCE: Frangi 1998 eq.(13)
         frangi_beta2: float = 15.0,   # TODO: researcher confirm for feature-map domain
+        mqar_pure: bool = False,
     ):
+        """
+        Args:
+            ...
+            mqar_pure: if True, skip the output-side multiplicative bypass
+                (g_gate / actual_gate / gate_map) that are present in the
+                iso-param blood-vessel design but absent in GDN2MemoryModule.
+                Setting mqar_pure=True makes A1' structurally minimal:
+                「A2 去掉 delta 纠错 + 去掉 Frangi」，最小差异。
+                Default=False preserves existing vessel-experiment behavior
+                (blood-vessel P4 main experiment retains param parity routers).
+                LinearAttnAdapter sets mqar_pure=True for MQAR probe.
+        """
         super().__init__()
         assert d_head % n_heads == 0, "d_head must be divisible by n_heads"
         assert directions in (1, 2, 4), f"directions must be 1, 2 or 4; got {directions}"
         dh = d_head
         nh = n_heads
 
-        self.d_model = d_model
-        self.d_head = d_head
-        self.n_heads = n_heads
+        self.d_model    = d_model
+        self.d_head     = d_head
+        self.n_heads    = n_heads
         self.max_seq_len = max_seq_len
         self.directions = directions
         self.use_frangi = use_frangi
+        self.mqar_pure  = mqar_pure   # if True: skip output-side bypass (g_gate/gate_map)
 
         # -- Q/K/V projections: identical to GDN2MemoryModule --
         self.proj_q = nn.Linear(d_model, dh * nh, bias=False)
@@ -1179,11 +1193,19 @@ class LinearAttnModule(nn.Module):
         nh, dh = self.n_heads, self.d_head
         o_seq_raw = o.reshape(B, T, nh * dh)                       # (B, T, nh*dh)
 
-        # M4: output gate g_out truly enters graph (no ×0.0).
-        # g_out: (B, T, nh); take mean across heads → (B, T, 1) → broadcast to (B, T, nh*dh)
-        # sigmoid(g_out) ∈ (0,1) — scales each token's output (stateless, no S_t recurrence).
-        g_gate = torch.sigmoid(g_out).mean(dim=-1, keepdim=True)   # (B, T, 1)
-        o_seq = o_seq_raw * g_gate                                  # (B, T, nh*dh)
+        if self.mqar_pure:
+            # MQAR pure mode: skip all output-side multiplicative bypass.
+            # g_gate / actual_gate / gate_map are NOT applied → A1' = minimal
+            # stateless linear attn, structurally closest to A2 (only delta removed).
+            # proj_g and proj_erase still project (params exist, grads flow through
+            # gate computations above) but their output does NOT gate the final token.
+            o_seq = o_seq_raw                                       # (B, T, nh*dh) — no bypass
+        else:
+            # M4: output gate g_out truly enters graph (no ×0.0).
+            # g_out: (B, T, nh); take mean across heads → (B, T, 1) → broadcast to (B, T, nh*dh)
+            # sigmoid(g_out) ∈ (0,1) — scales each token's output (stateless, no S_t recurrence).
+            g_gate = torch.sigmoid(g_out).mean(dim=-1, keepdim=True)  # (B, T, 1)
+            o_seq  = o_seq_raw * g_gate                               # (B, T, nh*dh)
 
         # Expose for ReIDReadoutHead (same API as GDN2MemoryModule)
         self._last_o_seq = o_seq
@@ -1195,16 +1217,282 @@ class LinearAttnModule(nn.Module):
         # Reshape back
         out = out_tokens.reshape(B, H, W, C).permute(0, 3, 1, 2)  # (B, C, H, W)
 
-        # M4: actual_gate (write suppressed by erase) applied as channel-wise scaling.
-        # This keeps both write_gate and erase_gate in the forward path.
-        # actual_gate: (B, T, nh) → mean → (B,1,H,W)
-        gate_map = actual_gate.mean(dim=-1).reshape(B, H, W).unsqueeze(1)  # (B,1,H,W)
-        out = out * gate_map
+        if not self.mqar_pure:
+            # M4: actual_gate (write suppressed by erase) applied as channel-wise scaling.
+            # Only in non-pure mode (vessel experiment, param parity path).
+            # actual_gate: (B, T, nh) → mean → (B,1,H,W)
+            gate_map = actual_gate.mean(dim=-1).reshape(B, H, W).unsqueeze(1)  # (B,1,H,W)
+            out = out * gate_map
 
         if return_memory:
             states_list = [None] * self.directions
             return out, states_list
         return out
+
+
+# --------------------------------------------------------------------------- #
+#  GLA — Gated Linear Accumulation (有状态非delta基线 for MQAR 胜负手探针)
+# --------------------------------------------------------------------------- #
+
+class GatedLinearAttnModule(nn.Module):
+    """
+    GLA: Gated Linear Accumulation — stateful non-delta baseline arm.
+
+    **Purpose (ACCEPTANCE_CRITERIA skeptic 2026-06-21)**:
+    Fills the 「有状态非delta」缺口:
+      - A2  (gdn2)        : stateful + delta correction  ← our claim
+      - GLA (this module) : stateful + NO delta correction ← this arm
+      - A1' (linear_attn): stateless (cumulative, no recurrence)
+      - gdn2_fla          : canonical FLA reference
+
+    A2 vs GLA isolates the delta-rule correction term specifically.
+    A2 > GLA → delta rule (not mere statefulness) drives capacity gain.
+
+    **Kernel (Schlag 2021 「naive accumulation + gating」)**:
+        S_t = g_t * S_{t-1}  +  β_t * outer(v_t, k_t)
+        o_t = S_t @ q_t
+    vs A2 delta rule:
+        S_t = g_t * S_{t-1}  +  β_t * outer(v_t - S_{t-1} @ k_t, k_t)
+
+    The ONLY difference is the absence of the error-correction term
+    「e = S_{t-1} @ k_t」. All other components (decay g, write gate β,
+    retrieval o = S @ q, L2-norm on q/k, LayerNorm, residual) are
+    IDENTICAL to GDN2MemoryModule — strict structural mirror.
+
+    **Param parity**: identical to GDN2MemoryModule (same projection shapes,
+    no additional components). numel(GLA) == numel(A2) by construction.
+
+    **State capacity**: same 64×64 matrix S per head — parity with A2 on
+    memory capacity budget. Only the write update rule differs.
+
+    GLA arm uses pure PyTorch stub (no FLA kernel dependency):
+    - Consistent with A1' implementation path (both CPU-runnable)
+    - Avoids FLA GLA kernel's short-conv / extra components
+    - Stub is registered by mqar_capacity_probe.py before GDN2 import
+
+    Args: identical to GDN2MemoryModule (use_frangi always False for MQAR).
+    """
+
+    MAX_SEQ_LEN = 1024
+
+    def __init__(
+        self,
+        d_model: int,
+        d_head: int = 64,
+        n_heads: int = 1,
+        max_seq_len: int = MAX_SEQ_LEN,
+        backend: str = BACKEND,       # kept for API parity; GLA uses pure stub
+        directions: int = 1,
+        use_frangi: bool = False,     # MQAR: always False (no vessel gate)
+        frangi_scales: Tuple[float, ...] = (0.5, 1.0, 1.5),
+        frangi_beta1: float = 0.5,
+        frangi_beta2: float = 15.0,
+    ):
+        super().__init__()
+        assert d_head % n_heads == 0, "d_head must be divisible by n_heads"
+        assert directions in (1, 2, 4), f"directions must be 1, 2 or 4; got {directions}"
+        dh = d_head
+        nh = n_heads
+
+        self.d_model    = d_model
+        self.d_head     = d_head
+        self.n_heads    = n_heads
+        self.max_seq_len = max_seq_len
+        self.directions = directions
+        self.use_frangi = use_frangi
+
+        # -- Q/K/V projections: IDENTICAL to GDN2MemoryModule --
+        self.proj_q = nn.Linear(d_model, dh * nh, bias=False)
+        self.proj_k = nn.Linear(d_model, dh * nh, bias=False)
+        self.proj_v = nn.Linear(d_model, dh * nh, bias=False)
+
+        # -- Gate projections: IDENTICAL to GDN2MemoryModule --
+        self.proj_write = nn.Linear(d_model, nh, bias=False)   # β write gate
+        self.proj_erase = nn.Linear(d_model, nh, bias=False)   # erase (decay blend)
+        self.proj_g     = nn.Linear(d_model, nh, bias=False)   # log-decay gate g
+
+        # -- Frangi: IDENTICAL to GDN2MemoryModule (for blood vessel parity) --
+        if use_frangi:
+            self.alpha_w = nn.Parameter(torch.tensor(0.5))
+            self.alpha_e = nn.Parameter(torch.tensor(0.5))
+            self.frangi  = DifferentiableFrangi(
+                scales=list(frangi_scales),
+                beta1=frangi_beta1,
+                beta2=frangi_beta2,
+                in_channels=d_model,
+            )
+        else:
+            self.alpha_w = None
+            self.alpha_e = None
+            self.frangi  = None
+
+        # -- Output projection + norm: IDENTICAL to GDN2MemoryModule --
+        self.proj_out = nn.Linear(dh * nh, d_model, bias=False)
+        self.norm     = nn.LayerNorm(d_model)
+
+        # GLA always uses the pure-PyTorch stub (registered by mqar_capacity_probe.py
+        # before this module is imported, or imported directly here via _gla_fn).
+        # We store a reference but it is populated in _ensure_gla_fn().
+        self._gla_fn = _pytorch_gated_linear_attn_stub
+
+    def _run_one_direction(
+        self,
+        tokens: torch.Tensor,          # (B, T, C)
+        perm: torch.Tensor,            # (T,)
+        inv_perm: torch.Tensor,        # (T,)
+        write_gate: torch.Tensor,      # (B, T, nh) — β write gate
+        erase_gate: torch.Tensor,      # (B, T, nh) — decay blended from erase
+        g: torch.Tensor,               # (B, T, nh) — log-space decay
+    ) -> torch.Tensor:
+        """
+        Run one GLA pass on reordered tokens, un-reorder output.
+
+        Calls _pytorch_gated_linear_attn_stub which implements:
+            S_t = g_t * S_{t-1} + β_t * outer(v_t, k_t)   [NO delta correction]
+            o_t = S_t @ q_t
+
+        Identical gate preparation as GDN2MemoryModule._run_one_direction;
+        only the kernel update rule differs (no error term e = S @ k).
+        """
+        B, T, C = tokens.shape
+        nh = self.n_heads
+        dh = self.d_head
+
+        t_perm = tokens[:, perm, :]                     # (B, T, C)
+
+        q = self.proj_q(t_perm).view(B, T, nh, dh)     # (B, T, nh, dh)
+        k = self.proj_k(t_perm).view(B, T, nh, dh)
+        v = self.proj_v(t_perm).view(B, T, nh, dh)
+        q = F.normalize(q, dim=-1)                       # L2-norm (same as A2)
+        k = F.normalize(k, dim=-1)
+
+        wg  = write_gate[:, perm, :]                    # (B, T, nh)
+        eg  = erase_gate[:, perm, :]                    # (B, T, nh)
+        gd  = g[:, perm, :]                             # (B, T, nh)
+
+        # Combine erase into g: identical to GDN2MemoryModule._run_one_direction
+        g_combined = gd - eg.abs()                      # (B, T, nh), log-space
+
+        # GLA kernel: S_t = g_t*S_{t-1} + β_t*outer(v_t, k_t)  [no delta correction]
+        # GLA 臂用纯 PyTorch scalar-gate 累加，与 A2 stub 同实现路径，唯一差 delta 项
+        res = self._gla_fn(q, k, v, beta=wg, g=g_combined)
+        o_perm = res[0] if isinstance(res, tuple) else res  # (B, T, nh, dh)
+
+        o_orig = o_perm[:, inv_perm, :, :]              # (B, T, nh, dh)
+        return o_orig
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        return_memory: bool = False,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, List[Optional[torch.Tensor]]]]:
+        """
+        Args:
+            x: (B, C, H, W) — same signature as GDN2MemoryModule.forward (drop-in).
+            return_memory: for API parity; returns [None,...] (no delta state exposed).
+
+        Returns:
+            return_memory=False → out: (B, C, H, W)
+            return_memory=True  → (out, states_list)  states_list = [None]*directions
+        """
+        B, C, H, W = x.shape
+        assert C == self.d_model, f"Expected C={self.d_model}, got {C}"
+        T = H * W
+        assert T <= self.max_seq_len, (
+            f"Sequence length {T} (H={H}, W={W}) exceeds GatedLinearAttnModule limit "
+            f"{self.max_seq_len}."
+        )
+
+        tokens = x.permute(0, 2, 3, 1).reshape(B, T, C)   # (B, T, C)
+        nh = self.n_heads
+
+        # Gate computation: IDENTICAL to GDN2MemoryModule.forward (with use_frangi=False)
+        if self.use_frangi:
+            vesselness = self.frangi(x)
+            v_flat     = vesselness.permute(0, 2, 3, 1).reshape(B, T, 1)
+            alpha_w    = torch.sigmoid(self.alpha_w)
+            alpha_e    = torch.sigmoid(self.alpha_e)
+            raw_write  = torch.sigmoid(self.proj_write(tokens))
+            write_gate = raw_write * (1.0 + alpha_w * v_flat)
+            write_gate = write_gate.clamp(0.0, 1.0)
+            raw_erase  = torch.sigmoid(self.proj_erase(tokens))
+            erase_gate = raw_erase * (1.0 - alpha_e * v_flat)
+            erase_gate = erase_gate.clamp(min=0.0)
+        else:
+            write_gate = torch.sigmoid(self.proj_write(tokens))   # (B, T, nh)
+            erase_gate = torch.zeros_like(write_gate)
+
+        g = F.logsigmoid(self.proj_g(tokens))                     # (B, T, nh)
+
+        perms     = _get_scan_permutations(H, W, self.directions, device=x.device)
+        inv_perms = [_invert_permutation(p) for p in perms]
+
+        o_list: List[torch.Tensor] = []
+        for perm, inv_perm in zip(perms, inv_perms):
+            o_dir = self._run_one_direction(tokens, perm, inv_perm,
+                                            write_gate, erase_gate, g)
+            o_list.append(o_dir)
+
+        o     = torch.stack(o_list, dim=0).mean(dim=0)            # (B, T, nh, dh)
+        o_seq = o.reshape(B, T, nh * self.d_head)                 # (B, T, nh*dh)
+        self._last_o_seq = o_seq
+
+        out_tokens = self.proj_out(o_seq)                         # (B, T, C)
+        out_tokens = self.norm(tokens + out_tokens)               # residual + LN
+
+        out = out_tokens.reshape(B, H, W, C).permute(0, 3, 1, 2) # (B, C, H, W)
+
+        if return_memory:
+            return out, [None] * self.directions
+        return out
+
+
+def _pytorch_gated_linear_attn_stub(
+    q: torch.Tensor,    # (B, T, nh, dh)
+    k: torch.Tensor,
+    v: torch.Tensor,
+    beta: torch.Tensor, # (B, T, nh)
+    g: torch.Tensor,    # (B, T, nh) log-decay
+    output_final_state: bool = False,
+):
+    """
+    Pure-PyTorch gated linear accumulation (NO delta-rule correction).
+
+    Implements:
+        S_t = g_t * S_{t-1}  +  β_t * outer(v_t, k_t)   ← no error term
+        o_t = S_t @ q_t
+
+    vs _pytorch_gated_delta_rule_stub (A2):
+        e   = S_{t-1} @ k_t                               ← error retrieval
+        S_t = g_t * S_{t-1}  +  β_t * outer(v_t - e, k_t) ← error-corrected write
+        o_t = S_t @ q_t
+
+    「GLA 臂用纯 PyTorch scalar-gate 累加，与 A2 stub 同实现路径，唯一差 delta 项」
+
+    Signature matches _pytorch_gated_delta_rule_stub for drop-in use.
+    Ref: Schlag et al. 2021 「naive accumulation + gating vs delta rule」.
+    """
+    B, T, nh, dh = q.shape
+    device, dtype = q.device, q.dtype
+    S = torch.zeros(B, nh, dh, dh, device=device, dtype=dtype)   # (B, nh, dh, dh)
+    o_list = []
+    for t in range(T):
+        gt = torch.exp(g[:, t, :])                   # (B, nh)  decay factor ∈ (0,1)
+        bt = beta[:, t, :]                            # (B, nh)  write gate β
+        qt = q[:, t, :, :]                            # (B, nh, dh)
+        kt = k[:, t, :, :]                            # (B, nh, dh)
+        vt = v[:, t, :, :]                            # (B, nh, dh)
+        # Decay state
+        S  = S * gt.unsqueeze(-1).unsqueeze(-1)       # (B, nh, dh, dh)
+        # Write: outer(v_t, k_t) — NO subtraction of error term e = S @ k_t
+        #   einsum bnd,bne->bnde : (B,nh,dh) x (B,nh,dh) → (B,nh,dh,dh)
+        S  = S + bt.unsqueeze(-1).unsqueeze(-1) * torch.einsum('bnd,bne->bnde', vt, kt)
+        # Retrieve: o_t = S_t @ q_t
+        #   einsum bnde,bne->bnd : (B,nh,dh,dh) x (B,nh,dh) → (B,nh,dh)
+        ot = torch.einsum('bnde,bne->bnd', S, qt)
+        o_list.append(ot)
+    o = torch.stack(o_list, dim=1)                   # (B, T, nh, dh)
+    return (o, S) if output_final_state else (o, None)
 
 
 # --------------------------------------------------------------------------- #

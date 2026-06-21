@@ -110,7 +110,10 @@ except ImportError:
     print("[mqar_probe] fla not found — using pure-PyTorch GDN-2 stub (CPU smoke only). "
           "Full sweep must run on HPC with fla installed.", file=sys.stderr)
 
-from models.unet_gdn2 import GDN2MemoryModule, LinearAttnModule  # noqa: E402
+from models.unet_gdn2 import (  # noqa: E402
+    GDN2MemoryModule, LinearAttnModule, GatedLinearAttnModule,
+    _pytorch_gated_linear_attn_stub,
+)
 
 # ---------------------------------------------------------------------------
 # FLA GatedDeltaNet cross-validation arm (gdn2_fla)
@@ -273,6 +276,10 @@ class LinearAttnAdapter(nn.Module):
         LinearAttnModule.forward also applies residual+LayerNorm internally
         (see unet_gdn2.py L1191-1193: out_tokens = self.norm(tokens + out_tokens)).
         Symmetric with GDN2Adapter — MQARBackbone skips the outer pre-norm+residual.
+
+    mqar_pure=True: skips output-side multiplicative bypass (g_gate/gate_map),
+        making A1' structurally minimal = 「A2 去掉 delta + 去掉 Frangi」.
+        Required for clean mechanism attribution in MQAR probe.
     """
 
     # MQARBackbone reads this flag (symmetric with GDN2Adapter)
@@ -288,6 +295,7 @@ class LinearAttnAdapter(nn.Module):
             max_seq_len=max_seq_len,
             directions=1,
             use_frangi=False,   # MQAR: no vessel gate
+            mqar_pure=True,     # Task B: skip output bypass → cleanest A1' for probe
         )
         self.d_model = d_model
 
@@ -302,6 +310,54 @@ class LinearAttnAdapter(nn.Module):
         feat = x.permute(0, 2, 1).unsqueeze(2)   # (B, C, 1, T)
         out_feat = self.module(feat)              # (B, C, 1, T)  — already has residual+LN
         out = out_feat.squeeze(2).permute(0, 2, 1)  # (B, T, C)
+        return out
+
+
+class GLAAdapter(nn.Module):
+    """
+    Wraps GatedLinearAttnModule so it takes (B, T, C) token sequences.
+    Same reshape trick as GDN2Adapter / LinearAttnAdapter.
+
+    「有状態非delta」基線 for MQAR 胜负手探针:
+      A2 vs GLA isolates delta correction; GLA vs A1' isolates statefulness.
+      Full 2×2 factorial:
+          delta:     A2(Y) GLA(N) A1'(N) gdn2_fla(Y)
+          stateful:  A2(Y) GLA(Y) A1'(N) gdn2_fla(Y)
+
+    GLA 臂用纯 PyTorch scalar-gate 累加，与 A2 stub 同实现路径，唯一差 delta 项。
+    No FLA dependency — GatedLinearAttnModule._gla_fn = _pytorch_gated_linear_attn_stub.
+
+    has_internal_residual = True (same as GDN2Adapter):
+        GatedLinearAttnModule.forward applies residual+LN internally.
+        MQARBackbone skips outer pre-norm+residual.
+    """
+
+    has_internal_residual: bool = True
+
+    def __init__(self, d_model: int, d_head: int, n_heads: int = 1,
+                 max_seq_len: int = 1024):
+        super().__init__()
+        self.module = GatedLinearAttnModule(
+            d_model=d_model,
+            d_head=d_head,
+            n_heads=n_heads,
+            max_seq_len=max_seq_len,
+            directions=1,
+            use_frangi=False,   # MQAR: no vessel gate — isolate pure mechanism
+        )
+        self.d_model = d_model
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        x: (B, T, C) → out: (B, T, C)
+
+        NOTE: module already has internal residual+LN.
+        MQARBackbone passes x directly and does NOT add a further residual.
+        """
+        B, T, C = x.shape
+        feat    = x.permute(0, 2, 1).unsqueeze(2)    # (B, C, 1, T)
+        out_feat = self.module(feat)                  # (B, C, 1, T) — residual+LN inside
+        out     = out_feat.squeeze(2).permute(0, 2, 1)  # (B, T, C)
         return out
 
 
@@ -588,6 +644,11 @@ class MQARModel(nn.Module):
             raise ValueError("Either backbone= or adapter= must be provided")
 
         self.head = nn.Linear(d_model, V)
+        # Weight tying (VLA/GPT standard): tie classifier head to embedding.
+        # Entry 25 根因诊断:untied + 大词表 V → copy-recall 学不动,loss 卡 ln(V/2),
+        # sanity n=4 全臂 acc≈0 白跑。embed.weight (V,d_model) 与 head.weight (V,d_model)
+        # 同形,可直接 tie。VLA(2605.11196) 明确 "weight tying ... shared identically"。
+        self.head.weight = self.embed.weight
 
     def forward(
         self,
@@ -652,7 +713,7 @@ def train_one_config(
     """
     Train one (arm, n_kv, lr, seed) config. Returns result dict.
 
-    arm: 'gdn2' | 'linear_attn' | 'gdn2_fla'
+    arm: 'gdn2' | 'linear_attn' | 'gla' | 'gdn2_fla'
 
     Backbone: 2-layer (n_layers=2), each layer = mixer + FFN, pre-norm residual.
     Both arms use MQARBackbone; only the mixer module differs.
@@ -672,6 +733,16 @@ def train_one_config(
     elif arm == 'linear_attn':
         mixers = [
             LinearAttnAdapter(d_model=d_model, d_head=d_head, n_heads=n_heads, max_seq_len=T)
+            for _ in range(n_layers)
+        ]
+    elif arm == 'gla':
+        # GLA: Gated Linear Accumulation — stateful non-delta baseline.
+        # S_t = g_t * S_{t-1} + β_t * outer(v_t, k_t)  [NO delta correction]
+        # Pure PyTorch stub (no FLA), same impl path as A2 stub, only delta term removed.
+        # 2×2 factorial: A2(stateful+delta) vs GLA(stateful,no-delta)
+        #                vs A1'(stateless,no-delta) vs gdn2_fla(stateful+delta+short_conv)
+        mixers = [
+            GLAAdapter(d_model=d_model, d_head=d_head, n_heads=n_heads, max_seq_len=T)
             for _ in range(n_layers)
         ]
     elif arm == 'gdn2_fla':
@@ -696,7 +767,7 @@ def train_one_config(
             for _ in range(n_layers)
         ]
     else:
-        raise ValueError(f"Unknown arm: {arm!r}. Valid: 'gdn2', 'linear_attn', 'gdn2_fla'")
+        raise ValueError(f"Unknown arm: {arm!r}. Valid: 'gdn2', 'linear_attn', 'gla', 'gdn2_fla'")
 
     backbone = MQARBackbone(d_model=d_model, mixers=mixers, n_layers=n_layers)
 
@@ -783,14 +854,19 @@ def compute_verdict(csv_path: Path, prereg_delta: float = 0.15) -> Dict:
     """
     Read sweep CSV, compute per-n_kv mean±std across seeds, judge LIVE/DEAD.
 
-    PREREG thresholds (from ROUTE2_BUDGET_PREREG.md):
-      LIVE: exists n in {16,32,64}:
-        acc_gdn2(n) - acc_la(n) > 0.15
-        AND acc_gdn2(n) > 0.5
-        AND acc_la(n) < 0.5
-        AND seed std < 0.05
-      DEAD: otherwise (gap < 0.15 everywhere or never beats la+delta at n<=64)
-      SANITY: n=4 both arms acc > 0.90 (else training failure, not null)
+    PREREG thresholds (from ROUTE2_BUDGET_PREREG.md, 2026-06-21 dual-gap upgrade):
+      LIVE: sanity_ok AND exists n in {16,32,64} where ALL hold:
+        (a)  acc_gdn2(n) - acc_la(n)  > 0.15   (delta > stateless)
+        (a') acc_gdn2(n) - acc_gla(n) > 0.15   (delta > stateful-no-delta, mechanism specificity)
+        (b)  acc_gdn2(n) > 0.5
+        (c)  acc_la(n)   < 0.5        (stateless collapsed at this n)
+        (d)  std < 0.05 for ALL THREE arms (gdn2, gla, linear_attn)
+      DEAD: otherwise (any condition fails for all n in {16,32,64})
+        Special sub-case: gap_la passes but gap_gla fails ->
+          delta_nonspecific=True (stateful effect only, not delta-rule specific)
+      SANITY (n=4): gdn2, gla, linear_attn ALL must have mean acc > 0.90
+        Any arm below 0.9 -> sanity_ok=False -> verdict='DEAD_SANITY_FAIL'
+      gdn2_fla: stats computed and reported as gdn2_fla_reference, NOT used in LIVE/DEAD gap.
     """
     rows = []
     with open(csv_path, 'r', newline='') as f:
@@ -835,10 +911,11 @@ def compute_verdict(csv_path: Path, prereg_delta: float = 0.15) -> Dict:
                 'accs': [float(a) for a in arr],
             }
 
-    # Sanity gate: n=4, both arms > 0.9
+    # Sanity gate: n=4, THREE arms (gdn2, gla, linear_attn) all must have mean > 0.9
+    # gdn2_fla excluded from sanity (reference arm, not judged)
     sanity_ok = True
     sanity_detail = {}
-    for arm in ('gdn2', 'linear_attn'):
+    for arm in ('gdn2', 'gla', 'linear_attn'):
         if arm in stats and 4 in stats[arm]:
             s = stats[arm][4]
             sanity_detail[arm] = {'mean': s['mean'], 'pass': bool(s['mean'] > 0.9)}
@@ -849,52 +926,97 @@ def compute_verdict(csv_path: Path, prereg_delta: float = 0.15) -> Dict:
             sanity_ok = False
 
     # Gap per n_kv
+    # Union of n values across gdn2 / gla / linear_attn (gdn2_fla stats included in stats output only)
     all_n = sorted(set(
         list(stats.get('gdn2', {}).keys()) +
+        list(stats.get('gla', {}).keys()) +
         list(stats.get('linear_attn', {}).keys())
     ))
     gap_table = {}
     live_windows = []
+    # Track n values where gap_la passes but gap_gla fails (delta non-specific signal)
+    delta_nonspecific_ns = []
 
     for n in all_n:
         g2 = stats.get('gdn2', {}).get(n, None)
+        gla = stats.get('gla', {}).get(n, None)
         la = stats.get('linear_attn', {}).get(n, None)
-        if g2 is None or la is None:
-            gap_table[n] = {'gap': None, 'acc_gdn2': None, 'acc_la': None,
-                            'std_gdn2': None, 'std_la': None}
-            continue
 
-        gap = g2['mean'] - la['mean']
-        gap_table[n] = {
-            'gap': float(gap),
-            'acc_gdn2': float(g2['mean']),
-            'acc_la': float(la['mean']),
-            'std_gdn2': float(g2['std']),
-            'std_la': float(la['std']),
+        # Build gap_table entry (None for any missing arm)
+        entry = {
+            'acc_gdn2':  float(g2['mean'])  if g2  is not None else None,
+            'std_gdn2':  float(g2['std'])   if g2  is not None else None,
+            'acc_gla':   float(gla['mean']) if gla is not None else None,
+            'std_gla':   float(gla['std'])  if gla is not None else None,
+            'acc_la':    float(la['mean'])  if la  is not None else None,
+            'std_la':    float(la['std'])   if la  is not None else None,
+            'gap_la':    None,
+            'gap_gla':   None,
         }
+        if g2 is not None and la is not None:
+            entry['gap_la'] = float(g2['mean'] - la['mean'])
+        if g2 is not None and gla is not None:
+            entry['gap_gla'] = float(g2['mean'] - gla['mean'])
+        gap_table[n] = entry
 
-        # Check LIVE conditions for this n
-        if n in (16, 32, 64):
-            cond_gap  = gap > prereg_delta
-            cond_g2   = g2['mean'] > 0.5
-            cond_la   = la['mean'] < 0.5
-            cond_std  = g2['std'] < 0.05
-            if cond_gap and cond_g2 and cond_la and cond_std:
+        # LIVE conditions — only for n in {16, 32, 64} and only when all three arms present
+        if n in (16, 32, 64) and g2 is not None and gla is not None and la is not None:
+            gap_la  = entry['gap_la']
+            gap_gla = entry['gap_gla']
+
+            # (a)  acc_gdn2 - acc_la > Δ
+            cond_gap_la  = gap_la  > prereg_delta
+            # (a') acc_gdn2 - acc_gla > Δ  [mechanism specificity, NEW]
+            cond_gap_gla = gap_gla > prereg_delta
+            # (b)  acc_gdn2 > 0.5
+            cond_g2      = g2['mean']  > 0.5
+            # (c)  acc_la < 0.5
+            cond_la_lt   = la['mean']  < 0.5
+            # (d)  std < 0.05 for ALL THREE arms
+            cond_std     = (g2['std'] < 0.05 and gla['std'] < 0.05 and la['std'] < 0.05)
+
+            all_live = cond_gap_la and cond_gap_gla and cond_g2 and cond_la_lt and cond_std
+            if all_live:
                 live_windows.append({
-                    'n_kv': n,
-                    'gap': float(gap),
-                    'acc_gdn2': float(g2['mean']),
-                    'acc_la': float(la['mean']),
-                    'std_gdn2': float(g2['std']),
-                    'cond_gap': cond_gap,
+                    'n_kv':              n,
+                    'gap_la':            float(gap_la),
+                    'gap_gla':           float(gap_gla),
+                    'acc_gdn2':          float(g2['mean']),
+                    'acc_gla':           float(gla['mean']),
+                    'acc_la':            float(la['mean']),
+                    'std_gdn2':          float(g2['std']),
+                    'std_gla':           float(gla['std']),
+                    'std_la':            float(la['std']),
+                    'cond_gap_la':       cond_gap_la,
+                    'cond_gap_gla':      cond_gap_gla,
                     'cond_acc_gdn2_gt_05': cond_g2,
-                    'cond_acc_la_lt_05': cond_la,
-                    'cond_std_lt_005': cond_std,
+                    'cond_acc_la_lt_05': cond_la_lt,
+                    'cond_std_lt_005':   cond_std,
                 })
+
+            # DEAD sub-case: gap_la passes but gap_gla fails -> delta non-specific signal
+            if cond_gap_la and not cond_gap_gla:
+                delta_nonspecific_ns.append(n)
 
     verdict = 'LIVE' if (sanity_ok and len(live_windows) > 0) else 'DEAD'
     if not sanity_ok:
         verdict = 'DEAD_SANITY_FAIL'
+
+    # delta_nonspecific: gap(gdn2-la) passes somewhere but gap(gdn2-gla) never passes
+    # Signals headline collapse: gdn2 advantage is stateful effect, NOT delta-rule specific
+    delta_nonspecific = len(delta_nonspecific_ns) > 0 and verdict != 'LIVE'
+    delta_nonspecific_msg = (
+        'acc_gdn2 ≈ acc_gla at n={}: gap(gdn2-gla) ≤ {:.2f}; '
+        'delta 非特异——仅有状态效应，headline「delta 关联记忆」塌，回退路1/benchmark-led'.format(
+            delta_nonspecific_ns, prereg_delta
+        ) if delta_nonspecific else None
+    )
+
+    # gdn2_fla reference stats (not used in gap judgement)
+    gdn2_fla_reference = (
+        {str(n): s for n, s in stats['gdn2_fla'].items()}
+        if 'gdn2_fla' in stats else None
+    )
 
     return {
         'verdict': verdict,
@@ -904,9 +1026,14 @@ def compute_verdict(csv_path: Path, prereg_delta: float = 0.15) -> Dict:
             'pass': sanity_ok,
             'detail': sanity_detail,
             'threshold': 0.9,
+            'arms_checked': ['gdn2', 'gla', 'linear_attn'],
         },
         'live_windows': live_windows,
+        'delta_nonspecific': delta_nonspecific,
+        'delta_nonspecific_ns': delta_nonspecific_ns,
+        'delta_nonspecific_msg': delta_nonspecific_msg,
         'gap_table': {str(k): v for k, v in gap_table.items()},
+        'gdn2_fla_reference': gdn2_fla_reference,
         'stats': {
             arm: {str(n): s for n, s in nd.items()}
             for arm, nd in stats.items()
@@ -926,8 +1053,8 @@ def parse_args() -> argparse.Namespace:
                    help='List of n_kv values to sweep')
     p.add_argument('--d_head', type=int, default=64)
     p.add_argument('--lr', type=float, nargs='+',
-                   default=[1e-3, 5e-4, 1e-4],
-                   help='Learning rates to sweep')
+                   default=[1e-3, 5e-4, 3e-4, 1e-4],
+                   help='Learning rates to sweep (3e-4 added: VLA standard lr)')
     p.add_argument('--seeds', type=int, nargs='+', default=[0, 1])
     p.add_argument('--T', type=int, default=256)
     p.add_argument('--vocab', type=int, default=8192)
@@ -947,12 +1074,18 @@ def parse_args() -> argparse.Namespace:
     p.add_argument('--out_dir', type=str,
                    default=str(_ROOT / 'outputs' / 'route2_budget'))
     p.add_argument('--cpu', action='store_true', help='Force CPU even if CUDA available')
-    p.add_argument('--arms', type=str, nargs='+', default=['gdn2', 'linear_attn'],
+    p.add_argument('--arms', type=str, nargs='+',
+                   default=['gdn2', 'linear_attn', 'gla'],
                    help=(
-                       'Which arms to run. Options: gdn2, linear_attn, gdn2_fla. '
+                       'Which arms to run. Options: gdn2, linear_attn, gla, gdn2_fla. '
+                       'gdn2   = A2 delta rule (stateful + delta correction, our claim). '
+                       'gla    = Gated Linear Accum (stateful, NO delta, pure PyTorch). '
+                       'linear_attn = A1\' stateless linear attn (pure PyTorch, mqar_pure=True). '
                        'gdn2_fla = FLA canonical GatedDeltaNet (use_short_conv=True, '
                        'cross-validation reference). REQUIRES fla on HPC (CUDA). '
-                       'Example: --arms gdn2 linear_attn gdn2_fla'
+                       '2x2 factorial: stateful={gdn2,gla} vs stateless={linear_attn}; '
+                       'delta={gdn2,gdn2_fla} vs no-delta={gla,linear_attn}. '
+                       'Example: --arms gdn2 linear_attn gla gdn2_fla'
                    ))
     p.add_argument('--log_every', type=int, default=100)
     # --- gdn2_fla arm config (only used when gdn2_fla is in --arms) ---

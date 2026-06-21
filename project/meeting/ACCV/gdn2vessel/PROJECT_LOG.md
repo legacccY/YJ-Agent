@@ -1,5 +1,34 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 26 — 2026-06-21 命门转向：headline 理论证伪（re-ID 缺训练信号）→ 胜负手四臂 MQAR 重设计 + weight-tying 补救起跑
+
+承 Entry 25 待拍。本窗**纯数学推导优先**（用户铁律：推导/查资料类任务不跑代码，coder 也禁跑，见 [[feedback_no_local_run_pure_derivation]]），把 headline 推到地基后重设胜负手实验并起跑。
+
+### 三轮纯数学推导（不跑代码，3 文档落档）
+1. **借来的 GDN-2 引擎 wiring 审计**（`reference/MQAR_MATH_WIRING_AUDIT.md`）：喂 kernel 的 q/k/v/β/g 数学 **0 致命正确**；short conv 缺失非混淆；小 n 打平是理论伪 null（delta 优势窗口在 n≈d=64，非 n≪d）。⚠️ STORY §1/§3 的 GDN-2「interference」短序列锚被误用（原文是 4K-8K 长序列）须替换为 Schlag d 界。
+2. **三件原创件审计**（`reference/NOVELTY_DERIVATION_AUDIT.md`，2 skeptic + 1 researcher 对抗）：① Frangi 门机制成立但**解耦的是「全局遗忘 vs 写入」非 GDN-2 的「定向擦除 vs 写入」**（§3.4「双门近似」措辞须改「正交解耦轴」）；② **re-ID 头 1 致命**——梯度图证：**没有任何 loss 训练 memory 绑同根身份**（detach 掐断弱监督回流 + 分割主 loss 是逐像素分类非检索目标 + DeltaNet 涌现前提=主任务是检索·分割不满足）→ A2≈A1' 是**结构必然**，与 Entry 22 实证 mean_delta≈2.35e-5 因果咬合；③ framing 连带塌。文献三方印证（XMem 靠 attention correspondence、医学 VOS 需显式 contrastive、Alain&Bengio linear probe 定理）。
+3. **解法调研**（plan `~/.claude/plans/nifty-wishing-rainbow.md`，3 Explore）：唯一数学出路 = **显式检索 loss 回流 memory**（VLA 2605.11196 证「状态更新≡检索 loss 隐式梯度下降」+ 自监督对比≈有监督对比 2506.04411）。关键辨析：合成断点「同根」标签来自自切 ≠ 数据集真实连通性 GT（眼底集本就没）→ 回流不违 Claim1 真意图，但需重划 R5。砍掉 2 处 agent 滑移（E1「对比 loss 但 detach 不回流」=伪解；E2「帧间视频」违单图空间核心）。
+
+### 用户三问诚实答
+改多大=**补缺失训练信号 + 拆 R5「不回流」防线**（原计划押「分割 loss 自发涌现身份」被证伪，改押「显式监督」）；理论多硬=**证伪硬（近定理）、解法方向硬（双理论支撑）、但可行性数学证不出（押实验）**；出不出彩=**押 delta 机制特异性甜区证明**——加显式 loss 后创新重心偏到「loss+benchmark」，审稿人必问「换任意有状态记忆+loss 也行？」→ 必须在 n≈d 甜区证 delta 特异。
+
+### 胜负手实验（先验再定 headline，反 HARKing）
+MQAR n≈d=64 甜区四臂 **stateful×delta 2×2**：gdn2(Y,Y) / **gla(Y,N 新增)** / linear_attn(N,N) / gdn2_fla(参照)。**双 gap 判据**（PREREG 升级写死）：LIVE ⟺ ∃n∈{16,32,64}: A2−A1'>0.15 **AND A2−GLA>0.15**（机制特异性必需）。LIVE=delta 特异→路 A 改 R5 冲 CVPR；`delta_nonspecific`（A2≈GLA）=delta 非特异、仅有状态效应→退路 B（Frangi 门 MICCAI/ACCV）。
+
+### skeptic 跑前论证逮 3 致命结构（幸亏没盲跑）
+① 缺「有状态非 delta」臂→加 **GLA**（=A2 去 `v−Sk` 纠错项，1head×64 容量严格对齐）；② A1' 为 iso-param 加的 `out*gate_map`/`g_gate` 旁路污染归因→**`mqar_pure=True` 净化**（血管 A1' 不动）；③ 判据只比 A1'→**双 gap**。+超参偏离 VLA：lr 加 3e-4。compute_verdict 同步双 gap+sanity 三臂+`delta_nonspecific` 信号。
+
+### weight-tying 补救（开门疏漏修正）
+开门 tail 未读到 Entry 25，漏其根因诊断「**MQARModel 缺 weight tying** → untied+大词表 copy-recall 学不动、sanity n=4≈0」。读到后主线补 `self.head.weight = self.embed.weight`（VLA 标准）。**这是上次 sanity 连环崩的真根因**，本次起跑前已修。
+
+### 4 卡 array 起跑（用户「4卡跑快」）
+sbatch 改 array 0-3 按臂切（各 1 卡独立 out_dir/triton cache）+ `mqar_merge_verdict.py` 合并。gpu_slot `cfd894a6` 占 hpc 4 卡。**job `1480725_[0-3]` 全 R**（gdn2/gla/linear_attn/gdn2_fla 各 1 卡，刚好有卡未排队）。
+
+### 待（下一步）
+盯 **n=4 sanity**（gdn2/gla/linear_attn 三臂须 acc>0.9，weight tying 修后应过）→ 不过立即 cancel 深查；过则等全扫 → `python scripts/mqar_merge_verdict.py` 出 verdict → 据 LIVE / `delta_nonspecific` 拍路 A/B。全扫完 `gpu_slot.py release cfd894a6`。
+
+---
+
 ## Entry 25 — 2026-06-21 路 2 模型无关两层预算：Layer1 PASS / Layer2 MQAR 探针 harness 难产（收工，待拍 A/B）
 
 承 Entry 24 战略二选一，用户拍**路 2**（原 re-ID 容量 framing 不动，换密集集/细粒度让单图身份数 n 逼近 d=64）。设计**两层模型无关预算**当 go/no-go 闸（PREREG 写死 `reference/ROUTE2_BUDGET_PREREG.md`），先验证再烧血管。

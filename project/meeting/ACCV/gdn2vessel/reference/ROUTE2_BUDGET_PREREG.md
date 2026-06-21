@@ -30,19 +30,29 @@ GDN-2 per-head 状态矩阵 d_head × d_head，**d_head = 64**（`unet_gdn2.py:6
 
 ## Layer 2 — GDN-2 MQAR 容量探针（阈值，判决性）
 
-**测量**：合成 associative-recall，真 `GDN2MemoryModule`(use_frangi=False, d_head=64) vs `LinearAttnModule`(stateless ELU+1)，exact-match accuracy。
+**测量**：合成 associative-recall，exact-match accuracy。**四臂因子设计（2026-06-21 skeptic 红队升级写死，stateful×delta 2×2）**：
 
-**自变量**：n_kv ∈ {4,8,16,32,64,96}（主扫，固定 T=256，d_head=64）；可选扩 d_head∈{32,128}。lr ∈ {1e-3,5e-4,1e-4}（取 lr 内最大 acc）。seed ≥2（报 mean±std）。词表 V=8192，random baseline = 1/(V/2)。
+| 臂 | stateful | delta 纠错 | 角色 |
+|---|---|---|---|
+| `gdn2` (A2) | Y | Y | 主角：delta-rule 关联记忆 |
+| `gla` | Y | **N** | **机制特异性对照**：scalar-gate 有状态、**无 delta 纠错**（=A2 去掉 `v−Sk` 纠错项，1head×64 容量严格对齐）|
+| `linear_attn` (A1', `mqar_pure`) | N | N | 无状态等参（**MQAR 去 iso-param 输出旁路**，唯一变量=delta on/off）|
+| `gdn2_fla` | Y | Y+short_conv | 仅作 canonical 收敛**参照**，**不进定量 gap 比较**（2head×32 容量+short conv 不对等）|
+
+> 升级根因（skeptic 2026-06-21）：旧三臂全是「delta 或其无状态退化」，A2>A1' 只证「有状态>无状态」，**证不到「delta 纠错 > 普通有状态记忆」=headline 要的机制特异性**。加 `gla` 臂 + 双 gap 判据堵死「换任意有状态记忆+loss 也行」的审稿质疑。A1' 旧版为 iso-param 加了 A2 没有的输出旁路（`out*gate_map`/`g_gate`），污染归因 → `mqar_pure=True` 净化。
+
+**自变量**：n_kv ∈ {4,8,16,32,64,96}（主扫，固定 T=256，d_head=64）；可选扩 d_head∈{32,128}。lr ∈ {1e-3,5e-4,3e-4,1e-4}（加 3e-4 覆盖 VLA 标准，取 lr 内最大 acc）。seed ≥2（报 mean±std）。词表 V=8192，random baseline = 1/(V/2)。
 **连续噪声 key 变体**：d_head 维球面采样 key + 高斯噪 σ∈{0,0.1,0.3}，value 离散；外推容差 = 比离散判决线宽 10-20%（即 Δ 放宽到 0.12）。
 
-**判据（写死，禁跑完调）**：
-- **路 2 活**（GDN-2 有优势窗口）：∃ n ∈ {16,32,64} 使
-  - (a) acc_GDN2(n) − acc_LA(n) > **Δ = 0.15**，且
+**判据（写死，禁跑完调；2026-06-21 升级为双 gap 机制特异性判据）**：
+- **路 2 活**（delta 机制特异，**两道 gap 都须过**）：∃ n ∈ {16,32,64} 使
+  - (a) acc_GDN2(n) − acc_LA(n) > **Δ = 0.15**（delta > 无状态），且
+  - (a') acc_GDN2(n) − acc_GLA(n) > **Δ = 0.15**（delta > 普通有状态，**机制特异性必需，新增**），且
   - (b) acc_GDN2(n) > 0.5，且
-  - (c) acc_LA(n) < 0.5（LA 已崩窗口才有意义），且
-  - 3 seed **std < 0.05**。
-- **路 2 死**（无窗口）：∀ n∈{4..96} |acc_GDN2−acc_LA| < Δ，**或** GDN-2 在 n≤64 从未超 acc_LA + Δ。
-- **收敛 sanity**（前置 gate）：n=4 时两模型都须 acc > 0.9，否则训练未收敛 → 排除该 config 重跑（lr 加密），不得当作 null。
+  - (c) acc_LA(n) < 0.5（无状态已崩窗口才有意义），且
+  - 3 seed **std < 0.05**（三臂均）。
+- **路 2 死**（无机制特异窗口）：∀ n 上述任一不满足；**尤其 acc_GDN2 ≈ acc_GLA（gap (a') 不过）→ delta 非特异、只是「有状态」效应，headline「delta 关联记忆」塌**，回退路 1 / benchmark-led。
+- **收敛 sanity**（前置 gate）：n=4 时 gdn2 / gla / linear_attn **三臂**都须 acc > 0.9（有状态两臂 gdn2/gla 在 n≪d 必平凡解出），否则训练未收敛 → 排除该 config 重跑（lr 加密），不得当作 null。**跑全扫前先单 config 烟测 A1' n=4 能否上 0.9**（防大词表+长噪声污染 ELU 归一化 denom 致 stateless 臂系统性 sanity fail）。
 
 ---
 
