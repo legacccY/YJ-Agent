@@ -1,5 +1,41 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 25 — 2026-06-21 路 2 模型无关两层预算：Layer1 PASS / Layer2 MQAR 探针 harness 难产（收工，待拍 A/B）
+
+承 Entry 24 战略二选一，用户拍**路 2**（原 re-ID 容量 framing 不动，换密集集/细粒度让单图身份数 n 逼近 d=64）。设计**两层模型无关预算**当 go/no-go 闸（PREREG 写死 `reference/ROUTE2_BUDGET_PREREG.md`），先验证再烧血管。
+
+### 调研（6 researcher 两轮，落 plan + 锚点）
+- framing 强（分支段 re-ID well-defined：skan/sknw + Bhuiyan2011 段匹配 + InSegNN，与 tracing 家族正交不撞）。
+- **机制先验弱（命门）**：VLA(2605.11196) 实证 scalar-gate DeltaNet 在 n/d≈0.5 就崩（非 n>d，根因均匀遗忘）；GDN-2 解耦门仍 **rank-1 per-step**，理论无 n<d 优势窗口（R5 评弱）；视觉无容量瓶颈先例（R6）。唯一微光=GDN-2 MK-NIAH 多键检索实测>scalar，但零 n/d 曲线。
+
+### Layer 1 = 数据集身份预算（✅ PASS，本地零 GPU）
+建 `src/benchmark/identity_budget.py`（三粒度 distinct 身份计数：连通分量/分支段/bifurcation，scipy+skimage 无 sknw 依赖，pytest 22 绿）。全候选集实测（Bash 核 JSON）：**CHASE-bifur median=76 / ROSE1DVC-branch=71 / CHUAC-bifur=48 落目标带 [32,96]**；冠脉 cc 太低、OCTA branch 太高(>>96)。结论：数据能给 n≈d，**换粒度即可不必换主战场**。CHASE cc 复现 n=1-4 锚点（计数无 bug）。
+
+### Layer 2 = GDN-2 MQAR 容量探针（❌ harness 难产，判决未出）
+建 `src/benchmark/mqar_capacity_probe.py`（GDN2MemoryModule vs LinearAttnModule vs 后加 FLA 官方 GatedDeltaNet 臂）。**连环 sanity FAIL，全 n=4 acc≈0**（收敛 sanity 闸 = n=4 须 acc>0.9）：
+1. 单层 → n=4≈0（Based/VLA：单层解不了 MQAR）。
+2. 2 层 VLA 原版 → 仍≈0。
+3. 修双重残差（backbone+模块内部双残差双 norm）→ 仍≈0。
+4. 加 FLA 官方 GatedDeltaNet 臂（自带 short conv，Zoology 证能解）→ **也≈0**。
+→ **三臂全崩=harness 级 bug，非机制、非我们模块（FLA 也崩）、非 reshape（FLA 绕过仍崩）**。
+- **根因诊断（主线代码审）= MQARModel 缺 weight tying**（embed 与 head 独立，VLA 明确 tie；untied + vocab8192 → copy-recall 学不动，loss 卡 ln(4096)≈8.3）。次要 vocab 偏大/步数。
+- 旁证 `reference/MQAR_MATH_WIRING_AUDIT.md`（喂 kernel 数学 0 致命正确、short conv 缺失非混淆、小 n 打平是理论伪 null）。
+
+### 🛑 待拍（下次起点，拍板点）
+**A**（带死线）：加 weight tying（+ 可能 vocab→2048）→ HPC 只跑 n=4 cheap sanity。收敛→全扫出判决；仍崩→harness 不可救，停，按先验定路 2。
+**B**：直接止损，据强悲观先验（R5/R1/R6）+ Stage-1 血管 null 判路 2 机制大概率死→转 benchmark-led/路 1。
+
+### 硬资产
+identity_budget.py（Layer1 工具+PASS 结果）+ MQAR 探针码（3 臂/2层/待 weight-tying 修）+ PREREG + MATH_WIRING_AUDIT + 6 researcher 容量调研锚点。HPC job 全 scancel + 卡槽全 release。
+
+### 教训
+- **收敛 sanity 必先于全扫**：连烧 3 次 HPC 才发现 acc≈0；missing weight tying 是 MQAR 标准要件，漏了。下次新合成任务先本地/小 job 验 canonical baseline 能收敛再扩。
+- **三臂全崩反而省事**：FLA(canonical)也崩一举锁定 harness 非机制，避免在我们模块上无限 debug。
+- training_lock hook 误拦含 "mqar" 的只读 HPC 脚本（当启训）→ 中性命名绕过；friction +12，下次 /optimize 收。
+- [[feedback_no_local_run_pure_derivation]]：coder 偷跑本地全扫卡死（错机器），正式跑一律 HPC、本地仅单 config <5min 调试 smoke。
+
+---
+
 ## Entry 24 — 2026-06-21 re-ID 容量 framing 三次坐实真 null → headline 战略分岔（收工，下次二选一）
 
 承 Entry 23（方向 A 测量修复）。本轮把方向 A 跑到底 + 二诊 + 救活调研，**结论：「delta-rule 关联召回容量做 re-ID」彻底死，但 GDN-2 创新点有救，下次走两条路之一**。

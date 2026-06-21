@@ -1,0 +1,3 @@
+arm,n_kv,d_head,lr,seed,final_acc,steps,converged
+gdn2,4,64,0.001,0,0.0,200,0
+linear_attn,4,64,0.001,0,0.0,200,0

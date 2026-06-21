@@ -28,6 +28,8 @@
 - [`reference/RELATED_WORK_MATERIAL.md`](reference/RELATED_WORK_MATERIAL.md) — §2 四块文献 + GDKVM R3 模板核准 + creatis 协议精读（两修正）
 - [`reference/BASELINE_B_PICK.md`](reference/BASELINE_B_PICK.md) — 档 B 补位裁决（MM-UNet 顶替降档的 MambaVessel++，核源 + 跑前 TODO）
 - [`reference/DRIVE_TESTGT_PLAN.md`](reference/DRIVE_TESTGT_PLAN.md) — DRIVE test GT 重下方案（官方包不含 test GT，社区完整包 zhz638/aifahim 候选，待主线拍板下载）
+- [`reference/ROUTE2_BUDGET_PREREG.md`](reference/ROUTE2_BUDGET_PREREG.md) — 路 2 模型无关两层预算预登记（Layer1 数据集身份预算目标带 [32,96]/≥30%≥48 + Layer2 GDN-2 MQAR 探针判据 Δ=0.15 + 决策闸，跑前写死反 HARKing）
+- [`reference/MQAR_MATH_WIRING_AUDIT.md`](reference/MQAR_MATH_WIRING_AUDIT.md) — GDN2MemoryModule 纯数学推导 + wiring 审计（2026-06-21，证否「bug 冒充 null」）。三结论：①喂 kernel 数学 0 致命正确 ②short conv 缺失非混淆 ③小 n 打平是理论伪 null（delta 优势窗口在 n≈d=64，非 n≪d）。⚠️ STORY 的 GDN-2「interference」短序列锚被误用须替换
 
 ## 🎯 双硬核贡献（skeptic 收敛 + 2026-06-20 调研升级）
 

@@ -1,0 +1,2 @@
+arm,n_kv,d_head,lr,seed,final_acc,steps,converged
+gdn2,2,32,0.001,0,0.078125,500,0

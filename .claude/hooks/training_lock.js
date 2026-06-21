@@ -21,16 +21,22 @@ process.stdin.on('end', () => {
   if ((data.tool_name || '') !== 'Bash') process.exit(0);
 
   const cmd = (data.tool_input && data.tool_input.command) || '';
-  // 非执行命令豁免：py_compile / pytest / lint / 版本帮助 + 调度器自身命令
-  // + HPC 上传/验证类命令（SFTP put/get、scp、grep/wc/printf/cat 含训练脚本名但不是真启训）
+  // 洞 B 修：只读查看命令按「首 token」判（剥掉前缀 `cd ... &&` / env 赋值），
+  // 命令里把 sbatch/Start-Process 当搜索词提到不再误伤（真启动以 python/Start-Process/sbatch 开头，不以 grep/cat 开头）。
+  const effCmd = cmd.replace(/^\s*cd\s+[^&|;]+(?:&&|;)\s*/i, '').trim();
+  const firstTok = ((effCmd.split(/[\s|;&]+/)[0]) || '').replace(/.*[/\\]/, '');
+  const isReadOnlyViewer = /^(grep|rg|egrep|fgrep|wc|printf|echo|cat|ls|stat|md5sum|sha256sum|diff|head|tail|find|sed|awk|tasklist)$/i.test(firstTok);
+  // 非执行命令豁免：py_compile / pytest / lint / 版本帮助 + 调度器自身命令 + SFTP/scp 传输 + 只读查看
   const isCompileOrTest = /py_compile|pyflakes|flake8|\bpytest\b|-m\s+pytest|--version|--help|gpu_slot\.py/i.test(cmd)
     || /\bsftp\b|\bscp\b/i.test(cmd)
-    || (/\b(grep|wc|printf|cat|ls|stat|md5sum|sha256sum|diff|head|tail)\b/i.test(cmd) && !/\bsbatch\b/i.test(cmd) && !/Start-Process/i.test(cmd));
-  // 训练命令识别（保守）
-  const isTraining = !isCompileOrTest && (
-    (/Start-Process/i.test(cmd) && /train/i.test(cmd)) ||
+    || isReadOnlyViewer;
+  // 洞 A 修：训练识别不止文件名 train*.py——扩到 probe/sweep/pilot/capacity/finetune/pretrain/mqar/experiment
+  // 这类「训到收敛/扫描」脚本名（防 mqar_capacity_probe.py 之类绕过）；--smoke/--dry-run/test_ 仍放行（tiny 烟测）。
+  const isSmoke = /--smoke|--dry[-_]?run|\btest_|tests\//i.test(cmd);
+  const isTraining = !isCompileOrTest && !isSmoke && (
+    (/Start-Process/i.test(cmd) && /\b(train|python)\b/i.test(cmd)) ||
     /\bsbatch\b/i.test(cmd) ||
-    (/python/i.test(cmd) && /train[\w-]*\.py/i.test(cmd)) ||
+    (/\bpython\b/i.test(cmd) && /[\w./-]*(train|sweep|probe|pilot|capacity|finetune|pretrain|mqar|experiment)[\w-]*\.py/i.test(cmd)) ||
     /run[_-]experiment/i.test(cmd)
   );
   if (!isTraining) process.exit(0);

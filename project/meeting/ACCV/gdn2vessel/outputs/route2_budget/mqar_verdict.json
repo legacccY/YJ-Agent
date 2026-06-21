@@ -1,0 +1,52 @@
+{
+  "verdict": "DEAD_SANITY_FAIL",
+  "prereg_delta": 0.15,
+  "prereg_file": "reference/ROUTE2_BUDGET_PREREG.md",
+  "sanity_gate": {
+    "pass": false,
+    "detail": {
+      "gdn2": {
+        "mean": 0.0,
+        "pass": false
+      },
+      "linear_attn": {
+        "mean": 0.0,
+        "pass": false
+      }
+    },
+    "threshold": 0.9
+  },
+  "live_windows": [],
+  "gap_table": {
+    "4": {
+      "gap": 0.0,
+      "acc_gdn2": 0.0,
+      "acc_la": 0.0,
+      "std_gdn2": 0.0,
+      "std_la": 0.0
+    }
+  },
+  "stats": {
+    "gdn2": {
+      "4": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.0
+        ]
+      }
+    },
+    "linear_attn": {
+      "4": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.0
+        ]
+      }
+    }
+  },
+  "random_baseline": 0.03125
+}
