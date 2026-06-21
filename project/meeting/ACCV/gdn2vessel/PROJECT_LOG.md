@@ -1,5 +1,35 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 28 — 2026-06-22 纯 Zoology 也崩 → FLA 版本生态冲突实锤 → 金标准对照堵死 → 最后一炮 gdn2
+
+承 Entry 27。纯 Zoology + 金标准对照连环崩,**根因升级到 FLA 版本生态冲突**(不是某次实现)。用户死线拍板「最后一炮只 gdn2」。
+
+### 纯 Zoology 烟测结果（接口通,但又两坑）
+- 容量对齐/三 mixer import/Trainer 框架**全通**(state=8192 打印 + gdn2 跑到 [1/3])。
+- **gdn2 没学**:8 epoch loss 卡 8.5(≈ln V/2) acc=0.0005。对比自搓 2000 step lr3e-4 到 0.176——纯 Zoology lr=1e-3/epoch少。weight tying 有(grep 证 L265,排除)。
+- **gla 崩**:`chunk_gla() got unexpected keyword 'head_first'`。
+- 中途修:`cache_dir=None`→`tempfile.mkdtemp`(Zoology DataConfig 要 str)。
+
+### FLA 版本矛盾实锤（核 HPC）
+- 装的 **FLA=0.5.2**:有 `GatedDeltaNet2` 新 layer(GDN-2),但 ops 层**删了 `head_first` 参数**。
+- Zoology mixer(gated_delta_net.py/gla.py)旧代码传 `head_first=False` → 撞 0.5.2 崩。
+- **根本冲突**:GDN-2(gdn2_mixer 用 GatedDeltaNet2 layer)需**新** FLA;Zoology 官方 mixer 需**旧** FLA(head_first)。装哪个都崩一半。
+
+### 金标准对照（官方 GDN-1）→ 堵死
+- coder 改 Zoology mixer 去 head_first(FLA 0.5.x layout B,T,H,D 一致无需 transpose)+ 加官方 GDN-1 臂跑。
+- **又崩**:`empty() got (tuple, dtype=NoneType)`——**第二个** FLA/torch API 不兼容。Zoology mixer 没维护到 FLA 0.5.x,逐个修无底洞。
+- **结论:MQAR go/no-go 闸工具链层面搭不起来**(FLA 0.5.x vs Zoology mixer 多处 API 冲突 + GDN-2/Zoology FLA 版本根本冲突)。**金标准对照路被生态冲突堵死。** GDN-2 从没在 MQAR 过 sanity(8-9 个坑)。
+
+### 死线决策（用户拍「最后一炮只 gdn2」）
+绕开所有 Zoology 旧 mixer(崩源),**只跑我们 gdn2 臂**(FLA GatedDeltaNet2 layer,唯一新FLA能跑):**开 short conv**(Zoology 证 MQAR 承重,单臂不需公平)+ 8000 step + lr{3e-4,1e-3}×seed{0,1} n=4。`mqar_capacity_probe.py` GDN2FLAAdapter use_short_conv False→True。**job 1481628 排队中**。
+- **gdn2 n=4 acc>0.9** → GDN-2 能 work,headline 一线 → 接着验甜区。
+- **不过** → 死得明白,据 Entry25 强悲观先验 + 工具链搭不起 **转路 B(Frangi 门,机制成立那个,MICCAI/ACCV)**。
+
+### 官方化资产（headline 定后用）
+`reference/OFFICIAL_CODE_REUSE.md`(GitHub/Kaggle 高赞清单)+ `reference/P1_OFFICIAL_MIGRATION_PLAN.md`(2D smp 预训练 backbone + FR-UNet data pipeline + 4 novelty 件插法)+ `reference/THEORY_FOUNDATION.md`(理论主文档)。卡槽 91029873 占 hpc 1,跑完 release。
+
+---
+
 ## Entry 27 — 2026-06-21 MQAR harness 弃自搓 → 换 Zoology 官方 repo（依赖泥潭趟通，烟测排队中）
 
 承 Entry 26 四臂 FLA 重构。**真跑连环暴露 harness 问题，最终弃自搓改 Zoology 官方**（用户拍板）。[[feedback_pytest_green_not_runnable]] 再验：py_compile 过反复栽，harness 必真跑才暴露。

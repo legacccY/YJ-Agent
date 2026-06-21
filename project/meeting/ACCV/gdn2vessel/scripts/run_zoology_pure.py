@@ -563,6 +563,7 @@ class _LinearAttnZoologyMixer(nn.Module):
 # — avoids circular-import risk of referencing scripts.run_zoology_pure itself.
 _MIXER_PATHS = {
     'gdn2':        'zoology.mixers.gdn2_mixer.GDN2Mixer',
+    'gdn1':        'zoology.mixers.gated_delta_net.GatedDeltaNet',  # GDN-1 gold-standard reference arm
     'gla':         'zoology.mixers.gla.GatedLinearAttention',
     'linear_attn': 'zoology.mixers.linear_attn_fla.LinearAttnFLAMixer',
 }
@@ -577,6 +578,24 @@ _MIXER_KWARGS = {
         'expand_v':       1.0,      # head_v_dim = 64*1.0 = 64
         'use_short_conv': False,    # mechanism isolation (VLA omits conv)
         'mode':           'chunk',
+    },
+    'gdn1': {
+        # GatedDeltaNet (zoology/mixers/gated_delta_net.py) — Zoology official GDN-1, gold-standard arm.
+        # Purpose: verify environment/harness correctness by running the OFFICIAL GDN-1 mixer.
+        # If gdn1 passes MQAR sanity (n_kv=4 acc>0.9), environment+harness are proven OK.
+        #
+        # GatedDeltaNet.__init__ has head_dim COMMENTED OUT (L88);
+        # head_dim = d_model // num_heads = 128 // 2 = 64. Capacity parity with gdn2/gla.
+        # NOTE: head_dim kwarg NOT passed (not in __init__ signature; derived internally).
+        # NOTE: use_short_conv=False raises UserWarning exception in __init__ else-branch (L171);
+        #   keep use_short_conv=True (official GDN-1 default; conv is part of GDN mechanism).
+        # state = num_heads * head_k_dim * head_v_dim = 2 * 64 * 64 = 8192
+        # expand_v=2 (GDN default) → head_v_dim=128; override to 1.0 for capacity parity with gdn2.
+        'num_heads':      2,        # head_k_dim = 128//2 = 64
+        'expand_v':       1.0,      # head_v_dim = 64*1.0 = 64 → state = 2*64*64 = 8192
+        'use_short_conv': True,     # MUST be True: False raises in __init__; conv is GDN-1 mechanism
+        'use_gate':       True,     # GDN-1 default; output gate is part of GDN mechanism
+        'mode':           'chunk',  # training only supports chunk (assert in GatedDeltaNet.forward)
     },
     'gla': {
         # GatedLinearAttention (zoology/mixers/gla.py)
