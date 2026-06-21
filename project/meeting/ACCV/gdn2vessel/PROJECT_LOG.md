@@ -1,5 +1,32 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 27 — 2026-06-21 MQAR harness 弃自搓 → 换 Zoology 官方 repo（依赖泥潭趟通，烟测排队中）
+
+承 Entry 26 四臂 FLA 重构。**真跑连环暴露 harness 问题，最终弃自搓改 Zoology 官方**（用户拍板）。[[feedback_pytest_green_not_runnable]] 再验：py_compile 过反复栽，harness 必真跑才暴露。
+
+### 自搓 harness 连环崩（每修一个冒一个）
+1. weight tying 缺失 → 补（loss 卡点 8.3 突破）。
+2. stub 三臂纯 PyTorch scan **GPU 卡死**（26min 0 step）→ 换 FLA layer。
+3. FLA 重构后实测：**gdn2(GDN-2 FLA GatedDeltaNet2)在学**（n=4 acc 0.176，loss 5.6→4.6），但 **gla/linear_attn 两臂完全不学**（loss 卡 9.x≈ln(V/2)，acc≈0）。三臂同 backbone/数据/tying，gdn2 学了=框架对，gla/linear_attn 的 FLA layer 接法有问题。
+4. n_kv=96 在 T=256 装不下（需 T≥289）→ 砍 96。
+
+### 多查（3 researcher 核源）→ 弃自搓
+- 自搓纯 PyTorch scan 是死路，官方一致用 **FLA chunk CUDA kernel**。
+- **Zoology(2312.04927)官方 MQAR repo** 有现成 gated_delta_net/gla mixer + 验证过的 harness。
+- 配置对齐 VLA Table 3：steps 8000、lr 3e-4 cosine+warmup、wd 1e-2、batch 64。T-n_kv 约束 T≥3n+1（VLA）/4n（Zoology）。V=8192 官方（V=2048 无源不用）。
+
+### Zoology 落地（coder + 主线）
+- coder 建：`gdn2_mixer.py`(FLA GatedDeltaNet2=GDN-2 包成 Zoology mixer) + `run_zoology_mqar.py`(Zoology 数据+mixer + **自写 VLA step 制训练 loop**，绕过 Zoology epoch/wandb Trainer) + `mqar_zoology.sbatch`(array 3 臂) + `zoology_smoke.sbatch`。
+- **三臂容量严格对齐**(hidden=128,num_heads=2,head_dim=64)：GDN-2/GLA(expand_k=1.0防默认0.5砍半)/LinearAttention，state=2×64×64=8192 三臂相等。
+- **依赖泥潭趟通**(HPC,主线)：`pip install -e . --no-deps` editable 失败 → run_zoology_mqar.py sys.path 加 `_scratch/zoology`(不靠 pip)；`zoology.utils` 顶层 `import wandb/pandas` + torch._dynamo 对 MagicMock 的 `__spec__` 崩 → 改 **`from __future__ import annotations`(注解 lazy)+ sed 注释脏 import**，import 链通(`ALL IMPORTS OK`)。装了 pydantic/rotary/einops/tqdm。
+
+### 待（烟测排队中）
+- **烟测 job 1481034 PD**(集群满排队)：三臂 n=4 × 2000 step，验接口通 + sanity。**重点：gla/linear_attn 用 Zoology mixer 这次学不学**(若还不学=问题在 FLA GLA/LinearAttention layer 本身非框架)。
+- 过 → 全扫 `mqar_zoology.sbatch`(3臂×5 n_kv×3 seed) → `compute_verdict` 双 gap → LIVE(A2>A1' 且 A2>GLA=delta特异→路A改R5冲CVPR) / `delta_nonspecific`(A2≈GLA→退路B Frangi门)。
+- 卡槽 2f5a421f 占 hpc 1，烟测完 release。
+
+---
+
 ## Entry 26 — 2026-06-21 命门转向：headline 理论证伪（re-ID 缺训练信号）→ 胜负手四臂 MQAR 重设计 + weight-tying 补救起跑
 
 承 Entry 25 待拍。本窗**纯数学推导优先**（用户铁律：推导/查资料类任务不跑代码，coder 也禁跑，见 [[feedback_no_local_run_pure_derivation]]），把 headline 推到地基后重设胜负手实验并起跑。
