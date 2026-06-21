@@ -25,6 +25,7 @@
 
 **调研参考（reference/，researcher 核源落档）**：
 - ★★ [`reference/THEORY_FOUNDATION.md`](reference/THEORY_FOUNDATION.md) — **理论地基主文档（写 §1/§3、定 headline、red-team 前必读）**。整合三轮纯数学推导：借来引擎 wiring 0 致命 / 容量理论(delta 优势在 n≈d) / 三原创件(re-ID 头 1 致命=无 loss 绑身份) / 核心定理(目标函数错配) / 解法路径(显式检索 loss 回流 memory，需改 R5) / STORY 待改清单。下面 MQAR_WIRING + NOVELTY 是它的细节支撑。
+- ★ [`reference/OFFICIAL_CODE_REUSE.md`](reference/OFFICIAL_CODE_REUSE.md) — 官方/高赞开源代码复用清单（反自搓外壳）：已对接(clDice/Skeleton-Recall/creatis/FLA/Zoology) + 待换(FR-UNet data pipeline/orobix预处理⭐1.4k/smp预训练backbone/SkelCon续连)。服务 P1 血管主实验换掉自搓 dataloader。
 - [`reference/SOTA_NUMBERS.md`](reference/SOTA_NUMBERS.md) — 视网膜血管 SOTA 数字表（核源版，含 split 陷阱 + RV-GAN 禁用）
 - [`reference/RELATED_WORK_MATERIAL.md`](reference/RELATED_WORK_MATERIAL.md) — §2 四块文献 + GDKVM R3 模板核准 + creatis 协议精读（两修正）
 - [`reference/BASELINE_B_PICK.md`](reference/BASELINE_B_PICK.md) — 档 B 补位裁决（MM-UNet 顶替降档的 MambaVessel++，核源 + 跑前 TODO）
