@@ -1,5 +1,33 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 29 — 2026-06-22 最后一炮 PASS(GDN-2 sanity 1.0!) → skeptic 抓 short conv 污染 → 无 conv 验证中
+
+承 Entry 28 死线最后一炮。**MQAR 线复活但 headline 真命门未碰。**
+
+### 🎉 最后一炮 PASS:GDN-2 能 work
+gdn2(GDN2FLAAdapter)**开 short conv + 8000 step** → MQAR n=4 sanity **acc=1.0 全4config**(lr{3e-4,1e-3}×seed{0,1},loss→0,converged=1。csv 真源 `outputs/route2_lastshot/mqar_results.csv`,监控直接 cat 非口述)。
+**复盘:8-9 个坑没过 sanity 的真根因 = short conv 关了 + step 不够(2000)**,**不是机制死/包装坏/FLA版本死**。版本冲突只是 Zoology 旧 mixer 那条路(已弃);我们 GDN2FLAAdapter(FLA layer 直接)一直能跑,缺 short conv + 充分 step。
+
+### skeptic 红队(headline 判决设计)→ 🔴 short conv 是判决污染源
+三源证据(Based/2407.05591/VLA)一致:**short conv 给 stateless/GLA 臂"输血"**(补它们缺的 local shift)→ 开 conv 跑双 gap 会制造**假 DEAD**(delta 真特异却被掩盖成 A2≈A1')。**VLA(我们 PREREG 照搬的判决协议)故意不加 conv**——无 conv 才干净分出 n=24 delta 1.0 vs stateless 0.01。
+**出路①(最便宜<0.3GPU·h)**:之前三臂不学真根因疑似 step不够(2000)不是缺conv → 验「无conv+8000step」三臂 n=4 sanity 能否都过0.9。过→不需conv,判决干净;没过→开/关conv双跑(delta判决只采无conv组)。
+
+### planner 设计甜区双 gap 矩阵
+n_kv{8,16,32,64(=d)}@T=256 + 超容量{96,128}@T=512(conv救不动的全局容量窗口)、三臂、3 seed、单lr3e-4+收敛保险加密、array按臂切3卡并行、~15-25 GPU·h。判据一字不动引 PREREG 双gap。compute_verdict 已实现直接对接。
+
+### 执行(无 conv 关键闸)
+gdn2 `use_short_conv` True→**False**(三臂统一无conv,grep=7)。`noconv_sanity.sbatch` 三臂 n=4 8000step 无conv → **job 1481718 R**(没排队)。卡槽 bddf6bbb。
+
+### ⚠️ 诚实:MQAR 判决 ≠ headline 成立(真命门未碰)
+- 无conv sanity 还没出 → 没过还要双跑。
+- 真正判决(甜区双gap delta机制特异性)还没跑(~15-25 GPU·h)。
+- **即便 MQAR 判 LIVE**:① MQAR→血管必要非充分(THEORY §0,机制层证了不等于血管re-ID work);② **re-ID 头缺训练信号的理论致命(THEORY §4 核心定理:没loss训memory绑身份)还在**——这是 headline 真命门,MQAR 解决不了,要改R5加显式loss(战略级);③ 血管主实验/headline定稿/官方化迁移全没做。
+
+### 下一步
+无conv sanity 三臂过0.9 → planner Round-A 无conv甜区双gap全扫 → verdict → LIVE(路A改R5冲CVPR)/delta_nonspecific(路B Frangi门)。前置 verifier 核 sanity csv真源。
+
+---
+
 ## Entry 28 — 2026-06-22 纯 Zoology 也崩 → FLA 版本生态冲突实锤 → 金标准对照堵死 → 最后一炮 gdn2
 
 承 Entry 27。纯 Zoology + 金标准对照连环崩,**根因升级到 FLA 版本生态冲突**(不是某次实现)。用户死线拍板「最后一炮只 gdn2」。

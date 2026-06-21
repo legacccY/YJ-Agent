@@ -157,7 +157,7 @@ class GDN2FLAAdapter(_FLAAdapterBase):
             num_heads=num_heads,
             head_dim=head_dim,
             expand_v=1.0,           # head_v_dim = head_dim * expand_v = 64
-            use_short_conv=True,    # 最后一炮:单臂不需公平,开 conv(Zoology证 MQAR 承重)给 gdn2 最好收敛机会
+            use_short_conv=False,   # 改回:short conv 是判决污染源(给stateless输血假DEAD,VLA故意不加)。三臂统一无conv,靠8000step收敛(skeptic红队2026-06-22)
             mode='chunk',           # training mode (FLA asserts chunk-only in train)
         )
 
