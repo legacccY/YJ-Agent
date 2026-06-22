@@ -1,0 +1,181 @@
+{
+  "task": "parity",
+  "random_baseline": 0.5,
+  "prereg_thresholds": {
+    "STATE_TRACKING_LIVE": ">0.90 long-bucket (128-256) mean acc",
+    "DIAGONAL_FAIL": "gla long-bucket mean acc \u2264 0.55",
+    "RED2_CONFIRMED": "gdn2 long-bucket mean acc \u2264 0.55"
+  },
+  "stats": {
+    "gla": {
+      "40-64": {
+        "mean": 0.5092364532019704,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5092364532019704
+        ]
+      },
+      "64-128": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      },
+      "128-256": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      }
+    },
+    "gdn2": {
+      "40-64": {
+        "mean": 0.5092364532019704,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5092364532019704
+        ]
+      },
+      "64-128": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      },
+      "128-256": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      }
+    },
+    "gdn1": {
+      "40-64": {
+        "mean": 0.5092364532019704,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5092364532019704
+        ]
+      },
+      "64-128": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      },
+      "128-256": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      }
+    },
+    "gdn1_neg": {
+      "40-64": {
+        "mean": 0.5092364532019704,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5092364532019704
+        ]
+      },
+      "64-128": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      },
+      "128-256": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      }
+    },
+    "deltanet_neg": {
+      "40-64": {
+        "mean": 0.5092364532019704,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5092364532019704
+        ]
+      },
+      "64-128": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      },
+      "128-256": {
+        "mean": 0.5107421875,
+        "std": 0.0,
+        "n_seeds": 1,
+        "accs": [
+          0.5107421875
+        ]
+      }
+    }
+  },
+  "arm_verdicts": {
+    "gla": {
+      "long_bucket_128_256_mean": 0.5107421875,
+      "STATE_TRACKING_LIVE": false,
+      "AT_CHANCE": true
+    },
+    "gdn2": {
+      "long_bucket_128_256_mean": 0.5107421875,
+      "STATE_TRACKING_LIVE": false,
+      "AT_CHANCE": true
+    },
+    "gdn1": {
+      "long_bucket_128_256_mean": 0.5107421875,
+      "STATE_TRACKING_LIVE": false,
+      "AT_CHANCE": true
+    },
+    "gdn1_neg": {
+      "long_bucket_128_256_mean": 0.5107421875,
+      "STATE_TRACKING_LIVE": false,
+      "AT_CHANCE": true
+    },
+    "deltanet_neg": {
+      "long_bucket_128_256_mean": 0.5107421875,
+      "STATE_TRACKING_LIVE": false,
+      "AT_CHANCE": true
+    }
+  },
+  "live_arms": [],
+  "dead_arms": [
+    "gla",
+    "gdn2",
+    "gdn1",
+    "gdn1_neg",
+    "deltanet_neg"
+  ],
+  "gla_diagonal_fail": true,
+  "red2_verdict": "CONFIRMED (gate kills neg eigval \u2014 GDN-2 cannot do parity OOD)",
+  "gdn2_long_acc": 0.5107421875,
+  "gla_long_acc": 0.5107421875,
+  "n_rows_parsed": 5
+}

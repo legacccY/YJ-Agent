@@ -119,9 +119,9 @@
       "deadline": "N/A",
       "status": "active",
       "priority": 4,
-      "phase": "2026-06-22 立项: 验「哪个 delta 变体真能做 parity 状态追踪 + GDN-2 as-shipped 是否如理论做不了 parity (🔴-2 gate-kills-neg-eigval)」。5 臂 OOD 长度泛化探针 (gla/gdn2/gdn1/gdn1_neg/deltanet_neg)，train len[3,40] eval len[40-256]。parity_probe.py 就绪等主线 HPC 跑。",
+      "phase": "2026-06-22 Crux1 parity_probe.py 就绪等主线 HPC 跑。Crux2 spr_probe.py 就绪(SPR手术阶段识别，Cholec80 LoViT特征，5臂iso-param，PTVR+segF1+calibrate/w_scan模式，p+CI双门verdict，等数据下载)。",
       "home": "project/meeting/delta-statetrack-probe/",
-      "scripts": "project/meeting/delta-statetrack-probe/parity_probe.py",
+      "scripts": "project/meeting/delta-statetrack-probe/parity_probe.py (Crux1 parity合成任务) + project/meeting/delta-statetrack-probe/spr_probe.py (Crux2 SPR手术阶段识别)",
       "updated": "2026-06-22"
     },
     "artioodbench": {
@@ -143,7 +143,7 @@
       "deadline": "TBD",
       "status": "active",
       "priority": 5,
-      "phase": "🔧 2026-06-22 建档+5工具调研落地。余嘉子任务=HPC部署测试5工具(PredIG/DeepImmuno/pTuneos/IMPROVE/NeoTImmuML)+收集4类信息(输入模板/参数/输出格式/简介)→PPT。总目标=做免疫反应『强弱定量』工具(超越现有有/无二分类)，benchmark现有工具+自研QuantImmune。部署排序易→难许可解耦: Wave1无许可证(DeepImmuno最易→PredIG容器→NeoTImmuML需先站内找源码URL)；Wave2依赖netMHCpan/PRIME学术许可(IMPROVE→pTuneos最难Py2.7+全基因组)。3硬阻塞: ①netMHCpan/PRIME许可未到位(需用户/导师学术邮箱申请~1-2天)②NeoTImmuML源码URL未公开(tumoragdb.com.cn站内)③袁老师输入数据未到(先用各工具bundled example烟测)。下一步: 列许可申请清单交用户发+Wave1从DeepImmuno本地clone起。详 DEPLOY_TRACKER + 04_LOG Entry1。",
+      "phase": "🔧 2026-06-22 HPC 部署进行中(用户拍板转HPC完成原始要求). 本地WSL2已全验通5工具配方: DeepImmuno✅ PredIG✅(docker) IMPROVE-Predict✅+DTU工具链全通(netMHCpan4.1/stabpan/2.8,内核vsyscall=emulate救活老二进制) NeoTImmuML(notebook需重训) pTuneos(部署验证,差VEP cache用户拍板不下). HPC(dtn jiayu2403 gpu4090)出网: github/pypi/DTU通,DockerHub不通; singularity3.11.3+module miniconda3可用. HPC策略: 3个conda工具原生装(github+pypi可达), PredIG/pTuneos传docker镜像转singularity. 进行中: HPC clone全工具+DeepImmuno env+IMPROVE models(lfs1.9G). 4类信息已齐(TOOLS/*.md). 待: IMPROVE env+DTU工具传HPC+docker镜像传HPC+PPT. 详 04_LOG Entry7-8.",
       "home": "project/meeting/QuantImmuBench/",
       "log": "project/meeting/QuantImmuBench/04_LOG.md",
       "updated": "2026-06-22"
