@@ -5,6 +5,8 @@
 > - **NCA-JEPA 创新线**：今早已封存（弃 NCA 主线，资源转 P1 ICLR / P3 MedAD-FailMap，详见 registry nca-jepa phase + NCA-JEPA/04_LOG）。
 > - **NCA-AB 换路探路**（方向 A 3D 全分辨率分割 / 方向 B 连续疾病轨迹）：A Gate 前判死（prior art + 显存账），B Gate0-2 过、**Gate3 轨迹证伪**（见下「Gate3 终判」）。
 > 资产可复用（NCA 码 / NIH 纵向对抽取 / 探针框架 / Gate1 胸片 persistence 能力发现 26.5dB），但无干净顶会方向。后续如续 NCA 医学轨迹须换叙事重走 Gate0。
+>
+> 📖 **NCA 通用参考手册** = `NCA_PRIMER.md`（2026-06-22 建）：是什么/有什么用/特性/怎么用 + 完整数学推导（动力系统→反应扩散 PDE→Jacobian 稳定性→λ_eff·S 发散→BPTT）+ 本组合台三项目战绩 + 引用速查。新窗口想快速理解 NCA 家族读它。
 
 ---
 

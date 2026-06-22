@@ -4,6 +4,34 @@
 
 ---
 
+## Entry 6 — 🔄 第三次重启（用户拍板，run-009 重筛 C044 胜出，降级版冲 ACCV）（2026-06-22）
+
+**诚实定性**：本项目历史 = ①2026-06-17 立项(C044) → ②2026-06-18 Gate1 三项 FAIL 封存（K1/A2/A4）。**本次是第三次重启同一主题**，触 stage-gate FAIL 放行红线。用户在充分知情（run-009 全程了解 NCA 5 轮天花板 + C044/PhaseMap 全部硬伤）下拍板复活。
+
+**复活依据**：run-009（NCA 迭代=test-time compute × 医学影像）核心命题**实锤死**（健康 official ckpt 重测：步数-Dice 倒 U，16 步峰 0.864、64 步崩 0.019，非小问题、非作者瞎说，是 NCA 步数≈训练步数本性）。转向 NCA 顺本性特长冲 ACCV。重筛 4 存活候选（S6-002 / S5-006 / S4b-011 烟测已FAIL / C044），**C044 横向胜出**：唯一实验已做完（三轮坐实）+ 外部不撞车（2508.06389 三重正交）+ 最顺本性（自组织/训练动力学分析）+ 不赌步数。
+
+**降级叙事（弃旧主 claim）**：
+- ❌ 弃：「NCA **尖锐、可前验、seed 稳定的普适**临界相边界」（Gate1 K1/A2 已证伪）。
+- ✅ 改：「NCA 医学分割训练中 update 稀疏度功能塌缩的**条件性**刻画——Hippo+clip=1.0 有确定断崖，BraTS/no-clip/跨 seed 不稳；正面贡献 = 刻画相变**成立/不成立的条件** + 谱半径/信息传播机制解释（PRIMER §6.4/6.7）+ NCA 训练**安全 fire_rate 区间实践指南**」。
+
+**🔴 必须正面处理的硬伤（不掩盖）**：
+- **A2 FAIL 是核心威胁**：BraTS 5ur×5seed 塌缩率全 MIXED（2/5,1/5,2/5,3/5,3/5）= 相变可能是**随机塌缩概率事件而非确定边界**。补实验后仍翻不了案 → 「相变」概念站不住，须诚实收口。
+- A4：第二实现 dice 0.3 vs 官方 0.7 = 无效对照，须找真对齐实现。
+- M1 传播半径 probe bug（全 nan 静默失败）= 机制段无实证基础，必修。
+
+**venue**：顶档 ACCV 2026（CCF-C，analysis 可发不需碾压 SOTA）；退路 MIDL/ISBI 2027 / TMLR。注：gdn2vessel 已投同会 ACCV 2026（Transformer 血管，不撞）。
+
+**4 项补实验（Gate1-重启 TODO）**：① 修 M1 probe bug→跑机制探针；② BraTS no-clip 扩 ur(0.45–0.80,步长0.05,5seed)→判临界漂移vs消失；③ Hippo vs BraTS 差异机制假设(前景占比/patch)+单变量实验；④ 找对齐第二实现替 MinimalNCA。
+
+**重启版 kill criteria（比上次硬，防第四次重启）**：
+- **K-new-1**：4 补实验后跨 seed 相变仍随机（A2 翻不了案）→ 承认无确定相变，**彻底收口不再重启**。
+- **K-new-2**：BraTS 全程任何条件无断崖 → 降纯 Hippo 单集 analysis（弱）或收口。
+- **K-new-3**：机制段（谱半径/传播半径↔ur 临界）拿不出实证关联 → 诚实 TMLR/workshop 不冲。
+
+**下一步**：`/design-experiment nca-phasemap` 设计 4 补实验矩阵 → 跑 → Gate1-重启严判。状态 shelved → **active（ACCV）**。
+
+---
+
 ## Entry 5 — Gate1 全跑完 + 去留判决：headline 在 BraTS 没复现，重降级/KILL 待拍（2026-06-18，analyst）
 
 **全实验落地**（HPC，全本地下载 `06_experiments/results/`）：B0/B1/B2/B3/B4/G/M1 七作业全完。analyst 出 `05_Gate1_去留报告.md` + figures/（K1/A2/A3/A4 各一图）。

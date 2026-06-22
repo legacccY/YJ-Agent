@@ -1,9 +1,11 @@
 # gdn2vessel 验收标准（顶会亮度目标分解）
 
 **目标**：按 CVPR/ICCV/MICCAI 顶会亮度建，ACCV 2026 作保底。不设周期上限——**唯一推进条件 = 每阶段硬阈值全 PASS**，不赶 deadline 牺牲质量。
-**最后更新**：2026-06-20
+**最后更新**：2026-06-22（路B重定位 — headline 主轴改可微 Frangi 门；新增「路B 最小验证 gate 预登记」kill-criteria 块）
 
 > 完成判定铁律：**不存在「基本完成」「差不多了」。要么逐条全 PASS，要么继续补。** 任一 FAIL → 不标完成，回去补；非硬伤无解 → 写诚实回退 + 停下报用户（stage-gate FAIL 放行是拍板点）。
+
+> ⚠️⚠️ **路B重定位（2026-06-22，用户拍板）**：立项锚「GDN-2 delta 机制特异性」已证伪（MQAR delta≈GLA + 目标函数错配）。headline 主轴改为「可微 Frangi 门调制记忆做端到端续连」。**当前唯一前置命门 = 下方「🔒🔒 路B 最小验证 gate 预登记」**——先砸这道门（feedback_falsify_crux_first），PASS 才全铺路B。原 P4 re-ID 可归因预登记表（A-I / A-v2 三臂命门）随 re-ID 降副产**整体冻结归档**（保留为硬资产留痕，**不再作为推进 gate**）。战略链见 `PROJECT_LOG.md` Entry 31 + `STORY_FRAMEWORK.md` 核心 Claim 区。
 
 ---
 
@@ -11,12 +13,12 @@
 
 | Lever | 目标版本（顶会亮度） | 不达标后果 | 状态 |
 |---|---|---|---|
-| L1. 双核心证透 | C（记忆续连）独头干净消融 + 核心 2（空间 re-ID）显式机制+指标 | headline 塌 → 不可投 | ⬜ P2/P4 |
+| L1. 可微 Frangi 门证透（路B主轴，2026-06-22 改） | Frangi 门 on/off 命门拓扑轴显著赢 + 记忆类型无关消融（门 ×{GDN-2,GLA,ConvGRU}都涨）| headline 塌 → benchmark-only/workshop 降级 | ⬜ 路B命门（下方预登记）|
 | L2. 杀手锏 benchmark | 自造断点续连 benchmark（对齐 creatis 合成协议）+ ε_β0/SR/re-ID | 核心 claim 无铁证 → 降为 overclaim | ⬜ P1 |
 | L3. baseline 全谱同台 | ≥12（SSM+拓扑+经典+冠脉+2025-2026 最新） | 漏比关键竞品 = reject | ⬜ P3 |
 | L4. 数据集超量 | ≥10 集全做满（视网膜5+冠脉3+OCTA2+跨域），允许 1-2 边缘集失败 | 数据偏单 = 泛化质疑 | ⬜ P3/P5 |
 | L5. 消融超量 | ≥8-10 组，每个机制 ≥1 干净对照 | 消融不系统 = novelty 存疑 | ⬜ P4 |
-| L6. 拓扑/续连赢 SOTA | clDice/Betti/ε_β0/re-ID ≥1 轴显著赢 SOTA；裸 Dice 持平不输 | 无胜负点 = reject | ⬜ P3 |
+| L6. 拓扑/续连赢 SOTA | clDice/Betti/ε_β0 ≥1 轴显著赢 SOTA（**必含 GLCP MICCAI2025 Oral 对比**，clDice 须过 >82.4% 门槛）；裸 Dice 持平不输 | 无胜负点 = reject | ⬜ P3 |
 | L7. 可解释性 | ≥3 张「记忆认出同根血管」可视化（王水花方向） | 卖点弱 | ⬜ P6 |
 | L8. CV 方法贡献叙述 | 新机制/原理/benchmark 先行，医学=validation | 被读成换模块/纯临床 = reject | ⬜ P7 |
 | L9. 写作/对抗审稿 | 数字三方对账 0 偏离 + reviewer 十角色 0 致命 + skeptic 攻 claim | 防御漏洞被审稿命中 | ⬜ P7 |
@@ -25,6 +27,36 @@
 ---
 
 ## 🚧 每阶段硬阈值（出口 gate，逐条 PASS 才进下阶段）
+
+### 🔒🔒 路B 最小验证 gate 预登记（2026-06-22 写死；planner 设计 + 用户拍板放行；**当前唯一前置命门，PASS 才全铺路B**；数字一字不动禁 HARKing）
+
+**背景**：路B重定位后 headline 押在「可微 Frangi 门（input-derived）调制记忆能否在拓扑轴显著提升续连」。严守 feedback_falsify_crux_first，先砸命门，不重蹈路A把命门拖到最后。
+
+**命门 H_crux（单一，跑前写死）**：可微 Frangi 门（**gate-on**）vs 无门（**gate-off**，唯一变量）在拓扑轴**显著赢**。配置 = 2 臂 × 2 集（DRIVE/CHASE）× 3 seed = 12 run（≈6–15 GPU·h）。
+
+**主判据轴 = clDice**（ε_β0 / Betti 交叉印证；clDice 是 PASS/FAIL 承重轴，ε_β0/Betti 只作同向佐证，**不许 clDice 不显著时改报 Betti**）。
+
+**PASS（→ 全铺路B，约 125 GPU·h）需同时满足三条**：
+1. **≥1 集** `clDice(gate-on) − clDice(gate-off)` 的 **3-seed 均值 gap ≥ +0.03 绝对**；
+2. 该集 **per-image 配对符号检验 / Wilcoxon 单侧 p < 0.05** 且 **bootstrap 95% CI 下界 > 0**；
+3. **DRIVE + CHASE 两集方向都为正**（不许一正一负）。
+
+**FAIL（→ benchmark-only / workshop 诚实降级，停下报用户）**：gap < +0.03 **或** p ≥ 0.05 / CI 下界 ≤ 0 **或** 两集方向相反。
+
+**🔒 FAIL 后机械红线（写死，禁绕）**：
+- 禁换主判据轴（clDice 不显著**不许**改报 Betti / ε_β0 凑过）；
+- 禁扩 seed 凑显著；
+- 禁调 Frangi σ / scale 参数重跑凑显著；
+- 禁换数据集（DRIVE/CHASE 锁定）。
+- FAIL = **stage-gate FAIL 拍板点**，停下报用户，写诚实回退。**禁再找新缺陷续命。**
+
+**🔒 参数量隐患已实测排除（gate 2 臂无需等参对照，2026-06-22）**：Frangi 门加 d_model+2 ≈ **258–514 参数 = 0.001–0.006%**（可忽略量级），故 gate-on 若赢**非容量优势**——记进预登记说明，无须扩 3 臂加等参对照。
+
+**统计实现纪律**：配对符号检验 / Wilcoxon 单侧 + bootstrap 95% CI **手算**（numpy + itertools，**禁 scipy.stats**，OMP 红线，沿用全项目纪律）。
+
+**一次验证（禁 p-hack）**：本地 e2e 真烟测通过后冻结配置，命门跑**一次**，禁反复调参直到 gap 出现。
+
+---
 
 ### P0 环境 & kill-shot
 - [ ] 关 2：单层 GDN-2 fwd/bwd 在 4090(sm_89) GPU 跑通（退路 `naive_chunk_gated_delta_rule` 纯 PyTorch 先验正确）
@@ -49,13 +81,16 @@
 - [ ] seed ≥3，数字 Bash/Grep 核 csv（禁 Read 看数据）
 - [ ] **不妥协**：拓扑或续连维度 ≥1 轴显著赢 SOTA + 裸 Dice 持平不输；禁调参作弊凑赢 Dice
 
-### P4 消融
+### P4 消融（2026-06-22 路B重定位：承重判据改 Frangi 门 on/off + 记忆类型无关）
 - [ ] ≥8-10 组消融
-- [ ] C 有/无 干净对照证「有 C 续连率/re-ID 率显著↑」（headline 铁证，可归因）
-- [ ] re-ID 头有/无、Frangi 门有/无、序列长度扫、多向数、delta-rule vs 普通线性 attn
-- [ ] **红线**：机制纠缠不可归因 = 跑偏
+- [ ] **Frangi 门 on/off 干净对照证「有门拓扑轴（clDice）显著↑」（headline 铁证，可归因到门，承重判据见上方路B命门）**
+- [ ] **记忆类型无关消融：Frangi 门 ×{GDN-2, GLA, ConvGRU} 都涨 → 证增益来自门非记忆类型（把 MQAR delta≈GLA 负结果转正向证据）**
+- [ ] 序列长度扫、多向数、reid_rate 副产刻画（仅报告不作机制承重）
+- [ ] **红线**：机制纠缠不可归因 = 跑偏；**禁把 delta-rule 机制特异（A2>A1'/A2>GLA）复活为承重判据**（已证伪，R6）
 
-#### 🔒 re-ID 可归因预登记表（2026-06-20 skeptic 致命-2 补 → 2026-06-20 命门 v2 修：补 A1' 等参臂 + 判据2 改 ε_β0 配平分层 CDE，skeptic 三轮复核 0🔴，设计阶段写死，禁跑完找说法）
+> 🗄️ **以下 re-ID 可归因预登记表（A-I / A-v2 三臂命门）2026-06-22 整体冻结归档**：re-ID 已降为续连质量副产描述指标（STORY Claim 2），其机制特异性已被 MQAR delta≈GLA + 目标函数错配证伪。**本表不再作为推进 gate**，保留为硬资产留痕（诚实负结果 + 方法学诊断），论文可引「我们曾预登记机制可归因判据并诚实报告其证伪」。当前推进命门 = 上方「路B 最小验证 gate」。**以下内容只读不再执行。**
+
+#### 🔒 re-ID 可归因预登记表（2026-06-20 skeptic 致命-2 补 → 2026-06-20 命门 v2 修：补 A1' 等参臂 + 判据2 改 ε_β0 配平分层 CDE，skeptic 三轮复核 0🔴，设计阶段写死，禁跑完找说法）【🗄️ 2026-06-22 冻结归档，不再作 gate】
 
 | 臂 | bottleneck 特征源 | re-ID 头 | 作用 |
 |---|---|---|---|

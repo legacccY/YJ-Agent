@@ -127,13 +127,29 @@ def precompute_one(
     Precompute break masks for all test-split images of one dataset at one severity.
 
     Returns list of manifest entries (one per test image).
+
+    DRIVE held-out split note (拍板 2026-06-22):
+      DRIVE 官方 test set (IDs 1-20) 无公开 GT，不可用于断点 benchmark。
+      DRIVE training set (IDs 21-40) 有 GT：
+        TRAIN_IDS = 21..36 (16张)  ← 模型训练集，不碰
+        VAL_IDS   = 37..40 (4张)  ← held-out（split='val'），有 GT，用于 benchmark
+      DRIVE benchmark 固定取 split='val'（VAL_IDS 37-40），
+      与 gate-on/off 同 split 配对，泄漏可控（val 集不在 training loop GT 中）。
+      GT 路径 training/1st_manual/{id}_manual1.gif，id=37-40，HPC 已确认存在。
     """
     params = SEVERITY_GRID[severity]
     seed = severity_seed(base_seed, severity)
 
-    # Load test split (RED LINE 1: only test images)
+    # DRIVE 特判：官方 test set (IDs 1-20) 无公开 GT → 改用 split='val'（VAL_IDS 37-40）。
+    # 其余数据集按 split='test' 原逻辑不变（RED LINE 1: only held-out images）。
+    if dataset_name == 'drive':
+        _split = 'val'   # VAL_IDS = 37..40，有 GT，是唯一可用 held-out（拍板 2026-06-22）
+    else:
+        _split = 'test'
+
+    # Load held-out split
     try:
-        ds = dataset_cls(data_root=data_root, split='test', patch_size=None,
+        ds = dataset_cls(data_root=data_root, split=_split, patch_size=None,
                          augment=False, skip_missing=True)
     except Exception as e:
         print(f'  SKIP {dataset_name}/{severity}: cannot load dataset: {e}')
@@ -143,7 +159,8 @@ def precompute_one(
     # ds.get_test_ids() which returns class attr TEST_IDS.  FIVESDataset resets class
     # attr TEST_IDS=[] in its __init__ finally-block, so get_test_ids() returns [] for
     # FIVES even though ds.ids is correctly populated.  Using ds.ids is equivalent for
-    # all loaders (CHASE/STARE/HRF/DRIVE have class-level TEST_IDS == ds.ids on split='test').
+    # all loaders (CHASE/STARE/HRF/DRIVE have class-level TEST_IDS == ds.ids on split).
+    # DRIVE: split='val' → ds.ids = VAL_IDS = [37, 38, 39, 40] (4 held-out images with GT).
     test_ids = list(ds.ids)
     if not test_ids:
         print(f'  SKIP {dataset_name}/{severity}: no test IDs (data not present)')

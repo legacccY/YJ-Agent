@@ -279,6 +279,100 @@ def betti_error(
 
 
 # --------------------------------------------------------------------------- #
+#  1b-ii. clDice metric — topology-preserving overlap metric (eval, numpy)
+# --------------------------------------------------------------------------- #
+#
+#  Formula from arXiv 2003.07311 (Shit et al., CVPR 2021):
+#    Topology Precision:   tprec = |V_Lskel ∩ V_P| / |V_Lskel|
+#    Topology Sensitivity: tsens = |V_Pskel ∩ V_L| / |V_Pskel|
+#    clDice = 2 * tprec * tsens / (tprec + tsens)
+#
+#  where V_L = GT foreground, V_P = pred foreground,
+#        V_Lskel = skeletonize(V_L), V_Pskel = skeletonize(V_P).
+#
+#  This is the BINARY EVAL version (not the soft/differentiable training loss).
+#  Uses skimage.morphology.skeletonize (Lee 1994, 3D-safe, medial axis thinning).
+#  NOT the soft_cldice from baselines/losses/cldice_loss.py (that is torch-based
+#  SoftSkeletonize for training loss only; this is the post-hoc eval metric on
+#  hard binary masks, consistent with evaluation practice in clDice paper §4).
+#
+#  Reference: Shit S. et al., "clDice - a Novel Topology-Preserving Loss Function
+#    for Tubular Structure Segmentation", CVPR 2021.  arXiv:2003.07311, Eq.(3–5).
+#  skimage.morphology.skeletonize: Lee TC et al. 1994 thinning algorithm.
+#    https://scikit-image.org/docs/stable/api/skimage.morphology.html#skimage.morphology.skeletonize
+#
+#  Windows/OMP safety: skimage uses C extensions, no scipy.stats, no OpenMP conflict.
+
+
+def cldice_metric(
+    pred_mask: np.ndarray,
+    gt_mask: np.ndarray,
+) -> float:
+    """
+    clDice evaluation metric (binary mask, numpy version).
+
+    Formula (arXiv 2003.07311, Eq.3-5):
+        tprec = |skel(gt)  ∩ pred| / |skel(gt)|
+        tsens = |skel(pred) ∩ gt|  / |skel(pred)|
+        clDice = 2 * tprec * tsens / (tprec + tsens)
+
+    Degenerate cases:
+        Both empty             → 1.0  (perfect trivially)
+        GT empty, pred non-empty → 0.0  (false positive: no structure to cover)
+        GT non-empty, pred empty → 0.0  (missed all structure)
+        skel(gt) empty (e.g. single pixel GT) but GT non-empty → tsens=1.0
+          (no skeleton = whole GT is 1 pixel: pred covering it = full sensitivity)
+        skel(pred) empty but pred non-empty → tprec=1.0 (same logic)
+
+    Args:
+        pred_mask: (H, W) predicted binary mask {0,1} or bool
+        gt_mask:   (H, W) ground-truth binary mask {0,1} or bool
+
+    Returns:
+        clDice ∈ [0, 1]. Higher is better. 1.0 = perfect topology overlap.
+    """
+    from skimage.morphology import skeletonize as skimage_skeletonize
+
+    pred = (pred_mask > 0).astype(bool)
+    gt   = (gt_mask   > 0).astype(bool)
+
+    # Degenerate: both empty
+    if pred.sum() == 0 and gt.sum() == 0:
+        return 1.0
+
+    # Degenerate: one empty, other non-empty → clDice = 0
+    if pred.sum() == 0 or gt.sum() == 0:
+        return 0.0
+
+    # Skeletonize both binary masks
+    skel_pred = skimage_skeletonize(pred)   # bool (H, W)
+    skel_gt   = skimage_skeletonize(gt)     # bool (H, W)
+
+    # Topology Sensitivity: skel(gt) covered by pred
+    n_skel_gt = int(skel_gt.sum())
+    if n_skel_gt == 0:
+        # GT is effectively a single isolated pixel (no skeleton after thinning)
+        # → consider tsens = 1.0 if pred covers any GT pixel
+        tsens = 1.0 if bool(np.logical_and(pred, gt).any()) else 0.0
+    else:
+        tsens = float(np.logical_and(skel_gt, pred).sum()) / n_skel_gt
+
+    # Topology Precision: skel(pred) covered by gt
+    n_skel_pred = int(skel_pred.sum())
+    if n_skel_pred == 0:
+        # Pred is a single isolated pixel → tprec = 1.0 if within GT
+        tprec = 1.0 if bool(np.logical_and(pred, gt).any()) else 0.0
+    else:
+        tprec = float(np.logical_and(skel_pred, gt).sum()) / n_skel_pred
+
+    # Harmonic mean (clDice)
+    denom = tprec + tsens
+    if denom == 0.0:
+        return 0.0
+    return float(2.0 * tprec * tsens / denom)
+
+
+# --------------------------------------------------------------------------- #
 #  1c. APLS — Average Path Length Similarity (standard cross-validation)
 # --------------------------------------------------------------------------- #
 #

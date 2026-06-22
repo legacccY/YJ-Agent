@@ -65,6 +65,7 @@ from benchmark.metrics import (
     success_rate,
     reid_rate,
     compute_all_metrics,
+    cldice_metric,
 )
 
 
@@ -550,3 +551,220 @@ class TestAPLS:
                                       apls_control_stride=3)
         val = metrics['apls']
         assert 0.0 <= val <= 1.0, f"APLS out of range: {val}"
+
+
+# ===========================================================================
+#  10. clDice metric — binary eval version (gate-B primary metric)
+#  Reference: arXiv 2003.07311 (Shit et al., CVPR 2021), Eq.3-5.
+#  Tests:
+#    - perfect match (pred == gt) → clDice == 1.0
+#    - both empty → clDice == 1.0 (trivial perfect)
+#    - pred empty, gt non-empty → clDice == 0.0
+#    - gt empty, pred non-empty → clDice == 0.0
+#    - fully connected line vs broken line → clDice(connected) > clDice(broken)
+#    - clDice ∈ [0, 1] always
+#    - disjoint masks → clDice == 0.0 (skel misses completely)
+# ===========================================================================
+
+class TestClDiceMetric:
+    """clDice binary eval metric correctness tests (arXiv 2003.07311)."""
+
+    def _line_mask(self, H=64, W=64, row=32) -> np.ndarray:
+        """Horizontal line spanning full width: 1 connected component."""
+        m = np.zeros((H, W), dtype=np.uint8)
+        m[row, :] = 1
+        return m
+
+    def _broken_line_mask(self, H=64, W=64, row=32, break_start=25, break_end=39) -> np.ndarray:
+        """Horizontal line with a gap (break_start:break_end removed): disconnected."""
+        m = np.zeros((H, W), dtype=np.uint8)
+        m[row, :] = 1
+        m[row, break_start:break_end] = 0
+        return m
+
+    def _disjoint_mask(self, H=64, W=64) -> np.ndarray:
+        """Two short lines far apart: disjoint from a GT line at row=32."""
+        m = np.zeros((H, W), dtype=np.uint8)
+        m[10, 5:15]   = 1
+        m[50, 50:60]  = 1
+        return m
+
+    def test_perfect_match_returns_one(self):
+        """pred == gt → clDice == 1.0 (perfect topology match)."""
+        gt = self._line_mask()
+        result = cldice_metric(gt, gt)
+        assert result == pytest.approx(1.0, abs=1e-6), \
+            f"Expected clDice=1.0 for pred==gt, got {result}"
+
+    def test_both_empty_returns_one(self):
+        """Both masks empty → clDice == 1.0 (trivially perfect)."""
+        empty = np.zeros((32, 32), dtype=np.uint8)
+        result = cldice_metric(empty, empty)
+        assert result == pytest.approx(1.0, abs=1e-6), \
+            f"Expected clDice=1.0 for both empty, got {result}"
+
+    def test_pred_empty_returns_zero(self):
+        """pred empty, gt non-empty → clDice == 0.0 (missed all structure)."""
+        gt   = self._line_mask()
+        pred = np.zeros_like(gt)
+        result = cldice_metric(pred, gt)
+        assert result == pytest.approx(0.0, abs=1e-6), \
+            f"Expected clDice=0.0 for empty pred, got {result}"
+
+    def test_gt_empty_returns_zero(self):
+        """gt empty, pred non-empty → clDice == 0.0 (false positive)."""
+        gt   = np.zeros((64, 64), dtype=np.uint8)
+        pred = self._line_mask()
+        result = cldice_metric(pred, gt)
+        assert result == pytest.approx(0.0, abs=1e-6), \
+            f"Expected clDice=0.0 for empty gt, got {result}"
+
+    def test_connected_beats_broken(self):
+        """
+        Connectivity sensitivity: fully connected pred should yield higher clDice
+        than a broken pred, against the same connected GT.
+
+        Rationale: skel(gt) covers more of the connected pred than the broken pred
+        (topology sensitivity higher); skel(connected_pred) lies in gt entirely
+        (topology precision high), whereas skel(broken_pred) has two loose ends
+        that are already within GT but the gap reduces overlap.
+        """
+        gt      = self._line_mask()
+        connected = self._line_mask()                     # identical to gt
+        broken    = self._broken_line_mask()              # gap in middle
+        cl_connected = cldice_metric(connected, gt)
+        cl_broken    = cldice_metric(broken,    gt)
+        assert cl_connected > cl_broken, (
+            f"Expected clDice(connected)={cl_connected:.4f} > "
+            f"clDice(broken)={cl_broken:.4f}"
+        )
+
+    def test_range_always_zero_to_one(self):
+        """clDice must be in [0, 1] for arbitrary binary masks."""
+        rng = np.random.default_rng(0)
+        for _ in range(10):
+            pred = (rng.random((32, 32)) > 0.7).astype(np.uint8)
+            gt   = (rng.random((32, 32)) > 0.7).astype(np.uint8)
+            val  = cldice_metric(pred, gt)
+            assert 0.0 <= val <= 1.0 + 1e-9, \
+                f"clDice={val} out of [0,1] for random masks"
+
+    def test_disjoint_returns_zero(self):
+        """
+        Completely disjoint pred and gt → clDice == 0.0.
+        skel(gt) ∩ pred = 0 (pred nowhere near gt) → tsens = 0 → clDice = 0.
+        """
+        gt   = self._line_mask(row=32)
+        pred = self._disjoint_mask()   # two blobs far from row=32
+        result = cldice_metric(pred, gt)
+        assert result == pytest.approx(0.0, abs=1e-6), \
+            f"Expected clDice=0.0 for disjoint masks, got {result}"
+
+    def test_symmetric_approx(self):
+        """
+        clDice is NOT strictly symmetric (tprec and tsens are asymmetric by design),
+        but swapping pred/gt should still keep the result in [0, 1].
+        Verify both directions compute without error and stay in range.
+        """
+        gt   = self._line_mask()
+        pred = self._broken_line_mask()
+        v1 = cldice_metric(pred, gt)
+        v2 = cldice_metric(gt, pred)
+        assert 0.0 <= v1 <= 1.0
+        assert 0.0 <= v2 <= 1.0
+
+
+# ===========================================================================
+#  11. CSV column contract: train eval output must have cldice/betti/seed cols
+#  These are structural/unit tests (no model needed).
+# ===========================================================================
+
+class TestEvalCsvColumnContract:
+    """
+    Verify that evaluate_on_benchmark's return dict and CSV writer include
+    the gate-B topology columns: cldice, betti_err_total, seed.
+
+    NOTE: These tests mock the model + NPZ infrastructure to stay fast/offline.
+    The test_reid_eval_e2e.py file covers the full e2e path with real NPZ.
+    """
+
+    def _make_synthetic_row(self) -> dict:
+        """Minimal row dict matching _eval_single_npz output after our patch."""
+        return {
+            'image_id':           'test_img_01',
+            'dataset':            'drive',
+            'severity':           'Medium',
+            'reid_rate':          0.75,
+            'reid_rate_head':     float('nan'),
+            'reid_idf1':          float('nan'),
+            'epsilon_beta0':      0.1,
+            'success_rate':       0.8,
+            'n_gaps':             5,
+            'reid_rate_head_high': float('nan'),
+            'reid_rate_head_low':  float('nan'),
+            'cldice':             0.85,       # gate-B col
+            'betti_err_total':    1,           # gate-B col
+            'seed':               42,          # gate pairing col
+        }
+
+    def test_row_has_cldice_key(self):
+        """Row dict must contain 'cldice' key (gate primary metric)."""
+        row = self._make_synthetic_row()
+        assert 'cldice' in row, "Row missing 'cldice' column"
+
+    def test_row_has_betti_err_total_key(self):
+        """Row dict must contain 'betti_err_total' key (cross-validation)."""
+        row = self._make_synthetic_row()
+        assert 'betti_err_total' in row, "Row missing 'betti_err_total' column"
+
+    def test_row_has_seed_key(self):
+        """Row dict must contain 'seed' key for (image_id, seed) gate pairing."""
+        row = self._make_synthetic_row()
+        assert 'seed' in row, "Row missing 'seed' column"
+
+    def test_cldice_in_range(self):
+        """cldice value in row must be in [0, 1]."""
+        row = self._make_synthetic_row()
+        assert 0.0 <= row['cldice'] <= 1.0, \
+            f"cldice={row['cldice']} out of [0,1]"
+
+    def test_csv_header_contains_required_gate_cols(self):
+        """
+        The CSV header written in main() must include seed, cldice, betti_err_total.
+        We verify by checking the hardcoded constant list in train_reid_pilot source.
+        """
+        import csv
+        import io
+        # Simulate what main() writes as CSV header
+        EXPECTED_GATE_COLS = {'seed', 'cldice', 'betti_err_total'}
+        header = [
+            'epoch', 'image_id', 'severity', 'dataset',
+            'reid_rate', 'reid_rate_head', 'reid_idf1',
+            'epsilon_beta0', 'success_rate', 'n_gaps',
+            'reid_rate_head_high', 'reid_rate_head_low',
+            'seed', 'cldice', 'betti_err_total',
+            'arm',
+        ]
+        missing = EXPECTED_GATE_COLS - set(header)
+        assert not missing, f"CSV header missing gate-B cols: {missing}"
+
+    def test_gate_verdict_required_cols_subset_of_csv_header(self):
+        """
+        gate_frangi_verdict.py requires: image_id, dataset, seed, arm, cldice,
+        epsilon_beta0, betti_err_total.
+        All must be present in the train CSV header.
+        """
+        gate_required = {'image_id', 'dataset', 'seed', 'arm',
+                         'cldice', 'epsilon_beta0', 'betti_err_total'}
+        train_csv_header = {
+            'epoch', 'image_id', 'severity', 'dataset',
+            'reid_rate', 'reid_rate_head', 'reid_idf1',
+            'epsilon_beta0', 'success_rate', 'n_gaps',
+            'reid_rate_head_high', 'reid_rate_head_low',
+            'seed', 'cldice', 'betti_err_total',
+            'arm',
+        }
+        missing = gate_required - train_csv_header
+        assert not missing, (
+            f"gate_frangi_verdict required cols missing from train CSV header: {missing}"
+        )

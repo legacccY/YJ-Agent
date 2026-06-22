@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# gate_job.sbatch.template — HPC sbatch 模板，路B Frangi门 gate 单 run
+#
+# 矩阵（ACCEPTANCE 预登记锁定）：
+#   arm ∈ {gate-on (--use_frangi 1), gate-off (--use_frangi 0)}
+#   dataset ∈ {drive, chase}
+#   seed ∈ {0, 1, 2}
+#   memory_mode 固定 delta_rule（--reid_feat_source memory）
+#   = 2 × 2 × 3 = 12 run
+#
+# 使用方式：
+#   用 launch_gate_sweep.py --dry-run 打印的占位符值替换下方 {PLACEHOLDERS}，
+#   保存为实例化文件（如 gate_on_drive_s0.sbatch），
+#   dos2unix 去 CRLF，上传 HPC 后单独提交（不批量并发）。
+#
+# Placeholders：
+#   {ARM_LABEL}  — 臂标签（gate-on / gate-off，仅用于 job-name/echo）
+#   {USE_FRANGI} — Frangi 门开关（1 = gate-on, 0 = gate-off）
+#   {DATASET}    — 数据集（drive / chase）
+#   {SEED}       — 种子整数（0 / 1 / 2）
+#   {DATA_ROOT}  — 该集 data_root（如 /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/DRIVE）
+#   {BENCH_DIR}  — benchmark_dir（扁平 /gpfs/work/bio/jiayu2403/gdn2vessel/data/benchmark_cache）
+#   {OUT_DIR}    — output_dir（如 /gpfs/work/bio/jiayu2403/gdn2vessel/outputs/gate_sweep/gate_on_drive_s0）
+#   {EPOCHS}     — 训练 epoch 数（TODO: 主线确认，路A 命门用 300，路B 默认 100 待对齐）
+#
+# HPC 提交 checklist（必过，见 feedback_hpc_submit_checklist + Entry3）：
+#   ① 上传后必须去 CRLF：dos2unix <file>.sbatch
+#                     或 sed -i 's/\r$//' <file>.sbatch
+#   ② 看 logs/{job-name}_{jobid}.out 产出确认真跑，不信 jobid
+#   ③ 单独提交（sbatch <file>.sbatch），不批量并发
+#   ④ DRIVE 提交前确认 benchmark_cache 有 drive_Medium_*.npz + manifest.json（[DEP-G1]）
+#   ⑤ CHASE 可直接跑（benchmark 已冻结，Entry14 ✓）
+#
+# venv 路径注意（Entry1 踩坑）：
+#   /gpfs/work/bio/jiayu2403/gdn2venv/bin/activate
+#   注意：jiayu2403/ 而非 gdn2vessel/ 下
+
+# ─── SLURM 头 ────────────────────────────────────────────────────────────────
+#SBATCH --partition=gpu4090
+#SBATCH --account=shuihuawang
+#SBATCH --qos=4gpus
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=12:00:00
+#SBATCH --job-name=gate_{DATASET}_{ARM_LABEL}_s{SEED}
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
+
+# ─── 1. 防 logs 目录缺失静默失败（checklist 必要项）────────────────────────
+mkdir -p logs
+
+# ─── 2. Triton / FLA NFS 死锁修复（Entry3 命脉，所有 GDN-2 job 必带）────────
+export TRITON_CACHE_DIR=/tmp/$USER/triton_cache
+mkdir -p "$TRITON_CACHE_DIR"
+rm -rf "$HOME/.triton/cache" 2>/dev/null || true
+
+# ─── 3. 激活 venv（路径含 jiayu2403/，Entry1 踩坑已修）─────────────────────
+source /gpfs/work/bio/jiayu2403/gdn2venv/bin/activate
+
+# ─── 4. 打印环境信息（调试用）────────────────────────────────────────────────
+echo "[gate_job] start: $(date)"
+echo "[gate_job] host: $(hostname)"
+echo "[gate_job] arm={ARM_LABEL}  use_frangi={USE_FRANGI}  dataset={DATASET}  seed={SEED}  epochs={EPOCHS}"
+echo "[gate_job] gpu: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo 'no nvidia-smi')"
+python -c "import torch; print(f'[gate_job] torch={torch.__version__}  cuda={torch.cuda.is_available()}')"
+
+# ─── 5. 主训练命令 ────────────────────────────────────────────────────────────
+# 注：--benchmark_dir 生产模式（全 test set 多图），
+#     manifest.json 按 --dataset + --severity 过滤，非单图 --benchmark_npz
+python /gpfs/work/bio/jiayu2403/gdn2vessel/src/train_reid_pilot.py \
+    --reid_feat_source memory \
+    --use_frangi {USE_FRANGI} \
+    --no_use_loc_feat \
+    --data_root {DATA_ROOT} \
+    --benchmark_dir {BENCH_DIR} \
+    --dataset {DATASET} \
+    --severity Medium \
+    --epochs {EPOCHS} \
+    --seed {SEED} \
+    --output_dir {OUT_DIR}
+
+EXIT_CODE=$?
+echo "[gate_job] done: $(date)  exit_code=$EXIT_CODE"
+exit $EXIT_CODE

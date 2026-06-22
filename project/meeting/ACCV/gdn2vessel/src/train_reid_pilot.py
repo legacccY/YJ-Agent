@@ -29,9 +29,16 @@ Evaluation (held-out benchmark NPZ batch, frozen seed=42):
 Results written to state.json (real-time) and reid_results.csv.
   reid_results.csv columns:
     epoch, image_id, severity, dataset, reid_rate, reid_rate_head, reid_idf1,
-    epsilon_beta0, success_rate, n_gaps, arm
+    epsilon_beta0, success_rate, n_gaps,
+    reid_rate_head_high, reid_rate_head_low,  (A-v2 crowding cols)
+    seed, cldice, betti_err_total,            (gate-B topology cols)
+    arm
   reid_rate_head / reid_idf1: re-ID head logit-driven metrics (NaN if head not active
     or no gaps with same-root partner visible in eval tile).
+  seed: training seed (args.seed); required by gate_frangi_verdict.py for
+    (image_id, seed) pairing between gate-on and gate-off arms.
+  cldice: binary-mask clDice (arXiv 2003.07311, eval version via skimage.skeletonize).
+  betti_err_total: |β0_err| + |β1_err| topology error (cross-validation indicator).
 
 Partial-correlation tool (standalone callable):
   python src/train_reid_pilot.py --partial_corr_only \\
@@ -544,6 +551,7 @@ def _eval_single_npz(
     overlap: int = 64,
     gap_k: Optional[np.ndarray] = None,
     k_thresh: Optional[float] = None,
+    seed: int = 42,
 ) -> Dict:
     """
     Run model on one benchmark NPZ.  Returns per-image metric dict.
@@ -568,6 +576,8 @@ def _eval_single_npz(
         epsilon_beta0,
         success_rate,
         reid_rate as compute_reid_rate,
+        cldice_metric,
+        betti_error,
     )
     from benchmark.synth_breaks import BreakResult, GapRecord
     from datasets.precompute_benchmark import load_benchmark_sample
@@ -621,6 +631,14 @@ def _eval_single_npz(
     eps = epsilon_beta0(pred_bin, gt_mask)
     sr  = success_rate(pred_bin, break_result)
 
+    # --- gate-B topology metrics: clDice + Betti (arXiv 2003.07311) ---
+    # clDice: harmonic mean of topology precision & sensitivity via skeletonize.
+    # betti_error: |β0_err| + |β1_err| (component + loop count errors).
+    # Both use binary masks (eval version, not soft-skeleton training loss).
+    cldice_val    = cldice_metric(pred_bin, gt_mask)
+    betti_dict    = betti_error(pred_bin, gt_mask)
+    betti_err_tot = betti_dict['betti_err_total']
+
     # --- M-B B-3: per-image gap_k computation (crowding, A-v2) ---
     # Compute k per gap from vessel_segment_map (for evaluation stratification only;
     # never flows into model forward or training).
@@ -659,6 +677,11 @@ def _eval_single_npz(
         # crowding-stratified (nan when gap_k/k_thresh not provided or A0' headless)
         'reid_rate_head_high': head_result.get('reid_rate_head_high', float('nan')),
         'reid_rate_head_low':  head_result.get('reid_rate_head_low',  float('nan')),
+        # gate-B topology cols (clDice gate主判据 + Betti 交叉印证)
+        'cldice':           cldice_val,
+        'betti_err_total':  betti_err_tot,
+        # seed: required by gate_frangi_verdict.py for (image_id, seed) pairing
+        'seed':             seed,
     }
     return row
 
@@ -672,6 +695,7 @@ def evaluate_on_benchmark(
     epoch: int = 0,
     arm: str = 'memory',
     k_thresh: Optional[float] = None,
+    seed: int = 42,
 ) -> Dict[str, float]:
     """
     Run model on a list of benchmark NPZ files, accumulate per-image metrics,
@@ -686,9 +710,11 @@ def evaluate_on_benchmark(
       csv_path       — if not None, append per-image rows to this CSV.
       epoch          — current training epoch (written to CSV).
       arm            — reid_feat_source string for CSV 'arm' column.
+      seed           — training seed, written to CSV 'seed' column for gate pairing.
 
     Returns dict of aggregated means:
-      reid_rate, epsilon_beta0, success_rate, n_gaps (total), n_images.
+      reid_rate, epsilon_beta0, success_rate, cldice_mean, betti_err_total_mean,
+      n_gaps (total), n_images.
 
     Statistical power note:
       Partial-corr across two arms requires n≥10 per arm (20 total) for
@@ -699,6 +725,7 @@ def evaluate_on_benchmark(
     if not npz_paths:
         return {
             'reid_rate': 0.0, 'epsilon_beta0': 0.0, 'success_rate': 0.0,
+            'cldice_mean': 0.0, 'betti_err_total_mean': 0.0,
             'n_gaps': 0, 'n_images': 0,
         }
 
@@ -708,7 +735,7 @@ def evaluate_on_benchmark(
     for npz_path in npz_paths:
         try:
             row = _eval_single_npz(model, device, npz_path, reid_feat_source,
-                                   k_thresh=k_thresh)
+                                   k_thresh=k_thresh, seed=seed)
             per_image_rows.append(row)
         except Exception as exc:
             print(f'  [benchmark] SKIP {Path(npz_path).name}: {exc}')
@@ -745,6 +772,9 @@ def evaluate_on_benchmark(
     # A-v2 M-B: crowding-stratified aggregates
     rrh_high_mean   = _nanmean_list('reid_rate_head_high')
     rrh_low_mean    = _nanmean_list('reid_rate_head_low')
+    # gate-B topology aggregates
+    cldice_mean     = _nanmean_list('cldice')
+    betti_err_mean  = _nanmean_list('betti_err_total')
 
     def _safe_round(v: float, ndigits: int = 6) -> object:
         """Round finite float; return 'nan' string for NaN (csv-safe)."""
@@ -756,6 +786,7 @@ def evaluate_on_benchmark(
     #          reid_rate, reid_rate_head, reid_idf1,
     #          epsilon_beta0, success_rate, n_gaps,
     #          reid_rate_head_high, reid_rate_head_low,  ← A-v2 M-B new columns
+    #          seed, cldice, betti_err_total,            ← gate-B topology cols
     #          arm
     # CRITICAL: header (written in main()) must match this column order exactly.
     if csv_path is not None:
@@ -775,6 +806,9 @@ def evaluate_on_benchmark(
                     row['n_gaps'],
                     _safe_round(row.get('reid_rate_head_high',  float('nan')), 6),
                     _safe_round(row.get('reid_rate_head_low',   float('nan')), 6),
+                    row.get('seed', seed),                                  # gate pairing key
+                    _safe_round(row.get('cldice',          float('nan')), 6),
+                    _safe_round(row.get('betti_err_total', float('nan')), 6),
                     arm,
                 ])
 
@@ -782,15 +816,17 @@ def evaluate_on_benchmark(
         print(f'  [benchmark] {errors} NPZ(s) skipped due to errors (of {len(npz_paths)} total).')
 
     return {
-        'reid_rate':            rr_mean,
-        'reid_rate_head':       rrh_mean,
-        'reid_idf1':            ridf1_mean,
-        'reid_rate_head_high':  rrh_high_mean,
-        'reid_rate_head_low':   rrh_low_mean,
-        'epsilon_beta0':        eps_mean,
-        'success_rate':         sr_mean,
-        'n_gaps':               n_gaps,
-        'n_images':             n_images,
+        'reid_rate':              rr_mean,
+        'reid_rate_head':         rrh_mean,
+        'reid_idf1':              ridf1_mean,
+        'reid_rate_head_high':    rrh_high_mean,
+        'reid_rate_head_low':     rrh_low_mean,
+        'epsilon_beta0':          eps_mean,
+        'success_rate':           sr_mean,
+        'cldice_mean':            cldice_mean,       # gate-B primary metric
+        'betti_err_total_mean':   betti_err_mean,    # gate-B cross-validation
+        'n_gaps':                 n_gaps,
+        'n_images':               n_images,
     }
 
 
@@ -1180,8 +1216,15 @@ def build_model(args) -> nn.Module:
     # A-v2 M-A: memory-only head (use_loc_feat=False) or fuse head (use_loc_feat=True)
     use_loc_feat = getattr(args, 'use_loc_feat', True)
 
-    # Frangi is active for both A2 and A1' (both have the module for iso-param parity)
-    use_frangi = (memory_mode in ('delta_rule', 'linear_attn'))
+    # --use_frangi CLI flag (路B gate-on/off 对照实验入口).
+    # Default behaviour preserved: on for delta_rule/linear_attn, off for cnn.
+    # Explicit --use_frangi {0,1} overrides the default for ALL memory_modes,
+    # allowing gate-on vs gate-off under the SAME memory_mode (delta_rule).
+    _frangi_cli = getattr(args, 'use_frangi', None)   # None = auto (not passed on CLI)
+    if _frangi_cli is not None:
+        use_frangi = bool(int(_frangi_cli))            # explicit: 1→True, 0→False
+    else:
+        use_frangi = memory_mode in ('delta_rule', 'linear_attn')  # legacy auto
 
     model = UNetGDN2(
         in_ch=1,
@@ -1254,6 +1297,13 @@ def parse_args():
                         'Pass --no_use_loc_feat for memory-only head (命门 A-v2 三臂).')
     p.add_argument('--no_use_loc_feat', dest='use_loc_feat', action='store_false',
                    help='A-v2 M-A: memory-only head (砍 dec_feat 近路).')
+    # 路B Frangi门 on/off 独立开关（gate-on vs gate-off 2臂对照实验）
+    # Default behaviour (None): 跟随 memory_mode 自动选（delta_rule/linear_attn→on, cnn→off）
+    # Explicit 1: gate-on 无论 memory_mode; Explicit 0: gate-off 无论 memory_mode。
+    p.add_argument('--use_frangi', type=int, default=None,
+                   choices=[0, 1],
+                   help='路B Frangi门开关：1=gate-on, 0=gate-off. '
+                        'Default None = auto (delta_rule/linear_attn→1, cnn→0).')
     p.add_argument('--k_thresh', type=float, default=None,
                    help='A-v2 M-B: preregistered crowding threshold k_thresh '
                         '(median, from crowding_manifest.json). When provided, '
@@ -1352,9 +1402,13 @@ def main():
         'cnn':          "A0'(cnn)",
     }
     arm_label = _arm_labels.get(args.reid_feat_source, args.reid_feat_source)
+    _frangi_cli_val = getattr(args, 'use_frangi', None)
+    _frangi_str = ('auto' if _frangi_cli_val is None
+                   else ('gate-on(1)' if int(_frangi_cli_val) == 1 else 'gate-off(0)'))
     print(f'[train_reid_pilot] device={device}  arm={arm_label}  '
           f'detach_memory={not args.no_detach_memory}  '
-          f'bp_source={args.reid_breakpoint_source}  seed={args.seed}')
+          f'bp_source={args.reid_breakpoint_source}  seed={args.seed}  '
+          f'use_frangi={_frangi_str}')
 
     # Warn if A3 ablation active (safety reminder)
     if args.no_detach_memory:
@@ -1483,6 +1537,7 @@ def main():
             'reid_rate', 'reid_rate_head', 'reid_idf1',
             'epsilon_beta0', 'success_rate', 'n_gaps',
             'reid_rate_head_high', 'reid_rate_head_low',   # A-v2 M-B crowding cols
+            'seed', 'cldice', 'betti_err_total',           # gate-B topology cols
             'arm',
         ])
 
@@ -1525,11 +1580,13 @@ def main():
                     epoch=epoch,
                     arm=args.reid_feat_source,
                     k_thresh=_k_thresh,   # A-v2 M-B crowding stratification
+                    seed=args.seed,       # gate-B: written to CSV seed col for pairing
                 )
                 print(f'  [benchmark] n_images={bench_metrics["n_images"]}  '
                       f'reid_rate={bench_metrics["reid_rate"]:.4f}  '
                       f'ε_β0={bench_metrics["epsilon_beta0"]:.4f}  '
-                      f'SR={bench_metrics["success_rate"]:.4f}')
+                      f'SR={bench_metrics["success_rate"]:.4f}  '
+                      f'clDice={bench_metrics.get("cldice_mean", float("nan")):.4f}')
             except Exception as exc:
                 print(f'  [benchmark] eval failed: {exc}')
 

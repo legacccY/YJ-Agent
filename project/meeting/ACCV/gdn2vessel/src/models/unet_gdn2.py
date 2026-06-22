@@ -200,17 +200,48 @@ class DifferentiableFrangi(nn.Module):
 
         return Lxx, Lxy, Lyy
 
+    # Numerical stability constants (float32-safe).
+    # _EPS_DISC: added *inside* sqrt to keep d(sqrt)/d(disc) bounded at disc→0.
+    #   Using sqrt(disc_raw + eps) instead of sqrt(clamp(disc, min=eps)):
+    #   clamp strategy zeroes the gradient where disc < eps (autograd treats
+    #   clamped region as constant), cutting gradient flow through trace/diff
+    #   in uniform background patches.  additive eps keeps the gradient
+    #   continuous: d/d(disc)[sqrt(disc+eps)] = 1/(2*sqrt(disc+eps)) →
+    #   bounded by 1/(2*sqrt(eps)) = 500 at disc=0 (float32-safe for typical
+    #   learning rates ≤ 1e-3 with Adam gradient clipping).
+    # _EPS_LAM2: floor on |λ₂| denominator in Rb = λ₁/|λ₂|; 1e-6 matches
+    #   float32 relative precision of Hessian entries.
+    # _EPS_S2: clamp floor on S² = λ₁²+λ₂² to prevent negative S² from
+    #   float32 rounding (S² is always ≥0 mathematically).
+    _EPS_DISC: float = 1e-6   # added inside sqrt of discriminant
+    _EPS_LAM2: float = 1e-6   # denominator guard for Rb = λ₁/|λ₂|
+
     @staticmethod
     def _eigenvalues_2x2_sym(
-        Lxx: torch.Tensor, Lxy: torch.Tensor, Lyy: torch.Tensor
+        Lxx: torch.Tensor, Lxy: torch.Tensor, Lyy: torch.Tensor,
+        eps_disc: float = 1e-6,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Closed-form eigenvalues of 2×2 symmetric matrix [[Lxx,Lxy],[Lxy,Lyy]].
         Returns (lambda1, lambda2) with |lambda1| ≤ |lambda2|.
+
+        Numerical stability (near-repeated eigenvalues, uniform background):
+          disc_raw = (Lxx-Lyy)² + 4*Lxy²  ≥ 0 mathematically.
+          We compute sqrt(disc_raw + eps_disc) rather than sqrt(clamp(disc_raw,
+          min=eps_disc)):
+            - clamp strategy: gradient = 0 where disc_raw < eps_disc (autograd
+              treats clamped input as constant) → kills gradient in background.
+            - additive eps strategy: gradient = 1/(2*sqrt(disc_raw+eps_disc)),
+              bounded at disc_raw=0 by 1/(2*sqrt(eps_disc)) ≈ 500, continuous
+              everywhere → gradient flows even in uniform patches.
+          See arXiv 2104.03821 §3 for analysis of differentiable eigendecomp
+          instability near repeated eigenvalues.
         """
         trace = Lxx + Lyy
         diff = Lxx - Lyy
-        disc = torch.sqrt(torch.clamp(diff ** 2 + 4 * Lxy ** 2, min=1e-12))
+        # disc_raw ≥ 0 always; additive eps keeps sqrt gradient bounded
+        disc_raw = diff ** 2 + 4.0 * Lxy ** 2   # (B,1,H,W) ≥ 0
+        disc = torch.sqrt(disc_raw + eps_disc)    # numerical-stable sqrt
         e1 = (trace - disc) / 2.0
         e2 = (trace + disc) / 2.0
         # Sort so |λ1| ≤ |λ2|
@@ -225,18 +256,31 @@ class DifferentiableFrangi(nn.Module):
 
         Returns:
             v: (B, 1, H, W) in [0, 1]
+
+        Numerical-stability notes (no change to Frangi mathematical semantics):
+          Rb = λ₁ / (|λ₂| + eps_lam2):
+            eps_lam2=1e-6 prevents divide-by-zero at background (λ₁≈λ₂≈0).
+            When λ₂≈0, vessel_mask=0 (λ₂≥0), so v=0 regardless of Rb value —
+            eps does not bias the final vesselness response.
+          S2 = clamp(λ₁²+λ₂², min=0):
+            float32 rounding can produce tiny negatives; clamp to 0 prevents
+            exp(-negative/...) > 1 which would break the [0,1] bound.
+          Both clamps are mathematically lossless: S2≥0 and |λ₂|>0 by definition.
         """
         Lxx, Lxy, Lyy = self._compute_hessian(img, sigma)
-        lam1, lam2 = self._eigenvalues_2x2_sym(Lxx, Lxy, Lyy)
+        lam1, lam2 = self._eigenvalues_2x2_sym(
+            Lxx, Lxy, Lyy, eps_disc=self._EPS_DISC
+        )
 
         # Vessel condition: λ₂ < 0 (bright-on-dark); zero otherwise
         vessel_mask = (lam2 < 0).float()
 
-        # Safe division: add tiny eps to |λ₂|
-        Rb = lam1 / (lam2.abs() + 1e-8)         # (B,1,H,W)
-        S2 = lam1 ** 2 + lam2 ** 2               # (B,1,H,W)
+        # Safe division: eps_lam2 floor on |λ₂| — no semantic change (see docstring)
+        Rb = lam1 / (lam2.abs() + self._EPS_LAM2)   # (B,1,H,W)
+        # S² = λ₁²+λ₂² — clamp to 0 to guard float32 negatives (lossless)
+        S2 = (lam1 ** 2 + lam2 ** 2).clamp(min=0.0)  # (B,1,H,W)
 
-        # Frangi 1998 eq. (13)
+        # Frangi 1998 eq. (13) — formula unchanged
         beta1_sq2 = 2.0 * self.beta1 ** 2
         beta2_sq2 = 2.0 * self.beta2 ** 2
 
