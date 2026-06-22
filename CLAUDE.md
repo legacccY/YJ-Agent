@@ -92,14 +92,15 @@
 | `verifier` | sonnet | ON | 核数字：Bash/Grep 核 csv，**禁 Read 看数据**，三方对账 |
 | `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计（事后审**成稿**） |
 | `skeptic` | opus | **OFF** | 决策点红队 / devil's advocate：立项前提 / 实验设计 / claim 逻辑三闸口，执行前找致命伤（事前攻**将要做的事**，正交 reviewer）。severity-gated，**0 致命即放行不卡流程**，不为批判而批判 |
+| `theorist` | opus | **OFF** | 理论推导/半形式化证明：立项证可行性+预测回报(scaling/样本复杂度)、失败从理论侧三分流归因(假设错/实现错/数据不够)、推导自检反幻觉。逐步标假设+置信+来源、结论分档(定理/toy验/待跑)禁越级卖。**只推导不跑**，正交 skeptic(它攻你推的)。提「理论推导/证明/为什么该 work/可行性」即触发 `/theory-audit` |
 | `optimizer` | sonnet | ON | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
 | `gh-publisher` | sonnet | ON | GitHub 发布/拉取/维护：本地子项目规范化成可开源 repo（README/LICENSE/CI/.gitignore 全套对齐顶级开源骨架）+ 隐私泄露扫描列风险 + 拉 repo 许可证合规 + 按 issue/PR review 定位修 bug。**不执行对外 push/repo create**（主线拍板后串行做）。提 github/开源/推仓库即软触发（`/gh-flow`） |
 
-> 九角色覆盖科研全闭环：调研(researcher)→设计(planner)→🩺红队设计(skeptic)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。skeptic 横切在**执行前闸口**（立项/设计/claim），与 reviewer 事后审成稿正交。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析三条腿**——派对应 agent。
+> 十角色覆盖科研全闭环：调研(researcher)→🧮理论推导(theorist)→设计(planner)→🩺红队设计(skeptic)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。theorist 横切在**理论地基**（立项可行性/失败归因/推导自检），skeptic 横切在**执行前闸口**（立项/设计/claim），与 reviewer 事后审成稿正交——theorist 产推导、skeptic 攻它、verifier 核它引的数（三层防线见 `/theory-audit`）。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析/理论四条腿**——派对应 agent。
 
 **⚡ 泛指令自动路由（铁律）**：用户实际只会说「开始工作 / 继续 / 接着干 / 干活吧 / 推进一下」这种**不带关键词的泛指令**，不会点名「设计实验/写码/分析」。主线必须**按项目状态自动定位流水线当前棒、主动派对应 agent/skill，绝不退回主线串行单干、绝不等用户给关键词**：
 > 1. 读 `registry.phase` + 项目 LOG 最新 entry + `log/experiment_state.json` → 判当前卡在哪一棒。
-> 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；要设计实验→`planner`/`/design-experiment`；设计完动手前/立项前/headline 定稿前→`skeptic` 红队（0 致命即过）；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。**泛指令「接着干/继续/把这篇推下去」要跨多阶段自动协调 → 上 `/conductor <project>`**（读 phase 建持久 DAG，自动一棒接一棒派编队、拍板点停、可跨窗恢复），别主线手动逐棒串。
+> 2. 自动选棒派单：缺情报→`researcher`/`/paper-scout`；**要理论支撑/证可行性/失败从理论侧推错因/查推导对不对→`theorist`/`/theory-audit`（立项前 kickoff、实验没达预期 diagnose、复查推导 selfcheck）**；要设计实验→`planner`/`/design-experiment`；设计完动手前/立项前/headline 定稿前→`skeptic` 红队（0 致命即过）；要写实验码→`coder`；要跑完整一轮→`/experiment-cycle`；跑完没解读→`analyst`/`/analyze-results`；要写章节→`verifier`→`writer`；要找漏洞→`reviewer`；半天级收口→`/stage-gate`。**泛指令「接着干/继续/把这篇推下去」要跨多阶段自动协调 → 上 `/conductor <project>`**（读 phase 建持久 DAG，自动一棒接一棒派编队、拍板点停、可跨窗恢复），别主线手动逐棒串。
 > 3. 训练经卡槽调度器有空卡即自启（一行回报，不卡拍板）；到真拍板点（投稿/立项/HPC 上传新数据…）停下报，其余自主推进。
 > 判据：能并行扇出就扇出，能一键 skill 就用 skill——**默认动作是「派编队」不是「自己埋头干」**。
 
@@ -178,6 +179,7 @@
 | 找新方向（立项前） | `/ideate "<种子>"`（选题工业流水线 G0-G6：批量产~100候选→工具撞车硬筛→加权+Swiss排序→skeptic红队+pre-mortem→<1GPU·h杀手锏立项前证伪→双venue+书面killcriteria拍板。专治「大胆claim全死」。全档 `project/ideation/00_README.md`）|
 | 新论文 | `/spin-off-paper`（建标准 schema + 登记 registry；新方向建议先走 `/ideate`） |
 | 探路调研 | `/paper-scout`（researcher×4 + reviewer 扇出） |
+| 理论支撑/证伪 | `/theory-audit <project> [kickoff\|diagnose\|selfcheck]`（**理论支撑推理器·三层防线**：theorist 半形式化推导→skeptic 独立证伪(命门多路投票)→verifier 核数。kickoff=立项证可行性+预测回报、diagnose=失败从理论侧三分流归因、selfcheck=推导自检反幻觉。落 `<home>/reference/THEORY_LEDGER.md` 冻结假设链防 HARKing。专治「理论塌缩」反复栽坑） |
 | 设计实验 | `/design-experiment <project>`（planner 出实验矩阵，对齐判据） |
 | 跑一轮完整实验 | `/experiment-cycle <project>`（planner→coder→🛑拍板→跑→analyst→verifier 全自动串，**固定线性 6 棒**） |
 | 多阶段自动编排 | `/conductor <project> [paper\|experiment\|scout\|writing]`（**通用 DAG 编排器**：读 phase 建持久任务图→查就绪棒自动派编队→独立棒并行扇出→跑完解锁下一棒→拍板点停。状态写 `.portfolio/pipelines/<project>.json` 抗 context 压缩，任何窗口续跑。是 experiment-cycle 的超集——要 DAG/并行/可恢复/自定义阶段时用。引擎 `tools/pipeline.py`，不手改 JSON） |

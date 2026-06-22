@@ -96,15 +96,36 @@
 
 ---
 
+## G4.5 — 理论闸 Theory（调研后·跑实验前）
+
+- **目的**：花 GPU·h 前先用**纯推导**杀掉理论上就站不住的候选——下界/界不存在、关键量是参数恒等式、拼接式不成立、回报预测说该规模不可能 work。组合台历史最贵的塌缩（MedSeg-UQ minimax 不存在 + 拼接不成立、SelInf deflation=√(2M)−1 喂任何数据固定值、NCA-JEPA「100×」无等参对照）全是**手推就能发现、却拖到跑完才暴**的。这道闸把它们前移到 0 算力的推导侧。
+- **负责**：`theorist`(opus)，经 `/theory-audit <候选> kickoff`。
+- **输入**：G4 幸存 ~5 候选 + 各自最大风险假设（G4 红队提炼）。
+- **动作**：
+  1. theorist 对每个候选半形式化推导**四栏假设链**（核心假设→机理→可证伪预测→若假设错现象），逐步标 `[假设]→[步骤]→[结论][置信][来源]`，结论分档（定理/toy验/待跑），数字标 csv/URL 查不到标 TODO 不臆造。
+  2. **回报预测**：用 scaling law / 样本复杂度 / 泛化界估「要多少数据·算力才该 work」。文献无现成 law 标 TODO 派 researcher。
+  3. **三层防线**：theorist 推导 → G4 skeptic 已红队（命门 claim 可补一轮独立证伪，CoVe 式生成验证问题 + self-consistency 多路重推）→ verifier 核引用数。
+- **kill 条件**：理论侧确定性证伪——下界/界**不存在**、关键量**纯参数恒等式**（σ/分母约掉喂任何数据固定值）、A+B **拼接式不成立**、回报预测说**该规模下不可能 work**。证伪须是 `定理` 档（有证明/可证伪条件），`待跑` 档**不算证伪通过也不算砍**（带进 G5 实证）。
+- **输出**：~4 候选，幸存者各产**冻结假设链** `<home>/reference/THEORY_LEDGER.md`（出实证前写死防 HARKing），其可证伪预测**直接成为 G5 杀手锏要验的靶**。
+- **通过率**：~80%（~5 → ~4）。**纯推导 0 算力**。
+- **杀死法 ②（理论先行实证滞后）**：与 G5 互补——G4.5 推导侧先廉价证伪，G5 实证侧强制再验。**理论过 ≠ 实证过，不放松 G5 纪律。**
+
+---
+
 ## G5 — 杀手锏预实验 Kill-shot 🛑
 
 - **目的**：**立项前**用最便宜的实验先证伪核心 claim——这是组合台历史上最缺的一步。
 - **负责**：`planner` 设计 → 🛑 主线跑（拍板点，训练经 `gpu_slot.py`）→ `verifier` 核读数。
-- **输入**：G4 的 ~5 候选 + 各自最大风险假设。
+- **输入**：G4.5 的 ~4 候选 + 各自**冻结假设链** `THEORY_LEDGER.md`（G5 跑的就是验这条链的可证伪预测）。
 - **动作**：
-  1. `planner` 把 G4 的证伪实验草案落成可跑的 <1 GPU·h run（最小数据/最短训练，目标=**快速证伪不是证明**）。**planner 必须预声明功效**：这实验能可靠检出的最小 effect size（MDE）+ 用 continuous metric（非 0/1 exact-match，防 floor effect）。欠功效设计退回重设。
+  1. `planner` 把 G4.5 假设链的可证伪预测落成可跑的 <1 GPU·h run（最小数据/最短训练，目标=**快速证伪不是证明**）。**planner 必须预声明功效**：这实验能可靠检出的最小 effect size（MDE）+ 用 continuous metric（非 0/1 exact-match，防 floor effect）。欠功效设计退回重设。
   2. 🛑 主线 `gpu_slot.py request` 申请卡槽 → 有空卡即起（自主区，一行回报）→ 跑。
   3. `verifier` 核结果 csv（Bash/Grep，不信 Read）+ **按 R9 判三分流**：附功效声明（N/metric/95%CI/MDE）→ 判 KILL / GRAY / KILL-proxy。
+- **G5 pilot 实现三铁律（优先官方·宽容·轻量）**：
+  - **① 优先官方代码，非必要不手搓**：杀手锏实现优先复用候选方法/baseline 的**官方 repo**（researcher 先查 official source）；接外部库**先核版本矩阵**（装的 vs requirements pin）+ 跑官方 example 裸基准坐实地基，再改最小量验 claim。手搓只在无官方实现时，且标 TODO 说明（[[feedback_version_matrix_first]] [[feedback_no_hallucinate_settings]]）。
+  - **② 测试宽容（快速证伪不是证明）**：pilot 判据从宽——只需能区分「**信号真不存在** vs **实验太小说不清**」。**不**因 pilot 没达 SOTA / 没精确复现 / 绝对性能低就判 claim 死（那是 floor effect → 走 R9 GRAY 带债，不是 KILL）。只有 `定理`级理论证伪 或 CI 窄+continuous 的干净 null 才 KILL。
+  - **③ 尽量轻量**：最小数据子集 / 最短训练 / 单 seed / 优先小 proxy task 或合成数据 / 能 CPU 烟测先 CPU。硬上限 <1 GPU·h，超了退回 planner 砍规模。
+  - **scope 警告**：以上宽容**只限 G5 快速证伪 pilot**；立项（G6）后正式实验仍**复现零偏离 + 数字 Bash/Grep 核 csv**（[[feedback_repro_zero_deviation]]），不把 pilot 宽松带进正式跑。
 - **kill 条件**（R9，**改三分流，防假阴性误杀顶会苗子**）：
   - **KILL（照砍）**：null + CI 窄 + continuous metric → 信号真不存在，砍。
   - **GRAY（不砍，带债）**：null + CI 宽 或 binary metric/MDE 过大 → 实验太小说明不了，**候选存活**排队更大验证（kill 权重仅 0.3）。run-004 一堆 GRAY 即此症——当时若直接砍就误杀。
@@ -138,7 +159,8 @@
 | G2 | ~50 | ~20 | 40% | 二元 kill + 工具撞车检测 |
 | G3 | ~20 | 8-10 | 45% | InnoEval 加权 + Swiss + 12维taste |
 | G4 | 8-10 | ~5 | 55% | skeptic 红队 + pre-mortem |
-| G5 | ~5 | 2-3 | 50% | <1GPU·h 杀手锏证伪 |
+| G4.5 | ~5 | ~4 | 80% | theorist 半形式化推导(理论证伪/回报预测)·0算力 |
+| G5 | ~4 | 2-3 | 60% | <1GPU·h 杀手锏证伪 |
 | G6 | 2-3 | 1 | 40% | 双venue+kill criteria+用户拍 |
 
 总 ~1%，与 VC deal funnel 同量级（leads→investment 0.5-1.5%）。

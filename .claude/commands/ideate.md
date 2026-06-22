@@ -18,7 +18,9 @@
 
 **G4 红队预演**（自主）：skeptic(opus) 对 top 8-10 → R5 Heilmeier + 攻三死法 + R6 pre-mortem + **上风险红队（「全成了天花板到哪」，校准 R8 信号有无注水，低 tier 降级非砍）** → 提炼最大风险假设 + G5 草案 → ~5 存活（保 ≥1 MAIN-tier 进 G5；无出路🔴致命即砍/回G1）。
 
-**G5 杀手锏预实验** 🛑（拍板点）：planner 落 <1 GPU·h run（**预声明功效 MDE + continuous metric**）→ 主线 `gpu_slot.py request` 申卡槽跑 → verifier 核 csv + **R9 三分流**：KILL（CI窄+continuous→砍）/ GRAY（CI宽/binary→欠功效不砍带债）/ KILL-proxy → 2-3 存活。
+**G4.5 理论闸**（自主，调研后·跑实验前）：对 G4 幸存候选起 **theorist(opus)** 跑 `/theory-audit <候选> kickoff`——半形式化推导核心假设链（假设→机理→可证伪预测→若假设错现象）+ scaling/样本复杂度**回报预测**（要多少数据·算力才该 work）。**理论侧就能证伪的直接砍，省 G5 算力**：下界/界不存在、关键量是纯参数恒等式（喂任何数据固定值，防 SelInf deflation 式）、拼接式不成立（防 MedSeg minimax 式）、回报预测说该规模下不可能 work。三层防线复用——theorist 推导 → G4 skeptic 已红队（命门可补一轮独立证伪）→ verifier 核引用数。幸存者产**冻结假设链** `THEORY_LEDGER.md` 喂 G5（G5 跑的就是验这条链的可证伪预测）。~5 → ~4。**纯推导 0 算力**，不替代 G5 实证（理论过 ≠ 实证过，G5 仍强制跑）。
+
+**G5 杀手锏预实验** 🛑（拍板点）：planner 落 <1 GPU·h run（**预声明功效 MDE + continuous metric**，对齐 G4.5 冻结假设链的可证伪预测）→ 主线 `gpu_slot.py request` 申卡槽跑 → verifier 核 csv + **R9 三分流**：KILL（CI窄+continuous→砍）/ GRAY（CI宽/binary→欠功效不砍带债）/ KILL-proxy → 2-3 存活。
 
 **G6 立项拍板** 🛑（拍板点）：幸存出完整立项卡（**双venue 顶档由 ceiling_tier 钉死不虚标** + 全分数轨迹含 Ceiling + kill-shot verdict + 红队残差 + R7 书面 kill criteria）→ **有 MAIN-tier 苗子显式点「这是顶会赌注」与稳票分开呈** → AskUserQuestion → 拍板走 `/spin-off-paper`。
 
@@ -27,6 +29,9 @@
 
 ## 红线
 - 全程纯软活到 G5 前；**G5 跑训练是拍板点**（经 gpu_slot.py，绝不挤正在跑的）。**G6 立项是用户决策**，不替用户拍。
+- **G4.5 理论闸纯推导 0 算力**：理论上能证伪的省 G5 算力先砍；但**理论过 ≠ 实证过**，G5 仍强制跑（不放松病因②「理论先行实证滞后」纪律——G4.5 是再加一道更便宜的理论筛，不替代实证）。theorist 结论分档(定理/toy验/待跑)，`待跑` 不算证伪通过。
+- **G5 pilot 三条（优先官方·宽容·轻量）**：①**优先官方代码**——杀手锏实现优先复用官方 repo/baseline，**非必要不自己手搓**；接外部库先核版本矩阵(装的 vs requirements pin)+跑官方 example 裸基准（[[feedback_version_matrix_first]] [[feedback_no_hallucinate_settings]]）。②**测试放宽容**——G5 是**快速证伪不是证明**，判据从宽：能区分「信号真不存在 vs 太小说不清」即够，别因 pilot 没达 SOTA/没精确复现就砍（那是 floor effect 不是 claim 死，正是 R9 GRAY 不砍的本意）。③**尽量轻量**——最小数据/最短训练/单 seed/优先小 proxy task 或合成数据，能 CPU 烟测先 CPU；硬上限 <1 GPU·h。
+- **宽容只限 G5 快速证伪 pilot**：立项后正式实验仍**复现零偏离 + 数字一律 Bash/Grep 核 csv**（[[feedback_repro_zero_deviation]]），不把 pilot 的宽松带进正式跑。
 - 杀哪个历史死法每闸都标了（见 03_GATES）：①立项乐观无对手→G4前移 ②理论先行→G5强制证伪 ③蓝海塌→G2工具撞车+可行硬闸 ④顶会执念→双venue强制 ⑤只量下风险塌成benchmark厂→R8天花板维度+MAIN保底+G4上风险红队；R9 kill-shot三分流防误杀顶会苗子。
 - **双向平衡（别矫枉过正）**：天花板信号必须举证（R8 举不出=0，防 LLM novelty 自评虚高泡沫 [Si et al.]）；GRAY 欠功效不砍但干净 KILL 照杀——既不退回大胆全死，也不塌成安全题。
 - ideator 喂 no-hallucinate（why_new 写差异化角度不写"没人做"）；可行性诚实标，别自我审查到只剩 1 个安全选题。

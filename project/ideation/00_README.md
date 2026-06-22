@@ -20,7 +20,7 @@
 **共同死法 4 种**（本流水线每一闸针对性堵）：
 
 1. **立项乐观无事前对手** —— 立项=乐观的自己自我确认，闸口(stage-gate/reviewer)杀在花完算力之后。→ **G4 红队 + G5 立项前证伪**前移。
-2. **理论先行、实证滞后** —— 漂亮理论故事先立项，跑了才知实证不撑。→ **G5 强制 <1 GPU·h 杀手锏预实验**，核心 claim 立项前先验。
+2. **理论先行、实证滞后** —— 漂亮理论故事先立项，跑了才知实证不撑。→ **G4.5 理论闸（theorist 半形式化推导先砍理论上就塌的，0 算力）+ G5 强制 <1 GPU·h 杀手锏预实验（实证证伪，理论过≠实证过）**，核心 claim 立项前先理论后实证双验。
 3. **挑"蓝海"一碰就塌** —— 优化"大胆/新"没优化"能活"。很多 claim "没人做过"正因为一碰就塌。→ **G2 工具撞车检测 + 可行性硬闸 + G3 excited-reader 测试**。
 4. **顶会执念** —— 默认全 ICLR/NeurIPS，本可发表的工作被顶会尺子量成"失败"。→ **G0/G6 强制双 venue 分档**（顶会版 + 退路版同时写）。
 
@@ -49,8 +49,11 @@ G3 评分排序 Rank       补情报 → InnoEval加权 + Swiss + R8天花板   
 G4 红队预演 Pre-mortem skeptic 攻三死法 + pre-mortem + 上风险红队    skeptic(opus)
    │  8-10 → ~5    致命路径+校准天花板(低tier降级非砍)             通过率 ~55%
    ▼
+G4.5 理论闸 Theory   theorist kickoff 半形式化推导+回报预测         theorist(opus)→/theory-audit
+   │  ~5 → ~4     理论可证伪(下界不存在/恒等式退化/拼接不成立)→砍   通过率 ~80%
+   ▼  纯推导0算力·幸存产冻结假设链THEORY_LEDGER喂G5·理论过≠实证过
 G5 杀手锏预实验 Kill-shot <1GPU·h证伪 + R9三分流(强制功效声明)       planner→🛑主线跑→verifier
-   │  ~5 → 2-3     KILL砍/GRAY欠功效不砍/KILL-proxy；gpu_slot调度   通过率 ~50%
+   │  ~4 → 2-3     KILL砍/GRAY欠功效不砍/KILL-proxy；gpu_slot调度   通过率 ~60%
    ▼
 G6 立项拍板 Go        完整双 venue + 书面 kill criteria             用户拍板
       2-3 → 1      → /spin-off-paper 建 schema + 登 registry
@@ -82,7 +85,8 @@ G0 宪章把搜索空间一次性钉死：领域边界、**硬排除清单**（N
 - **G0–G1** 自动：主线据种子草拟宪章（用户过目改）→ 起 ideator×N 批量产出 → 去重聚类落 `pool.jsonl`。
 - **G2–G3** 自动：跑撞车检测工具 + researcher 补情报 + 打分排序，淘汰大部，落分进池。
 - **G4** 自动：skeptic 对 top 8-10 红队 + pre-mortem。
-- **G5 🛑 拍板点**：杀手锏预实验要跑训练 → 经 `gpu_slot.py` 调度，主线串行跑（自主区，有空卡即起）。
+- **G4.5** 自动（调研后·跑实验前）：theorist 对幸存候选 `/theory-audit kickoff` 半形式化推导核心假设链 + 回报预测，理论侧能证伪的先砍省 G5 算力（防 MedSeg minimax 不存在 / SelInf deflation 恒等式式立项后才塌），幸存产冻结假设链喂 G5。纯推导 0 算力，**不替代 G5 实证**。
+- **G5 🛑 拍板点**：杀手锏预实验要跑训练 → 经 `gpu_slot.py` 调度，主线串行跑（自主区，有空卡即起）。**pilot 三铁律：优先官方代码非必要不手搓 / 测试宽容（快速证伪不是证明，没达 SOTA≠claim 死）/ 尽量轻量（小 proxy·合成数据·能 CPU 先 CPU·<1GPU·h）**。宽容只限 G5 pilot，立项后正式跑仍复现零偏离。
 - **G6 🛑 拍板点**：幸存 2-3 个带完整双 venue + 书面 kill criteria 呈用户，**立项是用户的决策**，拍了才 `/spin-off-paper`。
 
 详细每闸的输入/输出/负责 agent/通过率/kill 条件见 [`03_GATES.md`](03_GATES.md)。
@@ -121,7 +125,7 @@ G0 宪章把搜索空间一次性钉死：领域边界、**硬排除清单**（N
 - `runs/2026-06-17_run-003_nca-medimg/` — NCA × 医学影像单轴（剔除世界模型轴）
 - `runs/2026-06-17_run-004_medimg-worldmodel/` — 世界模型 × 医学影像（与 run-003 正交，硬排除 NCA/JEPA 家族）·60/40·ML 顶会主投。全漏斗 `104→(G2)69→(G3)45→(G4 0致命)12→(G5)终判`。**G5 无强去风险赢家**：C049 PASS 但 floor effect（rollout 卖点软）/ C047 GRAY（同模态 proxy 太弱）/ C042 GRAY（归一化假象）/ C077 KILL。**2026-06-18 G6 用户拍板=B+C：先补 C047 真 CHAOS 跨模态 G5 去风险，暂不立项**；对齐后仍分歧→立 C047，塌→回 C049 reframe 兜底。决策档 `07_report/G6_decision.md`。下一步=researcher 解 CHAOS 闸→planner 设计→coder→主线跑。
 
-运行时挂件：`.claude/agents/ideator.md`（批量产出工）+ `.claude/commands/ideate.md`（编排 skill）+ `tools/ideation_collision.py` / `ideation_gapmine.py`（已实现+测试）。
+运行时挂件：`.claude/agents/ideator.md`（批量产出工）+ `.claude/commands/ideate.md`（编排 skill）+ `tools/ideation_collision.py` / `ideation_gapmine.py`（已实现+测试）+ **`.claude/agents/theorist.md` + `.claude/commands/theory-audit.md`（G4.5 理论闸，见 [[reference_theory_engine]]）**。
 
 ---
 

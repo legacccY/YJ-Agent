@@ -48,6 +48,12 @@
           },
           {
             "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\theory_trigger.js\"",
+            "timeout": 3,
+            "statusMessage": "theory engine trigger..."
+          },
+          {
+            "type": "command",
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\use_the_squad.js\"",
             "timeout": 3,
             "statusMessage": "squad routing nudge..."
