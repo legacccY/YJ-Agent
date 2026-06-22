@@ -264,6 +264,19 @@
       "purpose": "FMReg 多任务配准框架来源; 子集 oasis/abdomenmrct 已单列; leaderboard 对照 VoxelMorph/TransMorph/LapIRN/uniGradICON",
       "status": "todo"
     },
+    "yuan_input_data": {
+      "name": "袁老师输入数据 (QuantImmuBench 工具测试输入)",
+      "n": null,
+      "local": "TODO 待袁老师提供",
+      "hpc": "TODO",
+      "source": "袁老师提供（团队内部）",
+      "used_by": [
+        "quantimmu-bench"
+      ],
+      "purpose": "5 个新抗原免疫原性预测工具(PredIG/DeepImmuno/pTuneos/IMPROVE/NeoTImmuML)的正式测试输入；到位后按各工具格式(CSV/TSV/FASTA/VCF)做转换。数据未到前先用各工具自带 bundled example 烟测",
+      "status": "todo",
+      "note": "需肽段序列+HLA allele(多数工具);pTuneos 需全基因组 WES/RNA-seq;格式转换脚本放 project/meeting/QuantImmuBench/scripts/"
+    },
     "lidc_idri": {
       "name": "LIDC-IDRI",
       "n": "1018 CT (4-annotator 结节标注)",

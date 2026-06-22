@@ -1,0 +1,3 @@
+# 外部工具 repo + 权重，不进组合台 git（体积大 + 上游有各自 license）
+*
+!.gitignore

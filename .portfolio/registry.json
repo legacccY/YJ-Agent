@@ -143,10 +143,10 @@
       "deadline": "TBD",
       "status": "active",
       "priority": 5,
-      "phase": "🔧 2026-06-22 HPC 部署进行中(用户拍板转HPC完成原始要求). 本地WSL2已全验通5工具配方: DeepImmuno✅ PredIG✅(docker) IMPROVE-Predict✅+DTU工具链全通(netMHCpan4.1/stabpan/2.8,内核vsyscall=emulate救活老二进制) NeoTImmuML(notebook需重训) pTuneos(部署验证,差VEP cache用户拍板不下). HPC(dtn jiayu2403 gpu4090)出网: github/pypi/DTU通,DockerHub不通; singularity3.11.3+module miniconda3可用. HPC策略: 3个conda工具原生装(github+pypi可达), PredIG/pTuneos传docker镜像转singularity. 进行中: HPC clone全工具+DeepImmuno env+IMPROVE models(lfs1.9G). 4类信息已齐(TOOLS/*.md). 待: IMPROVE env+DTU工具传HPC+docker镜像传HPC+PPT. 详 04_LOG Entry7-8.",
+      "phase": "🔧 2026-06-23 HPC部署基本达成(原始要求'在HPC部署测试5工具'). HPC(dtn jiayu2403)真就绪4工具smoke-pass: DeepImmuno✅(0.5325) IMPROVE-Predict✅(mean_pred=本地) PredIG✅(singularity,0.00614) NeoTImmuML✅env(notebook需重训); pTuneos sif建成(run受singularity /root权限+无fakeroot+VEP cache限,部署已本地docker验证); netMHCpan-4.1/2.8✅HPC原生+PRIME编译✅; netMHCstabpan待tcsh容器(仅feature_calc Stability需,Predict不受影响). 本地WSL2全5工具配方验通(含vsyscall=emulate救老二进制+netMHCstabpan全链). 4类信息全收TOOLS/*.md. 关键技术: Docker Hub国内不通→VPN代理7897拉+save传HPC转singularity; HPC glibc2.28 vs WSL2.39差异; git-lfs 1.9G. 剩: PPT(B4)+pTuneos端到端(VEP cache 25G用户拍板不下). 详04_LOG Entry1-13.",
       "home": "project/meeting/QuantImmuBench/",
       "log": "project/meeting/QuantImmuBench/04_LOG.md",
-      "updated": "2026-06-22"
+      "updated": "2026-06-23"
     }
   },
   "training_lock": {
