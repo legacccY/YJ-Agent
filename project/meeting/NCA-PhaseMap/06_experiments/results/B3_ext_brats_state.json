@@ -1,0 +1,8 @@
+{
+  "phase": "done",
+  "timestamp": "2026-06-22T16:48:03",
+  "total": 40,
+  "diverged_runs": 0,
+  "collapsed_runs": 17,
+  "csv": "D:\\YJ-Agent\\project\\meeting\\NCA-PhaseMap\\06_experiments\\results\\B3_ext_brats_seed.csv"
+}

@@ -1,0 +1,3 @@
+ur,fire_rate,dataset,init_seed,sigma,sigma_ci_low,sigma_ci_high,eps_active,n_steps,mre_ok
+0.25,0.75,mock,42,nan,nan,nan,nan,0,0
+0.25,0.75,mock,43,nan,nan,nan,nan,0,0

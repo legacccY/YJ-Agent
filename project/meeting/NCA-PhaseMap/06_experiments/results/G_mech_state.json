@@ -1,0 +1,14 @@
+{
+  "phase": "done",
+  "timestamp": "2026-06-22T19:03:27",
+  "total_runs": 21,
+  "run_ids": [
+    "brats_050",
+    "brats_065",
+    "brats_080",
+    "hippo_030",
+    "hippo_045",
+    "brats_080_clip1",
+    "hippo_045_clip1"
+  ]
+}

@@ -38,7 +38,9 @@ process.stdin.on('end', () => {
   // ideation/ 有 runs/ 结构化子树，由 00_README.md 统筹；tests/ 是测试套件，同 code/ 处理
   // killshots/ = 立项前证伪小脚本目录，类同 scripts/；_hpc/ = HPC 上传/提交脚本，类同 _scratch/
   // drafts_short/ drafts_long/ 等带后缀变体与 drafts/ 同等豁免；appendix/ 同 drafts
-  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts[\w-]*|appendix|killshots?|_hpc)\//.test('/' + rel)) process.exit(0);
+  // reference/ = 项目内技术文档/文献笔记，整目录由项目 README/LOG 统筹，单文件不逐一登记
+  // paper/ = 论文稿件目录（含 sections/），由项目 README 统筹，单章节不逐一登记；PLAN/ 子目录同理（有 MASTER_PLAN 统筹）
+  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts[\w-]*|appendix|killshots?|_hpc|reference|paper|PLAN)\//.test('/' + rel)) process.exit(0);
   // ICLR2027/ 根目录 *.tex：论文核心稿件，由项目 README 统筹索引，单文件无须逐一登记
   if (/project\/meeting\/ICLR2027\/[^/]+\.tex$/.test(rel)) process.exit(0);
 

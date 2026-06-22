@@ -1,0 +1,12 @@
+{
+  "overall": "K_NEW3_EARLY_PREDICT_WEAK",
+  "n_predictive": 0,
+  "n_direction_only": 2,
+  "n_not_predictive": 2,
+  "early_window": 50,
+  "n_valid_runs": 15,
+  "n_pos": 9,
+  "n_neg": 6,
+  "interpretation": "AUC \u65b9\u5411\u6b63\u786e\u4f46 CI \u542b 0.5 \u2192 n \u4e0d\u8db3\uff0c\u964d\u683c\u63aa\u8f9e\u4e0d\u5f3a\u5356",
+  "note": "n=15 run \u504f\u5c0f\uff08no-clip \u4e3b\u6761\u4ef6\uff09\uff0cCI \u5bbd\u5c5e\u9884\u671f\u3002\u65b9\u5411>0.5 \u5373\u6709\u610f\u4e49\uff0c\u4e0d\u5f3a\u5356\u663e\u8457\u6027\u3002early_window=50\uff08\u53ef\u8c03 --early_window 30 \u7f29\u7a97\uff09\u3002"
+}

@@ -1,0 +1,23 @@
+{
+  "sigma": {
+    "verdict": "MIXED",
+    "precedes": false,
+    "total": 567,
+    "n_neg": 0,
+    "n_pos": 69,
+    "n_zero": 498,
+    "interpretation": "\u6709\u7ffb\u53f7\uff1a\u03c3 \u65f6\u5e8f\u4e0d\u53ef\u5206\u8fa8 \u2192 \u964d\u7ea7\u4e3a\u300c\u76f8\u5173\u6027\u300d"
+  },
+  "d_front": {
+    "verdict": "MIXED",
+    "precedes": false,
+    "total": 567,
+    "n_neg": 0,
+    "n_pos": 69,
+    "n_zero": 498,
+    "interpretation": "\u6709\u7ffb\u53f7\uff1ad_front \u65f6\u5e8f\u4e0d\u53ef\u5206\u8fa8 \u2192 \u964d\u7ea7\u4e3a\u300c\u76f8\u5173\u6027\u300d"
+  },
+  "K_new_3_precursor": "NOT_PRECURSOR",
+  "interpretation": "\u03c3/d \u5747\u975e\u5148\u9a71 \u2192 K-new-3 \u964d TMLR",
+  "note": "P_X\u00d7P_f\u00d7N 27 \u7ec4 \u00d7 run \u6570\uff0c\u5168\u7a33\u624d\u5224\u5148\u9a71\u3002\u03c3 \u65b9\u5411\uff1a\u964d=\u8d8b\u584c\u7f29\uff0csign<0=\u5148\u9a71\u3002d \u65b9\u5411\uff1a\u5347=\u8d8b\u584c\u7f29\uff0csign<0=\u5148\u9a71\uff08P_X \u5012\u7f6e\u4e3a\u9ad8\u767e\u5206\u4f4d\uff09\u3002"
+}

@@ -388,10 +388,13 @@ def build_grid_b2(ur_min, ur_max, ur_step):
     return [(u, c, s) for u in urs for c in clips for s in seeds]
 
 
-def build_grid_b3(ur_min, ur_max):
-    # 5 ur × 5 seed，no-clip 主条件
-    n_ur  = 5
-    urs   = [round(ur_min + i * (ur_max - ur_min) / (n_ur - 1), 4) for i in range(n_ur)]
+def build_grid_b3(ur_min, ur_max, ur_list=None):
+    # 5 ur × 5 seed，no-clip 主条件；ur_list 提供则直接用（补1 扩 ur 0.45–0.80）
+    if ur_list is not None:
+        urs = [round(u, 4) for u in ur_list]
+    else:
+        n_ur  = 5
+        urs   = [round(ur_min + i * (ur_max - ur_min) / (n_ur - 1), 4) for i in range(n_ur)]
     seeds = [42, 43, 44, 45, 46]
     clips = [None]
     return [(u, c, s) for u in urs for c in clips for s in seeds]
@@ -416,6 +419,12 @@ def main():
                         default=float(os.environ.get('SIGMA_BG_BRATS', 'nan')))
     parser.add_argument('--smoke', type=int, default=0,
                         help='smoke 模式：仅跑 N 个 run × 5 step')
+    parser.add_argument('--ur_list', type=str, default=None,
+                        help='B3 显式 ur 列表（逗号分隔，覆盖 linspace），补1 扩 ur 用')
+    parser.add_argument('--out_suffix', type=str, default='',
+                        help='输出 csv/state 后缀，B3{suffix}_seed.csv，防覆盖既有 B3')
+    parser.add_argument('--dataset', choices=['brats', 'hippo'], default='brats',
+                        help='数据集：brats(默认) | hippo(补3 Hippo no-clip 尖锐性核)')
     args = parser.parse_args()
 
     smoke   = args.smoke > 0
@@ -445,21 +454,30 @@ def main():
         out_csv = os.path.join(RESULTS_DIR, "B2_fine.csv")
         out_state = os.path.join(RESULTS_DIR, "B2_state.json")
     else:  # B3
-        grid   = build_grid_b3(args.ur_min, args.ur_max)
-        out_csv = os.path.join(RESULTS_DIR, "B3_seed.csv")
-        out_state = os.path.join(RESULTS_DIR, "B3_state.json")
+        ur_list = None
+        if args.ur_list:
+            ur_list = [float(x) for x in args.ur_list.split(',')]
+        grid   = build_grid_b3(args.ur_min, args.ur_max, ur_list)
+        out_csv = os.path.join(RESULTS_DIR, f"B3{args.out_suffix}_seed.csv")
+        out_state = os.path.join(RESULTS_DIR, f"B3{args.out_suffix}_state.json")
 
     if smoke:
         grid = grid[:args.smoke]
 
     # ── 加载数据 ───────────────────────────────────────────────────
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from data_brats import BraTSSliceDataset
 
-    print(f"[{args.stage}] 加载 BraTSSliceDataset ...", flush=True)
-    train_ds = BraTSSliceDataset(data_root=args.data_root_brats,
-                                  fg_thresh=args.fg_thresh)
-    print(f"[{args.stage}] dataset n={len(train_ds)}", flush=True)
+    if args.dataset == 'hippo':
+        ds_label = 'Hippocampus'
+        print(f"[{args.stage}] 加载 HipSliceDataset（官方 Med-NCA Hippo 管线）...", flush=True)
+        train_ds = HipSliceDataset()
+    else:
+        ds_label = 'BraTS2021'
+        from data_brats import BraTSSliceDataset
+        print(f"[{args.stage}] 加载 BraTSSliceDataset ...", flush=True)
+        train_ds = BraTSSliceDataset(data_root=args.data_root_brats,
+                                      fg_thresh=args.fg_thresh)
+    print(f"[{args.stage}] dataset={ds_label} n={len(train_ds)}", flush=True)
 
     if smoke:
         class MockDS(torch.utils.data.Dataset):
@@ -529,7 +547,7 @@ def main():
             'fire_rate':      fire_rate,
             'clip_norm':      clip_label,
             'seed':           seed_val,
-            'dataset':        'BraTS2021',
+            'dataset':        ds_label,
             'final_dice':     _fmt(result['final_dice']),
             'diverged':       int(result['diverged']),
             'collapsed':      int(collapsed_flag),

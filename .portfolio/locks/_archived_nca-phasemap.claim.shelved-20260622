@@ -1,0 +1,6 @@
+project: nca-phasemap
+claimed: 2026-06-22 07:43 (Asia/Shanghai)
+window: run-009 → 立项复活窗口
+status: active (第三次重启，降级版冲 ACCV)
+task: 4 补实验 Gate1-重启（修 M1 probe / BraTS 扩 ur / Hippo-BraTS 机制 / 对齐第二实现）
+note: 核心威胁 A2（跨 seed 塌缩 MIXED=可能随机非确定相变）；硬 kill K-new-1 翻不了案即彻底收口不再重启

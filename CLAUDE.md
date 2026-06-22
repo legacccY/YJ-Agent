@@ -33,6 +33,8 @@
 - **fmreg / FMReg**（任务含 FMReg/形变配准/flow matching/registration；status=planning Gate1）：`project/meeting/FMReg/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
 - **selinf / SelInfBench**（任务含 SelInf/selective inference/winner's curse/报告值高估；status=active BIBE）：`project/meeting/SelInfBench/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
 - **artioodbench / ArtiOODBench**（任务含 ArtiOOD/artifact OOD/伪迹 benchmark；status=planning D&B）：`project/meeting/ArtiOODBench/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
+- **delta-statetrack-probe**（Delta State-Tracking Probe，服务 gdn2vessel Crux 1 的立项前实验探针；status=active，venue=N/A，无完整文档树）：直接查 `.portfolio/registry.json` 的 `delta-statetrack-probe` 条目 + `project/meeting/delta-statetrack-probe/parity_probe.py`。不按标准读档链走。
+- **quantimmu-bench / QuantImmuBench**（任务含 新抗原/neoantigen/免疫原性/immunogenicity/癌症疫苗/工具部署/PredIG/DeepImmuno/pTuneos/IMPROVE/NeoTImmuML；status=active benchmark 轻量工程台，无 STORY/ACCEPTANCE）：`project/meeting/QuantImmuBench/00_README.md` → `DEPLOY_TRACKER.md` → `TOOLS/<tool>.md` → `04_LOG.md` 最新 entry。袁老师协作项目，余嘉子任务=HPC 部署测试 5 工具+收集 4 类信息→PPT。
 - **🗄️ 已封存（shelved，开窗只读不开工，复活需拍板）**：`nca-phasemap`（`project/meeting/NCA-PhaseMap/`）、`disagree`（`project/meeting/DisagreePred/`）——各自 `00_README → 01_STORY → 02_ACCEPTANCE → 04_LOG` 读封存原因即可。
 
 > 统一规律：除 ICLR/NCA-JEPA/BMVC 三个历史特例，其余项目入口一律 `<home>/00_README.md`（自带读档顺序）→ `01_STORY` → `02_ACCEPTANCE` →（有则 `DATA_INVENTORY`/`PLAN/`）→ `04_LOG`/`PROJECT_LOG` 最新 entry。新项目 `/spin-off-paper` 建档后**必须回此清单补一行入口**，否则新窗口选它会断链（2026-06-20 gdn2vessel 踩坑根因）。
