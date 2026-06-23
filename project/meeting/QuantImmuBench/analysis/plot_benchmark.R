@@ -40,9 +40,10 @@ TOOL_COLORS <- c(
   "DeepImmuno" = "#E6693E",
   "PredIG"     = "#4C9BE8",
   "IMPROVE"    = "#3DA851",
-  "NeoTImmuML" = "#9B59B6"
+  "NeoTImmuML" = "#9B59B6",
+  "pTuneos"    = "#D55E00"
 )
-TOOL_ORDER <- c("PredIG", "NeoTImmuML", "IMPROVE", "DeepImmuno")
+TOOL_ORDER <- c("PredIG", "NeoTImmuML", "IMPROVE", "DeepImmuno", "pTuneos")
 
 base_theme <- theme_bw(base_size = 12) +
   theme(
@@ -121,7 +122,7 @@ fig2 <- ggplot(fig2_data, aes(x = Tool, y = AUC_ROC, fill = Threshold)) +
     labels = c(">0" = "ELISpot > 0", ">10" = "ELISpot > 10",
                ">median" = "ELISpot > median")
   ) +
-  scale_y_continuous(limits = c(0, 0.85), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0, 0.85), expand = c(0, 0)) +  # TODO: 若 pTuneos AUC > 0.85 需扩上限
   labs(
     title = "AUC-ROC by Tool and Threshold  (Aggregation = max)",
     x     = NULL,
@@ -193,7 +194,7 @@ fig4 <- ggplot(fig4_data, aes(x = Tool, y = AUC_ROC, fill = Aggregation)) +
     values = c("max" = "#4472C4", "mean" = "#ED7D31", "top3mean" = "#A9D18E"),
     labels = c("max" = "Max", "mean" = "Mean", "top3mean" = "Top-3 Mean")
   ) +
-  scale_y_continuous(limits = c(0, 0.82), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0, 0.82), expand = c(0, 0)) +  # TODO: 若 pTuneos AUC > 0.82 需扩上限
   labs(
     title = "AUC-ROC by Aggregation Method  (Threshold = ELISpot > 10)",
     x     = NULL,

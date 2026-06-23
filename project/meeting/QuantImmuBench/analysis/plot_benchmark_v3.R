@@ -36,17 +36,18 @@ for (p in pkgs) {
   library(p, character.only = TRUE)
 }
 
-# ── 2. Okabe-Ito 色盲安全调色板（4 工具）───────────────────────────────────────
-# 原始 Okabe-Ito 8 色；取其中柔和可区分的 4 色
+# ── 2. Okabe-Ito 色盲安全调色板（5 工具）───────────────────────────────────────
+# 原始 Okabe-Ito 8 色；取其中柔和可区分的 5 色
 OI_COLORS <- c(
   "DeepImmuno" = "#56B4E9",  # sky blue
   "PredIG"     = "#E69F00",  # orange
   "IMPROVE"    = "#009E73",  # green
-  "NeoTImmuML" = "#CC79A7"   # mauve/purple
+  "NeoTImmuML" = "#CC79A7",  # mauve/purple
+  "pTuneos"    = "#D55E00"   # vermillion (Okabe-Ito 第5安全色)
 )
 
 # 工具顺序
-TOOL_ORDER <- c("DeepImmuno", "PredIG", "IMPROVE", "NeoTImmuML")
+TOOL_ORDER <- c("DeepImmuno", "PredIG", "IMPROVE", "NeoTImmuML", "pTuneos")
 
 # ── 3. 读数据 ────────────────────────────────────────────────────────────────────
 df_metrics <- read_csv("metrics_ds2.csv", show_col_types = FALSE) |>
@@ -261,7 +262,7 @@ fig5 <- ggplot(df_heat, aes(x = Threshold, y = Tool, fill = AUC_ROC)) +
   geom_text(aes(label = sprintf("%.3f", AUC_ROC), color = text_color),
             size = 3.8, fontface = "plain") +
   scale_fill_distiller(palette = "Blues", direction = 1,
-                       limits = c(0.40, 0.80),
+                       limits = c(0.40, 0.80),  # TODO: 若 pTuneos AUC 超出 [0.40,0.80] 需调 limits
                        name   = "AUC-ROC") +
   scale_color_identity() +
   scale_x_discrete(expand = c(0, 0)) +

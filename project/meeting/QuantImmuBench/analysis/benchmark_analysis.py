@@ -5,13 +5,13 @@ from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve
 from scipy import stats
 warnings.filterwarnings("ignore")
 
-DATA_PATH = "D:/YJ-Agent/project/meeting/QuantImmuBench/scripts/out/merged_all_tools_4tools.xlsx"
+DATA_PATH = "D:/YJ-Agent/project/meeting/QuantImmuBench/scripts/out/merged_all_tools_5tools.xlsx"
 FIG_DIR   = "D:/YJ-Agent/project/meeting/QuantImmuBench/analysis/figures"
 ANLYS_DIR = "D:/YJ-Agent/project/meeting/QuantImmuBench/analysis"
 os.makedirs(FIG_DIR, exist_ok=True)
 
-TOOLS  = {"DeepImmuno":"MT_DeepImmuno","PredIG":"MT_PredIG","IMPROVE":"MT_IMPROVE_mean_prediction_rf","NeoTImmuML":"MT_NeoTImmuML"}
-COLORS = {"DeepImmuno":"#E6693E","PredIG":"#4C9BE8","IMPROVE":"#3DA851","NeoTImmuML":"#9B59B6"}
+TOOLS  = {"DeepImmuno":"MT_DeepImmuno","PredIG":"MT_PredIG","IMPROVE":"MT_IMPROVE_mean_prediction_rf","NeoTImmuML":"MT_NeoTImmuML","pTuneos":"MT_pTuneos"}
+COLORS = {"DeepImmuno":"#E6693E","PredIG":"#4C9BE8","IMPROVE":"#3DA851","NeoTImmuML":"#9B59B6","pTuneos":"#D55E00"}
 
 df = pd.read_excel(DATA_PATH)
 ds2 = df[df["Dataset"]=="DS2"].copy()

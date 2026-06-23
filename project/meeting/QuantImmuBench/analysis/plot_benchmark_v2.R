@@ -36,15 +36,19 @@ perpep   <- read_csv("plotdata_perpep.csv", show_col_types = FALSE)
 
 # ── 3. 全局设置 ────────────────────────────────────────────────────────────────
 # 工具顺序（按 max/>0 AUC 降序：PredIG 0.661, IMPROVE 0.621, NeoTImmuML 0.655, DeepImmuno 0.481）
-# 视觉习惯：从高到低排列
-TOOL_ORDER <- c("PredIG", "NeoTImmuML", "IMPROVE", "DeepImmuno")
+# 视觉习惯：从高到低排列；pTuneos 追加末尾，结果出来后可按 AUC 重排
+TOOL_ORDER <- c("PredIG", "NeoTImmuML", "IMPROVE", "DeepImmuno", "pTuneos")
 
-# NPG 调色板（Nature Publishing Group，ggsci 提供）
-# 固定映射：从 npg 前4色提取
-NPG_COLS <- pal_npg("nrc")(4)
-# NPG 默认: "#E64B35" "#4DBBD5" "#00A087" "#3C5488" "#F39B7F" ...
-TOOL_COLORS <- setNames(NPG_COLS, TOOL_ORDER)
-# PredIG=#E64B35(朱红), NeoTImmuML=#4DBBD5(天蓝), IMPROVE=#00A087(绿松), DeepImmuno=#3C5488(深蓝)
+# NPG 调色板（Nature Publishing Group）
+# 手动固定 5 色（原 pal_npg("nrc")(4) 扩第 5 色 #F39B7F，与 ggsci NPG 顺序一致）
+# NPG 顺序: "#E64B35" "#4DBBD5" "#00A087" "#3C5488" "#F39B7F" ...
+TOOL_COLORS <- c(
+  "PredIG"     = "#E64B35",   # 朱红
+  "NeoTImmuML" = "#4DBBD5",   # 天蓝
+  "IMPROVE"    = "#00A087",   # 绿松
+  "DeepImmuno" = "#3C5488",   # 深蓝
+  "pTuneos"    = "#F39B7F"    # NPG 第5色（salmon/橙粉）
+)
 
 # 阈值颜色（3色）
 THR_COLORS <- c(">0" = "#E64B35", ">10" = "#4DBBD5", ">median" = "#00A087")
@@ -423,7 +427,7 @@ fig4 <- ggplot(fig4_dodged) +
     limits = c(0.4, nlevels(fig4_data$Tool) + 0.7)
   ) +
   scale_y_continuous(
-    limits = c(0.28, 0.82),
+    limits = c(0.28, 0.82),  # TODO: 若 pTuneos AUC > 0.82 需扩上限
     breaks = seq(0.3, 0.8, 0.1),
     expand = c(0, 0)
   ) +
@@ -483,7 +487,7 @@ fig5 <- ggplot(fig5_data, aes(x = Threshold, y = Tool)) +
   scale_colour_viridis_c(
     option   = "plasma",       # 紫→橙→黄，视觉冲击力强
     name     = "AUC-ROC",
-    limits   = c(0.43, 0.76),
+    limits   = c(0.43, 0.76),  # TODO: 若 pTuneos AUC 超出 [0.43,0.76] 需调 limits
     breaks   = c(0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75),
     labels   = sprintf("%.2f", c(0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75)),
     guide    = guide_colorbar(

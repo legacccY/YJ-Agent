@@ -14,7 +14,7 @@ from sklearn.metrics import roc_curve, roc_auc_score
 
 # ── 路径 ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH  = os.path.join(SCRIPT_DIR, "..", "scripts", "out", "merged_all_tools_4tools.xlsx")
+DATA_PATH  = os.path.join(SCRIPT_DIR, "..", "scripts", "out", "merged_all_tools_5tools.xlsx")
 OUT_DIR    = SCRIPT_DIR
 
 # 工具列映射 (照搬 benchmark_analysis.py)
@@ -23,6 +23,7 @@ TOOLS = {
     "PredIG":      "MT_PredIG",
     "IMPROVE":     "MT_IMPROVE_mean_prediction_rf",
     "NeoTImmuML":  "MT_NeoTImmuML",
+    "pTuneos":     "MT_pTuneos",
 }
 
 # ── 读数据 ────────────────────────────────────────────────────────────────────

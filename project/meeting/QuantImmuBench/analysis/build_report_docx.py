@@ -329,7 +329,7 @@ caveats = [
     "IMPROVE 降级版：跳过 netMHCstabpan 稳定性预测（Stability 补 0），可能压低其实际性能，完整版表现或更优。",
     "NeoTImmuML 重训版：基于 TumorAgDB 重训（训练集正负比 364:1，未做下采样），分数不代表官方模型性能。",
     "DeepImmuno 覆盖受限：仅支持 9-10mer，较短/较长肽段无预测；低 AUC 部分反映表位长度限制而非模型本身。",
-    "pTuneos 未纳入：无法直接接受全长肽段输入，需重新设计处理流程，本次不参与比较。",
+    "pTuneos 评分说明：使用 Pre&RecNeo 模型 (model_pro)，每 (MT_pep, WT_pep, HLA) 三键唯一，综合 MT/WT 差异；非 9/10/11mer 行由 hydro_defaulted 标记，已纳入 benchmark 5 工具对比。",
     "DS1 无阴性对照：DS1 全为阳性（ELISpot 16-677 SFC），无法计算 AUC，四工具 Spearman 均不显著（|ρ| ≤ 0.16）。",
     "AUPRC 高基准线：ELISpot > 0 阈值下 baseline AUPRC = 0.891（=90/101），工具 AUPRC 0.89-0.94 提升有限，"
     "不宜作为主要判别指标。",

@@ -96,3 +96,7 @@ project/results/_bmvc_archive/
 .portfolio/pipelines/.archive/
 .claude/hooks/.delegate_gate_state.json
 .playwright-mcp/
+
+# Office 锁文件 + QuantImmu 临时 pptx 存档
+~$*
+project/meeting/QuantImmuBench/scripts/ptuneos/_archive_*.pptx

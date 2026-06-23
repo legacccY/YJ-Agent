@@ -63,3 +63,32 @@
 - 新字段全进 verdict JSON + CSV
 
 **下一步（gated）**：calibrate(job 1485869 排队中,旧码 TC0-only 不受硬化影响)出 TC0 PTVR 中位数+R²+w_scan 饱和→收尾 🔴-A 判定。**full run 前需🛑拍板**：重传硬化 spr_probe.py 到 HPC + HPC `--smoke --mode full` 验五臂新 verdict→才正式 full。
+
+## 2026-06-23 — Crux2 calibrate 诊断（HPC 卡顿 → 烟测验真相）
+**HPC 卡顿根因 = FairShare 归零**（不是 bug，配置同成功 job）：4gpus 队列优先级垫底排 4h 不动。出路=`gpudebug` QOS（priority 200，1h 墙，独立 gpudebug partition gpu3090n6 空闲）→ 立刻起跑。
+
+**full calibrate(20k steps,40视频) 假死**：GPU 恒 2-5% util 29min，非 hang 是 **20k steps 严重超量 + 40视频 gpfs IO 瓶颈饿 GPU**。
+
+**烟测(-u 无缓冲, 4视频/200步/1seed) 53s COMPLETED 验真相**：
+- 代码完全正常：gla FLA 臂在 3090 跑通(loss 0.6975→0.0010 **200步即收敛**)，sliding_window 同。
+- calibrate 数(指示性)：**PTVR-vs-Jaccard R²=0.0051 OK**(PTVR 不是 Jaccard 傀儡=解耦好,部分反驳🔴-A一刀)；Bootstrap null margin=0.0220；**TC0 PTVR noise floor(min)=0.0038 极低**。
+- 暴露 3 问题：①**iso-param 破**(numel spread 22.45%>5%,5臂参数量不等 gdn1_neg1.91M/deltaproduct2.17M/gla1.92M/sw1.77M,不公平,full前须修d_model/head_dim) ②**steps 100×过量**(20k抄自parity,SPR 200步秒收敛,应右调~2000) ③TC0 PTVR floor极低+density0.347+近线性顺序 = **再坐实任务太刻板,SPR大概率不需状态追踪**。
+
+**决策点（go/no-go,待用户拍板）**：probe 机制能跑，但证据偏向「Cholec80 SPR=低阶Markov,证不出状态追踪必要」+ 战略天花板(机制不新+任务不新)。falsify-crux-first 已用~1GPU·h 揭示命门松动,在投入full run+paper前该定夺。
+
+## 2026-06-23 — 🗄️ 方向封存（诚实退守，证据闭环）
+**封存裁决**：delta-statetrack 方向封存。机制真（Crux1 PASS），但「负特征值 NC¹ 状态追踪 × 医学时序」交集**结构性不存在**。
+
+**证据三层闭环**：
+1. **Crux2 第一个医学任务(SPR)实证证伪**：Cholec80 阶段转移 density 0.347 近确定性线性链、test GT PTVR 全 0、TC0 PTVR floor 0.004 → 低阶 Markov 够，不需状态追踪。
+2. **skeptic 红队「换任务」可行性 = NO-GO（结构性）**：医学时序主流结构=长依赖+可交换聚合/单调累积/计数，全落 TC⁰(diagonal SSM 能吃)；唯一带非交换原语候选(导管/血管树SO(3))无公开 NC¹-hard benchmark+撞 gdn2vessel+偏离 ACCV。换任何主流医学任务=重蹈 SPR 覆辙。
+3. **researcher 反查收口 = 空手**：无任何 published 医学 NC¹-hard/S_n-reducible benchmark。DeltaNet/DeltaProduct/Grazzi(ICLR25) real-world 清单全合成+语言建模零医学；反而 EHRMamba/SR-Mamba 显示 diagonal Mamba 在医学**赢** = 方向反证。
+
+**根因**：thesis 押的 claim 形状=「大胆机制×未验承重前提（医学任务需状态追踪）」，承重前提被证伪。印证 [[feedback_falsify_crux_first]] + [[feedback_claim_shape_decides_birth_difficulty]]——命门(医学任务是否 NC¹-hard)该最先最便宜证伪，这次用 ~1GPU·h+红队+反查在烧 full run+写 paper 前照出。诚实退守不 HARKing。
+
+**带走硬资产**：
+- Crux1 真核 PASS（job 1484588：GDN 家族 gdn1 0.599→gdn1_neg 0.975 单 flag +0.375 干净因果，负特征值 parity 状态追踪必要性实证）→ 可供未来非医学 venue/他项目复用
+- 判据框架（PTVR/seg-F1/P_switch 加严版 spr_probe.py）+ 转移图密度证伪法
+- Cholec80 数据管道（LoViT 特征 + Kaggle ganumatta 标签绕 CAMMA）+ HPC gpudebug 快车道调试经验（fairshare=0 时的出路）
+
+**未来复活条件**：出现 published 医学 NC¹-hard 任务（被证明需非交换长程组合且 diagonal SSM 有 floor），或愿自建合成「血管树路径追踪」探针（但偏离医学落地初衷+撞 gdn2vessel）。

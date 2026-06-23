@@ -141,18 +141,24 @@ const rows = [
   [cl("PredIG"), cc("XGBoost"), cc("✅ 连续 0-1",C.ok), cc("✅ 跑通",C.ok), cc("✅ 0.00614",C.ok), cc("✅ 完全跑通",C.ok)],
   [cl("IMPROVE"), cc("RandomForest"), cc("✅ 连续 0-1",C.ok), cc("🟡 Predict 步",C.warn), cc("🟡 Predict 步",C.warn), cc("⚠️ 部分(特征链)",C.warn)],
   [cl("NeoTImmuML"), cc("集成 ML"), cc("✅ 概率",C.ok), cc("🟡 重训跑通",C.warn), cc("🟡 env 就绪",C.warn), cc("⚠️ 部分(需重训)",C.warn)],
-  [cl("pTuneos"), cc("ML pipeline"), cc("✅ 排名分",C.ok), cc("🟡 部署验证",C.warn), cc("🟡 sif 建成",C.warn), cc("⚠️ 部分(VEP cache)",C.warn)],
+  [cl("pTuneos"), cc("ML pipeline"), cc("✅ 排名分",C.ok), cc("✅ 端到端",C.ok), cc("🟡 sif 受限",C.warn), cc("✅ Pre&RecNeo",C.ok)],
 ];
 s.addTable(rows, { x:0.7, y:1.95, w:11.9, colW:[2.0,1.9,2.3,1.85,1.7,2.15], rowH:[0.55,0.62,0.62,0.62,0.62,0.62],
   border:{pt:1,color:C.line}, align:"center", valign:"middle", fontFace:FB, fill:{color:C.card} });
 // 结论条
-s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:6.0, w:11.9, h:0.95, fill:{color:"E6F4F1"}, line:{color:C.sea,width:1} });
+s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:5.95, w:11.9, h:0.72, fill:{color:"E6F4F1"}, line:{color:C.sea,width:1} });
 s.addText([
-  { text:"结论：", options:{ bold:true, color:C.teal, fontSize:13.5 } },
-  { text:"5 工具全部部署 / 环境就绪；其中 ", options:{ color:C.ink, fontSize:13 } },
-  { text:"2 个 (DeepImmuno、PredIG) 已完全端到端跑通", options:{ bold:true, color:C.dark, fontSize:13 } },
-  { text:"，本地 + HPC 双验证、数值一致；3 个部分完成 (缺口明确，非「装不上」)。5 个均能输出连续 / 概率分数 → 都支持「强弱定量」。", options:{ color:C.ink, fontSize:13 } },
-], { x:0.95, y:6.08, w:11.4, h:0.8, fontFace:FB, valign:"middle", lineSpacingMultiple:1.05, margin:0 });
+  { text:"结论：", options:{ bold:true, color:C.teal, fontSize:13 } },
+  { text:"5 工具全部部署 / 环境就绪；其中 ", options:{ color:C.ink, fontSize:12.5 } },
+  { text:"5 / 5 均产出 ELISpot 真实分数并完成 benchmark", options:{ bold:true, color:C.dark, fontSize:12.5 } },
+  { text:"。DeepImmuno、PredIG 本地+HPC 双验证完全端到端；pTuneos 本地 docker 端到端 (Pre&RecNeo 子模型跑 ELISpot)；IMPROVE/NeoTImmuML 部分 (缺口明确，非「装不上」)。5 个均输出连续 / 概率分数 → 都支持「强弱定量」。", options:{ color:C.ink, fontSize:12.5 } },
+], { x:0.95, y:6.0, w:11.4, h:0.62, fontFace:FB, valign:"middle", lineSpacingMultiple:1.02, margin:0 });
+// 「部分完成」说明条 (缺什么 → 影响什么)
+s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:6.74, w:11.9, h:0.66, fill:{color:"FBEEE4"}, line:{color:C.warn,width:1} });
+s.addText([
+  { text:"「部分完成」= 工具自身限制，非部署失败：", options:{ bold:true, color:C.warn, fontSize:11 } },
+  { text:"IMPROVE 缺 ELISpot 没有的 RNA-seq 表达量 → Expression 特征降级、排序精度打折；NeoTImmuML 无官方预训练权重 → 用公开数据自训版 (不对标原论文数值)。两者均能出分、不影响进 benchmark。", options:{ color:C.ink, fontSize:11 } },
+], { x:0.95, y:6.79, w:11.4, h:0.56, fontFace:FB, valign:"middle", lineSpacingMultiple:1.0, margin:0 });
 pageno(s,3);
 
 // ============================================================
@@ -186,12 +192,12 @@ toolSlide({ idx:4, name:"NeoTImmuML", accent:"1C7293", method:"集成 ML", statu
   output:[ "分类指标 + 雷达图 + predict_proba 连续概率", "→ 能定量强弱", "自训后 10536 ELISpot 肽出分 0.0002-0.9974" ],
   intro:[ "纯肽特征，不要 HLA / 不要 netMHCpan 等许可工具 (部署最轻)", "局限：研究 notebook 无预训练权重 → 用 TumorAgDB2.0 (36535 行) 重训", "不含 78 特征计算代码 → 须 R Peptides 算" ],
 });
-toolSlide({ idx:5, name:"pTuneos", accent:"028090", method:"ML pipeline", status:"⚠️ 部分完成", statusCol:C.warn,
-  tagline:"个性化新抗原全流程 pipeline (WES/RNA-seq 或 VCF → 排名)，非单一评分工具",
-  input:[ "WES 模式：FASTQ + RNA-seq  或  VCF 模式：VCF+表达+拷贝数+纯度", "不接受单纯肽段 CSV，需配套患者基因组数据" ],
-  params:[ "python pTuneos.py {WES | VCF} -i config.yaml", "YAML 配各模块参数路径" ],
-  output:[ "Pre&RecNeo = T 细胞识别概率 (0-1)", "RefinedNeo = 连续综合排名分 (整合表达/加工/自身相似/识别)", "患者级：所有 RefinedNeo 之和 = 总体免疫原性" ],
-  intro:[ "端到端 pipeline，镜像自带 netMHCpan-4.0 / VEP / GATK / BWA 全套", "部署难度最高：Python2.7 老链 + 需全基因组", "⚠️ 停在 VEP cache (~15-25G)；架构喂不了纯肽 ELISpot" ],
+toolSlide({ idx:5, name:"pTuneos", accent:"028090", method:"ML pipeline", status:"✅ 端到端跑通", statusCol:C.ok,
+  tagline:"个性化新抗原全流程 pipeline (WES/RNA-seq 或 VCF → 排名)；识别子模型可单独跑肽段",
+  input:[ "完整 pipeline：VCF + 表达谱 + 拷贝数 + 纯度 + HLA (需全基因组，吃不了纯肽)", "⭐ Pre&RecNeo 子模型：仅 MT_pep + WT_pep + HLA 三列 (可跑 ELISpot 肽)" ],
+  params:[ "完整：python pTuneos.py {WES|VCF} -i config.yaml", "Pre&RecNeo：自写 wrapper 调 InVivoModelAndScore", "批 netMHCpan/blastp 加速 + nproc 并行" ],
+  output:[ "RefinedNeo = 患者级排名分 (乘表达/VAF/克隆性，需测序)", "Pre&RecNeo (model_pro) = 纯肽免疫原性识别分 → 与其他 4 工具可比", "example VCF 出 40 新抗原 (RefinedNeo 0.42–1.13)" ],
+  intro:[ "镜像自带 netMHCpan-4.0 / VEP / GATK / BWA 全套；修 8 坑 + VEP cache 14G 端到端跑通", "Pre&RecNeo 跑 ELISpot 32178 肽对 → 进 5 工具 benchmark (对账官方 r=1.0)", "⚠️ 诚实：本地 docker 跑 (HPC sif 受限 singularity 非 root)；疏水模型仅 9/10/11mer" ],
 });
 
 // ============================================================
@@ -243,25 +249,52 @@ s.addText([
   { text:"数据处理管线\n", options:{ bold:true, color:C.teal, fontSize:14, breakLine:true } },
   { text:"DS1 (83 行全 9-mer) 直接喂；DS2 (101 行变长) 滑窗截取 8-14mer。HLA 归一后按各工具格式生成输入，输出回贴主干表 (34247 行)。", options:{ color:C.ink, fontSize:12 } },
 ], { x:0.7, y:1.75, w:5.4, h:1.5, fontFace:FB, valign:"top", lineSpacingMultiple:1.1, margin:0 });
-const stat = [["DeepImmuno","17,103"],["PredIG","68,494"],["IMPROVE","26,790"],["NeoTImmuML","10,536"]];
-let sy=3.35;
+const stat = [["DeepImmuno","17,103"],["PredIG","68,494"],["IMPROVE","26,790"],["NeoTImmuML","10,536"],["pTuneos","34,247"]];
+let sy=3.18;
 stat.forEach(st=>{
-  s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:sy, w:5.4, h:0.66, fill:{color:C.card}, line:{color:C.line,width:1} });
-  s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:sy, w:0.08, h:0.66, fill:{color:C.mint} });
-  s.addText(st[0], { x:1.0, y:sy, w:3, h:0.66, fontFace:FB, fontSize:13, bold:true, color:C.ink, valign:"middle", margin:0 });
-  s.addText(st[1]+"  行", { x:3.7, y:sy, w:2.2, h:0.66, fontFace:FB, fontSize:13, color:C.teal, bold:true, align:"right", valign:"middle", margin:0 });
-  sy += 0.76;
+  s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:sy, w:5.4, h:0.56, fill:{color:C.card}, line:{color:C.line,width:1} });
+  s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:sy, w:0.08, h:0.56, fill:{color:C.mint} });
+  s.addText(st[0], { x:1.0, y:sy, w:3, h:0.56, fontFace:FB, fontSize:12.5, bold:true, color:C.ink, valign:"middle", margin:0 });
+  s.addText(st[1]+"  行", { x:3.7, y:sy, w:2.2, h:0.56, fontFace:FB, fontSize:12.5, color:C.teal, bold:true, align:"right", valign:"middle", margin:0 });
+  sy += 0.66;
 });
-s.addText("4 / 5 工具产出 ELISpot 真实免疫原性分数 (pTuneos 架构吃测序数据，喂不了纯肽)", { x:0.7, y:6.5, w:5.5, h:0.7, fontFace:FB, fontSize:10.5, italic:true, color:C.muted, valign:"top", margin:0 });
+s.addText("5 / 5 工具产出 ELISpot 真实免疫原性分数 (pTuneos 用 Pre&RecNeo 子模型跑肽段，对账官方 r=1.0)", { x:0.7, y:6.5, w:5.5, h:0.7, fontFace:FB, fontSize:10.5, italic:true, color:C.muted, valign:"top", margin:0 });
 // 右: ROC 图 (1400x1200 -> 比例 1.167)
 const ih=4.3, iw=ih*(1400/1200);
 s.addShape(pres.shapes.RECTANGLE, { x:6.5, y:1.7, w:6.1, h:5.1, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
 s.addImage({ path: FIG+"/fig1_roc_curves_ds2.png", x:6.5+(6.1-iw)/2, y:1.95, w:iw, h:ih });
-s.addText("初步 ROC (DS2)，仅工具部署演示用，非最终 benchmark 结论", { x:6.5, y:6.3, w:6.1, h:0.4, fontFace:FB, fontSize:10, italic:true, color:C.muted, align:"center", margin:0 });
+s.addText("5 工具 ROC (DS2, max 聚合, ELISpot>0)；pTuneos AUC 最高 0.75。DS2 阴性仅 11 → 非统计显著，演示用", { x:6.5, y:6.3, w:6.1, h:0.4, fontFace:FB, fontSize:9.5, italic:true, color:C.muted, align:"center", margin:0 });
 pageno(s,10);
 
 // ============================================================
-// Slide 11 — 结论 + 缺口
+// Slide 11 — Benchmark 深入 (阈值敏感 + 定量相关) + 官方/改动透明
+// ============================================================
+const FIG_R3 = "D:/YJ-Agent/project/meeting/QuantImmuBench/analysis/figures_R_v3";
+s = pres.addSlide();
+header(s, "Benchmark 深入", "阈值敏感性 · 定量相关 · 官方/改动透明");
+// 左图: 阈值柱状 (门槛效应)
+s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:1.65, w:5.85, h:3.35, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+s.addImage({ path: FIG_R3+"/fig2_bar_v3.png", x:0.85, y:1.78, w:5.55, h:3.1, sizing:{type:"contain", w:5.55, h:3.1} });
+s.addText("① 阈值敏感：pTuneos >0 最高 (0.78)，但 >10/>median 跌到 0.51/0.46 = 门槛效应；PredIG/IMPROVE 跨阈值稳", { x:0.7, y:5.02, w:5.85, h:0.55, fontFace:FB, fontSize:9.5, color:C.muted, valign:"top", margin:0 });
+// 右图: 散点 (定量相关)
+s.addShape(pres.shapes.RECTANGLE, { x:6.75, y:1.65, w:5.85, h:3.35, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+s.addImage({ path: FIG_R3+"/fig3_scatter_v3.png", x:6.9, y:1.78, w:5.55, h:3.1, sizing:{type:"contain", w:5.55, h:3.1} });
+s.addText("② 定量相关 (分数 vs ELISpot SFU)：PredIG ρ=0.28** / IMPROVE ρ=0.21* 能跟踪强度；pTuneos ρ=0.03 (ns) 不跟踪", { x:6.75, y:5.02, w:5.85, h:0.55, fontFace:FB, fontSize:9.5, color:C.muted, valign:"top", margin:0 });
+// 底部: 官方 vs 我们改动 透明声明
+s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:5.72, w:5.85, h:1.45, fill:{color:"E6F4F1"}, line:{color:C.sea,width:1} });
+s.addText([
+  { text:"✅ 完全官方 (算法/分数没动)\n", options:{ bold:true, color:C.teal, fontSize:11.5, breakLine:true } },
+  { text:"5 工具模型/权重/评分；pTuneos model_pro 数值 (r=1.0 对账证)；netMHCpan/blastp/VEP 等外部工具", options:{ color:C.ink, fontSize:10 } },
+], { x:0.9, y:5.85, w:5.5, h:1.25, fontFace:FB, valign:"top", lineSpacingMultiple:1.05, margin:0 });
+s.addShape(pres.shapes.RECTANGLE, { x:6.75, y:5.72, w:5.85, h:1.45, fill:{color:"FBEEE4"}, line:{color:C.warn,width:1} });
+s.addText([
+  { text:"🔧 我们的改动 (需标清)\n", options:{ bold:true, color:C.warn, fontSize:11.5, breakLine:true } },
+  { text:"ELISpot 滑窗/格式转换 · benchmark 评估框架 + 所有图 · ⚠️pTuneos 喂肽段 (抠识别子模型，合法但非官方标准流程) · 批处理加速 (结果同) · 修部署 8 坑 (不改算法)", options:{ color:C.ink, fontSize:10 } },
+], { x:6.95, y:5.85, w:5.5, h:1.25, fontFace:FB, valign:"top", lineSpacingMultiple:1.05, margin:0 });
+pageno(s,11);
+
+// ============================================================
+// Slide 12 — 结论 + 缺口
 // ============================================================
 s = pres.addSlide();
 s.background = { color: C.dark };
@@ -272,7 +305,7 @@ s.addText("已达成", { x:0.9, y:1.85, w:5, h:0.4, fontFace:FH, fontSize:16, bo
 s.addText([
   { text:"5 工具全部部署 / 环境就绪", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13.5, paraSpaceAfter:8 } },
   { text:"2 个完全端到端跑通 (DeepImmuno、PredIG)，本地+HPC 双验证", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13.5, paraSpaceAfter:8 } },
-  { text:"4 / 5 产出 ELISpot 真实分数", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13.5, paraSpaceAfter:8 } },
+  { text:"5 / 5 产出 ELISpot 真实分数 + benchmark (pTuneos 用 Pre&RecNeo 子模型，pTuneos AUC 最高 0.75)", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13.5, paraSpaceAfter:8 } },
   { text:"4 类信息全部收集完成 (逐工具文档齐)", options:{ bullet:{indent:14}, color:"FFFFFF", fontSize:13.5 } },
 ], { x:0.9, y:2.35, w:5.7, h:4.2, fontFace:FB, valign:"top", margin:0 });
 // 右: 剩余缺口
@@ -280,7 +313,7 @@ s.addText("剩余缺口 (诚实标注)", { x:7.0, y:1.85, w:5.5, h:0.4, fontFace
 const gaps=[
   ["IMPROVE 全特征链","Expression/NetMHCExp 需 RNA-seq，ELISpot 无 → 结构性 impute"],
   ["NeoTImmuML 权重","研究 notebook 无预训练权重，已用公开库自训补"],
-  ["pTuneos VEP cache","~15-25G 注释库待下；端到端停在注释步"],
+  ["pTuneos HPC 真跑","本地 docker 已端到端；HPC singularity 非 root/fakeroot 受限，待重打包"],
   ["袁老师正式数据","到位后按各工具格式做转换 → 正式测试"],
 ];
 let gy=2.35;

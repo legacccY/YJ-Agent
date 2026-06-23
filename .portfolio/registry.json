@@ -117,9 +117,9 @@
       "name": "Delta State-Tracking Probe",
       "venue": "N/A (立项前实验, 服务 gdn2vessel Crux 1)",
       "deadline": "N/A",
-      "status": "active",
+      "status": "shelved",
       "priority": 4,
-      "phase": "2026-06-23 Crux1 FLA-kernel PASS(GDN-fam): job1484588 gdn1(pos)0.599->gdn1_neg(neg)0.975 single-flag +0.375 3seed stable=clean causal; redline-2 effectively CONFIRMED(gdn2 0.617 overlaps pos arms). Caveat: cross-arch universality NOT established(deltanet_neg std0.099 unstable). Crux2 spr_probe.py awaits Cholec80. TODO: longer bucket 256-512 + deltanet_neg more seeds + 2nd task to lift universality.",
+      "phase": "2026-06-23 SHELVED 诚实退守: Crux1 PASS(机制真,负特征值parity状态追踪必要), 但「NC1状态追踪×医学时序」结构性不存在. 三层闭环: SPR实证证伪(density0.347近线性,TC0 PTVR floor0.004) + skeptic换任务NO-GO(医学时序普遍TC0可交换) + researcher反查空手(无published医学NC1-hard task, DeltaNet系全合成零医学). 资产: Crux1真核PASS(job1484588)+判据框架+Cholec80管道(LoViT+Kaggle ganumatta绕CAMMA)+gpudebug调试经验. 复活需published医学NC1-hard任务.",
       "home": "project/meeting/delta-statetrack-probe/",
       "scripts": "project/meeting/delta-statetrack-probe/parity_probe.py (Crux1 parity合成任务) + project/meeting/delta-statetrack-probe/spr_probe.py (Crux2 SPR手术阶段识别)",
       "updated": "2026-06-23"

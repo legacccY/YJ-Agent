@@ -4,6 +4,30 @@
 
 ---
 
+## Entry 20 — 2026-06-23 pTuneos 真正进 5 工具 benchmark（Pre&RecNeo 子模型跑 ELISpot）+ 完成度审计 + PPT/文档更新
+
+**重判任务完成度（用户问"有没有完成"）**：按袁老师 deliverable（5 工具 × [HPC 部署 + 跑 ELISpot + 4 类信息] + PPT）核 → 原判定 ~85-90%，pTuneos 两个未达：①HPC 真跑（卡 singularity 非 root/fakeroot，本地 docker 验证）②ELISpot 跑分。
+
+**关键突破：pTuneos 能进 5 工具 benchmark（用户拍板走 C）**。
+- 读官方源码 `VCFprocessor.py::InVivoModelAndScore()` 确认：pTuneos **Pre&RecNeo 识别模型**（`model_pro`，RF）**只吃 5 个纯肽+HLA 特征** `[Hydrophobicity, Recognition, Self_similarity, MT/WT_Binding_EL]`，输入仅 `MT_pep/WT_pep/HLA_type` → 可跑 ELISpot。**纠正前判**："吃不了纯肽"只对完整 RefinedNeo（乘 VAF/TPM/克隆性需测序）；Pre&RecNeo 才是与其他 4 工具 apples-to-apples 的可比量。
+- wrapper `scripts/ptuneos/ptuneos_pre_recneo.py`（容器内 Py2.7）：批 netMHCpan（按 HLA×长度，401 组）+ 批 blastp + 并行 calculate_R（20 进程），只算 model_pro 截断 immuno_effect。**对账官方 example 40 肽 model_pro 完全一致 r=1.0**（防伪通）。
+- **踩坑**：①netMHCpan 列位 `ml_record[2]`=Peptide（coder 误用 [1]=HLA，首跑探列改对）②blastp 同源肽含 gap `-` → BLOSUM62 `KeyError(('-','D'))` 崩在 row 5850 → aligner 加标准 20 氨基酸过滤 + homolog 解析拒非标准 hit + per-row try/except（修后 r=1.0 不破）。
+- 全量 32178 唯一肽对（本地 WSL2 docker，~20min，0 失败）→ `merged_all_tools_5tools.xlsx`（加 MT_pTuneos，34247 行全覆盖）。
+
+**5 工具 benchmark（DS2, metrics_ds2.csv 核实）**：
+- AUC-ROC（max/>0）：**pTuneos 0.7525（第一）** > PredIG 0.6611 > NeoTImmuML 0.6551 > IMPROVE 0.6207 > DeepImmuno 0.4813。4 工具数字与 Entry 19 完全一致（merge 没扰动）。
+- pTuneos mean/>0 AUC 0.7813 全表最高；但 >10/>median 掉到 0.46–0.58 = **门槛效应**（model_pro 93% 零值，量化 10 挡 → 二分强、梯度弱）。
+- 定量（Spearman）反转：IMPROVE top3mean ρ=0.320（p=0.001）最强、PredIG mean ρ=0.280（p=0.005）；pTuneos ρ=0.136（p=0.174 不显著）。
+- **启示（对袁老师课题）**：现有工具二分尚可（最优 AUC ~0.78），定量强弱整体弱（最优 ρ 0.32）→ 印证"做能定量强弱的工具"的动机。caveat：DS2 阴性仅 11，非统计显著。
+
+**产物更新**：R 图 3 版重出（含 pTuneos 第 5 色 #D55E00）；Word 报告 5 工具版；**PPT 更新 slide 3/8/10/11**（pTuneos ✅端到端 + Pre&RecNeo benchmark + 诚实标 HPC 受限/9-11mer 覆盖）→ 因原 .pptx 被占用，生成到 `QuantImmuBench_部署测试报告_5tools.pptx`（LibreOffice→PDF→PNG 视觉 QA 4 页通过，无溢出）。pTuneos.md/DEPLOY_TRACKER 状态更新。
+
+**PPT 增强（应用户要求）**：①新增 slide 11「Benchmark 深入」= fig2 阈值柱（门槛效应）+ fig3 散点（定量相关）+ **官方/改动透明声明双框**（绿=官方算法/分数没动 r=1.0；橙=我们改动：预处理/benchmark 框架/⚠️pTuneos 喂肽非官方标准用法/批处理/修 8 坑）→ 原结论页顺延 slide 12，全 12 页。②slide 3 加「部分完成说明」橙条：IMPROVE 缺 ELISpot 没有的 RNA-seq 表达量→Expression 特征降级（精度打折）；NeoTImmuML 无官方权重→自训版（不对标原论文）；均不影响进 benchmark。最终 PPT `QuantImmuBench_部署测试报告.pptx`（12 页，LibreOffice→PDF→PNG QA 通过）。
+
+**待办**：（可选）pTuneos HPC 真跑需重打包 sif（非 root）或上传 VEP cache。
+
+---
+
 ## Entry 19 — 2026-06-23 pTuneos example 端到端攻坚成功 + 5 工具全跑通 + benchmark/报告/图
 
 **🎉 5/5 工具全部产出真实结果。**
