@@ -1,0 +1,553 @@
+[parity_probe] device=cuda dummy=False task=parity
+[parity_probe] Capacity: num_heads=4 × head_dim=32² = 4096 (all arms equal)
+
+[parity_probe] [1/15] arm=gla task=parity seed=0
+  [gla|parity|seed=0] step=500/15000 loss=0.6835 len=35
+  [gla|parity|seed=0] step=1000/15000 loss=0.7889 len=35
+  [gla|parity|seed=0] step=1500/15000 loss=0.5045 len=11
+  [gla|parity|seed=0] step=2000/15000 loss=0.5787 len=20
+  [gla|parity|seed=0] step=2500/15000 loss=0.1905 len=6
+  [gla|parity|seed=0] step=3000/15000 loss=0.1593 len=3
+  [gla|parity|seed=0] step=3500/15000 loss=0.3187 len=26
+  [gla|parity|seed=0] step=4000/15000 loss=0.0593 len=3
+  [gla|parity|seed=0] step=4500/15000 loss=0.1429 len=4
+  [gla|parity|seed=0] step=5000/15000 loss=0.3938 len=33
+  [gla|parity|seed=0] step=5500/15000 loss=0.0287 len=10
+  [gla|parity|seed=0] step=6000/15000 loss=0.2844 len=23
+  [gla|parity|seed=0] step=6500/15000 loss=0.2518 len=29
+  [gla|parity|seed=0] step=7000/15000 loss=0.4877 len=38
+  [gla|parity|seed=0] step=7500/15000 loss=0.0471 len=16
+  [gla|parity|seed=0] step=8000/15000 loss=0.1807 len=35
+  [gla|parity|seed=0] step=8500/15000 loss=0.1823 len=39
+  [gla|parity|seed=0] step=9000/15000 loss=0.5711 len=36
+  [gla|parity|seed=0] step=9500/15000 loss=0.0584 len=9
+  [gla|parity|seed=0] step=10000/15000 loss=0.5321 len=40
+  [gla|parity|seed=0] step=10500/15000 loss=0.0440 len=17
+  [gla|parity|seed=0] step=11000/15000 loss=0.0338 len=27
+  [gla|parity|seed=0] step=11500/15000 loss=0.1155 len=39
+  [gla|parity|seed=0] step=12000/15000 loss=0.0330 len=22
+  [gla|parity|seed=0] step=12500/15000 loss=0.0531 len=35
+  [gla|parity|seed=0] step=13000/15000 loss=0.0738 len=9
+  [gla|parity|seed=0] step=13500/15000 loss=0.0339 len=21
+  [gla|parity|seed=0] step=14000/15000 loss=0.0516 len=11
+  [gla|parity|seed=0] step=14500/15000 loss=0.0198 len=34
+  [gla|parity|seed=0] step=15000/15000 loss=0.0387 len=16
+  [gla|parity|seed=0] OOD bucket 40-64: acc=0.9294 (LIVE)
+  [gla|parity|seed=0] OOD bucket 64-128: acc=0.7454 (FAIL)
+  [gla|parity|seed=0] OOD bucket 128-256: acc=0.6240 (FAIL)
+  -> long_acc(128-256)=0.6240 | 40-64=0.9294 | 64-128=0.7454
+
+[parity_probe] [2/15] arm=gla task=parity seed=1
+  [gla|parity|seed=1] step=500/15000 loss=0.8177 len=20
+  [gla|parity|seed=1] step=1000/15000 loss=0.8095 len=25
+  [gla|parity|seed=1] step=1500/15000 loss=0.7693 len=34
+  [gla|parity|seed=1] step=2000/15000 loss=1.3924 len=22
+  [gla|parity|seed=1] step=2500/15000 loss=0.4250 len=16
+  [gla|parity|seed=1] step=3000/15000 loss=0.1438 len=6
+  [gla|parity|seed=1] step=3500/15000 loss=0.5054 len=40
+  [gla|parity|seed=1] step=4000/15000 loss=0.4064 len=34
+  [gla|parity|seed=1] step=4500/15000 loss=0.1261 len=10
+  [gla|parity|seed=1] step=5000/15000 loss=0.3529 len=29
+  [gla|parity|seed=1] step=5500/15000 loss=0.2393 len=28
+  [gla|parity|seed=1] step=6000/15000 loss=0.1360 len=18
+  [gla|parity|seed=1] step=6500/15000 loss=0.5466 len=37
+  [gla|parity|seed=1] step=7000/15000 loss=0.3896 len=35
+  [gla|parity|seed=1] step=7500/15000 loss=0.1966 len=28
+  [gla|parity|seed=1] step=8000/15000 loss=0.4432 len=40
+  [gla|parity|seed=1] step=8500/15000 loss=0.1540 len=3
+  [gla|parity|seed=1] step=9000/15000 loss=0.0178 len=19
+  [gla|parity|seed=1] step=9500/15000 loss=0.1245 len=34
+  [gla|parity|seed=1] step=10000/15000 loss=0.1675 len=35
+  [gla|parity|seed=1] step=10500/15000 loss=0.0069 len=11
+  [gla|parity|seed=1] step=11000/15000 loss=0.0017 len=10
+  [gla|parity|seed=1] step=11500/15000 loss=0.0010 len=14
+  [gla|parity|seed=1] step=12000/15000 loss=0.0960 len=40
+  [gla|parity|seed=1] step=12500/15000 loss=0.0000 len=3
+  [gla|parity|seed=1] step=13000/15000 loss=0.0032 len=26
+  [gla|parity|seed=1] step=13500/15000 loss=0.0002 len=5
+  [gla|parity|seed=1] step=14000/15000 loss=0.0001 len=19
+  [gla|parity|seed=1] step=14500/15000 loss=0.0002 len=18
+  [gla|parity|seed=1] step=15000/15000 loss=0.0015 len=10
+  [gla|parity|seed=1] OOD bucket 40-64: acc=0.9126 (LIVE)
+  [gla|parity|seed=1] OOD bucket 64-128: acc=0.7329 (FAIL)
+  [gla|parity|seed=1] OOD bucket 128-256: acc=0.6185 (FAIL)
+  -> long_acc(128-256)=0.6185 | 40-64=0.9126 | 64-128=0.7329
+
+[parity_probe] [3/15] arm=gla task=parity seed=2
+  [gla|parity|seed=2] step=500/15000 loss=0.7081 len=11
+  [gla|parity|seed=2] step=1000/15000 loss=0.7223 len=37
+  [gla|parity|seed=2] step=1500/15000 loss=0.6587 len=38
+  [gla|parity|seed=2] step=2000/15000 loss=0.7179 len=21
+  [gla|parity|seed=2] step=2500/15000 loss=0.6552 len=22
+  [gla|parity|seed=2] step=3000/15000 loss=0.1404 len=12
+  [gla|parity|seed=2] step=3500/15000 loss=0.1438 len=11
+  [gla|parity|seed=2] step=4000/15000 loss=0.1183 len=5
+  [gla|parity|seed=2] step=4500/15000 loss=0.1736 len=24
+  [gla|parity|seed=2] step=5000/15000 loss=0.2001 len=6
+  [gla|parity|seed=2] step=5500/15000 loss=0.0944 len=16
+  [gla|parity|seed=2] step=6000/15000 loss=0.5070 len=25
+  [gla|parity|seed=2] step=6500/15000 loss=0.0676 len=16
+  [gla|parity|seed=2] step=7000/15000 loss=0.0722 len=25
+  [gla|parity|seed=2] step=7500/15000 loss=0.0683 len=17
+  [gla|parity|seed=2] step=8000/15000 loss=0.0488 len=17
+  [gla|parity|seed=2] step=8500/15000 loss=0.1570 len=33
+  [gla|parity|seed=2] step=9000/15000 loss=0.0487 len=21
+  [gla|parity|seed=2] step=9500/15000 loss=0.0282 len=21
+  [gla|parity|seed=2] step=10000/15000 loss=0.0472 len=22
+  [gla|parity|seed=2] step=10500/15000 loss=0.0404 len=30
+  [gla|parity|seed=2] step=11000/15000 loss=0.0350 len=19
+  [gla|parity|seed=2] step=11500/15000 loss=0.0481 len=14
+  [gla|parity|seed=2] step=12000/15000 loss=0.1152 len=5
+  [gla|parity|seed=2] step=12500/15000 loss=0.0267 len=29
+  [gla|parity|seed=2] step=13000/15000 loss=0.0442 len=35
+  [gla|parity|seed=2] step=13500/15000 loss=0.0247 len=25
+  [gla|parity|seed=2] step=14000/15000 loss=0.0547 len=37
+  [gla|parity|seed=2] step=14500/15000 loss=0.0263 len=21
+  [gla|parity|seed=2] step=15000/15000 loss=0.0317 len=34
+  [gla|parity|seed=2] OOD bucket 40-64: acc=0.8582 (FAIL)
+  [gla|parity|seed=2] OOD bucket 64-128: acc=0.7004 (FAIL)
+  [gla|parity|seed=2] OOD bucket 128-256: acc=0.5983 (FAIL)
+  -> long_acc(128-256)=0.5983 | 40-64=0.8582 | 64-128=0.7004
+
+[parity_probe] [4/15] arm=gdn2 task=parity seed=0
+  [gdn2|parity|seed=0] step=500/15000 loss=0.7597 len=35
+  [gdn2|parity|seed=0] step=1000/15000 loss=0.8884 len=35
+  [gdn2|parity|seed=0] step=1500/15000 loss=0.3222 len=11
+  [gdn2|parity|seed=0] step=2000/15000 loss=0.3839 len=20
+  [gdn2|parity|seed=0] step=2500/15000 loss=0.0028 len=6
+  [gdn2|parity|seed=0] step=3000/15000 loss=0.0000 len=3
+  [gdn2|parity|seed=0] step=3500/15000 loss=0.3238 len=26
+  [gdn2|parity|seed=0] step=4000/15000 loss=0.0000 len=3
+  [gdn2|parity|seed=0] step=4500/15000 loss=0.0000 len=4
+  [gdn2|parity|seed=0] step=5000/15000 loss=0.3235 len=33
+  [gdn2|parity|seed=0] step=5500/15000 loss=0.0001 len=10
+  [gdn2|parity|seed=0] step=6000/15000 loss=0.1241 len=23
+  [gdn2|parity|seed=0] step=6500/15000 loss=0.1890 len=29
+  [gdn2|parity|seed=0] step=7000/15000 loss=0.4380 len=38
+  [gdn2|parity|seed=0] step=7500/15000 loss=0.0034 len=16
+  [gdn2|parity|seed=0] step=8000/15000 loss=0.2118 len=35
+  [gdn2|parity|seed=0] step=8500/15000 loss=0.2822 len=39
+  [gdn2|parity|seed=0] step=9000/15000 loss=0.2284 len=36
+  [gdn2|parity|seed=0] step=9500/15000 loss=0.0000 len=9
+  [gdn2|parity|seed=0] step=10000/15000 loss=0.2882 len=40
+  [gdn2|parity|seed=0] step=10500/15000 loss=0.0008 len=17
+  [gdn2|parity|seed=0] step=11000/15000 loss=0.0656 len=27
+  [gdn2|parity|seed=0] step=11500/15000 loss=0.2196 len=39
+  [gdn2|parity|seed=0] step=12000/15000 loss=0.0084 len=22
+  [gdn2|parity|seed=0] step=12500/15000 loss=0.1280 len=35
+  [gdn2|parity|seed=0] step=13000/15000 loss=0.0000 len=9
+  [gdn2|parity|seed=0] step=13500/15000 loss=0.0019 len=21
+  [gdn2|parity|seed=0] step=14000/15000 loss=0.0000 len=11
+  [gdn2|parity|seed=0] step=14500/15000 loss=0.0726 len=34
+  [gdn2|parity|seed=0] step=15000/15000 loss=0.0002 len=16
+  [gdn2|parity|seed=0] OOD bucket 40-64: acc=0.8575 (FAIL)
+  [gdn2|parity|seed=0] OOD bucket 64-128: acc=0.6864 (FAIL)
+  [gdn2|parity|seed=0] OOD bucket 128-256: acc=0.5987 (FAIL)
+  -> long_acc(128-256)=0.5987 | 40-64=0.8575 | 64-128=0.6864
+
+[parity_probe] [5/15] arm=gdn2 task=parity seed=1
+  [gdn2|parity|seed=1] step=500/15000 loss=0.8975 len=20
+  [gdn2|parity|seed=1] step=1000/15000 loss=0.5752 len=25
+  [gdn2|parity|seed=1] step=1500/15000 loss=0.7697 len=34
+  [gdn2|parity|seed=1] step=2000/15000 loss=0.3665 len=22
+  [gdn2|parity|seed=1] step=2500/15000 loss=0.1777 len=16
+  [gdn2|parity|seed=1] step=3000/15000 loss=0.0002 len=6
+  [gdn2|parity|seed=1] step=3500/15000 loss=0.3997 len=40
+  [gdn2|parity|seed=1] step=4000/15000 loss=0.2940 len=34
+  [gdn2|parity|seed=1] step=4500/15000 loss=0.0014 len=10
+  [gdn2|parity|seed=1] step=5000/15000 loss=0.2299 len=29
+  [gdn2|parity|seed=1] step=5500/15000 loss=0.1862 len=28
+  [gdn2|parity|seed=1] step=6000/15000 loss=0.0033 len=18
+  [gdn2|parity|seed=1] step=6500/15000 loss=0.3907 len=37
+  [gdn2|parity|seed=1] step=7000/15000 loss=0.2925 len=35
+  [gdn2|parity|seed=1] step=7500/15000 loss=0.1010 len=28
+  [gdn2|parity|seed=1] step=8000/15000 loss=0.3658 len=40
+  [gdn2|parity|seed=1] step=8500/15000 loss=0.0000 len=3
+  [gdn2|parity|seed=1] step=9000/15000 loss=0.0010 len=19
+  [gdn2|parity|seed=1] step=9500/15000 loss=0.0121 len=34
+  [gdn2|parity|seed=1] step=10000/15000 loss=0.6856 len=35
+  [gdn2|parity|seed=1] step=10500/15000 loss=0.0000 len=11
+  [gdn2|parity|seed=1] step=11000/15000 loss=0.0000 len=10
+  [gdn2|parity|seed=1] step=11500/15000 loss=0.0000 len=14
+  [gdn2|parity|seed=1] step=12000/15000 loss=0.0505 len=40
+  [gdn2|parity|seed=1] step=12500/15000 loss=0.0000 len=3
+  [gdn2|parity|seed=1] step=13000/15000 loss=0.0001 len=26
+  [gdn2|parity|seed=1] step=13500/15000 loss=0.0000 len=5
+  [gdn2|parity|seed=1] step=14000/15000 loss=0.0000 len=19
+  [gdn2|parity|seed=1] step=14500/15000 loss=0.0000 len=18
+  [gdn2|parity|seed=1] step=15000/15000 loss=0.0000 len=10
+  [gdn2|parity|seed=1] OOD bucket 40-64: acc=0.9507 (LIVE)
+  [gdn2|parity|seed=1] OOD bucket 64-128: acc=0.7821 (FAIL)
+  [gdn2|parity|seed=1] OOD bucket 128-256: acc=0.6429 (FAIL)
+  -> long_acc(128-256)=0.6429 | 40-64=0.9507 | 64-128=0.7821
+
+[parity_probe] [6/15] arm=gdn2 task=parity seed=2
+  [gdn2|parity|seed=2] step=500/15000 loss=0.5848 len=11
+  [gdn2|parity|seed=2] step=1000/15000 loss=1.0417 len=37
+  [gdn2|parity|seed=2] step=1500/15000 loss=1.1493 len=38
+  [gdn2|parity|seed=2] step=2000/15000 loss=0.3775 len=21
+  [gdn2|parity|seed=2] step=2500/15000 loss=0.4436 len=22
+  [gdn2|parity|seed=2] step=3000/15000 loss=0.0988 len=12
+  [gdn2|parity|seed=2] step=3500/15000 loss=0.0252 len=11
+  [gdn2|parity|seed=2] step=4000/15000 loss=0.0000 len=5
+  [gdn2|parity|seed=2] step=4500/15000 loss=0.2500 len=24
+  [gdn2|parity|seed=2] step=5000/15000 loss=0.0001 len=6
+  [gdn2|parity|seed=2] step=5500/15000 loss=0.1166 len=16
+  [gdn2|parity|seed=2] step=6000/15000 loss=0.2483 len=25
+  [gdn2|parity|seed=2] step=6500/15000 loss=0.0211 len=16
+  [gdn2|parity|seed=2] step=7000/15000 loss=0.1261 len=25
+  [gdn2|parity|seed=2] step=7500/15000 loss=0.0180 len=17
+  [gdn2|parity|seed=2] step=8000/15000 loss=0.0620 len=17
+  [gdn2|parity|seed=2] step=8500/15000 loss=0.1828 len=33
+  [gdn2|parity|seed=2] step=9000/15000 loss=0.0149 len=21
+  [gdn2|parity|seed=2] step=9500/15000 loss=0.0070 len=21
+  [gdn2|parity|seed=2] step=10000/15000 loss=0.0062 len=22
+  [gdn2|parity|seed=2] step=10500/15000 loss=0.0144 len=30
+  [gdn2|parity|seed=2] step=11000/15000 loss=0.0013 len=19
+  [gdn2|parity|seed=2] step=11500/15000 loss=0.0001 len=14
+  [gdn2|parity|seed=2] step=12000/15000 loss=0.0000 len=5
+  [gdn2|parity|seed=2] step=12500/15000 loss=0.0026 len=29
+  [gdn2|parity|seed=2] step=13000/15000 loss=0.0075 len=35
+  [gdn2|parity|seed=2] step=13500/15000 loss=0.0029 len=25
+  [gdn2|parity|seed=2] step=14000/15000 loss=0.0107 len=37
+  [gdn2|parity|seed=2] step=14500/15000 loss=0.0004 len=21
+  [gdn2|parity|seed=2] step=15000/15000 loss=0.0060 len=34
+  [gdn2|parity|seed=2] OOD bucket 40-64: acc=0.9034 (LIVE)
+  [gdn2|parity|seed=2] OOD bucket 64-128: acc=0.7352 (FAIL)
+  [gdn2|parity|seed=2] OOD bucket 128-256: acc=0.6104 (FAIL)
+  -> long_acc(128-256)=0.6104 | 40-64=0.9034 | 64-128=0.7352
+
+[parity_probe] [7/15] arm=gdn1 task=parity seed=0
+  [gdn1|parity|seed=0] step=500/15000 loss=1.2093 len=35
+  [gdn1|parity|seed=0] step=1000/15000 loss=1.0749 len=35
+  [gdn1|parity|seed=0] step=1500/15000 loss=0.5804 len=11
+  [gdn1|parity|seed=0] step=2000/15000 loss=1.1678 len=20
+  [gdn1|parity|seed=0] step=2500/15000 loss=0.0561 len=6
+  [gdn1|parity|seed=0] step=3000/15000 loss=0.0003 len=3
+  [gdn1|parity|seed=0] step=3500/15000 loss=0.5207 len=26
+  [gdn1|parity|seed=0] step=4000/15000 loss=0.0000 len=3
+  [gdn1|parity|seed=0] step=4500/15000 loss=0.0000 len=4
+  [gdn1|parity|seed=0] step=5000/15000 loss=0.3785 len=33
+  [gdn1|parity|seed=0] step=5500/15000 loss=0.0002 len=10
+  [gdn1|parity|seed=0] step=6000/15000 loss=0.1889 len=23
+  [gdn1|parity|seed=0] step=6500/15000 loss=0.2043 len=29
+  [gdn1|parity|seed=0] step=7000/15000 loss=0.6547 len=38
+  [gdn1|parity|seed=0] step=7500/15000 loss=0.0794 len=16
+  [gdn1|parity|seed=0] step=8000/15000 loss=0.3518 len=35
+  [gdn1|parity|seed=0] step=8500/15000 loss=0.3719 len=39
+  [gdn1|parity|seed=0] step=9000/15000 loss=0.2410 len=36
+  [gdn1|parity|seed=0] step=9500/15000 loss=0.0000 len=9
+  [gdn1|parity|seed=0] step=10000/15000 loss=0.8419 len=40
+  [gdn1|parity|seed=0] step=10500/15000 loss=0.0001 len=17
+  [gdn1|parity|seed=0] step=11000/15000 loss=0.0359 len=27
+  [gdn1|parity|seed=0] step=11500/15000 loss=0.1504 len=39
+  [gdn1|parity|seed=0] step=12000/15000 loss=0.0063 len=22
+  [gdn1|parity|seed=0] step=12500/15000 loss=0.0557 len=35
+  [gdn1|parity|seed=0] step=13000/15000 loss=0.0000 len=9
+  [gdn1|parity|seed=0] step=13500/15000 loss=0.0000 len=21
+  [gdn1|parity|seed=0] step=14000/15000 loss=0.0000 len=11
+  [gdn1|parity|seed=0] step=14500/15000 loss=0.0234 len=34
+  [gdn1|parity|seed=0] step=15000/15000 loss=0.0000 len=16
+  [gdn1|parity|seed=0] OOD bucket 40-64: acc=0.8067 (FAIL)
+  [gdn1|parity|seed=0] OOD bucket 64-128: acc=0.7015 (FAIL)
+  [gdn1|parity|seed=0] OOD bucket 128-256: acc=0.5929 (FAIL)
+  -> long_acc(128-256)=0.5929 | 40-64=0.8067 | 64-128=0.7015
+
+[parity_probe] [8/15] arm=gdn1 task=parity seed=1
+  [gdn1|parity|seed=1] step=500/15000 loss=0.6933 len=20
+  [gdn1|parity|seed=1] step=1000/15000 loss=0.7018 len=25
+  [gdn1|parity|seed=1] step=1500/15000 loss=0.6192 len=34
+  [gdn1|parity|seed=1] step=2000/15000 loss=0.5185 len=22
+  [gdn1|parity|seed=1] step=2500/15000 loss=0.2284 len=16
+  [gdn1|parity|seed=1] step=3000/15000 loss=0.0759 len=6
+  [gdn1|parity|seed=1] step=3500/15000 loss=0.5692 len=40
+  [gdn1|parity|seed=1] step=4000/15000 loss=0.4968 len=34
+  [gdn1|parity|seed=1] step=4500/15000 loss=0.0309 len=10
+  [gdn1|parity|seed=1] step=5000/15000 loss=0.3071 len=29
+  [gdn1|parity|seed=1] step=5500/15000 loss=0.3863 len=28
+  [gdn1|parity|seed=1] step=6000/15000 loss=0.1296 len=18
+  [gdn1|parity|seed=1] step=6500/15000 loss=0.9207 len=37
+  [gdn1|parity|seed=1] step=7000/15000 loss=0.2681 len=35
+  [gdn1|parity|seed=1] step=7500/15000 loss=0.1647 len=28
+  [gdn1|parity|seed=1] step=8000/15000 loss=0.2918 len=40
+  [gdn1|parity|seed=1] step=8500/15000 loss=0.0000 len=3
+  [gdn1|parity|seed=1] step=9000/15000 loss=0.0313 len=19
+  [gdn1|parity|seed=1] step=9500/15000 loss=0.1968 len=34
+  [gdn1|parity|seed=1] step=10000/15000 loss=0.2998 len=35
+  [gdn1|parity|seed=1] step=10500/15000 loss=0.0043 len=11
+  [gdn1|parity|seed=1] step=11000/15000 loss=0.0006 len=10
+  [gdn1|parity|seed=1] step=11500/15000 loss=0.0026 len=14
+  [gdn1|parity|seed=1] step=12000/15000 loss=0.3381 len=40
+  [gdn1|parity|seed=1] step=12500/15000 loss=0.0000 len=3
+  [gdn1|parity|seed=1] step=13000/15000 loss=0.0585 len=26
+  [gdn1|parity|seed=1] step=13500/15000 loss=0.0000 len=5
+  [gdn1|parity|seed=1] step=14000/15000 loss=0.0015 len=19
+  [gdn1|parity|seed=1] step=14500/15000 loss=0.0012 len=18
+  [gdn1|parity|seed=1] step=15000/15000 loss=0.0000 len=10
+  [gdn1|parity|seed=1] OOD bucket 40-64: acc=0.8339 (FAIL)
+  [gdn1|parity|seed=1] OOD bucket 64-128: acc=0.6786 (FAIL)
+  [gdn1|parity|seed=1] OOD bucket 128-256: acc=0.5896 (FAIL)
+  -> long_acc(128-256)=0.5896 | 40-64=0.8339 | 64-128=0.6786
+
+[parity_probe] [9/15] arm=gdn1 task=parity seed=2
+  [gdn1|parity|seed=2] step=500/15000 loss=0.7219 len=11
+  [gdn1|parity|seed=2] step=1000/15000 loss=0.6519 len=37
+  [gdn1|parity|seed=2] step=1500/15000 loss=0.5705 len=38
+  [gdn1|parity|seed=2] step=2000/15000 loss=0.5760 len=21
+  [gdn1|parity|seed=2] step=2500/15000 loss=2.0847 len=22
+  [gdn1|parity|seed=2] step=3000/15000 loss=0.5924 len=12
+  [gdn1|parity|seed=2] step=3500/15000 loss=0.0309 len=11
+  [gdn1|parity|seed=2] step=4000/15000 loss=0.0902 len=5
+  [gdn1|parity|seed=2] step=4500/15000 loss=0.1727 len=24
+  [gdn1|parity|seed=2] step=5000/15000 loss=0.0016 len=6
+  [gdn1|parity|seed=2] step=5500/15000 loss=0.1465 len=16
+  [gdn1|parity|seed=2] step=6000/15000 loss=0.1421 len=25
+  [gdn1|parity|seed=2] step=6500/15000 loss=0.0737 len=16
+  [gdn1|parity|seed=2] step=7000/15000 loss=0.3119 len=25
+  [gdn1|parity|seed=2] step=7500/15000 loss=0.4852 len=17
+  [gdn1|parity|seed=2] step=8000/15000 loss=0.0030 len=17
+  [gdn1|parity|seed=2] step=8500/15000 loss=0.2757 len=33
+  [gdn1|parity|seed=2] step=9000/15000 loss=0.0090 len=21
+  [gdn1|parity|seed=2] step=9500/15000 loss=0.0206 len=21
+  [gdn1|parity|seed=2] step=10000/15000 loss=0.0074 len=22
+  [gdn1|parity|seed=2] step=10500/15000 loss=0.0178 len=30
+  [gdn1|parity|seed=2] step=11000/15000 loss=0.0000 len=19
+  [gdn1|parity|seed=2] step=11500/15000 loss=0.0000 len=14
+  [gdn1|parity|seed=2] step=12000/15000 loss=0.0000 len=5
+  [gdn1|parity|seed=2] step=12500/15000 loss=0.0132 len=29
+  [gdn1|parity|seed=2] step=13000/15000 loss=0.0403 len=35
+  [gdn1|parity|seed=2] step=13500/15000 loss=0.0000 len=25
+  [gdn1|parity|seed=2] step=14000/15000 loss=0.0034 len=37
+  [gdn1|parity|seed=2] step=14500/15000 loss=0.0000 len=21
+  [gdn1|parity|seed=2] step=15000/15000 loss=0.0010 len=34
+  [gdn1|parity|seed=2] OOD bucket 40-64: acc=0.9062 (LIVE)
+  [gdn1|parity|seed=2] OOD bucket 64-128: acc=0.7396 (FAIL)
+  [gdn1|parity|seed=2] OOD bucket 128-256: acc=0.6156 (FAIL)
+  -> long_acc(128-256)=0.6156 | 40-64=0.9062 | 64-128=0.7396
+
+[parity_probe] [10/15] arm=gdn1_neg task=parity seed=0
+  [gdn1_neg|parity|seed=0] step=500/15000 loss=0.0000 len=35
+  [gdn1_neg|parity|seed=0] step=1000/15000 loss=0.0000 len=35
+  [gdn1_neg|parity|seed=0] step=1500/15000 loss=0.0000 len=11
+  [gdn1_neg|parity|seed=0] step=2000/15000 loss=0.0000 len=20
+  [gdn1_neg|parity|seed=0] step=2500/15000 loss=0.0000 len=6
+  [gdn1_neg|parity|seed=0] step=3000/15000 loss=0.0000 len=3
+  [gdn1_neg|parity|seed=0] step=3500/15000 loss=0.0000 len=26
+  [gdn1_neg|parity|seed=0] step=4000/15000 loss=0.0000 len=3
+  [gdn1_neg|parity|seed=0] step=4500/15000 loss=0.0000 len=4
+  [gdn1_neg|parity|seed=0] step=5000/15000 loss=0.0000 len=33
+  [gdn1_neg|parity|seed=0] step=5500/15000 loss=0.0000 len=10
+  [gdn1_neg|parity|seed=0] step=6000/15000 loss=0.0000 len=23
+  [gdn1_neg|parity|seed=0] step=6500/15000 loss=0.0000 len=29
+  [gdn1_neg|parity|seed=0] step=7000/15000 loss=0.0000 len=38
+  [gdn1_neg|parity|seed=0] step=7500/15000 loss=0.0000 len=16
+  [gdn1_neg|parity|seed=0] step=8000/15000 loss=0.0000 len=35
+  [gdn1_neg|parity|seed=0] step=8500/15000 loss=0.0000 len=39
+  [gdn1_neg|parity|seed=0] step=9000/15000 loss=0.0000 len=36
+  [gdn1_neg|parity|seed=0] step=9500/15000 loss=0.0000 len=9
+  [gdn1_neg|parity|seed=0] step=10000/15000 loss=0.0000 len=40
+  [gdn1_neg|parity|seed=0] step=10500/15000 loss=0.0000 len=17
+  [gdn1_neg|parity|seed=0] step=11000/15000 loss=0.0000 len=27
+  [gdn1_neg|parity|seed=0] step=11500/15000 loss=0.0000 len=39
+  [gdn1_neg|parity|seed=0] step=12000/15000 loss=0.0000 len=22
+  [gdn1_neg|parity|seed=0] step=12500/15000 loss=0.0000 len=35
+  [gdn1_neg|parity|seed=0] step=13000/15000 loss=0.0000 len=9
+  [gdn1_neg|parity|seed=0] step=13500/15000 loss=0.0000 len=21
+  [gdn1_neg|parity|seed=0] step=14000/15000 loss=0.0000 len=11
+  [gdn1_neg|parity|seed=0] step=14500/15000 loss=0.0000 len=34
+  [gdn1_neg|parity|seed=0] step=15000/15000 loss=0.0000 len=16
+  [gdn1_neg|parity|seed=0] OOD bucket 40-64: acc=1.0000 (LIVE)
+  [gdn1_neg|parity|seed=0] OOD bucket 64-128: acc=1.0000 (LIVE)
+  [gdn1_neg|parity|seed=0] OOD bucket 128-256: acc=1.0000 (LIVE)
+  -> long_acc(128-256)=1.0000 | 40-64=1.0000 | 64-128=1.0000
+
+[parity_probe] [11/15] arm=gdn1_neg task=parity seed=1
+  [gdn1_neg|parity|seed=1] step=500/15000 loss=0.0000 len=20
+  [gdn1_neg|parity|seed=1] step=1000/15000 loss=0.0000 len=25
+  [gdn1_neg|parity|seed=1] step=1500/15000 loss=0.0000 len=34
+  [gdn1_neg|parity|seed=1] step=2000/15000 loss=0.0000 len=22
+  [gdn1_neg|parity|seed=1] step=2500/15000 loss=0.0000 len=16
+  [gdn1_neg|parity|seed=1] step=3000/15000 loss=0.0000 len=6
+  [gdn1_neg|parity|seed=1] step=3500/15000 loss=0.0000 len=40
+  [gdn1_neg|parity|seed=1] step=4000/15000 loss=0.0000 len=34
+  [gdn1_neg|parity|seed=1] step=4500/15000 loss=0.0000 len=10
+  [gdn1_neg|parity|seed=1] step=5000/15000 loss=0.0000 len=29
+  [gdn1_neg|parity|seed=1] step=5500/15000 loss=0.0000 len=28
+  [gdn1_neg|parity|seed=1] step=6000/15000 loss=0.0000 len=18
+  [gdn1_neg|parity|seed=1] step=6500/15000 loss=0.0000 len=37
+  [gdn1_neg|parity|seed=1] step=7000/15000 loss=0.0000 len=35
+  [gdn1_neg|parity|seed=1] step=7500/15000 loss=0.0000 len=28
+  [gdn1_neg|parity|seed=1] step=8000/15000 loss=0.0000 len=40
+  [gdn1_neg|parity|seed=1] step=8500/15000 loss=0.0000 len=3
+  [gdn1_neg|parity|seed=1] step=9000/15000 loss=0.0000 len=19
+  [gdn1_neg|parity|seed=1] step=9500/15000 loss=0.0000 len=34
+  [gdn1_neg|parity|seed=1] step=10000/15000 loss=0.0000 len=35
+  [gdn1_neg|parity|seed=1] step=10500/15000 loss=0.0000 len=11
+  [gdn1_neg|parity|seed=1] step=11000/15000 loss=0.0000 len=10
+  [gdn1_neg|parity|seed=1] step=11500/15000 loss=0.0000 len=14
+  [gdn1_neg|parity|seed=1] step=12000/15000 loss=0.0000 len=40
+  [gdn1_neg|parity|seed=1] step=12500/15000 loss=0.0000 len=3
+  [gdn1_neg|parity|seed=1] step=13000/15000 loss=0.0000 len=26
+  [gdn1_neg|parity|seed=1] step=13500/15000 loss=0.0000 len=5
+  [gdn1_neg|parity|seed=1] step=14000/15000 loss=0.0000 len=19
+  [gdn1_neg|parity|seed=1] step=14500/15000 loss=0.0000 len=18
+  [gdn1_neg|parity|seed=1] step=15000/15000 loss=0.0000 len=10
+  [gdn1_neg|parity|seed=1] OOD bucket 40-64: acc=1.0000 (LIVE)
+  [gdn1_neg|parity|seed=1] OOD bucket 64-128: acc=1.0000 (LIVE)
+  [gdn1_neg|parity|seed=1] OOD bucket 128-256: acc=1.0000 (LIVE)
+  -> long_acc(128-256)=1.0000 | 40-64=1.0000 | 64-128=1.0000
+
+[parity_probe] [12/15] arm=gdn1_neg task=parity seed=2
+  [gdn1_neg|parity|seed=2] step=500/15000 loss=0.0000 len=11
+  [gdn1_neg|parity|seed=2] step=1000/15000 loss=0.0000 len=37
+  [gdn1_neg|parity|seed=2] step=1500/15000 loss=0.0000 len=38
+  [gdn1_neg|parity|seed=2] step=2000/15000 loss=0.0000 len=21
+  [gdn1_neg|parity|seed=2] step=2500/15000 loss=0.0000 len=22
+  [gdn1_neg|parity|seed=2] step=3000/15000 loss=0.0000 len=12
+  [gdn1_neg|parity|seed=2] step=3500/15000 loss=0.0000 len=11
+  [gdn1_neg|parity|seed=2] step=4000/15000 loss=0.0000 len=5
+  [gdn1_neg|parity|seed=2] step=4500/15000 loss=0.0000 len=24
+  [gdn1_neg|parity|seed=2] step=5000/15000 loss=0.0000 len=6
+  [gdn1_neg|parity|seed=2] step=5500/15000 loss=0.0000 len=16
+  [gdn1_neg|parity|seed=2] step=6000/15000 loss=0.0000 len=25
+  [gdn1_neg|parity|seed=2] step=6500/15000 loss=0.0000 len=16
+  [gdn1_neg|parity|seed=2] step=7000/15000 loss=0.0000 len=25
+  [gdn1_neg|parity|seed=2] step=7500/15000 loss=0.0000 len=17
+  [gdn1_neg|parity|seed=2] step=8000/15000 loss=0.0000 len=17
+  [gdn1_neg|parity|seed=2] step=8500/15000 loss=0.0000 len=33
+  [gdn1_neg|parity|seed=2] step=9000/15000 loss=0.0000 len=21
+  [gdn1_neg|parity|seed=2] step=9500/15000 loss=0.0000 len=21
+  [gdn1_neg|parity|seed=2] step=10000/15000 loss=0.0000 len=22
+  [gdn1_neg|parity|seed=2] step=10500/15000 loss=0.0000 len=30
+  [gdn1_neg|parity|seed=2] step=11000/15000 loss=0.0000 len=19
+  [gdn1_neg|parity|seed=2] step=11500/15000 loss=0.0000 len=14
+  [gdn1_neg|parity|seed=2] step=12000/15000 loss=0.0000 len=5
+  [gdn1_neg|parity|seed=2] step=12500/15000 loss=0.0000 len=29
+  [gdn1_neg|parity|seed=2] step=13000/15000 loss=0.0000 len=35
+  [gdn1_neg|parity|seed=2] step=13500/15000 loss=0.0000 len=25
+  [gdn1_neg|parity|seed=2] step=14000/15000 loss=0.0000 len=37
+  [gdn1_neg|parity|seed=2] step=14500/15000 loss=0.0000 len=21
+  [gdn1_neg|parity|seed=2] step=15000/15000 loss=0.0000 len=34
+  [gdn1_neg|parity|seed=2] OOD bucket 40-64: acc=1.0000 (LIVE)
+  [gdn1_neg|parity|seed=2] OOD bucket 64-128: acc=0.9996 (LIVE)
+  [gdn1_neg|parity|seed=2] OOD bucket 128-256: acc=0.9244 (LIVE)
+  -> long_acc(128-256)=0.9244 | 40-64=1.0000 | 64-128=0.9996
+
+[parity_probe] [13/15] arm=deltanet_neg task=parity seed=0
+  [deltanet_neg|parity|seed=0] step=500/15000 loss=0.0000 len=35
+  [deltanet_neg|parity|seed=0] step=1000/15000 loss=0.0000 len=35
+  [deltanet_neg|parity|seed=0] step=1500/15000 loss=0.0000 len=11
+  [deltanet_neg|parity|seed=0] step=2000/15000 loss=0.0000 len=20
+  [deltanet_neg|parity|seed=0] step=2500/15000 loss=0.0000 len=6
+  [deltanet_neg|parity|seed=0] step=3000/15000 loss=0.0000 len=3
+  [deltanet_neg|parity|seed=0] step=3500/15000 loss=0.0000 len=26
+  [deltanet_neg|parity|seed=0] step=4000/15000 loss=0.0000 len=3
+  [deltanet_neg|parity|seed=0] step=4500/15000 loss=0.0000 len=4
+  [deltanet_neg|parity|seed=0] step=5000/15000 loss=0.0000 len=33
+  [deltanet_neg|parity|seed=0] step=5500/15000 loss=0.0000 len=10
+  [deltanet_neg|parity|seed=0] step=6000/15000 loss=0.0000 len=23
+  [deltanet_neg|parity|seed=0] step=6500/15000 loss=0.0000 len=29
+  [deltanet_neg|parity|seed=0] step=7000/15000 loss=0.0000 len=38
+  [deltanet_neg|parity|seed=0] step=7500/15000 loss=0.0000 len=16
+  [deltanet_neg|parity|seed=0] step=8000/15000 loss=0.0000 len=35
+  [deltanet_neg|parity|seed=0] step=8500/15000 loss=0.0000 len=39
+  [deltanet_neg|parity|seed=0] step=9000/15000 loss=0.0000 len=36
+  [deltanet_neg|parity|seed=0] step=9500/15000 loss=0.0000 len=9
+  [deltanet_neg|parity|seed=0] step=10000/15000 loss=0.0000 len=40
+  [deltanet_neg|parity|seed=0] step=10500/15000 loss=0.0000 len=17
+  [deltanet_neg|parity|seed=0] step=11000/15000 loss=0.0000 len=27
+  [deltanet_neg|parity|seed=0] step=11500/15000 loss=0.0000 len=39
+  [deltanet_neg|parity|seed=0] step=12000/15000 loss=0.0000 len=22
+  [deltanet_neg|parity|seed=0] step=12500/15000 loss=0.0000 len=35
+  [deltanet_neg|parity|seed=0] step=13000/15000 loss=0.0000 len=9
+  [deltanet_neg|parity|seed=0] step=13500/15000 loss=0.0000 len=21
+  [deltanet_neg|parity|seed=0] step=14000/15000 loss=0.0000 len=11
+  [deltanet_neg|parity|seed=0] step=14500/15000 loss=0.0000 len=34
+  [deltanet_neg|parity|seed=0] step=15000/15000 loss=0.0000 len=16
+  [deltanet_neg|parity|seed=0] OOD bucket 40-64: acc=1.0000 (LIVE)
+  [deltanet_neg|parity|seed=0] OOD bucket 64-128: acc=0.9654 (LIVE)
+  [deltanet_neg|parity|seed=0] OOD bucket 128-256: acc=0.7846 (FAIL)
+  -> long_acc(128-256)=0.7846 | 40-64=1.0000 | 64-128=0.9654
+
+[parity_probe] [14/15] arm=deltanet_neg task=parity seed=1
+  [deltanet_neg|parity|seed=1] step=500/15000 loss=0.0000 len=20
+  [deltanet_neg|parity|seed=1] step=1000/15000 loss=0.0000 len=25
+  [deltanet_neg|parity|seed=1] step=1500/15000 loss=0.0000 len=34
+  [deltanet_neg|parity|seed=1] step=2000/15000 loss=0.0000 len=22
+  [deltanet_neg|parity|seed=1] step=2500/15000 loss=0.0000 len=16
+  [deltanet_neg|parity|seed=1] step=3000/15000 loss=0.0000 len=6
+  [deltanet_neg|parity|seed=1] step=3500/15000 loss=0.0000 len=40
+  [deltanet_neg|parity|seed=1] step=4000/15000 loss=0.0000 len=34
+  [deltanet_neg|parity|seed=1] step=4500/15000 loss=0.0000 len=10
+  [deltanet_neg|parity|seed=1] step=5000/15000 loss=0.0000 len=29
+  [deltanet_neg|parity|seed=1] step=5500/15000 loss=0.0000 len=28
+  [deltanet_neg|parity|seed=1] step=6000/15000 loss=0.0000 len=18
+  [deltanet_neg|parity|seed=1] step=6500/15000 loss=0.0000 len=37
+  [deltanet_neg|parity|seed=1] step=7000/15000 loss=0.0000 len=35
+  [deltanet_neg|parity|seed=1] step=7500/15000 loss=0.0000 len=28
+  [deltanet_neg|parity|seed=1] step=8000/15000 loss=0.0000 len=40
+  [deltanet_neg|parity|seed=1] step=8500/15000 loss=0.0000 len=3
+  [deltanet_neg|parity|seed=1] step=9000/15000 loss=0.0000 len=19
+  [deltanet_neg|parity|seed=1] step=9500/15000 loss=0.0000 len=34
+  [deltanet_neg|parity|seed=1] step=10000/15000 loss=0.0000 len=35
+  [deltanet_neg|parity|seed=1] step=10500/15000 loss=0.0000 len=11
+  [deltanet_neg|parity|seed=1] step=11000/15000 loss=0.0000 len=10
+  [deltanet_neg|parity|seed=1] step=11500/15000 loss=0.0000 len=14
+  [deltanet_neg|parity|seed=1] step=12000/15000 loss=0.0000 len=40
+  [deltanet_neg|parity|seed=1] step=12500/15000 loss=0.0000 len=3
+  [deltanet_neg|parity|seed=1] step=13000/15000 loss=0.0000 len=26
+  [deltanet_neg|parity|seed=1] step=13500/15000 loss=0.0000 len=5
+  [deltanet_neg|parity|seed=1] step=14000/15000 loss=0.0000 len=19
+  [deltanet_neg|parity|seed=1] step=14500/15000 loss=0.0000 len=18
+  [deltanet_neg|parity|seed=1] step=15000/15000 loss=0.0000 len=10
+  [deltanet_neg|parity|seed=1] OOD bucket 40-64: acc=1.0000 (LIVE)
+  [deltanet_neg|parity|seed=1] OOD bucket 64-128: acc=1.0000 (LIVE)
+  [deltanet_neg|parity|seed=1] OOD bucket 128-256: acc=1.0000 (LIVE)
+  -> long_acc(128-256)=1.0000 | 40-64=1.0000 | 64-128=1.0000
+
+[parity_probe] [15/15] arm=deltanet_neg task=parity seed=2
+  [deltanet_neg|parity|seed=2] step=500/15000 loss=0.0000 len=11
+  [deltanet_neg|parity|seed=2] step=1000/15000 loss=0.0000 len=37
+  [deltanet_neg|parity|seed=2] step=1500/15000 loss=0.0000 len=38
+  [deltanet_neg|parity|seed=2] step=2000/15000 loss=0.0000 len=21
+  [deltanet_neg|parity|seed=2] step=2500/15000 loss=0.0000 len=22
+  [deltanet_neg|parity|seed=2] step=3000/15000 loss=0.0000 len=12
+  [deltanet_neg|parity|seed=2] step=3500/15000 loss=0.0000 len=11
+  [deltanet_neg|parity|seed=2] step=4000/15000 loss=0.0000 len=5
+  [deltanet_neg|parity|seed=2] step=4500/15000 loss=0.0000 len=24
+  [deltanet_neg|parity|seed=2] step=5000/15000 loss=0.0000 len=6
+  [deltanet_neg|parity|seed=2] step=5500/15000 loss=0.0000 len=16
+  [deltanet_neg|parity|seed=2] step=6000/15000 loss=0.0000 len=25
+  [deltanet_neg|parity|seed=2] step=6500/15000 loss=0.0000 len=16
+  [deltanet_neg|parity|seed=2] step=7000/15000 loss=0.0000 len=25
+  [deltanet_neg|parity|seed=2] step=7500/15000 loss=0.0000 len=17
+  [deltanet_neg|parity|seed=2] step=8000/15000 loss=0.0000 len=17
+  [deltanet_neg|parity|seed=2] step=8500/15000 loss=0.0000 len=33
+  [deltanet_neg|parity|seed=2] step=9000/15000 loss=0.0000 len=21
+  [deltanet_neg|parity|seed=2] step=9500/15000 loss=0.0000 len=21
+  [deltanet_neg|parity|seed=2] step=10000/15000 loss=0.0000 len=22
+  [deltanet_neg|parity|seed=2] step=10500/15000 loss=0.0000 len=30
+  [deltanet_neg|parity|seed=2] step=11000/15000 loss=0.0000 len=19
+  [deltanet_neg|parity|seed=2] step=11500/15000 loss=0.0000 len=14
+  [deltanet_neg|parity|seed=2] step=12000/15000 loss=0.0000 len=5
+  [deltanet_neg|parity|seed=2] step=12500/15000 loss=0.0000 len=29
+  [deltanet_neg|parity|seed=2] step=13000/15000 loss=0.0000 len=35
+  [deltanet_neg|parity|seed=2] step=13500/15000 loss=0.0000 len=25
+  [deltanet_neg|parity|seed=2] step=14000/15000 loss=0.0000 len=37
+  [deltanet_neg|parity|seed=2] step=14500/15000 loss=0.0000 len=21
+  [deltanet_neg|parity|seed=2] step=15000/15000 loss=0.0000 len=34
+  [deltanet_neg|parity|seed=2] OOD bucket 40-64: acc=1.0000 (LIVE)
+  [deltanet_neg|parity|seed=2] OOD bucket 64-128: acc=0.9625 (LIVE)
+  [deltanet_neg|parity|seed=2] OOD bucket 128-256: acc=0.7972 (FAIL)
+  -> long_acc(128-256)=0.7972 | 40-64=1.0000 | 64-128=0.9625
+
+[parity_probe] Sweep done. Results: /gpfs/work/bio/jiayu2403/delta_statetrack/outputs/parity_parity_results.csv
+
+[parity_probe] === VERDICT ===
+  Task:         parity
+  Live arms:    ['gdn1_neg']
+  Dead arms:    ['gla', 'gdn2', 'gdn1', 'deltanet_neg']
+  GLA diagonal fail (≈0.5): False
+  🔴-2 GDN-2:   AMBIGUOUS (long acc=0.617, between 0.55 and 0.90)
+  Verdict JSON: /gpfs/work/bio/jiayu2403/delta_statetrack/outputs/parity_parity_verdict.json
+FULL_EXIT=0

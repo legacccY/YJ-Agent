@@ -71,6 +71,7 @@
   4. **R8 顶会天花板打分（每条都打）**：5 接地信号 → `ceiling_tier` ∈ {MAIN/FINDINGS/WORKSHOP}，落进 pool.jsonl。低 tier **不砍**（诚实标 venue 档），但用于下面保底 + G6 定档。
   5. **天花板保底 re-rank（关键，治「顶会苗子被埋」）**：Swiss 排完后，**强制 ≥1-2 个 `ceiling_tier=MAIN` 候选晋级 G4**，即使其 Swiss 名次低于 cutoff（标 `lane=high_variance`）。否则保守 benchmark 题在 pairwise 天然占优，会把高天花板苗子全埋（[Si et al.] 风险厌恶 + Swiss 系统偏差）。
   6. **top 8-10 跑 R4 12 维 taste 深度体检**（含 excited-reader 测试）。
+  7. **R10-c 命门证伪成本标注**：每条标 `crux_cost` ∈ {LOW/HIGH}——headline 承重命门能否在可用 setting 上 <1GPU·h 证伪。真命门=普适/跨集/emergent（发现集小 pilot 测不了）→ `HIGH`，标「高难产风险」带进 G4/G6（不砍，逼 G6 按 R10-b 二选一）。
 - **kill 条件**：R2 硬阈命中 / 加权排序后 ~60%（**但 high_variance lane 名额受保护不被 cutoff 砍**）/ R4 可行性维<2。
 - **输出**：8-10 候选带完整分数表 + `ceiling_tier`，按综合名次排（含至少 1-2 个 MAIN-tier 苗子）。
 - **通过率**：~45%（20 → 8-10）。
@@ -130,9 +131,10 @@
   - **KILL（照砍）**：null + CI 窄 + continuous metric → 信号真不存在，砍。
   - **GRAY（不砍，带债）**：null + CI 宽 或 binary metric/MDE 过大 → 实验太小说明不了，**候选存活**排队更大验证（kill 权重仅 0.3）。run-004 一堆 GRAY 即此症——当时若直接砍就误杀。
   - **KILL-proxy**：目标 emergent 小规模本不可测 → 换 proxy task，proxy 也无信号才 kill（权重 0.6）。
-- **输出**：2-3 候选，核心 claim 经廉价实证**没当场死**（GRAY 的带「需大验证」债存活）。
+- **输出**：2-3 候选，核心 claim 经廉价实证**没当场死**（GRAY 的带「需大验证」债存活）。**verdict 必按 R10-a 标 `PASS-local`（单 setting 信号存在）vs `PASS-general`（≥2 独立 setting 不塌）**——单数据集/单实现的 PASS 只算 local，外推维度未验。
 - **通过率**：~50%（5 → 2-3）。
 - **杀死法 ②（理论先行实证滞后）**：强制立项前实证去风险；**反矫枉过正：欠功效 null 不当死信号，只杀干净 KILL**。
+- **🆕 杀死法（假阳跨集外推，R10）**：G5 单 setting PASS = `PASS-local`，**不准当普适证据**。真命门是普适/跨集的候选（`crux_cost=HIGH`），其外推维度此处只可能拿到 local PASS——交 G6 按 R10-b 处理，**禁把外推命门 IOU 进 R7 推到立项后**（= nca-phasemap/disagree 死法）。
 
 ---
 
@@ -144,7 +146,8 @@
 - **动作**：
   1. 每个候选出完整立项卡：双 venue 分档（**顶档由 `ceiling_tier` 钉死，不准乐观虚标**——MAIN→CVPR/NeurIPS main 冲，FINDINGS→Findings/MICCAI/TMLR 务实，不让 Findings 题写成「冲 CVPR main」自欺）+ 全分数轨迹（G2-G5，含 Ceiling + kill-shot verdict）+ 红队残差 + 杀手锏读数 + **R7 书面 kill criteria**。
   2. 主线一句话推荐 + AskUserQuestion 呈给用户。**若幸存里有 `ceiling_tier=MAIN` 苗子，推荐时显式点出「这是本轮顶会苗子」**，与 Findings-tier 稳票分开呈，让用户按 portfolio（顶会赌注 vs 稳产）配。
-- **kill 条件**：用户不拍 → 回池 / 砍。
+  3. **🔒 R10-b headline 不得超实证（钉死，立项卡必过）**：立项 headline 措辞只能 claim G5 实际验过的 setting。含外推字样（普适/universal/可前验/可外推/跨集/机制特异/seed 稳定）但外推维度只有 `PASS-local`（或 `crux_cost=HIGH` 未验）→ **必须二选一**：(i) headline 收窄到已验 setting，普适降为显式标注的立项后赌注（写 R8 standout 线，不进 headline）；(ii) 把跨集/足功效命门提为硬前置 gate（PASS-general 才准用外推 headline）。**禁把外推命门丢进 R7 kill criteria 当 IOU**——R7 只兜已验范围内出意外，不兜从没验过的外推维度。
+- **kill 条件**：用户不拍 → 回池 / 砍；**headline 外推字样超出 G5 实证覆盖且未按 R10-b 二选一 → 打回收窄，不准乐观立项**。
 - **输出**：用户拍板的 1（少数 2）个 → `/spin-off-paper` 建 schema + 登 registry + 关联 datasets + claim + 首条 LOG（含完整选题轨迹）。
 - **通过率**：~40%（2-3 → 1）。
 - **杀死法 ①④**：立项基于完整证据轨迹 + 双 venue，不基于单点乐观。

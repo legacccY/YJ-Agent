@@ -1,0 +1,4 @@
+stage,ur,fire_rate,clip_norm,seed,dataset,final_dice,diverged,collapsed,max_grad_norm,fg_ratio_mean,n_steps_run,collapse_thresh
+B3,0.45,0.55,None,42,BraTS2021,0.389534,0,0,0.130026,0.8,5,0.012882
+B3,0.45,0.55,None,43,BraTS2021,0.390638,0,0,0.154637,0.8,5,0.012882
+B3,0.45,0.55,None,44,BraTS2021,0.390558,0,0,0.150138,0.8,5,0.012882

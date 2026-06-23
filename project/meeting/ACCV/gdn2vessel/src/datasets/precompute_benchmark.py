@@ -324,7 +324,7 @@ def main():
     datasets_to_run = list(registry.keys()) if args.dataset == 'all' else [args.dataset]
     severities_to_run = list(SEVERITY_GRID.keys()) if args.severity == 'all' else [args.severity]
 
-    all_manifest = []
+    new_entries = []
 
     for ds_name in datasets_to_run:
         cls, root = registry[ds_name]
@@ -339,16 +339,39 @@ def main():
                 base_seed      = args.base_seed,
                 force_recompute= args.force,
             )
-            all_manifest.extend(entries)
+            new_entries.extend(entries)
 
-    # Write manifest
+    # ── Merge manifest (fix 2026-06-22: was overwrite-only, lost other dataset entries)
+    # Previously `--dataset drive` would overwrite and discard pre-existing chase entries.
+    # Now we: (1) read existing manifest, (2) merge by dedup key=(dataset,severity,image_id,seed),
+    # keeping new entries when key collides (re-computed beats stale cache), (3) write back full set.
     manifest_path = cache_dir / 'manifest.json'
+    existing_entries: list = []
+    if manifest_path.exists():
+        try:
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                existing_entries = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            existing_entries = []
+
+    def _entry_key(e: dict) -> tuple:
+        return (e.get('dataset', ''), e.get('severity', ''),
+                e.get('image_id', ''), e.get('seed', ''))
+
+    # Build lookup: new entries overwrite existing on same key
+    merged: dict = {_entry_key(e): e for e in existing_entries}
+    for e in new_entries:
+        merged[_entry_key(e)] = e
+    all_manifest = list(merged.values())
+
     with open(manifest_path, 'w', encoding='utf-8') as f:
         json.dump(all_manifest, f, indent=2)
 
     n_computed = sum(1 for e in all_manifest if e.get('status') == 'computed')
     n_cached   = sum(1 for e in all_manifest if e.get('status') == 'cached')
     print(f'\nDone. {n_computed} computed, {n_cached} cache hits. Manifest: {manifest_path}')
+    print(f'      Total entries in manifest: {len(all_manifest)} '
+          f'(datasets: {sorted({e.get("dataset") for e in all_manifest})})')
 
 
 if __name__ == '__main__':

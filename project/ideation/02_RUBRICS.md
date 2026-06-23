@@ -176,3 +176,24 @@ verdict: KILL / GRAY / KILL-proxy
 **反 floor-effect 操作**：pilot 评估指标**优先 continuous**（Brier/edit-distance/连续 score），别用 0/1 exact-match——后者最易触发 floor effect 把微弱信号抹平（[arXiv:2310.03262](https://arxiv.org/html/2310.03262v3) PassUntil：大采样可在小模型捞出信号）。
 
 `null result = no evidence of effect ≠ evidence of no effect`（[arXiv:2406.03980](https://arxiv.org/abs/2406.03980)）——宽 CI 的 null 是 GRAY 不是 KILL。
+
+---
+
+## R10 — G5 PASS 范围纪律 + 立项 headline 不得超实证（防假阳跨集外推）
+
+> **病因（2026-06-22 横向复盘）**：R9 只防**假阴**（宽 CI null 误判 KILL），完全不防**假阳**。组合台两篇 pipeline 自产项目同一死法——
+> - **nca-phasemap**：G5 在 Hippocampus 上「临界存在」三重实证 PASS → 立项 headline 写「NCA 存在**普适**尖锐相边界」→ 真命门（普适性=BraTS 第二集）被 IOU 进 R7 书面 kill criteria（K1）→ Gate1 K1 FAIL，烧完算力才死。
+> - **disagree**：75-scan AUROC 0.71 PASS → 立项 → 289-cluster 0.43 低于随机（小样本假阳=回归均值）。
+>
+> **根因**：大胆 claim 的承重命门 = 普适性/跨集复现/足样本，而 `<1GPU·h` 发现集小 pilot **测得出「这里有没有现象」、测不出「普适」**。G5 验了个便宜的代理命门 PASS，真命门推到立项后才死 = 「事后才严」偷爬回来，正是流水线立志消灭的病。配 [[feedback_falsify_crux_first]] + [[feedback_claim_shape_decides_birth_difficulty]]。
+
+**R10-a — 区分 PASS-local vs PASS-general**：G5 在**一个 setting**（单数据集/单实现/单尺度/单样本量级）上信号存在 = `PASS-local`，**不等于** `PASS-general`。命门只有在 **≥2 个独立 setting**（第二数据集 / 第二实现 / 足功效大样本）都不塌才算 `PASS-general`。G5 verdict 必标 local/general。
+
+**R10-b — 立项 headline 措辞不得超过实证覆盖（G6 钉死）**：headline 只能 claim G5 实际验过的 setting 范围。含「普适 / universal / 可前验 / 可外推 / 跨集 / 机制特异 / seed 稳定」等**外推字样**的 headline，其外推维度若只有 `PASS-local`，**必须二选一**：
+  - **(i) headline 收窄到已验 setting**（如「在 Med-NCA Hippocampus 上」而非「NCA 存在」），普适降为**显式标注的立项后赌注**写进 R8 standout 线，**不烤进 headline**；或
+  - **(ii) 把跨集/足功效命门提为硬前置 gate**（即便 >1GPU·h），`PASS-general` 才准用外推 headline。
+
+  **🔒 禁**：把外推维度的真命门丢进 R7 书面 kill criteria 当 IOU 推到立项后（= nca-phasemap/disagree 死法）。R7 只兜「**已验范围内**出意外」，**不兜「从没验过的外推维度」**。
+  > 正例 = BMVC QCTS：headline 只 claim「q̄ 在 dermoscopy + ImageNet-C 有效」——两个 setting 都实测了，绝不多写一个「universal」。所以 reviewer 18 issue 全应答下来，没一条能从地基掀翻。
+
+**R10-c — G3 命门证伪成本维（flag）**：G3 给每个候选标 `crux_cost` ∈ {LOW / HIGH}——其 headline 承重命门能否在**可用 setting** 上 `<1GPU·h` 证伪。`HIGH`（真命门 = 普适/跨集/emergent，发现集小 pilot 根本测不了）→ 在 G4 红队 + G6 呈用户时**显式标「高难产风险」**，逼 R10-b 二选一（收窄 claim or 预算贵命门前置），**不准带着未验外推 claim 进 G6 乐观立项**。`crux_cost=HIGH` 不是 kill 条件，是逼诚实定档。

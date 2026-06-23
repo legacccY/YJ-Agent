@@ -24,7 +24,7 @@ except ImportError:
 # ── 路径 ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).parent.resolve()
 METRICS_CSV = SCRIPT_DIR / "metrics_ds2.csv"
-FIGURES_R   = SCRIPT_DIR / "figures_R"
+FIGURES_R   = SCRIPT_DIR / "figures_R_v3"
 OUT_DOCX    = SCRIPT_DIR / "BENCHMARK_REPORT.docx"
 
 # ── 读数据 ────────────────────────────────────────────────────────────────────
@@ -282,16 +282,16 @@ doc.add_paragraph()
 add_heading(doc, "4. 分析图", level=2)
 
 figures = [
-    ("fig1_roc_curves_ds2.png",
+    ("fig1_roc_v3.png",
      "图 1  DS2 ROC 曲线对比（ELISpot > 0，Aggregation = max）。对角虚线为随机基线（AUC=0.50）。"),
-    ("fig2_auc_bar_thresholds.png",
-     "图 2  各工具 AUC-ROC 柱状图（Aggregation = max，三种阈值对比）。虚线为随机基线。"),
-    ("fig3_score_vs_elispot_scatter.png",
-     "图 3  预测分 vs ELISpot 散点图（Aggregation = max，4 工具分面）。黑线为线性拟合，灰带为 95% CI。rho* 表示 p<0.05 显著。"),
-    ("fig4_aggregation_comparison.png",
-     "图 4  三种聚合方式 AUC-ROC 对比（Threshold = ELISpot > 10）。"),
-    ("fig5_auc_heatmap.png",
-     "图 5  工具 × 阈值 AUC-ROC 热图（Aggregation = max）。绿色越深表示判别能力越强。"),
+    ("fig2_bar_v3.png",
+     "图 2  各工具 AUC-ROC 分组柱状图（Aggregation = mean，三种阈值 ELISpot>0/>10/>median 对比）。虚线为随机基线 0.50。"),
+    ("fig3_scatter_v3.png",
+     "图 3  预测分 vs ELISpot 散点图（Aggregation = max，4 工具分面）。黑线为线性拟合，灰带为 95% CI；角标为 Spearman rho 与 p 值。"),
+    ("fig4_bar_v3.png",
+     "图 4  三种聚合方式 AUC-ROC 对比（Threshold = ELISpot > 10）。虚线为随机基线 0.50。"),
+    ("fig5_heatmap_v3.png",
+     "图 5  工具 × 阈值 AUC-ROC 热图（Aggregation = mean）。蓝色越深表示判别能力越强，格内为 AUC 数值。"),
 ]
 
 for fname, caption in figures:

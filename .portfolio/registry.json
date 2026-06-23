@@ -119,10 +119,10 @@
       "deadline": "N/A",
       "status": "active",
       "priority": 4,
-      "phase": "2026-06-22 Crux1 parity_probe.py 就绪等主线 HPC 跑。Crux2 spr_probe.py 就绪(SPR手术阶段识别，Cholec80 LoViT特征，5臂iso-param，PTVR+segF1+calibrate/w_scan模式，p+CI双门verdict，等数据下载)。",
+      "phase": "2026-06-23 Crux1 FLA-kernel PASS(GDN-fam): job1484588 gdn1(pos)0.599->gdn1_neg(neg)0.975 single-flag +0.375 3seed stable=clean causal; redline-2 effectively CONFIRMED(gdn2 0.617 overlaps pos arms). Caveat: cross-arch universality NOT established(deltanet_neg std0.099 unstable). Crux2 spr_probe.py awaits Cholec80. TODO: longer bucket 256-512 + deltanet_neg more seeds + 2nd task to lift universality.",
       "home": "project/meeting/delta-statetrack-probe/",
       "scripts": "project/meeting/delta-statetrack-probe/parity_probe.py (Crux1 parity合成任务) + project/meeting/delta-statetrack-probe/spr_probe.py (Crux2 SPR手术阶段识别)",
-      "updated": "2026-06-22"
+      "updated": "2026-06-23"
     },
     "artioodbench": {
       "name": "ArtiOODBench",
@@ -143,7 +143,7 @@
       "deadline": "TBD",
       "status": "active",
       "priority": 5,
-      "phase": "🔧 2026-06-23 HPC部署基本达成(原始要求'在HPC部署测试5工具'). HPC(dtn jiayu2403)真就绪4工具smoke-pass: DeepImmuno✅(0.5325) IMPROVE-Predict✅(mean_pred=本地) PredIG✅(singularity,0.00614) NeoTImmuML✅env(notebook需重训); pTuneos sif建成(run受singularity /root权限+无fakeroot+VEP cache限,部署已本地docker验证); netMHCpan-4.1/2.8✅HPC原生+PRIME编译✅; netMHCstabpan待tcsh容器(仅feature_calc Stability需,Predict不受影响). 本地WSL2全5工具配方验通(含vsyscall=emulate救老二进制+netMHCstabpan全链). 4类信息全收TOOLS/*.md. 关键技术: Docker Hub国内不通→VPN代理7897拉+save传HPC转singularity; HPC glibc2.28 vs WSL2.39差异; git-lfs 1.9G. 剩: PPT(B4)+pTuneos端到端(VEP cache 25G用户拍板不下). 详04_LOG Entry1-13.",
+      "phase": "✅ 2026-06-23 5工具全跑通+benchmark+Word报告. 袁老师ELISpot两数据集(DS1 9mer/DS2变长滑窗8-14mer)→4工具出真实分(merged_all_tools_4tools.xlsx 34247行): DeepImmuno(9-10mer)/PredIG(8-14mer)/IMPROVE(8-12mer降级版跳坏的netMHCstabpan)/NeoTImmuML(8-13mer,TumorAgDB2.0重训,demo核验76/78特征精确吻合). pTuneos端到端攻坚成功(连环修8坑:filter_vep PATH/管道死锁/--ontology离线挂/missense过滤/缺蛋白组human.pep.all.fa/缺blast库/homolog UnboundLocal/裸netMHCpan PATH)→example出真实RefinedNeo分(40新抗原×28列,兜底0/40未触发=真算,MT结合<WT符生物学),仅example架构喂不了ELISpot. benchmark(analysis/BENCHMARK_REPORT.docx+metrics_ds2.csv): DS2验证IMPROVE最稳(Spearman+0.24~0.32全阈值显著)/PredIG阈值敏感/DeepImmuno·NeoTImmuML≈随机; 关键caveat:DS2阴性仅11排名非显著. R图3版(选v3克制Okabe-Ito). 剩: PPT(B4). 详04_LOG Entry14-19.",
       "home": "project/meeting/QuantImmuBench/",
       "log": "project/meeting/QuantImmuBench/04_LOG.md",
       "updated": "2026-06-23"

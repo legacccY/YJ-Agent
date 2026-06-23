@@ -39,14 +39,27 @@ Metrics:
   Boundary-acc@10
   Segmental F1 @ {10, 25, 50} overlap thresholds
 
-Verdict (skeptic-corrected, p+CI dual gate):
-  P1: gdn1_neg PTVR significantly lower than BOTH {gla, sliding_window, gdn1}
-      Wilcoxon p<0.05 (per-video, pure numpy) AND relative drop >= calibration margin
-      AND bootstrap 95% CI lower bound > margin
-  P2: gdn1_neg Jaccard (relaxed) >= max(TC arms) - 1pp
-  P3: gdn1_neg PTVR significantly lower than gdn1 (neg-eigval ablation)
-  P4: deltaproduct PTVR <= gdn1_neg (sanity: not underfitting)
-  FAIL = P1 OR P2 OR P3 fails -> direction dead, negative result archived
+Verdict (skeptic-corrected, red-team hardened 2026-06-23):
+  P1:      gdn1_neg PTVR significantly lower than ALL {gla, sliding_window, gdn1}
+           Wilcoxon p<0.05 (per-video, pure numpy) AND relative drop >= calibration margin
+           AND bootstrap 95% CI lower bound > margin
+  P1b:     co-primary seg_f1@50 gate: gdn1_neg seg_f1_50 significantly HIGHER than ALL TC0
+           {gla, sliding_window} — Wilcoxon p<0.05 (ctrl_arr < primary_arr, one-sided sign).
+           Prevents PTVR single-metric failure: if PTVR drops but seg_f1@50 also drops,
+           gdn1_neg is just predicting fewer switches (conservative bias), not state-tracking.
+  P2:      gdn1_neg Jaccard (relaxed) >= max(TC arms) - 1pp
+  P3:      gdn1_neg PTVR significantly lower than gdn1 (neg-eigval ablation)
+           Wilcoxon p<0.05 AND rel_drop >= calib_margin (effect-size gate added 2026-06-23).
+           Without calib_margin, p-only gate is trivially met at n>40 videos pooled across seeds.
+           rel_drop = (mean_ptvr_gdn1 - mean_ptvr_gdn1_neg) / max(mean_ptvr_gdn1, 1e-9).
+           If --calib_margin not set, falls back to p<0.05 only (backward compat).
+  P_switch: switch-count parity gate (red-team 🔴-B 2026-06-23):
+           gdn1_neg mean(n_pred_segments) in [0.8, 1.2] * mean(n_gt_segments) across test set
+           AND gdn1_neg mean(n_pred_segments) >= 0.8 * max(TC0 mean n_pred_segments).
+           Detects conservative-not-jumping bias: if gdn1_neg makes far fewer switches than GT
+           or TC0, low PTVR is an artifact of opportunity reduction, not temporal ordering.
+  P4:      deltaproduct PTVR <= gdn1_neg (sanity: not underfitting)
+  FAIL = P1 OR P1b OR P2 OR P3 OR P_switch fails -> direction dead, negative result archived
   FAIL on P4 alone = result uninterpretable, investigate underfitting
 
 Calibration modes:
@@ -836,6 +849,25 @@ def compute_boundary_acc(
     return detected / len(gt_boundaries)
 
 
+def _get_segments(arr: np.ndarray) -> List[Tuple[int, int, int]]:
+    """
+    Run-length encoding: returns list of (class, start, end_exclusive) for arr.
+    Used by compute_segmental_f1 and evaluate_arm (segment count gate).
+    """
+    segs: List[Tuple[int, int, int]] = []
+    if len(arr) == 0:
+        return segs
+    start = 0
+    cur   = arr[0]
+    for t in range(1, len(arr)):
+        if arr[t] != cur:
+            segs.append((int(cur), start, t))
+            start = t
+            cur   = arr[t]
+    segs.append((int(cur), start, len(arr)))
+    return segs
+
+
 def compute_segmental_f1(
     pred: np.ndarray,
     gt: np.ndarray,
@@ -849,21 +881,6 @@ def compute_segmental_f1(
     Each GT segment can be matched at most once (greedy, best overlap).
     F1 = 2*P*R / (P+R).
     """
-    def _get_segments(arr: np.ndarray) -> List[Tuple[int, int, int]]:
-        """Returns list of (class, start, end_exclusive)."""
-        segs = []
-        if len(arr) == 0:
-            return segs
-        start = 0
-        cur   = arr[0]
-        for t in range(1, len(arr)):
-            if arr[t] != cur:
-                segs.append((int(cur), start, t))
-                start = t
-                cur   = arr[t]
-        segs.append((int(cur), start, len(arr)))
-        return segs
-
     pred_segs = _get_segments(pred)
     gt_segs   = _get_segments(gt)
 
@@ -1192,12 +1209,18 @@ def evaluate_arm(
             # --- Segmental F1 ---
             seg_f1 = compute_segmental_f1(pred, gt, overlap_thresholds=(0.10, 0.25, 0.50))
 
+            # --- Segment counts (for P_switch gate: conservative-not-jumping detection) ---
+            n_pred_segs = len(_get_segments(pred))
+            n_gt_segs   = len(_get_segments(gt))
+
             per_video.append({
                 'video_id': vid,
                 **global_m,
-                'ptvr':          ptvr_val,
-                'lr_violation':  lrv_val,
-                'boundary_acc10': boundary,
+                'ptvr':             ptvr_val,
+                'lr_violation':     lrv_val,
+                'boundary_acc10':   boundary,
+                'n_pred_segments':  n_pred_segs,
+                'n_gt_segments':    n_gt_segs,
                 **seg_f1,
             })
 
@@ -1208,6 +1231,7 @@ def evaluate_arm(
         'relaxed_acc', 'relaxed_jaccard', 'relaxed_precision', 'relaxed_recall',
         'ptvr', 'lr_violation', 'boundary_acc10',
         'seg_f1_10', 'seg_f1_25', 'seg_f1_50',
+        'n_pred_segments', 'n_gt_segments',
     ]
     for k in keys_to_agg:
         vals = np.array([v[k] for v in per_video if k in v], dtype=float)
@@ -1452,29 +1476,44 @@ def compute_verdict(
     """
     Compute SPR probe verdict from per-arm per-seed per-video results.
 
-    all_results: {arm_name: [{'seed':int, 'per_video':[{'ptvr':float,'relaxed_jaccard':float,...}], ...}]}
+    all_results: {arm_name: [{'seed':int, 'per_video':[{'ptvr':float,'relaxed_jaccard':float,
+                  'seg_f1_50':float,'n_pred_segments':int,'n_gt_segments':int,...}], ...}]}
     calib_margin: bootstrap null distribution 95th pct margin from --calibrate.
                   If calibration not run, caller should pass a conservative default.
+                  If 0.0 or None, P3 effect-size gate is skipped (p-only, backward compat).
 
-    Gates:
-      P1: gdn1_neg PTVR sig lower than ALL {gla, sliding_window, gdn1}
-          Wilcoxon p<0.05 AND relative_drop >= margin AND CI_lower > margin
-      P2: gdn1_neg relaxed Jaccard >= max(TC_arms) - 0.01
-      P3: gdn1_neg PTVR sig lower than gdn1 (neg-eigval ablation; Wilcoxon p<0.05)
-      P4: deltaproduct PTVR <= gdn1_neg (sanity; not a gate, but flags underfitting)
+    Gates (red-team hardened 2026-06-23):
+      P1:      gdn1_neg PTVR sig lower than ALL {gla, sliding_window, gdn1}
+               Wilcoxon p<0.05 AND relative_drop >= margin AND CI_lower > margin
+      P1b:     co-primary: gdn1_neg seg_f1@50 sig HIGHER than ALL TC0 {gla, sliding_window}
+               Wilcoxon p<0.05 (H0: gdn1_neg seg_f1_50 == TC0; want gdn1_neg > TC0)
+               Guards against conservative-not-jumping bias inflating PTVR drop.
+      P2:      gdn1_neg relaxed Jaccard >= max(TC_arms) - 0.01
+      P3:      gdn1_neg PTVR sig lower than gdn1 (neg-eigval ablation)
+               Wilcoxon p<0.05 AND rel_drop >= calib_margin (if calib_margin > 0, else p-only)
+      P_switch: gdn1_neg switch-count parity with GT: mean(n_pred_segments) in
+               [0.8, 1.2] * mean(n_gt_segments) AND >= 0.8 * max(TC0 mean n_pred_segments)
+      P4:      deltaproduct PTVR <= gdn1_neg (sanity; not a gate, flags underfitting)
 
-    FAIL = P1 OR P2 OR P3 fails.
+    FAIL = P1 OR P1b OR P2 OR P3 OR P_switch fails.
     P4 fail = uninterpretable (investigate underfitting).
     """
-    # Collect per-video PTVR and jaccard for each arm (pool across seeds)
-    arm_ptvr:    Dict[str, List[float]] = defaultdict(list)
-    arm_jaccard: Dict[str, List[float]] = defaultdict(list)
+    # Collect per-video PTVR, jaccard, seg_f1_50, and segment counts for each arm (pool across seeds)
+    arm_ptvr:       Dict[str, List[float]] = defaultdict(list)
+    arm_jaccard:    Dict[str, List[float]] = defaultdict(list)
+    arm_seg_f1_50:  Dict[str, List[float]] = defaultdict(list)
+    arm_n_pred_seg: Dict[str, List[float]] = defaultdict(list)
+    arm_n_gt_seg:   Dict[str, List[float]] = defaultdict(list)
 
     for arm_name, seed_results in all_results.items():
         for sr in seed_results:
             for vd in sr.get('per_video', []):
                 arm_ptvr[arm_name].append(float(vd['ptvr']))
                 arm_jaccard[arm_name].append(float(vd['relaxed_jaccard']))
+                # seg_f1_50 may be absent in legacy results -- default 0.0
+                arm_seg_f1_50[arm_name].append(float(vd.get('seg_f1_50', 0.0)))
+                arm_n_pred_seg[arm_name].append(float(vd.get('n_pred_segments', 0.0)))
+                arm_n_gt_seg[arm_name].append(float(vd.get('n_gt_segments', 0.0)))
 
     def _ptvr_arr(arm: str) -> np.ndarray:
         return np.array(arm_ptvr.get(arm, []), dtype=float)
@@ -1529,12 +1568,81 @@ def compute_verdict(
         if ctrl in TC0_ARMS:
             tc0_jaccards.extend(arm_jaccard.get(ctrl, []))
 
+    # ---- P1b: co-primary seg_f1@50 gate (gdn1_neg > TC0 controls) ----
+    # Wilcoxon: H0: gdn1_neg seg_f1_50 == ctrl; want gdn1_neg > ctrl
+    # We pass (primary_arr, ctrl_arr) to _wilcoxon_pvalue which tests H0: median(x-y)=0,
+    # two-sided. We want primary > ctrl, so use _wilcoxon_pvalue(primary, ctrl) and check
+    # that mean(primary) > mean(ctrl) plus p<0.05 (directional check on top of p-value).
+    primary_seg50 = np.array(arm_seg_f1_50.get('gdn1_neg', []), dtype=float)
+    p1b_comparisons: Dict[str, Dict] = {}
+    p1b_all_pass = True
+    for ctrl in TC0_ARMS:
+        ctrl_seg50 = np.array(arm_seg_f1_50.get(ctrl, []), dtype=float)
+        if len(ctrl_seg50) == 0 or len(primary_seg50) == 0:
+            p1b_comparisons[ctrl] = {'error': f'No seg_f1_50 data for {ctrl}', 'p1b_pass': False}
+            p1b_all_pass = False
+            continue
+        nb = min(len(primary_seg50), len(ctrl_seg50))
+        p_s50 = primary_seg50[:nb]
+        c_s50 = ctrl_seg50[:nb]
+        # Two-sided Wilcoxon; direction enforced separately via mean check
+        pval_s50 = _wilcoxon_pvalue(p_s50, c_s50)
+        mean_primary_s50 = float(np.mean(p_s50))
+        mean_ctrl_s50    = float(np.mean(c_s50))
+        direction_ok     = mean_primary_s50 > mean_ctrl_s50
+        p1b_pass_ctrl    = (pval_s50 < 0.05) and direction_ok
+        p1b_all_pass     = p1b_all_pass and p1b_pass_ctrl
+        p1b_comparisons[ctrl] = {
+            'wilcoxon_p':            float(pval_s50),
+            'mean_seg_f1_50_gdn1_neg': mean_primary_s50,
+            'mean_seg_f1_50_ctrl':     mean_ctrl_s50,
+            'direction_ok':          bool(direction_ok),
+            'p1b_pass':              bool(p1b_pass_ctrl),
+        }
+
+    # ---- P_switch: switch-count parity gate (gdn1_neg not conservatively under-switching) ----
+    primary_n_pred = np.array(arm_n_pred_seg.get('gdn1_neg', []), dtype=float)
+    primary_n_gt   = np.array(arm_n_gt_seg.get('gdn1_neg', []), dtype=float)
+    if len(primary_n_pred) == 0 or len(primary_n_gt) == 0:
+        pswitch_pass   = False
+        pswitch_detail = {'error': 'No segment count data for gdn1_neg'}
+    else:
+        mean_pred_segs_primary = float(np.mean(primary_n_pred))
+        mean_gt_segs_primary   = float(np.mean(primary_n_gt))
+        # Gate A: gdn1_neg switches within [0.8, 1.2] * GT switch count
+        ratio_to_gt = mean_pred_segs_primary / max(mean_gt_segs_primary, 1.0)
+        gate_a_pass = (0.8 <= ratio_to_gt <= 1.2)
+        # Gate B: gdn1_neg >= 0.8 * max(TC0 mean pred segments) -- not under-switching vs TC0
+        tc0_mean_pred_segs = []
+        for tc_arm in TC0_ARMS:
+            tc_n_pred = np.array(arm_n_pred_seg.get(tc_arm, []), dtype=float)
+            if len(tc_n_pred) > 0:
+                tc0_mean_pred_segs.append(float(np.mean(tc_n_pred)))
+        if tc0_mean_pred_segs:
+            max_tc0_mean_pred = float(np.max(tc0_mean_pred_segs))
+            gate_b_pass = mean_pred_segs_primary >= 0.8 * max_tc0_mean_pred
+        else:
+            max_tc0_mean_pred = float('nan')
+            gate_b_pass = True  # no TC0 data, skip gate B
+        pswitch_pass = gate_a_pass and gate_b_pass
+        pswitch_detail = {
+            'mean_pred_segments_gdn1_neg': mean_pred_segs_primary,
+            'mean_gt_segments':            mean_gt_segs_primary,
+            'ratio_pred_to_gt':            float(ratio_to_gt),
+            'gate_a_pass_parity_0.8_1.2':  bool(gate_a_pass),
+            'max_tc0_mean_pred_segments':  float(max_tc0_mean_pred) if not math.isnan(max_tc0_mean_pred) else None,
+            'gate_b_pass_vs_tc0':          bool(gate_b_pass),
+            'p_switch_pass':               bool(pswitch_pass),
+        }
+
     # ---- P2: gdn1_neg relaxed Jaccard >= max(TC arms) - 1pp ----
     gdn1_neg_jacc = float(np.mean(arm_jaccard.get('gdn1_neg', [0.0])))
     max_tc0_jacc  = float(np.max([np.mean(arm_jaccard.get(a, [0.0])) for a in TC0_ARMS])) if TC0_ARMS else 0.0
     p2_pass       = gdn1_neg_jacc >= max_tc0_jacc - 0.01  # 1pp tolerance
 
-    # ---- P3: gdn1_neg PTVR < gdn1 (neg-eigval ablation) ----
+    # ---- P3: gdn1_neg PTVR < gdn1 (neg-eigval ablation) + effect-size gate ----
+    # effect-size gate: rel_drop >= calib_margin prevents trivial significance at large n.
+    # Skipped (p-only) if calib_margin is None or <= 0 (backward compat / no calibration run).
     gdn1_arr = _ptvr_arr('gdn1')
     if len(gdn1_arr) == 0:
         p3_pass = False
@@ -1542,12 +1650,23 @@ def compute_verdict(
     else:
         n3 = min(len(primary_arr), len(gdn1_arr))
         p3_p = _wilcoxon_pvalue(gdn1_arr[:n3], primary_arr[:n3])
-        p3_pass = p3_p < 0.05
+        mean_p3_primary = float(np.mean(primary_arr[:n3]))
+        mean_p3_gdn1    = float(np.mean(gdn1_arr[:n3]))
+        p3_rel_drop     = (mean_p3_gdn1 - mean_p3_primary) / max(mean_p3_gdn1, 1e-9)
+        # Effect-size gate: only if calib_margin is a positive number
+        use_effect_gate = (calib_margin is not None) and (calib_margin > 0.0)
+        if use_effect_gate:
+            p3_pass = (p3_p < 0.05) and (p3_rel_drop >= calib_margin)
+        else:
+            p3_pass = p3_p < 0.05
         p3_detail = {
-            'wilcoxon_p': float(p3_p),
-            'mean_ptvr_gdn1_neg': float(np.mean(primary_arr[:n3])),
-            'mean_ptvr_gdn1':     float(np.mean(gdn1_arr[:n3])),
-            'p3_pass': bool(p3_pass),
+            'wilcoxon_p':          float(p3_p),
+            'mean_ptvr_gdn1_neg':  mean_p3_primary,
+            'mean_ptvr_gdn1':      mean_p3_gdn1,
+            'rel_drop':            float(p3_rel_drop),
+            'calib_margin':        float(calib_margin) if calib_margin is not None else None,
+            'effect_gate_used':    bool(use_effect_gate),
+            'p3_pass':             bool(p3_pass),
         }
 
     # ---- P4: deltaproduct PTVR <= gdn1_neg (sanity) ----
@@ -1564,7 +1683,7 @@ def compute_verdict(
         p4_pass   = None
         p4_detail = {'error': 'No data for deltaproduct'}
 
-    overall_pass = p1_all_pass and p2_pass and p3_pass
+    overall_pass = p1_all_pass and p1b_all_pass and p2_pass and p3_pass and pswitch_pass
 
     # Residual-PTVR (diagnostic)
     all_ptvr_v   = np.array(arm_ptvr.get('gdn1_neg', []), dtype=float)
@@ -1579,31 +1698,46 @@ def compute_verdict(
         fail_reasons = []
         if not p1_all_pass:
             fail_reasons.append('P1: gdn1_neg PTVR not significantly lower than all controls')
+        if not p1b_all_pass:
+            fail_reasons.append('P1b: gdn1_neg seg_f1@50 not significantly higher than TC0 (co-primary)')
         if not p2_pass:
             fail_reasons.append('P2: gdn1_neg Jaccard below TC0 max - 1pp (precision penalty)')
         if not p3_pass:
-            fail_reasons.append('P3: neg-eigval ablation not significant')
+            fail_reasons.append('P3: neg-eigval ablation not significant or effect-size below margin')
+        if not pswitch_pass:
+            fail_reasons.append('P_switch: gdn1_neg under-switching (conservative bias inflating PTVR drop)')
         verdict_str = 'FAIL: ' + '; '.join(fail_reasons)
 
     return {
         'verdict':            verdict_str,
         'PASS':               bool(overall_pass),
         'P1_all_pass':        bool(p1_all_pass),
+        'P1b_all_pass':       bool(p1b_all_pass),
         'P2_pass':            bool(p2_pass),
         'P3_pass':            bool(p3_pass),
+        'P_switch_pass':      bool(pswitch_pass),
         'P4_pass':            p4_pass,
         'P1_comparisons':     p1_comparisons,
+        'P1b_comparisons':    p1b_comparisons,
+        'P1b_detail': {
+            'description': (
+                'co-primary: gdn1_neg seg_f1@50 must be significantly higher than ALL TC0 arms. '
+                'Prevents PTVR-only verdict when model is conservatively not switching phases.'
+            ),
+        },
         'P2_detail': {
             'gdn1_neg_jaccard':  gdn1_neg_jacc,
             'max_tc0_jaccard':   max_tc0_jacc,
             'threshold':         max_tc0_jacc - 0.01,
         },
         'P3_detail':          p3_detail,
+        'P_switch_detail':    pswitch_detail,
         'P4_detail':          p4_detail,
-        'calib_margin_used':  float(calib_margin),
+        'calib_margin_used':  float(calib_margin) if calib_margin is not None else None,
         'residual_ptvr_r2':   float(r2_ptvr_jacc) if not math.isnan(r2_ptvr_jacc) else None,
         'fail_rule': (
-            'FAIL = P1 OR P2 OR P3 fails. P4 fail = underfitting (investigate). '
+            'FAIL = P1 OR P1b OR P2 OR P3 OR P_switch fails. '
+            'P4 fail = underfitting (investigate). '
             'FAIL on PTVR polluted (R^2>0.5 from calibration) = verdict invalid, rerun with R^2<=0.5.'
         ),
     }
@@ -1920,6 +2054,7 @@ def main() -> None:
         'mean_lr_violation',
         'mean_boundary_acc10',
         'mean_seg_f1_10', 'mean_seg_f1_25', 'mean_seg_f1_50',
+        'mean_n_pred_segments', 'mean_n_gt_segments',
         'n_test_videos',
     ]
 
@@ -1993,6 +2128,8 @@ def main() -> None:
                 'mean_seg_f1_10': agg['mean_seg_f1_10'],
                 'mean_seg_f1_25': agg['mean_seg_f1_25'],
                 'mean_seg_f1_50': agg['mean_seg_f1_50'],
+                'mean_n_pred_segments': agg.get('mean_n_pred_segments', float('nan')),
+                'mean_n_gt_segments':   agg.get('mean_n_gt_segments', float('nan')),
                 'n_test_videos':  eval_r['n_test'],
             }
             csv_writer.writerow(row)
@@ -2024,12 +2161,14 @@ def main() -> None:
         json.dump(verdict, f, indent=2)
 
     print(f"\n[spr_probe] === VERDICT ===")
-    print(f"  Result: {verdict.get('verdict')}")
-    print(f"  PASS:   {verdict.get('PASS')}")
-    print(f"  P1 (gdn1_neg PTVR < all controls): {verdict.get('P1_all_pass')}")
-    print(f"  P2 (Jaccard >= TC0 max - 1pp):     {verdict.get('P2_pass')}")
-    print(f"  P3 (neg-eigval ablation sig):       {verdict.get('P3_pass')}")
-    print(f"  P4 (deltaproduct sanity):           {verdict.get('P4_pass')}")
+    print(f"  Result:   {verdict.get('verdict')}")
+    print(f"  PASS:     {verdict.get('PASS')}")
+    print(f"  P1       (gdn1_neg PTVR < all controls, p+CI+margin): {verdict.get('P1_all_pass')}")
+    print(f"  P1b      (gdn1_neg seg_f1@50 > TC0, co-primary):      {verdict.get('P1b_all_pass')}")
+    print(f"  P2       (Jaccard >= TC0 max - 1pp):                   {verdict.get('P2_pass')}")
+    print(f"  P3       (neg-eigval ablation sig + effect-size):      {verdict.get('P3_pass')}")
+    print(f"  P_switch (switch-count parity with GT and TC0):        {verdict.get('P_switch_pass')}")
+    print(f"  P4       (deltaproduct sanity):                        {verdict.get('P4_pass')}")
     print(f"  Verdict JSON: {verdict_path}")
 
     if not verdict.get('PASS'):

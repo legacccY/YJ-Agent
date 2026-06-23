@@ -4,6 +4,33 @@
 
 ---
 
+## Entry 19 — 2026-06-23 pTuneos example 端到端攻坚成功 + 5 工具全跑通 + benchmark/报告/图
+
+**🎉 5/5 工具全部产出真实结果。**
+
+### pTuneos 端到端跑通（example VCF，最硬一块）
+用户拍板「修到出结果」。VEP cache 14G(aria2 -x16 下完) + 解压 + 验证(单跑 4889 注释)。然后连环修 pTuneos 老代码/缺库 **8 个坑**才出 RefinedNeo 分（容器 bm2lab/ptuneos:v2.1，挂载补丁 VCFprocessor.py + database/Protein + vep_cache）：
+1. filter_vep 不在 PATH → PATH 加 /root/software/ensembl-vep
+2. `vep -o STDOUT | filter_vep` 管道死锁(CPU0%) → 拆两步(vep 出文件→filter_vep -i 读)
+3. filter_vep --ontology 离线连 SO 数据库挂死 → 去 --ontology
+4. 去 --ontology 引发精确匹配 bug：`coding_sequence_variant` 匹配不到 `missense_variant`(SO 子类)→ 候选肽空 → 改 filter 为 missense_variant(匹配 744 个)
+5. 缺 Ensembl 蛋白组 `database/Protein/human.pep.all.fa` → 下 release-97 pep.all(14M,110048条,header transcript:ENST 匹配 snv2fasta) 挂载
+6. 缺 blast 库 `peptide_database/peptide` → makeblastdb 建(110048序列)
+7. get_homolog_info `human_homolog_pep[_el]` UnboundLocal → 加 ASCII 兜底默认
+8. scoring 调裸 `netMHCpan` 不在 PATH → PATH 加 /root/software/netMHCpan-4.0
+
+**产物**：`scripts/out/ptuneos_example/test_final_neo_model.tsv`（40 新抗原×28列：combined_prediction_score=RefinedNeo + cellular_prevalence[PyClone克隆性] + Recognition/Hydrophobicity/Self_similarity/immuno_effect/MT,WT_Binding 等）。**注：仅 example VCF，pTuneos 架构喂不了 ELISpot 肽段。** 补丁文件存 `scripts/out/../ptuneos_run/patch/VCFprocessor.py`(本地 WSL)。
+
+### 4 工具 ELISpot 结果 + benchmark + 报告 + 图（本轮全成）
+- merged_all_tools_4tools.xlsx（34247行）：DeepImmuno/PredIG/IMPROVE/NeoTImmuML 全有 ELISpot 分
+- benchmark：analysis/BENCHMARK_REPORT.md + metrics_ds2.csv。DS2 验证：IMPROVE 最稳(Spearman +0.24~0.32 全阈值显著)、PredIG 阈值敏感(mean/>0 AUC 0.75)、DeepImmuno/NeoTImmuML≈随机。**关键 caveat：DS2 阴性仅 11，排名非统计显著。**
+- R 图 3 版(figures_R / _v2 花哨 / _v3 克制·用户选 v3)：ROC/分组柱/散点/聚合/热图，ggsci→Okabe-Ito 配色。
+- **Word 报告** analysis/BENCHMARK_REPORT.docx（中文，嵌 v3 图 + 指标表 + caveats）。
+
+**至此原始任务全部达成**：5 工具 HPC/本地部署测试 + 4 类信息(TOOLS/*.md + 实测输出) + benchmark + Word 报告。剩 PPT 成型(B4)。
+
+---
+
 ## Entry 18 — 2026-06-23 IMPROVE 不降级可行性深查（HPC 验证 + 命门：结构性做不到 + 跑偏判定）
 
 用户问「feature_calc 降级能不能不降级」→ 连 HPC 深查，**发现完全不降级对 ELISpot 数据结构性不可能**，且建 sif 偏离老师 deliverable。

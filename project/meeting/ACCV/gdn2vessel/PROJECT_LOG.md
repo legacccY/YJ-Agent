@@ -1,5 +1,14 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 31 — 2026-06-22 delta Crux 1 本地快速初判探针就绪
+
+新建 `project/meeting/delta-statetrack-probe/parity_local_torch.py`：
+- **目的**：本地 RTX4070（torch 2.7+cu126，无 FLA/triton）分钟级初判「负特征值 delta rule 是否碾压对角 SSM 解 parity OOD」（gdn2vessel § Crux 1 delta 状态追踪特异性）。
+- **三臂**：diag（对角 SSM，预测 OOD 崩）/ delta_neg（β∈(0,2) 负特征值，预测 OOD 过）/ delta_pos（β∈(0,1) 消融，预测也崩，证负特征值必要性）；naive 顺序循环，零 FLA 依赖。
+- **CLI**：`python parity_local_torch.py --steps 3000 --device cuda`（快跑 ~3-5min）；`--smoke --device cpu`（秒级管路验证）。
+- 对照已有 `parity_probe.py`（全量 FLA/HPC 版）——两文件正交，local 版是无依赖快速初判。
+- 待主线本地跑烟测 + 正式 3000 步扫出 verdict。
+
 ## Entry 30 — 2026-06-22 无conv sanity 出结果 → 三路编队裁决 → 便宜前置探针起跑(决定要不要烧42 GPU·h全扫)
 
 承 Entry 29 出路①。无conv三臂 n=4 sanity(job 1481718)跑完,大编队(verifier+skeptic+planner 并行)裁决后起前置探针。
@@ -1029,3 +1038,26 @@ dtn.hpc.xjtlu.edu.cn / jiayu2403 / account shuihuawang / gpu4090·4gpus / `/gpfs
 - MICCAI 2027≈2027-02(等8月,最适配CORE A);MIDL/ISBI 2026已过;MedIA/TMI期刊随时投(最适配,周期6-12月)。
 - **主线判断**:别硬赶ACCV(时间不现实+适配一般),ACCV是立项时GDN-2通用CV headline的注册venue,路B重定位+MICCAI关门后非最优。该奔MICCAI2027/期刊(最适配从容)。反跑偏:不为赶deadline出弱稿。
 - 🛑**用户拍:先不定venue,等gate判**(PASS→定venue全铺;FAIL→benchmark-only venue又不同)。
+
+### ④gate verdict撞4坑→drive真信号+chase重跑(2026-06-22)
+全12run done跑gate_frangi_verdict,连撞坑诊断修:
+1. **verdict配对bug**:csv的arm列=reid_feat_source"memory"非gate-on/off→0配对全NaN。coder修:arm从子目录名(gate_on_/gate_off_)推断+epoch去重+cldice按列名(第14列非第5)。
+2. **早期peek作废**:之前peek用第5列(reid_rate)非cldice(14列),"drive打平"看错列。
+3. **drive真信号(修后)**:gate-on clDice **0.584>gate-off 0.517 gap=+0.068**(超+0.03阈值,方向对!Frangi门真work)。但n=12样本少→**p=0.154不显著+bootstrap CI下界-0.014跨0**。
+4. **chase整条线白跑(我的失误)**:precompute_benchmark覆盖式写manifest(L327 all=[]+L346 'w'),我precompute DRIVE`--dataset drive`**覆盖丢chase entry**(chase npz在但manifest chase=0)→chase 6run benchmark eval全空(train正常done但无数据)。
+   - 修:杀precompute --dataset all(太慢timeout)+coder改precompute成**merge式**(读existing+dedup by(dataset,severity,id,seed)+写回,9 pytest过)→`--dataset chase`merge→manifest 48 entries['chase','drive']✓。
+   - 用户拍**重跑chase 6run**(稳不踩新坑)→job 1484672_[3-5,9-11%4] PD,卡槽c2d2306d。
+**drive信号有希望**:chase若同向,两集n=24可能p<0.05。watch gw5盯chase重跑→重verdict判两集。
+
+### ④gate命门最终判决:FAIL(2026-06-23,chase重跑后两集verdict)
+chase重跑(manifest修好,有数据)→重跑gate_frangi_verdict两集:
+- **drive**: gate-on clDice 0.584>off 0.517 **gap=+0.068**(n=12,p=0.154,CI下界-0.014)。方向正、量超阈值,但样本少不显著。
+- **chase**: gate-on 0.564<off 0.589 **gap=-0.025(负!方向反)**(n=24,p=0.846,CI下界-0.048)。**Frangi门在chase反而更差**。
+- **VERDICT=FAIL**:两集方向相反(P3违反)+无集p<0.05。Frangi门拓扑增益**不稳健**(drive好chase坏),命门不成立。真FAIL(数据齐12+24配对,verdict配对修对,非bug)。不能合并救(净负)。
+- 守kill-criteria机械红线:禁换轴/扩seed/调σ凑。FAIL=诚实接受。
+
+### 🛑 gdn2vessel 命门全死(项目级战略拍板)
+- 路A(delta re-ID):三重死(§4目标函数错配+MQAR delta≈GLA非特异+skeptic路A 2🔴)。
+- 路B(Frangi门):gate FAIL(两集方向相反,不稳健)。
+- 按预登记→benchmark-only诚实降级 或 止损封存。
+- **硬资产**:2D眼底人工断点benchmark(creatis协议+ε_β0/SR/re-ID指标)+诊断方法学(MQAR theory-audit三层防线+precompute merge修复)+诚实负结果(GDN-2视觉首用delta在2D血管不特异+Frangi门拓扑增益不稳健,全预登记证伪)+10集+12baseline+P1官方迁移基建(FR-UNet pipeline+smp backbone+Frangi数值稳定,105测试)。

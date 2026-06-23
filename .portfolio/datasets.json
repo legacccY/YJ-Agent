@@ -14,7 +14,9 @@
       "hpc": "/gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/ (1.9G, sftp tar 中转已部署验通 2026-06-20: CHASE/DRIVE/FIVES/HRF/STARE; kaggle.json 传 HPC 被权限拦故走本地中转)",
       "source": "Kaggle umairinayat/retinal-vessel-segmentation-datasets (1.79GB, license=other); 原始源: DRIVE=drive.grand-challenge.org / CHASE_DB1=researchdata.kingston.ac.uk/96 (CC-BY) / FIVES=figshare 19688169 / HRF=www5.cs.fau.de/research/data/fundus-images / STARE=cecas.clemson.edu/~ahoover/stare",
       "split": "DRIVE 20/20 固定; CHASE_DB1 20/8; FIVES 600/200; HRF 15/30; STARE 20 LOO",
-      "used_by": ["gdn2vessel"],
+      "used_by": [
+        "gdn2vessel"
+      ],
       "purpose": "gdn2vessel 核心血管分割主集 (DRIVE/CHASE/FIVES 撑 headline+断点续连 benchmark)",
       "drive_testgt_gap": "⚠️ 此 pack 的 DRIVE/test/ 只有 images+mask，缺 test/1st_manual GT（grand-challenge 官方包本就不含 test GT，在线提交评分）→ 标准 DRIVE 20/20 主 Dice 表需补 test GT。重下方案核源见 project/meeting/ACCV/gdn2vessel/reference/DRIVE_TESTGT_PLAN.md（候选完整包 Kaggle zhz638/aifahim，待主线拍板下载+校验后回填 local 路径）",
       "status": "downloading(local) / todo(hpc)"
@@ -25,7 +27,9 @@
       "local": "DCA1 ✓ data/vessel_coronary/DCA1_DB_Angiograms_134.zip (9.4MB,268 .pgm,134图+GT) | XCAD ✓ data/vessel_coronary/XCAD.zip (454MB,3502 PNG,train/test images+masks) | CHUAC ✓ data/vessel_coronary/CHUAC/ (figshare 私链 Playwright 下 angiography.rar→bsdtar/libarchive 本地解; Original/30原图(189×189) + Hemotool/30GT(512×512,0/1) + Photoshop/30GT 两套标注; ⚠️原图与mask分辨率不一致需 dataloader resize; CC BY 4.0) | OCTA-500 ⏳ data/vessel_octa/octa500.zip 下载中(kaggle xiefei/octa500,4.47G) | ROSE ✓ data/vessel_octa/ROSE_kaggle/ROSE/ (kaggle snikhilrao/octa-seg-data 50MB,绕开官方申请表; ROSE-1 SVC/DVC/SVC_DVC 117图+gt/thick_gt/thin_gt + ROSE-2 112图 = 229图对上官方; ⚠️kaggle标MIT但原版CC-BY-4.0学术用,发表引 Ma et al. IEEE TMI 2021)",
       "hpc": "DCA1+XCAD+CHUAC ✓ 已传+解压 /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel_coronary/ (2026-06-20). DCA1/Database_134_Angiograms/ 268 .pgm(134图+134_gt) | XCAD/XCAD/{train/{trainA,trainB,trainC},test/{images,masks}} 3495文件 | CHUAC/{Original,Hemotool,Photoshop}/ 各30 PNG=90文件 | ROSE ✓ /gpfs/.../data/vessel_octa/ROSE/ 731文件(ROSE-1 SVC/DVC/SVC_DVC + ROSE-2) | OCTA-500 ✓ 4.47G zip 传HPC(1385s)+unzip→data/vessel_octa/octa500/ (Label/OCTA(ILM_OPL)/OCTA_3mm_part1, 34700文件)",
       "source": "XCAD=dropbox dl=1 (github AISIGSJTU/SSVS README, https://www.dropbox.com/s/z0lk5oz6gt9mgd2/XCAD.zip?dl=1 ✓验通) | DCA1=https://www.cimat.mx/~ivan.cruz/DB_Angiograms_files/DB_Angiograms_134.zip ✓(直链恢复) | OCTA-500=kaggle xiefei/octa500 ✓(4.47G;原ieee-dataport需注册) | CHUAC=figshare私链 ✓已下 (item 'Angiographics' figshare.com/s/4d24cf3d14bc901a94bf, ndownloader/files/7573477 经浏览器 session 下 angiography.rar;curl 直下 202/403 须 Playwright 点 Download) | ROSE=✓已下 kaggle snikhilrao/octa-seg-data (绕开官方申请表; 官方 zenodo 12775880 受限需 Request access / imed.nimte.ac.cn/dataofrose.html 申请表, 均 CC-BY-4.0 学术)",
-      "used_by": ["gdn2vessel"],
+      "used_by": [
+        "gdn2vessel"
+      ],
       "purpose": "gdn2vessel 扩展覆盖(超标)+跨域泛化; 许可证逐个确认能否学术发表后纳入",
       "status": "✅ complete — 血管/管状 10 集全上 HPC (视网膜5 DRIVE/CHASE/FIVES/HRF/STARE + 冠脉3 DCA1/XCAD/CHUAC + OCTA2 OCTA-500/ROSE); CHUAC=Playwright figshare私链+本地bsdtar解, ROSE=kaggle镜像绕官方申请表, OCTA-500=4.47G en-face子集; OCTA unzip 2026-06-20收工时后台进行中(bwb155e7m)"
     },
@@ -289,6 +293,23 @@
       ],
       "purpose": "DisagreePred 主 benchmark: 预测 4-annotator 分歧本身(非 majority-vote 取 GT)。KILL-1 gating=下载后跑分歧可预测性 baseline,AUROC≤0.60 即砍。QUBIQ 备用第二集验普适",
       "status": "todo"
+    },
+    "cholec80_spr": {
+      "name": "Cholec80 (SPR, LoViT features + phase labels)",
+      "n": 80,
+      "local": "project/meeting/delta-statetrack-probe/data/cholec80/ (features/videoNN.pkl x80 [768,T,1,1] 1fps + phase_annotations/videoNN-phase.txt x80 25fps 7类) 已下齐",
+      "hpc": "TODO",
+      "source": {
+        "features_LoViT": "https://emckclac-my.sharepoint.com/:f:/g/personal/k21073807_kcl_ac_uk/EpShcwpjssRGomJdcEhfZ68B6bNAt_WAVKfOrtrUfI-Bgw?e=YPJNpf (Spatial_feature_Cholec80.zip 496MB, 匿名直连可下, pkl [768,T,1,1] ViT-B/16 768d 1fps; repo github.com/MRUIL/LoViT)",
+        "labels_CAMMA_form": "https://docs.google.com/forms/d/1GwZFM3-GhEduBs1d5QzbfFksKmS1OqXZAz8keYi-wKI (phase_annotations videoNN-phase.txt Frame<TAB>Phase 25fps 7类; CC-BY-NC-SA, 需CAMMA审批; email camma.dataset@gmail.com)",
+        "label_format_ref": "github.com/CAMMA-public/TF-Cholec80",
+        "labels_Kaggle_ganumatta": "kaggle datasets download ganumatta/cholec80 -f phase_annotations/videoNN-phase.txt (松散文件可单独下,~1MB/个,免CAMMA审批,CC-BY-NC-SA合规)"
+      },
+      "used_by": [
+        "delta-statetrack-probe"
+      ],
+      "purpose": "Crux2 SPR 手术阶段识别状态追踪验证 (spr_probe.py)。layout: <root>/features/videoNN.pkl + <root>/phase_annotations/videoNN-phase.txt",
+      "status": "ready-local (特征LoViT+标签Kaggle ganumatta 各80, e2e CPU smoke PASS); HPC上传+GPU 5臂run 待拍板"
     }
   }
 }

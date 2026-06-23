@@ -2,20 +2,23 @@
 test_gate_frangi_verdict.py — gate_frangi_verdict.py 的完整测试套件。
 
 覆盖：
-  1. 符号检验手算正确性（已知 p 验证）
-  2. Wilcoxon 手算正确性（方向一致性）
-  3. Bootstrap CI 下界（正 delta 集 → CI>0）
-  4. 配对逻辑（on/off 按 image_id+seed 配对）
-  5. 单集 PASS 分支（gap≥0.03 + p<0.05 + CI>0 + 正方向）
-  6. 单集 FAIL 分支（gap<0.03 / p≥0.05 / CI≤0 / 负方向）
-  7. 全局 PASS：DRIVE+CHASE 两集都正向 + ≥1 集达 P1+P2
-  8. 全局 FAIL：两集方向相反（P3 violated）
-  9. CSV 加载（arm 归一化 / dataset 小写 / NaN 容忍）
+  1.  符号检验手算正确性（已知 p 验证）
+  2.  Wilcoxon 手算正确性（方向一致性）
+  3.  Bootstrap CI 下界（正 delta 集 → CI>0）
+  4.  配对逻辑（on/off 按 image_id+seed 配对）
+  5.  单集 PASS 分支（gap≥0.03 + p<0.05 + CI>0 + 正方向）
+  6.  单集 FAIL 分支（gap<0.03 / p≥0.05 / CI≤0 / 负方向）
+  7.  全局 PASS：DRIVE+CHASE 两集都正向 + ≥1 集达 P1+P2
+  8.  全局 FAIL：两集方向相反（P3 violated）
+  9.  CSV 加载（arm 从目录名推断 / dataset 小写 / NaN 容忍）
+  9a. arm 推断：infer_arm_from_dirpath 从目录名正确推断 gate-on/gate-off
+  9b. epoch 去重：同 (image_id,seed,arm) 多行取最大 epoch
   10. no-scipy 红线（禁 scipy.stats）
 
 红线：
   - 禁 scipy.stats（OMP Error #15）
   - 阈值硬编码核对（GAP_THRESH=0.03, P_THRESH=0.05）
+  - arm 不读 csv 内列（csv 内 arm='memory'），从目录名推断
 """
 from __future__ import annotations
 
@@ -43,6 +46,7 @@ from gate_frangi_verdict import (
     dataset_verdict,
     run_verdict,
     load_metrics_csv,
+    infer_arm_from_dirpath,
     GAP_THRESH,
     P_THRESH,
     N_BOOTSTRAP,
@@ -51,20 +55,36 @@ from gate_frangi_verdict import (
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 工具：写 mock CSV
+# 工具：写 mock CSV（模拟真实 reid_results.csv 格式）
 # ─────────────────────────────────────────────────────────────────────────────
-_GATE_CSV_HEADER = ['image_id', 'dataset', 'seed', 'arm',
+# 真实列集（epoch 字段 + arm='memory' 模拟真实训练产出）
+_GATE_CSV_HEADER = ['epoch', 'image_id', 'dataset', 'seed', 'arm',
                     'cldice', 'epsilon_beta0', 'betti_err_total']
 
 
-def _write_gate_csv(tmp_path: Path, rows: list[dict], fname: str) -> Path:
-    p = tmp_path / fname
-    with open(p, 'w', newline='', encoding='utf-8') as f:
+def _write_gate_csv(path: Path, rows: list[dict]) -> Path:
+    """写 CSV 到 path（path 必须是完整文件路径，包含目录）。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'w', newline='', encoding='utf-8') as f:
         w = csv.DictWriter(f, fieldnames=_GATE_CSV_HEADER)
         w.writeheader()
         for row in rows:
-            w.writerow({k: row.get(k, 'nan') for k in _GATE_CSV_HEADER})
-    return p
+            # arm 写 'memory'（模拟真实训练产出，arm 推断靠目录名）
+            out_row = {k: row.get(k, 'nan') for k in _GATE_CSV_HEADER}
+            out_row['arm'] = 'memory'  # 真实 csv 里 arm 列 = reid_feat_source
+            w.writerow(out_row)
+    return path
+
+
+def _write_gate_csv_in_dir(tmp_path: Path,
+                            rows: list[dict],
+                            dir_name: str,
+                            fname: str = 'reid_results.csv') -> Path:
+    """
+    在 tmp_path/<dir_name>/<fname> 写 csv。
+    dir_name 应含 'gate_on' 或 'gate_off'（让 infer_arm_from_dirpath 能推断）。
+    """
+    return _write_gate_csv(tmp_path / dir_name / fname, rows)
 
 
 def _make_gate_rows(image_ids: list[str],
@@ -72,11 +92,65 @@ def _make_gate_rows(image_ids: list[str],
                     cldice_off: list[float],
                     dataset: str = 'drive',
                     seed: int = 42,
+                    epoch: int = 1,
                     eps_on: float = 0.10,
                     eps_off: float = 0.15,
                     betti_on: float = 1.0,
-                    betti_off: float = 1.5) -> list[dict]:
-    """生成 gate-on + gate-off 两组行。"""
+                    betti_off: float = 1.5) -> tuple[list[dict], list[dict]]:
+    """
+    生成 gate-on 和 gate-off 两组行（分开返回，便于写入不同目录）。
+
+    返回 (on_rows, off_rows)，调用方分别写入 gate_on_xxx/ 和 gate_off_xxx/ 目录。
+    arm 字段不写入 csv（写 'memory'），由目录名推断。
+    """
+    on_rows, off_rows = [], []
+    for iid, von, voff in zip(image_ids, cldice_on, cldice_off):
+        on_rows.append({
+            'epoch': epoch, 'image_id': iid, 'dataset': dataset, 'seed': seed,
+            'cldice': von,  'epsilon_beta0': eps_on,  'betti_err_total': betti_on,
+        })
+        off_rows.append({
+            'epoch': epoch, 'image_id': iid, 'dataset': dataset, 'seed': seed,
+            'cldice': voff, 'epsilon_beta0': eps_off, 'betti_err_total': betti_off,
+        })
+    return on_rows, off_rows
+
+
+def _make_and_write_gate_pair(tmp_path: Path,
+                               image_ids: list[str],
+                               cldice_on: list[float],
+                               cldice_off: list[float],
+                               dataset: str = 'drive',
+                               seed: int = 42,
+                               epoch: int = 1,
+                               tag: str = '') -> tuple[Path, Path]:
+    """
+    一站式：生成 gate-on/off 行并写入对应目录，返回 (on_csv_path, off_csv_path)。
+
+    目录命名：gate_on_{dataset}_s{seed}{tag} / gate_off_{dataset}_s{seed}{tag}
+    """
+    on_rows, off_rows = _make_gate_rows(
+        image_ids, cldice_on, cldice_off, dataset=dataset, seed=seed, epoch=epoch)
+    on_dir  = f'gate_on_{dataset}_s{seed}{tag}'
+    off_dir = f'gate_off_{dataset}_s{seed}{tag}'
+    on_path  = _write_gate_csv_in_dir(tmp_path, on_rows,  on_dir)
+    off_path = _write_gate_csv_in_dir(tmp_path, off_rows, off_dir)
+    return on_path, off_path
+
+
+def _make_rows_direct(image_ids: list[str],
+                      cldice_on: list[float],
+                      cldice_off: list[float],
+                      dataset: str = 'drive',
+                      seed: int = 42,
+                      eps_on: float = 0.10,
+                      eps_off: float = 0.15,
+                      betti_on: float = 1.0,
+                      betti_off: float = 1.5) -> list[dict]:
+    """
+    直接生成已含 arm 字段的 row 列表（用于 unit test 直接调 paired_gate_deltas /
+    dataset_verdict / run_verdict，不走 CSV，不需要目录名推断）。
+    """
     rows = []
     for iid, von, voff in zip(image_ids, cldice_on, cldice_off):
         rows.append({'image_id': iid, 'dataset': dataset, 'seed': seed,
@@ -200,10 +274,10 @@ class TestPairedGateDeltas:
     def test_paired_basic(self):
         """6 图配对 → n_pairs=6，delta=on-off。"""
         iids = [f'img{i}' for i in range(6)]
-        rows = _make_gate_rows(iids,
-                               cldice_on=[0.8] * 6,
-                               cldice_off=[0.7] * 6,
-                               seed=42)
+        rows = _make_rows_direct(iids,
+                                 cldice_on=[0.8] * 6,
+                                 cldice_off=[0.7] * 6,
+                                 seed=42)
         deltas, info = paired_gate_deltas(rows, metric='cldice')
         assert len(deltas) == 6
         assert all(abs(d - 0.1) < 1e-9 for d in deltas)
@@ -255,7 +329,7 @@ class TestDatasetVerdictPass:
         iids = [f'img{i}' for i in range(4)]
         rows = []
         for seed in [42, 1337, 2024]:
-            r = _make_gate_rows(
+            r = _make_rows_direct(
                 iids,
                 cldice_on=[0.85, 0.84, 0.86, 0.83],
                 cldice_off=[0.70, 0.71, 0.69, 0.72],
@@ -273,7 +347,7 @@ class TestDatasetVerdictPass:
         iids = [f'img{i}' for i in range(8)]
         on_vals  = [0.730] * 8
         off_vals = [0.700] * 8  # gap = 0.030 ≥ GAP_THRESH
-        rows = _make_gate_rows(iids, on_vals, off_vals, dataset='drive')
+        rows = _make_rows_direct(iids, on_vals, off_vals, dataset='drive')
         v = dataset_verdict(rows, 'drive', metric='cldice')
         assert v['gap_ok'] is True, f'gap={v["gap"]!r} should be ≥ {GAP_THRESH}'
 
@@ -288,7 +362,7 @@ class TestDatasetVerdictFail:
         iids = [f'img{i}' for i in range(8)]
         on_vals  = [0.710] * 8
         off_vals = [0.700] * 8  # gap = 0.01
-        rows = _make_gate_rows(iids, on_vals, off_vals, dataset='drive')
+        rows = _make_rows_direct(iids, on_vals, off_vals, dataset='drive')
         v = dataset_verdict(rows, 'drive', metric='cldice')
         assert v['dataset_pass'] is False
         assert not v['gap_ok']
@@ -298,7 +372,7 @@ class TestDatasetVerdictFail:
         iids = [f'img{i}' for i in range(8)]
         on_vals  = [0.65] * 8
         off_vals = [0.80] * 8  # on < off
-        rows = _make_gate_rows(iids, on_vals, off_vals, dataset='chase')
+        rows = _make_rows_direct(iids, on_vals, off_vals, dataset='chase')
         v = dataset_verdict(rows, 'chase', metric='cldice')
         assert v['dataset_pass'] is False
         assert not v['direction_positive']
@@ -324,8 +398,8 @@ class TestRunVerdictPass:
                 iids = [f'img{i}' for i in range(n_per_seed)]
                 on_vals  = [0.85 + 0.01 * i for i in range(n_per_seed)]
                 off_vals = [0.70 + 0.01 * i for i in range(n_per_seed)]
-                rows.extend(_make_gate_rows(iids, on_vals, off_vals,
-                                            dataset=ds, seed=seed))
+                rows.extend(_make_rows_direct(iids, on_vals, off_vals,
+                                              dataset=ds, seed=seed))
             rows_by_ds[ds] = rows
         return rows_by_ds
 
@@ -358,12 +432,12 @@ class TestRunVerdictFail:
         """DRIVE on>off，CHASE on<off → P3 violated → global FAIL。"""
         iids = [f'img{i}' for i in range(6)]
         rows_by_ds = {
-            'drive': _make_gate_rows(iids,
-                                     cldice_on=[0.85]*6, cldice_off=[0.70]*6,
-                                     dataset='drive'),
-            'chase': _make_gate_rows(iids,
-                                     cldice_on=[0.60]*6, cldice_off=[0.80]*6,
-                                     dataset='chase'),
+            'drive': _make_rows_direct(iids,
+                                       cldice_on=[0.85]*6, cldice_off=[0.70]*6,
+                                       dataset='drive'),
+            'chase': _make_rows_direct(iids,
+                                       cldice_on=[0.60]*6, cldice_off=[0.80]*6,
+                                       dataset='chase'),
         }
         v = run_verdict(rows_by_ds, datasets=['drive', 'chase'])
         assert v['global_pass'] is False
@@ -373,7 +447,7 @@ class TestRunVerdictFail:
     def test_gap_too_small_fail(self):
         """两集 gap=0.005 < 0.03 → global FAIL。"""
         iids = [f'img{i}' for i in range(6)]
-        rows_by_ds = {ds: _make_gate_rows(
+        rows_by_ds = {ds: _make_rows_direct(
             iids,
             cldice_on=[0.705]*6, cldice_off=[0.700]*6,  # gap=0.005
             dataset=ds) for ds in ['drive', 'chase']}
@@ -387,73 +461,142 @@ class TestRunVerdictFail:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 9. CSV 加载
+# 9a. infer_arm_from_dirpath 单元测试
+# ─────────────────────────────────────────────────────────────────────────────
+class TestInferArm:
+    """验证 arm 从目录名正确推断，不读 csv 内 arm 列。"""
+
+    def test_gate_on_underscore(self, tmp_path):
+        """目录名含 gate_on → 'gate-on'。"""
+        p = tmp_path / 'gate_on_drive_s0' / 'reid_results.csv'
+        assert infer_arm_from_dirpath(p) == 'gate-on'
+
+    def test_gate_off_underscore(self, tmp_path):
+        """目录名含 gate_off → 'gate-off'。"""
+        p = tmp_path / 'gate_off_chase_s1337' / 'reid_results.csv'
+        assert infer_arm_from_dirpath(p) == 'gate-off'
+
+    def test_gate_on_hyphen(self, tmp_path):
+        """目录名含 gate-on（连字符）→ 'gate-on'。"""
+        p = tmp_path / 'gate-on_drive_s2024' / 'reid_results.csv'
+        assert infer_arm_from_dirpath(p) == 'gate-on'
+
+    def test_gate_off_hyphen(self, tmp_path):
+        """目录名含 gate-off（连字符）→ 'gate-off'。"""
+        p = tmp_path / 'gate-off_drive_s0' / 'reid_results.csv'
+        assert infer_arm_from_dirpath(p) == 'gate-off'
+
+    def test_gate_on_uppercase(self, tmp_path):
+        """大写 GATE_ON → 归一小写后识别。"""
+        p = tmp_path / 'GATE_ON_drive' / 'metrics.csv'
+        assert infer_arm_from_dirpath(p) == 'gate-on'
+
+    def test_unknown_dir_returns_none(self, tmp_path):
+        """无 gate_on/gate_off 字样 → None。"""
+        p = tmp_path / 'baseline_run' / 'reid_results.csv'
+        assert infer_arm_from_dirpath(p) is None
+
+    def test_memory_arm_in_dir_name_irrelevant(self, tmp_path):
+        """目录名含 'memory' 但不含 gate_on/off → None（不误匹配）。"""
+        p = tmp_path / 'gate_sweep_memory_s0' / 'reid_results.csv'
+        # 'gate_sweep_memory' 不含 gate_on 或 gate_off 作为独立子串
+        result = infer_arm_from_dirpath(p)
+        assert result is None
+
+    def test_gate_on_in_grandparent(self, tmp_path):
+        """gate_on 出现在祖父目录名 → 'gate-on'（检查两级）。"""
+        p = tmp_path / 'gate_on_exp' / 'subdir' / 'reid_results.csv'
+        # parent.name = 'subdir'（无 gate_on）, parent.parent.name = 'gate_on_exp'
+        assert infer_arm_from_dirpath(p) == 'gate-on'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. CSV 加载（arm 从目录名推断）
 # ─────────────────────────────────────────────────────────────────────────────
 class TestCSVLoad:
 
-    def test_load_basic(self, tmp_path):
+    def test_load_basic_via_dirname(self, tmp_path):
+        """arm 从目录名推断：gate_on_drive_s0/ + gate_off_drive_s0/ → 各 3 行，共 6 行。"""
         iids = ['img0', 'img1', 'img2']
-        rows = _make_gate_rows(iids, [0.8]*3, [0.7]*3, dataset='drive')
-        p = _write_gate_csv(tmp_path, rows, 'test.csv')
-        by_ds = load_metrics_csv([p])
+        on_path, off_path = _make_and_write_gate_pair(
+            tmp_path, iids, [0.8]*3, [0.7]*3, dataset='drive', seed=42)
+        by_ds = load_metrics_csv([on_path, off_path])
         assert 'drive' in by_ds
         assert len(by_ds['drive']) == 6  # 3 on + 3 off
+        arms = {r['arm'] for r in by_ds['drive']}
+        assert arms == {'gate-on', 'gate-off'}, f'Expected both arms, got {arms}'
+
+    def test_arm_from_dirname_not_csv_column(self, tmp_path):
+        """
+        csv 内 arm 列 = 'memory'，arm 应从目录名推断（gate-on），不是 'memory'。
+        """
+        on_path, _ = _make_and_write_gate_pair(
+            tmp_path, ['img0'], [0.8], [0.7], dataset='drive', seed=42, tag='_test')
+        by_ds = load_metrics_csv([on_path])
+        assert 'drive' in by_ds
+        r = by_ds['drive'][0]
+        assert r['arm'] == 'gate-on', f'arm should be gate-on from dirname, got {r["arm"]!r}'
 
     def test_dataset_lowercased(self, tmp_path):
         """dataset 字段大写 DRIVE → 归一小写 drive。"""
-        rows = [{'image_id': 'img0', 'dataset': 'DRIVE', 'seed': 42,
-                 'arm': 'gate-on', 'cldice': 0.8,
-                 'epsilon_beta0': 0.1, 'betti_err_total': 1.0}]
-        p = _write_gate_csv(tmp_path, rows, 'upper.csv')
+        row = {'epoch': 1, 'image_id': 'img0', 'dataset': 'DRIVE', 'seed': 42,
+               'cldice': 0.8, 'epsilon_beta0': 0.1, 'betti_err_total': 1.0}
+        p = _write_gate_csv(tmp_path / 'gate_on_DRIVE_s0' / 'reid_results.csv', [row])
         by_ds = load_metrics_csv([p])
         assert 'drive' in by_ds, f'Keys: {list(by_ds)}'
         assert 'DRIVE' not in by_ds
 
-    def test_arm_normalization(self, tmp_path):
-        """arm='gate_on' / '1' / 'on' 都归一为 'gate-on'。"""
-        rows = [
-            {'image_id': 'img0', 'dataset': 'drive', 'seed': 42,
-             'arm': 'gate_on', 'cldice': 0.8,
-             'epsilon_beta0': 0.1, 'betti_err_total': 1.0},
-            {'image_id': 'img1', 'dataset': 'drive', 'seed': 42,
-             'arm': '1', 'cldice': 0.8,
-             'epsilon_beta0': 0.1, 'betti_err_total': 1.0},
-            {'image_id': 'img2', 'dataset': 'drive', 'seed': 42,
-             'arm': 'gate-off', 'cldice': 0.7,
-             'epsilon_beta0': 0.15, 'betti_err_total': 1.5},
-        ]
-        p = _write_gate_csv(tmp_path, rows, 'arm_norm.csv')
-        by_ds = load_metrics_csv([p])
-        arms = {r['arm'] for r in by_ds['drive']}
-        assert 'gate-on' in arms, f'Arms: {arms}'
-        assert 'gate_on' not in arms and '1' not in arms
-
     def test_nan_tolerance(self, tmp_path):
         """cldice='nan' → 不 crash，加载为 float('nan')。"""
-        rows = [{'image_id': 'img0', 'dataset': 'drive', 'seed': 42,
-                 'arm': 'gate-on', 'cldice': 'nan',
-                 'epsilon_beta0': 'nan', 'betti_err_total': 'nan'}]
-        p = _write_gate_csv(tmp_path, rows, 'nan.csv')
+        row = {'epoch': 1, 'image_id': 'img0', 'dataset': 'drive', 'seed': 42,
+               'cldice': 'nan', 'epsilon_beta0': 'nan', 'betti_err_total': 'nan'}
+        p = _write_gate_csv(tmp_path / 'gate_on_drive_s0' / 'reid_results.csv', [row])
         by_ds = load_metrics_csv([p])
         r = by_ds['drive'][0]
         assert np.isnan(r['cldice'])
         assert np.isnan(r['epsilon_beta0'])
 
-    def test_multi_csv_concat(self, tmp_path):
-        """多个 CSV 文件合并（不同 arm/seed）。"""
+    def test_epoch_dedup_last_epoch_wins(self, tmp_path):
+        """
+        同 (image_id, seed, arm) 多 epoch 行 → 只保留最大 epoch 行。
+        epoch=1 cldice=0.7, epoch=5 cldice=0.85 → 保留 epoch=5 的 0.85。
+        """
+        rows = [
+            {'epoch': 1, 'image_id': 'img0', 'dataset': 'drive', 'seed': 42,
+             'cldice': 0.70, 'epsilon_beta0': 0.15, 'betti_err_total': 1.5},
+            {'epoch': 5, 'image_id': 'img0', 'dataset': 'drive', 'seed': 42,
+             'cldice': 0.85, 'epsilon_beta0': 0.10, 'betti_err_total': 1.0},
+            {'epoch': 3, 'image_id': 'img0', 'dataset': 'drive', 'seed': 42,
+             'cldice': 0.78, 'epsilon_beta0': 0.12, 'betti_err_total': 1.2},
+        ]
+        p = _write_gate_csv(tmp_path / 'gate_on_drive_s42' / 'reid_results.csv', rows)
+        by_ds = load_metrics_csv([p])
+        assert 'drive' in by_ds
+        drive_rows = by_ds['drive']
+        assert len(drive_rows) == 1, f'Expected 1 row after dedup, got {len(drive_rows)}'
+        assert abs(drive_rows[0]['cldice'] - 0.85) < 1e-9, (
+            f'Expected epoch=5 cldice=0.85, got {drive_rows[0]["cldice"]}')
+        assert drive_rows[0]['epoch'] == 5
+
+    def test_multi_csv_concat_via_dirname(self, tmp_path):
+        """多个 CSV（gate_on / gate_off 目录）合并，共 4 行。"""
         iids = ['img0', 'img1']
-        p1 = _write_gate_csv(tmp_path,
-                              [{'image_id': i, 'dataset': 'drive', 'seed': 42,
-                                'arm': 'gate-on', 'cldice': 0.8,
-                                'epsilon_beta0': 0.1, 'betti_err_total': 1.0}
-                               for i in iids], 'on.csv')
-        p2 = _write_gate_csv(tmp_path,
-                              [{'image_id': i, 'dataset': 'drive', 'seed': 42,
-                                'arm': 'gate-off', 'cldice': 0.7,
-                                'epsilon_beta0': 0.15, 'betti_err_total': 1.5}
-                               for i in iids], 'off.csv')
-        by_ds = load_metrics_csv([p1, p2])
-        assert len(by_ds['drive']) == 4
+        on_path, off_path = _make_and_write_gate_pair(
+            tmp_path, iids, [0.8, 0.82], [0.7, 0.71], dataset='drive', seed=42)
+        by_ds = load_metrics_csv([on_path, off_path])
+        assert len(by_ds['drive']) == 4, f'Expected 4 rows, got {len(by_ds["drive"])}'
+
+    def test_unknown_dir_rows_skipped(self, tmp_path):
+        """
+        目录名无 gate_on/off，csv 内 arm='memory'（真实产出）→ 行被跳过，
+        不 crash，drive 无数据（返回空 dict）。
+        """
+        row = {'epoch': 1, 'image_id': 'img0', 'dataset': 'drive', 'seed': 42,
+               'cldice': 0.8, 'epsilon_beta0': 0.1, 'betti_err_total': 1.0}
+        p = _write_gate_csv(tmp_path / 'baseline_run' / 'reid_results.csv', [row])
+        by_ds = load_metrics_csv([p])
+        # arm='memory' 无法从目录名推断 → 行跳过 → drive 无数据
+        assert by_ds.get('drive', []) == [], f'Should be empty, got {by_ds.get("drive")}'
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -499,15 +642,15 @@ class TestNoScipy:
 class TestE2ERunVerdict:
     """
     完整端对端：造 12 run CSV（2集×2臂×3seed×4图/run），
-    通过 load_metrics_csv → run_verdict 验证全链。
+    arm 从目录名推断，通过 load_metrics_csv → run_verdict 验证全链。
     """
 
-    SEEDS    = [42, 1337, 2024]
-    N_IMGS   = 4
+    SEEDS     = [42, 1337, 2024]
+    N_IMGS    = 4
     DATASETS_ = ['drive', 'chase']
 
-    def _make_12run_rows(self, on_off_gap: float = 0.10) -> dict:
-        """造 12run 数据，返回 {dataset: rows}。"""
+    def _make_12run_rows_direct(self, on_off_gap: float = 0.10) -> dict:
+        """造 12run 数据（直接行，含 arm 字段），返回 {dataset: rows}。用于跳 CSV 直测。"""
         rows_by_ds: dict = {}
         for ds in self.DATASETS_:
             rows = []
@@ -515,43 +658,74 @@ class TestE2ERunVerdict:
                 iids = [f'img{i}' for i in range(self.N_IMGS)]
                 on_vals  = [0.80 + on_off_gap * 0.5] * self.N_IMGS
                 off_vals = [0.80 - on_off_gap * 0.5] * self.N_IMGS
-                rows.extend(_make_gate_rows(iids, on_vals, off_vals,
-                                            dataset=ds, seed=seed))
+                rows.extend(_make_rows_direct(iids, on_vals, off_vals,
+                                              dataset=ds, seed=seed))
             rows_by_ds[ds] = rows
         return rows_by_ds
 
-    def test_12run_clear_pass(self, tmp_path):
-        """gap=0.10 → 明确 PASS。"""
-        rows = self._make_12run_rows(on_off_gap=0.10)
+    def _write_12run_csvs(self, tmp_path: Path,
+                           on_off_gap: float = 0.10) -> list:
+        """
+        写真实目录结构 12 run CSV（arm 从目录名推断），返回 csv 路径列表。
+        结构：tmp_path/gate_{on/off}_{ds}_s{seed}/reid_results.csv
+        """
+        csv_paths = []
+        for ds in self.DATASETS_:
+            for seed in self.SEEDS:
+                iids = [f'img{i}' for i in range(self.N_IMGS)]
+                on_vals  = [0.80 + on_off_gap * 0.5] * self.N_IMGS
+                off_vals = [0.80 - on_off_gap * 0.5] * self.N_IMGS
+                on_p, off_p = _make_and_write_gate_pair(
+                    tmp_path, iids, on_vals, off_vals, dataset=ds, seed=seed)
+                csv_paths.extend([on_p, off_p])
+        return csv_paths
+
+    def test_12run_clear_pass_direct(self):
+        """gap=0.10 直接行 → 明确 PASS（绕 CSV 快路径）。"""
+        rows = self._make_12run_rows_direct(on_off_gap=0.10)
         v = run_verdict(rows, datasets=self.DATASETS_)
         assert v['global_pass'] is True, f'fail_reasons={v["fail_reasons"]}'
         assert v['VERDICT'] == 'PASS'
 
-    def test_12run_small_gap_fail(self, tmp_path):
-        """gap=0.01 < 0.03 → FAIL。"""
-        rows = self._make_12run_rows(on_off_gap=0.01)
+    def test_12run_small_gap_fail_direct(self):
+        """gap=0.01 < 0.03 直接行 → FAIL。"""
+        rows = self._make_12run_rows_direct(on_off_gap=0.01)
         v = run_verdict(rows, datasets=self.DATASETS_)
         assert v['global_pass'] is False
 
-    def test_via_csv_roundtrip(self, tmp_path):
+    def test_via_csv_roundtrip_dirname(self, tmp_path):
         """
-        CSV 写出 → load_metrics_csv → run_verdict 全链，
-        验证 CSV 格式与 load 逻辑无缝衔接。
-        """
-        rows = self._make_12run_rows(on_off_gap=0.12)
-        # 写各 run CSV（每 dataset 一个 CSV 含所有 seed+arm）
-        csv_paths = []
-        for ds, ds_rows in rows.items():
-            p = _write_gate_csv(tmp_path, ds_rows, f'{ds}_all.csv')
-            csv_paths.append(p)
+        CSV 写入目录（gate_on_xxx/gate_off_xxx）→ load_metrics_csv 从目录名推 arm
+        → run_verdict 全链，验证真实场景配对正确（gap=0.12 → PASS）。
 
+        这是修 arm 配对 bug 后的核心回归测试：
+        - csv 内 arm 列='memory'（不是 gate-on/gate-off）
+        - arm 靠目录名 gate_on_*/gate_off_* 推断
+        - 配对键 (image_id, seed) 正确产生 12对/集
+        """
+        csv_paths = self._write_12run_csvs(tmp_path, on_off_gap=0.12)
         loaded = load_metrics_csv(csv_paths)
+
+        # 验证每集都有 gate-on 和 gate-off 行（配对前置检查）
+        for ds in self.DATASETS_:
+            arms_found = {r['arm'] for r in loaded.get(ds, [])}
+            assert 'gate-on'  in arms_found, f'{ds}: missing gate-on rows'
+            assert 'gate-off' in arms_found, f'{ds}: missing gate-off rows'
+            n_on  = sum(1 for r in loaded[ds] if r['arm'] == 'gate-on')
+            n_off = sum(1 for r in loaded[ds] if r['arm'] == 'gate-off')
+            assert n_on == self.N_IMGS * len(self.SEEDS), (
+                f'{ds}: expected {self.N_IMGS * len(self.SEEDS)} on-rows, got {n_on}')
+            assert n_off == n_on, f'{ds}: on={n_on} off={n_off} mismatch'
+
         v = run_verdict(loaded, datasets=self.DATASETS_)
-        assert v['global_pass'] is True, f'CSV roundtrip verdict={v}'
+        assert v['global_pass'] is True, (
+            f'CSV roundtrip with dirname-arm should PASS, got: '
+            f'verdict={v["VERDICT"]}, fail_reasons={v["fail_reasons"]}, '
+            f'per_dataset={[(d["dataset"], d["gap"], d["n_pairs"]) for d in v["per_dataset_cldice"]]}')
 
     def test_verdict_json_serializable(self):
         """run_verdict 返回 dict 必须 json.dumps 不抛异常。"""
-        rows = self._make_12run_rows()
+        rows = self._make_12run_rows_direct()
         v = run_verdict(rows, datasets=self.DATASETS_)
         out = json.dumps(v, ensure_ascii=False)
         reloaded = json.loads(out)

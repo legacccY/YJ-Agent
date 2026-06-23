@@ -5,10 +5,23 @@ gate_frangi_verdict.py — 路B Frangi门 gate-on vs gate-off 最小验证判定
   读取 12 run (DRIVE/CHASE × gate-on/off × 3seed) 的 per-image metrics CSV，
   numpy 手算 PASS/FAIL 判定，输出 verdict JSON。
 
-CSV 格式（每 run 一行/图）：
-  image_id, dataset, seed, arm, cldice, epsilon_beta0, betti_err_total
-  arm: 'gate-on' | 'gate-off'
-  dataset: 'drive' | 'chase' (小写)
+CSV 格式（真实训练产出，reid_results.csv）：
+  epoch, image_id, severity, dataset, reid_rate, reid_rate_head, reid_idf1,
+  epsilon_beta0, success_rate, n_gaps, reid_rate_head_high, reid_rate_head_low,
+  seed, cldice, betti_err_total, arm
+
+  重要：csv 内 arm 列值 = 'memory'（reid_feat_source），不代表 gate-on/off。
+  arm (gate-on/off) 从包含该 csv 的父目录名推断：
+    - 目录名含 'gate_on' 或 'gate-on' → arm = 'gate-on'
+    - 目录名含 'gate_off' 或 'gate-off' → arm = 'gate-off'
+  目录命名示例：
+    outputs/gate_sweep/gate_on_drive_s0/reid_results.csv  → gate-on
+    outputs/gate_sweep/gate_off_drive_s0/reid_results.csv → gate-off
+
+  多 epoch：每 run csv 含多行（不同 epoch 多次 eval），
+  对每个 (image_id, seed) 取最大 epoch 行（防重复）。
+
+  dataset 字段归一为小写。
 
 PASS 条件（全部同时满足）：
   P1: ≥1集 clDice gap = mean(on) - mean(off) ≥ +0.03 (3-seed均值gap)
@@ -24,15 +37,17 @@ FAIL 条件：gap<0.03 OR p≥0.05/CI≤0 OR 两集方向相反
 红线：
   - 禁 scipy.stats（OMP Error #15）——全程 numpy 手算
   - 禁 hardcode 假数据，需明确 CLI 路径输入
+  - arm 不从 csv 内列读（那列是 memory），从目录名推断
 
 用法（主线跑，coder 不跑）：
+  # 最常用：指定含 12 run 子目录的根目录，自动递归找 reid_results.csv
   python scripts/gate_frangi_verdict.py \\
-      --csv_dir outputs/gate_frangi_runs/ \\
+      --csv_dir outputs/gate_sweep/ \\
       --out_json outputs/gate_frangi_verdict.json
 
-  或者直接指定各 run 的 CSV 文件（glob 模式）：
+  # 或直接 glob
   python scripts/gate_frangi_verdict.py \\
-      --csv_glob "outputs/gate_frangi_runs/**/metrics.csv" \\
+      --csv_glob "outputs/gate_sweep/**/reid_results.csv" \\
       --out_json outputs/gate_frangi_verdict.json
 
 Windows 兼容：无 scipy，无 fork，路径用 pathlib。
@@ -195,22 +210,68 @@ def bootstrap_ci_lower(deltas: np.ndarray,
 
 
 # ============================================================================
+# arm 推断（从目录名，不读 csv 内 arm 列）
+# ============================================================================
+
+def infer_arm_from_dirpath(csv_path: Path) -> Optional[str]:
+    """
+    从 csv 文件的父目录名推断 arm（gate-on / gate-off）。
+
+    规则（大小写不敏感，- 和 _ 等价）：
+      目录名含 'gate_on'  或 'gate-on'  → 'gate-on'
+      目录名含 'gate_off' 或 'gate-off' → 'gate-off'
+
+    返回 None 表示推断失败（调用方会打 WARNING 并跳过该 csv）。
+
+    动机：真实训练输出 csv 内 arm 列值='memory'（reid_feat_source），
+    不代表 gate-on/off；arm 信息编码在子目录名里，例如：
+      outputs/gate_sweep/gate_on_drive_s0/reid_results.csv  → gate-on
+      outputs/gate_sweep/gate_off_drive_s0/reid_results.csv → gate-off
+    """
+    # 检查 csv 文件所在目录 + 其父目录（共两级）
+    for part in [csv_path.parent.name, csv_path.parent.parent.name]:
+        normalized = part.replace('-', '_').lower()
+        if 'gate_on' in normalized:
+            return 'gate-on'
+        if 'gate_off' in normalized:
+            return 'gate-off'
+    return None
+
+
+# ============================================================================
 # CSV 加载
 # ============================================================================
 
-def load_metrics_csv(csv_paths: List[Path]) -> Dict[str, List[dict]]:
+def load_metrics_csv(csv_paths: List[Path],
+                     arm_override: Optional[str] = None) -> Dict[str, List[dict]]:
     """
     读取多个 per-run metrics CSV，按 dataset 分组返回行列表。
 
-    期望列（路B 专用格式）：
-      image_id, dataset, seed, arm, cldice, epsilon_beta0, betti_err_total
+    真实 CSV 格式（reid_results.csv）：
+      epoch, image_id, severity, dataset, reid_rate, reid_rate_head, reid_idf1,
+      epsilon_beta0, success_rate, n_gaps, reid_rate_head_high, reid_rate_head_low,
+      seed, cldice, betti_err_total, arm
 
-    dataset 归一为小写。arm 归一为 'gate-on' | 'gate-off'。
+    arm 来源：
+      1. arm_override 参数（单测时直接指定，e.g. 'gate-on'）
+      2. csv 父目录名推断（infer_arm_from_dirpath）
+      3. csv 内 arm 列归一化（兼容旧格式/单测 csv 里直接写 gate-on/gate-off）
+      优先级：arm_override > 目录名 > csv 列（fallback）
+
+    多 epoch 去重：对每个 (image_id, seed) 只保留最大 epoch 行，
+    防止多次 eval 导致同图重复计入。
+
+    dataset 归一为小写。
     缺失列 → 报警告，填 NaN（不 crash）。
     """
-    rows_by_dataset: Dict[str, List[dict]] = {}
-    required_cols = {'image_id', 'dataset', 'seed', 'arm', 'cldice',
+    # 需要的列（csv 内 arm 列降为可选，实际从目录名推断）
+    required_cols = {'image_id', 'dataset', 'seed', 'cldice',
                      'epsilon_beta0', 'betti_err_total'}
+
+    # 每个 csv 路径加载为 raw rows（含 epoch）
+    # 结构：{(dataset, image_id, seed, arm): {epoch: raw_row}}
+    # 先按 csv 粒度聚合，最后选最大 epoch
+    raw_by_key: Dict[tuple, dict] = {}  # key → {epoch → parsed_row_dict}
 
     for csv_path in csv_paths:
         csv_path = Path(csv_path)
@@ -218,6 +279,18 @@ def load_metrics_csv(csv_paths: List[Path]) -> Dict[str, List[dict]]:
             print(f'[gate_frangi_verdict] WARNING: CSV not found, skip: {csv_path}',
                   file=sys.stderr)
             continue
+
+        # 推断 arm
+        if arm_override is not None:
+            arm_for_this_csv = arm_override
+        else:
+            arm_from_dir = infer_arm_from_dirpath(csv_path)
+            if arm_from_dir is not None:
+                arm_for_this_csv = arm_from_dir
+            else:
+                # fallback: 读 csv 内 arm 列（旧格式 / 单测直接写 gate-on/gate-off）
+                arm_for_this_csv = None  # 延迟到行级推断
+
         with open(csv_path, newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             if reader.fieldnames is None:
@@ -228,29 +301,55 @@ def load_metrics_csv(csv_paths: List[Path]) -> Dict[str, List[dict]]:
             if missing:
                 print(f'[gate_frangi_verdict] WARNING: CSV missing cols {missing}: {csv_path}',
                       file=sys.stderr)
+
             for row in reader:
                 ds = row.get('dataset', '').strip().lower()
                 if not ds:
                     continue
-                # Normalize arm
-                arm_raw = row.get('arm', '').strip().lower()
-                if arm_raw in ('gate-on', 'gate_on', '1', 'on'):
-                    arm = 'gate-on'
-                elif arm_raw in ('gate-off', 'gate_off', '0', 'off'):
-                    arm = 'gate-off'
-                else:
-                    arm = arm_raw  # pass through, pair step will skip unknowns
 
+                # arm 确定
+                if arm_for_this_csv is not None:
+                    arm = arm_for_this_csv
+                else:
+                    # fallback: 从 csv 内 arm 列归一化（兼容直接写 gate-on/gate-off 的旧格式）
+                    arm_raw = row.get('arm', '').strip().lower()
+                    if arm_raw in ('gate-on', 'gate_on', '1', 'on'):
+                        arm = 'gate-on'
+                    elif arm_raw in ('gate-off', 'gate_off', '0', 'off'):
+                        arm = 'gate-off'
+                    else:
+                        # 真实 csv 的 'memory' 会走到这里——警告并跳过
+                        print(
+                            f'[gate_frangi_verdict] WARNING: cannot infer arm from dir '
+                            f'({csv_path.parent.name!r}) or csv col ({arm_raw!r}), skip row '
+                            f'image_id={row.get("image_id")!r} in {csv_path}',
+                            file=sys.stderr)
+                        continue
+
+                image_id = row.get('image_id', '').strip()
+                seed     = _safe_int(row.get('seed', '0'))
+                epoch    = _safe_int(row.get('epoch', '0'))
+
+                key = (ds, image_id, seed, arm)
                 parsed = {
-                    'image_id':         row.get('image_id', '').strip(),
+                    'image_id':         image_id,
                     'dataset':          ds,
-                    'seed':             _safe_int(row.get('seed', '0')),
+                    'seed':             seed,
                     'arm':              arm,
+                    'epoch':            epoch,
                     'cldice':           _safe_float(row.get('cldice', 'nan')),
                     'epsilon_beta0':    _safe_float(row.get('epsilon_beta0', 'nan')),
                     'betti_err_total':  _safe_float(row.get('betti_err_total', 'nan')),
                 }
-                rows_by_dataset.setdefault(ds, []).append(parsed)
+                # 保留最大 epoch（每 key 只存一行 → last epoch wins）
+                if key not in raw_by_key or epoch > raw_by_key[key]['epoch']:
+                    raw_by_key[key] = parsed
+
+    # 按 dataset 聚合（去掉 epoch 字段，不需要下游知道）
+    rows_by_dataset: Dict[str, List[dict]] = {}
+    for parsed in raw_by_key.values():
+        ds = parsed['dataset']
+        rows_by_dataset.setdefault(ds, []).append(parsed)
 
     return rows_by_dataset
 
@@ -548,6 +647,12 @@ def main():
         sys.exit(1)
 
     print(f'[gate_frangi_verdict] 找到 {len(csv_paths)} 个 CSV 文件', file=sys.stderr)
+
+    # ---- 打印每个 csv 推断到的 arm（调试用） ----
+    for cp in sorted(csv_paths):
+        inferred = infer_arm_from_dirpath(Path(cp))
+        print(f'[gate_frangi_verdict]   {Path(cp).parent.name!r:40s} → arm={inferred!r}',
+              file=sys.stderr)
 
     # ---- 加载 ----
     rows_by_dataset = load_metrics_csv(csv_paths)
