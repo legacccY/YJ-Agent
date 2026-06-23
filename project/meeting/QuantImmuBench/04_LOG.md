@@ -4,6 +4,106 @@
 
 ---
 
+## Entry 18 — 2026-06-23 IMPROVE 不降级可行性深查（HPC 验证 + 命门：结构性做不到 + 跑偏判定）
+
+用户问「feature_calc 降级能不能不降级」→ 连 HPC 深查，**发现完全不降级对 ELISpot 数据结构性不可能**，且建 sif 偏离老师 deliverable。
+
+**HPC 验证（已做，纯跑现有二进制，无上传）**：
+- ✅ **netMHCpan-2.8 在 HPC 出真值**（破 WSL 退化疑云）：跑退化肽 RLETIRNPK/NLVPMVATV + 对照 → 肽段全保真（**没被改写成 YSAMYEEKV**）、1-log50k(aff) 随肽变化（0.036/0.717/0.750/0.827/0.153/0.002，**非 WSL 常数 0.016/0.17/19.00**）、生物学合理（CMV/流感/AAAWYLWEV=SB）。HPC el8 老二进制兼容好。allele 格式须 `HLA-A02:01`。
+- 🔴 **netMHCstabpan 二进制 HPC 原生跑不了**：`libm.so.6: version GLIBC_2.29 not found`（HPC glibc 2.28，objdump 确认需 2.29）。后端 `-affpred netMHCpan-2.8/netMHCpan`（已验真跑）。→ 唯一解=glibc≥2.29+tcsh 容器跑 stabpan 二进制 + 2.8 后端。
+- HPC 登录节点有 tcsh ✅。路径 `/gpfs/.../quantimmu/ext_tools/netMHCstabpan-1.0` + `netMHCpan-2.8`。
+
+**🔴 命门发现（读 predict_local.py L35-45 + 官方 example 表头）**：Simple 模型 base 特征含 **4 个 impute 列**，来源不同：
+| 特征 | 来源 | 肽-only 能补 | ELISpot 能补 |
+|---|---|---|---|
+| Stability | netMHCstabpan | ✅ | ✅（HPC 容器，已验可行）|
+| Foreigness | antigen.garnish（肽 BLAST 人蛋白组）| ✅ | ✅（需装）|
+| Expression | RNA-seq 表达量 | ❌ | 🔴 **不能**（ELISpot 无 RNA-seq）|
+| NetMHCExp | netMHCpan×表达量 | ❌ | 🔴 **不能**（依赖 Expression）|
+
+证据：官方 `data/calculated_features_test.tsv` 表头 `...Expression PrioScore CelPrev NetMHCExp Foreigness...` = **用户须提供的输入列**（neoantigen pipeline 配 RNA-seq），非 feature_calc 从肽算。
+**结论**：严格「完全不降级」= 结构性做不到（数据缺口非部署缺口）。能做上限 = impute 4→2（补 Stability±Foreigness），Expression/NetMHCExp 永远 impute。
+
+**跑偏判定（用户贴老师要求自查）**：老师 deliverable = 5 工具 × 4 类信息 + **PPT** + 用 ELISpot 数据跑通演示。建 stabpan sif 给 IMPROVE 抠 1-2 列特征 = **过度工程**，不推进 4 类信息也不推进 PPT，且全不降级本就不可能。**决策：停 sif，IMPROVE 降级保持现状**，把 impute 情况当「输入要求」信息写进文档/PPT（恰是老师要的第①类）。
+
+**真交付缺口**：①PPT（老师明写最终交付，现 0，素材 REPORT.md+TOOLS/*.md 已齐）②pTuneos example（**另一窗口负责，本窗不碰**）。
+
+**摩擦**：HPC CPU 推理被 `training_lock` hook 误判训练 1 次，按协议 request local 0 卡放行→release（memory feedback_training_auto_slot 已记此模式）。
+
+---
+
+## Entry 15 — 2026-06-23 三线并行解锁剩余工具（IMPROVE 卡 netMHCstabpan / NeoTImmuML 卡训练数据 / VEP 下载中）
+
+用户「并行开始」剩 3 工具，VEP cache 后台下。
+
+**A 线 pTuneos / VEP cache**：镜像内 VEP=97.1，example VCF=**GRCh38**（contig chr1=248956422）。下 `release-97 indexed homo_sapiens GRCh38`（14.3G，URL 已核 200）。后台 wget -c 中（China→Ensembl 龟速 ~243K/s，ETA ~6h，8% 时报）。**注意：pTuneos 只能完成自身 example 端到端，喂不了 ELISpot（无 VCF）。**
+
+**B 线 IMPROVE feature_calc**：本地全链跑通 feature_calc（不用容器，netMHCpan-4.1/PRIME/MixMHCpred/kernelSim 全配好）。**踩 8 坑连环修**：①conda run 不转发 stdin→改 activate ②预测子目录不自建→预建 ③装 biopython/peptides/matplotlib/seaborn ④MixMHCpred 须整目录 symlink（靠 executable_dir 找 code/main.py）⑤PRIME.x repo 自带是 **Mac arm64 二进制**→本地 g++ 重编 Linux x86-64 ⑥PRIME 也须整目录 symlink ⑦predict_local.py 缺列不补就选列崩→patch 补 NaN+fillna(0) ⑧模型是 numpy2.x pickle→Predict 必用 improve_new(py3.11) 非 improve(py3.7)。
+- **🔴 真命门：netMHCstabpan 坏**。独立复现：9mer 输入 RLETIRNPK/NLVPMVATV **都输出成乱码 YSAMYEEKV**；且所有肽 Pred/Thalf/%Rank 恒 `0.016/0.17/19.00`（常数）→ 其 netMHCpan-2.8（2014 静态二进制）后端在 WSL 下没真算。8mer 保序但分数同样是常数垃圾。**Entry7「11 行 stability 跑通」实为这种退化输出**（假通）。
+- 后果：Stability 特征全垃圾 + 9mer 行 inner-merge 掉（DS1 全 9mer→binding 特征全 NaN→预测退化成只用理化特征，6 个 HLA 同分 0.443327）。smoke 20 行只 10 个 DS2 8mer 出有效 HLA 特异分。
+- **决策点（待用户）**：(a) 丢 Stability 特征（impute，IMPROVE 用 netMHCpan-4.1+PRIME+理化+SelfSim 出降级但 HLA 特异分；与工具自身 impute Foreignness/Expression 一致）vs (b) 深修 netMHCpan-2.8（2014 二进制，成功率低）。
+
+**C 线 NeoTImmuML**：堵在训练数据。repo 无 Input.csv（187k 训练集），需从 `tumoragdb.com.cn` 下 TumorAgDB2.0（可能注册/联系作者 13401930670@163.com）。R 78 特征脚本 + train_predict.py 已写好（`scripts/neotimmuml/`），拿到数据即可跑。脚本 TODO：autoCorrelation aaindex 参数/aaComp_1/cruciani 列定义需对 demo.csv 交叉核验。
+
+**脚本产物**：`scripts/improve/{run_feature_calc.sh,feature_calc_local.py}` + `scripts/neotimmuml/{extract_peptides.py,calc_78_features.R,train_predict.py}`。
+
+---
+
+## Entry 16 — 2026-06-23 IMPROVE 全量出分 + 三工具合表 + NeoTImmuML 数据到手
+
+用户拍板「测全部工具」（纠正我擅自砍 scope——我错了，已认）。
+
+**IMPROVE 全量完成（降级版）**：连环修 conda source 缺失 → 26790 行全跑通。`scripts/out/improve_full_result.tsv`（26790 行，mean_prediction_rf 全非空，0.295-0.755，23082 distinct=HLA 特异，证降级有效）。坑补记：v2 脚本重写时丢了 `source conda.sh` 致 conda not found，加回。
+
+**三工具合表**：`scripts/out/merged_all_tools_3tools.xlsx`（34247 行）= DeepImmuno(11358,9-10mer) + PredIG(34247,8-14mer) + IMPROVE(26790,8-12mer)。单工具表 merged_{deepimmuno,predig,improve}.xlsx 同步更新。注：旧 merged_all_tools.xlsx(11:01,2工具版)被 Excel 占用锁，故合表另存 _3tools 名。
+
+**NeoTImmuML 训练数据到手**（免注册）：tumoragdb.com.cn/#/download 直下 immunogenic_neopeptide.xlsx(101) + Non-immunogenic(36589) → build_trainset.py 组装 36535 行(100 阳+36435 阴,364:1)。label=col immunogenicity(0/1)。notebook 无任何不平衡处理（搜遍 21 cell，照搬）。
+- **R 特征卡 Peptides 2.4.6 API**：calc_78_features.R 多处 API 不符（scale 函数返 list 需 [[1]] / aaComp 返 list 矩阵 / membpos 返 list / autoCorrelation 无 aaindex 参数）→ 每肽 dimension 错。已给 coder 精确诊断重修中。装好本机 lgbm4.6/xgb3.3 + R Peptides 2.4.6。
+- 卡槽坑：build_trainset/train 命中 training_lock hook（train 关键词，实为 CPU ML），按协议 request local 槽放行。
+
+**pTuneos/VEP**：本地 wget 龟速卡死(1.58G) → 用户拍板换 HPC 下。HPC wget 在跑（PID 3044947，/gpfs/.../ext_tools/vep_cache/，增长中）。pTuneos 结论=只能跑自带 example 出有效 RefinedNeo 分，喂不了 ELISpot（架构）。
+
+**当前**：4/5 工具有进展。DeepImmuno+PredIG+IMPROVE 三个有 ELISpot 真实分（PPT 主体齐）；NeoTImmuML R 修中；pTuneos 等 VEP。
+
+---
+
+## Entry 17 — 2026-06-23 NeoTImmuML 跑通出分 + 4 工具合表 + VEP 加速
+
+**NeoTImmuML R 特征修对**（Peptides 2.4.6 真实 API）：scale 函数全返 list 须 `[[1]]`、aaComp/membpos 返 list、autoCorrelation 签名是 `(sequence,lag,property,center)` 无 aaindex。**demo 核验 76/78 列精确吻合**（diff=0）；只 aaComp_1（来源不明，可能非 Peptides::aaComp）+ cruciani_1（PP 分量待定）两列微差——78 里 2 列树集成几乎无影响，且训练/预测同脚本自洽，接受。
+**NeoTImmuML 训练+预测完成**：trainset 36535（100阳/36435阴，notebook 无不平衡处理照搬）→ RF+LGB+XGB VotingClassifier → 10536 ELISpot 肽出分 0.0002-0.9974。`scripts/out/neotimmuml_scores.csv`。
+
+**4 工具合表**：`scripts/out/merged_all_tools_4tools.xlsx`（34247 行×32 列）：PredIG 34247 / NeoTImmuML 30739(8-13mer,无HLA按肽贴) / IMPROVE 26790 / DeepImmuno 11358。**4/5 工具有 ELISpot 真实分**。
+
+**VEP 加速**：本地/HPC 单连接 wget 均 0.24MB/s（China→Ensembl 限速，ETA 16.7h）→ 装 aria2c 用 `-x16 -s16` 多连接 = 3.0MB/s（12×），ETA ~1h，本地续传。停 HPC 冗余 wget。下完跑 pTuneos example（仅 example，喂不了 ELISpot）。
+
+**剩**：pTuneos 等 VEP 下完跑 example（最后 1 个 + 仅自带数据）。4 工具 ELISpot 结果 + 4 类信息已够 PPT 主体。
+
+---
+
+## Entry 14 — 2026-06-23 袁老师 ELISpot 数据集→工具输入管线（prepare 验通）
+
+袁老师给两个 ELISpot 真数据集（`data/Elispot_Dataset1.xlsx` 83行全9mer / `Elispot_Dataset2.xlsx` 101行变长15-29mer）+ 参考输出格式 `Sample_merged_prime_results.xlsx`（李紫晨 PRIME 跑法，炸开成 Window_Size(8-14)×Position×HLA 行）。任务=把 MT/WT peptide + HLA 转成工具输入跑分。
+
+**用户拍板 scope**：①先跑 3 个即用肽段工具 DeepImmuno+IMPROVE+PredIG（pTuneos 只吃VCF喂不了/NeoTImmuML要重训，缓）②DS1 9mer 直接喂不滑窗，DS2 滑窗 8-14mer ③输出「都做」=每工具 merged xlsx + 合成大表。
+
+**建管线**（coder 写，主线本地验）：
+- `scripts/prepare_inputs.py` — 读两数据集→主干炸开表 + 三工具输入文件。HLA 归一（紧凑 `B5701`→`HLA-B*57:01`；标准原样）。**已本地跑通+对参考逐字验证**：`16097-101-3` win8 pos1 = MT/WT=STRDPLSE + HLA A66:01/B40:01/B57:01/C06:02，与 Sample 一致；DS1 MT/WT 只突变位差。
+- `scripts/merge_results.py` — 工具输出回贴主干→单工具 xlsx + 合成大表（待工具跑完，解析器按 TOOLS/*.md 格式预写，真实列名跑后校准）。
+- 产出（`scripts/out/`）：master_backbone.csv（34247行=DS1 325+DS2 33922）；deepimmuno_input.csv（17103 unique，仅9/10mer，无冒号HLA）；predig_input.csv（68494=MT+WT，8-14mer，protein_seq=全长肽上下文）；improve_input.tsv（26790，MT+WT对，8-12mer，无星HLA）+ 各 map.csv。
+- 核实：DS2 MT/WT 全等长（SNV位点对齐，切窗安全）；DS2 HLA 全 class I。
+
+**smoke 验证（各 50 行 DS1+DS2）端到端通过**：DeepImmuno(WSL conda) + PredIG(WSL docker) 跑通→merge 回贴对参考逐字验证（DS2 STRDPLSE MT/WT NetCleave 靠蛋白上下文正确区分，证位置 join 对）。**merge 关键校准**：PredIG 输出 ID=`HLA_epitope` 丢 protein_name，但**严格保输入序**（0 mismatch）→ 改位置 join（output[i]↔predig_input[i]）+ 行级 epitope/HLA 断言防错位。
+
+**全量跑完成（用户拍板：DeepImmuno=HPC / PredIG=本地，IMPROVE 本轮跳）**：
+- **DeepImmuno → HPC** cpudebug 分区（job 1485416，exit=0，76s，17103 行）。坑：cpudebug qos 限 MaxWall=1h + MaxTRESPU=cpu=4 + 同时1作业（首提 8cpu/8h 双超限 PD 卡住，改 4cpu/1h 过）。
+- **PredIG → 本地 WSL** docker。坑：PredIG **硬限输入 <5000 行** → 切 14 块（≤4999）串跑（每块仅 ~17s，全程 4min）→ 按序拼 68494 行，0 epitope mismatch 保序。
+- **merge 全量** → `scripts/out/merged_{deepimmuno,predig,all_tools}.xlsx`。QC 通过：34247 行×41 列；DeepImmuno 仅 9/10mer 有值(11358)、PredIG 全 8-14mer 覆盖(34247,0缺失)；已知值精确(1_0 A2402 DI=0.37028/PredIG=0.026091)；分数域 0-1 合理；Elispot 金标签全齐。
+
+**产物**（PPT/分析用）：`scripts/out/merged_all_tools.xlsx`（主干+双工具 MT/WT 分数+PredIG 全特征）+ 单工具 xlsx。**IMPROVE 待 feature_calc 解锁补**（netMHCstabpan tcsh 容器 Entry13）；pTuneos/NeoTImmuML 按用户拍板缓。
+**HPC 部署侧产物**：`/gpfs/work/bio/jiayu2403/quantimmu/elispot_run/`（di_elispot.sh + 输入 + di_out 结果）。
+
+---
+
 ## Entry 13 — 2026-06-23 HPC 部署收口（4/5 smoke-pass + 2 容器边界）
 
 - ptuneos.sif build✅(1.7G)。但 singularity run 受限：①镜像程序在 /root，非root用户访问拒，`--fakeroot` 无 subuid 映射不可用 ②VEP cache 缺(用户拍板不下)。pTuneos 部署已本地 docker 验证(Py2.7+校验输入)，HPC sif 建成；真跑需 fakeroot 或重打包+VEP cache。
@@ -139,6 +239,29 @@ PredIG 镜像 Docker Hub 阻塞根因链 + 修复：
 - 4 类信息已补进 `TOOLS/DeepImmuno.md`（输入模板/参数/输出格式实测）。
 
 **下一步**：Wave1 续 → PredIG（Singularity 容器）或先 NeoTImmuML 站内找源码 URL。pTuneos+IMPROVE 等许可证（清单已给用户）。
+
+---
+
+## Entry 18 — 2026-06-23 R/ggplot2 图 + Word 报告脚本交付（三脚本就绪）
+
+**产物**（analysis/ 目录下）：
+- `analysis/export_plot_data.py` — 从 merged_all_tools_4tools.xlsx 导出 R 画图用 tidy CSV（plotdata_perpep.csv + plotdata_roc.csv），聚合逻辑照搬 benchmark_analysis.py 保证数字与 metrics_ds2.csv 对得上。
+- `analysis/plot_benchmark.R` — ggplot2 画 5 张顶会风格图（fig1 ROC/fig2 AUC 柱/fig3 散点/fig4 聚合对比/fig5 热图），输出 analysis/figures_R/*.png + *.pdf（dpi=300）。Rscript 路径 E:\R-4.3.3\bin\Rscript.exe。
+- `analysis/build_report_docx.py` — python-docx 生成中文 Word 报告 analysis/BENCHMARK_REPORT.docx（CJK 字体 SimSun/SimHei，含两张结果表+5 图+结论+Caveats+下一步）。
+
+**运行顺序（主线执行，我不跑）**：
+```
+# Step 1: 导出画图数据
+python analysis/export_plot_data.py
+
+# Step 2: R 画图
+E:\R-4.3.3\bin\Rscript.exe analysis/plot_benchmark.R
+
+# Step 3: 生成 Word
+python analysis/build_report_docx.py
+```
+
+**需装包**：python-docx（`pip install python-docx`）；R 包 ggplot2/dplyr/tidyr/readr/scales/ggrepel（脚本内 install.packages 自动装）。
 
 ---
 
