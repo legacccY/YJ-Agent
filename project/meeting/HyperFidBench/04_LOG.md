@@ -122,6 +122,23 @@
 - HyperGALE env dtn nohup 建中。
 - **待**：run-01 seed0 5-fold 均值定 Gate1②；4gpus 腾位→上全量 3-seed run-01/02/04 + HyperGALE run-03。
 
+## Entry 12 — 2026-06-25 收工（在跑的不停）
+
+**本次完成**：
+1. `/design-experiment hyperfid` 出 Gate1 矩阵 + 3 researcher 清官方超参 + 用户拍数据策略（各按官方→Gate2 统一）。2 coder 实现两泳道代码（braingb/hypergale 各 6 文件）。
+2. **本地全验**：数据管道（871 FC 干净，**抓修 261 丢失 bug**）+ pytest braingb 16/16 + BrainGB smoke 端到端。判明 edge_node_concate 本地 8GB 不可行→上 HPC。
+3. **HPC 上 BrainGB Gate1 ② 基本确认**：env 建成（dtn nohup+TMPDIR 本地，torch2.1cu118/pyg2.5.3）；gpudebug 绕 4gpus 队列堵跑 run-01 seed0 edge_node_concate = fold0-3 acc **68.6/60.9/64.9/59.8%，4-fold 均值 63.5%**，落文献 65-70% 邻域。
+4. **HPC infra 硬资产**（复用价值高，已记 [[feedback_version_matrix_first]] 系）：GLIBC 2.28→cu118 wheel；pip 走 **aliyun 镜像**（pytorch.org 1MB/s→22MB/s）；**计算节点外网慢→dtn 预下 wheelhouse 离线装**；pip 版本自检禁用；torch `--no-deps` 跳 triton；TMPDIR 本地避 gpfs 慢IO；`pip download 含deps` 回溯地狱→`--no-deps` 分组。helper `tools/_hf_hpc.py`（凭据从 HPC_WORKFLOW.md 读防泄露）。
+
+**在跑/留账**：gpudebug run-01 seed0(job 1491703,gpu_slot 059b5ffe) 跑 fold4 中，不停。
+
+**下次接力 TODO**：
+- ① run-01 seed0 跑完看 5-fold 均值（gpudebug 可能 1h 超时丢 fold4，folds0-3 已够判 Gate1②≈63.5% PASS 邻域）。
+- ② **hypergale env build 失败**：torch+pyg2.3.1 装上但 `pytorch_lightning` import 失败（setup step4 框架依赖没装上，需查 fetch_hg3 的 lightning wheel 是否完整 + deps）。venv=hf_hypergale_venv(4.8G)。
+- ③ **4gpus 队列堵**（fetalss 5+km+fmreg 占满 MaxSubmit=8）→ 腾位才能上全量 3-seed run-01/02/04 + HyperGALE run-03。可考虑协调 fetalss 窗或等。
+- ④ HyperGALE 还需 ABIDE-II 下载（dtn boto3 S3）+ FC 自建（nilearn Schaefer400+Ledoit-Wolf）才能训 run-03。
+- 提交工具：`tools/_hf_submit_bgb.py`（BrainGB GPU job，含 env-if-missing 守卫）；sbatch_braingb.sh（4gpus 全量）/sbatch_bgb_debug.sh（gpudebug 单 seed）。
+
 ## Entry 1 — 2026-06-24 立项决策（用户拍板）
 
 **来源**：选题流水线 `/ideate` 2026-06-24 轮（charter: `project/ideation/runs/2026-06-24_charter.md`；报告: `2026-06-24_选题报告.md`）。从 112 候选 → G2 16 → G3 评分 → G2′撞车核 + G4 红队 → 双 headline 幸存。本项目 = headline 1（B5-10）。

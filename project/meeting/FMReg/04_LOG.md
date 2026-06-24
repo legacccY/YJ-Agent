@@ -45,6 +45,8 @@
 
 **下一步**：监控 job（squeue PD→R + g2a_state.json 看 epoch）→ 跑完拉 csv → analyst 判预登记门 → release slot。
 
+**🏁 收工态（2026-06-25）**：job 1489821 **RUNNING 中**（arm A_s0 ep60/100，loss≈−0.31 收敛正常）。slot `9a1c6844` 持有不释放（job 在跑）。下窗第一步=按上方续跑指南监控（paramiko squeue + cat g2a_results/g2a_state.json + tail logs/1489821.out）。完成拉 csv→analyst→release。Monitor 随本窗 session 结束停，下窗重挂或手动 poll。
+
 ---
 
 ## Entry 7 — G2-A job 200ep 太慢 → 杀 + 重投参数定（2026-06-18 收工）
