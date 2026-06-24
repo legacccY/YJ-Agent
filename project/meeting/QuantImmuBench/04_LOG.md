@@ -22,7 +22,13 @@
 
 **HLAthena** ⚠️→救援中：镜像 standalone 运行时从作者 GCS bucket `gs://msmodels` 拉模型（镜像内 /models 空），bundled key 死（buckets.get 401）→ 卡 retry。**突破：bucket 对象匿名可下**（list+mediaLink 通）→ 后台匿名下全套 A0101+panpan 模型（2.2G+），待 patch `fetch_models=false` 本地跑。
 
-**待办**：PRIME 完成 → 拉 HPC PRIME+ImmuneApp 结果 → merge_wave3 出 `merged_all_tools_8tools.xlsx` → benchmark 分析出图。HLAthena 模型下完 → patch 跑 smoke。
+**收口（同日）——8tools benchmark 完成 + 诚实结果**：
+- 3 工具 ELISpot 全量跑完：ImmuneApp 65 allele ✅、deepHLApan MT+WT 32178 ✅、PRIME 39 支持 allele ✅（**根因排查：26 罕见 allele MixMHCpred 不支持→PRIME.x 卡死不报错，timeout 杀不掉 perl 孙进程→按 PID 净杀+预筛排除标 NaN**）。
+- merge → `merged_all_tools_8tools.xlsx`（34247×40，新 6 列）。修 merge_wave3 parse_prime 加 `comment='#'` 跳 PRIME 注释行 + 重组扁平 MT/WT 目录绕非递归 glob。
+- **analyst 算 8 工具 DS2 指标**（`metrics_ds2_8tools.csv` + `BENCHMARK_8TOOLS.md` + fig6/7/8）：**旧 5 工具复现 delta 0.004 = 口径对齐铁证**（pTuneos 0.7525/PredIG 0.6611 与 Entry 20 一致）。**新 3 工具结果**：ImmuneApp AUC 0.589(mean 0.644 最优,5/8)、PRIME 0.528(近随机,6/8)、deepHLApan 0.419(**低于随机**,8/8)；Spearman 全不显著。**新 3 工具都没超第一批**（pTuneos 0.781/PredIG 0.750 仍最强，定量 IMPROVE Spearman 0.320 无可替代）。caveat 沿用：DS2 阴性仅 11 非显著 + IEDB overlap。
+- **HLAthena 下载修**：跑飞根因=匿名下 `models_panpan/` 整前缀含 `OLD_ecdf/` 全 allele 57MB 文件(几百 GB)→删 OLD_ 精确下 23 文件 136M。模型齐，待 patch `fetch_models=false` 跑 smoke。
+
+**Wave 3 战果**：5 工具调研建档；**3 工具(PRIME/ImmuneApp/deepHLApan)部署 SMOKE_PASS + 全量 ELISpot 正式测试 + 进 8tools benchmark**；MHLAPre 穷尽证伪判死(权重全网无)；HLAthena 救援下载完成待 patch。诚实结论=新工具本 benchmark 无增量，第一批组合(pTuneos+PredIG+IMPROVE)仍最优。
 
 ## Entry 23 — 2026-06-24 第二批工具开跑部署（PRIME ✅ SMOKE_PASS r=1.0 + 大编队备 kit）
 
