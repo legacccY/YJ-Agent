@@ -1143,3 +1143,9 @@ DRIVE faithful 训完 best_dice=0.7976(满40ep官方区间),但 benchmark eval d
 **eval 优化**(coder):evaluate.py 加 --severity all/多值,model 加载1次+severity loop内+infer_cache 跨severity复用同图推理(输入图severity无关)→eval ~24min/cell 降~6min,批2 24cells 省巨大。28 pytest 过(含 build_model 调1次canary)。优化版+模板上传HPC(向后兼容)。
 **CHASE faithful**:epoch=294s(图大2.5×DRIVE)→40ep+eval~3.7h 超3h walltime。scontrol延时被拒(集群禁)→cancel+改6h walltime重提 job **1491082 RUNNING@gpu3090n4**。批2 sbatch待改 --severity all 省eval。
 **待**:CHASE完成(~3.7h)→两集FR-UNet全链路通+CHASE severity-response→批2全main-venv baseline区分度命门。卡槽 7258e91e。
+
+### Entry 32 续9 — 收工(2026-06-25)：CHASE done + 复现预算决策待定
+CHASE 训练 done(best_dice0.682),eval 4×severity 跑中(Easy出:dice0.717 cldice0.699 SR0.349 reID0.366 eps_b0 44.19;剩3 severity ~18min)。用户「在跑的别停,收工」→CHASE eval 继续不停,**复现预算决策留下次**(CHASE 全4 severity数据出齐+DRIVE对照再定)。
+**🛑 复现预算决策(待拍,下次第一件)**:FR-UNet DRIVE 0.798(≈官方0.80✓)但 CHASE 0.682(vs官方0.81差0.13),根因=repeats1000对CHASE大图(2.9×DRIVE)欠采样。选项 A=统一repeats1000固定预算诚实标差距(快/公平/审稿可能质疑0.13大) / B=按图scale repeats保真但大图walltime爆(CHASE~9h不现实) / C=中道repeats2000(~2×walltime CHASE~6h边缘,望~0.75差距<0.06)。定了才fanout批2全baseline。
+**本会话硬资产**:全链路train→eval真数字通(3 bug修)+DRIVE FR-UNet cell(dice0.798 SR severity-response衰减0.725→0.555)+CHASE cell(待eval全出)+STORY benchmark-only重定位+paper §1/§2/§3/§5+refs.bib(47核实)+eval优化(24→6min/cell)+gpu3090 fallback战术。
+**遗留**:① 卡槽 7258e91e 待 CHASE eval 完后 release(下次清账) ② friction 44条(no-pointer29+training-lock14)/optimize optimizer被分类器denied,下次需放行hook编辑权限或手修 ③ 批2前先验1-2其他adapter(cs_net/cldice)的preprocess_benchmark_image对不对+sbatch改--severity all省eval。
