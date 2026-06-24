@@ -183,7 +183,7 @@ toolSlide({ idx:3, name:"IMPROVE", accent:"028090", method:"RandomForest", statu
   input:[ "TSV，必填  突变肽 + 野生型肽 + HLA", "肽段 8-12 AA", "两步流程：① feature_calc 算特征  ② Predict 跑 RF" ],
   params:[ "步2  --model {Simple | TME_excluded | TME_included}", "每变体加载 5 个 RF (rf0-rf4 集成)" ],
   output:[ "TSV 追加  mean_prediction_rf (连续 0-1)", "= 5fold × 50 RF 集成平均", "实测 Simple 变体 EEFLNSWML = 0.5146" ],
-  intro:[ "RF 22 特征，专为新表位排名设计，整合 TCR 识别 (PRIME)", "⚠️ 数据缺口：ELISpot 仅肽+HLA，无 RNA-seq → Expression / NetMHCExp 必 impute；Stability 可经容器补", "Predict 步本地+HPC 跑通；全特征链需学术许可工具" ],
+  intro:[ "RF 22 特征，专为新表位排名设计，整合 TCR 识别 (PRIME)", "⚠️ 数据缺口：ELISpot 仅肽+HLA，无 RNA-seq → Expression / NetMHCExp 必 impute；Stability 可经容器补", "Predict 步本地+HPC 跑通；许可工具(netMHCpan/PRIME)已到位，全特征链余 netMHCstabpan(glibc 挡)+self_similarity/garnish 待补" ],
 });
 toolSlide({ idx:4, name:"NeoTImmuML", accent:"1C7293", method:"集成 ML", status:"⚠️ 部分(已重训)", statusCol:C.warn,
   tagline:"加权集成 (LightGBM+XGBoost+RandomForest) 预测肿瘤新抗原免疫原性，78 个肽段物化特征",

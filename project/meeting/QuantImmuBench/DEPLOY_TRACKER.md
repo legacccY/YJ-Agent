@@ -56,15 +56,17 @@
 
 ---
 
-## 学术许可申请清单（Wave 2 前置，需用户/导师本人学术邮箱发）
+## 学术许可申请清单（许可均已解决，状态同步至 2026-06-24）
 
 | 许可工具 | 用途 | 申请处 | 状态 |
 |---|---|---|---|
-| netMHCpan-4.1 | pTuneos + IMPROVE 的 HLA 结合预测 | DTU Health Tech | ✅ **已装+跑通** `~/quantimmu/ext_tools/netMHCpan-4.1`（2026-06-22 官方 test.pep PASS）|
-| netMHCstabpan-1.0 | IMPROVE 的 HLA 稳定性 | DTU Health Tech | 🚚 **挪 HPC**（NMHOME 已配 WSL，但后端 2.8 在 WSL2 segfault）→ 用户拍板 2026-06-22 挪 HPC 跑 |
-| **netMHCpan-2.8** | netMHCstabpan 的后端（必需）| DTU services.healthtech.dtu.dk/services/NetMHCpan-2.8/ | ⚠️ 已下+装 WSL，**2.8 二进制 WSL2 segfault**（2014 静态 ELF 撞新内核 signal 11）→ **挪 HPC 重试**（真 Linux 旧兼容好）。本地 tar 在 `~/quantimmu/ext_tools/netMHCpan-2.8`，传 HPC 即可 |
-| PRIME | IMPROVE 的 TCR 识别分 | Gfeller lab github.com/GfellerLab/PRIME（学术免费）| ☐ 待 clone（免许可，可现做）|
-| MixMHCpred | IMPROVE / PRIME 依赖 | Gfeller lab github.com/GfellerLab/MixMHCpred（学术免费）| ☐ 待 clone（免许可，可现做）|
+| netMHCpan-4.1 | pTuneos + IMPROVE 的 HLA 结合预测 | DTU Health Tech | ✅ **HPC 装+跑通** `ext_tools/netMHCpan-4.1`（官方 test.pep PASS）|
+| netMHCpan-4.0 | pTuneos scoring | （pTuneos 镜像内置）| ✅ **镜像自带** `bm2lab/ptuneos:v2.1` 内 `/root/software/netMHCpan-4.0`，免单独申请 |
+| **netMHCpan-2.8** | netMHCstabpan 的后端（必需）| DTU services.healthtech.dtu.dk/services/NetMHCpan-2.8/ | ✅ **HPC 跑通** `ext_tools/netMHCpan-2.8`（el8 原生跑，test.pep 11 行；WSL2 曾 segfault → 已挪 HPC 解决）|
+| netMHCstabpan-1.0 | IMPROVE 的 HLA 稳定性 | DTU Health Tech | ⚠️ **HPC glibc 挡**：二进制需 GLIBC_2.29，HPC el8 仅 2.28 → 需新 glibc 容器。**仅 IMPROVE feature_calc 的 Stability 特征用它，Predict 步与 benchmark 不受影响** |
+| PRIME | IMPROVE 的 TCR 识别分 | Gfeller lab github.com/GfellerLab/PRIME（学术免费）| ✅ **已 clone** HPC `tools_repos/PRIME` |
+| MixMHCpred | IMPROVE / PRIME 依赖 | Gfeller lab github.com/GfellerLab/MixMHCpred（学术免费）| ✅ **已 clone** HPC `tools_repos/MixMHCpred` |
+| self_similarity | IMPROVE 的 Self-similarity 特征 | github.com/SRHgroup/self_similarity | ✅ **已 clone** HPC `tools_repos/self_similarity` |
 
 > ⚠️ **benchmark 发布限制**：netMHCpan/netMHCstabpan 学术许可第 7(v)/10 条 —— 未经 DTU 书面同意不得向第三方发布在其软件上跑的 benchmark 结果。本项目是 benchmark → 论文/对外报告含 netMHCpan 对比数字前需取 DTU 书面同意（投稿阶段处理）。
 > DTU 工具 = Linux 二进制，装 WSL2 `~/quantimmu/ext_tools/`。net 工具脚本是 tcsh（已 `apt install tcsh`）。

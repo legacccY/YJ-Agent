@@ -9,7 +9,7 @@
 按用户「更新进度、删垃圾、整理」+「HPC 特有文件拉个文件夹过来、整理参考文献、非我们的代码标好出处」做了四件事：
 
 **1. 清垃圾（删 41 个 tracked + 移走未跟踪 junk）**：
-- `git rm`：`analysis/figures/`（matplotlib 旧图，PPT 已不引用）、`figures_R/` + `figures_R_v2/`（v1/v2，被 v3 取代）、`benchmark_analysis.py` + `plot_benchmark.R` + `plot_benchmark_v2.R`（生成上面被删图的旧脚本）、`scripts/out/smoke/` + `smoke_merged/`（早期烟测中间产物）、`merged_all_tools_3tools.xlsx` + `_4tools.xlsx`（进度快照，`_5tools.xlsx` 为终版）、`scripts/neotimmuml/verify_tmp/`（特征核对 scratch）。
+- `git rm`：`analysis/figures/` 多余图（**保留 `fig1_roc_curves_ds2.png`——PPT slide 10 ROC 仍引用，误删后已从 git 恢复**）、`figures_R/` + `figures_R_v2/`（v1/v2，被 v3 取代）、`benchmark_analysis.py` + `plot_benchmark.R` + `plot_benchmark_v2.R`（生成上面被删图的旧脚本）、`scripts/out/smoke/` + `smoke_merged/`（早期烟测中间产物）、`merged_all_tools_3tools.xlsx` + `_4tools.xlsx`（进度快照，`_5tools.xlsx` 为终版）、`scripts/neotimmuml/verify_tmp/`（特征核对 scratch）。
 - 移到 `D:\YJ-Agent\.trash_quantimmu`（rm/git clean 被权限拒，走 Filesystem MCP）：各 `__pycache__`、`scripts/ptuneos/_archive_*.pptx`（旧 PPT 存档 1.3M）。**保留**：`figures_R_v3`（PPT+Word 引用）、`plot_benchmark_v3.R`、终版 merged_5tools、per-tool merges、自训 models/train_data、ptuneos benchmark 产物、所有 deliverables。
 
 **2. HPC 文件归档到 `HPC/`**：从 `/gpfs/work/bio/jiayu2403/quantimmu/`（HPC 总 47G）SFTP 拉回 25 个**自有编排文件 + 小产物**（~12.5M）→ `HPC/deploy/`（部署脚本+日志）、`HPC/elispot_run/`（SLURM 脚本+ELISpot 输入输出，含 DeepImmuno job 1485416）、`HPC/smoke/`（烟测）。**大件留 HPC 未拉**：`sif/`(32G 容器)、`tools_repos/`(11G 外部 repo)、`envs/`(4.2G)、`ext_tools/`(217M 许可二进制)——见 `HPC/README.md`。
@@ -19,6 +19,14 @@
 **4. 代码出处 `PROVENANCE.md`**：明确区分自有代码（scripts/ 全部、自训 models、analysis、HPC 脚本——其中 ptuneos/neotimmuml 是复刻官方逻辑非原码）vs 外部工具代码（5 repo + 依赖，版权归原作者，留 HPC 未进 git）。**许可红线**：DTU 工具（netMHCpan/stabpan）学术许可禁再分发，含其跑出的 benchmark 数字（第 7(v)/10 条），投稿前取 DTU 书面同意。
 
 文档入口已补进 `00_README.md`（读档顺序 + 目录结构 + 文件树）。整理后项目结构干净，进度不变（5 工具 benchmark 状态同 Entry 20）。
+
+**追加（同日）——全档进度统一到最新 + PPT/PDF 修正**：用户指出 00_README/PPT 有过期「许可未到位」措辞，逐档核对统一：
+- **00_README**：当前状态块从立项早期（Wave 排序/许可未到位）改到 Entry 20 真相（5 工具全跑通、netMHCpan-4.1/2.8 装好跑通、PRIME/MixMHCpred 免许可已 clone、NeoTImmuML 源码找到；遗留只剩 netMHCstabpan glibc[不影响 benchmark]+pTuneos HPC 真跑+袁老师数据）。
+- **DEPLOY_TRACKER 许可清单**：下半表停在 06-22（2.8 WSL segfault 待挪 HPC、PRIME/MixMHCpred ☐待clone）与上半 HPC 状态表打架 → 统一为现实（2.8 ✅HPC 跑通、stabpan ⚠️glibc 挡仅 Stability 用、PRIME/MixMHCpred/self_similarity ✅已 clone HPC tools_repos——HPC inventory 实证）。
+- **PPT（gen_ppt.js 重生成）**：slide 6 IMPROVE「全特征链需学术许可工具」会误读成许可没办下来 → 改「许可工具(netMHCpan/PRIME)已到位，全特征链余 netMHCstabpan(glibc 挡)+self_similarity/garnish 待补」。benchmark 数字全核 `metrics_ds2.csv`：slide 11 用 mean 聚合（pTuneos 0.78/0.51/0.46、PredIG ρ=0.28**、IMPROVE ρ=0.21*、pTuneos ρ=0.03 ns）全对、自洽，无误。
+- **PDF 交付件**：旧 `_YJ.pdf`(06-23 18:21) 过期 → LibreOffice 从新 pptx 重导 12 页替换（旧版存 `.trash_quantimmu`）。
+- **REPORT.md**：pTuneos 行 + 一句话 + 结论从「停在 VEP cache/2 完全+3 部分」改到 Entry 20（5/5 跑通 benchmark、pTuneos 端到端），加指针到 BENCHMARK_REPORT/PPT。
+至此 00_README / DEPLOY_TRACKER / REPORT / PPT / PDF / 04_LOG 状态全一致。
 
 ## Entry 20 — 2026-06-23 pTuneos 真正进 5 工具 benchmark（Pre&RecNeo 子模型跑 ELISpot）+ 完成度审计 + PPT/文档更新
 

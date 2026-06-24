@@ -23,9 +23,11 @@
 | **PredIG** | XGBoost | ✅ 连续 0-1 | ✅ 跑通 | ✅ 跑通(0.00614) | ✅ **完全跑通** |
 | **IMPROVE** | RandomForest | ✅ 连续 0-1 | 🟡 仅 Predict 步 | 🟡 仅 Predict 步 | ⚠️ **部分**（特征计算链未端到端）|
 | **NeoTImmuML** | 集成 ML | ✅ 概率(predict_proba) | 🟡 仅 env+demo | 🟡 仅 env | ⚠️ **部分**（notebook 无预训练权重，需重训）|
-| **pTuneos** | ML pipeline | ✅ 连续排名分 | 🟡 部署验证 | 🟡 sif 建成 | ⚠️ **部分**（停在 VEP cache，未产出结果）|
+| **pTuneos** | ML pipeline | ✅ 连续排名分 | ✅ 端到端 | 🟡 sif 受限 | ✅ **端到端**（example VCF 40 新抗原；Pre&RecNeo 子模型跑 ELISpot 进 benchmark）|
 
-**一句话**：5 个工具全部**部署/环境就绪**，其中 **2 个（DeepImmuno、PredIG）已完全端到端跑通**（输入肽段→输出免疫原性分数，本地+HPC 双验证，数值一致）；**3 个为部分完成**，各有明确缺口（见下）。**5 个工具全部能输出连续/概率分数 → 都支持「免疫强弱定量」**（项目核心目标），非纯二分类。
+**一句话**：5 个工具**全部部署 + 跑通 ELISpot benchmark**。**DeepImmuno、PredIG** 本地+HPC 双验证完全端到端；**pTuneos** 本地 docker 端到端（修 8 坑 + VEP cache 14G，Pre&RecNeo 子模型对账官方 r=1.0 进 benchmark）；**IMPROVE、NeoTImmuML** 部分（缺口明确、非「装不上」：IMPROVE 缺 ELISpot 没有的 RNA-seq → Expression 降级；NeoTImmuML 无官方权重 → 自训版）。**5/5 均产出 ELISpot 真实分数并完成 benchmark**，全部输出连续/概率分数 → 都支持「免疫强弱定量」。
+
+> 📊 benchmark 指标/图/结论见 `analysis/BENCHMARK_REPORT.md`(+docx) 与 PPT；本文为部署阶段的 4 类信息报告（PPT 素材）。
 
 ---
 
@@ -98,8 +100,8 @@
 |---|---|---|
 | IMPROVE feature_calc 全链 | 不能从生肽段一键到分 | 装 MixMHCpred(python)+self_similarity + netMHCstabpan 容器化(tcsh+glibc) |
 | NeoTImmuML 无权重 | 出不了预测 | 用 TumorAgDB2.0 数据按 notebook 重训 + R Peptides 算特征 |
-| pTuneos VEP cache | 端到端停在注释 | 下 VEP cache ~15-25G（用户暂缓）+ 解决 HPC fakeroot |
+| IMPROVE feature_calc Stability | 缺 netMHCstabpan | HPC glibc 2.28<2.29 挡 → 需新 glibc 容器（仅 Stability 特征，不影响 Predict/benchmark）|
+| pTuneos HPC 真跑 | 本地 docker 已端到端 | HPC singularity 非 root/fakeroot 受限 → 待重打包 sif |
 | 袁老师输入数据 | 正式测试未开始 | 数据到位后按各工具格式做转换脚本 |
-| **PPT（最终交付）** | — | 5 份 TOOLS/*.md 内容齐，可汇 PPT |
 
-**结论**：5 工具部署/环境全就绪，2 个完全端到端跑通、3 个部分（缺口明确且非「装不上」）；4 类信息已全收集，可据本报告 + `TOOLS/*.md` 汇成 PPT。
+**结论**：5 工具**全部部署 + 跑通 ELISpot benchmark**（pTuneos 用 Pre&RecNeo 子模型，AUC 最高 0.75）；2 个完全端到端双验证（DeepImmuno、PredIG），pTuneos 本地 docker 端到端，IMPROVE/NeoTImmuML 部分（缺口明确非「装不上」）；4 类信息全收集。交付件 = PPT/PDF + `analysis/BENCHMARK_REPORT`（benchmark 结论）+ `TOOLS/*.md`（逐工具 4 类信息）。
