@@ -143,10 +143,10 @@
       "deadline": "TBD",
       "status": "active",
       "priority": 5,
-      "phase": "✅ 2026-06-23 5工具全跑通+benchmark+Word报告. 袁老师ELISpot两数据集(DS1 9mer/DS2变长滑窗8-14mer)→4工具出真实分(merged_all_tools_4tools.xlsx 34247行): DeepImmuno(9-10mer)/PredIG(8-14mer)/IMPROVE(8-12mer降级版跳坏的netMHCstabpan)/NeoTImmuML(8-13mer,TumorAgDB2.0重训,demo核验76/78特征精确吻合). pTuneos端到端攻坚成功(连环修8坑:filter_vep PATH/管道死锁/--ontology离线挂/missense过滤/缺蛋白组human.pep.all.fa/缺blast库/homolog UnboundLocal/裸netMHCpan PATH)→example出真实RefinedNeo分(40新抗原×28列,兜底0/40未触发=真算,MT结合<WT符生物学),仅example架构喂不了ELISpot. benchmark(analysis/BENCHMARK_REPORT.docx+metrics_ds2.csv): DS2验证IMPROVE最稳(Spearman+0.24~0.32全阈值显著)/PredIG阈值敏感/DeepImmuno·NeoTImmuML≈随机; 关键caveat:DS2阴性仅11排名非显著. R图3版(选v3克制Okabe-Ito). 剩: PPT(B4). 详04_LOG Entry14-19.",
+      "phase": "✅余嘉前5工具部署+benchmark+PPT完成(分工:后5=李紫晨). 2026-06-24大面积推动(多波opus编队):全景调研+深析+红队(pTuneos最优统计不可区分bootstrap坐实)+理论(回报封顶ρ~0.4-0.6). QuantImmune退守路线:连续magnitude命门实测FAIL(IEDB肿瘤quantitative455/0.9%,真私有neoepitope定量GT公开源≈0:序数2/频率25)→序数A/频率B数据够但撞命门,开发工具三路线(自补ELISpot/共享抗原代练迁移/放宽scope)呈袁拍板,推荐(b)共享训练+自补验证. 落reference/×11+RETREAT_ROUTE_ordinal+EXPERIMENT_MATRIX_ordinal_retreat",
       "home": "project/meeting/QuantImmuBench/",
       "log": "project/meeting/QuantImmuBench/04_LOG.md",
-      "updated": "2026-06-23"
+      "updated": "2026-06-24"
     },
     "hyperfid": {
       "name": "HyperFidBench",
@@ -172,6 +172,19 @@
       "story": "project/meeting/WaveFidBench/01_STORY.md",
       "acceptance": "project/meeting/WaveFidBench/02_ACCEPTANCE.md",
       "log": "project/meeting/WaveFidBench/04_LOG.md",
+      "updated": "2026-06-24"
+    },
+    "fetalss-bench": {
+      "name": "FetalSSBench",
+      "venue": "ACCV 2026 (main; 截稿 2026-07-05 大阪; CORE-B) → WACV App / MICCAI workshop / ISBI",
+      "deadline": "2026-07-05 (ACCV)",
+      "status": "planning",
+      "priority": 5,
+      "phase": "🆕 2026-06-24 立项 (/ideate run-011 候选A). 胎儿超声半监督分割统一benchmark+自适应阈值小增量. G5 pilot GRAY-PASS. 下一步 Phase1 扩baseline+多集.",
+      "home": "project/meeting/FetalSSBench/",
+      "story": "project/meeting/FetalSSBench/01_STORY.md",
+      "acceptance": "project/meeting/FetalSSBench/02_ACCEPTANCE.md",
+      "log": "project/meeting/FetalSSBench/04_LOG.md",
       "updated": "2026-06-24"
     }
   },

@@ -1,0 +1,17 @@
+metric,count
+total_rows,573409
+quant_notnull,5773
+quant_notnull_pos,5453
+mag_method_rows,369537
+mag_quant_notnull,1265
+mag_quant_pos,1082
+tumor_mag_quant,5
+tumor_mag_quant_pos,5
+neo_mag_quant,0
+neo_mag_quant_pos,0
+tumor_OR_neo_mag_quant_pos,5
+distinct_PMID_mag_quant_pos_allDisease,114
+distinct_PMID_tumor_mag_quant_pos,2
+distinct_PMID_neo_mag_quant_pos,0
+distinct_PMID_tumorORneo_mag_quant_pos,2
+distinct_peptides_tumorORneo_mag_quant_pos,4

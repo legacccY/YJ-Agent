@@ -1,0 +1,25 @@
+method,total,quant_nonnull,pct,units_top
+ELISPOT,278562,861,0.31,(no_unit)861
+3H-thymidine,57437,118,0.21,(no_unit)118
+ICS,54859,243,0.44,(no_unit)243
+biological activity,49323,3,0.01,(no_unit)3
+ELISA,40739,14,0.03,(no_unit)14
+multimer/tetramer,35137,161,0.46,(no_unit)161
+51 chromium,13315,241,1.81,(no_unit)241
+cytometric bead array,11156,0,0.0,
+in vivo assay,8933,35,0.39,(no_unit)35
+in vitro assay,5026,0,0.0,
+bioassay,4159,0,0.0,
+binding assay,3772,1951,51.72,1/s:825;M^-1s^-1:748;nM:360
+in vivo skin test,2260,3,0.13,(no_unit)3
+CFSE,2008,0,0.0,
+RNA/DNA detection,1938,0,0.0,
+surface plasmon resonance (SPR),1728,1689,97.74,nM:1658;KD [nM]:31
+intracellular staining,979,0,0.0,
+High throughput multiplexed assay,825,0,0.0,
+BrdU,602,0,0.0,
+x-ray crystallography,455,454,99.78,angstroms:454
+reporter gene assay,109,0,0.0,
+radio immuno assay (RIA),84,0,0.0,
+electron microscopy,2,0,0.0,
+any method,1,0,0.0,

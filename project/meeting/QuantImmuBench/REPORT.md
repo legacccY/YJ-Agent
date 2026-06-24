@@ -25,7 +25,13 @@
 | **NeoTImmuML** | 集成 ML | ✅ 概率(predict_proba) | 🟡 仅 env+demo | 🟡 仅 env | ⚠️ **部分**（notebook 无预训练权重，需重训）|
 | **pTuneos** | ML pipeline | ✅ 连续排名分 | ✅ 端到端 | 🟡 sif 受限 | ✅ **端到端**（example VCF 40 新抗原；Pre&RecNeo 子模型跑 ELISpot 进 benchmark）|
 
-**一句话**：5 个工具**全部部署 + 跑通 ELISpot benchmark**。**DeepImmuno、PredIG** 本地+HPC 双验证完全端到端；**pTuneos** 本地 docker 端到端（修 8 坑 + VEP cache 14G，Pre&RecNeo 子模型对账官方 r=1.0 进 benchmark）；**IMPROVE、NeoTImmuML** 部分（缺口明确、非「装不上」：IMPROVE 缺 ELISpot 没有的 RNA-seq → Expression 降级；NeoTImmuML 无官方权重 → 自训版）。**5/5 均产出 ELISpot 真实分数并完成 benchmark**，全部输出连续/概率分数 → 都支持「免疫强弱定量」。
+**一句话（诚实分级）**：5 个工具均已部署，且 **5/5 均产出可进 ELISpot benchmark 的连续/概率分数**，但端到端完整度分三档，不可一概而论：
+- **DeepImmuno、PredIG = 完整端到端双验证**：本地 + HPC 双跑通，从原始肽段一键到分数，无降级。
+- **pTuneos = 子模型版**：本地 docker example VCF 端到端跑通（修 8 坑 + VEP cache 14G），但进 benchmark 用的是 **Pre&RecNeo 子模型**（对账官方逻辑 r=1.0，证复刻正确，**非整管线对 ELISpot 端到端能力背书**）。
+- **IMPROVE = 降级版**：仅 Predict 步端到端，**特征计算链（feature_calculations.py）未端到端验证**（缺 ELISpot 没有的 RNA-seq → Expression 特征降级，netMHCstabpan 在 HPC 受 glibc 挡）。
+- **NeoTImmuML = 自训版**：官方无预训练权重，benchmark 用的是**我们自训的模型，非官方权重，不对标原论文精度**。
+
+全部输出连续/概率分数 → 形式上都支持「免疫强弱定量」，但定量相关性的实测结论见 benchmark 报告（多数工具对连续 SFC 的预测能力很弱）。各工具具体缺口见对应 `TOOLS/*.md` 卡。
 
 > 📊 benchmark 指标/图/结论见 `analysis/BENCHMARK_REPORT.md`(+docx) 与 PPT；本文为部署阶段的 4 类信息报告（PPT 素材）。
 

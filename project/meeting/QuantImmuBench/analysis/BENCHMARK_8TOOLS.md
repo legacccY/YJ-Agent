@@ -39,7 +39,7 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 |------|------|-------|---------|-------|--------------|------------|------|
 | 1 | pTuneos | 101 | **0.7525** | 0.9494 | 0.1363 | 0.1741 | 第一批 |
 | 2 | PredIG | 101 | 0.6611 | 0.9411 | 0.1983 | 0.0468* | 第一批 |
-| 3 | NeoTImmuML | 101 | 0.6551 | 0.9421 | 0.0218 | 0.8285 | 第一批 |
+| 3 | NeoTImmuML ★ | 101 | 0.6551 | 0.9421 | 0.0218 | 0.8285 | 第一批 |
 | 4 | IMPROVE | 101 | 0.6207 | 0.9221 | **0.2434** | **0.0142*** | 第一批 |
 | 5 | **ImmuneApp** | 101 | 0.5889 | 0.9080 | 0.0885 | 0.3786 | **新** |
 | 6 | **PRIME** | 100 | 0.5276 | 0.9146 | 0.1163 | 0.2491 | **新，1 肽段缺失** |
@@ -47,17 +47,20 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 | 8 | **deepHLApan** | 98 | 0.4188 | 0.9038 | 0.0415 | 0.6847 | **新，3 肽段缺失** |
 
 *标注 = p<0.05 显著
+★ NeoTImmuML = **自训版**（官方无预训练权重，本表用我们自训的模型），**非官方权重，不对标原论文精度**。
 
 ---
 
 ## 3. 各工具最优 AUC（任意聚合方式）
+
+> ⚠️ 本表为每工具在 9 个（聚合 × 阈值）组合里挑最高 AUC（selection-on-max），不同工具取不同口径，**彼此不可比、不作排名依据**（见 reference/REDTEAM_benchmark.md 🟠-3）；同口径 apples-to-apples 比较以 §2（max,>0）为准。
 
 | 排名 | 工具 | 最优聚合 | 最优阈值 | AUC-ROC | Spearman rho | Spearman p |
 |------|------|----------|---------|---------|--------------|------------|
 | 1 | pTuneos | mean | >0 | **0.7813** | 0.0297 | 0.7679 |
 | 2 | PredIG | mean | >0 | 0.7495 | 0.2797 | 0.0046** |
 | 3 | IMPROVE | top3mean | >10 | 0.6805 | 0.3202 | 0.0011** |
-| 4 | NeoTImmuML | max | >0 | 0.6551 | 0.0218 | 0.8285 |
+| 4 | NeoTImmuML ★ | max | >0 | 0.6551 | 0.0218 | 0.8285 |
 | 5 | **ImmuneApp** | mean | >0 | 0.6444 | 0.0434 | 0.6666 |
 | 6 | **PRIME** | top3mean | >median | 0.6042 | 0.1682 | 0.0944 |
 | 7 | **deepHLApan** | top3mean | >10 | 0.5728 | 0.0475 | 0.6422 |
@@ -75,25 +78,26 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 | 4 | **PRIME** | 0.1163 | 0.2491 | 否 |
 | 5 | **ImmuneApp** | 0.0885 | 0.3786 | 否 |
 | 6 | **deepHLApan** | 0.0415 | 0.6847 | 否 |
-| 7 | NeoTImmuML | 0.0218 | 0.8285 | 否 |
+| 7 | NeoTImmuML ★ | 0.0218 | 0.8285 | 否 |
 | 8 | DeepImmuno | -0.1168 | 0.2449 | 否 |
 
 ---
 
 ## 5. 关键发现
 
-**5a. 新 3 工具没有一个打败 pTuneos（AUC 0.752）或 PredIG（AUC 0.661）**
+**5a. 新 3 工具点估均未超过第一批头部（pTuneos AUC 0.752 / PredIG 0.661）**
 
-- ImmuneApp 排第 5（AUC=0.589），是新 3 个里最好的，但仍低于 pTuneos/PredIG/NeoTImmuML
+- ImmuneApp 排第 5（AUC=0.589），是新 3 个里点估最高的，但仍低于第一批头部工具
 - PRIME 排第 6（AUC=0.528），接近随机
 - deepHLApan 排最末（AUC=0.419），低于随机（<0.5），max 聚合表现差于随机分类器
+- ⚠️ 注：第一批头部工具之间（pTuneos / PredIG / NeoTImmuML）的差距在 bootstrap 下统计不可区分（见 §8 caveat 1 + reference/REDTEAM_benchmark.md）；「新工具无增量」是稳健结论（任意聚合 × 阈值下没有一个超过第一批最优点估，且 IEDB 泄漏方向只会让分数虚高、对此结论顺风），但不应据此对第一批内部排序下确定性判语。
 
 **5b. 定量 Spearman 新工具全部不显著**
 
 - 三新工具 Spearman rho 均 < 0.17，p 均 > 0.09，无法对 ELISpot SFU 做有意义的连续预测
-- 第一批中 IMPROVE (rho=0.243, p=0.014) 和 PredIG (rho=0.198, p=0.047) 仍是最优定量预测工具
+- 第一批中 IMPROVE (rho=0.243, p=0.014) 和 PredIG (rho=0.198, p=0.047) 是本 DS2 上定量相关性点估最高且显著的工具（但样本小、CI 宽，需扩负样本复核）
 
-**5c. ImmuneApp 聚合方式敏感：mean 比 max 高 0.056 AUC**
+**5c. ImmuneApp 聚合方式敏感：mean 比 max 高 0.055 AUC**
 
 - ImmuneApp max>0: 0.589；mean>0: 0.644（差距 +0.055）
 - 提示 ImmuneApp 分数的代表性受到窗口选取方式影响较大
@@ -108,10 +112,12 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 
 ## 6. 对袁老师课题的启示
 
-| 需求 | 推荐工具 | 理由 |
+> ⚠️ 措辞红线（见 reference/REDTEAM_benchmark.md 🔴-1）：本表的「推荐」仅指**点估排序**，不构成统计显著的最优工具。2000 次 bootstrap 显示各工具 AUC 95% CI 大面积重叠（pTuneos 0.7525 CI=[0.598,0.888]），配对 bootstrap 证 pTuneos 对 PredIG/NeoTImmuML 的 ΔAUC 95% CI 跨 0、**统计不可区分**（analysis/bootstrap_ci_ds2.csv + bootstrap_paired_ds2.csv）。对外措辞一律用「点估居前」，不用「最优/最强/无可替代」。
+
+| 需求 | 点估居前的工具 | 理由（含不确定性） |
 |------|---------|------|
-| 阳性/阴性判别（ELISpot >0） | **pTuneos**（AUC 0.781 mean agg）/ **PredIG**（AUC 0.750 mean agg） | 两者 AUC 最高，第二批新工具均未超过 |
-| 定量强弱排序（ELISpot SFU） | **IMPROVE**（rho=0.320 top3mean，p=0.001）/ **PredIG**（rho=0.280，p=0.005） | 唯二显著 Spearman，新工具无显著相关 |
+| 阳性/阴性判别（ELISpot >0） | **pTuneos**（AUC 0.781 mean agg）/ **PredIG**（AUC 0.750 mean agg） | 两者 AUC 点估居前，但 bootstrap 证对 PredIG/NeoTImmuML 统计不可区分（CI 重叠、ΔAUC 跨 0）；pTuneos 高分对聚合/阈值敏感（换 >median 阈值掉到 ~0.46，低于随机），非稳健能力 |
+| 定量强弱排序（ELISpot SFU） | **IMPROVE**（rho=0.320 top3mean，p=0.001）/ **PredIG**（rho=0.280，p=0.005） | 在本 DS2 上 IMPROVE 定量相关性最高且唯一稳定显著（但样本小、n_neg=11、CI 宽，结论待扩负样本复核）；新工具无显著相关 |
 | 部署简便性（全覆盖，无 NaN） | **PredIG**、**pTuneos**、**ImmuneApp** | NaN=0，覆盖全部 HLA+长度 |
 
 新 3 工具在本 ELISpot benchmark 上**没有提供增量价值**，不建议替换现有第一批推荐工具（pTuneos/PredIG/IMPROVE）。

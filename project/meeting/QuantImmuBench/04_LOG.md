@@ -4,6 +4,184 @@
 
 ---
 
+## 2026-06-24【数据组窗】实下 5 公开集 + IEDB magnitude 命门实测 FAIL + 统一 GT schema + 泄漏划分
+
+支援数据组（王子源/谢孟翰）。「火力全开、大规模派 opus」。认领 `quantimmu-bench-data.claim`。
+
+**实下（对外下载已逐报，落 `data/external/`，1.8G）**：
+- **IEDB tcell_full_v3.csv 1.3G/573409 行**（magnitude 命门源）+ **ITSNdb**(git clone, 199 肽 binary) + **VDJdb**(406M, 197729, TCR 维度) + **PRIME 训练集**(SuppTables Table S4/S3, CC BY 4.0) + **dbPepNeo2 补充**(113 候选肽)。
+- ⬜ TODO（标步骤防臆想）：NEPdb(站点无直链)、harmonized(README figshare 链实为分类器.sav 非数据)、dbPepNeo2 全库(JS 站)、TESLA(Synapse 公开但连续列待人工核 mmc)、NeoTImmuML(仅 demo.csv)。
+
+**命门实测（opus analyst，决定 QuantImmune magnitude 回归地基）= ❌ FAIL（高置信）**：
+- 肿瘤子集 functional 连续 magnitude 正例 **6 条/3 study**（判据 ≥10³，差 167×）。
+- 全库 `Quantitative measurement` 填充 1.01%，其中 71% 是 MHC binding 非免疫原性 functional。
+- TESLA 也是 binary（37 正）非连续源（opus researcher 核 PMC 镜像）。
+- 退守料：肿瘤子集响应频率 19625 行 + 序数三档 2584 条 → **命中率回退方向（连续→序数/频率）= 拍板点，待袁老师/徐伊琳定**。落 `reference/PHASE0_iedb_fillrate_MEASURED.md` + `analysis/iedb_fillrate_by_method.csv`。
+
+**字段三方对账（opus verifier 核原文件）+ 三口径坑**：① PRIME 596:6084 vs 596:64989（含 58905 random 负）差一量级，入实验前锁口径 ② ITSNdb 只有主表 binary，TNB/Val 标签是患者应答/变异来源非肽级 ③ VDJdb score 是录入 confidence 非强弱。
+
+**泄漏实测（肽级上界，给 split plan 地基）**：ITSNdb 197 肽→**181(92%)现于 IEDB**、**114(58%)现于 PRIME**；PRIME-real 6387→**3845(60%)现于 IEDB**。→ 公开源几乎全撞 IEDB，肽级去重不够，必须 (肽+4 位 HLA) key + leave-study-out + 承认 pseudo-leakage。
+
+**交付物**：
+- `reference/UNIFIED_GT_schema.md` — 统一长表 schema（多源异构标签分列：binary/序数/连续/响应频率/TCR）+ HLA 规范化规则 + 泄漏实测 + train/test/held-out 划分（主测试=本地 ELISpot DS1/DS2，独立 held-out=TESLA+ITSNdb 干净子集，PRIME/IEDB 仅训练池）。
+- `scripts/load_unified.py` — 加载器把 ITSNdb/PRIME/VDJdb(/IEDB) 统一成 schema 长表 + 复现 overlap，**已烟测对上 verifier**（ITSNdb 199、PRIME 6680、VDJdb 197118、overlap 114）。
+- `reference/DATA_INVENTORY_download.md` 加「实下状态」表。
+
+**未决拍板点**：①连续→序数/频率退守方向（命门 FAIL 后）②harmonized/NEPdb/dbPepNeo2 全库/TESLA 连续列需 Playwright/邮件/人工，下一窗补。
+
+---
+
+## 2026-06-24【退守路线窗】QuantImmune 序数退守路线设计（连续 magnitude 命门 FAIL 后）
+
+用户「火力全开/所有人任务都完成」+ 执行窗口 3。Phase0 命门倾向 FAIL（连续 magnitude 回归地基存疑）后，派 4 路 opus 编队（planner 矩阵 / researcher 先例撞车 / theorist 回报 / skeptic 红队）评估退守路线，**四方高度收敛**：
+
+- **theorist 定理级**：退守**不绕开** precursor frequency 命门——序数/响应频率/自补三条都受同一天花板封顶，序数化只把 ρ_max≈0.4-0.6 经单调换算成 τ_max≈0.26-0.41/QWK≈0.35-0.52（rank 不变性+DPI 双重锁死，**换指标不换地基**）。自补 ELISpot 解决 GT 数量不解决信息上界（天花板纹丝不动），唯一抬天花板路径=喂供体特异信息(HLA 分型/TCR-seq)。
+- **researcher 撞车**：响应频率回归=DeepImmuno 已占（🔴 撞车，beta-binomial responded/tested 就是它）；序数三档=半蓝海（没人当 ordinal-regression target 显式做，但 DeepImmuno 用了序数先验）。新颖性 连续>序数>频率。陷阱：IEDB 两种 high/int/low——用 T-cell `Assay Qualitative Measure`(b)，别混 MHC binding IC50 分档(a)。
+- **theorist 回报排序**：A 序数三档 > C 自补 > B 频率（B 因 $\hat\pi$ 与 SFC **实证可解耦** B4 红旗 + 偷换问题定义，风险最高）。
+- **skeptic 最强建议=第四条路线 D**：直接做「现有工具定量能力 benchmark」论文不做新工具——承重点最少（证据在手 8tools+ρ=0.32）、撞车最低、不死于 GT 稀缺、符合死活对照（benchmark 族全活 memory benchmark_is_optimal_strategy）。致命伤=0，三路线都可放行拍板。
+
+**共识推荐**：**D benchmark 主路 + A/B 简单 baseline 当 contribution + C 缩成跨供体 held-out 评测金标准**；同时把 claim 形状从 novel method 降到 benchmark/empirical（窄、可观测、承重前提在手=BMVC 一次过形状）。避坑：退守后别再押「第一个定量回归工具」当 headline（=把退守又包装成大胆 claim 重蹈 A 族难产）。
+
+**🛑 拍板前 0-GPU 命门核查（<2h，拍板前必跑）**：拉 IEDB tcell_full_v3.csv 一次性核三件——①肿瘤子集 Positive-Intermediate 序数档记录数+跨 PMID（判 A 退不退化二分）②肿瘤子集 ≥4-subject 的 (peptide,HLA) 去重数+responded/tested 直方图（判 B）③连续填充率（原 Phase0 残留）。一份表三个 value_counts 一起出。
+
+**🛑 拍板点（呈袁老师/徐伊琳）**：claim 形状（D/A/B/C）= 命中率回退方向，本窗只呈证据+推荐不擅自定。
+
+**本窗新文件指针**：`reference/RETREAT_ROUTE_ordinal.md`（四方综合决策综述，拍板入口）· `reference/EXPERIMENT_MATRIX_ordinal_retreat.md`（planner 完整序数 4-phase 矩阵，立项后照跑）。认领 `.portfolio/locks/quantimmu-bench-route.claim`。
+
+**🔬 命门核查实测（2026-06-24 授权后主线下 IEDB tcell_full_v3 实跑）**：下 IEDB `tcell_full_v3.zip`（43M→csv 1.33GB），跑 `analysis/phase0_fillrate_check.py` → `analysis/phase0_fillrate_actual.csv`。**IEDB 573,409 行，肿瘤子集 50,384**。三路线实测：**连续 SFC 仅 455(0.9%)<10³ = 🔴 FAIL 实证坐实**；**A 序数三档 high472+int160+low1545=2177 跨 35-316 PMID = 🟡 CONDITIONAL PASS（中间档仅 160 薄→可能退化二档）**；**B 响应频率(Subjects Positive/Tested) ≥4-tested 3813、中间值 0.2-0.8 占 32.4% = 🟢 PASS（量最足）**。**反转**：实测 B 最足（推翻"纯肿瘤稀疏"预判），但 B 撞 DeepImmuno+theorist B4 红旗（与 SFC 解耦）。**scope caveat**：肿瘤子集含共享抗原(NY-ESO/MAGE/病毒相关)，限真私有 neoepitope 则 B 大幅缩水（待 Antigen 二次过滤）。数据可得性 B>A>连续，但 D benchmark 主路不依赖单一路线数据够仍最稳。新增 `analysis/phase0_fillrate_check.py`+`phase0_fillrate_actual.csv`。IEDB 大文件留 scratchpad（session 隔离，未进 git）。**claim 形状=拍板点呈袁/徐定。** 未改 registry/00_README（留持锁主窗收口）。
+
+## 2026-06-24【文献深挖窗】全景调研→可投稿 related work 储备 + 撞车持续监控 + 8 TODO 回填
+
+**目标**：把已有全景调研深挖成可投稿级 related work 储备 + 持续撞车监控 + 回填旧档 TODO 盲区。
+
+**编队**：5 路 opus researcher 多角度并行扇出（撞车监控 / 工具 repo+许可 / 数据集+引用歧义 / 方法学对标 / 领域 taxonomy+引用图谱）。总 subagent ~318k tokens。
+
+**核心结论（撞车监控更新）**：🟢 **蓝海仍开放，高置信**。2024-26 普查 12+ 新方法 + 6 综述，**0 个工具做连续 magnitude 回归**（报 Pearson/Spearman/MAE 对 ELISpot SFC / tetramer 频率）。explorationpub 2024「magnitude unaddressed gap」未被推翻反被印证。最强立项佐证 = **PredIG 有 low/inter/high 分级标签却 binarize 丢弃 + CNNeoPP 能分 weak/strong(8-81/≥81 spots)仍只吐二分** → 数据有 magnitude 信号，全行业选择性丢弃。
+
+**重大纠正（3 处旧档错，已改）**：
+1. **neoIM ≠ Immunity DOI 10.1016/j.immuni.2023.09.002**（两篇混淆）：该 DOI = Müller et al. harmonized datasets；neoIM = myNEO bioRxiv 10.1101/2022.06.03.494687，专利 EP4229640，**专有无 repo→不可纳入 benchmark**。
+2. **"Nature Cancer 2025 reproducibility crisis" 疑搜索幻觉**（无可点击文章），须替换为 TESLA 6%/Buckley/Zhao 真实证据。
+3. **NeoPepDB 不存在 = NEPdb 笔误**（10.3389/fimmu.2021.644637，二元标签）。
+
+**已确认（可用）**：IMPROVE DOI=10.3389/fimmu.2024.1360281 (PMID 38633261，与 PMC11021644 同篇)；8 工具 repo+许可全核 LICENSE 原文（Repitope=MIT/NeoaPred=Apache 完全开放；BigMHC/ImmunoStruct/diffRBM 学术非商用；T-SCAPE/DeepNeo 许可不明）。
+
+**产物**：
+- `reference/RELATED_WORK_draft.md`（新建，投稿级草稿）= taxonomy 能力阶梯 L1-L4 + 方法范式分类 + 4 段英文 related work 散文(paper-ready，带 inline DOI) + 方法学对标表+评估协议九条+句子库 + 引用图谱文字版 + 22 条参考文献表 + 重大纠正&TODO。
+- `reference/litlib/`（新建本地文献库）= 15 篇 OA PDF（arXiv/bioRxiv/medRxiv/Frontiers/EuropePMC，全 %PDF 校验）+ README 索引。
+- 回填：`LANDSCAPE_tools.md`（工具 repo+许可表+neoIM 纠正）、`LANDSCAPE_datasets.md`（NeoPepDB=NEPdb 消歧+TESLA）、`BENCHMARK_METHODOLOGY.md`（IMPROVE DOI+reproducibility crisis 幻觉警示+评估协议）。
+
+**残留 TODO（投前人工核，不臆想）**：TESLA 连续值下载位+补充表列名（Cell 403 未核，勿臆造）；CEDAR 定量填充率须自测；PRIME "not calibrated probability" 原句；CD8 magnitude×临床获益确切出处；PredIG/Nat MI 系列等几篇全文 paywall；3 篇综述 magnitude 段落未抓；explorationpub/Genes&Immunity 综述 PDF 未下。
+
+**reviewer 收口（opus，0 致命）**：判可作可投稿起点；2 🟠（蓝海叙事 vs 天花板张力、pMTnet 连续近邻防御缺失）+ 3 🟡 已据此打补丁进草稿 §0/§1/§RW.2/§RW.4/§4（claim 收窄到 top-K 排序增量+承认生物学上界、搬入连续近邻防御、L4 改正交轴、协议补 permutation+BA-null）。残留交 verifier：Müller Immunity DOI 期刊归属、ρ=0.32 CI、PRIME 逐字原句、PredIG/pMTnet DOI、TESLA 连续值（投前核源，勿带引号臆造）。
+
+**建议下一步（建引用图谱）**：related work 叙事=「能力阶梯 L1→L4 断层」，值得派 coder 用 networkx/graphviz 出引用图（节点按 L1-L4 着色，边=baseline 关系，QuantImmune 填 L4 空位）。
+
+---
+
+## 2026-06-24【PPT 终检窗】最终交付 PPT+Word 整合出稿 + 全量核数 + 源 md 修正
+
+**窗口**：PPT 终检窗（认领 `.portfolio/locks/quantimmu-bench-ppt.claim`，不并写 registry）。任务=把本轮全部修复整合成给袁老师的最终交付（重出 16 页 PPT + Word 报告，覆盖余嘉前 5 工具 4 类信息 + 8tools benchmark 保守结论 + 蓝海/命门/理论 + QuantImmune 立项）。
+
+**① 全量核数（主线 Grep/Read csv 直核，禁信叙述）**——8tools 所有进 PPT 数字三方核对，结果 **0 处数据 drift**，仅发现 1 处文字陈旧值 + 1 处措辞需改：
+- 主表(max,>0) 8 工具 AUC/AUPRC/Spearman/p 全对 csv（pTuneos 0.7525/PredIG 0.6611/NeoTImmuML 0.6551/IMPROVE 0.6207/ImmuneApp 0.5889/PRIME 0.5276 n_pep=100/DeepImmuno 0.4813/deepHLApan 0.4188 n_pep=98 n_neg=10）。
+- 最优聚合(pTuneos mean>0=0.7813 等)、定量(IMPROVE top3mean ρ=0.3202 p=0.0011 / PredIG mean ρ=0.2797 p=0.0046)、DS1 全阳(deepHLApan ρ=−0.503 反向、其余 |ρ|<0.16)、患者分层(9 病人/前 2 贡献 45% 阴性)、ensemble(TOP3 rankmean 0.8146)、ImmuneApp mean−max=0.0555 — 全对 csv。
+- **🔴 陈旧值修正**：pTuneos bootstrap CI 下界 `bootstrap_ci_ds2.csv` 实值 **0.5981**，但 PPT_UPDATE/BENCHMARK_8TOOLS/PROJECT_LANDSCAPE 文字写旧 **0.577**（CI 重画前的值，fig6/caterpillar 已是 0.598）。统一改为 **[0.598, 0.888]、宽 ±0.15**（3 处源 md 已修；本窗生成的 PPT/Word 直读 csv，天然正确）。
+- **措辞修正**：「唯一显著配对=pTuneos-IMPROVE」不准——配对 csv 显示 pTuneos 显著胜 IMPROVE/PRIME/deepHLApan 三对，但对最近竞品 PredIG/NeoTImmuML 不显著。改准确版「pTuneos 仅显著超弱工具，对最近竞品 PredIG/NeoTImmuML 统计不可区分」。
+- **PROJECT_LANDSCAPE 事实错误修正**：line 22 原写「新纳入 3 工具（PredIG、IMPROVE、NeoTImmuML 第二批）」=错（这仨是第一批）→ 改正为「第二批（PRIME、ImmuneApp、deepHLApan）」。
+
+**② 交付脚本（主线写，自包含，复用旧配色）**：
+- `ppt/gen_ppt_final.js`（pptxgenjs，**16 页**）：封面 / 背景+4类信息+分工 / 5工具诚实分级总览 / DeepImmuno·PredIG·pTuneos·IMPROVE·NeoTImmuML★ 逐工具 4 类信息 / 部署工程踩坑 / benchmark 方法 / **8工具保守结论(主图 fig6)** / 统计稳健性(caterpillar) / 定量能力+DS1证伪(fig7) / 诚实caveat+许可红线 / QuantImmune立项(蓝海命门天花板headline) / 结论下一步。输出 `QuantImmuBench_最终交付_2026-06-24.pptx`。
+- `analysis/build_report_final.py`（python-docx，10 节）：表读 csv（metrics_ds2_8tools/bootstrap_ci_ds2/bootstrap_paired_ds2/ds1）保持溯源，嵌 fig6/fig7/caterpillar。输出 `QuantImmuBench_最终交付报告_2026-06-24.docx`。
+- 措辞红线落实：全用「点估居前」无「最优/最强/无可替代」；NeoTImmuML 标★自训版；ensemble 0.81 整个略去(避免被单摘)；许可红线单列页(netMHCpan/DTU 数字禁再分发+deepHLApan GPL)。
+
+**③ 内容自审（opus reviewer 暂宕→主线 10 角度代审）**：对照 `reference/REVIEW_deliverables.md` 8 条逐一核生成稿——🔴-A(用已修fig6/全8工具caterpillar)✅ / 🟠-B(阴性定义≤0)✅ / 🟠-C(IEDB overlap标待测)✅ / 🟠-D(诚实分级无「5/5跑通」+NeoTImmuML★)✅ / 🟠-E(ensemble略去)✅ / ⛔-F(保守措辞)✅ / ⛔-G(扩负=补真实阴性肽非纳DS1)✅。内容防弹。
+
+**⚠️ 待执行（opus 分类器临时宕机，Bash/Agent 全被 auto-mode 阻塞）**：
+1. 跑 `node ppt/gen_ppt_final.js` + `python analysis/build_report_final.py` 出二进制成品（脚本就绪，恢复即跑）。
+2. 派 opus reviewer 对成品 PPT/Word 终审（主线已代审，opus 恢复再补一道）。
+
+---
+
+## 2026-06-24（Wave3 红队补强 🔴-A：bootstrap CI 扩 8 工具 + 重画 fig6/7/8，待主线跑）
+
+修 reviewer 致命伤 🔴-A 两条（coder 写，未执行，仅 py_compile 静态过）：
+- **证据集(5)≠结论集(8)**：扩 `analysis/bootstrap_ci.py` —— 数据源从 plotdata_perpep.csv(旧5工具) 改为 `scripts/out/merged_all_tools_8tools.xlsx`，全 8 工具 max-agg(每肽取该工具全部 HLA×Window 子肽 MT_<tool> 的 max) + Elispot>0 标签，复用 2000 boots/seed=20260624。输出 `bootstrap_ci_ds2.csv` 扩到 8 行。旧 5 工具 point AUC 与 metrics_ds2_8tools.csv max/>0 行一致(pTuneos 0.7525/PredIG 0.6611/...)；新 3 工具 ImmuneApp 0.5889/PRIME 0.5276/deepHLApan 0.4188，n_pep 不齐(deepHLApan=98/PRIME=100/其余=101) CI 各自照算。paired ΔAUC 增 pTuneos vs 三新工具(common-peptide 对齐)。caterpillar `figures_deepdive/fig_bootstrap_ci.png` 扩全 8 工具(新=橙空心方/旧=蓝实心圆)，预期新工具 CI 同样跨 0.5 → 正面支撑「无增量」，可取代 fig6 进 PPT。
+- **fig6 截断+pTuneos 基准线**：新建 `analysis/plot_fig6to8_8tools.py` 重画 fig6/7/8（生成旧版的脚本未落盘仓里，故新建自包含版）。fig6 = AUC 柱**从 0 起不截断** + 删红色 pTuneos best 线、唯一基准灰色 0.5 随机线 + 每柱叠 95% bootstrap CI error bar（读 bootstrap_ci_ds2.csv）；fig7 = Spearman rho 柱(0 线唯一基准、对称范围)；fig8 = 8 工具 ROC(对角随机线、无最优高亮)。AUC/Spearman 读 metrics_ds2_8tools.csv max/>0 行，ROC 点从 8tools xlsx 现算。覆盖 `analysis/figures/fig6_8tools_auc_comparison.png` 等旧截断版。
+
+**待主线跑**（coder 不跑，有先后依赖）：
+1. `python analysis/bootstrap_ci.py`（先扩 CI 到 8 行，fig6 依赖其产物）
+2. `python analysis/plot_fig6to8_8tools.py`（重画 fig6/7/8，须 ①先跑）
+
+**预期产物**：`analysis/bootstrap_ci_ds2.csv`(8行) / `analysis/bootstrap_paired_ds2.csv` / `analysis/figures_deepdive/fig_bootstrap_ci.png` / `analysis/figures/fig6_8tools_auc_comparison.png`+fig7+fig8(各 .png+.pdf)。
+
+---
+
+## Entry 26 — 2026-06-24 项目全景决策综述成稿（给袁老师）
+
+writer(opus) 整合本轮 8 人调研编队全部产出，写 `PROJECT_LANDSCAPE.md`（项目根，2-3 页）——一页纸看懂「现状+蓝海+命门+建议」，供袁老师对 QuantImmune 立项拍板。结构：①余嘉子任务现状（10 工具部署/8 进 benchmark/四类信息+PPT 成型）②八工具 benchmark 保守诚实结论（判别力普遍弱、统计不可区分、新 3 工具无增量、定量弱最优 IMPROVE ρ=0.24）③蓝海=magnitude 连续回归是公认 unaddressed gap 不撞车（条件：真连续 SFC 标签+报 r/ρ/MAE）④命门=连续 GT 稀缺，立项前必先核 IEDB/CEDAR magnitude 字段填充率+TESLA 补充表⑤理论天花板 ρ~0.4-0.6 别承诺颠覆性，headline 押临床 top-K 排序增量(C3)⑥下一步清单（核填充率/补 AUPRC+ISSR+overlap/扩负样本/bootstrap CI 已补）。数字均经本地 csv 核对（bootstrap_ci_ds2.csv：pTuneos AUC 0.7525 CI[0.577,0.889]、除 pTuneos 外 CI 下界全跌破 0.5）。
+- 产物：`PROJECT_LANDSCAPE.md`（项目入口级决策综述，整合 reference/ 5 份 + analysis/ 2 份）。
+
+## Entry 25 — 2026-06-24 大面积推动（13 路 opus 编队全景调研 + benchmark 深析 + 红队核数 + 理论 + QuantImmune 路线）+ 袁老师分工澄清
+
+用户「火力全开，方方面面都完善，所有方面落档；尽可能多派 agent，全部 opus」。两波共 13 个 opus agent 扇出 + 主线落档 + 跑零成本实证。
+
+### ⚠️ 袁老师分工澄清（2026-06-24，重要纠认知，不回退）
+袁老师正式分组消息：**预测工具组分工 = 余嘉(legacccY) 负责 PredIG / DeepImmuno / pTuneos / IMPROVE / NeoTImmuML（=第一批，本档已 100% 部署+测试+4 类信息+PPT 完成 ✅）；李紫晨负责 PRIME / deepHLApan / ImmuneApp / MHLAPre / HLAthena（=第二批 Wave3）**。
+- 此前 Entry 22 写「第二批原属李紫晨现并入余嘉」——**修正认知：后 5 个是李紫晨的活，我们做的 Wave3 部署+benchmark 属超额/可移交李紫晨参考，不是余嘉核心交付**。
+- 已做的 8tools benchmark 仍有效（5+3），不回退；但余嘉后续重心 = 前 5 工具 + 配合 QuantImmu 组（徐伊琳）+ 数据组（王子源/谢孟翰）。
+- 其他组：徐伊琳=HPC 部署 QuantImmune 模块；王子源/谢孟翰=文献搜索+数据收集。袁老师将按组建群。
+
+### 第一波（8 opus：全景调研+深析+红队+核数+理论）
+- **撞车扫描 = 🟢 蓝海**：新抗原免疫原性工具几乎全二分类，**「response magnitude 连续回归」是公认 unaddressed gap**（explorationpub 2024 综述背书）。QuantImmune 定量方向不撞车。但 binding 类(NetMHCpan/MHCflurry BA)连续输出会被审稿人当「已有定量 baseline」→ 必须设对照证明显著优于 proxy。落 `reference/LANDSCAPE_tools.md`。
+- **数据集命门**：唯 **IEDB/CEDAR**（系统带 quantitative magnitude 字段）+ TESLA（原文有 tetramer 频率但 Synapse/MTA+正文 403 未核）能做 magnitude 回归 GT；其余(PRIME/NEPdb/dbPepNeo2/harmonized)全 binary。立项前必须先核 IEDB/CEDAR quantitative 字段**实际填充率**(≥10³)。落 `reference/LANDSCAPE_datasets.md`。
+- **方法学对标**：学界规范=AUPRC+ISSR top-K(PredIG)+逐工具量化训练集 overlap%+真实阳性率(1-6%)；ROC-AUC 仅辅助；天花板低(独立集 0.52-0.65)。落 `reference/BENCHMARK_METHODOLOGY.md`。
+- **深析（analyst）**：「组合最优」点估略高(TOP3 rankmean AUC 0.8146>pTuneos 0.7525)但**配对 bootstrap ΔAUC CI=[−0.091,+0.230] 跨 0 不显著**；盲目 ALL8 组合反而更差(被 deepHLApan 0.419/DeepImmuno 0.481 拖累)；deepHLApan 0.419 低于随机=分数饱和(中位 0.993)非 bug。落 `analysis/DEEPDIVE_8tools.md`+`figures_deepdive/`。
+- **红队（🔴-1 致命）**：「pTuneos 最优」用确定性语言但 n_neg=11 统计不可区分；0.78 是(单聚合×单阈值×11 阴性)三重最优角落脆弱点(>10 阈值掉 0.58、>median 掉 0.46)。落 `reference/REDTEAM_benchmark.md`。
+- **核数（verifier）**：三方对账(csv↔LOG↔报告↔TOOLS 卡) **0 处 drift**，结论数字全可信。唯 BENCHMARK_8TOOLS line96「0.056」改 0.055(已修)。落 `reference/VERIFY_numbers.md`。
+- **理论**：方向可行但**回报封顶** ρ~0.4-0.6(precursor frequency 供体特异结构缺席锁天花板)；现有工具止步二分主要是「缺连续标签(B)」非「信号不存在」；headline 押 C3(临床 top-K 排序增量)，C2(TCR-seq 破天花板)当 stretch。落 `reference/THEORY_quant.md`。
+
+### 主线实证（零 GPU，补红队 🔴-1/🟠-4 + 方法学缺口）
+- **bootstrap CI（`analysis/bootstrap_ci.py`）铁证红队 🔴-1**：pTuneos AUC 0.7525 **CI=[0.577,0.890]** 极宽；**pTuneos vs PredIG ΔAUC=0.091 CI=[−0.145,+0.310] 跨 0 不显著**；vs NeoTImmuML 也跨 0；仅 vs IMPROVE ΔAUC=0.132 CI=[0.006,0.287] 勉强显著。→ **「pTuneos 最优」对 PredIG/NeoTImmuML 统计不可区分，headline 必须改保守版**「现有工具判别力普遍弱、无统计显著最优工具」。落 `analysis/bootstrap_ci_ds2.csv`+`bootstrap_paired_ds2.csv`。
+- **patient_strat（`analysis/patient_strat_check.py`）坐实红队 🟠-4**：DS2 仅 **9 病人** 101 肽，**前 2 病人占 5/11 阴性(45%)**，有效自由度~9<<101；患者级 bootstrap CI 比按肽更宽。per-patient Spearman 显示 IMPROVE/PredIG/pTuneos 患者内仍有 ~0.20 微弱排序力。落 `analysis/patient_strat_ds2.csv`。
+- **metrics_topk（`analysis/metrics_topk.py`）补方法学缺口**：每工具 AUPRC+PPV@top-10/25/50(ISSR)+MCC@Youden。注意 base rate 0.89 高→AUPRC 0.89-0.96 提升有限(印证不平衡警告)；PredIG mean AUPRC 0.959/PPV_top10=1.0、IMPROVE MCC 最稳。落 `analysis/metrics_topk_ds2.csv`。
+- **阴性定义核实（解红队 🟠-B）**：DS2 阴性 11 = **1 个 SFC==0 + 10 个 SFC<0(背景扣减负值=真无反应)**，定义干净(≤0)，非阈值人为切弱阳；BENCHMARK_REPORT「90/11」对，DEEPDIVE:63 误写已修。
+
+### 第二波（5 opus：审稿+综述+工程脚本+DS1+实验矩阵）
+- **reviewer 十角色对抗审**：致命=1(🔴-A fig6 红色「pTuneos best」基准线+y 轴截断+caterpillar 只 5 工具缺新 3)；重伤 4(阴性定义/IEDB overlap 待查/「5/5 跑通」措辞 vs IMPROVE+NeoTImmuML+pTuneos 实为子模型自训版/ensemble 0.81 别当卖点)；跑偏 2(「无可替代/最强」绝对化、DEEPDIVE「纳 DS1 合并扩负」错误已删)。落 `reference/REVIEW_deliverables.md`。
+- **DS1 分析（analyst）**：DS1 全阳(82 肽 SFC 16-677 无阴性)→算不了 AUC，但测 magnitude 排序：**8/9 工具 ρ≈随机，无一能排 SFC 强弱**(deepHLApan ρ=−0.50 反向待 verifier 核极性)；DS2 能排 DS1 不能 = 干净对照 → **现有工具是分类器非定量回归器**(袁 QuantImmune 论点的正面硬证据)。落 `analysis/DS1_magnitude.md`+`figures/ds1_*`。
+- **coder 写 3 强化脚本(未跑/待主线)**：`iedb_overlap_check.py`(IEDB overlap，需先下 tcell_full csv 放 data/)、`metrics_topk.py`(已跑✅)、`patient_strat_check.py`(已跑✅)。
+- **planner QuantImmune 实验矩阵**：Phase0 命门 gate(核 IEDB/CEDAR 填充率≥10³，0 GPU 最先证伪)→Phase1 baseline 复刻(撞车靶+标签打乱对照)→Phase2 回归(防泄漏切分，C1 超 baseline+C3 top-K)→Phase3 验证。落 `reference/EXPERIMENT_MATRIX_quantimmune.md`。
+- **writer 袁老师决策综述**：整合全部 → `PROJECT_LANDSCAPE.md`(项目根，2-3 页：现状+蓝海+命门+理论天花板+下一步)。
+
+### 本轮新文件指针（hook 守，全登记）
+- `reference/`：LANDSCAPE_tools.md · LANDSCAPE_datasets.md · BENCHMARK_METHODOLOGY.md · REDTEAM_benchmark.md · VERIFY_numbers.md · THEORY_quant.md · REVIEW_deliverables.md · EXPERIMENT_MATRIX_quantimmune.md
+- 项目根：`PROJECT_LANDSCAPE.md`（袁老师决策综述）
+- `analysis/`：DEEPDIVE_8tools.md · DS1_magnitude.md · bootstrap_ci.py · metrics_topk.py · patient_strat_check.py · iedb_overlap_check.py · bootstrap_ci_ds2.csv · bootstrap_paired_ds2.csv · metrics_topk_ds2.csv · patient_strat_ds2.csv · ds1_magnitude_spearman_{bestbinder,mean}.csv · figures_deepdive/ · figures/ds1_*
+
+### 待办（reviewer 修复 + 下一步）
+- 🔴 fig6 重画(删红线/标 y 轴截断/叠 CI) + caterpillar 补全 8 工具；NeoTImmuML 排名表标星「自训版非官方」；REPORT headline「5/5 跑通」改子模型/降级措辞；删「无可替代/最强」绝对化词。
+- 🟠 IEDB overlap 跑(待用户下 IEDB tcell_full csv)；deepHLApan DS1 反向 ρ 交 verifier 核极性。
+- 余嘉核心(前 5 工具)已完成；后续配合袁老师建群 + QuantImmune 路线（给徐伊琳/袁老师参考，余嘉不主导建模）。
+
+### 追加（同日，第三波 4 opus「所有方向」+ 主线收尾）
+用户「所有人的任务都要完成 / 活力全开大规模推进所有方向」。第三波 4 opus（coder 修图+扩 bootstrap / researcher×2 命门+数据组 / writer 改措辞+PPT）：
+- **reviewer 🔴-A 致命伤全修 + 核数 PASS**：`bootstrap_ci.py` 扩到**全 8 工具**（从 merged_all_tools_8tools.xlsx 读新 3 工具）+ 新建 `plot_fig6to8_8tools.py` 重画 fig6/7/8（删红色「pTuneos best」线 + y 轴不截断 + 柱叠 95% CI + 唯一灰 0.5 随机线）。主线跑两脚本，**8 个 AUC 逐一核对 metrics_ds2_8tools.csv（max,>0）ALL MATCH**。
+- **8 工具 bootstrap 新细节**（`bootstrap_ci_ds2.csv` 8 行 + `fig_bootstrap_ci.png` 全 8 工具 caterpillar 取代旧 fig6）：配对 ΔAUC pTuneos **显著胜** PRIME(CI[0.044,0.434])/deepHLApan(CI[0.040,0.589])，但 **vs ImmuneApp 不显著**(ΔAUC 0.164 CI[−0.093,0.414] 跨 0)、vs PredIG 跨 0、vs IMPROVE 勉强(CI[0.006,0.287])。→ 连「无增量的新工具 ImmuneApp」都和 pTuneos 统计不可区分，n_neg=11 啥都分不开；「无增量」方向稳健但对单工具不全显著。
+- **🔴 QuantImmune Phase0 命门倾向 FAIL（立项情报，给袁/徐伊琳）**：IEDB/CEDAR 连续 magnitude **非系统连续列**（折叠成二分+序数三档），用 IEDB 的模型全二分无人用连续回归，TESLA 肿瘤正例仅 37 单 study。→ 连续回归地基跨 study ≥10³ 证据未找到，倾向退「序数分级/响应频率回归」或**自补 ELISpot**（Wave3 管道正好补）。claim 形状=命中率回退方向=**拍板点需袁/徐伊琳定**。实测步骤(0 GPU)见 `reference/PHASE0_iedb_fillrate.md`。
+- **数据组支援**：11 数据集可操作下载清单（直接 URL+方式+体积+定量+许可+推荐顺序）。落 `reference/DATA_INVENTORY_download.md`。
+- **writer 措辞保守化（已直接改）**：REPORT headline「5/5 跑通」改诚实四档；BENCHMARK_8TOOLS 删「最优/最强/无可替代」、NeoTImmuML 加 ★「自训版非官方」、§3 加 selection-on-max 不可比声明、§6 加措辞红线框。PPT 增量大纲落 `ppt/PPT_UPDATE_2026-06-24.md`（4 slide）。
+
+### 追加新文件指针
+- `reference/`：PHASE0_iedb_fillrate.md · DATA_INVENTORY_download.md（+前述 8 份共 10 份）
+- `ppt/PPT_UPDATE_2026-06-24.md`；`analysis/plot_fig6to8_8tools.py`（fig6/7/8 已覆盖为无截断+带 CI 版）
+
+### 需外部输入才能继续的边界（拍板/owner-gated）
+- IEDB tcell_full_v3 csv 下载 → 才能跑 `iedb_overlap_check.py`(overlap 实测) + Phase0 填充率实测。
+- HLAthena patch+WSL2 跑(李紫晨) / QuantImmune 模块代码(徐伊琳 HPC) / 袁老师正式输入数据 → 各 owner 推进。
+- deepHLApan DS1 反向 ρ=−0.50 交 verifier 核分数极性。
+
+
+
 ## Entry 24 — 2026-06-24 第二批 ELISpot 正式测试（双关并行：HPC + 本机 WSL2）+ HLAthena 救援
 
 用户「开跑 + 大编队并行 + HPC/本机双关 + 正式测试也并行」。状态推进：
@@ -431,3 +609,19 @@ python analysis/build_report_docx.py
 **部署排序**（易→难，许可解耦）：Wave 1 = DeepImmuno → PredIG → NeoTImmuML（无许可证）；Wave 2 = IMPROVE → pTuneos（依赖学术许可）。
 
 **下一步**：①列 netMHCpan/PRIME 学术许可申请清单交用户/袁老师本人学术邮箱发；②Wave 1 从 DeepImmuno 本地 clone + 读 README 起。
+
+---
+
+## 2026-06-24（Wave3 红队补强：3 个 benchmark 强化脚本就绪，待主线跑）
+
+**改动**（coder 写，未执行，仅 py_compile 静态过）：
+- `analysis/iedb_overlap_check.py`（补红队 🟠-2 训练集污染）：从 merged_all_tools_8tools.xlsx 抽 ELISpot 肽，对 IEDB tcell_full 导出 csv 做①精确 match ②9mer 子串 match，输出 overlap 比例 + 命中清单 `iedb_overlap_hits.csv` + 干净肽白名单 `iedb_overlap_whitelist.csv`（建议据此剔 overlap 重算 AUC）。**前置依赖**：需用户先去 iedb.org → Database Export 下 tcell_full_v3.csv，缺文件脚本会清晰报错给下载指引（不联网/不自动下）。
+- `analysis/metrics_topk.py`（补方法学缺口）：对每工具每聚合算 AUPRC + PPV@top-10/25/50（ISSR）+ MCC@Youden 阈值，输出 `metrics_topk_ds2.csv` 对齐 PredIG/IMPROVE 报告规范。默认 `--source perpep`（5 工具），`--source merged` 走 xlsx 算全 8 工具。
+- `analysis/patient_strat_check.py`（补红队 🟠-4 患者聚集）：从 DS2 读 Patient_ID（多候选列名 fallback + Peptide_ID 反解兜底），统计每患者肽数/阴性肽数（看 11 阴性是否集中 1-2 患者）+ 各工具患者内 Spearman + 按患者 bootstrap AUC，输出 `patient_strat_ds2.csv` + 一句话判有效自由度 vs n。
+
+**待主线跑**（coder 不跑）：
+- `python analysis/metrics_topk.py`（无前置，直接跑）
+- `python analysis/patient_strat_check.py`（无前置，直接跑）
+- `python analysis/iedb_overlap_check.py --iedb data/iedb_tcell_full.csv`（需用户先下 IEDB csv）
+
+Windows 规范已遵守：Spearman 纯 numpy 实现（避 scipy.stats × torch OMP 冲突）、pathlib 路径、零 GPU。

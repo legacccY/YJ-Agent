@@ -14,9 +14,15 @@
 3. 输出数据的格式及含义
 4. 工具的简要介绍（特点、优势）
 
-**第一批 5 工具（✅ 全部署 + 跑通 ELISpot benchmark）**：PredIG · DeepImmuno · pTuneos · IMPROVE · NeoTImmuML
-**第二批 5 工具（原李紫晨负责，现并入；2026-06-24 调研建档完成，待部署）**：PRIME · deepHLApan · ImmuneApp · MHLAPre · HLAthena
+**余嘉的 5 工具（✅ 全部署 + 跑通 ELISpot benchmark + 4 类信息 + PPT，核心任务已完成）**：PredIG · DeepImmuno · pTuneos · IMPROVE · NeoTImmuML
+**李紫晨的 5 工具（⚠️ 2026-06-24 袁老师分工明确=李紫晨负责，非余嘉核心任务）**：PRIME · deepHLApan · ImmuneApp · MHLAPre · HLAthena
+- ⚠️ **分工纠正（2026-06-24 袁老师分组消息，见 04_LOG Entry 25）**：后 5 工具是李紫晨的活，余嘉此前做的 Wave3 部署+benchmark（3 工具 SMOKE_PASS+进 8tools 表）属**超额/可移交李紫晨参考**，不回退（已做的 benchmark 仍有效）。余嘉后续重心 = 前 5 工具 + 配合 QuantImmu 组（徐伊琳）/ 数据组（王子源、谢孟翰）。
 - 可行性矩阵 + 部署排序 + 两红旗见 `DEPLOY_TRACKER.md` §第二批 Wave 3。要点：PRIME 最易（HPC 已半 clone）；**HLAthena 仅预测提呈非免疫原性→只能当 presentation proxy**；**MHLAPre 权重未发布需邮件作者（阻塞）**。
+
+**📚 2026-06-24 大面积推动产出（13 路 opus 编队，全景调研+深析+红队+理论+路线，见 04_LOG Entry 25）**：
+- `PROJECT_LANDSCAPE.md`（项目根）= 给袁老师的**一页纸决策综述**（现状+蓝海+命门+理论天花板+下一步），QuantImmune 立项拍板入口。
+- `reference/`（新建调研档）：`LANDSCAPE_tools.md`（工具全景+撞车=蓝海）· `LANDSCAPE_datasets.md`（数据集全景+定量 GT 命门）· `BENCHMARK_METHODOLOGY.md`（学界方法学对标）· `REDTEAM_benchmark.md`（红队 🔴-1）· `VERIFY_numbers.md`（0 drift 核数）· `THEORY_quant.md`（可行性理论 ρ~0.4-0.6）· `REVIEW_deliverables.md`（十角色审稿）· `EXPERIMENT_MATRIX_quantimmune.md`（QuantImmune 实验路线）。
+- `analysis/` 新增：`DEEPDIVE_8tools.md`（组合最优深析）· `DS1_magnitude.md`（DS1 证伪工具定量能力）· `bootstrap_ci.py`+csv（pTuneos「最优」统计不可区分铁证）· `metrics_topk.py`+csv（AUPRC+ISSR）· `patient_strat_check.py`+csv（患者聚集）· `iedb_overlap_check.py`（待跑，需下 IEDB csv）。
 
 ## 团队分工（背景，非我任务）
 - **预测工具组**：李紫晨（5 工具）+ 余嘉（5 工具，本档）

@@ -1,0 +1,25 @@
+method,total,quant_notnull,fill_pct
+binding assay,3772,1951,51.723
+surface plasmon resonance (SPR),1728,1689,97.743
+ELISPOT,278562,861,0.309
+x-ray crystallography,455,454,99.78
+ICS,54859,243,0.443
+51 chromium,13315,241,1.81
+multimer/tetramer,35137,161,0.458
+3H-thymidine,57437,118,0.205
+in vivo assay,8933,35,0.392
+ELISA,40739,14,0.034
+biological activity,49323,3,0.006
+in vivo skin test,2260,3,0.133
+BrdU,602,0,0.0
+CFSE,2008,0,0.0
+RNA/DNA detection,1938,0,0.0
+bioassay,4159,0,0.0
+cytometric bead array,11156,0,0.0
+in vitro assay,5026,0,0.0
+intracellular staining,979,0,0.0
+radio immuno assay (RIA),84,0,0.0
+reporter gene assay,109,0,0.0
+High throughput multiplexed assay,825,0,0.0
+any method,1,0,0.0
+electron microscopy,2,0,0.0

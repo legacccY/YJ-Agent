@@ -1,0 +1,33 @@
+section,key,value
+subset,total_rows,573409.0
+subset,tumor_rows,50384.0
+qualitative_all,Negative,361572.0
+qualitative_all,Positive,182923.0
+qualitative_all,Positive-Low,17985.0
+qualitative_all,Positive-High,5813.0
+qualitative_all,Positive-Intermediate,5116.0
+qualitative_tumor,Negative,36216.0
+qualitative_tumor,Positive,11991.0
+qualitative_tumor,Positive-Low,1545.0
+qualitative_tumor,Positive-High,472.0
+qualitative_tumor,Positive-Intermediate,160.0
+ordinal_tumor,positive_high_n,472.0
+ordinal_tumor,positive_high_pmid,117.0
+ordinal_tumor,positive_intermediate_n,160.0
+ordinal_tumor,positive_intermediate_pmid,35.0
+ordinal_tumor,positive_low_n,1545.0
+ordinal_tumor,positive_low_pmid,316.0
+quantitative,nonnull_all,5773.0
+quantitative,nonnull_tumor,455.0
+quantitative,tumor_nonnull_pmid,49.0
+freq,both_nonnull,301048.0
+freq,ge4_tested_all,237048.0
+freq,ge4_tested_tumor,3813.0
+freq,ge4_tumor_pmid,409.0
+freq,mid_frac_ratio,0.324
+freq_hist,"(-0.001, 0.01]",1394.0
+freq_hist,"(0.01, 0.2]",716.0
+freq_hist,"(0.2, 0.5]",753.0
+freq_hist,"(0.5, 0.8]",528.0
+freq_hist,"(0.8, 0.99]",144.0
+freq_hist,"(0.99, 1.0]",278.0

@@ -1,315 +1,362 @@
 {
-  "schema_version": 1,
-  "updated": "2026-06-17T09:12",
-  "note": "跨论文共享数据集地址单一真源。本地 + HPC 路径、下载源、用途、状态都在此。任何脚本/config 引用数据集前先查此表，不重复硬编码、不臆想路径。新增数据集或换路径只改这里 + 在引用处指向。状态: ready=就位可用 / partial=部分就位 / todo=待下载。",
-  "hosts": {
-    "local": "D:/YJ-Agent",
-    "hpc": "XJTLU HPC (gpu4090, 4 卡 qos) — 见 project/HPC_WORKFLOW.md / memory project_hpc_xjtlu"
+ "schema_version": 1,
+ "updated": "2026-06-24",
+ "note": "跨论文共享数据集地址单一真源。本地 + HPC 路径、下载源、用途、状态都在此。任何脚本/config 引用数据集前先查此表，不重复硬编码、不臆想路径。新增数据集或换路径只改这里 + 在引用处指向。状态: ready=就位可用 / partial=部分就位 / todo=待下载。",
+ "hosts": {
+  "local": "D:/YJ-Agent",
+  "hpc": "XJTLU HPC (gpu4090, 4 卡 qos) — 见 project/HPC_WORKFLOW.md / memory project_hpc_xjtlu"
+ },
+ "datasets": {
+  "brats_mets_2025": {
+   "name": "BraTS-METS 2025 (脑转移瘤分割, Lighthouse Challenge)",
+   "n": "1296 train + 179 val (test 不公开)",
+   "local": "data/brats_mets/ (Kaggle 镜像 ahmedfb/bratsmet24 下载中, 40 case 子集, BraTS-MET-XXXXX-000/{t1c,t1n,t2f,t2w,seg}.nii 非压缩, 5.17GB; killshot 子集足够)",
+   "hpc": "TODO 未上传 (上传=对外传输拍板点; 40 case 小, 也可本机 proxy 跑)",
+   "source": "killshot 用 Kaggle 免-DUA 镜像 ahmedfb/bratsmet24 (BraTS-MET 2024, 40 case, kaggle datasets download -d ahmedfb/bratsmet24 --unzip); 正式项目用官方 Synapse syn64153130 (需 DUA, 1296 case, ~440GB; 旧版 2023=syn51514107). ⚠️ 镜像 license=未声明(Kaggle), 原 BraTS-MET=Synapse DUA, 内部 killshot 去风险可用, 发表注明原始许可(同 ROSE 套路)",
+   "format": ".nii.gz 240x240x155 1mm iso; 3 模态 T1/T1ce/T2-FLAIR (2025 三模态); label 语义 NETC=1/SNFH=2/ET=3 (非 instance, 实例靠 26-conn connected-component 下游分解)",
+   "extract_size_warn": "⚠️ 解压 ~440GB 上限 (1296 case × ~350MB), 压缩态 ~90-150GB; 全下会爆 HPC quota——killshot 只下 ~100-150 case 子集, 先 du 单 case 实测再估 (踩坑纪律 ISLES 14→165GB)",
+   "metrics": "lesion-wise Dice + detection rate + panoptica RQ/SQ/PQ (github.com/BrainImageAnalysis/panoptica); <100mm³(≈<6mm) 子组单独算 RQ+merge-rate",
+   "baseline_code": "blob_loss=github.com/neuronflow/blob_loss; dICI loss=github.com/BrainImageAnalysis/ICI-loss; 冠军编排=github.com/BrainLesion/BraTS",
+   "used_by": [
+    "ideation-run010"
+   ],
+   "purpose": "run-010 G5 杀手锏 M1-05 (实例感知分割) loss 消融: 验自提 count/instance loss 比 blob/ICI 多降<5mm 微转移误并率",
+   "status": "todo (用户 DUA + 下子集 + 拍板上传 HPC 后才能跑)"
   },
-  "datasets": {
-    "vessel_collection_kaggle": {
-      "name": "Retinal Vessel Seg Collection (DRIVE+CHASE+FIVES+HRF+STARE)",
-      "n": "DRIVE 40 + CHASE_DB1 28 + FIVES 800 + HRF 45 + STARE 20",
-      "local": "data/vessel/ (kaggle umairinayat/retinal-vessel-segmentation-datasets 解压 1.9G; 子目录 DRIVE/(test,training) CHASE/(images,masks) FIVES/(images,masks) HRF/(images,masks,roi_masks) STARE/(images,masks) + README.md + dataset_info.json)",
-      "hpc": "/gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/ (1.9G, sftp tar 中转已部署验通 2026-06-20: CHASE/DRIVE/FIVES/HRF/STARE; kaggle.json 传 HPC 被权限拦故走本地中转)",
-      "source": "Kaggle umairinayat/retinal-vessel-segmentation-datasets (1.79GB, license=other); 原始源: DRIVE=drive.grand-challenge.org / CHASE_DB1=researchdata.kingston.ac.uk/96 (CC-BY) / FIVES=figshare 19688169 / HRF=www5.cs.fau.de/research/data/fundus-images / STARE=cecas.clemson.edu/~ahoover/stare",
-      "split": "DRIVE 20/20 固定; CHASE_DB1 20/8; FIVES 600/200; HRF 15/30; STARE 20 LOO",
-      "used_by": [
-        "gdn2vessel"
-      ],
-      "purpose": "gdn2vessel 核心血管分割主集 (DRIVE/CHASE/FIVES 撑 headline+断点续连 benchmark)",
-      "drive_testgt_gap": "⚠️ 此 pack 的 DRIVE/test/ 只有 images+mask，缺 test/1st_manual GT（grand-challenge 官方包本就不含 test GT，在线提交评分）→ 标准 DRIVE 20/20 主 Dice 表需补 test GT。重下方案核源见 project/meeting/ACCV/gdn2vessel/reference/DRIVE_TESTGT_PLAN.md（候选完整包 Kaggle zhz638/aifahim，待主线拍板下载+校验后回填 local 路径）",
-      "status": "downloading(local) / todo(hpc)"
-    },
-    "vessel_pending": {
-      "name": "血管/管状待补集 (冠脉/OCTA; STARE+HRF 已随 collection 到)",
-      "n": "XCAD 126标注 / DCA1 134 / CHUAC 30 / OCTA-500 500 / ROSE 229",
-      "local": "DCA1 ✓ data/vessel_coronary/DCA1_DB_Angiograms_134.zip (9.4MB,268 .pgm,134图+GT) | XCAD ✓ data/vessel_coronary/XCAD.zip (454MB,3502 PNG,train/test images+masks) | CHUAC ✓ data/vessel_coronary/CHUAC/ (figshare 私链 Playwright 下 angiography.rar→bsdtar/libarchive 本地解; Original/30原图(189×189) + Hemotool/30GT(512×512,0/1) + Photoshop/30GT 两套标注; ⚠️原图与mask分辨率不一致需 dataloader resize; CC BY 4.0) | OCTA-500 ⏳ data/vessel_octa/octa500.zip 下载中(kaggle xiefei/octa500,4.47G) | ROSE ✓ data/vessel_octa/ROSE_kaggle/ROSE/ (kaggle snikhilrao/octa-seg-data 50MB,绕开官方申请表; ROSE-1 SVC/DVC/SVC_DVC 117图+gt/thick_gt/thin_gt + ROSE-2 112图 = 229图对上官方; ⚠️kaggle标MIT但原版CC-BY-4.0学术用,发表引 Ma et al. IEEE TMI 2021)",
-      "hpc": "DCA1+XCAD+CHUAC ✓ 已传+解压 /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel_coronary/ (2026-06-20). DCA1/Database_134_Angiograms/ 268 .pgm(134图+134_gt) | XCAD/XCAD/{train/{trainA,trainB,trainC},test/{images,masks}} 3495文件 | CHUAC/{Original,Hemotool,Photoshop}/ 各30 PNG=90文件 | ROSE ✓ /gpfs/.../data/vessel_octa/ROSE/ 731文件(ROSE-1 SVC/DVC/SVC_DVC + ROSE-2) | OCTA-500 ✓ 4.47G zip 传HPC(1385s)+unzip→data/vessel_octa/octa500/ (Label/OCTA(ILM_OPL)/OCTA_3mm_part1, 34700文件)",
-      "source": "XCAD=dropbox dl=1 (github AISIGSJTU/SSVS README, https://www.dropbox.com/s/z0lk5oz6gt9mgd2/XCAD.zip?dl=1 ✓验通) | DCA1=https://www.cimat.mx/~ivan.cruz/DB_Angiograms_files/DB_Angiograms_134.zip ✓(直链恢复) | OCTA-500=kaggle xiefei/octa500 ✓(4.47G;原ieee-dataport需注册) | CHUAC=figshare私链 ✓已下 (item 'Angiographics' figshare.com/s/4d24cf3d14bc901a94bf, ndownloader/files/7573477 经浏览器 session 下 angiography.rar;curl 直下 202/403 须 Playwright 点 Download) | ROSE=✓已下 kaggle snikhilrao/octa-seg-data (绕开官方申请表; 官方 zenodo 12775880 受限需 Request access / imed.nimte.ac.cn/dataofrose.html 申请表, 均 CC-BY-4.0 学术)",
-      "used_by": [
-        "gdn2vessel"
-      ],
-      "purpose": "gdn2vessel 扩展覆盖(超标)+跨域泛化; 许可证逐个确认能否学术发表后纳入",
-      "status": "✅ complete — 血管/管状 10 集全上 HPC (视网膜5 DRIVE/CHASE/FIVES/HRF/STARE + 冠脉3 DCA1/XCAD/CHUAC + OCTA2 OCTA-500/ROSE); CHUAC=Playwright figshare私链+本地bsdtar解, ROSE=kaggle镜像绕官方申请表, OCTA-500=4.47G en-face子集; OCTA unzip 2026-06-20收工时后台进行中(bwb155e7m)"
-    },
-    "hippocampus_msd": {
-      "name": "MSD Task04 Hippocampus",
-      "n": 260,
-      "local": "project/meeting/Med-NCA/data/Task04_Hippocampus/ (imagesTr/labelsTr nii.gz; MEDNCA_ROOT/data)",
-      "hpc": "/gpfs/work/bio/jiayu2403/run003/mednca/data/Task04_Hippocampus/",
-      "source": "Medical Segmentation Decathlon (http://medicaldecathlon.com/)",
-      "split": "脚本内 volume-level 7:3 (C001/C044 系列)",
-      "used_by": [
-        "nca-phasemap"
-      ],
-      "purpose": "NCA-PhaseMap 主数据：Med-NCA 复现 + update 稀疏度功能塌缩相边界 killshot (C044/C044b/C044c)；r1_hippocampus epoch_300 ckpt 在 MEDNCA_ROOT/checkpoints",
-      "status": "ready"
-    },
-    "isic2020": {
-      "name": "ISIC 2020",
-      "n": 33126,
-      "local": "data/raw/isic2020/train-image/image/",
-      "hpc": "TODO 未确认 HPC 路径",
-      "source": "https://challenge2020.isic-archive.com/",
-      "split": "data/isic_split.csv (70/10/20)",
-      "used_by": [
-        "iclr"
-      ],
-      "purpose": "主训练集；ITB-LQ/HQ/Edge 降质子集源 (results/itb_subsets.csv)",
-      "status": "ready"
-    },
-    "fitzpatrick17k": {
-      "name": "FitzPatrick17k",
-      "n": 16577,
-      "local": "data/raw/fitzpatrick17k/images/",
-      "hpc": "TODO",
-      "source": "https://github.com/mattgroh/fitzpatrick17k",
-      "used_by": [
-        "iclr"
-      ],
-      "purpose": "肤型公平性 (I-VI) + 训练补充；ITB-Diverse 1500 源；L10 全量 fairness (n=16012 带肤型)",
-      "status": "ready"
-    },
-    "ham10000": {
-      "name": "HAM10000",
-      "n": 10015,
-      "local": "data/external/ham10000/",
-      "hpc": "TODO",
-      "source": "https://doi.org/10.7910/DVN/DBW86T",
-      "used_by": [
-        "iclr",
-        "medad-failmap"
-      ],
-      "purpose": "zero-shot 跨数据集 (iclr: results/external_ham10000_predictions.csv) + medad-failmap T6 跨集外推 B0 训 AE on NV(6705 图) (anomaly_scores_isic_ae.csv); 图分 HAM10000_images_part_1/part_2 两目录, dx==nv 过滤",
-      "lesion_mask": "data/external/ham10000/HAM10000_segmentations_lesion_tschandl/ (官方 GT lesion mask 10016 张 ISIC_<id>_segmentation.png, Tschandl 单医师 FIJI, Dataverse fileId 3838943; Phase1 真 mask 算同口径 size/contrast 用)",
-      "status": "ready"
-    },
-    "pad_ufes": {
-      "name": "PAD-UFES-20",
-      "n": 2298,
-      "local": "project/data/external/pad_ufes/",
-      "hpc": "TODO",
-      "source": "https://data.mendeley.com/datasets/zr7vgbcyr2/1",
-      "used_by": [
-        "iclr"
-      ],
-      "purpose": "zero-shot 跨数据集 (smartphone)",
-      "status": "ready"
-    },
-    "dermnet": {
-      "name": "DermNet",
-      "n": 23000,
-      "local": "project/data/external/dermnet/",
-      "hpc": "TODO",
-      "source": "已爬 (web scrape)",
-      "used_by": [
-        "iclr"
-      ],
-      "purpose": "训练补充 / 跨域",
-      "status": "ready"
-    },
-    "chexpert": {
-      "name": "CheXpert",
-      "n": null,
-      "local": "project/data/external/chexpert/",
-      "hpc": "TODO",
-      "source": "kaggle ashery/chexpert (CheXpert-v1.0-small 11.5GB, CC0-1.0) | 官方 stanfordaimi.azurewebsites.net",
-      "used_by": [
-        "iclr",
-        "ideation-run007"
-      ],
-      "purpose": "cross-modality 跨域 (chest X-ray); 脚本 scripts/eval_chexray_crossdomain.py 就位待跑",
-      "status": "partial_download",
-      "note": "train.csv已落; 全量chexpert.zip下载中断在~762MB/11.5GB(收工2026-06-19);续:kaggle datasets download ashery/chexpert -p project/data/external/chexpert/ --unzip"
-    },
-    "aptos2019": {
-      "name": "APTOS 2019 Blindness (fundus)",
-      "n": null,
-      "local": "project/data/external/aptos2019/",
-      "hpc": "TODO",
-      "source": "https://www.kaggle.com/c/aptos2019-blindness-detection",
-      "used_by": [
-        "iclr"
-      ],
-      "purpose": "cross-modality 跨域 (diabetic retinopathy); 脚本 scripts/eval_fundus_crossdomain.py",
-      "status": "todo"
-    },
-    "kvasir": {
-      "name": "Kvasir-endoscopy",
-      "n": null,
-      "local": "project/data/external/kvasir/",
-      "hpc": "TODO",
-      "source": "https://datasets.simula.no/kvasir/",
-      "used_by": [
-        "iclr"
-      ],
-      "purpose": "cross-modality 跨域 (endoscopy); M2 待下载",
-      "status": "todo"
-    },
-    "isic2024": {
-      "name": "ISIC 2024 SLICE-3D",
-      "n": 400000,
-      "local": "project/data/external/isic2024/",
-      "hpc": "TODO",
-      "source": "https://www.kaggle.com/competitions/isic-2024-challenge",
-      "used_by": [
-        "iclr"
-      ],
-      "purpose": "L24 real LQ smartphone-style 子集挖掘; M2 待下载",
-      "status": "todo"
-    },
-    "nih_cxr14": {
-      "name": "NIH ChestX-ray14 (224² resized)",
-      "n": 112120,
-      "local": "project/meeting/Med-NCA/NCA-JEPA/data/nih_cxr14/images-224/images-224/ (build_splits.py DATA_ROOT)",
-      "hpc": "/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/ (absolute; 112120 png 已解压验通)",
-      "splits_hpc": "/gpfs/work/bio/jiayu2403/nca-jepa/splits/ (pretrain_10k=10000图/3257患者, probe 1%/10%/100%, test=25596, 患者重叠0)",
-      "source": "Kaggle khanfashee/nih-chest-x-ray-14-224x224-resized (PNG, 224²); 原图 NIH Box 1024² ~45GB",
-      "split": "DATA_ROOT/splits/ (build_splits.py 生成; pilot 子集 10k)",
-      "used_by": [
-        "nca-jepa"
-      ],
-      "purpose": "NCA-JEPA pilot 预训练 + linear probe; 对齐 CheXWorld 224² 输入",
-      "status": "ready(本地+HPC 均部署验通)"
-    },
-    "medianomaly_bench": {
-      "name": "MedIAnomaly benchmark (7 集)",
-      "n": null,
-      "subsets": "RSNA(胸片) / VinDr-CXR(胸片) / BrainTumor(脑MRI) / LAG(眼底) / Camelyon16(病理,有像素mask) / BraTS2021(脑MRI FLAIR,有像素mask) / ISIC2018-Task3(皮镜,nevus=正常)",
-      "local": "BraTS2021: project/meeting/MedAD-FailMap/data/BraTS2021/ ; BrainTumor(脑MRI): data/external/medianomaly/BrainTumor/ (images/ 2200 jpg + data.json split) ; RSNA(胸片): data/external/medianomaly/RSNA/ (images/ 5851 png + data.json + stage_2_train_labels.csv) ; LAG/VinCXR/Camelyon16 still TODO on Zenodo rec 12677223",
-      "hpc": "TODO",
-      "source": "Zenodo 分集 tar.gz: https://zenodo.org/api/records/12677223/files/<NAME>.tar.gz/content (BraTS2021 70MB / BrainTumor 42MB / LAG 202MB / RSNA 568MB / VinCXR 620MB / Camelyon16 891MB；注意是分集非单 zip)；codebase github.com/caiyu6666/MedIAnomaly。ISIC2018 不在此 Zenodo→本地 HAM10000 NV(6705图)零下载对接",
-      "used_by": [
-        "artioodbench",
-        "fmreg",
-        "medad-failmap"
-      ],
-      "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估(协变量分层用 BraTS test/annotation mask); Phase 0 只用 BraTS2021。【fmreg 复用 BraTS2021 多序列(T1/T2/FLAIR)做同模态可变形配准主战场, 已 ready 免下】",
-      "status": "partial (BraTS2021 ready, 余 todo)",
-      "format": "data.json schema: {\"train\":{\"0\":[normal files]},\"test\":{\"0\":[normal],\"1\":[anomaly]}}; class 0=normal 1=anomaly",
-      "note_artioodbench": "ArtiOODBench cross-source pairs: CXR P1=NIH(ID) vs VinDr(OOD local) / P2=NIH vs RSNA(OOD) ; MRI P3=BraTS2021 normal(ID) vs BrainTumor(OOD) ; derm P4=HAM10000(ID) vs ISIC2020(OOD local). cross-source task label=source-institution not normal/anomaly."
-    },
-    "vindrcxr_domainB": {
-      "name": "Domain-B CXR (vindrcxr)",
-      "n": 18000,
-      "n_subset": 10000,
-      "local": "D:/YJ-Agent/data/external/vindr_cxr",
-      "hpc": "TODO: 填 HPC 部署路径",
-      "source": "Kaggle xhlulu/vinbigdata (VinBigData=VinDr-CXR 官方比赛数据, 512x512 PNG 镜像). 原始: physionet.org/content/vindr-cxr/1.0.0 (DICOM, 需凭证)",
-      "split": "D:/YJ-Agent/data/external/vindr_cxr/splits/domainB_10k.txt",
-      "used_by": [
-        "nca-jepa"
-      ],
-      "purpose": "NCA-JEPA 路线 B — 遗忘探针域 B 续训集（对齐域 A NIH 10k 规模）",
-      "status": "ready(local)",
-      "format": "PNG 512x512",
-      "structure": "train/<id>.png (15000) + test/<id>.png (3000); split 路径相对 local 根, 正斜杠",
-      "note": "NCA-JEPA 路线B遗忘探针域B. 纯SSL无标签(train_meta.csv未用). n_subset=10000采样=9000train+1000val"
-    },
-    "oasis": {
-      "name": "OASIS (brain MRI registration)",
-      "n": "Learn2Reg 版 416 subjects (~416 train / 39 test)",
-      "local": "TODO 待下载",
-      "hpc": "TODO",
-      "source": "https://www.oasis-brains.org/ ; Learn2Reg 预处理版 https://learn2reg.grand-challenge.org/Datasets/ (OASIS-1 基, 160×224×192, 35 FreeSurfer 标签可算 Dice; 需 grand-challenge 账号)",
-      "used_by": [
-        "fmreg"
-      ],
-      "purpose": "FMReg 脑 MRI 可变形配准【正式 benchmark】; 中训 inter-subject 全量 + 35 标签算 Dice + neg_jac 折叠率。注: G5 killshot 实际用 BraTS2021 flair(非 OASIS, G6 卡/旧 Entry 措辞误写已订正)",
-      "status": "todo"
-    },
-    "ixi": {
-      "name": "IXI (brain MRI registration, junyuchen 预处理版)",
-      "n": "576 (403 train / 58 val / 115 test)",
-      "local": "project/meeting/FMReg/data/IXI/IXI_data/ (Train 403/Val 58/Test 115 + atlas.pkl, 160×192×224, 每 .pkl=(image,label) FreeSurfer 皮层下分割; zip 原档 IXI_data.pkl 1.54GB 同目录可删)",
-      "hpc": "TODO (Gate1 G2-A 上传是拍板点先报)",
-      "source": "https://github.com/junyuchen245/Preprocessed_IXI_Dataset (GDrive id=1-VQewCVNj5eTtc3eQGhTM2yXBQmgm8Ol, 1.54GB zip 误名.pkl, atlas-to-patient, 160×192×224, 含 atlas + 皮层下 FreeSurfer 分割标签, 免注册); 原始 http://brain-development.org/ixi-dataset/",
-      "used_by": [
-        "fmreg"
-      ],
-      "purpose": "FMReg 脑配准【Gate1 G2-A gating 主战场】(atlas-to-patient, 带标签可算 Dice/NCC_LM); TransMorph 标准集, 与 OASIS 互补",
-      "status": "ready(local 已下载解压 2026-06-18; HPC 待上传)"
-    },
-    "abdomenmrct": {
-      "name": "Learn2Reg AbdomenMRCT (跨模态 MRI-CT 腹部配准)",
-      "n": "8 配对 + 90 非配对 / 8 test (122 scans 总; 192×160×192 @ 2mm iso; 4 器官标注: liver/spleen/left+right kidney, test 集额外 gallbladder/stomach/aorta/portal vein/pancreas)",
-      "local": "D:/YJ-Agent/data/AbdomenMRCT/ (已下解压验通; Train/ 8配对 + Test/ 8配对; 命名 img<ID>_tcia_{CT,MR}.nii.gz + seg<ID>_tcia_{CT,MR}.nii.gz, 模态靠_CT/_MR后缀, 配对靠4位<ID>; 标签{1,2,3,4}=liver/spleen/L+R kidney bg=0; 滤 ._ 垃圾; run-004 C047 killshot + fmreg 共用)",
-      "hpc": "TODO",
-      "source": "免登录直链(Lübeck 云,不需 grand-challenge 账号,1.8GB): train=https://cloud.imi.uni-luebeck.de/s/DgGZFpTKBEn8PpS/download | test=https://cloud.imi.uni-luebeck.de/s/zP5RekyR6xeKCPp/download | ROI masks(gdrive)=https://drive.google.com/uc?export=download&id=1pW_UNe28_7gnZ4GynpV6XvLP-hLQrbyP | 官方页 https://learn2reg.grand-challenge.org/Learn2Reg2021/ (ref arXiv:2112.04489)",
-      "used_by": [
-        "fmreg",
-        "ideation-run004 (C047 killshot 去风险)"
-      ],
-      "purpose": "FMReg 跨模态 L4 lever【首选】; FM-based MR-CT 生成式配准是真空地(FlowReg/对手全无跨模态)。run-004 C047 killshot: 真配对 CT/MRI 验跨模态 dynamics collapse 是否=domain-shift",
-      "status": "ready (local, 2026-06-18 下载解压+nibabel 验通; 192×160×192 float32; 90 非配对在辅助 BCV-CT/CHAOS-MR 直链未下, killshot 用 16 配对足够)"
-    },
-    "dirlab": {
-      "name": "Dir-Lab 4DCT (肺呼吸配准, TRE benchmark)",
-      "n": "10 cases × 300 landmark/对 = 3000 pts",
-      "local": "TODO 待下载",
-      "hpc": "TODO",
-      "source": "https://www.dir-lab.com/ (4D-CT 10例, inhale/exhale 300 手工 landmark/对, 1.0×1.0×2.5mm; 公开免费, 官网可达性中训前确认)",
-      "used_by": [
-        "fmreg"
-      ],
-      "purpose": "FMReg 肺配准【TRE 金标准 benchmark】; FM 少步配准在肺 4DCT 是真空地",
-      "status": "todo"
-    },
-    "learn2reg": {
-      "name": "Learn2Reg benchmark",
-      "n": null,
-      "local": "TODO 待下载",
-      "hpc": "TODO",
-      "source": "https://learn2reg.grand-challenge.org/ (多任务: OASIS脑/AbdomenCT-CT/AbdomenMRCT跨模态/肺CT/LUMIR脑/ReMIND超声-MRI; 公开 leaderboard + 官方 baseline; 指标 TRE/Dice/DSC30/HD95/%|J|≤0/SDlogJ 几何均值排名)",
-      "used_by": [
-        "fmreg"
-      ],
-      "purpose": "FMReg 多任务配准框架来源; 子集 oasis/abdomenmrct 已单列; leaderboard 对照 VoxelMorph/TransMorph/LapIRN/uniGradICON",
-      "status": "todo"
-    },
-    "yuan_input_data": {
-      "name": "袁老师输入数据 (QuantImmuBench 工具测试输入)",
-      "n": null,
-      "local": "TODO 待袁老师提供",
-      "hpc": "TODO",
-      "source": "袁老师提供（团队内部）",
-      "used_by": [
-        "quantimmu-bench"
-      ],
-      "purpose": "5 个新抗原免疫原性预测工具(PredIG/DeepImmuno/pTuneos/IMPROVE/NeoTImmuML)的正式测试输入；到位后按各工具格式(CSV/TSV/FASTA/VCF)做转换。数据未到前先用各工具自带 bundled example 烟测",
-      "status": "todo",
-      "note": "需肽段序列+HLA allele(多数工具);pTuneos 需全基因组 WES/RNA-seq;格式转换脚本放 project/meeting/QuantImmuBench/scripts/"
-    },
-    "lidc_idri": {
-      "name": "LIDC-IDRI",
-      "n": "1018 CT (4-annotator 结节标注)",
-      "local": "D:/YJ-Agent/project/meeting/DisagreePred/data/LIDC_subset (150 scan/15G,2026-06-19扩);派生件 results/patches 289npy + results/a2_seg_masks 289 + lidc_disagree_labels.csv",
-      "hpc": "/gpfs/work/bio/jiayu2403/disagree/ (2026-06-19传~25M派生件:results/patches 289npy + a2_seg_masks 289 + lidc_disagree_labels_hpc.csv[patch路径改写HPC绝对];非原始DICOM。KILL-1 job1471101)",
-      "source": "TCIA 公开免费 https://www.cancerimagingarchive.net/collection/lidc-idri/ ; 全集 1018 CT ~124GB(过大不下,用户拍板); 4 医师独立标注; pylidc cluster_annotations tol默认=slice_thickness(文档写pixel_spacing是bug); 存在性分歧65.2%(2669被标结节仅928获4/4一致,Armato2011 PMC3041807; 旧稿margin0.22=Dong2017边缘评分分歧≠存在性,勿混). 【精简路径(2026-06-18 researcher探,避124GB)】①XML-only<200MB=pylidc无DICOM纯查k分歧标签+坐标(免费,先算分布) https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=1966254 ②DICOM-LIDC-IDRI-Nodules 2.51GB=per-annotator SEG mask(非CT像素) https://www.cancerimagingarchive.net/analysis-result/dicom-lidc-idri-nodules/ ③KILL-1需CT图像patch→NBIA子集下~150-200 scan≈18-30GB(MIC-DKFZ/LIDC-IDRI-processing保per-annotator). ④LUNA16衍生丢标注者身份不可用/QUBIQ无肺结节排除",
-      "split": "立项后定 (KILL-1 baseline 先行)",
-      "used_by": [
-        "disagree"
-      ],
-      "purpose": "DisagreePred 主 benchmark: 预测 4-annotator 分歧本身(非 majority-vote 取 GT)。KILL-1 gating=下载后跑分歧可预测性 baseline,AUROC≤0.60 即砍。QUBIQ 备用第二集验普适",
-      "status": "todo"
-    },
-    "cholec80_spr": {
-      "name": "Cholec80 (SPR, LoViT features + phase labels)",
-      "n": 80,
-      "local": "project/meeting/delta-statetrack-probe/data/cholec80/ (features/videoNN.pkl x80 [768,T,1,1] 1fps + phase_annotations/videoNN-phase.txt x80 25fps 7类) 已下齐",
-      "hpc": "TODO",
-      "source": {
-        "features_LoViT": "https://emckclac-my.sharepoint.com/:f:/g/personal/k21073807_kcl_ac_uk/EpShcwpjssRGomJdcEhfZ68B6bNAt_WAVKfOrtrUfI-Bgw?e=YPJNpf (Spatial_feature_Cholec80.zip 496MB, 匿名直连可下, pkl [768,T,1,1] ViT-B/16 768d 1fps; repo github.com/MRUIL/LoViT)",
-        "labels_CAMMA_form": "https://docs.google.com/forms/d/1GwZFM3-GhEduBs1d5QzbfFksKmS1OqXZAz8keYi-wKI (phase_annotations videoNN-phase.txt Frame<TAB>Phase 25fps 7类; CC-BY-NC-SA, 需CAMMA审批; email camma.dataset@gmail.com)",
-        "label_format_ref": "github.com/CAMMA-public/TF-Cholec80",
-        "labels_Kaggle_ganumatta": "kaggle datasets download ganumatta/cholec80 -f phase_annotations/videoNN-phase.txt (松散文件可单独下,~1MB/个,免CAMMA审批,CC-BY-NC-SA合规)"
-      },
-      "used_by": [
-        "delta-statetrack-probe"
-      ],
-      "purpose": "Crux2 SPR 手术阶段识别状态追踪验证 (spr_probe.py)。layout: <root>/features/videoNN.pkl + <root>/phase_annotations/videoNN-phase.txt",
-      "status": "ready-local (特征LoViT+标签Kaggle ganumatta 各80, e2e CPU smoke PASS); HPC上传+GPU 5臂run 待拍板"
-    }
+  "vessel_collection_kaggle": {
+   "name": "Retinal Vessel Seg Collection (DRIVE+CHASE+FIVES+HRF+STARE)",
+   "n": "DRIVE 40 + CHASE_DB1 28 + FIVES 800 + HRF 45 + STARE 20",
+   "local": "data/vessel/ (kaggle umairinayat/retinal-vessel-segmentation-datasets 解压 1.9G; 子目录 DRIVE/(test,training) CHASE/(images,masks) FIVES/(images,masks) HRF/(images,masks,roi_masks) STARE/(images,masks) + README.md + dataset_info.json)",
+   "hpc": "/gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel/ (1.9G, sftp tar 中转已部署验通 2026-06-20: CHASE/DRIVE/FIVES/HRF/STARE; kaggle.json 传 HPC 被权限拦故走本地中转)",
+   "source": "Kaggle umairinayat/retinal-vessel-segmentation-datasets (1.79GB, license=other); 原始源: DRIVE=drive.grand-challenge.org / CHASE_DB1=researchdata.kingston.ac.uk/96 (CC-BY) / FIVES=figshare 19688169 / HRF=www5.cs.fau.de/research/data/fundus-images / STARE=cecas.clemson.edu/~ahoover/stare",
+   "split": "DRIVE 20/20 固定; CHASE_DB1 20/8; FIVES 600/200; HRF 15/30; STARE 20 LOO",
+   "used_by": [
+    "gdn2vessel"
+   ],
+   "purpose": "gdn2vessel 核心血管分割主集 (DRIVE/CHASE/FIVES 撑 headline+断点续连 benchmark)",
+   "drive_testgt_gap": "⚠️ 此 pack 的 DRIVE/test/ 只有 images+mask，缺 test/1st_manual GT（grand-challenge 官方包本就不含 test GT，在线提交评分）→ 标准 DRIVE 20/20 主 Dice 表需补 test GT。重下方案核源见 project/meeting/ACCV/gdn2vessel/reference/DRIVE_TESTGT_PLAN.md（候选完整包 Kaggle zhz638/aifahim，待主线拍板下载+校验后回填 local 路径）",
+   "status": "downloading(local) / todo(hpc)"
+  },
+  "vessel_pending": {
+   "name": "血管/管状待补集 (冠脉/OCTA; STARE+HRF 已随 collection 到)",
+   "n": "XCAD 126标注 / DCA1 134 / CHUAC 30 / OCTA-500 500 / ROSE 229",
+   "local": "DCA1 ✓ data/vessel_coronary/DCA1_DB_Angiograms_134.zip (9.4MB,268 .pgm,134图+GT) | XCAD ✓ data/vessel_coronary/XCAD.zip (454MB,3502 PNG,train/test images+masks) | CHUAC ✓ data/vessel_coronary/CHUAC/ (figshare 私链 Playwright 下 angiography.rar→bsdtar/libarchive 本地解; Original/30原图(189×189) + Hemotool/30GT(512×512,0/1) + Photoshop/30GT 两套标注; ⚠️原图与mask分辨率不一致需 dataloader resize; CC BY 4.0) | OCTA-500 ⏳ data/vessel_octa/octa500.zip 下载中(kaggle xiefei/octa500,4.47G) | ROSE ✓ data/vessel_octa/ROSE_kaggle/ROSE/ (kaggle snikhilrao/octa-seg-data 50MB,绕开官方申请表; ROSE-1 SVC/DVC/SVC_DVC 117图+gt/thick_gt/thin_gt + ROSE-2 112图 = 229图对上官方; ⚠️kaggle标MIT但原版CC-BY-4.0学术用,发表引 Ma et al. IEEE TMI 2021)",
+   "hpc": "DCA1+XCAD+CHUAC ✓ 已传+解压 /gpfs/work/bio/jiayu2403/gdn2vessel/data/vessel_coronary/ (2026-06-20). DCA1/Database_134_Angiograms/ 268 .pgm(134图+134_gt) | XCAD/XCAD/{train/{trainA,trainB,trainC},test/{images,masks}} 3495文件 | CHUAC/{Original,Hemotool,Photoshop}/ 各30 PNG=90文件 | ROSE ✓ /gpfs/.../data/vessel_octa/ROSE/ 731文件(ROSE-1 SVC/DVC/SVC_DVC + ROSE-2) | OCTA-500 ✓ 4.47G zip 传HPC(1385s)+unzip→data/vessel_octa/octa500/ (Label/OCTA(ILM_OPL)/OCTA_3mm_part1, 34700文件)",
+   "source": "XCAD=dropbox dl=1 (github AISIGSJTU/SSVS README, https://www.dropbox.com/s/z0lk5oz6gt9mgd2/XCAD.zip?dl=1 ✓验通) | DCA1=https://www.cimat.mx/~ivan.cruz/DB_Angiograms_files/DB_Angiograms_134.zip ✓(直链恢复) | OCTA-500=kaggle xiefei/octa500 ✓(4.47G;原ieee-dataport需注册) | CHUAC=figshare私链 ✓已下 (item 'Angiographics' figshare.com/s/4d24cf3d14bc901a94bf, ndownloader/files/7573477 经浏览器 session 下 angiography.rar;curl 直下 202/403 须 Playwright 点 Download) | ROSE=✓已下 kaggle snikhilrao/octa-seg-data (绕开官方申请表; 官方 zenodo 12775880 受限需 Request access / imed.nimte.ac.cn/dataofrose.html 申请表, 均 CC-BY-4.0 学术)",
+   "used_by": [
+    "gdn2vessel"
+   ],
+   "purpose": "gdn2vessel 扩展覆盖(超标)+跨域泛化; 许可证逐个确认能否学术发表后纳入",
+   "status": "✅ complete — 血管/管状 10 集全上 HPC (视网膜5 DRIVE/CHASE/FIVES/HRF/STARE + 冠脉3 DCA1/XCAD/CHUAC + OCTA2 OCTA-500/ROSE); CHUAC=Playwright figshare私链+本地bsdtar解, ROSE=kaggle镜像绕官方申请表, OCTA-500=4.47G en-face子集; OCTA unzip 2026-06-20收工时后台进行中(bwb155e7m)"
+  },
+  "hippocampus_msd": {
+   "name": "MSD Task04 Hippocampus",
+   "n": 260,
+   "local": "project/meeting/Med-NCA/data/Task04_Hippocampus/ (imagesTr/labelsTr nii.gz; MEDNCA_ROOT/data)",
+   "hpc": "/gpfs/work/bio/jiayu2403/run003/mednca/data/Task04_Hippocampus/",
+   "source": "Medical Segmentation Decathlon (http://medicaldecathlon.com/)",
+   "split": "脚本内 volume-level 7:3 (C001/C044 系列)",
+   "used_by": [
+    "nca-phasemap"
+   ],
+   "purpose": "NCA-PhaseMap 主数据：Med-NCA 复现 + update 稀疏度功能塌缩相边界 killshot (C044/C044b/C044c)；r1_hippocampus epoch_300 ckpt 在 MEDNCA_ROOT/checkpoints",
+   "status": "ready"
+  },
+  "isic2020": {
+   "name": "ISIC 2020",
+   "n": 33126,
+   "local": "data/raw/isic2020/train-image/image/",
+   "hpc": "TODO 未确认 HPC 路径",
+   "source": "https://challenge2020.isic-archive.com/",
+   "split": "data/isic_split.csv (70/10/20)",
+   "used_by": [
+    "iclr"
+   ],
+   "purpose": "主训练集；ITB-LQ/HQ/Edge 降质子集源 (results/itb_subsets.csv)",
+   "status": "ready"
+  },
+  "fitzpatrick17k": {
+   "name": "FitzPatrick17k",
+   "n": 16577,
+   "local": "data/raw/fitzpatrick17k/images/",
+   "hpc": "TODO",
+   "source": "https://github.com/mattgroh/fitzpatrick17k",
+   "used_by": [
+    "iclr"
+   ],
+   "purpose": "肤型公平性 (I-VI) + 训练补充；ITB-Diverse 1500 源；L10 全量 fairness (n=16012 带肤型)",
+   "status": "ready"
+  },
+  "ham10000": {
+   "name": "HAM10000",
+   "n": 10015,
+   "local": "data/external/ham10000/",
+   "hpc": "TODO",
+   "source": "https://doi.org/10.7910/DVN/DBW86T",
+   "used_by": [
+    "iclr",
+    "medad-failmap"
+   ],
+   "purpose": "zero-shot 跨数据集 (iclr: results/external_ham10000_predictions.csv) + medad-failmap T6 跨集外推 B0 训 AE on NV(6705 图) (anomaly_scores_isic_ae.csv); 图分 HAM10000_images_part_1/part_2 两目录, dx==nv 过滤",
+   "lesion_mask": "data/external/ham10000/HAM10000_segmentations_lesion_tschandl/ (官方 GT lesion mask 10016 张 ISIC_<id>_segmentation.png, Tschandl 单医师 FIJI, Dataverse fileId 3838943; Phase1 真 mask 算同口径 size/contrast 用)",
+   "status": "ready"
+  },
+  "pad_ufes": {
+   "name": "PAD-UFES-20",
+   "n": 2298,
+   "local": "project/data/external/pad_ufes/",
+   "hpc": "TODO",
+   "source": "https://data.mendeley.com/datasets/zr7vgbcyr2/1",
+   "used_by": [
+    "iclr"
+   ],
+   "purpose": "zero-shot 跨数据集 (smartphone)",
+   "status": "ready"
+  },
+  "dermnet": {
+   "name": "DermNet",
+   "n": 23000,
+   "local": "project/data/external/dermnet/",
+   "hpc": "TODO",
+   "source": "已爬 (web scrape)",
+   "used_by": [
+    "iclr"
+   ],
+   "purpose": "训练补充 / 跨域",
+   "status": "ready"
+  },
+  "chexpert": {
+   "name": "CheXpert",
+   "n": null,
+   "local": "project/data/external/chexpert/",
+   "hpc": "TODO",
+   "source": "kaggle ashery/chexpert (CheXpert-v1.0-small 11.5GB, CC0-1.0) | 官方 stanfordaimi.azurewebsites.net",
+   "used_by": [
+    "iclr",
+    "ideation-run007"
+   ],
+   "purpose": "cross-modality 跨域 (chest X-ray); 脚本 scripts/eval_chexray_crossdomain.py 就位待跑",
+   "status": "partial_download",
+   "note": "train.csv已落; 全量chexpert.zip下载中断在~762MB/11.5GB(收工2026-06-19);续:kaggle datasets download ashery/chexpert -p project/data/external/chexpert/ --unzip"
+  },
+  "aptos2019": {
+   "name": "APTOS 2019 Blindness (fundus)",
+   "n": null,
+   "local": "project/data/external/aptos2019/",
+   "hpc": "TODO",
+   "source": "https://www.kaggle.com/c/aptos2019-blindness-detection",
+   "used_by": [
+    "iclr"
+   ],
+   "purpose": "cross-modality 跨域 (diabetic retinopathy); 脚本 scripts/eval_fundus_crossdomain.py",
+   "status": "todo"
+  },
+  "kvasir": {
+   "name": "Kvasir-endoscopy",
+   "n": null,
+   "local": "project/data/external/kvasir/",
+   "hpc": "TODO",
+   "source": "https://datasets.simula.no/kvasir/",
+   "used_by": [
+    "iclr"
+   ],
+   "purpose": "cross-modality 跨域 (endoscopy); M2 待下载",
+   "status": "todo"
+  },
+  "isic2024": {
+   "name": "ISIC 2024 SLICE-3D",
+   "n": 400000,
+   "local": "project/data/external/isic2024/",
+   "hpc": "TODO",
+   "source": "https://www.kaggle.com/competitions/isic-2024-challenge",
+   "used_by": [
+    "iclr"
+   ],
+   "purpose": "L24 real LQ smartphone-style 子集挖掘; M2 待下载",
+   "status": "todo"
+  },
+  "nih_cxr14": {
+   "name": "NIH ChestX-ray14 (224² resized)",
+   "n": 112120,
+   "local": "project/meeting/Med-NCA/NCA-JEPA/data/nih_cxr14/images-224/images-224/ (build_splits.py DATA_ROOT)",
+   "hpc": "/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/ (absolute; 112120 png 已解压验通)",
+   "splits_hpc": "/gpfs/work/bio/jiayu2403/nca-jepa/splits/ (pretrain_10k=10000图/3257患者, probe 1%/10%/100%, test=25596, 患者重叠0)",
+   "source": "Kaggle khanfashee/nih-chest-x-ray-14-224x224-resized (PNG, 224²); 原图 NIH Box 1024² ~45GB",
+   "split": "DATA_ROOT/splits/ (build_splits.py 生成; pilot 子集 10k)",
+   "used_by": [
+    "nca-jepa"
+   ],
+   "purpose": "NCA-JEPA pilot 预训练 + linear probe; 对齐 CheXWorld 224² 输入",
+   "status": "ready(本地+HPC 均部署验通)"
+  },
+  "medianomaly_bench": {
+   "name": "MedIAnomaly benchmark (7 集)",
+   "n": null,
+   "subsets": "RSNA(胸片) / VinDr-CXR(胸片) / BrainTumor(脑MRI) / LAG(眼底) / Camelyon16(病理,有像素mask) / BraTS2021(脑MRI FLAIR,有像素mask) / ISIC2018-Task3(皮镜,nevus=正常)",
+   "local": "BraTS2021: project/meeting/MedAD-FailMap/data/BraTS2021/ ; BrainTumor(脑MRI): data/external/medianomaly/BrainTumor/ (images/ 2200 jpg + data.json split) ; RSNA(胸片): data/external/medianomaly/RSNA/ (images/ 5851 png + data.json + stage_2_train_labels.csv) ; LAG/VinCXR/Camelyon16 still TODO on Zenodo rec 12677223",
+   "hpc": "TODO",
+   "source": "Zenodo 分集 tar.gz: https://zenodo.org/api/records/12677223/files/<NAME>.tar.gz/content (BraTS2021 70MB / BrainTumor 42MB / LAG 202MB / RSNA 568MB / VinCXR 620MB / Camelyon16 891MB；注意是分集非单 zip)；codebase github.com/caiyu6666/MedIAnomaly。ISIC2018 不在此 Zenodo→本地 HAM10000 NV(6705图)零下载对接",
+   "used_by": [
+    "artioodbench",
+    "fmreg",
+    "medad-failmap"
+   ],
+   "purpose": "重建式 AD 失败边界主 benchmark; 仅 BraTS2021/Camelyon16 支持像素级评估(协变量分层用 BraTS test/annotation mask); Phase 0 只用 BraTS2021。【fmreg 复用 BraTS2021 多序列(T1/T2/FLAIR)做同模态可变形配准主战场, 已 ready 免下】",
+   "status": "partial (BraTS2021 ready, 余 todo)",
+   "format": "data.json schema: {\"train\":{\"0\":[normal files]},\"test\":{\"0\":[normal],\"1\":[anomaly]}}; class 0=normal 1=anomaly",
+   "note_artioodbench": "ArtiOODBench cross-source pairs: CXR P1=NIH(ID) vs VinDr(OOD local) / P2=NIH vs RSNA(OOD) ; MRI P3=BraTS2021 normal(ID) vs BrainTumor(OOD) ; derm P4=HAM10000(ID) vs ISIC2020(OOD local). cross-source task label=source-institution not normal/anomaly."
+  },
+  "vindrcxr_domainB": {
+   "name": "Domain-B CXR (vindrcxr)",
+   "n": 18000,
+   "n_subset": 10000,
+   "local": "D:/YJ-Agent/data/external/vindr_cxr",
+   "hpc": "TODO: 填 HPC 部署路径",
+   "source": "Kaggle xhlulu/vinbigdata (VinBigData=VinDr-CXR 官方比赛数据, 512x512 PNG 镜像). 原始: physionet.org/content/vindr-cxr/1.0.0 (DICOM, 需凭证)",
+   "split": "D:/YJ-Agent/data/external/vindr_cxr/splits/domainB_10k.txt",
+   "used_by": [
+    "nca-jepa"
+   ],
+   "purpose": "NCA-JEPA 路线 B — 遗忘探针域 B 续训集（对齐域 A NIH 10k 规模）",
+   "status": "ready(local)",
+   "format": "PNG 512x512",
+   "structure": "train/<id>.png (15000) + test/<id>.png (3000); split 路径相对 local 根, 正斜杠",
+   "note": "NCA-JEPA 路线B遗忘探针域B. 纯SSL无标签(train_meta.csv未用). n_subset=10000采样=9000train+1000val"
+  },
+  "oasis": {
+   "name": "OASIS (brain MRI registration)",
+   "n": "Learn2Reg 版 416 subjects (~416 train / 39 test)",
+   "local": "TODO 待下载",
+   "hpc": "TODO",
+   "source": "https://www.oasis-brains.org/ ; Learn2Reg 预处理版 https://learn2reg.grand-challenge.org/Datasets/ (OASIS-1 基, 160×224×192, 35 FreeSurfer 标签可算 Dice; 需 grand-challenge 账号)",
+   "used_by": [
+    "fmreg"
+   ],
+   "purpose": "FMReg 脑 MRI 可变形配准【正式 benchmark】; 中训 inter-subject 全量 + 35 标签算 Dice + neg_jac 折叠率。注: G5 killshot 实际用 BraTS2021 flair(非 OASIS, G6 卡/旧 Entry 措辞误写已订正)",
+   "status": "todo"
+  },
+  "ixi": {
+   "name": "IXI (brain MRI registration, junyuchen 预处理版)",
+   "n": "576 (403 train / 58 val / 115 test)",
+   "local": "project/meeting/FMReg/data/IXI/IXI_data/ (Train 403/Val 58/Test 115 + atlas.pkl, 160×192×224, 每 .pkl=(image,label) FreeSurfer 皮层下分割; zip 原档 IXI_data.pkl 1.54GB 同目录可删)",
+   "hpc": "TODO (Gate1 G2-A 上传是拍板点先报)",
+   "source": "https://github.com/junyuchen245/Preprocessed_IXI_Dataset (GDrive id=1-VQewCVNj5eTtc3eQGhTM2yXBQmgm8Ol, 1.54GB zip 误名.pkl, atlas-to-patient, 160×192×224, 含 atlas + 皮层下 FreeSurfer 分割标签, 免注册); 原始 http://brain-development.org/ixi-dataset/",
+   "used_by": [
+    "fmreg"
+   ],
+   "purpose": "FMReg 脑配准【Gate1 G2-A gating 主战场】(atlas-to-patient, 带标签可算 Dice/NCC_LM); TransMorph 标准集, 与 OASIS 互补",
+   "status": "ready(local 已下载解压 2026-06-18; HPC 待上传)"
+  },
+  "abdomenmrct": {
+   "name": "Learn2Reg AbdomenMRCT (跨模态 MRI-CT 腹部配准)",
+   "n": "8 配对 + 90 非配对 / 8 test (122 scans 总; 192×160×192 @ 2mm iso; 4 器官标注: liver/spleen/left+right kidney, test 集额外 gallbladder/stomach/aorta/portal vein/pancreas)",
+   "local": "D:/YJ-Agent/data/AbdomenMRCT/ (已下解压验通; Train/ 8配对 + Test/ 8配对; 命名 img<ID>_tcia_{CT,MR}.nii.gz + seg<ID>_tcia_{CT,MR}.nii.gz, 模态靠_CT/_MR后缀, 配对靠4位<ID>; 标签{1,2,3,4}=liver/spleen/L+R kidney bg=0; 滤 ._ 垃圾; run-004 C047 killshot + fmreg 共用)",
+   "hpc": "TODO",
+   "source": "免登录直链(Lübeck 云,不需 grand-challenge 账号,1.8GB): train=https://cloud.imi.uni-luebeck.de/s/DgGZFpTKBEn8PpS/download | test=https://cloud.imi.uni-luebeck.de/s/zP5RekyR6xeKCPp/download | ROI masks(gdrive)=https://drive.google.com/uc?export=download&id=1pW_UNe28_7gnZ4GynpV6XvLP-hLQrbyP | 官方页 https://learn2reg.grand-challenge.org/Learn2Reg2021/ (ref arXiv:2112.04489)",
+   "used_by": [
+    "fmreg",
+    "ideation-run004 (C047 killshot 去风险)"
+   ],
+   "purpose": "FMReg 跨模态 L4 lever【首选】; FM-based MR-CT 生成式配准是真空地(FlowReg/对手全无跨模态)。run-004 C047 killshot: 真配对 CT/MRI 验跨模态 dynamics collapse 是否=domain-shift",
+   "status": "ready (local, 2026-06-18 下载解压+nibabel 验通; 192×160×192 float32; 90 非配对在辅助 BCV-CT/CHAOS-MR 直链未下, killshot 用 16 配对足够)"
+  },
+  "dirlab": {
+   "name": "Dir-Lab 4DCT (肺呼吸配准, TRE benchmark)",
+   "n": "10 cases × 300 landmark/对 = 3000 pts",
+   "local": "TODO 待下载",
+   "hpc": "TODO",
+   "source": "https://www.dir-lab.com/ (4D-CT 10例, inhale/exhale 300 手工 landmark/对, 1.0×1.0×2.5mm; 公开免费, 官网可达性中训前确认)",
+   "used_by": [
+    "fmreg"
+   ],
+   "purpose": "FMReg 肺配准【TRE 金标准 benchmark】; FM 少步配准在肺 4DCT 是真空地",
+   "status": "todo"
+  },
+  "learn2reg": {
+   "name": "Learn2Reg benchmark",
+   "n": null,
+   "local": "TODO 待下载",
+   "hpc": "TODO",
+   "source": "https://learn2reg.grand-challenge.org/ (多任务: OASIS脑/AbdomenCT-CT/AbdomenMRCT跨模态/肺CT/LUMIR脑/ReMIND超声-MRI; 公开 leaderboard + 官方 baseline; 指标 TRE/Dice/DSC30/HD95/%|J|≤0/SDlogJ 几何均值排名)",
+   "used_by": [
+    "fmreg"
+   ],
+   "purpose": "FMReg 多任务配准框架来源; 子集 oasis/abdomenmrct 已单列; leaderboard 对照 VoxelMorph/TransMorph/LapIRN/uniGradICON",
+   "status": "todo"
+  },
+  "yuan_input_data": {
+   "name": "袁老师输入数据 (QuantImmuBench 工具测试输入)",
+   "n": null,
+   "local": "TODO 待袁老师提供",
+   "hpc": "TODO",
+   "source": "袁老师提供（团队内部）",
+   "used_by": [
+    "quantimmu-bench"
+   ],
+   "purpose": "5 个新抗原免疫原性预测工具(PredIG/DeepImmuno/pTuneos/IMPROVE/NeoTImmuML)的正式测试输入；到位后按各工具格式(CSV/TSV/FASTA/VCF)做转换。数据未到前先用各工具自带 bundled example 烟测",
+   "status": "todo",
+   "note": "需肽段序列+HLA allele(多数工具);pTuneos 需全基因组 WES/RNA-seq;格式转换脚本放 project/meeting/QuantImmuBench/scripts/"
+  },
+  "quantimmu_neoantigen_public": {
+   "name": "新抗原免疫原性公开 benchmark 数据集合 (5 集已下)",
+   "n": "IEDB 573409行 / ITSNdb 199肽(129阳70阴) / VDJdb 197729行(2068唯一肽) / PRIME训练 596阳+6084阴+58905random / dbPepNeo2补充113候选",
+   "local": "project/meeting/QuantImmuBench/data/external/ (1.8G; tcell_full_v3.csv 1.3G + ITSNdb/ + vdjdb/ 406M + PRIME/{TableS4,TableS3}.xlsx + dbPepNeo2_Table1.xlsx)",
+   "hpc": "TODO 未上传(对外传输拍板点;多为CPU推理本机够)",
+   "source": "IEDB=http://www.iedb.org/downloader.php?file_name=doc/tcell_full_v3.zip(免费需引) | ITSNdb=github.com/elmerfer/ITSNdb(repo LICENSE) | VDJdb=github.com/antigenomics/vdjdb-db release 2026-06-11-ZENODO(AGPL-3.0) | PRIME训练=data.mendeley.com/datasets/2kmmjp4tmm/1 SuppTables.zip(CC BY 4.0) | dbPepNeo2补充=ndownloader.figshare.com/files/34794049(CC BY 4.0)",
+   "format": "IEDB csv双行表头(Epitope/Name肽,Qualitative Measurement标签,Quantitative measurement稀疏) | ITSNdb csv(Neoantigen/HLA/NeoType) | PRIME xlsx(Mutant/Allele/Immunogenicity,第2行表头) | VDJdb tsv(antigen.epitope/mhc.a/vdjdb.score)",
+   "used_by": [
+    "quantimmu-bench"
+   ],
+   "purpose": "工具定量benchmark的GT源+泄漏对照。统一GT schema见reference/UNIFIED_GT_schema.md,加载器scripts/load_unified.py。⚠️magnitude连续回归GT命门FAIL(IEDB肿瘤functional连续正例仅6条/3study,见PHASE0_iedb_fillrate_MEASURED.md)→退守序数/响应频率",
+   "leakage_warn": "⚠️公开源几乎全撞IEDB:ITSNdb 197肽中181(92%)现于IEDB、114(58%)现于PRIME;PRIME-real 6387中3845(60%)现于IEDB。真held-out靠本地ELISpot DS1/DS2+TESLA+leave-study-out;必(肽+4位HLA)去重+承认pseudo-leakage",
+   "extract_size_warn": "IEDB zip 43M→解压csv 1.3G;VDJdb全表406M。盘D:仅~27G空余,只留派生量",
+   "status": "partial (5集已下;NEPdb/harmonized/dbPepNeo2全库/TESLA/NeoTImmuML训练集 TODO需Playwright/邮件/账号)"
+  },
+  "lidc_idri": {
+   "name": "LIDC-IDRI",
+   "n": "1018 CT (4-annotator 结节标注)",
+   "local": "D:/YJ-Agent/project/meeting/DisagreePred/data/LIDC_subset (150 scan/15G,2026-06-19扩);派生件 results/patches 289npy + results/a2_seg_masks 289 + lidc_disagree_labels.csv",
+   "hpc": "/gpfs/work/bio/jiayu2403/disagree/ (2026-06-19传~25M派生件:results/patches 289npy + a2_seg_masks 289 + lidc_disagree_labels_hpc.csv[patch路径改写HPC绝对];非原始DICOM。KILL-1 job1471101)",
+   "source": "TCIA 公开免费 https://www.cancerimagingarchive.net/collection/lidc-idri/ ; 全集 1018 CT ~124GB(过大不下,用户拍板); 4 医师独立标注; pylidc cluster_annotations tol默认=slice_thickness(文档写pixel_spacing是bug); 存在性分歧65.2%(2669被标结节仅928获4/4一致,Armato2011 PMC3041807; 旧稿margin0.22=Dong2017边缘评分分歧≠存在性,勿混). 【精简路径(2026-06-18 researcher探,避124GB)】①XML-only<200MB=pylidc无DICOM纯查k分歧标签+坐标(免费,先算分布) https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=1966254 ②DICOM-LIDC-IDRI-Nodules 2.51GB=per-annotator SEG mask(非CT像素) https://www.cancerimagingarchive.net/analysis-result/dicom-lidc-idri-nodules/ ③KILL-1需CT图像patch→NBIA子集下~150-200 scan≈18-30GB(MIC-DKFZ/LIDC-IDRI-processing保per-annotator). ④LUNA16衍生丢标注者身份不可用/QUBIQ无肺结节排除",
+   "split": "立项后定 (KILL-1 baseline 先行)",
+   "used_by": [
+    "disagree"
+   ],
+   "purpose": "DisagreePred 主 benchmark: 预测 4-annotator 分歧本身(非 majority-vote 取 GT)。KILL-1 gating=下载后跑分歧可预测性 baseline,AUROC≤0.60 即砍。QUBIQ 备用第二集验普适",
+   "status": "todo"
+  },
+  "cholec80_spr": {
+   "name": "Cholec80 (SPR, LoViT features + phase labels)",
+   "n": 80,
+   "local": "project/meeting/delta-statetrack-probe/data/cholec80/ (features/videoNN.pkl x80 [768,T,1,1] 1fps + phase_annotations/videoNN-phase.txt x80 25fps 7类) 已下齐",
+   "hpc": "TODO",
+   "source": {
+    "features_LoViT": "https://emckclac-my.sharepoint.com/:f:/g/personal/k21073807_kcl_ac_uk/EpShcwpjssRGomJdcEhfZ68B6bNAt_WAVKfOrtrUfI-Bgw?e=YPJNpf (Spatial_feature_Cholec80.zip 496MB, 匿名直连可下, pkl [768,T,1,1] ViT-B/16 768d 1fps; repo github.com/MRUIL/LoViT)",
+    "labels_CAMMA_form": "https://docs.google.com/forms/d/1GwZFM3-GhEduBs1d5QzbfFksKmS1OqXZAz8keYi-wKI (phase_annotations videoNN-phase.txt Frame<TAB>Phase 25fps 7类; CC-BY-NC-SA, 需CAMMA审批; email camma.dataset@gmail.com)",
+    "label_format_ref": "github.com/CAMMA-public/TF-Cholec80",
+    "labels_Kaggle_ganumatta": "kaggle datasets download ganumatta/cholec80 -f phase_annotations/videoNN-phase.txt (松散文件可单独下,~1MB/个,免CAMMA审批,CC-BY-NC-SA合规)"
+   },
+   "used_by": [
+    "delta-statetrack-probe"
+   ],
+   "purpose": "Crux2 SPR 手术阶段识别状态追踪验证 (spr_probe.py)。layout: <root>/features/videoNN.pkl + <root>/phase_annotations/videoNN-phase.txt",
+   "status": "ready-local (特征LoViT+标签Kaggle ganumatta 各80, e2e CPU smoke PASS); HPC上传+GPU 5臂run 待拍板"
+  },
+  "abide_i_cc200": {
+   "name": "ABIDE-I preprocessed (CPAC/filt_global, CC200 atlas) — ASD 功能连接组分类",
+   "n": "871 被试 (ASD=403/TD=468), FC shape (871,200,200)",
+   "local": "project/meeting/HyperFidBench/data/external/abide1/ (nilearn fetch_abide_pcp 直下 871 rois_cc200 .1D); 派生 FC=vendor/BrainGB/examples/datasets/ABIDE/abide.npy",
+   "hpc": "TODO 未上传 (上传=对外传输拍板点)",
+   "source": "preprocessed-connectomes-project.org 免登录 (nilearn datasets.fetch_abide_pcp pipeline=cpac, band_pass_filtering=True, global_signal_regression=True, derivatives=rois_cc200); S3 备选 s3.amazonaws.com/fcp-indi/data/Projects/ABIDE_Initiative/Outputs/cpac/",
+   "used_by": "hyperfid (BrainGB 泳道, Gate1)",
+   "status": "ready (本地)"
   }
+ },
+ "fetal_us_seg": {
+  "subsets": "PSFHS(耻骨联合+胎头,像素mask) / HC18(胎儿头围,椭圆GT填mask) / FUGC(宫颈超声,需申请)",
+  "local": "PSFHS: project/meeting/_run011_pilot/data/PSFHS/PSFHS/{image_mha,label_mha}/ (2716 .mha=1358图+mask) ; HC18/FUGC TODO",
+  "source": "PSFHS=Zenodo 10969427(免申请132MB) ; HC18=Zenodo 1322001(免申请,training_set.zip 133MB+test_set.zip) ; FUGC=Zenodo 14305302(需签协议邮件 fugc.isbi25@gmail.com)",
+  "purpose": "FetalSSBench 胎儿超声半监督分割统一benchmark主战场(候选A). 候选C(speckle)用 BUSI Kaggle+Nakagami合成; 候选B(OOD)用 BraTS-Africa/M&Ms 不在此条.",
+  "status": "partial (PSFHS ready, HC18 todo下, FUGC 需申请)"
+ }
 }
