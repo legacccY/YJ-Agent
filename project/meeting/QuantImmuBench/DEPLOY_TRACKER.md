@@ -88,9 +88,9 @@
 | 工具 | clone | 环境 | 权重 | example 烟测 | 4类信息 | 状态 | 阻塞 |
 |---|---|---|---|---|---|---|---|
 | PRIME | ✅ | ✅ `envs/prime` | ✅(随repo) | ✅ **r=1.0** | ✅ | **SMOKE_PASS** | 无（PRIME2.1+MixMHCpred3.0 跑通，147 行对账官方 diff=0）|
-| ImmuneApp | ☐ | ☐ | ✅随repo | ☐ | ✅ | **调研完成·待部署** | TF1.15+Keras2.3.1 Py3.7 老环境（Linux only）|
-| deepHLApan | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署** | keras2.0.8×TF2.7.2 版本地狱 → 走官方 Docker `biopharm/deephlapan:v1.1` |
-| HLAthena | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署(proxy)** | ⚠️ 只预测提呈非免疫原性→仅 presentation baseline；无 GitHub，Docker `ssarkizova/hlathena-external` |
+| ImmuneApp | ✅(tarball) | ✅ `envs/immuneapp` | ✅随repo | ✅ | ✅ | **SMOKE_PASS** | 无（HPC py3.7+TF1.15.0 跑通，出 Immunogenicity_score；坑=staged 装 TF 防 pip 回溯）|
+| deepHLApan | ✅(Docker镜像) | ✅(镜像内) | ✅ | ✅ | ✅ | **SMOKE_PASS** | 无（本机 WSL2 docker `biopharm/deephlapan:v1.1` 跑通 binding+immuno 双分；坑=outdir 须先建）|
+| HLAthena | ✅(Docker镜像) | ✅(镜像内) | ✅ | 🟡 | ✅ | **镜像就绪·待 smoke(proxy)** | ⚠️ 只预测提呈非免疫原性→仅 presentation baseline；镜像 `ssarkizova/hlathena-external:dev`(2.35G) 已拉，有 predict 脚本待勘察调用 |
 | MHLAPre | ✅(15M) | ☐ | ❌缺 | ☐ | ✅ | **阻塞坐实** | 🔴 clone+inspect 确认：无 .pt 权重 + `ProcessData/Transfer_data/*.npy` 缺（README 明示太大需邮件作者）→ 跑不通。已摸清列名(Epitope/MHC Restriction/Assay，代码读 Antigen 列需改名) |
 
 ### 部署排序（易→难）

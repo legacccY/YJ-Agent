@@ -25,7 +25,7 @@
 - 高置信新抗原定义：immunogenicity >0.5 AND binding 排名 top20
 - 分数类型：连续 0–1（两个分数）
 - **能否定量免疫强弱**：✅ 是（immunogenicity score 连续）← 项目核心目标
-- **实测输出样例**：TODO（README 未列精确输出列名，需跑 demo 确认）
+- **实测输出**（WSL2 docker SMOKE_PASS）：`<name>_predicted_result.csv` = `Annotation,HLA,Peptide,binding score,immunogenic score`（例 `MKRFVQWL HLA-C07:02 binding=0.9919 immunogenic=0.972`）+ `_predicted_result_rank.csv`（加 rank 列，按 binding 降序）
 
 ## 4. 简介（特点 / 优势）
 - 方法：3 层双向 GRU（BiGRU）+ attention
@@ -41,8 +41,10 @@
 - 外部许可证工具：无
 - GPU 需求：训练需 GPU（CUDA9/cuDNN7 旧版）；推理 CPU 可
 - **部署难度坑**：keras2.0.8（2017）+ TF2.7.2（2021）已知不兼容（Issue #9「Error in loading the saved optimizer state」）→ **官方推荐 Docker `biopharm/deephlapan:v1.1`** 绕版本地狱
-- 部署状态：调研完成，待部署（建议走官方 Docker）
-- example 烟测 job_id / 路径：TODO
+- 部署状态：✅ **SMOKE_PASS（2026-06-24 本机 WSL2 docker）**。镜像 `biopharm/deephlapan:v1.1`（2.44G，内置 **Python2.7 + TF1.12**，自解了 keras/TF 版本地狱——比 conda 路强）。CLI `/usr/local/bin/deephlapan`。
+- **坑（实测）**：`deephlapan -F file -O outdir` 的 outdir **必须先存在**（工具不自建，否则 `IOError No such file`）→ 先 `mkdir -p`。
+- example 烟测：`deephlapan -F demo/1.csv -O /out` → demo（`Annotation,HLA,peptide`）出 binding+immunogenic 双分。
+- HLA 格式 `HLA-A01:01`（无星号，实测确认）。
 - 许可：GPL-2.0（衍生品须同 GPL-2.0 开源）
 
 ### TODO（researcher 标）
