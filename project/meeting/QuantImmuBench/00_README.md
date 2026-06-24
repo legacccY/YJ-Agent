@@ -22,12 +22,16 @@
 - **QuantImmu 组**：徐伊琳 —— HPC 部署 QuantImmune 模块
 - **数据收集组**：王子源、谢孟翰 —— 文献搜索 + 数据收集（袁老师提供输入数据）
 
-## 当前状态
-- **阶段**：部署 + example 烟测（袁老师输入数据未到 → 先用各工具自带 example 跑通）
-- **硬阻塞**：
-  1. **netMHCpan / PRIME 等学术许可未到位** → pTuneos + IMPROVE 硬依赖，需先申请（见 `DEPLOY_TRACKER.md` 许可清单），排在 Wave 2。
-  2. **NeoTImmuML 官方源码 URL 未公开** → 需进 tumoragdb.com.cn 站内找（TODO）。
-  3. **袁老师输入数据待给** → 到位后第二阶段做格式转换 + 正式测试。
+## 当前状态（2026-06-24 更新，详见 04_LOG Entry 19/20）
+- **阶段**：✅ **5 工具全部部署 + 跑通 ELISpot benchmark**（用各工具自带 example + ELISpot 数据集）；PPT + Word 报告成型。
+- **许可/依赖均已解决**（不再是阻塞）：
+  1. **netMHCpan-4.1 / 4.0 / 2.8 已装 + 跑通**（netMHCpan-4.0 随 pTuneos 镜像内置免单独申请）；**PRIME / MixMHCpred 学术免费，已 clone**。pTuneos example VCF 端到端 + Pre&RecNeo 跑 ELISpot 进 benchmark（对账官方 r=1.0）。
+  2. **NeoTImmuML 官方源码已找到**（github.com/01SYan19/NeoTImmuML，Playwright 进 tumoragdb.com.cn 抓出）。
+- **遗留（非阻塞 / 小缺口）**：
+  - **netMHCstabpan-1.0** 仍 glibc 挡（HPC el8 仅 glibc 2.28，需 ≥2.29）→ 仅 IMPROVE feature_calc 的 Stability 特征用它，Predict 步与 benchmark 不受影响。
+  - **pTuneos HPC 真跑** 受 singularity 非 root/fakeroot 限制（本地 WSL2 docker 已端到端验证）。
+  - **袁老师输入数据待给** → 到位后第二阶段做格式转换 + 正式测试。
+- ⚠️ 许可红线：netMHCpan/stabpan 学术许可禁再分发（含其跑出的数字），投稿前取 DTU 书面同意（见 `PROVENANCE.md` / `DEPLOY_TRACKER.md`）。
 
 ## HPC / 部署规范
 - HPC：`dtn.hpc.xjtlu.edu.cn` / 用户 `jiayu2403` / 分区 `gpu4090`（详见 `project/HPC_WORKFLOW.md` + memory `project_hpc_xjtlu`）。
