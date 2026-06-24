@@ -152,8 +152,8 @@ KILL-4 (资源): 若 [算力/时间] 超出预算 [X GPU·h / Y 周] 仍无 PASS
 
 **用法（关键，防两头矫枉过正）**：
 - 低 Ceiling **不在 G3 直接砍**——扎实的 B-venue 好题仍是真论文，只**诚实标档**，不让它冒充顶会 slot（CVPR 2026 Findings track 实操：solid-but-incremental 自愿进 Findings，不当 main-track 胜）。
-- 但 G3 re-rank **保底**：≥1-2 个 `MAIN` 候选必须晋级 G4，即使 Swiss 名次较低（标 `lane=high_variance`）。直接对冲 pairwise judge 的风险厌恶——保守 benchmark 题在两两比较里天然更易胜（[Si et al.] + Swiss 系统性偏差 [arXiv:2410.19333](https://arxiv.org/html/2410.19333v1)），不保底就会把顶会苗子全埋掉。
-- 70-20-10 portfolio：不强制每题都去风险到安全档；留 transformational 通道（[innovation portfolio](https://www.acceptmission.com/blog/innovation-portfolio-management-guide/)）。
+- **G3 MAIN-tier 保底晋级 = opt-in（2026-06-24 路 B 校准，见 [[STRATEGY_MEMO_2026-06-24]]）**：**仅当本轮宪章 E 节 `risk_quota` 显式留了 A 族 side-bet 槽**，才强制晋级 ≥1 个 `MAIN` 候选进 G4（标 `lane=high_variance`，对冲 pairwise judge 风险厌恶 [Si et al.] + Swiss 偏差 [arXiv:2410.19333](https://arxiv.org/html/2410.19333v1)）。**默认路 B 轮（A 族槽=0）不强塞**——让漏斗自然导向 B 族 benchmark/empirical（约束下最高成功率，组合台死活对照实证：A 族大胆题全死、B 族全活）。ceiling_tier 评分本身仍跑（诚实标档是有用信息），只是不再用它强行保送 A 族。
+- portfolio 配比由宪章 `risk_quota` 定（默认 ≈85% B / 15% A，非旧 70-20-10）；要冲 transformational 通道须开 side-bet 槽显式留痕（[innovation portfolio](https://www.acceptmission.com/blog/innovation-portfolio-management-guide/)）。
 
 ---
 

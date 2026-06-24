@@ -4,17 +4,18 @@
 
 ---
 
-## 🔖 续跑指南（下一窗口开门必读，2026-06-18 收工更新）
+## 🔖 续跑指南（下一窗口开门必读，2026-06-24 重投后更新）
 
-**当前态**：G2-A gating job **1461174 已 scancel 杀掉**（200ep 太慢——arm_A 单臂 6h13m 还没落 ckpt，stdout 全缓冲看不到 epoch，8 单元 A+B+C+DE(5×) 投影远超 walltime）。slot `a54df04b` 已 release，**无 job 在跑**。
+**当前态**：G2-A gating **已重投 = job 1489821**（2026-06-24，100ep + time 72h + `-u` + per-epoch state.json）。slot `9a1c6844`（hpc 1 卡）持有中。提交时 PD（排队等调度）。**监控盲已解**：脚本现每 logged epoch 写 `gate1_results/g2a_state.json`（arm/seed/epoch/loss/ts）+ print flush=True + submit `python3.10 -u`。
 
-**关键发现**：qos `4gpus` MaxWall = **7 天**（不是 24h）；旧 submit 脚本自己写死 `--time=24:00:00` 才是假瓶颈。HPC 上 `submit_g2a.sh` 仍是旧版（time 24h / epochs 200），**重投前必改**。
+**下窗第一步——监控 job 1489821**（凭证见 `project/HPC_WORKFLOW.md`）：
+1. paramiko 看 `squeue -u jiayu2403`（PD→R？）+ `cat gate1_results/g2a_state.json`（看到 epoch 推进=真跑）+ `tail logs/1489821.out`。
+2. 跑完拉 `gate1_results/gate1_g2a_fourarm.csv` + verdict.txt + png → 本地 `gate1/results/` → 派 **analyst** 判（禁 Read 核数，Bash/Grep）。
+3. `gpu_slot.py release 9a1c6844` 清账。
 
-**下窗第一步——重投 G2-A**（用户拍 B=减 epoch 重投；凭证见 `project/HPC_WORKFLOW.md`：dtn.hpc.xjtlu.edu.cn / jiayu2403 / pxXd3VGhbB）：
-1. `gpu_slot.py request fmreg hpc 1` 申卡槽（GO 即起 / QUEUED 即排队）。
-2. 改 HPC `/gpfs/work/bio/jiayu2403/fmreg/submit_g2a.sh`：`--time=24:00:00 → 72:00:00`、`--epochs 200 → 100`（砍半探针，跨臂相对比较仍公平；72h 用 7 天余量兜底确保跑完）。
-3. `sbatch submit_g2a.sh` → 记新 jobid 写进本指南。
-4. **建议**：脚本中途无 per-epoch state.json/flush → 监控盲。重投前可让 coder 给 `gate1_g2a_fourarm.py` 的 print 加 `flush=True`（或 submit 用 `python3.10 -u`）+ 每臂 epoch 末写 state.json，下窗能看 epoch 不抓瞎（<15 行，非必须但强烈建议）。
+**预登记 gating 门**（不事后改）：`rho_C 显著>rho_DE(强baseline,CI不重叠 or p<0.05) AND rho_C>rho_B AND AUSE_C<AUSE_DE AND ECE_C<ECE_DE AND dice_C≥dice_A−0.02` → PASS 报用户拍阶段2全量(~500 GPU·h)；FAIL(强baseline反超)→诚实降 TMLR analysis 不洗（ACCEPTANCE §A0′）。
+
+**历史**：旧 job 1461174（200ep）已 scancel（太慢+监控盲）；qos `4gpus` MaxWall=7天（旧 submit 写死 24h 是假瓶颈，已改 72h）。
 
 **结局分支**（重投跑完后）：
 1. **csv 出 verdict**：拉 `gate1_results/gate1_g2a_fourarm.csv`+verdict.txt+png 回 `gate1/results/` → 派 **analyst** 判（禁 Read 核数，Bash/Grep）。预登记门：`rho_C 显著>rho_DE(强baseline) AND >rho_B AND AUSE/ECE方向一致 AND dice_C≥dice_A−0.02`。PASS → 报用户拍阶段2全量(~500 GPU·h，见 `05_Gate1_matrix.md`)；FAIL(强baseline反超) → 诚实降 TMLR analysis 不洗（ACCEPTANCE §A0′ 预登记）。
@@ -25,6 +26,24 @@
 **关键文件**：脚本 HPC `code/gate1_g2a_fourarm.py` / 本地 `gate1/gate1_g2a_fourarm.py`（含 `--epochs/--arm/--phase`，ckpt 只在单臂全 epoch 完后落盘 line 816-819）；submit `HPC:fmreg/submit_g2a.sh`；设计真源 `05_Gate1_matrix.md`；判据 `02_ACCEPTANCE.md` §A0′；K0 史见 Entry 5。HPC 数据 `/gpfs/work/bio/jiayu2403/fmreg/data/IXI/IXI_data/`（已传，免传）。
 
 **别动**：BMVC 封印。
+
+---
+
+## Entry 8 — G2-A gating 重投 job 1489821（2026-06-24）
+
+按 Entry7 续跑指南执行重投。
+
+**监控盲修复**（解 Entry7 根因：stdout 全缓冲看不到 epoch）：`gate1_g2a_fourarm.py` 加
+- `import json` + 全局 `_STATE_PATH` + `_log_state()` helper（每 logged epoch 写 `gate1_results/g2a_state.json`：arm/seed/epoch/n_epochs/loss/ts）
+- 三个 train_arm_A/B/C 循环 print 加 `flush=True` + 调 `_log_state()`
+- run() 设 `_STATE_PATH = out_dir/g2a_state.json`
+- 共 +22 行，py_compile + CPU smoke 端到端通过，state.json 正确写入（last=arm C ep3）。
+
+**submit_g2a.sh 改**：`--time 24h→72h`、`--epochs 200→100`、`python3.10 → python3.10 -u`。
+
+**执行**：`gpu_slot request fmreg hpc 1` → GO `9a1c6844`（剩3卡）。paramiko 上传脚本（1589行）+ 重写 submit + `sbatch` → **job 1489821 PD**（gpu4090，排队等调度）。HPC 上传新代码=拍板点，用户「授权跑」放行。
+
+**下一步**：监控 job（squeue PD→R + g2a_state.json 看 epoch）→ 跑完拉 csv → analyst 判预登记门 → release slot。
 
 ---
 

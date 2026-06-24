@@ -38,12 +38,24 @@
 - **退路档（保）**：______（TMLR / MedIA / workshop / D&B track / ICBINB…）
 - **判据**：若一个候选"只有顶会档没有体面退路档"→ 风险过高，G3 降权。
 
-## E. 风险偏好（本轮要什么样的候选）
+## E. 策略类目标 + 风险配额（硬字段，开轮即定，G1 配额据此扇出）
 
-- [ ] **策略 A（低风险高执行）**：成熟方向做到比所有人好 —— 需执行力碾压
-- [ ] **策略 B（高风险高回报）**：押下一个可能火的方向 —— 需方向判断领先
-- **本轮配比建议**：__% A / __% B（如 70/30，组合台连栽 4 个大胆 claim，建议本轮提高 A 占比稳住）
-- **可接受的最坏结局**：______（如"至少能落一篇退路档 workshop"=底线）
+> 2026-06-24 路 B 校准（见 [[STRATEGY_MEMO_2026-06-24]]）：组合台死活对照 + 外部门槛调研确认——对 1-4 GPU 本科生 + 生信背景，**benchmark/empirical/application 是约束下成功率最高的主力策略**，A 族大胆 novelty 是最低成功率档。默认路 B：主力产 B 族，A 族仅占显式 side-bet 槽。
+>
+> 成功率排序（带引用见 memo）：benchmark ⭐⭐⭐⭐⭐ > empirical ⭐⭐⭐⭐ > application ⭐⭐⭐⭐ >> incremental ⭐⭐⭐ > novel-idea ⭐⭐。
+
+- **`strategy_class_target`**（本轮主力策略类，默认 = 主力 B 族）：
+  - [x] **Benchmark / Dataset**（新数据集或重标注 + baseline 分析；算力最省，成功率最高）
+  - [x] **Empirical study**（复现 + 深度分析，清晰 research question + ≥4-5 baseline）
+  - [x] **Application**（已有方法 → 新域/新数据，投 WACV Application track「系统创新>算法突破」）
+  - [ ] **Incremental 小改进**（已有方法合理改进 + 扎实实验；需实验非常全）
+  - [ ] **Novel idea（A 族大胆新方法）**——⚠️仅作 side bet，默认**不开**；要开须在下方 `risk_quota` 显式留槽 + 明知高死亡率分开记账
+
+- **`risk_quota`**（B 族主力 / A 族 side-bet 比例，默认 **≈85% B / 15% A**，**非** R8 旧 70-20-10）：__% B 族 / __% A 族 side bet
+  - 默认路 B 轮：A 族 = 0 或仅 1 个显式 side-bet 槽；G3 **不强制保底**晋级 A 族苗子（见 R8 用法 opt-in）。
+  - 若本轮要冲顶会 main-track，显式开 A 族槽并写明：明知 high-risk novelty 是最低成功率档，接受高死亡率 + 更多算力/时间。
+
+- **可接受的最坏结局**：______（如"至少能落一篇 ACCV/WACV/D&B"=底线）
 
 ## F. 默认 Kill Criteria（事前写死，G2-G5 机器执行）
 

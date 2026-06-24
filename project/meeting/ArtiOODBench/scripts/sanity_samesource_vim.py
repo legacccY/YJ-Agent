@@ -22,6 +22,7 @@ Sanity 负对照：检验 A-5 承重 ViM=1.0 是否被「in-sample vs out-of-sam
 
 输出：results/sanity_samesource_vim.csv
 """
+import csv
 import sys
 from pathlib import Path
 import numpy as np
@@ -69,9 +70,9 @@ def _vim_auroc(feats_fit, logits_fit, feats_id_test, logits_id_test,
 def main():
     rng = np.random.RandomState(SEED)
     rows = []
-    hdr = ("modality,source_A,source_B,control,vim_auroc,resid_auroc,"
-           "n_fit,n_id_test,n_ood,note")
-    print(hdr)
+    hdr = ["modality", "source_A", "source_B", "control", "vim_auroc", "resid_auroc",
+           "n_fit", "n_id_test", "n_ood", "note"]
+    print(",".join(hdr))
 
     for modality, dsA, dsB in TRIPLETS:
         fA, lA = _load(dsA)
@@ -119,11 +120,11 @@ def main():
                      v, r, half, nA - half, len(fB),
                      "fit=A前半; id-test=A后半(held-out); ood=B(跨源). 正确协议=真 source 信号"))
 
-    with open(OUT_CSV, "w", encoding="utf-8") as f:
-        f.write(hdr + "\n")
+    with open(OUT_CSV, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(hdr)
         for row in rows:
-            line = ",".join(str(x) for x in row)
-            f.write(line + "\n")
+            writer.writerow([str(x) for x in row])
             print(f"  {row[0]:11} {row[3]:34} ViM={row[4]:.4f}  Resid={row[5]:.4f}")
 
     print(f"\n[OUT] {OUT_CSV}")

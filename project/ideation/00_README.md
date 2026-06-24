@@ -26,6 +26,8 @@
 
 5. **【2026-06-18 新增】只量下风险、塌成 benchmark 工厂** —— 前 4 闸全是「会不会死」的硬闸，没一道量「活了够不够顶会」。5 轮幸存者全 benchmark/分析型（selinf→TMLR/D&B、disagree、ArtiOODBench），能上 CVPR/NeurIPS main-track 的 method/theory 型（A 族）全死在 G5。**矫枉过正成另一种病**。→ **R8 顶会天花板维度（G3 surface + MAIN-tier 保底配额 + G4 上风险红队 + G6 按 tier 定档）** 补上风险闸；**R9 kill-shot 三分流（KILL/GRAY/KILL-proxy + 强制功效声明）** 防 <1 GPU·h pilot 假阴性误杀顶会苗子。两者互为平衡：找出 CVPR 苗子，但天花板信号必须举证（防 LLM novelty 自评虚高泡沫），且不放松干净 KILL 纪律。
 
+   > **【2026-06-24 路 B 校准，覆盖上面对 ⑤ 的处方，见 [[STRATEGY_MEMO_2026-06-24]]】** 外部门槛调研 + 组合台死活对照后翻案：把 ⑤「benchmark 工厂」当病是**误判**。死活对照极干净——A 族大胆 novelty 押命门的项目（NCA-JEPA/NCA-PhaseMap/DisagreePred/delta/MedAD）**全死**，benchmark/empirical（quantimmu/ArtiOOD/selinf）**全活**；外部证据：1-4 GPU 本科生策略成功率 benchmark>empirical>application>>incremental>novel-idea，而 ACCV/WACV 二梯队**不要求 radical novelty**（WACV Application track 官方「OK not to have algorithmic novelty」）。**结论：对余嘉约束 benchmark/empirical 是最优主力策略，不是病。** R8 的「MAIN-tier 强制保底晋级」降为 **opt-in**（仅宪章 E 节显式开 A 族 side-bet 槽才保底），默认轮让漏斗自然导向 B 族。R8 ceiling 评分 + R9/R10 保留（仍是有用信息/纪律）。**注意 R8 原文与本注意图相反，以本注为准，避免冷窗口重蹈 R8 摇摆。**
+
 > 核心理念：**把组合台现有的"事后才严"（verifier/reviewer/stage-gate 极诚实极能杀，但杀在闸口）提前到"事前就严"。** 立项门槛建在证据上，不建在希望上。
 > **双向平衡（别矫枉过正）**：下风险硬闸杀「会死的」，上风险维度（R8）surface「能上顶会的」，kill-shot 三分流（R9）保护「被小实验误判的」。既不退回拍脑袋大胆全死，也不塌成只活 benchmark 安全题。
 
@@ -118,6 +120,8 @@ G0 宪章把搜索空间一次性钉死：领域边界、**硬排除清单**（N
 | S5-salvage | B | **run-006 C107（NCA-JEPA死项目→OOD benchmark artifact污染）** | ✓ 立项 ArtiOODBench | — |
 
 > 注：selinf/disagree/nca-phasemap 精确策略 tag 为 inferred（主线据现象型归 B 族），run-002/003 pool 有真 tag 以真 tag 为准。每轮补录：「哪策略产的，存活/死亡 + 死因」。配额按此表数据在下轮 G0 宪章时动态调。
+
+> **【2026-06-24 跨轮策略类复盘，见 [[STRATEGY_MEMO_2026-06-24]]】** 按「策略类（非 S-tag）」重新归类全组合台死活：**A 族 high-risk novelty 押命门 → 全死/退**（NCA-JEPA、NCA-PhaseMap、DisagreePred、delta-statetrack、MedAD-FailMap）；**B 族 benchmark/empirical → 全活在投**（quantimmu-bench、ArtiOODBench、SelInfBench）；BMVC（窄+post-hoc 增量）= 唯一投出。死活信号压倒性 → 路 B：B 族升主力、A 族降 opt-in side bet。下轮 G0 配额默认 ≈85% B / 15% A（非旧 70-20-10）。
 
 **轮次台账**：
 - `runs/2026-06-17_run-001_nca-wm-medseg-uq/` — NCA-WM/MedSeg-UQ 残值挖

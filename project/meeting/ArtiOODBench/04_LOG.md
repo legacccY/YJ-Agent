@@ -2,6 +2,41 @@
 
 > **核心章节散文草稿指针**：`05_DRAFT_core.md`（writer 出，§Method/§Results/§Discussion-Limitations，paper-ready，venue 无关 md 待落 D&B LaTeX；数字全 verifier 核，2026-06-19）。⚠️ **Entry 10 后此草稿的 A-5「ViM=1.0 完美 source leakage」段落已失效待重写**（in-sample 伪迹，见 Entry 10）。
 
+## Entry 12 — 2026-06-24 投稿冲刺：4 收尾 TODO 清 + held-out A-4 据实校正（逮到 1 真 PASS）+ D&B LaTeX 落地
+
+大编队推进 Entry 11 留的 4 个投稿前收尾 TODO，全部完成；过程逮到一个承重 bug 并据实校正。
+
+**① 引文真实性核查（researcher 联网，BLOCKING）= 全 REAL，skeptic「2604 占位幻觉」判断推翻**：
+- 🔴 **arXiv:2604.04199 真实存在**：Roth 2026「Which Leakage Types Matter? A Quantitative Landscape Across 2,047 Benchmark Datasets」，原文 abstract「Class I (estimation): all nine conditions produce |ΔAUC| ≤ 0.005」——A-7 差异化锚点（N≫D 下 <0.005 vs 本文 N_id<D 放大到 +0.223）**有原文直接支撑，无需替换**。2026-04 论文在知识截止后故被疑幻觉，实存。
+- ViM(2203.10807, CVPR2022 Wang et al)/ImageNet-OOD(2310.01755, ICLR2024 Yang)/OpenOOD(2210.07242, NeurIPS2022 D&B) 全 REAL。
+- 三处引文修正：**OpenMIBOOD(2503.16247) venue 改「arXiv preprint 2025」**（CVPR2025 收录 arXiv 无注解，未确认）；**「Wang 2014 AJE」系笔误 → Lunt 2014 AJE(179(2):226-235)**；**PMC10532230 = Vasiliuk 2023 J.Imaging「Limitations of OOD Detection in 3D Medical Image Segmentation」，IHF=Intensity Histogram Features**（非心衰，draft 用法对，注明）。
+
+**② 🔴 held-out A-4 据实校正（用户拍板=诚实报 held-out 真值，A-7 留承重）**：
+- verifier 三方对账逮到：**draft 的 A-4 段用了 in-sample 数字**（min CI 0.966 / CXR 0.945/0.978/0.775 / derm 0.582/0.720/0.676 / "6 对全 FAIL"——全来自 a4_bootstrap_spearman.csv，in-sample 协议）。但论文全程 held-out，in-sample 把 ViM 冻在 1.0/rank1 压住翻转 = 自相矛盾。
+- 主线用 a4_rank_flip.py 的权威 AND 门逻辑（`(ci_upper<0.7 OR top1掉出top3) AND 机制口径2 spearman≥0.5`；脚本 L254 明确不信 bootstrap csv 旧 A4_verdict 字段）在 held-out csv 上复算 5 可评估对：
+  | 对 | verdict | 依据 |
+  |---|---|---|
+  | NIH_vs_VinDr | FAIL | sp=0.9725, ci_up=1.0, top1 未掉 |
+  | NIH_vs_RSNA | FAIL | sp=0.967, ci_up=1.0 |
+  | VinDr_vs_RSNA | FAIL | sp=0.9396, ci_up=1.0 |
+  | ISIC2020_vs_PAD_UFES | FAIL | sp=0.6374, ci_up=0.9145（全对最小 CI 上界） |
+  | **HAM_NV_vs_ISIC2020 (derm)** | **真 PASS** | sp=0.3736; top1=SHE rank1→rank6 掉出 top3 ✓ + 机制口径2 spearman=1.0 全符合预登记 MDS>KNN/ViM>MSP ✓ |
+  | BraTS / HAM_fitz | INSUFFICIENT | n_matched=8 / 26 <30 |
+- **校正后 held-out A-4 = 4 FAIL + 1 真 PASS(derm) + 2 INSUFFICIENT**，非 draft 的「全 FAIL」。原 L3「去污染翻转排名」命门在这一对上**真触发了预登记 PASS**。
+- **拍板点（#4 偏离承重 / #5 stage-gate FAIL→partial PASS）→ 用户拍板=诚实报**：A-4 维持降级 limitation，但据实写出这 1 个 PASS（口径：4 FAIL + 1 低功效 PASS，HAM-ISIC CI=[−0.24,0.94] 结构性低功效，1/5 不足以支撑普适 actionable claim）。**承重不变**（A-1/A-2 现象 + A-7 机制 + A-6 处方），结构性低功效仍当 contribution。反跑偏纪律：不用 in-sample 喂"全 FAIL"，也不把 1 PASS 夸成主结果。
+
+**③ fig_heldout_vim_vs_artifact 重出 n=7**：新建 scripts/plot_heldout_vim_vs_artifact.py，7 点（artifact-only vs held-out ViM），标 ρ=0.821/r=0.955，NIH/RSNA honest-negative 橙三角 + chance=0.5 虚线，覆盖旧 n=4 版。主线跑出 + QA 过。
+
+**④ sanity_samesource_vim.csv note 列逗号修**：coder 改 sanity 脚本 csv.writer 加引号 + 一次性 _fix_sanity_csv_quote.py 修存量 csv，note 列含逗号值已加双引号，下游 parser 不再错切 resid_auroc。
+
+**⑤ D&B LaTeX 落地（writer）**：新建 `paper/main.tex`（NeurIPS D&B 骨架，neurips_2024 style + article fallback）+ `paper/refs.bib`（8 条 REAL bibtex）。全节：Abstract(~210词,单一叙事弧)/Introduction/Related Work(正面对齐 ImageNet-OOD+OpenMIBOOD+Vasiliuk+ViM train-fit+Roth taxonomy)/Method/Results(含 held-out A-4 校正口径 + 4 图)/Discussion/Conclusion。Method/Results/Discussion port 自 05_DRAFT_core.md。05_DRAFT_core.md 的 A-4 段同步改 held-out 口径（in-sample 读数降脚注）。A-7 严守 skeptic 收窄红线（不 claim 发现 held-out）。verifier 抽查 main.tex 承重数字（0.777/+0.223/0.406/held-out throughout/A-4 四 FAIL一 PASS）零 drift。
+
+**资产**：paper/main.tex + paper/refs.bib（新）+ 05_DRAFT_core.md（A-4 改 held-out）+ scripts/plot_heldout_vim_vs_artifact.py + scripts/_fix_sanity_csv_quote.py（新）+ figures/fig_heldout_vim_vs_artifact n=7（覆盖）+ results/sanity_samesource_vim.csv（加引号）。4 张 paper 图（fig_a1/fig_heldout_insample_delta/fig_heldout_vim_vs_artifact/fig_heldout_heatmap_13x7）全在 figures/。
+
+**收尾 TODO（投稿前，非阻断）**：①官方 neurips_2024.sty 放 paper/ 才能 final 编译（现走 article fallback）②**held-out A-4 权威 verdict 应固化成 csv**（a4_rank_flip.py 现只跑 in-sample 7 法，建议派 coder 加 --protocol heldout + 13 法支持，emit a4_rank_flip_heldout.csv 入投稿复现包；本轮 verdict 是主线 inline python 复算，逻辑可复现但未落盘）③main.tex 编译一遍查 LaTeX 报错/图路径 ④可选 reviewer 对成稿对抗审一轮。
+
+---
+
 ## Entry 11 — 2026-06-19 ~17:40 held-out 全矩阵重跑（用户拍板「held-out 重算 + 银边升主线」）→ A-5 strict FAIL，承重据实迁移
 
 **用户拍板**：option ① held-out 重算 + 把 in-sample 灌水升为新 benchmark-critique 主贡献。

@@ -1061,3 +1061,39 @@ chase重跑(manifest修好,有数据)→重跑gate_frangi_verdict两集:
 - 路B(Frangi门):gate FAIL(两集方向相反,不稳健)。
 - 按预登记→benchmark-only诚实降级 或 止损封存。
 - **硬资产**:2D眼底人工断点benchmark(creatis协议+ε_β0/SR/re-ID指标)+诊断方法学(MQAR theory-audit三层防线+precompute merge修复)+诚实负结果(GDN-2视觉首用delta在2D血管不特异+Frangi门拓扑增益不稳健,全预登记证伪)+10集+12baseline+P1官方迁移基建(FR-UNet pipeline+smp backbone+Frangi数值稳定,105测试)。
+
+---
+
+## Entry 32 — 2026-06-24 命门全死后拍板：benchmark-only 诚实降级（用户拍板）
+
+承 Entry 31 gate FAIL。两条命门全死（路A delta 三重死 + 路B Frangi 门 gate FAIL 两集方向相反不稳健）。按 ACCEPTANCE 预登记 stage-gate FAIL 拍板点，**用户拍板：走 benchmark-only 论文**（非止损封存）。
+
+**新定位 = Dataset & Benchmark 稿**：以硬资产立稿——2D 眼底人工断点续连 benchmark（creatis 协议 + ε_β0/SR/re-ID 指标）+ 12 baseline 全谱 leaderboard + 诊断方法学（MQAR theory-audit 三层防线 + 预登记证伪）+ 诚实负结果（GDN-2 视觉首用 delta 不特异 + Frangi 门拓扑增益不稳健）。记忆/Frangi 门从 headline 卖点降为 benchmark 上被评测的方法之一。
+
+**待办（本窗开工）**：① 派编队 scope（researcher=D&B venue 适配+benchmark 稿录用要件；skeptic=红队 benchmark-only claim 够不够强；analyst=盘点哪些 baseline 真在 benchmark 上跑出数 vs 仅设计就绪）② 综合→重定位 STORY headline 草案→用户拍 ③ 补跑缺的 baseline leaderboard。
+
+### Entry 32 续 — benchmark-only 开工：建 leaderboard 地基（2026-06-24）
+
+承上拍板 benchmark-only。三编队 scope 收敛：
+- **researcher**：venue 无 deadline 压力（NeurIPS2026 E&D 已截 5/6）→ 目标 MICCAI2027(~2027/2,CORE A,14月窗)/MIDL2027(~2026/11)/NeurIPS2027 E&D。负结果 benchmark 有直接先例(Touchstone NeurIPS24/Pixel-Wise Metrics NeurIPS25，E&D track 明文收负结果)。2D 眼底「人工断点+续连指标」benchmark 仍空白(PTR=3D肺/creatis=方法论文/MaskVSC TMI25=方法论文非benchmark)。
+- **skeptic 1🔴**：leaderboard 不存在=唯一致命。承重点收窄到「首个 2D 眼底续连评测套件=续连指标族(ε_β0+SR+reID+clDice/Betti)+12基线全谱+预登记诊断方法学(含诚实负结果)」，不押「首个断点benchmark」(PTR占)。先砸「benchmark能否区分方法」命门再立稿。
+- **analyst 实测**：12 baseline 真跑出数=0(全 adapter+yaml 就绪，零结果 csv)。唯2真 csv=旧 re-ID pilot(已FAIL)。`_scratch/` 三臂数据=mock 烟测。
+
+**HPC 家底盘点(SSH 实测)**：5 数据集全在 + baseline 代码已在 HPC(src/baselines) + benchmark npz 103个(5集×4severity) + gate_sweep/route2 结果都在。**缺口=baseline 从没真跑过出 leaderboard csv**。
+
+**用户拍板：先打通 1 条全链路(FR-UNet on DRIVE)再批量**。今天工程：
+1. **建 `src/train_harness.py`**(coder，统一训练台，接口对齐 baseline_job.sbatch.template)：读config→registry取adapter→model/loss/optim→训练循环→best.pth+state.json。30 pytest 绿(含 mini FR-UNet 前向/反向)。
+2. **建断点 benchmark 评测入口**(coder，扩 evaluate.py)：+`--benchmark_dir`+`--severity`，load npz断裂图→跑adapter模型→续连三轴 csv(复用 train_reid_pilot benchmark块+frozen_breaks loader)。20 pytest 绿(主线修 import json 漏 + _FakeAdapter 补3抽象方法)。**注 TODO：reid_head 大图+ours_gdn2 可能超 seq_len，FR-UNet/DRIVE小图不触发，跑通DRIVE再处理。**
+3. **HPC e2e 真烟测**：train_harness+evaluate.py 传HPC编译过。卡槽 GO dcd38137(占1卡)。提 smoke job **1489877**(FR-UNet DRIVE 2ep→best.pth→evaluate --benchmark_dir Medium→csv)，验全链路+续连列非NaN。后台 poll 中。
+
+**待(smoke 出→)**：① 验续连列非NaN+管道不碎 → ② FR-UNet 正式训(epochs=40官方+frunet全局stats cache)打通真链路 → ③ 批量 12 baseline×DRIVE/CHASE×seed≥3 填 leaderboard → ④ 看方法间区分度(skeptic命门：有区分→立稿/挤一团→停下报)。
+
+### Entry 32 续2 — 批0 烟测 PASS + SR 指标隐患（2026-06-24）
+
+**批0 FR-UNet DRIVE 烟测 job 1489877 PASS**：train_exit=0+eval_exit=0，全链路真跑通。train_harness 训 2ep(val_dice0.16欠训正常)→best.pth→evaluate --benchmark_dir Medium→续连 csv 22列 4行(id37-40)，续连列 ε_β0/SR/reID 全非 NaN，管道不碎。核心烟测目标达成（feedback_pytest_green_not_runnable：真数据真跑通非mock）。
+
+**SR 指标隐患（审 csv 逮到）**：SR=1.0 满分而 dice=0.16(se0.83/sp0.24=76%背景误判血管)。根因=success_rate(metrics.py:679)=闭合gap/总gap，_is_gap_closed 只看pred覆盖gap区→过预测blob平凡刷满SR=1.0无判别度。leaderboard 主续连指标不能单用SR，须ε_β0(拓扑连续0.28-1.67有区分)/clDice主判。这正是D&B诊断方法学卖点但须解决=主续连轴用ε_β0。
+
+**次要TODO**：topo_source=fallback_scipy(非official精度待核)；git_commit=unknown(HPC抓取失败小修)。
+
+**批1前置**：FR-UNet官方复现用global-stats minmax(smoke用fallback per-image=偏离红线4)→建FRUNetPreprocessor cache(DRIVE+CHASE)，train_harness传--frunet_cache_path。

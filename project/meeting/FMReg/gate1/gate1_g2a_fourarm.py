@@ -49,6 +49,7 @@ Windows 规范:
 import argparse
 import csv
 import glob
+import json
 import math
 import os
 import pickle
@@ -790,6 +791,21 @@ def estimate_sigma_p_3d(arm_a_model, loader, device, n_batches=3):
 # Training functions
 # ============================================================
 
+_STATE_PATH = None   # set in run(); per-epoch heartbeat for monitoring (solves stdout-buffer blindness)
+
+
+def _log_state(arm, ep, n_epochs, loss, seed=0):
+    if _STATE_PATH is None:
+        return
+    try:
+        with open(_STATE_PATH, "w") as f:
+            json.dump({"arm": arm, "seed": seed, "epoch": ep + 1,
+                       "n_epochs": n_epochs, "loss": float(loss),
+                       "ts": time.time()}, f)
+    except Exception:
+        pass
+
+
 def train_arm_A(model, loader, n_epochs, device, ckpt_path=None, seed=0):
     """
     Arm A training
@@ -812,7 +828,8 @@ def train_arm_A(model, loader, n_epochs, device, ckpt_path=None, seed=0):
             opt.step()
         if (ep + 1) % log_every == 0 or ep == 0:
             print(f"  [A s={seed}] ep {ep+1}/{n_epochs}  loss={loss.item():.5f}  "
-                  f"t={time.time()-t0:.1f}s")
+                  f"t={time.time()-t0:.1f}s", flush=True)
+            _log_state(f"A_s{seed}", ep, n_epochs, loss.item(), seed)
     if ckpt_path:
         os.makedirs(os.path.dirname(ckpt_path), exist_ok=True)
         torch.save(model.state_dict(), ckpt_path)
@@ -848,7 +865,8 @@ def train_arm_B(model, loader, n_epochs, device, ckpt_path=None, seed=0):
             opt.step()
         if (ep + 1) % log_every == 0 or ep == 0:
             print(f"  [B] ep {ep+1}/{n_epochs}  recon={recon.item():.5f}  "
-                  f"kl={kl.item():.5f}  t={time.time()-t0:.1f}s")
+                  f"kl={kl.item():.5f}  t={time.time()-t0:.1f}s", flush=True)
+            _log_state("B", ep, n_epochs, loss.item(), seed)
     if ckpt_path:
         os.makedirs(os.path.dirname(ckpt_path), exist_ok=True)
         torch.save(model.state_dict(), ckpt_path)
@@ -892,7 +910,8 @@ def train_arm_C(model, loader, n_epochs, device, sigma_p, ckpt_path=None, seed=0
             opt.step()
         if (ep + 1) % log_every == 0 or ep == 0:
             print(f"  [C] ep {ep+1}/{n_epochs}  loss={loss.item():.5f}  "
-                  f"t={time.time()-t0:.1f}s")
+                  f"t={time.time()-t0:.1f}s", flush=True)
+            _log_state("C", ep, n_epochs, loss.item(), seed)
     if ckpt_path:
         os.makedirs(os.path.dirname(ckpt_path), exist_ok=True)
         torch.save(model.state_dict(), ckpt_path)
@@ -1255,6 +1274,9 @@ def run(args):
 
     os.makedirs(out_dir,  exist_ok=True)
     os.makedirs(ckpt_dir, exist_ok=True)
+
+    global _STATE_PATH
+    _STATE_PATH = os.path.join(out_dir, "g2a_state.json")
 
     if args.cpu or smoke:
         device = torch.device("cpu")

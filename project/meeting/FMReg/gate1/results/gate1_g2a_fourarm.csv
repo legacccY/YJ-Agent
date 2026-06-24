@@ -1,5 +1,5 @@
 arm,dice,neg_jac_pct,sdlogj,rho,p_rho,ause,ece,ncc_vx,rho_diff_C_DE,rho_ci_low,rho_ci_high,rho_p_approx,ncc_lm,n_test,n_epochs,k_samples,de_n,prior_lambda,image_sigma,lambda_s,ss_int_steps,fm_rollout_train,fm_eval_steps,smoke,verdict,verdict_detail
-A,0.4601,0.0000,0.0143,0.0000,1.0000,nan,nan,0.0000,,,,,,2,3,2,2,10,0.02,0.01,7,2,4,True,,
+A,0.4602,0.0000,0.0151,0.0000,1.0000,nan,nan,0.0000,,,,,,2,3,2,2,10,0.02,0.01,7,2,4,True,,
 B,0.4509,0.0000,0.0161,0.0000,1.0000,nan,nan,0.0000,,,,,,2,3,2,2,10,0.02,0.01,7,2,4,True,,
-C,0.4432,0.0000,0.0337,0.0000,1.0000,nan,nan,0.0000,0.0000,0.0000,0.0000,1.0000,0.0000,2,3,2,2,10,0.02,0.01,7,2,4,True,FAIL,"rho_C(0.0000) 不显著优于 rho_DE(0.0000) (CI_low=0.0000<=0 AND p=1.0000>=0.05) → 强 baseline 不输, A0 机制证不出, 停报, 降 TMLR 不洗"
+C,0.4434,0.0000,0.0347,0.0000,1.0000,nan,nan,0.0000,0.0000,0.0000,0.0000,1.0000,0.0000,2,3,2,2,10,0.02,0.01,7,2,4,True,FAIL,"rho_C(0.0000) 不显著优于 rho_DE(0.0000) (CI_low=0.0000<=0 AND p=1.0000>=0.05) → 强 baseline 不输, A0 机制证不出, 停报, 降 TMLR 不洗"
 DE,0.4380,0.0000,0.0179,0.0000,1.0000,nan,nan,0.0000,,,,,0.0000,2,3,2,2,10,0.02,0.01,7,2,4,True,,

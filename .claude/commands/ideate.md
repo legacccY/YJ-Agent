@@ -10,19 +10,19 @@
 
 **G0 宪章**（人主导）：据种子草拟 `project/ideation/runs/<date>_charter.md`（复制 `01_CHARTER.template.md`）→ AskUserQuestion 让用户过目/改硬排除/算力预算/双venue/风险配比 → 锁定。
 
-**G1 批量产出**（自主）：起 **ideator(sonnet)×8**，按 **B 族倾斜配额**（S3×2 + S4×2 + S1/S2/S5/S6 各×1；B 族实证命中率高，A 族须填 mechanism_anchor），每个产 15-20 条 → 合并 → SPECTER2 余弦 0.8 去重 + 多样性聚类 → 落 `runs/<date>_pool.jsonl`（~50 唯一）。工具未实现前去重可降级人工判。
+**G1 批量产出**（自主）：起 **ideator(sonnet)×8**，配额**据宪章 E 节 `strategy_class_target` + `risk_quota`**（2026-06-24 路 B，见 [[STRATEGY_MEMO_2026-06-24]]）。默认路 B（A 族槽=0）= **主力 B 族**：benchmark/empirical/application 占满（如 S3/S4 现象驱动型 + dataset/复现/应用型各扇出），**A 族(novel-idea)仅在宪章显式留了 side-bet 槽时才产**且须填 mechanism_anchor。每个产 15-20 条 → 合并 → SPECTER2 余弦 0.8 去重 + 多样性聚类 → 落 `runs/<date>_pool.jsonl`（~50 唯一）。工具未实现前去重可降级人工判。
 
 **G2 机器硬筛**（自主）：撞车检测（`tools/ideation_collision.py`，未实现则 researcher 网页版逐条查 top 候选）+ R1 二元 kill checklist → ~20 存活，砍的记 reason + 最近邻论文。
 
-**G3 评分排序**（自主）：researcher 补情报 → R2 InnoEval 加权（硬阈 Feas<4/Q-Nov<4 砍）→ R3 Swiss pairwise → **R8 顶会天花板打分定 `ceiling_tier`（MAIN/FINDINGS/WORKSHOP，低 tier 不砍只标档）+ 保底 ≥1-2 个 MAIN-tier 苗子晋级（标 high_variance，防被 benchmark 题埋）** → top10 跑 R4 → 8-10 排名。**主线/用户 final rerank 否决权**。
+**G3 评分排序**（自主）：researcher 补情报 → R2 InnoEval 加权（硬阈 Feas<4/Q-Nov<4 砍）→ R3 Swiss pairwise → **R8 顶会天花板打分定 `ceiling_tier`（MAIN/FINDINGS/WORKSHOP，低 tier 不砍只标档）** + **MAIN-tier 保底晋级 = opt-in**：仅当宪章 `risk_quota` 留了 A 族 side-bet 槽才强制晋级 ≥1 个 MAIN 苗子（标 high_variance）；**默认路 B 轮不强塞，让漏斗自然导向 B 族**（见 R8 用法 + [[STRATEGY_MEMO_2026-06-24]]）→ top10 跑 R4 → 8-10 排名。**主线/用户 final rerank 否决权**。
 
-**G4 红队预演**（自主）：skeptic(opus) 对 top 8-10 → R5 Heilmeier + 攻三死法 + R6 pre-mortem + **上风险红队（「全成了天花板到哪」，校准 R8 信号有无注水，低 tier 降级非砍）** → 提炼最大风险假设 + G5 草案 → ~5 存活（保 ≥1 MAIN-tier 进 G5；无出路🔴致命即砍/回G1）。
+**G4 红队预演**（自主）：skeptic(opus) 对 top 8-10 → R5 Heilmeier + 攻三死法 + R6 pre-mortem + **上风险红队（「全成了天花板到哪」，校准 R8 信号有无注水，低 tier 降级非砍）** → 提炼最大风险假设 + G5 草案 → ~5 存活（**仅开了 A 族 side-bet 槽的轮才保 ≥1 MAIN-tier 进 G5**，默认路 B 不保；无出路🔴致命即砍/回G1）。
 
 **G4.5 理论闸**（自主，调研后·跑实验前）：对 G4 幸存候选起 **theorist(opus)** 跑 `/theory-audit <候选> kickoff`——半形式化推导核心假设链（假设→机理→可证伪预测→若假设错现象）+ scaling/样本复杂度**回报预测**（要多少数据·算力才该 work）。**理论侧就能证伪的直接砍，省 G5 算力**：下界/界不存在、关键量是纯参数恒等式（喂任何数据固定值，防 SelInf deflation 式）、拼接式不成立（防 MedSeg minimax 式）、回报预测说该规模下不可能 work。三层防线复用——theorist 推导 → G4 skeptic 已红队（命门可补一轮独立证伪）→ verifier 核引用数。幸存者产**冻结假设链** `THEORY_LEDGER.md` 喂 G5（G5 跑的就是验这条链的可证伪预测）。~5 → ~4。**纯推导 0 算力**，不替代 G5 实证（理论过 ≠ 实证过，G5 仍强制跑）。
 
 **G5 杀手锏预实验** 🛑（拍板点）：planner 落 <1 GPU·h run（**预声明功效 MDE + continuous metric**，对齐 G4.5 冻结假设链的可证伪预测）→ 主线 `gpu_slot.py request` 申卡槽跑 → verifier 核 csv + **R9 三分流**：KILL（CI窄+continuous→砍）/ GRAY（CI宽/binary→欠功效不砍带债）/ KILL-proxy → 2-3 存活。
 
-**G6 立项拍板** 🛑（拍板点）：幸存出完整立项卡（**双venue 顶档由 ceiling_tier 钉死不虚标** + 全分数轨迹含 Ceiling + kill-shot verdict + 红队残差 + R7 书面 kill criteria）→ **有 MAIN-tier 苗子显式点「这是顶会赌注」与稳票分开呈** → AskUserQuestion → 拍板走 `/spin-off-paper`。
+**G6 立项拍板** 🛑（拍板点）：幸存出完整立项卡（**双venue 顶档由 ceiling_tier 钉死不虚标** + 全分数轨迹含 Ceiling + kill-shot verdict + 红队残差 + R7 书面 kill criteria）→ **若本轮开了 A 族 side-bet 槽且有 MAIN-tier 苗子存活，显式点「这是顶会赌注·高死亡率」与 B 族稳票分开呈**（默认路 B 无此段）→ AskUserQuestion → 拍板走 `/spin-off-paper`。
 
 ## 落档
 一轮结束写 `runs/<date>_选题报告.md`：漏斗各级数字 + 幸存立项卡 + 被砍 top 原因聚类。pool.jsonl 砍掉的不删（negative pool 复盘资产）。

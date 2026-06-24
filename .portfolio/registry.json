@@ -130,7 +130,7 @@
       "deadline": "TBD (CVPR2027 ~2026-11)",
       "status": "planning",
       "priority": 5,
-      "phase": "🔧→📝 2026-06-19 held-out 校正+v6 收窄定稿完成。A-5 原 ViM=1.0 证为 in-sample 评估伪迹(负对照:同源对半切也1.0;l3 feats_test 含ID)→held-out 真值 ViM0.41-0.997(mean0.777,>0.95仅2/7)→A-5 strict FAIL→承重迁移三贡献:①A-1/A-2 artifact白盒(PASS,7对0.64-0.9997)②A-7 in-sample灌水 cautionary(Δ+0.223只ViM/Residual,N_id<D放大,收窄不claim发现held-out)③A-6 held-out+sanity处方。source距离驱动 n=7 ρ=0.821/r=0.955(NIH/RSNA诚实负例0.64→0.41)。skeptic 致命-1(held-out是ViM/OpenOOD既有标准)已收窄化解。STORY/ACCEPTANCE/draft v6定稿留全痕,verifier零drift。收尾TODO:核arXiv:2604.04199引文真实性+fig重出n=7+落D&B LaTeX+Intro/Abstract。下一步:补完整章节投稿冲刺。",
+      "phase": "📝 2026-06-24 投稿冲刺：D&B LaTeX 落地(paper/main.tex+refs.bib 全节,Abstract/Intro/RelatedWork 补齐)。4 收尾TODO清:①引文全REAL(researcher核,2604.04199=Roth2026真存在|ΔAUC≤0.005锚点,OpenMIBOOD改arXiv,Wang2014→Lunt2014,PMC=Vasiliuk2023)②🔴held-outA-4据实校正:draft误用in-sample数字(全FAIL),held-out权威AND门复算=4FAIL+1真PASS(derm HAM-ISIC,top1 SHE掉出top3+机制口径2=1.0)+2INSUFFICIENT→用户拍板诚实报,A-4维持降级limitation,承重不变(A-1/A-2+A-6+A-7),结构性低功效当contribution③fig_heldout_vim_vs_artifact重出n=7(ρ0.821/r0.955)④sanity csv逗号修。verifier抽查main.tex承重数(0.777/+0.223/0.406/held-out throughout)零drift。投稿前TODO:官方neurips_2024.sty+held-out A-4 verdict固化成csv(a4_rank_flip.py加--protocol heldout+13法)+编译查图路径+可选reviewer审成稿。",
       "home": "project/meeting/ArtiOODBench/",
       "story": "project/meeting/ArtiOODBench/01_STORY.md",
       "acceptance": "project/meeting/ArtiOODBench/02_ACCEPTANCE.md",
@@ -147,6 +147,32 @@
       "home": "project/meeting/QuantImmuBench/",
       "log": "project/meeting/QuantImmuBench/04_LOG.md",
       "updated": "2026-06-23"
+    },
+    "hyperfid": {
+      "name": "HyperFidBench",
+      "venue": "ACCV 2026 (Biomedical track; 截稿 2026-07-05 大阪; CCF-C/CORE-B) → MICCAI workshop / BSPC (fallback)",
+      "deadline": "2026-07-05 (ACCV)",
+      "status": "planning",
+      "priority": 4,
+      "phase": "🆕 2026-06-24 立项 (用户拍板双 headline 并行, /ideate 2026-06-24 轮 headline 1=B5-10). 超图 GNN 脑病(ASD/AD)分类的解释忠实度 benchmark, 对齐王水花超图 GCN 独门. RQ=同一忠实度公理下超边/GNNExplainer/Grad-CAM-graph 哪种最忠实+对齐 DMN, 修复现有超图 fidelity 指标缺陷(2410.07764). G5 地基全绿: 数据 ABIDE 免登录 S3 直下/baseline BrainGB(217⭐)+HyperGALE(超图16⭐)/指标 PyG fidelity+GraphFramEx+nilearn Schaefer(DMN), ~8 GPU·h. G4 红队 0 致命, 残差=超边vs热图可比协议须先设计(L1命门). 撞车🟡有角度(SHypX 2410.07764 通用非脑病). 下一步 /design-experiment hyperfid 出 Gate1 矩阵(下 ABIDE+跑通 baseline+验 fidelity 非nan).",
+      "home": "project/meeting/HyperFidBench/",
+      "story": "project/meeting/HyperFidBench/01_STORY.md",
+      "acceptance": "project/meeting/HyperFidBench/02_ACCEPTANCE.md",
+      "log": "project/meeting/HyperFidBench/04_LOG.md",
+      "updated": "2026-06-24"
+    },
+    "wavefid": {
+      "name": "WaveFidBench",
+      "venue": "ACCV 2026 (Biomedical track; 截稿 2026-07-05 大阪; CCF-C/CORE-B) → CBM / BSPC (fallback)",
+      "deadline": "2026-07-05 (ACCV)",
+      "status": "planning",
+      "priority": 4,
+      "phase": "🆕 2026-06-24 立项 (用户拍板双 headline 并行, /ideate 2026-06-24 轮 headline 2=B5-13). Wavelet 频域子带视角的 XAI 忠实度 benchmark (AD 分类), 对齐王水花 wavelet+可解释双招牌. RQ=AD 判别信息在 wavelet 频带分布+XAI 解释是否对齐承载信息的频带+哪类 XAI 哪频带最忠实. G5 地基全绿: 数据 Kaggle AD 4-class 当天可下/baseline pytorch_wavelets(1.2k⭐)子带置零/指标 Quantus(666⭐ ROAD/IROF)+captum, <5 GPU·h. 撞车🟢干净(最近邻 WaveletFusion 2026-05 无忠实度维度). G4 红队 0 致命, 命门=严守 benchmark 定位 novelty 锚频带分解轴, 拉开与 WaveletFusion 距离. 下一步 /design-experiment wavefid 出 Gate1 矩阵(下 Kaggle 先核溯源+跑通分类器+子带置零+Quantus 非nan).",
+      "home": "project/meeting/WaveFidBench/",
+      "story": "project/meeting/WaveFidBench/01_STORY.md",
+      "acceptance": "project/meeting/WaveFidBench/02_ACCEPTANCE.md",
+      "log": "project/meeting/WaveFidBench/04_LOG.md",
+      "updated": "2026-06-24"
     }
   },
   "training_lock": {

@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import subprocess
 import sys
@@ -903,6 +904,408 @@ def evaluate_adapter(
 
 
 # --------------------------------------------------------------------------- #
+#  断点续连 benchmark 评测（三轴全含续连轴）
+# --------------------------------------------------------------------------- #
+
+def _tiled_inference_numpy(
+    model: Any,
+    device: "torch.device",
+    image: np.ndarray,
+    tile_size: int = 512,
+    overlap: int = 64,
+) -> np.ndarray:
+    """
+    Sliding-window tiled inference for large full-resolution images.
+
+    Mirrors train_reid_pilot._tiled_inference exactly (BUG2 fix: avoids
+    GDN-2 bottleneck sequence > max_seq_len=1024 on images like CHASE 960×999).
+    A 512×512 tile → bottleneck 32×32 = 1024 tokens (at limit).
+
+    Args:
+        model:     PyTorch model (already .eval(), on device).
+        device:    torch.device.
+        image:     (H, W) float32 preprocessed image (green+CLAHE+norm).
+        tile_size: tile side length in pixels (default 512).
+        overlap:   overlap between adjacent tiles (pixels, default 64).
+
+    Returns:
+        logit_map: (H, W) float32 averaged raw logits in original image space.
+    """
+    H_orig, W_orig = image.shape
+    stride = tile_size - overlap
+
+    # Pad so full tiles cover every pixel (reflect mode preserves local structure)
+    pad_h = (stride - (H_orig - overlap) % stride) % stride
+    pad_w = (stride - (W_orig - overlap) % stride) % stride
+    img_pad = np.pad(image, ((0, pad_h), (0, pad_w)), mode='reflect')
+    H_pad, W_pad = img_pad.shape
+
+    sum_map   = np.zeros((H_pad, W_pad), dtype=np.float64)
+    count_map = np.zeros((H_pad, W_pad), dtype=np.float64)
+
+    model.eval()
+    with torch.no_grad():
+        y0 = 0
+        while y0 + tile_size <= H_pad:
+            x0 = 0
+            while x0 + tile_size <= W_pad:
+                y1 = y0 + tile_size
+                x1 = x0 + tile_size
+                tile_np = img_pad[y0:y1, x0:x1]
+                inp = torch.tensor(
+                    tile_np, dtype=torch.float32
+                ).unsqueeze(0).unsqueeze(0).to(device)   # (1,1,tile,tile)
+                out = model(inp)
+                # model may return (logits, reid_ctx) tuple or bare logits
+                if isinstance(out, tuple):
+                    logits_t = out[0]
+                else:
+                    logits_t = out
+                logits_np = logits_t.squeeze(0).squeeze(0).cpu().numpy()
+                sum_map[y0:y1, x0:x1]   += logits_np
+                count_map[y0:y1, x0:x1] += 1.0
+                x0 += stride
+            y0 += stride
+
+    logit_map = (sum_map / np.maximum(count_map, 1.0)).astype(np.float32)
+    return logit_map[:H_orig, :W_orig]
+
+
+def _load_manifest_entries(
+    benchmark_dir: Path,
+    dataset: Optional[str],
+    severity: Optional[str],
+) -> List[Dict[str, Any]]:
+    """
+    Read benchmark_dir/manifest.json and filter by dataset + severity.
+
+    Dataset name matching is case-insensitive (lower() both sides), aligned with
+    reid_verdict_v2:72 convention (manifest stores lowercase 'drive'/'chase', etc.).
+
+    Args:
+        benchmark_dir: path containing manifest.json + npz files.
+        dataset:       dataset filter (e.g. 'drive', 'DRIVE'); None = all.
+        severity:      severity filter (e.g. 'Medium'); None = all.
+
+    Returns:
+        List of manifest entry dicts with 'npz' key pointing to existing files.
+
+    Raises:
+        SystemExit(1): manifest not found or no matching entries.
+    """
+    manifest_path = benchmark_dir / 'manifest.json'
+    if not manifest_path.exists():
+        print(
+            f'[benchmark] ERROR: manifest.json not found in {benchmark_dir}.\n'
+            f'  Run: python src/datasets/precompute_benchmark.py --cache_dir {benchmark_dir}',
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    with open(manifest_path, 'r', encoding='utf-8') as f:
+        manifest = json.load(f)
+
+    ds_filter  = dataset.lower()  if dataset  is not None else None
+    sev_filter = severity          if severity is not None else None
+
+    selected = []
+    for entry in manifest:
+        if ds_filter  is not None and entry.get('dataset', '').lower() != ds_filter:
+            continue
+        if sev_filter is not None and entry.get('severity', '') != sev_filter:
+            continue
+        npz = entry.get('npz', '')
+        if npz and Path(npz).exists():
+            selected.append(entry)
+        else:
+            print(f'[benchmark] WARNING: NPZ missing on disk, skipping: {npz}',
+                  file=sys.stderr)
+
+    if not selected:
+        print(
+            f'[benchmark] ERROR: No valid NPZ entries found for '
+            f'dataset={dataset!r} severity={severity!r} in {manifest_path}.\n'
+            f'  Check precompute_benchmark.py output and manifest.json.',
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    return selected
+
+
+def evaluate_benchmark(
+    adapter_name: str,
+    ckpt_path: str | Path,
+    benchmark_dir: str | Path,
+    dataset: Optional[str] = None,
+    severity: Optional[str] = None,
+    seed: int = 42,
+    threshold: float = 0.5,
+    output_csv: Optional[str | Path] = None,
+    device_str: str = "cpu",
+    use_external_topo: bool = True,
+    tile_size: int = 512,
+    overlap: int = 64,
+) -> List[Dict[str, Any]]:
+    """
+    Run three-axis evaluation on the frozen breakpoint benchmark.
+
+    This is the BENCHMARK path (断点续连 leaderboard entry):
+      - Reads frozen NPZ files from benchmark_dir (precomputed by precompute_benchmark.py).
+      - Feeds model the preprocessed 'image' field from NPZ (green+CLAHE+norm),
+        NOT the broken mask (that would be OOD — BUG1 lesson from train_reid_pilot).
+      - Uses tiled inference to handle full-resolution images (BUG2 lesson).
+      - Computes all three axes: overlap (dice/iou/auc/se/sp) + topology (cldice/betti)
+        + reconnection (epsilon_beta0 / success_rate / reid_rate — HEADLINE metrics).
+      - FOV: benchmark NPZs have no FOV mask → full-image FOV (ones).
+        Overlap axis is still computed on full image for consistency.
+      - GT for overlap/topo: vessel_segment_map > 0 (original vessel mask before breaks).
+
+    Args:
+        adapter_name:   MODEL_REGISTRY adapter key.
+        ckpt_path:      best.pth checkpoint path.
+        benchmark_dir:  directory with manifest.json + npz files.
+        dataset:        dataset filter (lowercase preferred, e.g. 'drive'). None=all.
+        severity:       severity filter ('Easy'/'Medium'/'Hard'/'Extreme'). None=all.
+        seed:           recorded in CSV (does not affect eval logic).
+        threshold:      binarisation threshold (default 0.5).
+        output_csv:     CSV path; None = print only.
+        device_str:     'cpu' | 'cuda' | 'cuda:0'.
+        use_external_topo: try external topo libs (default True).
+        tile_size:      sliding-window tile side (default 512, keeps GDN-2 ≤1024 tokens).
+        overlap:        tile overlap in pixels (default 64).
+
+    Returns:
+        list of per-image metric dicts (schema identical to evaluate_adapter output,
+        with extra columns: severity, image_id already present).
+
+    CSV schema (superset of evaluate_adapter — adds 'severity' column):
+        dataset, baseline, kind, seed, split, severity, img_id,
+        dice, iou, auc, se, sp,
+        cldice, betti_b0_err, betti_b1_err, skeleton_recall, topo_source,
+        epsilon_beta0, success_rate, reid_rate, n_gaps,
+        reid_rate_head, reid_idf1,
+        ckpt_path, eval_input_mode, threshold, git_commit
+
+    Raises:
+        SystemExit(1): manifest missing, no matching NPZ, or ckpt not found.
+    """
+    import baselines  # trigger auto_discover → @register
+    from baselines.registry import get_adapter
+    from benchmark.tools_topology import compute_topology_suite
+    from benchmark.metrics import (
+        compute_all_metrics,
+        epsilon_beta0 as _eps_b0,
+        success_rate as _sr,
+        reid_rate as _rr,
+    )
+    from benchmark.synth_breaks import BreakResult, GapRecord
+    from datasets.precompute_benchmark import load_benchmark_sample
+
+    benchmark_dir = Path(benchmark_dir)
+    ckpt_path     = Path(ckpt_path)
+
+    # ---- guard: ckpt exists ----
+    if not ckpt_path.exists():
+        print(
+            f'[benchmark] ERROR: checkpoint not found: {ckpt_path}',
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # ---- load manifest entries ----
+    entries = _load_manifest_entries(benchmark_dir, dataset, severity)
+    print(f'[benchmark] {len(entries)} NPZ entries matched '
+          f'(dataset={dataset!r}, severity={severity!r})')
+
+    # ---- build adapter + model ----
+    device  = torch.device(device_str)
+    adapter = get_adapter(adapter_name)
+    cfg: Dict[str, Any] = {}
+    model = adapter.build_model(cfg).to(device)
+    ckpt  = torch.load(str(ckpt_path), map_location=device, weights_only=True)
+    if isinstance(ckpt, dict) and 'state_dict' in ckpt:
+        ckpt = ckpt['state_dict']
+    model.load_state_dict(ckpt)
+    model.eval()
+
+    git_commit = _get_git_commit()
+    per_image_rows: List[Dict[str, Any]] = []
+
+    for entry in entries:
+        npz_path = entry['npz']
+
+        # ---- load NPZ sample ----
+        sample = load_benchmark_sample(npz_path)
+
+        image_f            = sample.get('image')        # (H,W) float32 or None
+        mask_broken        = sample['mask_broken']      # (H,W) uint8 — NOT fed to model
+        vessel_segment_map = sample['vessel_segment_map']  # (H,W) int32
+        gaps_raw           = sample['gaps']             # List[dict]
+        image_id           = sample['image_id']
+        ds_name            = sample['dataset']
+        sev_name           = sample['severity']
+
+        if image_f is None:
+            print(
+                f'[benchmark] WARNING: NPZ {Path(npz_path).name} missing "image" field. '
+                f'Re-run precompute_benchmark.py --force to regenerate. Skipping.',
+                file=sys.stderr,
+            )
+            continue
+
+        image_f = image_f.astype(np.float32)
+
+        # ---- GT mask (original, no breaks) ----
+        gt_mask = (vessel_segment_map > 0).astype(np.uint8)
+
+        # ---- FOV: benchmark NPZ has no FOV mask → full-image ones ----
+        H_img, W_img = image_f.shape
+        fov = np.ones((H_img, W_img), dtype=np.uint8)
+
+        # ---- reconstruct BreakResult ----
+        gaps = []
+        for g in gaps_raw:
+            gaps.append(GapRecord(**{
+                'gap_id':          g['gap_id'],
+                'center_yx':       tuple(g['center_yx']),
+                'radius':          g['radius'],
+                'gap_size':        g['gap_size'],
+                'sigma':           g['sigma'],
+                'segment_id_left': g['segment_id_left'],
+                'segment_id_right':g['segment_id_right'],
+            }))
+        break_result = BreakResult(
+            mask_broken        = mask_broken,
+            gaps               = gaps,
+            vessel_segment_map = vessel_segment_map,
+        )
+
+        # ---- tiled inference on ORIGINAL IMAGE (not mask_broken!) ----
+        # BUG1 lesson: feed preprocessed source image, same distribution as training.
+        # BUG2 lesson: tile to avoid GDN-2 bottleneck > max_seq_len=1024 tokens.
+        logit_map = _tiled_inference_numpy(
+            model, device, image_f,
+            tile_size=tile_size,
+            overlap=overlap,
+        )   # (H, W) float32 logits
+
+        prob     = (1.0 / (1.0 + np.exp(-logit_map))).astype(np.float32)  # sigmoid
+        pred_bin = (prob >= threshold).astype(np.uint8)
+
+        # ---- axis-1 overlap ----
+        overlap_m = _compute_overlap_metrics(pred_bin, gt_mask, fov, pred_prob=prob)
+
+        # ---- axis-2 topology (FOV-masked — full-image FOV = no mask here) ----
+        pred_fov = (pred_bin * fov).astype(np.uint8)
+        gt_fov   = (gt_mask  * fov).astype(np.uint8)
+        topo     = compute_topology_suite(pred_fov, gt_fov, use_external=use_external_topo)
+        topo_source = topo.get('betti_source', 'unknown')
+
+        # ---- axis-3 reconnection (HEADLINE: SR / reID / ε_β0) ----
+        # compute_all_metrics covers SR, reID, ε_β0 together.
+        conn    = compute_all_metrics(pred_bin, gt_mask, break_result)
+        eps_b0  = conn['epsilon_beta0']
+        sr      = conn['success_rate']
+        rr      = conn['reid_rate']
+        n_gaps  = conn['n_gaps']
+
+        # reid_rate_head / reid_idf1 — only when model has reid_head (A1' / ours_gdn2)
+        reid_rate_head_val = float('nan')
+        reid_idf1_val      = float('nan')
+        if (hasattr(model, 'use_reid_head') and model.use_reid_head
+                and hasattr(model, 'reid_head') and model.reid_head is not None
+                and len(gaps) > 0):
+            # Build (1,1,H,W) tensor for _compute_reid_head_metrics
+            inp_t = torch.tensor(
+                image_f, dtype=torch.float32
+            ).unsqueeze(0).unsqueeze(0).to(device)   # (1,1,H,W)
+            try:
+                reid_rate_head_val, reid_idf1_val = _compute_reid_head_metrics(
+                    model       = model,
+                    img_t       = inp_t,
+                    break_result= break_result,
+                    orig_h      = H_img,
+                    orig_w      = W_img,
+                    device      = device,
+                )
+            except Exception as _e:
+                print(f'[benchmark] reid_head forward failed for {image_id}: {_e}',
+                      file=sys.stderr)
+
+        row = {
+            # metadata
+            'dataset':         ds_name,
+            'baseline':        adapter_name,
+            'kind':            adapter.kind,
+            'seed':            seed,
+            'split':           'benchmark',
+            'severity':        sev_name,
+            'img_id':          image_id,
+            # axis-1 overlap
+            'dice':            overlap_m['dice'],
+            'iou':             overlap_m['iou'],
+            'auc':             overlap_m['auc'],
+            'se':              overlap_m['se'],
+            'sp':              overlap_m['sp'],
+            # axis-2 topology
+            'cldice':          topo.get('cldice', float('nan')),
+            'betti_b0_err':    topo.get('betti_b0_err', float('nan')),
+            'betti_b1_err':    topo.get('betti_b1_err', float('nan')),
+            'skeleton_recall': topo.get('skeleton_recall', float('nan')),
+            'topo_source':     topo_source,
+            # axis-3 reconnection (HEADLINE)
+            'epsilon_beta0':   eps_b0,
+            'success_rate':    sr,
+            'reid_rate':       rr,
+            'n_gaps':          n_gaps,
+            # axis-3 reid head logit direct eval (M2)
+            'reid_rate_head':  reid_rate_head_val,
+            'reid_idf1':       reid_idf1_val,
+            # tracking
+            'ckpt_path':       str(ckpt_path),
+            'eval_input_mode': 'benchmark_tiled',
+            'threshold':       threshold,
+            'git_commit':      git_commit,
+        }
+        per_image_rows.append(row)
+
+    # ---- write CSV ----
+    if output_csv is not None:
+        output_csv = Path(output_csv)
+        output_csv.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            'dataset', 'baseline', 'kind', 'seed', 'split', 'severity', 'img_id',
+            'dice', 'iou', 'auc', 'se', 'sp',
+            'cldice', 'betti_b0_err', 'betti_b1_err', 'skeleton_recall', 'topo_source',
+            'epsilon_beta0', 'success_rate', 'reid_rate', 'n_gaps',
+            'reid_rate_head', 'reid_idf1',
+            'ckpt_path', 'eval_input_mode', 'threshold', 'git_commit',
+        ]
+        with open(output_csv, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+            writer.writeheader()
+            writer.writerows(per_image_rows)
+
+        print(f'[benchmark] wrote {len(per_image_rows)} rows → {output_csv}')
+
+    # ---- summary ----
+    if per_image_rows:
+        mean_dice = float(np.mean([r['dice'] for r in per_image_rows]))
+        mean_sr   = float(np.nanmean([r['success_rate'] for r in per_image_rows]))
+        mean_rr   = float(np.nanmean([r['reid_rate'] for r in per_image_rows]))
+        mean_eps  = float(np.nanmean([r['epsilon_beta0'] for r in per_image_rows]))
+        print(
+            f'[benchmark] adapter={adapter_name} severity={severity} seed={seed}\n'
+            f'  mean_dice={mean_dice:.4f}  mean_SR={mean_sr:.4f}'
+            f'  mean_reID={mean_rr:.4f}  mean_ε_β0={mean_eps:.4f}'
+        )
+
+    return per_image_rows
+
+
+# --------------------------------------------------------------------------- #
 #  CLI 入口
 # --------------------------------------------------------------------------- #
 
@@ -913,7 +1316,7 @@ def _parse_args():
     p.add_argument("--ckpt", required=True,
                    help="Path to best.pth checkpoint")
     p.add_argument("--data_root", required=True,
-                   help="DRIVE root directory (contains training/)")
+                   help="Dataset root directory (contains training/ for DRIVE, etc.)")
     p.add_argument("--dataset", default="DRIVE",
                    help="Dataset name for CSV (default: DRIVE)")
     p.add_argument("--split", default="val", choices=["train", "val", "all"])
@@ -925,23 +1328,66 @@ def _parse_args():
                    help="'cpu' | 'cuda' | 'cuda:0' (default: cpu)")
     p.add_argument("--no_external_topo", action="store_true",
                    help="Force fallback topo implementations (no external libs)")
+    # ---- benchmark mode args (断点续连 leaderboard) ----
+    p.add_argument("--benchmark_dir", default=None,
+                   help=(
+                       "If set, run BENCHMARK evaluation path (三轴含续连轴) instead of "
+                       "val-split path. Path to precomputed benchmark cache containing "
+                       "manifest.json + npz files (output of precompute_benchmark.py). "
+                       "When --data_root is unused in this mode but still required by "
+                       "argparse; pass any placeholder if not needed."
+                   ))
+    p.add_argument("--severity", default=None,
+                   choices=["Easy", "Medium", "Hard", "Extreme"],
+                   help=(
+                       "Severity filter for benchmark mode. One of Easy/Medium/Hard/Extreme. "
+                       "None = evaluate all severities in manifest (default: None). "
+                       "Ignored when --benchmark_dir is not set."
+                   ))
+    p.add_argument("--tile_size", type=int, default=512,
+                   help="Tile size for tiled inference in benchmark mode (default 512).")
+    p.add_argument("--tile_overlap", type=int, default=64,
+                   help="Tile overlap for benchmark tiled inference (default 64).")
     return p.parse_args()
 
 
 def _main():
     args = _parse_args()
-    evaluate_adapter(
-        adapter_name=args.adapter,
-        ckpt_path=args.ckpt,
-        data_root=args.data_root,
-        dataset=args.dataset,
-        split=args.split,
-        seed=args.seed,
-        threshold=args.threshold,
-        output_csv=args.output_csv,
-        device_str=args.device,
-        use_external_topo=not args.no_external_topo,
-    )
+
+    if args.benchmark_dir is not None:
+        # ---- BENCHMARK path: 断点续连三轴 (SR/reID/ε_β0 non-NaN) ----
+        # Pass dataset as-is; _load_manifest_entries does lower() for case-insensitive match.
+        # User explicitly passes --dataset drive (or DRIVE) to filter; default "DRIVE" = filter
+        # to DRIVE images.  To skip dataset filter, user should not pass --dataset (TODO: add
+        # --no_dataset_filter flag if multi-dataset all-in-one eval is needed later).
+        evaluate_benchmark(
+            adapter_name    = args.adapter,
+            ckpt_path       = args.ckpt,
+            benchmark_dir   = args.benchmark_dir,
+            dataset         = args.dataset,
+            severity        = args.severity,
+            seed            = args.seed,
+            threshold       = args.threshold,
+            output_csv      = args.output_csv,
+            device_str      = args.device,
+            use_external_topo = not args.no_external_topo,
+            tile_size       = args.tile_size,
+            overlap         = args.tile_overlap,
+        )
+    else:
+        # ---- LEGACY path: val-split overlap+topo only (向后兼容，续连轴 NaN) ----
+        evaluate_adapter(
+            adapter_name    = args.adapter,
+            ckpt_path       = args.ckpt,
+            data_root       = args.data_root,
+            dataset         = args.dataset,
+            split           = args.split,
+            seed            = args.seed,
+            threshold       = args.threshold,
+            output_csv      = args.output_csv,
+            device_str      = args.device,
+            use_external_topo = not args.no_external_topo,
+        )
 
 
 if __name__ == "__main__":

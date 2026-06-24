@@ -7,7 +7,7 @@ rho_C=0.0000  rho_B=0.0000  rho_DE=0.0000
 rho_C - rho_DE: mean=0.0000  CI=[0.0000, 0.0000]  p=1.0000
 AUSE_C=nan  AUSE_DE=nan
 ECE_C=nan    ECE_DE=nan
-dice_A=0.4601  dice_C=0.4432
+dice_A=0.4602  dice_C=0.4434
 
 Preregistered thresholds (§6 05_Gate1_matrix.md):
   PASS = rho_C sig>rho_DE (CI_low>0 or p<0.05) AND rho_C>rho_B
