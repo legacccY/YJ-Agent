@@ -13,6 +13,18 @@
 | **IMPROVE** | IMPROVE: a feature model to predict neoepitope immunogenicity through broad-scale validation of T-cell recognition. *Frontiers in Immunology*, 2024. | [10.3389/fimmu.2024.1360281](https://doi.org/10.3389/fimmu.2024.1360281) | https://github.com/SRHgroup/IMPROVE_tool · 论文 repo https://github.com/SRHgroup/IMPROVE_paper |
 | **pTuneos** | pTuneos: prioritizing tumor neoantigens from next-generation sequencing data. *Genome Medicine*, 2019. | [10.1186/s13073-019-0679-x](https://doi.org/10.1186/s13073-019-0679-x) | https://github.com/bm2-lab/pTuneos |
 
+## 第二批 5 工具（原李紫晨负责，现并入；2026-06-24 调研建档）
+
+| 工具 | 论文 | DOI | 官方 repo |
+|---|---|---|---|
+| **PRIME** v2.1 | PRIME 1.0: Prediction of neo-epitope immunogenicity reveals TCR recognition determinants. *Cell Reports Medicine*, 2021. / PRIME 2.0: Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0. *Cell Systems*, 2023. | [10.1016/j.celrep.2021.100194](https://doi.org/10.1016/j.celrep.2021.100194) · [10.1016/j.cels.2022.12.002](https://doi.org/10.1016/j.cels.2022.12.002) | https://github.com/GfellerLab/PRIME |
+| **deepHLApan** | DeepHLApan: A Deep Learning Approach for Neoantigen Prediction Considering Both HLA-Peptide Binding and Immunogenicity. *Frontiers in Immunology*, 2019. | [10.3389/fimmu.2019.02559](https://doi.org/10.3389/fimmu.2019.02559) | https://github.com/jiujiezz/deephlapan |
+| **ImmuneApp** | ImmuneApp for HLA-I epitope prediction and immunopeptidome analysis. *Nature Communications*, 2024. | [10.1038/s41467-024-53296-0](https://doi.org/10.1038/s41467-024-53296-0) | https://github.com/bsml320/ImmuneApp |
+| **MHLAPre** | Meta learning for mutant HLA class I epitope immunogenicity prediction to accelerate cancer clinical immunotherapy. *Briefings in Bioinformatics*, 2024. | [10.1093/bib/bbae625](https://doi.org/10.1093/bib/bbae625) | https://github.com/ChanganMakeYi/MHLAPre |
+| **HLAthena** | A large peptidome dataset improves HLA class I epitope prediction across most of the human population. *Nature Biotechnology*, 2020. | [10.1038/s41587-019-0322-9](https://doi.org/10.1038/s41587-019-0322-9) | 无 GitHub；web hlathena.tools + Docker `ssarkizova/hlathena-external` |
+
+> ⚠️ HLAthena 预测 MHC 提呈非免疫原性（benchmark 只能当 proxy）；MHLAPre 权重未发布需邮件作者。详见 `DEPLOY_TRACKER.md` §第二批 Wave 3。
+
 ## 外部依赖工具（被上述工具调用）
 
 | 工具 | 用途 / 被谁依赖 | 出处 | 许可 |

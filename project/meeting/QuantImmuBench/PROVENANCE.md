@@ -30,10 +30,20 @@
 | NeoTImmuML（`NeoTImmuML.ipynb`、`demo.csv`） | github.com/01SYan19/NeoTImmuML | 见上游 repo |
 | IMPROVE（`Predict_immunogenicity*.py`、`feature_calculations.py`、models.zip） | github.com/SRHgroup/IMPROVE_tool | 见上游 repo |
 | pTuneos（`VCFprocessor.py` 等，`bm2lab/ptuneos:v2.1` 镜像） | github.com/bm2-lab/pTuneos | 见上游 repo |
-| PRIME / MixMHCpred | github.com/GfellerLab | 学术免费 |
+| PRIME / MixMHCpred | github.com/GfellerLab | 学术免费（商用需 Ludwig Institute 许可）|
 | self_similarity | github.com/SRHgroup/self_similarity | 随 IMPROVE |
 | NetCleave / NetCTLpan / MHCflurry / NOAH | PredIG 官方 Docker 镜像内打包 | 各自上游 |
 | Ensembl VEP + cache | ensembl.org/vep | Apache-2.0 |
+
+### 第二批 5 工具（原李紫晨负责，现并入；2026-06-24 调研建档，未部署）
+
+| 外部代码 | 来源 | 许可 |
+|---|---|---|
+| PRIME | github.com/GfellerLab/PRIME | 学术非商用免费；商用需 Ludwig Institute (nbulgin@lcr.org) |
+| deepHLApan | github.com/jiujiezz/deephlapan（或 Docker `biopharm/deephlapan:v1.1`）| **GPL-2.0**（衍生品须同 GPL 开源）|
+| ImmuneApp | github.com/bsml320/ImmuneApp | **MIT**（自由使用/修改/分发）|
+| MHLAPre | github.com/ChanganMakeYi/MHLAPre | **无 LICENSE**（GitHub 默认版权保留；学术使用需确认作者，权重未发布需邮件 23B903048@stu.hit.edu.cn）|
+| HLAthena | 无 GitHub；Docker `ssarkizova/hlathena-external` + 论文 Supplementary Code | **research-only**（无显式开源协议，商用联系 Broad；Docker 再分发待作者确认）|
 
 ## ⚠️ 许可与再分发限制（重要）
 

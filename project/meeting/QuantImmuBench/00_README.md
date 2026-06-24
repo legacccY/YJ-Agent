@@ -8,14 +8,15 @@
 袁老师牵头的**癌症个性化新抗原疫苗**协作项目。总目标 = 做一个能预测 T 细胞免疫反应**「强弱定量程度」**的工具（比现有只判「有/无免疫原性」的二分类更进一步），路线 = 大量跑现有工具 + 数据集做 benchmark，再结合自研 QuantImmune 算法。
 
 ## 我（余嘉 / legacccy）的子任务
-在 HPC 上**部署并测试 5 个现有预测工具**，每个工具测试运行后收集 4 类信息，最终以 **PPT** 形式记录：
+在 HPC 上**部署并测试现有预测工具**，每个工具测试运行后收集 4 类信息，最终以 **PPT** 形式记录：
 1. 输入数据的模板 / 格式
 2. 预测工具运行的参数设置（可调参数的类型及功能）
 3. 输出数据的格式及含义
 4. 工具的简要介绍（特点、优势）
 
-**我负责的 5 个工具**：PredIG · DeepImmuno · pTuneos · IMPROVE · NeoTImmuML
-（李紫晨负责另 5 个：PRIME / deepHLApan / ImmuneApp / MHLAPre / HLAthena —— 不在本档范围）
+**第一批 5 工具（✅ 全部署 + 跑通 ELISpot benchmark）**：PredIG · DeepImmuno · pTuneos · IMPROVE · NeoTImmuML
+**第二批 5 工具（原李紫晨负责，现并入；2026-06-24 调研建档完成，待部署）**：PRIME · deepHLApan · ImmuneApp · MHLAPre · HLAthena
+- 可行性矩阵 + 部署排序 + 两红旗见 `DEPLOY_TRACKER.md` §第二批 Wave 3。要点：PRIME 最易（HPC 已半 clone）；**HLAthena 仅预测提呈非免疫原性→只能当 presentation proxy**；**MHLAPre 权重未发布需邮件作者（阻塞）**。
 
 ## 团队分工（背景，非我任务）
 - **预测工具组**：李紫晨（5 工具）+ 余嘉（5 工具，本档）
@@ -49,7 +50,8 @@ QuantImmuBench/
 ├── PROVENANCE.md         # 代码归属（我们写的 vs 外部）+ 许可/再分发限制
 ├── TOOLS/                # 每工具一份 info 文档（= PPT 素材）
 │   ├── _TEMPLATE.md
-│   ├── PredIG.md / DeepImmuno.md / pTuneos.md / IMPROVE.md / NeoTImmuML.md
+│   ├── 第一批：PredIG.md / DeepImmuno.md / pTuneos.md / IMPROVE.md / NeoTImmuML.md
+│   ├── 第二批：PRIME.md / deepHLApan.md / ImmuneApp.md / MHLAPre.md / HLAthena.md
 ├── HPC/                  # 从 HPC 拉回的部署脚本 + ELISpot 正式跑产物（HPC/README.md 说明）
 ├── analysis/            # benchmark 指标/出图（figures_R_v3 为终版）/报告
 └── scripts/              # 部署 / 烟测 / 格式转换脚本（均我们写的，见 PROVENANCE）

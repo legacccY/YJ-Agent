@@ -76,3 +76,31 @@
 ## 袁老师输入数据（第二阶段）
 - 状态：未到（datasets.json `yuan_input_data` status=todo）。
 - 到位后：按各工具输入格式写格式转换脚本（`scripts/`）→ 正式跑 → 补真实输出到 TOOLS md。
+
+---
+
+## 第二批 5 工具（Wave 3，原李紫晨负责，现并入余嘉测试）
+
+> 2026-06-24 调研建档完成（5 researcher 并行查官方 repo/paper/依赖/输入输出/许可）。本轮**只到第 1 步（建档）+ 可行性判定**，未部署。逐工具 4 类信息见 `TOOLS/<tool>.md`，论文/许可见 `REFERENCES.md`/`PROVENANCE.md`。
+
+### 状态总表
+
+| 工具 | clone | 环境 | 权重 | example 烟测 | 4类信息 | 状态 | 阻塞 |
+|---|---|---|---|---|---|---|---|
+| PRIME | 🟡 HPC 半 clone | ☐ | — | ☐ | ✅ | **调研完成·待部署** | 待编译(g++ -O3)+确认 MixMHCpred≥v3.0 |
+| ImmuneApp | ☐ | ☐ | ✅随repo | ☐ | ✅ | **调研完成·待部署** | TF1.15+Keras2.3.1 Py3.7 老环境（Linux only）|
+| deepHLApan | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署** | keras2.0.8×TF2.7.2 版本地狱 → 走官方 Docker `biopharm/deephlapan:v1.1` |
+| HLAthena | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署(proxy)** | ⚠️ 只预测提呈非免疫原性→仅 presentation baseline；无 GitHub，Docker `ssarkizova/hlathena-external` |
+| MHLAPre | ☐ | ☐ | ❌缺 | ☐ | ✅ | **调研完成·阻塞** | 🔴 权重未上传需邮件作者+无 license+CUDA10.2 旧+IEDB overlap |
+
+### 部署排序（易→难）
+**PRIME（最易，已半 clone）→ ImmuneApp → deepHLApan → HLAthena(proxy) → MHLAPre（权重阻塞，末位）**
+
+### ⚠️ 两个可行性红旗（部署前必读，防踩坑）
+1. **HLAthena 不是免疫原性工具**：预测 MHC-I 提呈（presentation），论文明确不预测免疫原性；独立 benchmark ELISpot AUC~0.6、PPV 0.3063 近随机。→ 进 benchmark **只能当 presentation baseline proxy，须标注层次不同，不与 PRIME/deepHLApan/ImmuneApp/MHLAPre 等免疫原性工具 apples-to-apples 并列**。
+2. **MHLAPre 权重缺**：README 称权重+训练数据太大未上传，需邮件作者（23B903048@stu.hit.edu.cn）；且 repo 无 LICENSE、CUDA10.2 旧、IEDB 训练数据与 ELISpot benchmark 可能 overlap（数据泄露）。→ 部署前置阻塞，可能要权重或重训。
+
+### 共性观察
+- 这 5 个里 4 个（PRIME/deepHLApan/ImmuneApp/MHLAPre）有免疫原性连续输出，**理论可进 ELISpot benchmark**（HLAthena 仅 proxy）。
+- 4 个有 HLA 格式差异需预处理（deepHLApan 无星号 `HLA-A01:01`，others `HLA-A*01:01`），肽长限制各异（PRIME 8-14 / 其余多 8-15），benchmark 喂数据时按各自格式转换。
+- **多数训练数据含 IEDB → 与 ELISpot benchmark 测试集 overlap 风险普遍**，正式 benchmark 前需统一排重（与第一批同此 caveat）。

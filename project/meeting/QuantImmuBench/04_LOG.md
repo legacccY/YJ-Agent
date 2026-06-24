@@ -4,6 +4,32 @@
 
 ---
 
+## Entry 22 — 2026-06-24 第二批 5 工具调研建档（PRIME / deepHLApan / ImmuneApp / MHLAPre / HLAthena）
+
+用户要把原属李紫晨的另 5 工具也并入余嘉测试，走与第一批同一 6 步流程。用户拍板**本轮只到「调研建档 + 定可行性」**（不上 HPC 真跑、不进 benchmark）= 6 步的第 1 步。
+
+**派 5 个 researcher 并行**查官方 repo/paper/依赖/输入输出/许可/能否吃 ELISpot 肽+HLA，多源核实，建 `TOOLS/{PRIME,deepHLApan,ImmuneApp,MHLAPre,HLAthena}.md`。
+
+**可行性矩阵**：
+
+| 工具 | repo | 预测 | 输出 | 进 benchmark | 部署难度 |
+|---|---|---|---|---|---|
+| PRIME v2.1 | GfellerLab/PRIME | 免疫原性(MixMHCpred提呈+TCR) | %Rank+Score 连续 | ✅ apples-to-apples | **低**(HPC 已半 clone,仅 MixMHCpred,无 DTU 许可) |
+| deepHLApan | jiujiezz/deephlapan | binding+immunogenicity 双模型 | 0-1 连续 | ✅ | 中(keras2.0.8×TF2.7.2 版本地狱→官方 Docker) |
+| ImmuneApp | bsml320/ImmuneApp | 提呈+ImmuneApp-Neo 免疫原性 | Immunogenicity_score 连续 | ✅ | 中(TF1.15+Py3.7,权重随repo,MIT) |
+| MHLAPre | ChanganMakeYi/MHLAPre | 免疫原性(MAML+Transformer+TextCNN) | 0-1 连续 | ⚠️有 caveat | **高** |
+| HLAthena | 无GitHub/Docker | **仅提呈 presentation** | MSi presentation score | ⚠️ 只能 proxy | 中 |
+
+**两个可行性红旗（已记 DEPLOY_TRACKER §Wave 3 + 各卡顶部）**：
+1. **HLAthena 不是免疫原性工具**——预测 MHC-I 提呈，论文明确不预测免疫原性，独立 benchmark ELISpot AUC~0.6/PPV 0.3063 近随机 → 进 benchmark 只能当 presentation baseline proxy，不与免疫原性工具 apples-to-apples 并列。
+2. **MHLAPre 权重未发布**——README 称太大未上传需邮件作者(23B903048@stu.hit.edu.cn)，且无 LICENSE、CUDA10.2 旧、IEDB 训练数据与 ELISpot 可能 overlap → 部署前置阻塞。
+
+**部署排序（易→难，下一阶段从这起）**：PRIME(已半 clone) → ImmuneApp → deepHLApan → HLAthena(proxy) → MHLAPre(阻塞)。
+
+**共性**：4/5 有免疫原性连续输出可进 benchmark(HLAthena 仅 proxy)；HLA 格式/肽长各异需预处理(deepHLApan 无星号 `HLA-A01:01`)；多数训练含 IEDB → ELISpot overlap 风险普遍需排重。
+
+**落档**：5 张 TOOLS 卡 + DEPLOY_TRACKER §第二批 Wave 3 状态表 + 00_README 子任务/结构 + REFERENCES(5 论文 DOI+repo) + PROVENANCE(5 工具许可:PRIME 非商用免费/deepHLApan GPL-2.0/ImmuneApp MIT/MHLAPre 无 license/HLAthena research-only)。状态=调研完成待部署。**未跑代码/未连 HPC**。
+
 ## Entry 21 — 2026-06-24 文件夹整理 + 清垃圾 + HPC 文件归档 + 出处/许可标注
 
 按用户「更新进度、删垃圾、整理」+「HPC 特有文件拉个文件夹过来、整理参考文献、非我们的代码标好出处」做了四件事：
