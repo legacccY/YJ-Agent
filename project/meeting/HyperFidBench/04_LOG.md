@@ -130,7 +130,8 @@
 3. **HPC 上 BrainGB Gate1 ② 基本确认**：env 建成（dtn nohup+TMPDIR 本地，torch2.1cu118/pyg2.5.3）；gpudebug 绕 4gpus 队列堵跑 run-01 seed0 edge_node_concate = fold0-3 acc **68.6/60.9/64.9/59.8%，4-fold 均值 63.5%**，落文献 65-70% 邻域。
 4. **HPC infra 硬资产**（复用价值高，已记 [[feedback_version_matrix_first]] 系）：GLIBC 2.28→cu118 wheel；pip 走 **aliyun 镜像**（pytorch.org 1MB/s→22MB/s）；**计算节点外网慢→dtn 预下 wheelhouse 离线装**；pip 版本自检禁用；torch `--no-deps` 跳 triton；TMPDIR 本地避 gpfs 慢IO；`pip download 含deps` 回溯地狱→`--no-deps` 分组。helper `tools/_hf_hpc.py`（凭据从 HPC_WORKFLOW.md 读防泄露）。
 
-**在跑/留账**：gpudebug run-01 seed0(job 1491703,gpu_slot 059b5ffe) 跑 fold4 中，不停。
+**在跑/留账**：gpudebug run-01 seed0(job 1491703) 跑 fold4 中，不停。
+**[收工后补]** run-01 seed0 全 5 fold 跑完(赶在1h内)：fold0-4 acc=68.57/60.92/64.94/59.77/70.69%，**seed0 5-fold 均值 acc=64.98% auc=69.55%，正中文献 65-70% → Gate1 ② 确认 PASS**(BrainGB edge_node_concate)。job 完成,gpu_slot 059b5ffe 已 release。
 
 **下次接力 TODO**：
 - ① run-01 seed0 跑完看 5-fold 均值（gpudebug 可能 1h 超时丢 fold4，folds0-3 已够判 Gate1②≈63.5% PASS 邻域）。

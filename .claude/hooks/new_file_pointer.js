@@ -41,7 +41,10 @@ process.stdin.on('end', () => {
   // reference/ = 项目内技术文档/文献笔记，整目录由项目 README/LOG 统筹，单文件不逐一登记
   // paper/ = 论文稿件目录（含 sections/），由项目 README 统筹，单章节不逐一登记；PLAN/ 子目录同理（有 MASTER_PLAN 统筹）
   // analysis/ = 项目分析脚本/中间文档子目录，整目录由 04_LOG/README 统筹，单文件不逐一登记
-  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts[\w-]*|appendix|killshots?|_hpc|reference|paper|PLAN|analysis)\//.test('/' + rel)) process.exit(0);
+  // TOOLS/ = benchmark 项目工具文档目录（大写，case-sensitive 须显式列）→ 整目录已被 00_README 统筹
+  // \d+_experiments?/ = 带数字前缀的实验目录（如 06_experiments/）→ 整目录由项目 LOG 统筹
+  // _run\d+[_\w]*/ = ideation 探针/pilot 临时目录（如 _run011_pilot/）→ 同 _scratch/ 性质
+  if (/\/(src|configs?|utils?|scripts?|code|eval|TOOLS?|tools?|tests?|ideation|drafts[\w-]*|appendix|killshots?|_hpc|reference|paper|PLAN|analysis|\d+_experiments?|_run\d+[\w]*)\//.test('/' + rel)) process.exit(0);
 
   // 文件名以 _scratch_ 开头 → 临时探针，即使不在 _scratch/ 目录也豁免
   if (/^_scratch_/.test(base)) process.exit(0);
