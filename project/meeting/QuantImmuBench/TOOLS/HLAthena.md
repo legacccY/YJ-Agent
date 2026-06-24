@@ -38,8 +38,10 @@
 - 语言 / 框架 / 依赖：Python（推断，需核 Docker 内部）；不依赖 netMHCpan
 - 外部许可证工具：无已知
 - GPU 需求：CPU 可（小网络）
-- 部署状态：调研完成，待部署（建议 Docker→Singularity 转 HPC）；**仅作 presentation proxy baseline**
-- example 烟测 job_id / 路径：TODO
+- 部署状态：✅ **SMOKE_PASS（2026-06-24 本机 WSL2 docker，GCS 死锁已绕过）**。
+- **关键坑+解（实测）**：镜像 standalone 运行时**从作者 GCS bucket `gs://msmodels` 现拉模型**（镜像内 /models 空），bundled `gcloud_key.json`（project decent-oxygen-195020）**已死**（`storage.buckets.get` 401）→ 卡 `retry_util.py Retrying request`。**突破**：bucket **对象匿名可下**（list API + 直链 `https://storage.googleapis.com/msmodels/<obj>` 通，只是 buckets.get 要权限）。解 = ①匿名下需要的模型（A0101.tar.gz + models_pan_pan_CV 15 文件 + linear/ecdf RDS，共 **136M**；⚠️ 别下整 `models_panpan/` 前缀——含 `ecdf/OLD_nmhc_mhcflurry_mixmhcpred/` 全 allele 57MB 文件会膨胀几百 GB）②布置 /models（A0101 解压+linear+ecdf）+ /models_panpan（CV+linear_pan_pan+ecdf）③`sed 's/fetch_models="true"/fetch_models="false"/'` patch `predict_docker.bash`（chmod +x）④docker 挂载本地模型+patched 脚本跑。
+- example 烟测：`predict --runID x --rundir /work --peptides /pred/test/peps.txt --alleles A0101` → 出 `<id>-predictions.txt`（17 列含 `MSi_A0101` 提呈分、`prank.MSi`、`best.MSi_allele`）。例 `IDLLKEIY MSi=0.844`。
+- **全量 ELISpot benchmark 未跑**：需下全 65 allele 的 specific 模型（每个 ~100M，约 6.5G）+ R 慢；HLAthena 仅 presentation proxy（预期近随机），ROI 低 → 暂停在 smoke-deployed。
 - 许可：research purposes only（商用联系 Broad）；无显式开源协议
 
 ### TODO（researcher 标）

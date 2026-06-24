@@ -90,7 +90,7 @@
 | PRIME | ✅ | ✅ `envs/prime` | ✅(随repo) | ✅ **r=1.0** | ✅ | **SMOKE_PASS** | 无（PRIME2.1+MixMHCpred3.0 跑通，147 行对账官方 diff=0）|
 | ImmuneApp | ✅(tarball) | ✅ `envs/immuneapp` | ✅随repo | ✅ | ✅ | **SMOKE_PASS** | 无（HPC py3.7+TF1.15.0 跑通，出 Immunogenicity_score；坑=staged 装 TF 防 pip 回溯）|
 | deepHLApan | ✅(Docker镜像) | ✅(镜像内) | ✅ | ✅ | ✅ | **SMOKE_PASS** | 无（本机 WSL2 docker `biopharm/deephlapan:v1.1` 跑通 binding+immuno 双分；坑=outdir 须先建）|
-| HLAthena | ✅(Docker镜像) | ✅(镜像内) | ✅ | 🟡 | ✅ | **镜像就绪·待 smoke(proxy)** | ⚠️ 只预测提呈非免疫原性→仅 presentation baseline；镜像 `ssarkizova/hlathena-external:dev`(2.35G) 已拉，有 predict 脚本待勘察调用 |
+| HLAthena | ✅(Docker镜像) | ✅(镜像内) | ✅(匿名下136M) | ✅ | ✅ | **SMOKE_PASS(proxy)** | GCS 死锁绕过(匿名下模型+patch fetch_models=false 挂载)。出 MSi 提呈分。⚠️ 仅 presentation proxy；全量 benchmark 需下全65allele模型~6.5G+R慢,未跑 |
 | MHLAPre | ✅(15M) | ☐ | ❌缺 | ❌ | ✅ | **阻塞·不可复现** | 🔴 无权重 + ProcessData npy 缺 + **预处理管线代码也缺**（Pretreatment.py 无 main、生成 hla_epit_cdr3.npy 的拼装码被注释）→ 自训路也不通。全网(GitHub/Kaggle/Zenodo/HF)搜权重空。唯一路=邮件作者(23B903048@stu.hit.edu.cn)。已摸清列名 |
 
 ### 部署排序（易→难）
