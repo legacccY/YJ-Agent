@@ -2,3 +2,12 @@
 scripts/out/prime_input_*/
 scripts/out/immuneapp_input_*/
 scripts/out/wave3_hpc_inputs.tar.gz
+scripts/out/prime/
+scripts/out/prime_MT/
+scripts/out/prime_WT/
+scripts/out/immuneapp/
+scripts/out/immuneapp_MT/
+scripts/out/immuneapp_WT/
+scripts/out/prime_out.tar.gz
+scripts/out/immuneapp_out.tar.gz
+scripts/out/prime_out_8tools_unused

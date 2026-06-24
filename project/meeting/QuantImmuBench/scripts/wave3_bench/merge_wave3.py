@@ -107,7 +107,7 @@ def parse_prime(path_str: str, side: str = 'MT') -> pd.DataFrame:
     dfs = []
     for f in files:
         try:
-            df = pd.read_csv(f, sep='\t', encoding='utf-8')
+            df = pd.read_csv(f, sep='\t', encoding='utf-8', comment='#')
             df.columns = [c.strip() for c in df.columns]
             dfs.append(df)
             print(f'[PRIME-{side}] 读入 {len(df)} 行 ← {f.name}', file=sys.stderr)
