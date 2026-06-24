@@ -1,6 +1,8 @@
 # QuantImmuBench — 新抗原免疫原性「强弱定量」工具 Benchmark
 
 > 入口读档顺序：本文 → `REPORT.md`（完整部署测试报告，PPT 素材）→ `DEPLOY_TRACKER.md`（5 工具部署状态总表）→ `TOOLS/<tool>.md`（逐工具信息）→ `04_LOG.md` 最新 entry
+>
+> 另见：`REFERENCES.md`（工具论文/DOI/repo 出处）· `PROVENANCE.md`（代码归属：哪些是我们写的 vs 外部工具 + 许可/再分发限制）· `HPC/`（从 HPC 拉回的部署脚本 + ELISpot 正式跑产物，`HPC/README.md` 说明哪些大件留 HPC）
 
 ## 一句话
 袁老师牵头的**癌症个性化新抗原疫苗**协作项目。总目标 = 做一个能预测 T 细胞免疫反应**「强弱定量程度」**的工具（比现有只判「有/无免疫原性」的二分类更进一步），路线 = 大量跑现有工具 + 数据集做 benchmark，再结合自研 QuantImmune 算法。
@@ -39,10 +41,14 @@ QuantImmuBench/
 ├── 00_README.md          # 本文：总目标 + 我的子任务 + 状态
 ├── 04_LOG.md             # 时间倒序日志
 ├── DEPLOY_TRACKER.md     # 5 工具部署状态总表 + 标准流程 + 许可清单
+├── REFERENCES.md         # 工具论文/DOI/repo 出处 + 外部依赖 + 数据集
+├── PROVENANCE.md         # 代码归属（我们写的 vs 外部）+ 许可/再分发限制
 ├── TOOLS/                # 每工具一份 info 文档（= PPT 素材）
 │   ├── _TEMPLATE.md
 │   ├── PredIG.md / DeepImmuno.md / pTuneos.md / IMPROVE.md / NeoTImmuML.md
-└── scripts/              # 部署 / 烟测 / 格式转换脚本
+├── HPC/                  # 从 HPC 拉回的部署脚本 + ELISpot 正式跑产物（HPC/README.md 说明）
+├── analysis/            # benchmark 指标/出图（figures_R_v3 为终版）/报告
+└── scripts/              # 部署 / 烟测 / 格式转换脚本（均我们写的，见 PROVENANCE）
 ```
 
 ## 注

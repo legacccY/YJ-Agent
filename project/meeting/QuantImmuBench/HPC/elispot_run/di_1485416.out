@@ -1,0 +1,5 @@
+DI start Tue Jun 23 10:57:32 CST 2026 node=cpu8358n11
+mode is multiple
+input file is /gpfs/work/bio/jiayu2403/quantimmu/elispot_run/deepimmuno_input.csv
+output will be in /gpfs/work/bio/jiayu2403/quantimmu/elispot_run/di_out
+DI exit=0 end Tue Jun 23 10:58:48 CST 2026

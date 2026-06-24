@@ -1,0 +1,2 @@
+ID,epitope,HLA_allele,PredIG,NOAH,NetCleave,Hydrophobicity_peptide,MW_peptide,Charge_peptide,Stab_peptide,TCR_contact,Hydrophobicity_tcr_contact,MW_tcr_contact,Charge_tcr_contact
+HLA-A*02:01_SLLMWITQV,SLLMWITQV,HLA-A*02:01,0.0061380286,-6.085,,1.36666666666667,1090.34584,-0.0020157006072527,-7.86666666666667,MWITQ,0.26,677.81624,-0.0020157006072527

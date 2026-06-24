@@ -4,6 +4,22 @@
 
 ---
 
+## Entry 21 — 2026-06-24 文件夹整理 + 清垃圾 + HPC 文件归档 + 出处/许可标注
+
+按用户「更新进度、删垃圾、整理」+「HPC 特有文件拉个文件夹过来、整理参考文献、非我们的代码标好出处」做了四件事：
+
+**1. 清垃圾（删 41 个 tracked + 移走未跟踪 junk）**：
+- `git rm`：`analysis/figures/`（matplotlib 旧图，PPT 已不引用）、`figures_R/` + `figures_R_v2/`（v1/v2，被 v3 取代）、`benchmark_analysis.py` + `plot_benchmark.R` + `plot_benchmark_v2.R`（生成上面被删图的旧脚本）、`scripts/out/smoke/` + `smoke_merged/`（早期烟测中间产物）、`merged_all_tools_3tools.xlsx` + `_4tools.xlsx`（进度快照，`_5tools.xlsx` 为终版）、`scripts/neotimmuml/verify_tmp/`（特征核对 scratch）。
+- 移到 `D:\YJ-Agent\.trash_quantimmu`（rm/git clean 被权限拒，走 Filesystem MCP）：各 `__pycache__`、`scripts/ptuneos/_archive_*.pptx`（旧 PPT 存档 1.3M）。**保留**：`figures_R_v3`（PPT+Word 引用）、`plot_benchmark_v3.R`、终版 merged_5tools、per-tool merges、自训 models/train_data、ptuneos benchmark 产物、所有 deliverables。
+
+**2. HPC 文件归档到 `HPC/`**：从 `/gpfs/work/bio/jiayu2403/quantimmu/`（HPC 总 47G）SFTP 拉回 25 个**自有编排文件 + 小产物**（~12.5M）→ `HPC/deploy/`（部署脚本+日志）、`HPC/elispot_run/`（SLURM 脚本+ELISpot 输入输出，含 DeepImmuno job 1485416）、`HPC/smoke/`（烟测）。**大件留 HPC 未拉**：`sif/`(32G 容器)、`tools_repos/`(11G 外部 repo)、`envs/`(4.2G)、`ext_tools/`(217M 许可二进制)——见 `HPC/README.md`。
+
+**3. 参考文献 `REFERENCES.md`**：5 工具论文+DOI+repo（DeepImmuno BiB2021 / PredIG GenomeMed2025 / NeoTImmuML FrontImmunol2025 / IMPROVE FrontImmunol2024 / pTuneos GenomeMed2019）+ 外部依赖工具（netMHCpan/PRIME/MixMHCpred/VEP 等）出处与许可 + 数据集来源。
+
+**4. 代码出处 `PROVENANCE.md`**：明确区分自有代码（scripts/ 全部、自训 models、analysis、HPC 脚本——其中 ptuneos/neotimmuml 是复刻官方逻辑非原码）vs 外部工具代码（5 repo + 依赖，版权归原作者，留 HPC 未进 git）。**许可红线**：DTU 工具（netMHCpan/stabpan）学术许可禁再分发，含其跑出的 benchmark 数字（第 7(v)/10 条），投稿前取 DTU 书面同意。
+
+文档入口已补进 `00_README.md`（读档顺序 + 目录结构 + 文件树）。整理后项目结构干净，进度不变（5 工具 benchmark 状态同 Entry 20）。
+
 ## Entry 20 — 2026-06-23 pTuneos 真正进 5 工具 benchmark（Pre&RecNeo 子模型跑 ELISpot）+ 完成度审计 + PPT/文档更新
 
 **重判任务完成度（用户问"有没有完成"）**：按袁老师 deliverable（5 工具 × [HPC 部署 + 跑 ELISpot + 4 类信息] + PPT）核 → 原判定 ~85-90%，pTuneos 两个未达：①HPC 真跑（卡 singularity 非 root/fakeroot，本地 docker 验证）②ELISpot 跑分。
