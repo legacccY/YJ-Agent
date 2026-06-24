@@ -54,6 +54,19 @@
 2. **响应频率回归**（responded/tested）——IEDB 有 number_of_subjects_tested/positive 列，连续比例可做 GT，肿瘤子集量待核。
 3. **自补 ELISpot 实测产连续 GT**——袁老师 Wave3 已有 ELISpot 正式测试管道（DS1/DS2），不依赖公开源。**最稳**。
 
+### ✅ 用户拍板 = 选 ② 响应频率回归；GT 量级已实测 PASS（2026-06-25）
+退守前先证伪选项②的命门（GT 够不够 ≥10³）。API 实测：
+
+| 源 | 响应频率 GT 可用行 | vs ≥10³ |
+|---|---|---|
+| CEDAR 癌症库 `response_frequency_` 非空 | **58,736** | **PASS ~50×** |
+| CEDAR tested+positive 双非空（可算频率） | 59,843 | PASS |
+| CEDAR tested>1（真多受试者非单人） | 45,776 | PASS |
+| IEDB 全库 response_frequency 非空（对照） | 293,811 | PASS |
+
+→ **响应频率回归 GT 在 CEDAR 癌症库就有 ~10⁴–10⁵，量级命门大幅 PASS**（连续 magnitude 仅 ~10² 的 ~200–500 倍）。方向地基稳。
+- ⚠️ 仍待精化（下一步）：①去重到唯一肽 + 跨 PMID study 数 ②response frequency = 群体「%responded」≠ 逐肽免疫强度，需向审稿人界定为「群体响应率回归」非「单细胞强度」 ③肿瘤 neoepitope vs TAA/shared-antigen 子集切分（CEDAR 含共享抗原非纯 neo）④tested=1 退化样本（freq 仅 0/1）需过滤，用 tested>1 的 45,776 为干净基。
+
 ## 附：ELISpot benchmark × IEDB overlap（红队 🟠-2 污染量化）
 - ELISpot benchmark 7,238 唯一肽 vs IEDB 229,625 肽：**overlap 82.2%（9mer 子串）/ 2.5%（精确 181）**。
 - 但 9mer overlap 多为突变长肽的非突变 flanking 区与 IEDB WT 表位共享 9mer，非必然直接训练泄漏。

@@ -18,7 +18,13 @@
 
 **timeout 隐患（用户点醒）**：400+肽 run 逼近 900s→静默NaN。修=**分块**(chunk≤200肽,实测214s<<1200s)消timeout+提速。`run_hla_chunk.sh` 拆 336 块 24-way 跑 combine 回 allele。验证:A0301 200肽 chunk=214s 出真 MSi(AAAVFKTLP=0.0061)。ETA~70-90min。
 
-**待**：完成→合并→merge HLAthena 第9列→9tools 分析。⚠️分工:第二批含 HLAthena 按袁老师新分工属李紫晨，余嘉本轮超额不回退。
+**速度根因 + sbatch 死路**：登录节点被另一用户 jiawang 占 32 核 → chunk 饿死(18-22min vs 单测 3.5min)。想 sbatch 专用 CPU 节点但**我的 qos 只有 cpudebug=max 4核+1hr**，跑不了大作业 → 只能登录节点。
+
+**最终态（收工时 2026-06-25 01:42）**：`run_hla_chunk.sh` 登录节点后台跑(setsid)，**timeout 调 3000s**(50min 余量，慢 chunk 也不超时变 NaN→保证完整正确)，336 chunks。日志 `hla_chunk6.log`，输出 `hla_bench3/<allele>_<T>.txt`(列 pep\tMSi)。被 jiawang 占核拖，预计 ~5-8hr。
+
+**🔧 跑完接手 merge（任何窗口）**：①核 `ls hla_bench3/*.msi|wc -l`≈336(无静默失败) ②拉 `hla_bench3/<allele>_<T>.txt` 到本地 ③按 (peptide,HLA_Allele) map 回 master_backbone → MT/WT_HLAthena 列 → 9tools.xlsx ④analyst 算指标(HLAthena 标 **presentation proxy** caveat:预测提呈非免疫原性,ELISpot 上预期近随机)。
+
+**待**：HLAthena 跑完 merge 第9列。⚠️分工:第二批含 HLAthena 按袁老师新分工属李紫晨，余嘉本轮超额不回退。
 
 ---
 
