@@ -91,7 +91,7 @@
 | ImmuneApp | ✅(tarball) | ✅ `envs/immuneapp` | ✅随repo | ✅ | ✅ | **SMOKE_PASS** | 无（HPC py3.7+TF1.15.0 跑通，出 Immunogenicity_score；坑=staged 装 TF 防 pip 回溯）|
 | deepHLApan | ✅(Docker镜像) | ✅(镜像内) | ✅ | ✅ | ✅ | **SMOKE_PASS** | 无（本机 WSL2 docker `biopharm/deephlapan:v1.1` 跑通 binding+immuno 双分；坑=outdir 须先建）|
 | HLAthena | ✅(Docker镜像) | ✅(镜像内) | ✅ | 🟡 | ✅ | **镜像就绪·待 smoke(proxy)** | ⚠️ 只预测提呈非免疫原性→仅 presentation baseline；镜像 `ssarkizova/hlathena-external:dev`(2.35G) 已拉，有 predict 脚本待勘察调用 |
-| MHLAPre | ✅(15M) | ☐ | ❌缺 | ☐ | ✅ | **阻塞坐实** | 🔴 clone+inspect 确认：无 .pt 权重 + `ProcessData/Transfer_data/*.npy` 缺（README 明示太大需邮件作者）→ 跑不通。已摸清列名(Epitope/MHC Restriction/Assay，代码读 Antigen 列需改名) |
+| MHLAPre | ✅(15M) | ☐ | ❌缺 | ❌ | ✅ | **阻塞·不可复现** | 🔴 无权重 + ProcessData npy 缺 + **预处理管线代码也缺**（Pretreatment.py 无 main、生成 hla_epit_cdr3.npy 的拼装码被注释）→ 自训路也不通。全网(GitHub/Kaggle/Zenodo/HF)搜权重空。唯一路=邮件作者(23B903048@stu.hit.edu.cn)。已摸清列名 |
 
 ### 部署排序（易→难）
 **PRIME（最易，已半 clone）→ ImmuneApp → deepHLApan → HLAthena(proxy) → MHLAPre（权重阻塞，末位）**
