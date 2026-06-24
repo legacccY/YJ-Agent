@@ -7,12 +7,13 @@
 元学习（MAML）+ Transformer Encoder + TextCNN 预测**突变 HLA-I 表位免疫原性**。双子模型：IM（免疫原性）+ TT（迁移到 pHLA-TCR，预测能否激活 CTL）。
 
 ## 1. 输入数据模板 / 格式
-- 文件格式：TODO（repo 无 example 文件，README 无列名示例）
-- 必填字段：肽段序列 + HLA allele（推测两列，需查 `Pretreatment.py` 源码确认）
+- 文件格式：CSV（**实测**：repo 内 `data/data_MHLAPre.csv` = `Epitope, MHC Restriction, Assay`，例 `APSFGSFHLI, B*07:02, 1`；TCR 任务用 `data/TCR-HLA-epotite4.csv` = `Epitope, Assay, CDR3, Label`）
+- ⚠️ **列名不一致坑（实测）**：`Pretreatment.py` 代码读的是 `dataset['Antigen']` 列 + TCR，**与出厂 CSV 的 `Epitope` 列对不上** → 跑前需把 `Epitope`→`Antigen` 改名/预处理
+- 必填字段：Epitope(肽段) + MHC Restriction(HLA) + Assay(标签 1/0)
 - 肽段长度限制：8–15 AA（以 9-mer 为主）
-- HLA 格式：标准 `HLA-A*02:01`（HLA-A/B/C；内部 34 位伪序列 + BLOSUM62 编码）
+- HLA 格式：**实测 `B*07:02`**（无 HLA- 前缀；HLA-A/B/C）
 - 是否需基因组数据：否
-- **实测输入样例**：TODO（无官方示例，需联系作者或读源码）
+- **实测输入样例**：`Epitope,MHC Restriction,Assay` → `APSFGSFHLI,B*07:02,1`
 
 ## 2. 运行参数设置
 - 运行方式：顺序执行 3 脚本 `python Pretreatment.py` → `python TransfomerEncoder.py` → `python TextCNN.py`（无 CLI 参数说明）
@@ -20,11 +21,11 @@
 - **实测命令行**：TODO
 
 ## 3. 输出数据格式 + 含义
-- 输出文件格式：TODO（README 无示例输出）
-- 关键列 + 含义：连续概率分（0–1，softmax），越高免疫原性越强；精确列名 TODO
-- 分数类型：连续 0–1
+- 输出文件格式：**无（实测）**——`TextCNN.py` 最后 `return F.softmax(x)`，研究代码只算 ROC-AUC/PR 等指标（`sklearn.metrics`），**不存预测文件**（同 NeoTImmuML 性质）；要出分需自己加 to_csv
+- 关键列 + 含义：softmax 概率（两类），免疫原性阳性概率越高越强
+- 分数类型：连续 0–1（softmax）
 - **能否定量免疫强弱**：✅ 是（连续概率）← 项目核心目标
-- **实测输出样例**：TODO
+- **实测输出样例**：N/A（需改代码导出 predict_proba）
 
 ## 4. 简介（特点 / 优势）
 - 方法：MAML 元学习 + Transformer Encoder + TextCNN，BLOSUM62（50×21）编码
@@ -39,8 +40,9 @@
 - 语言 / 框架 / 依赖：Python 3.9.13 + torch1.12.1（CUDA 10.2）+ rdkit~2021.03.2 + sklearn≥1.0.2 + numpy1.21.2/pandas1.4.4（Linux，conda，~10min 装）
 - 外部许可证工具：无
 - GPU 需求：torch+CUDA10.2（HPC 一般 CUDA11/12 → 需确认兼容）
-- 部署状态：调研完成，**阻塞待部署**（权重缺，需邮件作者；CUDA 版本待对齐）
-- example 烟测 job_id / 路径：TODO
+- 部署状态：**阻塞坐实（2026-06-24 HPC clone+inspect）**。repo clone OK（15M，`tools_repos/MHLAPre`），代码 5 脚本齐 + 部分数据（`data_MHLAPre.csv` 等）；但 **(a) 无权重文件（无 .pt）(b) `ProcessData/Transfer_data/*.npy` 程序中间数据缺**（`TransfomerEncoder.py` line 69 `np.load('ProcessData/Transfer_data/hla_epit_cdr3.npy')` 会 FileNotFound）→ README 明示「raw + procedural data too large to upload，需邮件 23B903048@stu.hit.edu.cn」。**跑不通，待权重/数据。**
+- 运行顺序（README 实测）：`python Pretreatment.py` → `TransfomerEncoder.py` → `TextCNN.py`
+- example 烟测 job_id / 路径：N/A（阻塞）
 - 许可：**无 LICENSE 文件**（GitHub 默认版权保留；学术使用需确认作者许可）
 
 ### TODO（researcher 标，多为阻塞项）

@@ -91,7 +91,7 @@
 | ImmuneApp | ☐ | ☐ | ✅随repo | ☐ | ✅ | **调研完成·待部署** | TF1.15+Keras2.3.1 Py3.7 老环境（Linux only）|
 | deepHLApan | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署** | keras2.0.8×TF2.7.2 版本地狱 → 走官方 Docker `biopharm/deephlapan:v1.1` |
 | HLAthena | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署(proxy)** | ⚠️ 只预测提呈非免疫原性→仅 presentation baseline；无 GitHub，Docker `ssarkizova/hlathena-external` |
-| MHLAPre | ☐ | ☐ | ❌缺 | ☐ | ✅ | **调研完成·阻塞** | 🔴 权重未上传需邮件作者+无 license+CUDA10.2 旧+IEDB overlap |
+| MHLAPre | ✅(15M) | ☐ | ❌缺 | ☐ | ✅ | **阻塞坐实** | 🔴 clone+inspect 确认：无 .pt 权重 + `ProcessData/Transfer_data/*.npy` 缺（README 明示太大需邮件作者）→ 跑不通。已摸清列名(Epitope/MHC Restriction/Assay，代码读 Antigen 列需改名) |
 
 ### 部署排序（易→难）
 **PRIME（最易，已半 clone）→ ImmuneApp → deepHLApan → HLAthena(proxy) → MHLAPre（权重阻塞，末位）**
