@@ -12,12 +12,12 @@
 - 肽段长度限制：8–14 AA
 - HLA 格式：简写 `A0101` 或标准 `A01:01` / `HLA-A01:01` / `HLA-A*01:01` 均可
 - 是否需基因组数据：**否**（只要 mutant peptide + HLA，不要 WT 肽/表达量）
-- **实测输入样例**：TODO
+- **实测输入样例**：`test/test.txt` = 147 行肽段（每行一条，如 `VMLQAPLFT`），allele 命令行给 `A0101,A2501,B0801,B1801`
 
 ## 2. 运行参数设置
 - 主要参数：`-i` 输入肽段文件、`-o` 输出、`-a` HLA allele 列表、`-mix` 指定 MixMHCpred 路径
 - 模型变体：v2.1（最新，依赖 MixMHCpred v3.0+）
-- **实测命令行**：TODO
+- **实测命令行**：`./PRIME -i test/test.txt -o test/out.txt -a A0101,A2501,B0801,B1801 -mix <MixMHCpred 路径>`（不传 -mix 则查 PATH）
 
 ## 3. 输出数据格式 + 含义
 - 输出文件格式：文本（空格/tab 分隔，5 列）
@@ -29,7 +29,7 @@
   - Col5 = Best allele
 - 分数类型：连续 %Rank（0–100）+ Score
 - **能否定量免疫强弱**：✅ 是（PRIME Score / %Rank 连续）← 项目核心目标
-- **实测输出样例**：TODO
+- **实测输出**（17 列，多 allele）：`Peptide / %Rank_bestAllele / Score_bestAllele / %RankBinding_bestAllele / BestAllele / 每 allele 的 %Rank+Score+%RankBinding`。例 `VMLQAPLFT %Rank=3.901 Score=0.010242 BestAllele=B0801`。MixMHCpred 单跑输出 `Peptide/Score_bestAllele/BestAllele/%Rank_bestAllele/...`（如 `GILGFVFTL Score=0.260 A0201 %Rank=0.035`）
 
 ## 4. 简介（特点 / 优势）
 - 方法：MixMHCpred 提呈分 + TCR 接触位点氨基酸频率特征 + 肽长 → 轻量打分模型
@@ -45,11 +45,11 @@
 - 语言 / 框架 / 依赖：C++（lib 需 `g++ -O3` 编译）+ Perl + Shell；**唯一外部依赖 MixMHCpred v3.0+**
 - 外部许可证工具：无（MixMHCpred 同 Gfeller lab，学术免费，无 DTU 许可）
 - GPU 需求：无（CPU）
-- 部署状态：调研完成，HPC 已半 clone `tools_repos/PRIME` → 待编译 + 确认 MixMHCpred 版本（见 DEPLOY_TRACKER Wave 3）
-- example 烟测 job_id / 路径：TODO
+- 部署状态：✅ **SMOKE_PASS + 验证 r=1.0**（2026-06-24 HPC）。`tools_repos/PRIME` V2.1（PRIME.x 已编译）+ `tools_repos/MixMHCpred` **MixMHCpred3.0**（python，非 C++）。env `envs/prime`（py3.11 + numpy/pandas/scipy/logomaker/matplotlib）。
+- example 烟测 / 验证：`./PRIME -i test/test.txt -o test/out.txt -a A0101,A2501,B0801,B1801 -mix .../MixMHCpred` → 147 行输出与官方 `test/out_compare.txt` **diff=0 完全一致**（防伪通）。
 - 许可：学术非商用免费；商用需向 Ludwig Institute (nbulgin@lcr.org) 申请
 
-### TODO（researcher 标）
-- 确认 HPC `tools_repos/PRIME` 版本（master v2.1 还是旧版，git tag 核）
-- 确认 HPC MixMHCpred 版本 ≥ v3.0
-- PRIME 实测烟测（尚无 HPC 实跑记录）
+### 已解决（原 TODO）
+- ✅ HPC PRIME 版本 = V2.1（git tag 核）
+- ✅ MixMHCpred = v3.0（`-h` 返回 `MixMHCpred3.0`；**v3.0 是 Python 不是 C++，只需 python 包 + 可选 MAFFT**，无编译）
+- ✅ PRIME 实测烟测 PASS + r=1.0 对账

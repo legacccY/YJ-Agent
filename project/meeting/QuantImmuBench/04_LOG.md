@@ -4,6 +4,23 @@
 
 ---
 
+## Entry 23 — 2026-06-24 第二批工具开跑部署（PRIME ✅ SMOKE_PASS r=1.0 + 大编队备 kit）
+
+用户「开跑 + 大编队并行」。按 CLAUDE.md：HPC 执行主线串行、部署 kit 纯软活派 coder 并行。
+
+**大编队（4 coder 并行写部署 kit，纯软活不跑）**：`scripts/{immuneapp,deephlapan,hlathena,mhlapre}/` 各一套 deploy/smoke/NOTES（bash -n 过）。要点：deepHLApan/HLAthena 因 **HPC 无 docker + Docker Hub 不通** → 给「conda 直建」+「WSL2 拉镜像转 singularity」两条路；MHLAPre kit 诚实标三大阻塞（权重缺/无 license/CUDA10.2）。
+
+**PRIME 部署成功（主线串行，HPC）**：
+- HPC 盘点：`tools_repos/PRIME` V2.1（PRIME.x 已编译）+ `tools_repos/MixMHCpred` = **MixMHCpred3.0**。**纠正建档假设**：MixMHCpred v3.0 是 **Python（`code/*.py`）不是 C++**，无需 g++ 编译，只要 python 包（numpy/pandas/scipy/logomaker/matplotlib）+ 可选 MAFFT（仅新 allele）。
+- 建 env `envs/prime`（py3.11 + 上述包）。
+- MixMHCpred 单跑烟测：`GILGFVFTL` Score=0.260/A0201、`KLLEPVLLL` 0.312，正常。
+- PRIME 全 test：`./PRIME -i test/test.txt -o test/out.txt -a A0101,A2501,B0801,B1801 -mix .../MixMHCpred` → 147 行 17 列输出。
+- **验证 r=1.0**：与官方 `test/out_compare.txt` **diff=0 完全一致**（防伪通）。PRIME → **SMOKE_PASS**。
+- 4 类信息实测回填 `TOOLS/PRIME.md`，DEPLOY_TRACKER Wave 3 表 PRIME 行更新。
+
+**进行中**：ImmuneApp clone（433M 大 repo）+ 建 py3.7 TF1.15 env（HPC 后台跑，约 15min）。下一步轮询 + smoke。
+
+**部署进度**：PRIME ✅ → ImmuneApp(env building) → deepHLApan → HLAthena(proxy) → MHLAPre(阻塞)。
 ## Entry 22 — 2026-06-24 第二批 5 工具调研建档（PRIME / deepHLApan / ImmuneApp / MHLAPre / HLAthena）
 
 用户要把原属李紫晨的另 5 工具也并入余嘉测试，走与第一批同一 6 步流程。用户拍板**本轮只到「调研建档 + 定可行性」**（不上 HPC 真跑、不进 benchmark）= 6 步的第 1 步。

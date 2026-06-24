@@ -87,7 +87,7 @@
 
 | 工具 | clone | 环境 | 权重 | example 烟测 | 4类信息 | 状态 | 阻塞 |
 |---|---|---|---|---|---|---|---|
-| PRIME | 🟡 HPC 半 clone | ☐ | — | ☐ | ✅ | **调研完成·待部署** | 待编译(g++ -O3)+确认 MixMHCpred≥v3.0 |
+| PRIME | ✅ | ✅ `envs/prime` | ✅(随repo) | ✅ **r=1.0** | ✅ | **SMOKE_PASS** | 无（PRIME2.1+MixMHCpred3.0 跑通，147 行对账官方 diff=0）|
 | ImmuneApp | ☐ | ☐ | ✅随repo | ☐ | ✅ | **调研完成·待部署** | TF1.15+Keras2.3.1 Py3.7 老环境（Linux only）|
 | deepHLApan | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署** | keras2.0.8×TF2.7.2 版本地狱 → 走官方 Docker `biopharm/deephlapan:v1.1` |
 | HLAthena | ☐ | ☐ | ✅(Docker) | ☐ | ✅ | **调研完成·待部署(proxy)** | ⚠️ 只预测提呈非免疫原性→仅 presentation baseline；无 GitHub，Docker `ssarkizova/hlathena-external` |
