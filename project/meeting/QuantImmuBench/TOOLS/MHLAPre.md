@@ -43,7 +43,7 @@
 - 部署状态：**阻塞坐实（2026-06-24 HPC clone+inspect）**。repo clone OK（15M，`tools_repos/MHLAPre`），代码 5 脚本齐 + 部分数据（`data_MHLAPre.csv` 等）；但 **(a) 无权重文件（无 .pt）(b) `ProcessData/Transfer_data/*.npy` 程序中间数据缺**（`TransfomerEncoder.py` line 69 `np.load('ProcessData/Transfer_data/hla_epit_cdr3.npy')` 会 FileNotFound）→ README 明示「raw + procedural data too large to upload，需邮件 23B903048@stu.hit.edu.cn」。**跑不通，待权重/数据。**
 - 运行顺序（README 实测）：`python Pretreatment.py` → `TransfomerEncoder.py` → `TextCNN.py`
 - **自训路也不通（2026-06-24 源码数据流分析）**：① `Pretreatment.py` 只有编码 helper 函数（peptide_encode_HLA/antigenMap/aamapping_TCR），**无 `__main__`，跑它不产出任何 npy**。② `TransfomerEncoder.py:69` 把缺失的 `ProcessData/Transfer_data/hla_epit_cdr3.npy` 当**输入** load；生成它的「HLA+epitope+CDR3→npy」拼装代码**没随 repo 发（line 55-58 全注释掉）**。→ 即「原始 CSV → 中间 npy」这步代码缺失，自训需逆向作者无文档的预处理胶水。**区别 NeoTImmuML（有完整 notebook 只需重训）；MHLAPre 是预处理管线本身不完整。**
-- 全网搜权重（GitHub 原 repo+3 fork+releases+作者所有 repo / Kaggle / Zenodo / figshare / HuggingFace）**全空**（2026-06-24 researcher 核）。
+- **大部队 4 路犄角旮旯搜全空（2026-06-24，铁证）**：①中文平台 Gitee/ModelScope/ScienceDB/NGDC/OpenI/百度网盘/CSDN/知乎 全空 ②作者 12 人关联 repo/主页/课题组 + THLAnet（同作者，只共享 encode 文件无权重）全空 ③期刊 Oxford 补充 PDF + Zenodo/figshare/Dryad/OSF/CodeOcean/Synapse/GigaDB/PwC/bio.tools 全空 ④Git 取证：49 commit 逐个扫，权重/npy **从未进过 git 历史**，无 LFS，3 fork 字节一致。同组工具 HLAIImaster 也同样"数据太大没传需邮件"。
 - **结论**：唯一可行路 = 邮件作者要权重+ProcessData。叠加无 license + IEDB overlap → ROI 低，建议标阻塞末位、可选邮件作者当 bonus。
 - example 烟测 job_id / 路径：N/A（阻塞，不可复现）
 - 许可：**无 LICENSE 文件**（GitHub 默认版权保留；学术使用需确认作者许可）
