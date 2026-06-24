@@ -1,0 +1,524 @@
+% ===================================================================
+% refs.bib  --  gdn2vessel D&B manuscript
+% Generated: 2026-06-24  |  Researcher agent (Sonnet 4.6)
+% Sources: arXiv / IEEE Xplore / MICCAI Springer / ICML PMLR
+% KEY policy:
+%   Primary keys use "key:" prefix (matches related_work.tex).
+%   Legacy TODO_ and bare keys: crossref alias to avoid compile errors.
+%   TODO_dandb_negative / TODO_clinical_connectivity:
+%     No single paper confirmed -- placeholder @misc. See inline notes.
+% ===================================================================
+
+% ---------------------------------------------------------------
+% 1. Vessel segmentation baselines
+% ---------------------------------------------------------------
+
+@article{key:frunet,
+  author    = {Wentao Liu and Huihua Yang and Tong Tian and Zhiwei Cao
+               and Xipeng Pan and Weijin Xu and Yang Jin and Feiyue Gao},
+  title     = {Full-Resolution Network and Dual-Threshold Iteration for
+               Retinal Vessel and Coronary Angiograph Segmentation},
+  journal   = {{IEEE} Journal of Biomedical and Health Informatics},
+  volume    = {26},
+  number    = {9},
+  pages     = {4623--4634},
+  year      = {2022},
+  doi       = {10.1109/JBHI.2022.3188710}
+}
+
+@article{key:csnet,
+  author    = {Lei Mou and Yitian Zhao and Huazhu Fu and Yonghuai Liu
+               and Jun Cheng and Yalin Zheng and Pan Su and Jianlong Yang
+               and Li Chen and Alejandro F. Frangi and Masahiro Akiba and Jiang Liu},
+  title     = {{CS}$^2$-Net: Deep Learning Segmentation of Curvilinear
+               Structures in Medical Imaging},
+  journal   = {Medical Image Analysis},
+  volume    = {67},
+  pages     = {101874},
+  year      = {2021},
+  doi       = {10.1016/j.media.2020.101874},
+  eprint    = {2010.07486},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{key:iternet,
+  author    = {Liangzhi Li and Manisha Verma and Yuta Nakashima
+               and Hajime Nagahara and Ryo Kawasaki},
+  title     = {{IterNet}: Retinal Image Segmentation Utilizing Structural
+               Redundancy in Vessel Networks},
+  booktitle = {{IEEE/CVF} Winter Conference on Applications of Computer
+               Vision ({WACV})},
+  year      = {2020},
+  eprint    = {1912.05763},
+  archivePrefix = {arXiv}
+}
+
+@article{key:scsnet,
+  author    = {Hao Wu and Wei Wang and Jie Zhong and Baiying Lei
+               and Zhixi Wen and Jing Qin},
+  title     = {{SCS-Net}: A Scale and Context Sensitive Network for
+               Retinal Vessel Segmentation},
+  journal   = {Medical Image Analysis},
+  volume    = {70},
+  pages     = {102025},
+  year      = {2021},
+  doi       = {10.1016/j.media.2021.102025}
+}
+
+% ---------------------------------------------------------------
+% 2. SSM / Mamba segmentation
+% ---------------------------------------------------------------
+
+@article{key:vmunet,
+  author    = {Jiacheng Ruan and Jincheng Li and Suncheng Xiang},
+  title     = {{VM-UNet}: Vision Mamba {UNet} for Medical Image Segmentation},
+  journal   = {arXiv preprint arXiv:2402.02491},
+  year      = {2024},
+  eprint    = {2402.02491},
+  archivePrefix = {arXiv}
+}
+
+@article{key:umamba,
+  author    = {Jun Ma and Feifei Li and Bo Wang},
+  title     = {{U-Mamba}: Enhancing Long-range Dependency for Biomedical
+               Image Segmentation},
+  journal   = {arXiv preprint arXiv:2401.04722},
+  year      = {2024},
+  eprint    = {2401.04722},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{key:swinumamba,
+  author    = {Jiarun Liu and Hao Yang and Hong-Yu Zhou and Yan Xi
+               and Lequan Yu and Yizhou Yu and Yong Liang and Guangming Shi
+               and Shaoting Zhang and Hairong Zheng and Shanshan Wang},
+  title     = {{Swin-UMamba}: Mamba-Based {UNet} with {ImageNet}-Based Pretraining},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention
+               -- {MICCAI} 2024},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {15008},
+  pages     = {615--625},
+  year      = {2024},
+  eprint    = {2402.03302},
+  archivePrefix = {arXiv}
+}
+
+@article{key:hmmamba,
+  author    = {Tao Wang and Dongyuan Tian and Wenbin Lei and Xiaohu Zhou
+               and Enmin Song and Guangzhi Ma},
+  title     = {Hierarchical Multi-Scale {Mamba} with Tubular Structure-Aware
+               Convolution for Retinal Vessel Segmentation},
+  journal   = {Entropy},
+  volume    = {27},
+  number    = {8},
+  pages     = {862},
+  year      = {2025},
+  doi       = {10.3390/e27080862}
+}
+
+% ---------------------------------------------------------------
+% 3. Topology / connectivity losses
+% ---------------------------------------------------------------
+
+@inproceedings{key:cldice,
+  author    = {Suprosanna Shit and Johannes C. Paetzold and Anjany Sekuboyina
+               and Ivan Ezhov and Alexander Unger and Andrey Zhylka
+               and Josien P. W. Pluim and Ulrich Bauer and Bjoern H. Menze},
+  title     = {{clDice} -- A Novel Topology-Preserving Loss Function for
+               Tubular Structure Segmentation},
+  booktitle = {{IEEE/CVF} Conference on Computer Vision and Pattern
+               Recognition ({CVPR})},
+  pages     = {16560--16569},
+  year      = {2021},
+  eprint    = {2003.07311},
+  archivePrefix = {arXiv}
+}
+@inproceedings{TODO_cldice, crossref = {key:cldice} }
+
+@inproceedings{key:cbdice,
+  author    = {Pengcheng Shi and Jiesi Hu and Yanwu Yang and Zilve Gao
+               and Wei Liu and Ting Ma},
+  title     = {Centerline Boundary Dice Loss for Vascular Segmentation},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention
+               -- {MICCAI} 2024},
+  series    = {Lecture Notes in Computer Science},
+  year      = {2024},
+  eprint    = {2407.01517},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{key:bettimatching,
+  author    = {Nico Stucki and Johannes C. Paetzold and Suprosanna Shit
+               and Bjoern Menze and Ulrich Bauer},
+  title     = {Topologically Faithful Image Segmentation via Induced
+               Matching of Persistence Barcodes},
+  booktitle = {Proceedings of the 40th International Conference on
+               Machine Learning ({ICML})},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {202},
+  pages     = {32698--32727},
+  publisher = {{PMLR}},
+  year      = {2023},
+  eprint    = {2211.15272},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{key:skeletonrecall,
+  author    = {Yannick Kirchhoff and Maximilian R. Rokuss and Saikat Roy
+               and Balint Kovacs and Constantin Ulrich and Tassilo Wald
+               and Maximilian Zenk and Philipp Vollmuth and Jens Kleesiek
+               and Fabian Isensee and Klaus H. Maier-Hein},
+  title     = {Skeleton Recall Loss for Connectivity Conserving and Resource
+               Efficient Segmentation of Thin Tubular Structures},
+  booktitle = {European Conference on Computer Vision ({ECCV})},
+  year      = {2024},
+  eprint    = {2404.03010},
+  archivePrefix = {arXiv}
+}
+
+% ---------------------------------------------------------------
+% 4. Vessel reconnection
+% ---------------------------------------------------------------
+
+@inproceedings{key:corsegrec,
+  author    = {Yuhao Qiu and Chen Li and Yong Gao and Yuanfeng Ji
+               and Peng Wang and Yefeng Zheng and Quanzheng Li},
+  title     = {{CorSegRec}: A Topology-Preserving Scheme for Extracting
+               Fully-Connected Coronary Arteries from {CT} Angiography},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention
+               -- {MICCAI} 2023},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {14220},
+  pages     = {667--677},
+  year      = {2023}
+}
+@inproceedings{TODO_corsegrec, crossref = {key:corsegrec} }
+
+@inproceedings{key:glcp,
+  author    = {Feixiang Zhou and Zhuangzhi Gao and He Zhao and Jianyang Xie
+               and Yanda Meng and Yitian Zhao and Gregory Y. H. Lip
+               and Yalin Zheng},
+  title     = {{GLCP}: Global-to-Local Connectivity Preservation for
+               Tubular Structure Segmentation},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention
+               -- {MICCAI} 2025},
+  year      = {2025},
+  eprint    = {2507.21328},
+  archivePrefix = {arXiv},
+  note      = {Oral}
+}
+@inproceedings{TODO_glcp, crossref = {key:glcp} }
+
+% ---------------------------------------------------------------
+% 5. Disconnection benchmark / tracing
+% ---------------------------------------------------------------
+
+@inproceedings{key:ptr,
+  author    = {Ziqiao Weng and Jiancheng Yang and Dongnan Liu and Weidong Cai},
+  title     = {Topology Repairing of Disconnected Pulmonary Airways and
+               Vessels: Baselines and a Dataset},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention
+               -- {MICCAI} 2023},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {14222},
+  year      = {2023},
+  eprint    = {2306.07089},
+  archivePrefix = {arXiv}
+}
+@inproceedings{TODO_ptr, crossref = {key:ptr} }
+
+@article{key:vgn,
+  author    = {Seung Yeon Shin and Soochahn Lee and Il Dong Yun
+               and Kyoung Mu Lee},
+  title     = {Deep Vessel Segmentation by Learning Graphical Connectivity},
+  journal   = {Medical Image Analysis},
+  volume    = {58},
+  pages     = {101556},
+  year      = {2019},
+  doi       = {10.1016/j.media.2019.101556},
+  eprint    = {1806.02279},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{key:trexplorer,
+  author    = {Roman Naeem and David Hagerman and Lennart Svensson
+               and Fredrik Kahl},
+  title     = {Trexplorer: Recurrent {DETR} for Topologically Correct
+               Tree Centerline Tracking},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention
+               -- {MICCAI} 2024},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {15011},
+  pages     = {744--754},
+  year      = {2024}
+}
+
+% ---------------------------------------------------------------
+% 6. 2-D fundus completion / protocol reference
+% ---------------------------------------------------------------
+
+@article{key:maskvsc,
+  author    = {Yi Zhou and Tariq S. Ahmed and Minglong Wang and Eric A. Newman
+               and Leopold Schmetterer and Huazhu Fu and Jianlong Cheng
+               and Bing Tan},
+  title     = {Masked Vascular Structure Segmentation and Completion in
+               Retinal Images},
+  journal   = {{IEEE} Transactions on Medical Imaging},
+  volume    = {44},
+  number    = {6},
+  pages     = {2492--2503},
+  year      = {2025},
+  doi       = {10.1109/TMI.2025.3538336}
+}
+@article{TODO_maskvsc, crossref = {key:maskvsc} }
+
+@inproceedings{key:creatis,
+  author    = {Sophie Carneiro-Esteves and Antoine Vacavant
+               and {Odyss{	extquoteright}{e}e} Merveille},
+  title     = {Restoring Connectivity in Vascular Segmentations Using a
+               Learned Post-Processing Model},
+  booktitle = {Topology- and Graph-Informed Imaging Informatics ({TGI3}),
+               {MICCAI} 2024 Workshop},
+  series    = {Lecture Notes in Computer Science},
+  year      = {2024},
+  eprint    = {2404.10506},
+  archivePrefix = {arXiv}
+}
+@inproceedings{creatis,     crossref = {key:creatis} }
+@inproceedings{TODO_creatis, crossref = {key:creatis} }
+
+% ---------------------------------------------------------------
+% 7. Benchmark precedents (metric reliability)
+% ---------------------------------------------------------------
+
+@inproceedings{key:touchstone,
+  author    = {Pedro R. A. S. Bassi and Wenxuan Li and Yucheng Tang
+               and Fabian Isensee and Zifu Wang and Jieneng Chen
+               and Yu-Cheng Chou and Yannick Kirchhoff and Maximilian Rokuss
+               and Ziyan Huang and Jin Ye and Junjun He and Tassilo Wald
+               and Constantin Ulrich and Michael Baumgartner and Saikat Roy
+               and Klaus H. Maier-Hein and Paul Jaeger and Yiwen Ye
+               and Yutong Xie and Jianpeng Zhang and Ziyang Chen and Yong Xia
+               and Zhaohu Xing and Lei Zhu and Yousef Sadegheih
+               and Afshin Bozorgpour and Pratibha Kumari and Reza Azad
+               and Dorit Merhof and Pengcheng Shi and Ting Ma and Yuxin Du
+               and Fan Bai and Tiejun Huang and Bo Zhao and Haonan Wang
+               and Xiaomeng Li and Hanxue Gu and Haoyu Dong and Jichen Yang
+               and Maciej A. Mazurowski and Saumya Gupta and Linshan Wu
+               and Jiaxin Zhuang and Hao Chen and Holger Roth and Daguang Xu
+               and Matthew B. Blaschko and Sergio Decherchi and Andrea Cavalli
+               and Alan L. Yuille and Zongwei Zhou},
+  title     = {Touchstone Benchmark: Are We on the Right Way for Evaluating
+               {AI} Algorithms for Medical Segmentation?},
+  booktitle = {Advances in Neural Information Processing Systems ({NeurIPS}),
+               Datasets and Benchmarks Track},
+  year      = {2024},
+  eprint    = {2411.03670},
+  archivePrefix = {arXiv}
+}
+@inproceedings{TODO_touchstone, crossref = {key:touchstone} }
+
+@inproceedings{key:pixelwise,
+  author    = {Tianyu Lin and Xinran Li and Chuntung Zhuang and Qi Chen
+               and Yuanhao Cai and Kai Ding and Alan L. Yuille
+               and Zongwei Zhou},
+  title     = {Are Pixel-Wise Metrics Reliable for Sparse-View Computed
+               Tomography Reconstruction?},
+  booktitle = {Advances in Neural Information Processing Systems ({NeurIPS}),
+               Datasets and Benchmarks Track},
+  year      = {2025},
+  eprint    = {2506.02093},
+  archivePrefix = {arXiv}
+}
+@inproceedings{TODO_pixelwise, crossref = {key:pixelwise} }
+
+% ---------------------------------------------------------------
+% 8. Linear attention / memory
+% ---------------------------------------------------------------
+
+@inproceedings{key:gla,
+  author    = {Songlin Yang and Bailin Wang and Yikang Shen
+               and Rameswar Panda and Yoon Kim},
+  title     = {Gated Linear Attention Transformers with Hardware-Efficient
+               Training},
+  booktitle = {Proceedings of the 41st International Conference on Machine
+               Learning ({ICML})},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {235},
+  pages     = {56501--56523},
+  publisher = {{PMLR}},
+  year      = {2024},
+  eprint    = {2312.06635},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{key:gdn2,
+  author    = {Songlin Yang and Jan Kautz and Ali Hatamizadeh},
+  title     = {Gated Delta Networks: Improving {Mamba2} with Delta Rule},
+  booktitle = {International Conference on Learning Representations ({ICLR})},
+  year      = {2025},
+  eprint    = {2412.06464},
+  archivePrefix = {arXiv}
+}
+@inproceedings{TODO_deltanet, crossref = {key:gdn2} }
+
+@inproceedings{key:gdkvm,
+  author    = {Rui Wang and Yimu Sun and Jingxing Guo and Huisi Wu
+               and Jing Qin},
+  title     = {{GDKVM}: Echocardiography Video Segmentation via
+               Spatiotemporal Key-Value Memory with Gated Delta Rule},
+  booktitle = {{IEEE/CVF} International Conference on Computer Vision ({ICCV})},
+  pages     = {12191--12200},
+  year      = {2025},
+  eprint    = {2512.10252},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{key:schlag2021,
+  author    = {Imanol Schlag and Kazuki Irie and {J{"{}u}rgen} Schmidhuber},
+  title     = {Linear Transformers Are Secretly Fast Weight Programmers},
+  booktitle = {Proceedings of the 38th International Conference on Machine
+               Learning ({ICML})},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {139},
+  pages     = {9355--9366},
+  publisher = {{PMLR}},
+  year      = {2021}
+}
+
+% ---------------------------------------------------------------
+% 9. IDF1 / tracking precedent
+% ---------------------------------------------------------------
+
+@inproceedings{key:snaketracker,
+  author    = {Li Chen and Wenjin Liu and Niranjan Balu
+               and Mahmud Mossa-Basha and Thomas S. Hatsukami
+               and Jenq-Neng Hwang and Chun Yuan},
+  title     = {Deep Open Snake Tracker for Vessel Tracing},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention
+               -- {MICCAI} 2021},
+  series    = {Lecture Notes in Computer Science},
+  year      = {2021},
+  eprint    = {2107.09049},
+  archivePrefix = {arXiv}
+}
+@inproceedings{snaketracker,     crossref = {key:snaketracker} }
+@inproceedings{TODO_snaketracker, crossref = {key:snaketracker} }
+
+% ---------------------------------------------------------------
+% 10. MQAR / Zoology
+% ---------------------------------------------------------------
+
+@article{key:mqar,
+  author    = {Simran Arora and Sabri Eyuboglu and Aman Timalsina
+               and Isys Johnson and Michael Poli and James Zou
+               and Atri Rudra and Christopher {R{	extquoteright{}e}}},
+  title     = {Zoology: Measuring and Improving Recall in Efficient
+               Language Models},
+  journal   = {arXiv preprint arXiv:2312.04927},
+  year      = {2023},
+  eprint    = {2312.04927},
+  archivePrefix = {arXiv}
+}
+@article{TODO_mqar, crossref = {key:mqar} }
+
+% ---------------------------------------------------------------
+% 11. Datasets
+% ---------------------------------------------------------------
+
+@article{key:drive,
+  author    = {Joes Staal and Michael D. Abramoff and Meindert Niemeijer
+               and Max A. Viergever and Bram {van Ginneken}},
+  title     = {Ridge-Based Vessel Segmentation in Color Images of the Retina},
+  journal   = {{IEEE} Transactions on Medical Imaging},
+  volume    = {23},
+  number    = {4},
+  pages     = {501--509},
+  year      = {2004},
+  doi       = {10.1109/TMI.2004.825627}
+}
+
+@article{key:chasedb1,
+  author    = {Muhammad Moazam Fraz and Paolo Remagnino and Andreas Hoppe
+               and Bunyarit Uyyanonvara and Alicja R. Rudnicka
+               and Christopher G. Owen and Sarah A. Barman},
+  title     = {An Ensemble Classification-Based Approach Applied to Retinal
+               Blood Vessel Segmentation},
+  journal   = {{IEEE} Transactions on Biomedical Engineering},
+  volume    = {59},
+  number    = {9},
+  pages     = {2538--2548},
+  year      = {2012},
+  doi       = {10.1109/TBME.2012.2205687}
+}
+
+@article{key:stare,
+  author    = {Adam D. Hoover and Valentina Kouznetsova and Michael Goldbaum},
+  title     = {Locating Blood Vessels in Retinal Images by Piecewise Threshold
+               Probing of a Matched Filter Response},
+  journal   = {{IEEE} Transactions on Medical Imaging},
+  volume    = {19},
+  number    = {3},
+  pages     = {203--210},
+  year      = {2000},
+  doi       = {10.1109/42.845178}
+}
+
+@article{key:hrf,
+  author    = {Attila Budai and Rudiger Bock and Andreas Maier
+               and Joachim Hornegger and Georg Michelson},
+  title     = {Robust Vessel Segmentation in Fundus Images},
+  journal   = {International Journal of Biomedical Imaging},
+  volume    = {2013},
+  pages     = {154860},
+  year      = {2013},
+  doi       = {10.1155/2013/154860}
+}
+
+@article{key:fives,
+  author    = {Kai Jin and Xingru Huang and Jingxing Zhou and Yunxiang Li
+               and Yan Yan and Yibao Sun and Qianni Zhang and Yaqi Wang
+               and Juan Ye},
+  title     = {{FIVES}: A Fundus Image Dataset for Artificial Intelligence
+               Based Vessel Segmentation},
+  journal   = {Scientific Data},
+  volume    = {9},
+  number    = {1},
+  pages     = {475},
+  year      = {2022},
+  doi       = {10.1038/s41597-022-01564-3}
+}
+
+% ---------------------------------------------------------------
+% 12. PLACEHOLDER entries -- needs manual resolution before submission
+% ---------------------------------------------------------------
+
+% TODO_dandb_negative  [PLACEHOLDER]
+% Context (diagnostics.tex): cites that benchmark work documenting negative and
+% cautionary results is explicitly invited by D&B venues.
+% FINDING: NeurIPS 2024 D&B CfP does NOT explicitly state this.
+%          NeurIPS 2026 ED track does. No single citable paper maps to claim.
+% RESOLUTION OPTIONS (choose before submission):
+%   (a) Remove cite; rewrite as assertion or add footnote with CfP URL.
+%   (b) Cite key:touchstone as a representative D&B paper surfacing limits.
+%   (c) Cite a meta-evaluation paper if one is found.
+@misc{TODO_dandb_negative,
+  author = {PLACEHOLDER},
+  title  = {TODO-dandb-negative: no single paper confirmed. See refs.bib comment.},
+  year   = {2024}
+}
+
+% TODO_clinical_connectivity  [PLACEHOLDER]
+% Context (intro.tex): cites that vessel tortuosity, branching geometry and
+% AV-network integrity are read off connected topology not per-pixel overlap.
+% No specific paper was mandated.
+% CANDIDATES:
+%   Zhao et al. IEEE TMI 2020, retinal vascular network topology.
+%   Any systematic review of retinal vascular biomarkers (2019-2022).
+% RESOLUTION: Replace with chosen reference before submission.
+@misc{TODO_clinical_connectivity,
+  author = {PLACEHOLDER},
+  title  = {TODO-clinical-connectivity: needs clinical/review paper on vessel
+            connectivity and clinical significance. See refs.bib comment.},
+  year   = {2020}
+}

@@ -4,6 +4,53 @@
 
 ---
 
+## Entry HLA — 2026-06-25【Wave3 工具窗】HLAthena 全量 benchmark 攻坚（HPC 加速 + 3 真 bug + 分块保证）
+
+> 窗口：本窗做 Wave3 第二批工具部署（PRIME/ImmuneApp/deepHLApan SMOKE_PASS+进 8tools；MHLAPre 权重全网无判死；HLAthena 本 entry）。
+
+用户要 HLAthena 进 9tools + 加速 + **保证结果正常**。HLAthena=presentation proxy，部署最折腾。
+
+**GCS 死锁绕过（SMOKE_PASS）**：镜像空壳，运行时从作者 `gs://msmodels` 拉模型，bundled key 死(401)→卡 retry。突破=**对象匿名可下**→下模型+patch `fetch_models=false` 挂载本地跑通。
+
+**加速改道 HPC**(48核+快GCS)：本机 docker save(2.35G→gz 901M，sshpass 直传绕 9p)→HPC singularity build hlathena.sif(792M)+并行下 65allele 模型(6.6G)。坑：别下整 `models_panpan/`(含 OLD_ecdf 全allele 57M→几百GB)，精确下。
+
+**3 真 bug（控制变量二分，不再猜）**：①**CRLF** `\r` 进肽长→encoding res9 KeyError，修 `tr -d '\015'`；②**混长崩** len8(panpan)+len9(specific) 混→合并崩，证:纯9mer OK/8+9混 FAIL，修=每长度单跑；③**孤儿抢CPU** ann_pred 孤儿不死拖死新跑(0输出假象)，根因 pkill 杀子不杀父(xargs respawn)，修=先杀父+setsid。
+
+**timeout 隐患（用户点醒）**：400+肽 run 逼近 900s→静默NaN。修=**分块**(chunk≤200肽,实测214s<<1200s)消timeout+提速。`run_hla_chunk.sh` 拆 336 块 24-way 跑 combine 回 allele。验证:A0301 200肽 chunk=214s 出真 MSi(AAAVFKTLP=0.0061)。ETA~70-90min。
+
+**待**：完成→合并→merge HLAthena 第9列→9tools 分析。⚠️分工:第二批含 HLAthena 按袁老师新分工属李紫晨，余嘉本轮超额不回退。
+
+---
+
+## Entry 27 — 2026-06-24【IEDB 实测窗】Phase0 命门用真数据钉死 = FAIL + CEDAR 兜底 + overlap 污染实测
+
+**窗口**：`.portfolio/locks/quantimmu-bench-iedb.claim`。任务=下 IEDB/CEDAR 真数据钉死 Phase0 命门 + 测 ELISpot×IEDB overlap。3 opus researcher（CEDAR URL/TESLA mmc/IEDB schema）+ 1 opus analyst（污染 AUC 偏差）+ 主线实测。
+> ⚠️ **双窗交叉确认**：同日「数据组窗」（下方 entry）独立下同一 IEDB csv 也得 magnitude 命门 FAIL；本窗在其上加 **CEDAR API 兜底 + per-method 填充率 + overlap AUC 偏差 + TESLA 核查**，把命门钉到三源交叉死。
+
+### 对外下载（拍板点已报备）
+- IEDB `tcell_full_v3.zip`（44.7MB→`tcell_full_v3.csv` **1.34GB / 573,409 行**）。**csv 行数 = IQ-API 计数 573,409 完全吻合**（交叉核验通过）。
+
+### 🔴 命门裁定：**FAIL（高置信，三源交叉）** — 详 `analysis/PHASE0_MEASURED.md`
+- **IEDB 全库**：连续 quant 非空全方法 5,773（大头 binding/IC50 非免疫原性强度）；功能 assay（ELISPOT+tetramer+ICS）连续 magnitude **仅 1,265 行（全病种）**，正例 1,082。ELISPOT 填充率 **861/278,562=0.31%**、tetramer 161/35,137=0.46%。
+- **肿瘤子集（命门）**：disease=cancer×功能×quant=**5 正/2 PMID**；Homo sapiens 源上界 **9 正/6 PMID**（真肿瘤分子 DBL+MART-1+DNMT1≈6）。1,265 行被病毒/感染霸占。
+- **CEDAR 癌症专库 API 兜底**（最权威肿瘤上界）：全库 153,251 行，功能 magnitude **158 行 total**，正例 **104/唯一肽 87/36 PMID**。
+- **判据**：≥2 study **PASS（36 PMID）**；≥10³ 正例 **FAIL（~87–104 唯一肿瘤肽≈10²，差 ~10×）**。问题=连续值系统性稀疏，非单一来源。
+- **TESLA**（核 Cell 2020 PMC7652061）：608 肽/37 正例，公开仅 binary，逐肽连续 tetramer 频率从未发布，单 consortium → 三判据全 FAIL。
+
+### ② ELISpot × IEDB overlap 污染（红队 🟠-2）
+- IEDB 全库 **229,625 唯一线性肽**；ELISpot benchmark **7,238 唯一肽 → overlap 82.2%（9mer）/ 2.5%（精确 181）**。9mer 多为突变长肽 flanking 与 IEDB WT 共享，非必然直接泄漏。
+- **AUC 乐观偏差**（`overlap_auc_bias.csv`）：**仅 pTuneos 实质**（full 0.778→clean-8mer 0.604，Δ+0.174），其余 7 工具 |Δ|<0.02 可忽略。⚠️ DS2 n_neg=11，pTuneos Δ bootstrap CI=[−0.11,+0.29] 含 0 = 方法学 caveat 非确证。
+
+### 🛑 拍板点（命门 FAIL = 命中率回退方向，停下报袁/徐伊琳）
+连续 magnitude 回归地基（公开源）不成立。退守三选一：①序数分级回归 ②响应频率回归 ③自补 ELISpot 产连续 GT（最稳，Wave3 管道已有）。**需袁/徐伊琳拍板。**
+
+### 新文件指针
+- `analysis/PHASE0_MEASURED.md`·`phase0_fillrate_measured.py`·`phase0_fillrate_measured.csv`·`phase0_method_quant_fill.csv`·`iedb_overlap_hits.csv`·`iedb_overlap_whitelist.csv`·`overlap_auc_bias.csv`·`figures/fig_iedb_overlap_auc_bias.png`·`fig_ptuneos_score_dist_clean_vs_full.png`
+- `reference/PHASE0_iedb_fillrate.md` 顶部加实测裁定横幅。
+- `data/`（不进 git）：`magnitude_rows.json`(IEDB 1265)·`cedar_magnitude_rows.json`(CEDAR 158)·`iedb_peptides.csv`(229k)；`tcell_full_v3.csv` 数据组窗已下同一份。
+
+---
+
 ## 2026-06-24【数据组窗】实下 5 公开集 + IEDB magnitude 命门实测 FAIL + 统一 GT schema + 泄漏划分
 
 支援数据组（王子源/谢孟翰）。「火力全开、大规模派 opus」。认领 `quantimmu-bench-data.claim`。

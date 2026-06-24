@@ -6,10 +6,12 @@ Coverage:
   2. _tiled_inference_numpy: tiled forward on large (>512) image, output shape OK.
   3. evaluate_benchmark end-to-end: mock adapter (identity conv) + fake NPZ →
        ① benchmark_dir loads + filters matching entries
-       ② model runs on 'image' field (not mask_broken) → pred non-trivial
+       ② model runs via adapter.forward_adapt (BUG3 fix: NOT via _tiled_inference_numpy)
        ③ SR / reID / ε_β0 all non-NaN (续连轴 headline 全有值)
        ④ CSV written with correct schema (all fieldnames present)
-  4. Legacy path backward compat: not passing --benchmark_dir → evaluate_adapter
+       ⑤ eval_input_mode = 'benchmark_adapter' (was 'benchmark_tiled' before BUG3 fix)
+  4. BUG3 fix regression: forward_adapt is called (not model.forward directly).
+  5. Legacy path backward compat: not passing --benchmark_dir → evaluate_adapter
      called; benchmark path NOT entered (no import crash).
 
 Design:
@@ -482,8 +484,8 @@ class TestEvaluateBenchmarkE2E:
 
         assert len(rows_read) == 1
 
-    def test_eval_input_mode_is_benchmark(self, tmp_path):
-        """eval_input_mode must be 'benchmark_tiled' (not 'fullimg')."""
+    def test_eval_input_mode_is_benchmark_adapter(self, tmp_path):
+        """eval_input_mode must be 'benchmark_adapter' (BUG3 fix: was 'benchmark_tiled')."""
         from evaluate import evaluate_benchmark
         bdir = self._build_benchmark_dir(tmp_path, n_imgs=1)
         ckpt = _make_fake_ckpt(tmp_path)
@@ -496,7 +498,87 @@ class TestEvaluateBenchmarkE2E:
             tile_size     = 128,
             overlap       = 16,
         )
-        assert rows[0]['eval_input_mode'] == 'benchmark_tiled'
+        assert rows[0]['eval_input_mode'] == 'benchmark_adapter', (
+            f"BUG3 regression: eval_input_mode={rows[0]['eval_input_mode']!r}, "
+            f"expected 'benchmark_adapter' (adapter path, not tiled-inference-numpy path)"
+        )
+
+    def test_bug3_forward_adapt_called_not_model_forward(self, tmp_path):
+        """
+        BUG3 regression test: adapter.forward_adapt must be called (not model.forward).
+
+        Before BUG3 fix, _tiled_inference_numpy called model(inp) directly,
+        bypassing adapter.preprocess_benchmark_image and adapter.forward_adapt.
+        This caused FR-UNet dice≈0 (OOD input).
+
+        We verify the fix by using a fake adapter whose forward_adapt returns
+        a constant +10 logit (→ pred_bin all-ones, dice > 0 if any GT vessel),
+        but whose model.forward returns -10 logit (→ pred_bin all-zeros, dice=0).
+        If forward_adapt is called → dice > 0 (pass).
+        If model.forward is called directly → dice ≈ 0 (fail).
+        """
+        import baselines
+        from baselines.registry import MODEL_REGISTRY
+        from baselines.base_adapter import BaselineAdapter
+
+        CANARY_ADAPTER = '_test_canary_forward_adapt'
+
+        class _CanaryModel(nn.Module):
+            """Returns large negative logit (-10) → pred all-zeros when called directly."""
+            def __init__(self):
+                super().__init__()
+            def forward(self, x):
+                return torch.full_like(x, -10.0)  # all-zeros after sigmoid
+
+        class _CanaryAdapter(BaselineAdapter):
+            """forward_adapt returns +10 logit → pred all-ones.  model.forward returns -10."""
+            name = CANARY_ADAPTER
+            kind = 'test'
+            source_repo = 'test'
+            env_tag = 'main'
+
+            def build_model(self, cfg):
+                return _CanaryModel()
+
+            def build_loss(self, cfg):
+                return nn.BCEWithLogitsLoss()
+
+            def build_optimizer(self, model, cfg):
+                return torch.optim.SGD([], lr=0.0)
+
+            def preprocess_cfg(self):
+                return {}
+
+            def forward_adapt(self, model, img_t, device):
+                # Returns +10 logit → sigmoid ≈ 1.0 → pred_bin all-ones
+                return torch.full_like(img_t, 10.0)
+
+        if CANARY_ADAPTER not in MODEL_REGISTRY:
+            MODEL_REGISTRY[CANARY_ADAPTER] = _CanaryAdapter
+
+        from evaluate import evaluate_benchmark
+
+        bdir = self._build_benchmark_dir(tmp_path, n_imgs=1)
+        # Canary model has no parameters; save an empty state_dict as ckpt.
+        canary_ckpt_path = tmp_path / 'canary_best.pth'
+        torch.save(_CanaryModel().state_dict(), str(canary_ckpt_path))
+
+        rows = evaluate_benchmark(
+            adapter_name  = CANARY_ADAPTER,
+            ckpt_path     = canary_ckpt_path,
+            benchmark_dir = bdir,
+            severity      = 'Medium',
+            device_str    = 'cpu',
+        )
+        assert len(rows) == 1
+        dice_val = rows[0]['dice']
+        # If adapter.forward_adapt was called → pred all-ones → dice > 0 (GT has vessel pixels)
+        # If model.forward was called directly → pred all-zeros → dice ≈ 0
+        assert dice_val > 0.0, (
+            f'BUG3 NOT FIXED: dice={dice_val:.4f}. '
+            f'model.forward returned all-zeros (-10 logit) meaning adapter.forward_adapt '
+            f'was NOT called. Expected adapter path (+10 logit → all-ones → dice>0).'
+        )
 
     def test_missing_ckpt_exits(self, tmp_path):
         """Non-existent ckpt should exit with code 1."""
@@ -582,3 +664,245 @@ class TestLegacyPathCompat:
         """_tiled_inference_numpy must be importable."""
         from evaluate import _tiled_inference_numpy  # noqa: F401
         assert callable(_tiled_inference_numpy)
+
+
+# ---------------------------------------------------------------------------
+#  Test 5: Multi-severity (--severity all / multi-value) — model loaded once
+# ---------------------------------------------------------------------------
+
+class TestMultiSeverityEval:
+    """
+    Tests for the multi-severity optimisation:
+      - model/adapter/ckpt loaded ONCE regardless of severity count.
+      - Each severity produces its own CSV (<stem>_<Severity>.csv).
+      - Inference cache reuses forward pass for same image_id across severities.
+      - Single-severity call still works (backward compat).
+      - 'all' sentinel expands to 4 severities.
+      - Unknown severity raises ValueError.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        _register_fake_adapter()
+
+    def _build_multi_sev_dir(
+        self, tmp_path: Path, dataset: str = 'drive',
+        severities: list = None, n_imgs: int = 2,
+    ) -> Path:
+        """Create benchmark_dir with entries for multiple severities."""
+        if severities is None:
+            severities = ['Easy', 'Medium', 'Hard', 'Extreme']
+        bdir = tmp_path / 'bench_multi'
+        bdir.mkdir(exist_ok=True)
+        entries = []
+        seed_offset = 0
+        for sev in severities:
+            for i in range(n_imgs):
+                image_id = f'img_{sev[:1].lower()}_{i:02d}'  # e.g. 'img_e_00'
+                npz = _make_fake_npz(
+                    bdir, dataset=dataset, severity=sev,
+                    image_id=image_id, H=64, W=64, n_gaps=2,
+                    seed=200 + seed_offset,
+                )
+                entries.append({
+                    'dataset':  dataset,
+                    'severity': sev,
+                    'image_id': image_id,
+                    'npz':      str(npz),
+                    'n_gaps':   2,
+                })
+                seed_offset += 1
+        _make_fake_manifest(bdir, entries)
+        return bdir
+
+    def test_single_severity_string_backward_compat(self, tmp_path):
+        """Single-string severity still works (no regression)."""
+        from evaluate import evaluate_benchmark
+        bdir = self._build_multi_sev_dir(tmp_path, severities=['Medium'])
+        ckpt = _make_fake_ckpt(tmp_path)
+        rows = evaluate_benchmark(
+            adapter_name  = _FAKE_ADAPTER_NAME,
+            ckpt_path     = ckpt,
+            benchmark_dir = bdir,
+            dataset       = 'drive',
+            severity      = 'Medium',
+            seed          = 42,
+            device_str    = 'cpu',
+        )
+        assert len(rows) == 2, f'Expected 2 rows for single severity, got {len(rows)}'
+        assert all(r['severity'] == 'Medium' for r in rows)
+
+    def test_multi_severity_list_returns_combined_rows(self, tmp_path):
+        """Passing ['Easy', 'Hard'] returns rows for both severities combined."""
+        from evaluate import evaluate_benchmark
+        bdir = self._build_multi_sev_dir(tmp_path, severities=['Easy', 'Hard'], n_imgs=2)
+        ckpt = _make_fake_ckpt(tmp_path)
+        rows = evaluate_benchmark(
+            adapter_name  = _FAKE_ADAPTER_NAME,
+            ckpt_path     = ckpt,
+            benchmark_dir = bdir,
+            dataset       = 'drive',
+            severity      = ['Easy', 'Hard'],
+            seed          = 42,
+            device_str    = 'cpu',
+        )
+        assert len(rows) == 4, f'Expected 4 rows (2 Easy + 2 Hard), got {len(rows)}'
+        sev_seen = {r['severity'] for r in rows}
+        assert sev_seen == {'Easy', 'Hard'}, f'Unexpected severities: {sev_seen}'
+
+    def test_all_sentinel_runs_four_severities(self, tmp_path):
+        """'all' sentinel expands to all four severities."""
+        from evaluate import evaluate_benchmark
+        bdir = self._build_multi_sev_dir(
+            tmp_path,
+            severities=['Easy', 'Medium', 'Hard', 'Extreme'],
+            n_imgs=1,
+        )
+        ckpt = _make_fake_ckpt(tmp_path)
+        rows = evaluate_benchmark(
+            adapter_name  = _FAKE_ADAPTER_NAME,
+            ckpt_path     = ckpt,
+            benchmark_dir = bdir,
+            dataset       = 'drive',
+            severity      = 'all',
+            seed          = 42,
+            device_str    = 'cpu',
+        )
+        assert len(rows) == 4, f'Expected 4 rows (1 per severity), got {len(rows)}'
+        sev_seen = {r['severity'] for r in rows}
+        assert sev_seen == {'Easy', 'Medium', 'Hard', 'Extreme'}
+
+    def test_multi_severity_writes_per_severity_csv(self, tmp_path):
+        """Each severity writes its own <stem>_<Severity>.csv file."""
+        from evaluate import evaluate_benchmark
+        bdir = self._build_multi_sev_dir(
+            tmp_path, severities=['Easy', 'Medium'], n_imgs=1,
+        )
+        ckpt = _make_fake_ckpt(tmp_path)
+        out_base = tmp_path / 'out_eval.csv'
+        evaluate_benchmark(
+            adapter_name  = _FAKE_ADAPTER_NAME,
+            ckpt_path     = ckpt,
+            benchmark_dir = bdir,
+            dataset       = 'drive',
+            severity      = ['Easy', 'Medium'],
+            output_csv    = out_base,
+            seed          = 42,
+            device_str    = 'cpu',
+        )
+        csv_easy   = tmp_path / 'out_eval_Easy.csv'
+        csv_medium = tmp_path / 'out_eval_Medium.csv'
+        assert csv_easy.exists(),   f'Missing per-severity CSV: {csv_easy}'
+        assert csv_medium.exists(), f'Missing per-severity CSV: {csv_medium}'
+        # Verify each file contains rows only for its severity
+        for csv_path, expected_sev in [(csv_easy, 'Easy'), (csv_medium, 'Medium')]:
+            with open(csv_path, 'r', newline='', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    assert row['severity'] == expected_sev, (
+                        f'{csv_path.name}: expected severity={expected_sev!r}, '
+                        f'got {row["severity"]!r}'
+                    )
+
+    def test_model_build_called_once_for_multi_severity(self, tmp_path):
+        """
+        model.build_model must be called exactly ONCE even when multiple severities
+        are requested (the optimisation target).
+
+        Strategy: register a canary adapter that counts build_model calls via a
+        mutable counter in a shared list (avoids closure mutation issues).
+        """
+        import baselines
+        from baselines.registry import MODEL_REGISTRY
+        from baselines.base_adapter import BaselineAdapter
+
+        BUILD_COUNTER = [0]  # mutable list — incremented inside build_model
+        CANARY_NAME = '_test_build_once_canary'
+
+        class _CountingAdapter(BaselineAdapter):
+            name       = CANARY_NAME
+            kind       = 'test'
+            source_repo = 'test'
+            env_tag    = 'main'
+
+            def build_model(self, cfg):
+                BUILD_COUNTER[0] += 1
+                return _TinyConvModel()
+
+            def build_loss(self, cfg):
+                return nn.BCEWithLogitsLoss()
+
+            def build_optimizer(self, model, cfg):
+                return torch.optim.SGD([], lr=0.0)
+
+            def preprocess_cfg(self):
+                return {}
+
+            def forward_adapt(self, model, img_t, device):
+                with torch.no_grad():
+                    return model(img_t.to(device))
+
+        if CANARY_NAME not in MODEL_REGISTRY:
+            MODEL_REGISTRY[CANARY_NAME] = _CountingAdapter
+
+        from evaluate import evaluate_benchmark
+
+        bdir = self._build_multi_sev_dir(
+            tmp_path,
+            severities=['Easy', 'Medium', 'Hard', 'Extreme'],
+            n_imgs=1,
+        )
+        ckpt = _make_fake_ckpt(tmp_path)
+
+        BUILD_COUNTER[0] = 0  # reset before call
+        evaluate_benchmark(
+            adapter_name  = CANARY_NAME,
+            ckpt_path     = ckpt,
+            benchmark_dir = bdir,
+            dataset       = 'drive',
+            severity      = 'all',
+            seed          = 42,
+            device_str    = 'cpu',
+        )
+        assert BUILD_COUNTER[0] == 1, (
+            f'build_model was called {BUILD_COUNTER[0]} time(s); '
+            f'expected exactly 1 (model should be loaded once for all severities). '
+            f'The multi-severity optimisation is NOT in effect.'
+        )
+
+    def test_unknown_severity_raises_value_error(self, tmp_path):
+        """Passing an unknown severity string must raise ValueError."""
+        from evaluate import evaluate_benchmark
+        bdir = self._build_multi_sev_dir(tmp_path, severities=['Medium'])
+        ckpt = _make_fake_ckpt(tmp_path)
+        with pytest.raises(ValueError, match='Unknown severity'):
+            evaluate_benchmark(
+                adapter_name  = _FAKE_ADAPTER_NAME,
+                ckpt_path     = ckpt,
+                benchmark_dir = bdir,
+                severity      = 'BogusLevel',
+                device_str    = 'cpu',
+            )
+
+    def test_resolve_severity_list_helper(self):
+        """Unit-test _resolve_severity_list directly."""
+        from evaluate import _resolve_severity_list
+        # None → None
+        assert _resolve_severity_list(None) is None
+        # single string
+        assert _resolve_severity_list('Medium') == ['Medium']
+        # 'all' sentinel
+        result = _resolve_severity_list('all')
+        assert set(result) == {'Easy', 'Medium', 'Hard', 'Extreme'}
+        assert len(result) == 4
+        # list
+        assert _resolve_severity_list(['Easy', 'Hard']) == ['Easy', 'Hard']
+        # deduplication
+        dedup = _resolve_severity_list(['Medium', 'Medium'])
+        assert dedup == ['Medium']
+        # ['all'] list
+        result2 = _resolve_severity_list(['all'])
+        assert set(result2) == {'Easy', 'Medium', 'Hard', 'Extreme'}
+        # invalid
+        with pytest.raises(ValueError):
+            _resolve_severity_list('SuperHard')

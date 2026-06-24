@@ -1,0 +1,52 @@
+# Gate1 CPU tiny 烟测 config
+# 用途：纯验 e2e 工程管道跑通（data_split→train→subband_zero→faithfulness），CPU 跑，
+# 每类子采样 25 张、epochs=1，秒级完成。绝不报任何数字（slice split + 极小子集 + 平衡增强集）。
+# local GPU 被别窗占用时用此 config 走 CPU，不抢卡槽。
+
+# ---- 数据 ----
+dataset: kaggle_smoke
+data_root: null  # 通过 --data_root 传入（指向 Combined Dataset/test）
+
+split_mode: slice
+train_ratio: 0.70
+val_ratio: 0.15
+test_ratio: 0.15
+random_seed: 42
+max_samples_per_class: 25  # 烟测子采样；正式跑须设 null
+
+split_csv_dir: log/splits_smoke
+
+# ---- 图像预处理 ----
+image_size: 224
+normalize_mean: [0.485, 0.456, 0.406]
+normalize_std: [0.229, 0.224, 0.225]
+
+# ---- 分类器 ----
+backbone: resnet50
+num_classes: 4
+pretrained: true
+
+optimizer: adam
+lr: 1.0e-4
+batch_size: 8
+epochs: 1  # 烟测单轮
+scheduler: none
+
+use_class_weight: true
+
+# Quantus 烟测提速（CPU）：放大 PixelFlipping 步长、缩 ROAD 百分点数
+pixelflip_features_in_step: 3136   # 须整除 50176(=224²): 3136×16=50176（烟测16步；正式 512×98）
+road_percentages: [10, 30, 50, 70, 90]  # 烟测 5 点（正式 range(1,100,2)=50 点）
+
+num_workers: 0
+pin_memory: false
+
+aug_hflip: true
+aug_rotation_degrees: 15
+aug_vflip: false
+
+# ---- 输出 ----
+log_dir: log/smoke
+checkpoint_dir: log/smoke/checkpoints
+results_csv: log/smoke/classifier_results.csv
+state_json: log/smoke/classifier_state.json

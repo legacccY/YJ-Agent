@@ -1,0 +1,1 @@
+method,dataset,label_ratio,seed,dice_head,dice_mean,hd95_head,hd95_mean,n_labeled,n_unlabeled,n_test,epochs,train_time_min

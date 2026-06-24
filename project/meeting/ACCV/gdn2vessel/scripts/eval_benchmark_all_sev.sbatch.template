@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+# eval_benchmark_all_sev.sbatch.template — HPC sbatch 模板
+# 单次 evaluate.py 跑全部 4 severity (Easy/Medium/Hard/Extreme)。
+#
+# 关键优化（vs 4× 循环）：
+#   --severity all  → model/adapter/ckpt 加载 1 次，同一 image_id 的模型推理
+#   结果跨 severity 复用缓存（benchmark 设计：severity 只改 gap 结构，不改模型输入图）。
+#   节省 ~4× import torch + 4× load ckpt + 4× build model + 重复推理 开销。
+#
+# 产出 CSV（每 severity 一文件，下游 verdict/leaderboard 脚本命名一致）：
+#   {OUT_DIR}/p3_{DATASET}_{ADAPTER}_s{SEED}_Easy.csv
+#   {OUT_DIR}/p3_{DATASET}_{ADAPTER}_s{SEED}_Medium.csv
+#   {OUT_DIR}/p3_{DATASET}_{ADAPTER}_s{SEED}_Hard.csv
+#   {OUT_DIR}/p3_{DATASET}_{ADAPTER}_s{SEED}_Extreme.csv
+#
+# 使用方式：
+#   替换 {PLACEHOLDERS}，保存为实例化文件（如 eval_drive_frunet_s42.sbatch），
+#   dos2unix 去 CRLF，上传 HPC 后单独提交。
+#
+# Placeholders：
+#   {ADAPTER}    — adapter 名（e.g. fr_unet, backbone_unet, ours_gdn2）
+#   {DATASET}    — 数据集小写（e.g. drive, chase, stare, fives）
+#   {DATASET_UP} — 数据集大写（e.g. DRIVE, CHASE, STARE, FIVES），用于 --dataset 参数
+#   {SEED}       — 种子整数（e.g. 42）
+#   {DATA_ROOT}  — 该集 data_root（e.g. /gpfs/.../data/vessel/DRIVE）
+#   {BENCH_DIR}  — benchmark_dir 扁平目录（含 manifest.json，e.g. /gpfs/.../data/benchmark_cache）
+#   {CKPT_PATH}  — best.pth 完整路径（e.g. /gpfs/.../outputs/frunet_drive_s42/best.pth）
+#   {OUT_DIR}    — 输出目录（e.g. /gpfs/.../outputs/eval_benchmark/drive_frunet_s42）
+#
+# HPC 提交 checklist（必过，见 feedback_hpc_submit_checklist）：
+#   ① 上传后必须去 CRLF：dos2unix <file>.sbatch
+#                      或 sed -i 's/\r$//' <file>.sbatch
+#   ② 看 logs/{job-name}_{jobid}.out 产出确认 4 个 CSV 已写，不信 jobid
+#   ③ 单独提交（sbatch <file>.sbatch），不批量并发
+#   ④ 确认 benchmark_cache 有对应 {DATASET}_{Easy,Medium,Hard,Extreme}_*.npz + manifest.json
+
+# ─── SLURM 头 ────────────────────────────────────────────────────────────────
+#SBATCH --partition=gpu4090
+#SBATCH --account=shuihuawang
+#SBATCH --qos=4gpus
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=02:00:00
+#SBATCH --job-name=eval_{DATASET}_{ADAPTER}_s{SEED}
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
+
+# ─── 1. 防 logs 目录缺失静默失败 ────────────────────────────────────────────
+mkdir -p logs
+mkdir -p {OUT_DIR}
+
+# ─── 2. Triton / FLA NFS 死锁修复（所有 GDN-2 job 必带）────────────────────
+export TRITON_CACHE_DIR=/tmp/$USER/triton_eval
+mkdir -p "$TRITON_CACHE_DIR"
+rm -rf "$HOME/.triton/cache" 2>/dev/null || true
+
+# ─── 3. 激活 venv ────────────────────────────────────────────────────────────
+source /gpfs/work/bio/jiayu2403/gdn2venv/bin/activate
+
+# ─── 4. 打印环境信息 ─────────────────────────────────────────────────────────
+echo "[eval] start: $(date)"
+echo "[eval] host: $(hostname)"
+echo "[eval] adapter={ADAPTER}  dataset={DATASET}  seed={SEED}"
+echo "[eval] ckpt={CKPT_PATH}"
+echo "[eval] bench_dir={BENCH_DIR}"
+echo "[eval] out_dir={OUT_DIR}"
+echo "[eval] gpu: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo 'no nvidia-smi')"
+python -c "import torch; print(f'[eval] torch={torch.__version__}  cuda={torch.cuda.is_available()}')"
+
+# ─── 5. 单次 evaluate.py 跑全 4 severity ────────────────────────────────────
+# --severity all → model 加载 1 次，4 severity 顺序跑，产出 4 个独立 CSV。
+# --output_csv 是 stem，加载后自动派生 _Easy.csv / _Medium.csv 等。
+python /gpfs/work/bio/jiayu2403/gdn2vessel/src/evaluate.py \
+    --adapter   {ADAPTER} \
+    --ckpt      {CKPT_PATH} \
+    --data_root {DATA_ROOT} \
+    --dataset   {DATASET_UP} \
+    --benchmark_dir {BENCH_DIR} \
+    --severity  all \
+    --seed      {SEED} \
+    --device    cuda \
+    --output_csv {OUT_DIR}/p3_{DATASET}_{ADAPTER}_s{SEED}.csv
+
+EXIT_CODE=$?
+echo "[eval] done: $(date)  exit_code=$EXIT_CODE"
+
+# ─── 6. 验证 4 个 CSV 产出 ───────────────────────────────────────────────────
+echo "[eval] --- CSV 产出验证 ---"
+for SEV in Easy Medium Hard Extreme; do
+    CSV="{OUT_DIR}/p3_{DATASET}_{ADAPTER}_s{SEED}_${SEV}.csv"
+    if [ -f "$CSV" ]; then
+        ROWS=$(wc -l < "$CSV")
+        echo "[eval] OK: $CSV  ($ROWS lines incl header)"
+    else
+        echo "[eval] MISSING: $CSV"
+    fi
+done
+
+exit $EXIT_CODE

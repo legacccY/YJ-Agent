@@ -218,6 +218,13 @@ def _build_datasets(
         cache_path = cfg.get("frunet_cache_path", None)  # 可选，从 config 读
         # cache_path 也可由 --frunet_cache_path CLI arg 覆盖（见 parse_args）
 
+        # BUG-FIX-patch-epoch: 官方 dataset size = 预切 patch 总数（非图片数）。
+        # 本实现等价：train dataset 里每张图重复 repeats 次，每次随机切 1 patch。
+        # repeats=200 → DRIVE(16张)=3200 items, bs=512 → 6 steps/epoch（合理量级）。
+        # BUG-FIX-val: val 传 patch_size=None → 整图模式，配合 _val_epoch 里的
+        # adapter.forward_adapt 做官方 get_square+整图推理，Dice 信号才有意义。
+        _FRUNET_TRAIN_REPEATS = int(cfg.get("frunet_train_repeats", 1000))
+
         if ds_upper == "DRIVE":
             train_ds = make_frunet_dataset(
                 name="drive",
@@ -226,12 +233,13 @@ def _build_datasets(
                 patch_size=patch_size,
                 augment=True,
                 cache_path=cache_path,
+                repeats=_FRUNET_TRAIN_REPEATS,  # BUG-FIX-patch-epoch
             )
             val_ds = make_frunet_dataset(
                 name="drive",
                 data_root=str(data_root),
                 split="val",
-                patch_size=patch_size,
+                patch_size=None,          # BUG-FIX-val: 整图模式（官方 get_square）
                 augment=False,
                 cache_path=cache_path,
             )
@@ -243,12 +251,13 @@ def _build_datasets(
                 patch_size=patch_size,
                 augment=True,
                 cache_path=cache_path,
+                repeats=_FRUNET_TRAIN_REPEATS,  # BUG-FIX-patch-epoch
             )
             val_ds = make_frunet_dataset(
                 name="chase",
                 data_root=str(data_root),
                 split="val",
-                patch_size=patch_size,
+                patch_size=None,          # BUG-FIX-val: 整图模式
                 augment=False,
                 cache_path=cache_path,
             )
@@ -262,12 +271,13 @@ def _build_datasets(
                 augment=True,
                 cache_path=cache_path,
                 stare_official_baseline=False,
+                repeats=_FRUNET_TRAIN_REPEATS,  # BUG-FIX-patch-epoch
             )
             val_ds = make_frunet_dataset(
                 name="stare",
                 data_root=str(data_root),
                 split="val",
-                patch_size=patch_size,
+                patch_size=None,          # BUG-FIX-val: 整图模式
                 augment=False,
                 cache_path=cache_path,
                 stare_official_baseline=False,
@@ -280,12 +290,13 @@ def _build_datasets(
                 patch_size=patch_size,
                 augment=True,
                 cache_path=cache_path,
+                repeats=_FRUNET_TRAIN_REPEATS,  # BUG-FIX-patch-epoch
             )
             val_ds = make_frunet_dataset(
                 name="fives",
                 data_root=str(data_root),
                 split="val",
-                patch_size=patch_size,
+                patch_size=None,          # BUG-FIX-val: 整图模式
                 augment=False,
                 cache_path=cache_path,
             )
@@ -430,28 +441,57 @@ def _val_epoch(
     model: nn.Module,
     loader: DataLoader,
     device: torch.device,
+    adapter: Optional[Any] = None,
 ) -> float:
     """
     单 epoch 验证，返回 mean val Dice（FOV 内，纯 numpy，无 scipy）。
     阈值固定 0.5（与 evaluate.py _base_eval.yaml 量尺一致）。
+
+    BUG-FIX-val: 若 adapter 有 forward_adapt（如 fr_unet 的滑窗推理），
+    则调 adapter.forward_adapt(model, img, device) 代替直接 model(img)。
+    fr_unet val_ds 传 patch_size=None → 整图 get_square → forward_adapt 滑窗 →
+    frunet_test_crop_tensor 裁回 orig_hw → Dice 才是真实全图 Dice。
     """
+    from datasets.frunet_pipeline import frunet_test_crop_tensor  # 整图裁回工具
+
     model.eval()
     dice_scores = []
+    use_forward_adapt = (adapter is not None and hasattr(adapter, 'forward_adapt'))
 
     for batch in loader:
         img = batch["image"].to(device, non_blocking=False)
-        gt = batch["gt"].to(device, non_blocking=False)
+        gt  = batch["gt"].to(device, non_blocking=False)
         fov = batch["fov"].to(device, non_blocking=False)
+        # orig_hw: frunet 整图模式下返回 (orig_H, orig_W)，patch 模式下 = patch_size
+        orig_hw = batch.get("orig_hw", None)  # tuple of (Tensor, Tensor) after collate
 
-        logits = model(img)
+        if use_forward_adapt:
+            # BUG-FIX-val: fr_unet 整图推理路径
+            # DataLoader collate 会把 orig_hw tuple → (Tensor[B], Tensor[B])
+            logits = adapter.forward_adapt(model, img, device)  # (B,1,H_pad,W_pad)
+        else:
+            logits = model(img)
+
         prob = torch.sigmoid(logits)
         pred_bin = (prob > 0.5).float()
 
         for b in range(img.shape[0]):
+            # BUG-FIX-val: 整图模式时裁回 orig_hw，去掉 get_square 的 zero-padding
+            if use_forward_adapt and orig_hw is not None:
+                oh = int(orig_hw[0][b]) if hasattr(orig_hw[0], '__len__') else int(orig_hw[0])
+                ow = int(orig_hw[1][b]) if hasattr(orig_hw[1], '__len__') else int(orig_hw[1])
+                pred_b  = frunet_test_crop_tensor(pred_bin[b],   oh, ow)   # (1,oh,ow)
+                gt_b    = frunet_test_crop_tensor(gt[b],          oh, ow)   # (1,oh,ow)
+                fov_b   = frunet_test_crop_tensor(fov[b],         oh, ow)   # (1,oh,ow)
+            else:
+                pred_b = pred_bin[b]
+                gt_b   = gt[b]
+                fov_b  = fov[b]
+
             d = _dice_np(
-                pred_bin[b, 0].cpu().numpy(),
-                gt[b, 0].cpu().numpy(),
-                fov[b, 0].cpu().numpy(),
+                pred_b[0].cpu().numpy(),
+                gt_b[0].cpu().numpy(),
+                fov_b[0].cpu().numpy(),
             )
             dice_scores.append(d)
 
@@ -680,7 +720,7 @@ def main(argv=None):
             model, train_loader, optimizer, loss_fn,
             device, use_amp, scaler,
         )
-        val_dice = _val_epoch(model, val_loader, device)
+        val_dice = _val_epoch(model, val_loader, device, adapter=adapter)
 
         elapsed = time.time() - t0
 

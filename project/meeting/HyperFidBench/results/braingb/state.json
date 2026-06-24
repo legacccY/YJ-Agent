@@ -1,0 +1,13 @@
+{
+  "run_id": "smoke-edge2",
+  "status": "running",
+  "model": "gcn",
+  "atlas": "cc200",
+  "dataset": "ABIDE",
+  "epoch": 0,
+  "seed_idx": 0,
+  "fold_idx": 0,
+  "acc": null,
+  "auc": null,
+  "timestamp": 1782298917.3593535
+}

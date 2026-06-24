@@ -1,0 +1,163 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% §5 Diagnostic Methodology & Honest Negative Findings — gdn2vessel benchmark-only D&B 稿
+% 真源：STORY_FRAMEWORK.md（Claim 4 = 预登记诊断方法学 + 诚实负结果）
+%        + PROJECT_LOG.md Entry 31/32（两命门死的完整证伪链）。
+% 本节服务 Claim 4 / lever = D&B track 诚实评测贡献 + benchmark 判别力的正向证据。
+% 三条负结果均已确证（实验在先、预登记 kill-criteria 写死）→ 照实写不 hedge。
+% 但所有具体数字 \TODO 占位（禁臆造，verifier 核 csv 回填）；引用 \cite 占位。
+% R6 严守：禁复活死命门当卖点（不写「delta 仍有微弱优势」「Frangi 门 DRIVE 涨说明有效」）。
+% 双盲：无自引/机构；禁绝对化措辞。
+% =====================================================================
+\section{Diagnostic Methodology and Honest Negative Findings}
+\label{sec:diagnostics}
+
+A benchmark earns trust not only by ranking methods but by being able to
+\emph{falsify} the hypotheses of those who build on it---including its own
+authors. This section reports the diagnostic discipline that accompanies the
+suite and the three negative findings it produced. We present these findings
+as the intended output of the protocol rather than as failures to be hidden:
+each is a case in which a method, a mechanism, or a metric was held to a
+criterion fixed in advance and did not meet it, and each demonstrates that
+the suite can detect exactly the kinds of limitation that a reconnection
+evaluation is meant to surface.
+
+\subsection{A pre-registered, falsify-the-crux diagnostic protocol}
+\label{sec:diagnostics:protocol}
+
+The diagnostic protocol that ships with this benchmark rests on two
+principles. The first is \emph{pre-registration}: for every load-bearing
+hypothesis, the kill-criteria---the numerical thresholds and the statistical
+tests under which the hypothesis is to be rejected---are written down before
+the corresponding data are seen. This guards against post-hoc rationalization
+(hypothesizing after the results are known) and against the temptation to
+relax a threshold once the numbers arrive. The second is a
+\emph{three-layer line of defence} in which a hypothesis is first derived
+semi-formally, then independently challenged by an adversarial review that
+seeks to refute it, and finally checked numerically against the recorded
+outputs, with no single layer able to confirm a claim on its own.
+
+The discipline is deliberately ordered to test the load-bearing assumption
+\emph{first}, with the cheapest decisive experiment, rather than last. A
+recurring failure mode in method-driven work is to defer the crux---the one
+assumption on which the headline rests---until after a large body of
+supporting evidence has been assembled, at which point confirmation bias
+makes an unfavourable result easy to read as favourable. By contrast, the
+protocol here treats the crux as the thing to attempt to break at the
+outset. The two negative findings reported below were each produced by a
+pre-registered audit of this kind, applied to a hypothesis on which an
+earlier framing of the project had rested. We report them in full because a
+diagnostic methodology that only ever confirms its authors' hypotheses would
+provide no evidence of discriminative power; the value of the protocol is
+precisely that it rejected the hypotheses it was given. This follows the
+spirit of benchmark work that documents negative and cautionary results
+rather than suppressing them \cite{TODO_dandb_negative}.
+
+\subsection{Negative finding I: associative memory is not mechanistically specific}
+\label{sec:diagnostics:memory}
+
+The first hypothesis subjected to a pre-registered audit was that a
+delta-rule associative-memory module is mechanistically \emph{specific} for
+reconnection---that its memory dynamics confer an advantage on tubular
+reconnection over a plain stateful memory, and in particular that the memory
+state can be made to bind same-root identity for re-identification. This
+hypothesis was rejected on two independent grounds.
+
+\paragraph{The mechanism is not specific (MQAR probe).}
+We isolated the memory mechanism on a multi-query associative-recall
+probe \cite{TODO_mqar}, a controlled retrieval task on which a
+genuinely superior associative memory should separate from a baseline. Under
+the pre-registered comparison, the delta-rule memory matched a plain gated
+linear-attention memory at the only operating point at which both converged
+(MQAR with sequence length $n{=}64$ and learning rate $10^{-3}$:
+gdn2~$\approx$~\TODO{gdn2 acc, 核 csv} versus
+gla~$\approx$~\TODO{gla acc, 核 csv}). At this point the two are
+indistinguishable; the delta rule shows no advantage over a standard stateful
+memory \cite{TODO_deltanet}. We emphasize what is \emph{not} concluded:
+this is a negative result about \emph{specificity}, not a claim that either
+memory is poor in absolute terms. The probe simply does not support the
+hypothesis that the delta rule is the special ingredient.
+
+\paragraph{The objective provides no gradient for the intended binding.}
+The second ground is structural rather than empirical. In the reconnection
+pipeline, the dominant training signal is the segmentation loss, and the
+re-identification head is isolated from the memory state by three stop-gradient
+boundaries. Consequently the segmentation objective exerts \emph{no} gradient
+pressure to bind the memory state to a consistent same-root identity: the
+property on which the ``memory performs re-identification internally''
+hypothesis depended is never optimized for, and so cannot emerge from
+training. Taken together, the non-specific probe result and the objective
+mismatch establish that the memory module is one evaluated method on the
+leaderboard, and nothing more. We make \emph{no} claim of mechanism
+specificity, and the module's leaderboard standing is reported in
+Section~\ref{sec:benchmark} on the same footing as every other baseline.
+
+\subsection{Negative finding II: a differentiable vesselness gate does not robustly improve topology}
+\label{sec:diagnostics:gate}
+
+The second hypothesis was that a differentiable Frangi-style vesselness gate,
+derived from the input image and used to modulate the memory, robustly
+improves topological reconnection over an ungated variant. The gate adds a
+negligible number of parameters relative to the backbone, so any improvement
+could not be attributed to added capacity. The audit pre-registered a gate
+that the gated variant had to pass to be accepted, with every threshold fixed
+before the runs: (i) at least one dataset showing a clDice gap of at least
+$+0.03$ in favour of the gated variant; (ii) a paired test with $p<0.05$ and
+a bootstrap confidence interval whose lower bound lies above zero; and (iii)
+a consistent direction of effect across both datasets.
+
+The pre-registered gate was not passed. On DRIVE the gated variant was ahead
+(clDice gap $\approx$~\TODO{DRIVE clDice gap, 核 csv}), but on CHASE the
+direction reversed and the gated variant was behind
+(clDice gap $\approx$~\TODO{CHASE clDice gap, 核 csv}). With the two datasets
+pointing in opposite directions, and with neither dataset reaching the
+pre-registered significance threshold
+(\TODO{DRIVE p-value + bootstrap CI bound, 核 csv};
+\TODO{CHASE p-value + bootstrap CI bound, 核 csv}), none of the three
+pre-registered pass conditions was met. The honest reading is that the gate's
+topological effect is \emph{not robust}: it is dataset-dependent rather than a
+reliable improvement. In keeping with the pre-registered discipline, we did
+not switch the evaluation axis, expand the seed count, or retune the gate's
+scale to manufacture significance after the fact; a gate that passes only on
+the dataset on which it happens to help is not a gate that improves topology.
+The gated variant is therefore reported as one configuration the benchmark
+evaluates, not as a contribution.
+
+\subsection{Negative finding III: a success-rate metric can be saturated by over-prediction}
+\label{sec:diagnostics:metric}
+
+The third negative finding concerns a metric rather than a method, and is
+detailed where the metric family is defined
+(Section~\ref{sec:benchmark:srdiag}). In brief, the intuitive ``did the gap
+close?'' success rate can be saturated by a degenerate over-predicting model,
+because the underlying gap-closure test only checks whether any foreground
+pixel covers the centre of the erased region; a model that floods the image
+with foreground can be scored as closing every gap. We restate it here as the
+third instance of the benchmark diagnosing a limitation---this time a
+limitation of one of its own candidate metrics---which is why the primary
+reconnection axis is a topological continuity measure and the success rate is
+reported only in an over-prediction context.
+
+\subsection{Negative findings as positive evidence of discriminative power}
+\label{sec:diagnostics:positive}
+
+The three findings above do not weaken the benchmark; they are the evidence
+that it works. A reconnection evaluation suite is useful exactly to the extent
+that it can show when a mechanism is not special, when a gating component is
+unstable across datasets, and when a metric can be gamed. The suite did all
+three: it found a memory mechanism to be non-specific against a plain
+baseline, a vesselness gate to be unstable in the direction of its effect, and
+a success-rate metric to be exploitable by over-prediction. None of these
+would be visible without a fixed protocol, held-out evaluation, and
+pre-registered criteria.
+
+We are explicit about scope. These are established negative results, reported
+as such; we do not soften them into qualified successes, and we do not
+selectively report the dataset on which a rejected hypothesis happened to look
+favourable. The modules involved---the associative-memory variant and the
+gated variant---appear in the leaderboard as evaluated methods, on the same
+footing as every other baseline, and not as headline contributions. Reporting
+cautionary and negative findings of this kind is an intended use of a
+benchmark, and dataset-and-benchmark venues explicitly invite it
+\cite{TODO_dandb_negative}; surfacing where methods and metrics break is part
+of what gives a benchmark its value.

@@ -1,0 +1,48 @@
+# Gate1 HPC Kaggle sanity config
+# 用途：full-Kaggle (Combined Dataset, 平衡增强集) 在 HPC RTX4090 上跑 GPU 规模 sanity。
+# ⚠️ slice-level split = 泄漏，数字不可报正式（仅验 GPU 规模 + 真 Quantus 数 sanity，如 ROAD≠0）。
+# 正式 reportable Gate1 走 gate1_oasis.yaml（患者级 split）。
+
+dataset: kaggle_hpc
+data_root: null  # 通过 --data_root 传入（HPC: /gpfs/work/bio/jiayu2403/wavefid/data/alzheimer_kaggle/Combined Dataset/train）
+
+split_mode: slice
+train_ratio: 0.70
+val_ratio: 0.15
+test_ratio: 0.15
+random_seed: 42
+max_samples_per_class: null  # full（每类 2560，共 10240）
+
+split_csv_dir: log/splits_hpc_kaggle
+
+image_size: 224
+normalize_mean: [0.485, 0.456, 0.406]
+normalize_std: [0.229, 0.224, 0.225]
+
+backbone: resnet50
+num_classes: 4
+pretrained: true
+
+optimizer: adam
+lr: 1.0e-4
+batch_size: 32
+epochs: 15  # sanity（非 reportable 不必跑满 50）
+scheduler: cosine
+
+use_class_weight: true
+
+num_workers: 8     # HPC 多核，加速数据加载
+pin_memory: true   # HPC GPU 可用
+
+aug_hflip: true
+aug_rotation_degrees: 15
+aug_vflip: false
+
+# Quantus 正式参数（HPC GPU 不必提速）
+pixelflip_features_in_step: 512   # 512×98=50176（整除）
+road_percentages: null            # null → 默认 range(1,100,2) 50 点
+
+log_dir: log/hpc_kaggle
+checkpoint_dir: log/hpc_kaggle/checkpoints
+results_csv: log/hpc_kaggle/classifier_results.csv
+state_json: log/hpc_kaggle/classifier_state.json

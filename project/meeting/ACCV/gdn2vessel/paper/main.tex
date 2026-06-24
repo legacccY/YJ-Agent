@@ -1,0 +1,39 @@
+% !TEX program = pdflatex
+% =====================================================================
+% gdn2vessel — benchmark-only D&B 稿 main skeleton
+% 重定位 2026-06-24：benchmark-only（两命门全死，STORY_FRAMEWORK.md 真源）
+% venue 未定（NeurIPS D&B 2027 / MICCAI 2027 / MIDL）→ 暂用中性 article 模板，
+%   定 venue 后换对应模板（NeurIPS data style / LNCS）。章节 \input 可移植。
+% 所有数字 = \TODO 占位，verifier 核 csv 后回填。双盲：无作者/机构/可识别自引。
+% =====================================================================
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx,booktabs,amsmath,amssymb,hyperref,xcolor}
+\usepackage[margin=1in]{geometry}
+
+% 占位宏：未回填数字一律 \TODO（编译可见红字，防误当真值）
+\newcommand{\TODO}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+
+\title{A Disconnection--Reconnection Benchmark for 2D Retinal Vessel Segmentation:\\
+Protocol, Connectivity Metrics, a Full-Spectrum Leaderboard, and Honest Negative Findings}
+\author{Anonymous Submission}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\TODO{abstract — benchmark-only：2D 眼底断点续连套件 + 续连指标族(含 SR 可被过预测刷满的诊断) + 12 baseline leaderboard + 预登记诊断方法学与诚实负结果。区分度 claim hedge 至批2。数字回填后写。}
+\end{abstract}
+
+\input{sections/intro}
+\input{sections/related_work}
+\input{sections/benchmark}
+% \input{sections/leaderboard}   % §4 待批2/批量数字出后写
+\input{sections/diagnostics}     % §5 诊断方法学+负结果(负结果已确证)
+% \input{sections/discussion}    % §6
+% \input{sections/conclusion}    % §7
+
+\bibliographystyle{plain}
+% \bibliography{refs}            % refs.bib 待建,citation key 现为占位
+\end{document}

@@ -3,6 +3,13 @@
 > 服务 quantimmu-bench / 袁 QuantImmune 立项 Phase0（帮徐伊琳/袁老师证伪方向地基）。researcher(opus) 联网，2026-06-24。0 GPU 命门证伪。
 > 承重前提：连续 ground-truth（SFC/%tetramer/SI）跨 ≥2 study ≥10³。
 
+## 🔴 已实测钉死（2026-06-24 IEDB 实测窗）→ 见 `analysis/PHASE0_MEASURED.md`
+> 全部 TODO 已用真数据替代（IEDB 本地 1.34GB csv + IQ-API + CEDAR API 三源交叉）。**裁定：命门 FAIL（高置信）**。
+> 肿瘤/neoepitope 连续 magnitude（ELISPOT+tetramer+ICS）实测 = CEDAR 癌症库 **104 正例 / 87 唯一肽 / 36 PMID ≈ 10²**（IEDB 本地全库肿瘤子集 5–9 正例）。
+> **≥2 study 判据 PASS（36 PMID），≥10³ 量级判据 FAIL（差 ~10×）**——连续值被系统性稀疏记录，多数研究只报 pos/neg 定性。
+> 退守三选一（拍板点，需袁/徐伊琳）：①序数分级回归 ②响应频率(responded/tested)回归 ③自补 ELISpot 产连续 GT（最稳，Wave3 管道已有）。
+> 下方原"倾向 FAIL"分析（区间估计）保留作过程留痕。
+
 ## ⭐ 核心结论（命门倾向 FAIL）
 **连续 magnitude 在公开源里不是可直接回归的连续列系统存在**，而是被 IEDB/CEDAR 折叠成「响应频率二分 + 序数三档(positive-high/-intermediate/-low)」。所有实际用过 IEDB T cell 数据的免疫原性模型(DeepImmuno/NetTepi/Repitope)**无一用连续 magnitude 回归，全部二分** = 「连续列稀疏/不可直接用」的最强间接铁证。
 - 连续 magnitude 跨 ≥2 study ≥10³ 的**直接证据未找到**(标 TODO 给实测步骤)。

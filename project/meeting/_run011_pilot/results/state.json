@@ -1,0 +1,20 @@
+{
+  "phase": "done",
+  "current_run": null,
+  "runs_done": [
+    "supervised_r005_s0",
+    "mean_teacher_r005_s0",
+    "supervised_r005_s1",
+    "supervised_r010_s0",
+    "supervised_r010_s1",
+    "supervised_r020_s0",
+    "supervised_r020_s1",
+    "mean_teacher_r005_s1",
+    "mean_teacher_r010_s0",
+    "mean_teacher_r010_s1",
+    "mean_teacher_r020_s0",
+    "mean_teacher_r020_s1"
+  ],
+  "total_runs": 12,
+  "last_dice": 0.9248442351818085
+}

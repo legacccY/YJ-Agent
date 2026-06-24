@@ -1,0 +1,300 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% §3 The Disconnection--Reconnection Benchmark — gdn2vessel benchmark-only D&B 稿
+% 真源：STORY_FRAMEWORK.md §3 故事弧 + LEADERBOARD_MATRIX.md（severity 网格 + 防泄漏）
+% 公式照实现核实：
+%   src/benchmark/synth_breaks.py  — SEVERITY_GRID (size_max 6/8/10/12, nb_deco=100)、
+%       creatis create_disconnections 协议、apply_breaks/GapRecord/BreakResult
+%   src/benchmark/metrics.py       — epsilon_beta0:173 / betti_error:234 / cldice_metric:307 /
+%       _is_gap_closed:640 / success_rate:679 / reid_rate:773 / _check_reid_at_gap:711
+%   src/datasets/precompute_benchmark.py — npz 离线冻结 + manifest + test-split-only(RED LINE 1)
+% 数字一律 \TODO 占位（禁臆造），唯一已确证可写实 = SR=1.0@dice≈0.16 诊断（代码根因明确）。
+% 区分度 claim hedge 至批2；双盲：无自引/机构。
+% =====================================================================
+\section{The Disconnection--Reconnection Benchmark}
+\label{sec:benchmark}
+
+The benchmark is the central methodological contribution of this paper. It
+consists of (i) a synthetic-breakpoint protocol that injects reproducible
+gaps into ground-truth vessel masks over a four-level severity grid
+(Section~\ref{sec:benchmark:protocol}); (ii) a leakage-control design that
+keeps evaluation sets held out and prevents the protocol from feeding
+ground-truth topology into any evaluated method
+(Section~\ref{sec:benchmark:leakage}); (iii) a family of connectivity
+metrics for reconnection, cross-checked against standard topological measures
+(Section~\ref{sec:benchmark:metrics}); and (iv) a documented diagnosis of a
+metric failure mode, namely that the gap-closure success rate can be
+saturated by over-prediction (Section~\ref{sec:benchmark:srdiag}).
+
+\subsection{Synthetic breakpoint protocol}
+\label{sec:benchmark:protocol}
+
+\paragraph{Breakpoint injection.} The core disconnection algorithm follows
+the published plug-and-play breakpoint procedure of
+\cite{TODO_creatis}, which we adopt as a protocol reference rather than as a
+competing method. Given a binary ground-truth vessel mask, the procedure
+first computes a chessboard distance transform restricted to the morphological
+skeleton, so that each skeletal pixel is tagged with the local vessel
+thickness. Skeletal pixels are then bucketed into thickness tiers, and only
+the three finest (thinnest) tiers are retained, since thin vessels are the
+most plausible places for a real segmenter to break. A breakpoint draw
+selects a tier with probability proportional to an exponential law that
+favours thinner vessels: with $U$ retained tiers indexed by $i$,
+\begin{equation}
+  P(\text{tier } i) \;=\; \frac{2^{\,U-(i+1)}}{2^{\,U}-1},
+  \qquad i = 0,\dots,U-1 ,
+  \label{eq:tierprob}
+\end{equation}
+so thinner tiers are exponentially more likely to be broken. For each of
+$N_{\mathrm{deco}}$ draws a skeletal point is sampled from the chosen tier and
+a soft erasure artefact is stamped at that location: a solid disk of radius
+$\rho \sim \mathcal{N}(s_{\max} / t,\; 4)$ (clipped at $\rho \geq 0$, where $t$
+is the tier's thickness value and $s_{\max}$ the maximum gap-size parameter)
+is sparsely sampled, Gaussian-smoothed with $\sigma = 0.8$, and thresholded at
+$0.4$ to produce the erased region. All erasures are accumulated and the mask
+is binarised at $\geq 0.1$. The procedure is purely subtractive: a
+zero-leakage assertion enforces that every foreground pixel of the broken mask
+was foreground in the original ground truth, so no spurious vessels are ever
+hallucinated by the protocol.
+
+\paragraph{Per-gap records.} On top of the \cite{TODO_creatis} procedure, our
+suite additionally extracts a per-gap record for every connected component of
+the accumulated erasure mask. Each record stores the gap centre, an
+approximate radius (half the bounding-box diagonal), the gap-size parameter,
+the smoothing $\sigma$, and the identities of the two dominant ground-truth
+vessel segments bordering the gap. The segment identities are obtained by
+connected-component labelling of the \emph{original} ground-truth mask
+(8-connectivity), and they are what makes same-vessel re-identification
+measurable (Section~\ref{sec:benchmark:metrics}). This per-gap metadata is
+an addition of this paper; the reference procedure produces only the broken
+mask.
+
+\paragraph{Severity grid.} We expose the maximum gap-size parameter
+$s_{\max}$ as a difficulty knob and define a four-level severity grid, with
+the number of draws fixed at $N_{\mathrm{deco}} = 100$ throughout:
+
+\begin{table}[t]
+  \centering
+  \begin{tabular}{lccl}
+    \toprule
+    Severity & $s_{\max}$ & $N_{\mathrm{deco}}$ & Provenance \\
+    \midrule
+    Easy    & 6  & 100 & this paper's extension \\
+    Medium  & 8  & 100 & aligned with the reference protocol's official setting \\
+    Hard    & 10 & 100 & this paper's extension \\
+    Extreme & 12 & 100 & this paper's extension \\
+    \bottomrule
+  \end{tabular}
+  \caption{Four-level severity grid. Only the Medium level is anchored to the
+  reference protocol's published parameters ($s_{\max}=8$,
+  $N_{\mathrm{deco}}=100$); the Easy, Hard, and Extreme levels are this
+  paper's extensions and are flagged as such in the released code.}
+  \label{tab:severity}
+\end{table}
+
+The grid is the benchmark's principal source of discriminative pressure: it
+yields a \emph{severity-response} axis along which a method's reconnection
+quality can be tracked as breakpoints widen
+(Section~\ref{sec:benchmark}; leaderboard in Section~\ref{sec:benchmark}).
+
+\paragraph{Reproducibility.} Every draw is governed by a fixed seed. Each
+severity level derives its seed deterministically from a base seed
+($\mathrm{seed} = 42$), so that a given (dataset, severity, seed) triple
+always yields the identical set of gaps. The broken masks, the per-pixel
+vessel-segment map, the per-gap records, and the preprocessed source image
+are precomputed offline and frozen as compressed archives, indexed by a
+manifest mapping each (dataset, severity) pair to its archive, gap count, and
+timestamp. Because the breaks are frozen, every evaluated method is scored on
+exactly the same masks, which is what makes the leaderboard comparable.
+
+\subsection{Leakage-control design}
+\label{sec:benchmark:leakage}
+
+The benchmark enforces two non-negotiable separations.
+
+\paragraph{Held-out evaluation sets.} Breakpoints are injected only into the
+test split of each dataset; training images are never broken or evaluated
+(for example, the DRIVE evaluation images are disjoint from the DRIVE
+training images). The precompute stage reads ground-truth masks from the test
+split exclusively, so no training sample can enter the benchmarked set.
+
+\paragraph{The protocol never supervises an evaluated method with
+ground-truth topology.} The synthetic breakpoint protocol is applied only to
+construct the \emph{input} that an evaluated method must reconnect; the
+ground-truth topology is used solely as the adjudicator at scoring time and is
+never fed back to any method as a target or as a feature. Concretely, the
+gap-injection procedure, the per-gap segment identities, and all evaluated
+methods are input-derived, and the protocol is purely subtractive (the
+zero-leakage assertion above guarantees the broken mask is a subset of the
+original mask, so the protocol cannot leak new structure). Using the
+ground-truth topology as the judge of reconnection quality is permitted;
+using it to supervise a method under evaluation is not, and the frozen,
+offline precompute makes this separation auditable.
+
+\subsection{A family of connectivity metrics}
+\label{sec:benchmark:metrics}
+
+We report reconnection quality along a primary topological axis, two
+reconnection-specific axes, and two standard topological cross-checks. Unless
+noted, all metrics are computed from a predicted binary mask and the
+ground-truth mask only, so that every baseline---whether or not it has a
+re-identification head---is scored on the same footing.
+
+\paragraph{Primary reconnection axis: $\varepsilon_{\beta_0}$.} The primary
+axis is a topological continuity error based on the zeroth Betti number
+$\beta_0$ (the number of connected components):
+\begin{equation}
+  \varepsilon_{\beta_0}
+  \;=\;
+  \frac{\bigl|\,\beta_0^{\text{pred}} - \beta_0^{\text{gt}}\,\bigr|}
+       {\max\!\bigl(\beta_0^{\text{gt}},\, 1\bigr)} .
+  \label{eq:epsbeta0}
+\end{equation}
+A perfectly reconnected mask matches the ground-truth component count and
+attains $\varepsilon_{\beta_0} = 0$; broken predictions inflate the component
+count and raise the error. We adopt $\varepsilon_{\beta_0}$ as the primary
+axis because it measures connectivity directly rather than overlap, and
+because it is more sensitive to true connectivity than the gap-level success
+rate discussed below (Section~\ref{sec:benchmark:srdiag}).
+
+\paragraph{Gap-closure success rate (SR).} \emph{This is a novel metric
+contributed by this paper}; it is not part of the reference protocol, which
+reports overlap and surface-distance measures together with
+$\varepsilon_{\beta_0}$ only. SR uses the per-gap records to ask, for each
+injected gap, whether it has been closed:
+\begin{equation}
+  \mathrm{SR}
+  \;=\;
+  \frac{N_{\text{closed}}}{N_{\text{gaps}}}
+  \;=\;
+  \frac{1}{N_{\text{gaps}}}
+  \sum_{g=1}^{N_{\text{gaps}}}
+  \mathbf{1}\!\left[\,\textsc{closed}(g)\,\right],
+  \label{eq:sr}
+\end{equation}
+where $N_{\text{gaps}}$ is the number of injected gaps and
+$\textsc{closed}(g)$ is the gap-closure test defined in
+Eq.~\eqref{eq:closed} below. $\mathrm{SR} \in [0,1]$, with $1.0$ indicating
+every gap closed. We deliberately report SR with a documented failure mode
+(Section~\ref{sec:benchmark:srdiag}) rather than as a clean ranking axis.
+
+\paragraph{Same-vessel re-identification rate.} A reconnection can close a
+gap yet bridge the \emph{wrong} pair of vessels. To penalise such mistakes we
+report a same-root re-identification rate, adapting identity-preservation
+logic from multiple-object tracking (the IDF1 family) to the gap setting,
+following the use of identity-aware matching in open-curve vessel tracking
+\cite{TODO_snaketracker}:
+\begin{equation}
+  \mathrm{reid\text{-}rate}
+  \;=\;
+  \frac{1}{N_{\text{gaps}}}
+  \sum_{g=1}^{N_{\text{gaps}}}
+  \mathbf{1}\!\left[\,
+    \textsc{seg}_L(g)\in\mathcal{C}(g)
+    \;\wedge\;
+    \textsc{seg}_R(g)\in\mathcal{C}(g)
+  \,\right],
+  \label{eq:reid}
+\end{equation}
+where $\textsc{seg}_L(g)$ and $\textsc{seg}_R(g)$ are the two ground-truth
+segment identities recorded for gap $g$, and $\mathcal{C}(g)$ is the set of
+ground-truth segment identities found under the predicted foreground within a
+disk around the gap centre. A gap counts as correctly re-identified only if
+\emph{both} bordering segments are bridged (for an internal single-segment
+gap, the one recorded segment must appear); bridging a different vessel scores
+$0$, never a partial credit, mirroring the strict identity logic of MOT IDF1.
+Because Eq.~\eqref{eq:reid} is computed from the predicted mask against the
+ground-truth segment map, it is available for every baseline; a separate
+head-driven variant applies only to methods that expose an explicit
+re-identification head and is reported as an additional column without
+contaminating the shared axes.
+
+\paragraph{Standard topological cross-checks.} To guard against a
+self-validating custom metric, every reconnection number is cross-checked
+against two off-the-shelf, label-free topology measures. The first is clDice
+\cite{TODO_cldice}, the centreline Dice, computed on hard binary masks as
+\begin{equation}
+  \mathrm{clDice}
+  \;=\;
+  \frac{2\,\mathrm{T_{prec}}\,\mathrm{T_{sens}}}
+       {\mathrm{T_{prec}} + \mathrm{T_{sens}}},
+  \quad
+  \mathrm{T_{prec}} = \frac{|S_{\text{gt}}\cap V_{\text{pred}}|}{|S_{\text{gt}}|},
+  \quad
+  \mathrm{T_{sens}} = \frac{|S_{\text{pred}}\cap V_{\text{gt}}|}{|S_{\text{pred}}|},
+  \label{eq:cldice}
+\end{equation}
+where $V_{(\cdot)}$ is a foreground mask and $S_{(\cdot)}$ its skeleton. The
+second is the Betti-number error. Writing $\beta_0$ for connected components
+and $\beta_1$ for independent loops, recovered from the 2D
+Euler--Poincar\'e relation $\beta_1 = \beta_0 - \chi$ via the Euler number
+$\chi$, we report
+\begin{equation}
+  \beta_0^{\text{err}} = \bigl|\beta_0^{\text{pred}}-\beta_0^{\text{gt}}\bigr|,
+  \quad
+  \beta_1^{\text{err}} = \bigl|\beta_1^{\text{pred}}-\beta_1^{\text{gt}}\bigr|,
+  \quad
+  \text{Betti err} = \beta_0^{\text{err}} + \beta_1^{\text{err}}.
+  \label{eq:betti}
+\end{equation}
+clDice and the Betti error use only standard definitions and provide an
+independent topological reading against which our reconnection axes can be
+sanity-checked. A segmentation sanity axis (Dice, IoU, AUC, sensitivity,
+specificity) is reported alongside but is not treated as a reconnection
+measure.
+
+\subsection{Diagnosis: the gap-closure success rate is saturable by
+over-prediction}
+\label{sec:benchmark:srdiag}
+
+Reporting a metric family is only useful if its failure modes are
+characterized. We document one such failure mode for the gap-closure success
+rate of Eq.~\eqref{eq:sr}, and it is the reason we relegate SR to a contextual
+rather than a primary role.
+
+\paragraph{The gap-closure test.} A gap $g$ centred at $(c_y, c_x)$ with
+recorded radius $r$ is judged closed if the predicted mask contains
+\emph{any} foreground pixel inside a disk of radius $r + 3$ around the gap
+centre:
+\begin{equation}
+  \textsc{closed}(g)
+  \;=\;
+  \mathbf{1}\!\left[\,
+    \exists\,(y,x):\;
+    (y-c_y)^2 + (x-c_x)^2 \leq (r+3)^2
+    \;\wedge\;
+    \mathrm{pred}(y,x) > 0
+  \,\right].
+  \label{eq:closed}
+\end{equation}
+The test asks only whether the centre of the erased zone is covered, with a
+small tolerance for spatial offset; it does not ask whether the covering
+foreground actually re-establishes a path between the two severed segments.
+
+\paragraph{The failure mode.} Eq.~\eqref{eq:closed} can be satisfied without
+any genuine reconnection. A degenerate model that floods the image with
+foreground---a single large blob---covers the centre of every gap and is
+therefore credited with closing all of them, driving SR to its maximum. We
+observe this directly: in a smoke test, a poorly fitted model with a Dice of
+only $\approx 0.16$ attains a success rate of $1.0$. The two numbers are
+incompatible only if SR is read as a reconnection score; they are perfectly
+consistent once Eq.~\eqref{eq:closed} is recognised as a coverage test that a
+blob satisfies trivially. The root cause is structural rather than a tuning
+artefact: the gap-closure test in Eq.~\eqref{eq:closed} checks coverage of the
+gap centre, not the restoration of connectivity, so over-prediction is
+rewarded.
+
+\paragraph{Consequence for the benchmark.} This diagnosis dictates our
+metric protocol. We use the topological continuity error
+$\varepsilon_{\beta_0}$ of Eq.~\eqref{eq:epsbeta0} as the primary reconnection
+axis: a flooding blob that saturates SR \emph{fuses} the entire mask into one
+component, which drives $\beta_0^{\text{pred}}$ far from $\beta_0^{\text{gt}}$
+and is penalised by $\varepsilon_{\beta_0}$ rather than rewarded. SR is
+reported only alongside a specificity / over-prediction context (so a high SR
+accompanied by a collapsed specificity is read as flooding, not
+reconnection), and never as a standalone ranking axis. Characterising a
+metric's exploitable failure mode in this way follows the tradition of
+metric-failure-mode analysis in segmentation evaluation
+\cite{TODO_pixelwise,TODO_touchstone}, and it is, with the synthetic-breakpoint
+protocol and the connectivity-metric family, one of the methodological
+contributions of this suite.

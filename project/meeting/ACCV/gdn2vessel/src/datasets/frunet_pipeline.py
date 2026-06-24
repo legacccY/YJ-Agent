@@ -300,23 +300,31 @@ class FRUNetDataset(Dataset):
         self,
         source_dataset: Dataset,
         split: str = 'train',
-        patch_size: Optional[int] = 48,  # 官方: 48×48
+        patch_size: Optional[int] = 48,  # 官方: 48×48；eval 时传 None 走整图路径
         augment: bool = False,
         pad_multiple: int = 32,
         cache_path: Optional[str] = None,
         eval_square_size: Optional[int] = None,  # FIX Q7: 官方 get_square target_size（如 DRIVE=592,CHASE=1008）
+        repeats: int = 1,  # BUG-FIX: 训练 split 时每张图在 __len__ 里的重复次数
+                           # 官方预切 patch（dataset size=全部 patch 数），本实现等价用 repeats
+                           # 每次 __getitem__ 随机切一个 patch，repeats 控制 steps/epoch
+                           # 默认1保持向后兼容；train_harness._build_datasets fr_unet 分支
+                           # 应传 repeats=200（16张DRIVE → 3200 items，bs=512 → ~6步/epoch）
     ):
         """
         Args:
             source_dataset:   已构造好的底层 Dataset，提供 _load_gt/_img_path 等。
             split:            'train' | 'val' | 'test' — 决定哪些 ID 进 __getitem__。
-            patch_size:       训练时 48（官方）；eval 时 None（走 get_square 整图）。
+            patch_size:       训练时 48（官方）；eval 时 None（走 get_square 整图路径）。
             augment:          True 仅 training split 时开。
             pad_multiple:     保留接口（eval 路径已改为 get_square，此参数暂不使用）。
             cache_path:       pickle 路径。None → 实时 normalize（仅 minmax，无 global 统计）。
             eval_square_size: FIX Q7 官方 get_square target_size。None 时 eval 路径
                               自动取 max(H,W) 的最小 16 倍数（兜底，非官方原值）。
                               正式复现应传官方值（DRIVE=592, CHASE=1008）。
+            repeats:          BUG-FIX-patch-epoch：训练 split 时 ids 在 __len__ 里重复
+                              repeats 次（每次 __getitem__ 随机切一个新 patch）。
+                              非 train split 无效（repeats 强制=1，避免 val 膨胀）。
         """
         super().__init__()
         self._src = source_dataset
@@ -328,15 +336,22 @@ class FRUNetDataset(Dataset):
 
         # IDs by split
         if split == 'train':
-            self.ids = list(self._src.TRAIN_IDS)
+            self._base_ids = list(self._src.TRAIN_IDS)
         elif split == 'val':
-            self.ids = list(self._src.VAL_IDS)
+            self._base_ids = list(self._src.VAL_IDS)
         elif split == 'test':
-            self.ids = list(self._src.TEST_IDS)
+            self._base_ids = list(self._src.TEST_IDS)
         elif split == 'all':
-            self.ids = list(self._src.TRAIN_IDS) + list(self._src.VAL_IDS)
+            self._base_ids = list(self._src.TRAIN_IDS) + list(self._src.VAL_IDS)
         else:
             raise ValueError(f"split must be 'train'/'val'/'test'/'all', got {split!r}")
+
+        # BUG-FIX-patch-epoch: 训练时扩展 ids 供 DataLoader 抽样
+        # val/test/all 不扩展（repeats 忽略），防 val Dice 膨胀
+        if split == 'train' and patch_size is not None and repeats > 1:
+            self.ids = self._base_ids * repeats
+        else:
+            self.ids = self._base_ids
 
         # Load pickle cache
         self._cache: Optional[Dict] = None
@@ -697,6 +712,7 @@ class FRUNetDRIVE(FRUNetDataset):
         cache_path: Optional[str] = None,
         skip_missing: bool = False,
         eval_square_size: Optional[int] = 592,  # FIX Q7: DRIVE 官方 get_square 目标尺寸（TODO researcher 核）
+        repeats: int = 1,  # BUG-FIX-patch-epoch: 透传给 FRUNetDataset
     ):
         src = DRIVEDataset(data_root=data_root, split=split,
                            patch_size=None, augment=False,
@@ -710,6 +726,7 @@ class FRUNetDRIVE(FRUNetDataset):
             pad_multiple=pad_multiple,
             cache_path=cache_path,
             eval_square_size=eval_square_size,
+            repeats=repeats,  # BUG-FIX-patch-epoch
         )
 
     def _load_image_normalized(self, sid) -> np.ndarray:
@@ -752,6 +769,7 @@ class FRUNetCHASE(FRUNetDataset):
         cache_path: Optional[str] = None,
         skip_missing: bool = False,
         eval_square_size: Optional[int] = 1008,  # FIX Q7: CHASE 官方 get_square 目标尺寸（TODO researcher 核）
+        repeats: int = 1,  # BUG-FIX-patch-epoch: 透传给 FRUNetDataset
     ):
         src = CHASEDataset(data_root=data_root, split=split,
                            patch_size=None, augment=False,
@@ -764,6 +782,7 @@ class FRUNetCHASE(FRUNetDataset):
             pad_multiple=pad_multiple,
             cache_path=cache_path,
             eval_square_size=eval_square_size,
+            repeats=repeats,  # BUG-FIX-patch-epoch
         )
 
 
@@ -796,12 +815,14 @@ class FRUNetSTARE(FRUNetDataset):
         cache_path: Optional[str] = None,
         skip_missing: bool = False,
         official_baseline: bool = False,  # FIX Q2: True=全20张无split（官方），False=12/4/4（GDN-2主实验）
+        repeats: int = 1,  # BUG-FIX-patch-epoch: 透传给 FRUNetDataset
     ):
         """
         Args:
             official_baseline: True → FR-UNet 官方协议（train=test=全20张，无 hold-out）。
                                False（默认）→ 12/4/4 deterministic split（GDN-2 主实验用）。
                                两套协议显式区分，防 GDN-2 主实验误用官方 train=test 泄漏。
+            repeats:           BUG-FIX-patch-epoch，见 FRUNetDataset.__init__。
         """
         self.official_baseline = official_baseline
 
@@ -821,7 +842,9 @@ class FRUNetSTARE(FRUNetDataset):
             self.pad_multiple = pad_multiple
             self.eval_square_size = None
             # 全20张 IDs（官方 train=test）
+            # BUG-FIX-patch-epoch: official_baseline=True 时通常 train=test，不扩展
             self.ids = list(_STARE_ALL_IDS)
+            self._base_ids = list(_STARE_ALL_IDS)
             # Load pickle cache（复用父类 cache 逻辑）
             self._cache = None
             if cache_path is not None:
@@ -847,6 +870,7 @@ class FRUNetSTARE(FRUNetDataset):
                 augment=augment,
                 pad_multiple=pad_multiple,
                 cache_path=cache_path,
+                repeats=repeats,  # BUG-FIX-patch-epoch
             )
 
     def _load_image_normalized(self, sid) -> np.ndarray:
@@ -900,6 +924,7 @@ class FRUNetHRF(FRUNetDataset):
         pad_multiple: int = 32,
         cache_path: Optional[str] = None,
         skip_missing: bool = False,
+        repeats: int = 1,  # BUG-FIX-patch-epoch: 透传给 FRUNetDataset
     ):
         # TODO 主线/researcher 确认 HRF 是否纳入 P1 及 split 依据，当前 split 无官方源。
         src = HRFDataset(data_root=data_root, split=split,
@@ -912,6 +937,7 @@ class FRUNetHRF(FRUNetDataset):
             augment=augment,
             pad_multiple=pad_multiple,
             cache_path=cache_path,
+            repeats=repeats,  # BUG-FIX-patch-epoch
         )
 
 
@@ -934,6 +960,7 @@ class FRUNetFIVES(FRUNetDataset):
         pad_multiple: int = 32,
         cache_path: Optional[str] = None,
         skip_missing: bool = False,
+        repeats: int = 1,  # BUG-FIX-patch-epoch: 透传给 FRUNetDataset
     ):
         src = FIVESDataset(data_root=data_root, split=split,
                            patch_size=None, augment=False,
@@ -950,15 +977,22 @@ class FRUNetFIVES(FRUNetDataset):
 
         # Use instance-level ids from FIVESDataset
         if split == 'train':
-            self.ids = list(src._train_ids)
+            _base_ids = list(src._train_ids)
         elif split == 'val':
-            self.ids = list(src._val_ids)
+            _base_ids = list(src._val_ids)
         elif split == 'test':
-            self.ids = list(src._test_ids)
+            _base_ids = list(src._test_ids)
         elif split == 'all':
-            self.ids = list(src._train_ids) + list(src._val_ids)
+            _base_ids = list(src._train_ids) + list(src._val_ids)
         else:
             raise ValueError(f"split must be train/val/test/all, got {split!r}")
+
+        self._base_ids = _base_ids
+        # BUG-FIX-patch-epoch: 训练 split 时扩展 ids（等价于 FRUNetDataset.__init__ 的逻辑）
+        if split == 'train' and patch_size is not None and repeats > 1:
+            self.ids = _base_ids * repeats
+        else:
+            self.ids = _base_ids
 
         # Load pickle cache (replicate parent logic)
         self._cache = None
@@ -1006,6 +1040,7 @@ def make_frunet_dataset(
     cache_path: Optional[str] = None,
     skip_missing: bool = False,
     stare_official_baseline: bool = False,  # FIX Q2: STARE 官方协议（True=全20张，False=GDN-2 held-out）
+    repeats: int = 1,  # BUG-FIX-patch-epoch: 训练 split 时 ids 重复次数（见 FRUNetDataset.__init__）
 ) -> FRUNetDataset:
     """
     Factory: 按 name 构造对应 FR-UNet Dataset 实例。
@@ -1014,20 +1049,24 @@ def make_frunet_dataset(
         name:       'drive' | 'chase' | 'stare' | 'hrf' | 'fives'
         data_root:  dataset 根目录（从 datasets.json 读，例如 D:/YJ-Agent/data/vessel/DRIVE）
         split:      'train' | 'val' | 'test'
-        patch_size: 训练 48；eval None
+        patch_size: 训练 48；eval None（整图路径，配合 forward_adapt 滑窗）
         augment:    True 仅 training
         cache_path: FRUNetPreprocessor 生成的 pickle 路径
         skip_missing: 路径验证宽松（HPC 同步中时用）
         stare_official_baseline: FIX Q2 — 仅对 name='stare' 生效。
             True：官方 FR-UNet STARE 协议（train=test=全20张，有评估泄漏，仅用于复现官方数字）。
             False（默认）：GDN-2 主实验 12/4/4 held-out split（防泄漏）。
+        repeats:    BUG-FIX-patch-epoch — 训练 split 时每张图在 __len__ 里重复次数。
+            train_harness 传 200，让 DRIVE(16张) → 3200 items，bs=512 → ~6 steps/epoch。
+            val/test split 自动忽略此参数（FRUNetDataset.__init__ 非 train 强制 repeats=1）。
 
     Example（从 datasets.json 取路径）：
         import json, pathlib
         ds_json = json.loads(pathlib.Path('.portfolio/datasets.json').read_text())
         drive_root = 'D:/YJ-Agent/data/vessel/DRIVE'
         ds = make_frunet_dataset('drive', drive_root, split='train',
-                                 cache_path='data/frunet_cache/drive.pkl')
+                                 cache_path='data/frunet_cache/drive.pkl',
+                                 repeats=200)
 
         # FR-UNet STARE 官方 baseline 复现（train=test=全20张）：
         ds_stare_repro = make_frunet_dataset('stare', stare_root,
@@ -1047,6 +1086,7 @@ def make_frunet_dataset(
         augment=augment,
         cache_path=cache_path,
         skip_missing=skip_missing,
+        repeats=repeats,  # BUG-FIX-patch-epoch: 透传给 FRUNetDataset.__init__
     )
     if name == 'stare':
         kwargs['official_baseline'] = stare_official_baseline

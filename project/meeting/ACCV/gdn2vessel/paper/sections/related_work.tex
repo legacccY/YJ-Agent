@@ -1,139 +1,181 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% Section 2 — Related Work  (gdn2vessel, ACCV 2026)
-% Standalone draft. Intended to be \input into main.tex.
-% Defensive-writing rules R1--R7 enforced (see STORY_FRAMEWORK.md).
-% All quantitative SOTA numbers are placeholders (\TODO) — do NOT present
-% any borrowed number as ours; values to be filled after verifier checks csv.
-% Citation keys are placeholders to be reconciled with the .bib file.
-% Double-blind: no author/institution/identifiable repository self-citation.
+% Section 2 — Related Work  (gdn2vessel, benchmark-only D&B 稿)
+% 重定位 2026-06-24：benchmark-only（STORY_FRAMEWORK.md 真源，两命门全死）。
+% 框架 = 支撑「为何需要这个 benchmark」，每条点名划界；禁卖方法/机制。
+% 所有 SOTA 数字 = \TODO 占位（禁借数当我们的，禁臆造）；citation key 占位。
+% 双盲：无作者/机构/可识别自引。
+% 防御规则 R1/R2/R3/R3b/R4/R6（见 STORY_FRAMEWORK.md）：
+%   - novelty 收窄：禁 "first disconnection benchmark"（PTR 已占 3D 肺）；
+%     禁 "first in-model connectivity"（CorSegRec/GLCP 已做 reconnection）。
+%   - 记忆模块/Frangi 门 = leaderboard 被评测项，不卖机制特异（已证伪）。
+%   - 区分度 claim 一律 hedge（批2 未跑）：we report what the benchmark reveals。
 % =====================================================================
 
 \section{Related Work}
 \label{sec:related}
 
-We organise prior work into four threads that our method intersects:
-tubular/vessel segmentation backbones, topology- and connectivity-oriented
-objectives, linear-attention and delta-rule sequence models, and
-differentiable vesselness priors. Throughout, we emphasise that none of these
-threads performs \emph{in-model spatial re-identification of the same vessel
-across a break}, which is the locus of our contribution.
+We position our benchmark against five threads of prior work. The first two
+threads---vessel/tubular segmentation backbones and topology- or
+connectivity-oriented methods---supply the \emph{methods that our leaderboard
+evaluates}; they are subjects of measurement, not competing benchmarks. The
+remaining three threads---prior synthetic-disconnection benchmarks, the closest
+2D fundus reconnection method, and benchmark/metric-diagnosis studies---are where
+our contribution must be \emph{delineated}, and we do so explicitly below. We
+make no claim that any single component (a segmentation backbone, a connectivity
+loss, or a memory module) is novel in isolation; the contribution we defend is
+the \emph{evaluation suite}---a reproducible synthetic-break protocol, a family
+of reconnection metrics with a diagnosed failure mode, a full-spectrum
+leaderboard, and a pre-registered diagnostic methodology---specialised to the
+\emph{2D fundus} setting.
 
 % ---------------------------------------------------------------------
-\subsection{Vessel and Tubular Structure Segmentation}
+\subsection{Vessel and Tubular Segmentation Backbones}
 \label{sec:related:vessel}
 
 \paragraph{CNN backbones.}
-Curvilinear and tubular structure segmentation has been driven by encoder--decoder
-CNNs. Beyond U-Net and its variants (UNet++, Attention U-Net), specialised designs
-target the thin, elongated geometry of vessels: IterNet~\cite{iternet}, SA-UNet,
-CS$^2$-Net~\cite{csnet}, SCS-Net, and FR-UNet~\cite{frunet} refine multi-scale
-context, attention, or iterative refinement. These models improve the per-pixel
-delineation of vessels but treat each forward pass as a single bottom-up labelling
-problem; they carry no explicit notion of vessel \emph{identity} that could be
-retrieved across a low-contrast or occluded gap.
+Curvilinear and tubular segmentation has long been driven by encoder--decoder
+CNNs. Beyond U-Net and its variants, specialised designs target the thin,
+elongated geometry of vessels: IterNet~\cite{key:iternet}, CS$^2$-Net~\cite{key:csnet},
+and FR-UNet~\cite{key:frunet} refine multi-scale context, attention, or iterative
+refinement. These networks optimise per-pixel delineation and form a part of the
+classical-CNN tier of our leaderboard.
 
 \paragraph{State-space (Mamba) backbones.}
-A recent line replaces or augments convolutional context with selective
-state-space models (SSMs). Generic medical backbones include VM-UNet~\cite{vmunet},
-U-Mamba~\cite{umamba}, and Swin-UMamba~\cite{swinumamba}. Vessel- and
-tubular-specific SSM designs are more directly comparable: HM-Mamba couples
-hierarchical multi-scale tubular convolution with frequency-domain gating;
-VFGS-Net~\cite{vfgsnet} introduces a frequency-guided bidirectional scan;
-MM-UNet~\cite{mmunet} adds morphological deformable sampling;
-MambaVesselNet++~\cite{mambavesselpp} targets 3D vessels with bifocal fusion;
-and TA-Mamba combines serpentine spatial convolution with frequency-aware gated
-Mamba while reporting topology-aware scores. A separate group emphasises the
-\emph{scan ordering} itself, e.g. the serpentine scan of Serp-Mamba~\cite{serpmamba}
-on wide-field fundus and the diagonal scan of TopoMamba~\cite{topomamba}. These
-methods establish strong segmentation baselines and we compare against them
-directly. Crucially, the recurrent state in these SSM backbones aggregates
-\emph{context} along a fixed scan; it is not used as an addressable
-key--value memory that stores and retrieves a specific vessel's identity.
-We adopt a standard reorder for 2D scanning and explicitly do \emph{not}
-claim the scan as a contribution (R4); our contribution is the associative
-memory operating on the scanned sequence, not the scan itself.
+A more recent line replaces or augments convolutional context with selective
+state-space models (SSMs). Generic medical backbones include
+VM-UNet~\cite{key:vmunet}, U-Mamba~\cite{key:umamba}, and
+Swin-UMamba~\cite{key:swinumamba}; vessel- and tubular-specific variants such as
+HM-Mamba~\cite{key:hmmamba} couple hierarchical multi-scale tubular convolution
+with frequency-domain gating, and related scan-ordering designs emphasise the
+spatial traversal itself. We treat all of these as \emph{baselines to be
+evaluated} rather than as competitors to our benchmark: they define the
+SSM/Mamba and CNN tiers of the full-spectrum leaderboard
+(Section~\ref{sec:leaderboard}). We report each method's reproduced segmentation
+scores against published values for sanity (any reproduction gap of more than a
+few points is flagged, not silently claimed as a win), and place every method on
+the same disconnection--reconnection protocol so that they are scored on
+identical synthetic breaks.
 
 % ---------------------------------------------------------------------
-\subsection{Topology- and Connectivity-Oriented Methods}
+\subsection{Topology, Connectivity, and Vessel Reconnection}
 \label{sec:related:topo}
 
+\paragraph{Connectivity losses and topological objectives.}
 A complementary body of work enforces connectivity through dedicated objectives
-or architectural priors rather than through per-pixel overlap. clDice~\cite{cldice}
-and its radius-aware extension cbDice~\cite{cbdice} provide differentiable
-soft-skeleton losses; persistent-homology objectives such as
-TopoLoss~\cite{topoloss}, Betti Matching~\cite{bettimatching}, and the warping
-loss~\cite{warpingloss} penalise topological discrepancies; Skeleton
-Recall~\cite{skeletonrecall} offers a lightweight CPU skeleton objective; and
-Topograph~\cite{topograph} encodes a component graph. On the architectural side,
-DSCNet~\cite{dscnet} adapts the receptive field to curved tubular shapes,
-DconnNet~\cite{dconnnet} decouples directional connectivity subspaces, and
-PASC-Net~\cite{pascnet} couples plug-and-play shape convolutions with hierarchical
-topological constraints.
+rather than per-pixel overlap. clDice~\cite{key:cldice} and its radius-aware
+extension cbDice~\cite{key:cbdice} provide differentiable soft-skeleton losses;
+persistent-homology and Betti-matching objectives~\cite{key:bettimatching}
+penalise topological discrepancies; and Skeleton Recall~\cite{key:skeletonrecall}
+offers a lightweight skeleton objective. We do not propose a new connectivity
+loss. Instead, clDice, Betti errors, and Skeleton Recall enter our metric family
+as standard topology axes that cross-check our reconnection-specific measures
+(Section~\ref{sec:bench}).
 
-These approaches share two properties that distinguish them from ours. First, the
-loss-based methods (clDice, cbDice, Betti/persistent-homology, Skeleton Recall) act
-as global differentiable \emph{regularisers}: they push the prediction toward the
-correct global topology but do not localise a break or carry an in-model record of
-which structure should be continued. Second, the architectural priors model
-directional or shape context within a single feed-forward pass and likewise hold no
-cross-gap identity state. Most directly related, the learned post-processing model
-of Corvo~\emph{et al.}~\cite{creatis} restores connectivity by training a residual
-U-Net that operates on the \emph{segmentation mask} produced by an upstream
-segmenter; it is an explicit two-stage, post-hoc reconstruction without end-to-end
-gradients into the segmentation backbone and without an associative memory. We adopt
-its synthetic-break generation protocol for our reconnection benchmark
-(Section~\ref{sec:bench}), but our reconnection mechanism is fundamentally different:
-it is performed \emph{inside} the forward pass of a single end-to-end model via a
-delta-rule matrix state, rather than as a downstream correction of a mask.
+\paragraph{Vessel reconnection methods (delineation from our scope).}
+Crucially, reconnecting broken vessels is \emph{not} an unaddressed problem, and
+we therefore make \textbf{no} claim of being the first to perform in-model
+connectivity or vessel reconnection. CorSegRec~\cite{key:corsegrec} couples
+segmentation with reconnection and introduces its own continuity-oriented score,
+and GLCP~\cite{key:glcp} (MICCAI~2025 Oral) explicitly models \emph{local
+breakpoints together with global connectivity}. These are mature reconnection
+methods; in our work they are candidate entries on the leaderboard rather than
+points of novelty. Our distinction is one of \emph{evaluation rather than
+method}: where these works contribute reconnection \emph{models}, we contribute a
+standardised suite---a controlled synthetic-break protocol with a severity grid,
+a reconnection metric family with a diagnosed failure mode, and a leaderboard
+that places such methods on common ground.
 
 % ---------------------------------------------------------------------
-\subsection{Linear Attention and Delta-Rule Sequence Models}
-\label{sec:related:delta}
+\subsection{Synthetic-Disconnection Benchmarks and Tracing}
+\label{sec:related:bench}
 
-Linear-attention and delta-rule models replace softmax attention with a recurrent
-matrix-valued state that is updated in linear time. DeltaNet~\cite{deltanet}
-introduces a delta update rule with a parallel Householder formulation; gated linear
-attention (GLA)~\cite{gla} and Mamba-2~\cite{mamba2} add data-dependent gating and
-unify SSMs with attention; RWKV~\cite{rwkv} and test-time training~\cite{ttt}
-explore matrix-valued or gradient-updated hidden states. Gated DeltaNet
-(GDN-1)~\cite{gatedeltanet} unifies the delta update with a scalar decay gate.
-Our memory module is built on its successor, Gated DeltaNet-2
-(GDN-2)~\cite{gdn2}, which decouples the gating into a channel-wise erase gate
-on the key side and a write gate on the value side, with GDN-1 recovered as a
-degenerate special case. To the best of our knowledge, delta-rule associative
-memory of this kind has so far been evaluated only on language modelling and
-long-context retrieval; it has not previously been applied to visual or
-segmentation tasks.
+\paragraph{Prior disconnection benchmarks (the precedent we narrow against).}
+The idea of a benchmark built on \emph{synthetic} structural breaks already
+exists. PTR~\cite{key:ptr} (MICCAI~2023), released as ``baselines and a
+dataset,'' provides a synthetic-disconnection benchmark for \emph{3D pulmonary}
+tubular structures. Because this precedent occupies the disconnection-benchmark
+form, we deliberately \textbf{do not} claim ``the first disconnection
+benchmark.'' We narrow our headline to the first \emph{2D fundus} reconnection
+\emph{evaluation suite}, defined by the specific combination of a reproducible
+synthetic-break protocol, a reconnection metric family (with metric-failure
+diagnosis), a full-spectrum baseline leaderboard, and a pre-registered
+diagnostic methodology---a combination, to our knowledge, not previously
+assembled for retinal fundus images.
 
-\paragraph{Distinction from GDKVM.}
-The closest neighbour to our use of gated delta memory is GDKVM~\cite{gdkvm}.
-Unlike GDKVM [ICCV25] which uses gated delta KV memory across echo video frames
-(temporal), we operate within a single image (spatial) and add explicit
-same-vessel re-identification. Concretely, GDKVM stores a key--value memory and
-builds \emph{inter-frame} associations to segment cardiac chambers in
-echocardiography \emph{video}, where the memory is indexed by time; our setting
-has no temporal axis. We index the memory along a spatial scan of a single fundus
-image and read it out to decide whether the two sides of a break belong to the
-\emph{same} vessel. We are not aware of any prior method that uses delta-rule
-associative memory to perform in-model reconnection of vessel breaks, which
-positions our work as a distinct point in this space.
+\paragraph{Tracing-based connectivity.}
+A separate family recovers connectivity by \emph{tracing} curvilinear structures,
+e.g.\ graph-based vessel networks~\cite{key:vgn} and transformer tracing models
+such as Trexplorer~\cite{key:trexplorer}. These methods typically require seed
+points or a starting node and produce graphs rather than dense masks; they
+address a related but distinct task and are not the object of our mask-based
+reconnection protocol.
 
 % ---------------------------------------------------------------------
-\subsection{Differentiable Vesselness Priors}
-\label{sec:related:frangi}
+\subsection{2D Fundus Completion and Our Protocol Source}
+\label{sec:related:fundus}
 
-Hessian-based vesselness filters (e.g. Frangi's measure) are classical
-input-derived cues for tubular structures. Frangi-Net~\cite{frangiNet}
-reformulates the 2D Frangi filter as a trainable network so that the Frangi
-\emph{weights themselves are learned to perform segmentation} -- there the Frangi
-computation is the backbone. Other works use vesselness as a preprocessing or
-pseudo-labelling signal: as a self-supervised pretext~\cite{frangiPretext} or as a
-filtered input channel fused with the image~\cite{frangiFusion}. Our use is
-orthogonal to all of these: we keep a differentiable Frangi layer as a side-branch
-that consumes only the input image, and we use its \emph{output as an external gate
-signal that modulates the erase/write strength} of the GDN-2 associative memory
-(Section~\ref{sec:method:frangi}). The vesselness is never used as a label, a
-segmentation prediction, or a backbone; it is a derived, input-only control signal
-for the memory. We are not aware of prior work that couples a Hessian vesselness
-measure into the gating of a linear-attention memory in this way.
+\paragraph{Closest 2D fundus reconnection method.}
+The closest neighbour in modality and task is MaskVSC~\cite{key:maskvsc}
+(TMI~2025), which performs masked completion of 2D retinal vessels. We delineate
+our work from it on the same method-versus-evaluation axis: MaskVSC is a
+\emph{method paper} that proposes a completion model, whereas we contribute an
+\emph{evaluation suite}---a protocol, a metric family with a documented failure
+mode, a leaderboard, and a diagnostic methodology---on which methods of this kind
+can be measured.
+
+\paragraph{Source of our synthetic-break protocol.}
+Our disconnection protocol follows the plug-and-play synthetic-break generation
+of Corvo~\emph{et al.}~\cite{key:creatis} (arXiv~2404.10506). We stress that this
+is a \emph{reference source for our protocol, not a competitor}: their work is a
+method paper, and we adapt its break-generation procedure (with the
+radius-distribution and gap parameters fixed for reproducibility, organised into
+a four-level severity grid) as the controlled stimulus of our benchmark. We note
+two deviations from the original protocol---it includes neither a boundary-blur
+step nor a success-rate metric---so the success-rate metric we report is our own
+addition, defined explicitly and accompanied by its failure-mode diagnosis
+(Section~\ref{sec:bench}). The protocol and all evaluated methods derive breaks
+and predictions from the input image only, never from ground-truth topology.
+
+% ---------------------------------------------------------------------
+\subsection{Benchmark and Metric-Diagnosis Studies}
+\label{sec:related:diag}
+
+A growing line of dataset-and-benchmark work shows that \emph{systematic
+evaluation revealing the limits of methods and metrics} is itself a contribution.
+Touchstone~\cite{key:touchstone} (NeurIPS~2024 Datasets \& Benchmarks) re-ranks
+segmentation methods under a controlled large-scale protocol, and recent
+pixel-wise-metric analyses~\cite{key:pixelwise} (NeurIPS~2025) expose how
+overlap-style metrics can mislead. These precedents legitimise our two
+diagnostic contributions: (i) the finding that our success-rate metric can be
+\emph{saturated by over-prediction}---a degenerate, low-overlap model can score
+near the ceiling because the gap-closure check only inspects coverage of the
+erased region---which is why we use a topological-continuity measure as the
+primary reconnection axis and report success rate only alongside a specificity or
+over-prediction context; and (ii) our pre-registered honest negative results
+(Section~\ref{sec:diag}). Following the same metric-diagnosis tradition, we treat
+these findings as evidence about \emph{what the benchmark reveals} rather than as
+claims that any one method or metric is superior.
+
+% ---------------------------------------------------------------------
+\subsection{Linear-Attention Memory Modules (an Evaluated Method, Not a Claim)}
+\label{sec:related:memory}
+
+For completeness we situate the memory-based entry on our leaderboard. Linear
+attention and delta-rule sequence models replace softmax attention with a
+recurrent matrix-valued state updated in linear time, including gated linear
+attention (GLA)~\cite{key:gla} and the Gated DeltaNet family. The entry we label
+\texttt{ours\_gdn2} is built on GDN-2~\cite{key:gdn2}, a gated delta-rule
+associative memory; a separate temporal use of gated delta KV memory appears in
+GDKVM~\cite{key:gdkvm} (ICCV~2025), which indexes memory across echocardiography
+\emph{video frames}, whereas our single-image setting indexes a \emph{spatial}
+scan and has no temporal axis. We emphasise---consistent with our honest
+reporting (Section~\ref{sec:diag})---that \texttt{ours\_gdn2} is simply
+\emph{one evaluated method on the leaderboard}, and we make \textbf{no} claim of
+mechanism specificity for the delta-rule memory. On the contrary, our
+pre-registered audit finds that delta-rule memory is \emph{not} specific on 2D
+vessels: at the only comparable convergence point, gated delta memory matches
+plain gated linear attention on an associative-recall probe, and the
+segmentation objective provides no gradient incentive that would bind the memory
+state to vessel identity. This negative result is reported as evidence that the
+benchmark has discriminative power, not as a competitive advantage.

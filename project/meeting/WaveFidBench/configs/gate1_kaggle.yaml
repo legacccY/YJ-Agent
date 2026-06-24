@@ -1,0 +1,54 @@
+# Gate1 Kaggle 烟测 config
+# 用途：slice-level split，仅验工程管道跑通，结果不报正式数字
+# WARNING: slice-level split = 泄漏，acc 虚高 28-45pp，勿引用为正式结果
+
+# ---- 数据 ----
+dataset: kaggle
+# 数据根目录：4 类子文件夹 NonDemented/VeryMildDemented/MildDemented/ModerateDemented
+# 通过 --data_root 命令行参数传入，不写死绝对路径
+data_root: null  # 必须通过 --data_root 传入
+
+split_mode: slice  # kaggle 无 patient ID，只能 slice-level（烟测用）
+train_ratio: 0.70
+val_ratio: 0.15
+test_ratio: 0.15
+random_seed: 42
+
+split_csv_dir: log/splits  # 输出 split 索引 csv 目录（相对 WaveFidBench/）
+
+# ---- 图像预处理 ----
+image_size: 224
+# ImageNet mean/std（灰度 repeat 3ch 暂用 ImageNet 标准）
+# TODO: Kaggle 集无专用 mean/std，暂用 ImageNet，OASIS 可重算专用值
+normalize_mean: [0.485, 0.456, 0.406]
+normalize_std: [0.229, 0.224, 0.225]
+
+# ---- 分类器 ----
+backbone: resnet50  # resnet50 | vit_b_16
+num_classes: 4
+pretrained: true  # ImageNet 预训练
+
+# 超参（来源：researcher T3，核实值）
+optimizer: adam
+lr: 1.0e-4
+batch_size: 32
+epochs: 2  # 烟测快速跑通，正式 gate1_oasis.yaml 改 50
+scheduler: cosine  # cosine | none
+
+# 类不均衡：CrossEntropyLoss class_weight（按训练集频率倒数，脚本自动计算）
+use_class_weight: true
+
+# DataLoader（Windows spawn 规范）
+num_workers: 0  # Windows spawn + DataLoader 安全起见 0，可按系统调整
+pin_memory: false  # Windows spawn worker 不支持 pin_memory=true
+
+# 数据增强（researcher T3：horizontal flip + rotation±15°，禁 vertical flip）
+aug_hflip: true
+aug_rotation_degrees: 15
+aug_vflip: false  # 禁止：颅脑方向语义
+
+# ---- 输出 ----
+log_dir: log  # 相对 WaveFidBench/
+checkpoint_dir: log/checkpoints
+results_csv: log/classifier_results.csv
+state_json: log/classifier_state.json

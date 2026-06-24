@@ -1,0 +1,57 @@
+# Gate1 OASIS 正式 config（reportable）
+# 数据源：Kaggle ninadaithal/imagesoasis = OASIS-1 衍生 2D slice，
+#   文件名 OAS1_XXXX_MR1_mpr-1_NNN.jpg（保留 subject ID）+ 类文件夹
+#   (Non Demented / Very mild Dementia / Mild Dementia / Moderate Dementia)。
+#   全自动下载(kaggle CLI)，免 DUA。patient-level split 防泄漏 → 正式数字。
+
+# ---- 数据 ----
+dataset: oasis
+# data_root 通过 --data_root 传入（HPC: .../wavefid/data/oasis_kaggle/Data）
+# 类标签 = 文件夹名（collect_samples 自动检测，无需 cdr 映射）。
+data_root: null
+
+split_mode: patient  # 按 subject ID 分组，防切片泄漏（命门）
+# imagesoasis 文件名 OAS1_0028_MR1_... → subject = OAS1_0028
+subject_id_regex: "^(OAS\\d+_\\d+)"
+train_ratio: 0.70
+val_ratio: 0.15
+test_ratio: 0.15
+random_seed: 42
+
+split_csv_dir: log/splits_oasis
+
+# ---- 图像预处理 ----
+image_size: 224
+# TODO: OASIS 到位后可重算专用 mean/std，暂用 ImageNet
+normalize_mean: [0.485, 0.456, 0.406]
+normalize_std: [0.229, 0.224, 0.225]
+
+# ---- 分类器 ----
+backbone: resnet50  # resnet50 | vit_b_16
+num_classes: 4
+pretrained: true
+
+optimizer: adam
+lr: 1.0e-4
+batch_size: 64
+epochs: 50  # 正式训练（researcher T3 文献 50-100）
+scheduler: cosine
+
+use_class_weight: true  # imagesoasis 极不均衡（Non Demented 占多数）
+
+num_workers: 8     # HPC 多核
+pin_memory: true   # HPC GPU
+
+aug_hflip: true
+aug_rotation_degrees: 15
+aug_vflip: false
+
+# Quantus 正式参数（GPU 不提速）
+pixelflip_features_in_step: 512   # 512×98=50176（整除）
+road_percentages: null            # null → range(1,100,2) 50 点
+
+# ---- 输出 ----
+log_dir: log/hpc_oasis
+checkpoint_dir: log/hpc_oasis/checkpoints
+results_csv: log/hpc_oasis/classifier_results.csv
+state_json: log/hpc_oasis/classifier_state.json

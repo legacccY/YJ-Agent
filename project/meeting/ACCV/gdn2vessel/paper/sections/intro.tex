@@ -1,0 +1,164 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% §1 Introduction — gdn2vessel benchmark-only D&B 稿
+% 真源：STORY_FRAMEWORK.md（2026-06-24 benchmark-only 重定位）+ LEADERBOARD_MATRIX.md
+% 承重点 = benchmark 能区分方法（hedge 至批2，禁写死 sharply ranks）+ 诊断现有方法/指标局限。
+% 数字一律 \TODO 占位（禁臆造）；引用 \cite 占位（refs.bib 待建）。双盲：无自引/机构。
+% =====================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Reconnection at vessel breakpoints is clinically decisive yet hard to score}
+\label{sec:intro:problem}
+
+Thin tubular structures---retinal vessels, airways, and neuronal
+processes---carry information whose clinical value lies primarily in their
+\emph{connectivity}: whether a vessel tree remains a single connected
+component, how branches join, and where a path is interrupted. In 2D retinal
+fundus imaging, automated segmentation routinely produces masks that are
+locally accurate yet topologically broken: a vessel that is faint under low
+contrast, crossed by another vessel, or partially occluded is frequently
+rendered as two disconnected fragments rather than one continuous path.
+These \emph{breakpoints} matter downstream, because vessel tortuosity,
+branching geometry, and the integrity of the arteriovenous network are read
+off the connected topology rather than off per-pixel overlap
+\cite{TODO_clinical_connectivity}.
+
+A model can therefore score well on conventional overlap metrics
+(Dice, IoU) while failing precisely where it matters: at the gaps. The
+ability to \emph{reconnect} a vessel across such a gap is a distinct skill
+from segmenting it, and the central difficulty addressed in this paper is
+not how to perform reconnection, but how to \emph{measure} it. Reconnection
+quality is hard to score for two reasons. First, overlap metrics are blind
+to connectivity by construction, so a method that closes a gap and a method
+that leaves it open can receive almost identical Dice. Second, the
+connectivity-aware metrics that do exist---and the bespoke ``success''
+measures proposed alongside individual reconnection methods---are reported
+under heterogeneous, often unspecified protocols, which makes cross-method
+comparison unreliable and leaves their own failure modes undocumented.
+
+\subsection{There is no standardized 2D-fundus reconnection evaluation suite}
+\label{sec:intro:gap}
+
+Progress on a perceptual capability is usually paced by a standardized
+benchmark with a fixed protocol, a leaderboard, and metrics whose semantics
+are understood. Vessel reconnection has the methods but not the benchmark.
+On the method side, dedicated reconnection and connectivity-recovery
+approaches exist---for example region-aware co-segmentation for vessel
+reconnection (CorSegRec) \cite{TODO_corsegrec} and global--local
+connectivity priors (GLCP) \cite{TODO_glcp}---and 2D-fundus completion has
+been studied as a generative task (MaskVSC) \cite{TODO_maskvsc}. These are
+\emph{methods}, not evaluation suites, and each reports connectivity under
+its own protocol. On the benchmark side, a synthetic-breakpoint benchmark
+already exists, but in a different setting: PTR \cite{TODO_ptr} provides a
+standardized disconnection benchmark for \emph{3D pulmonary} airways/vessels,
+not 2D fundus. We therefore make \emph{no} claim to the first disconnection
+benchmark; PTR occupies that ground in 3D lung.
+
+The gap we identify is specific. For \emph{2D retinal fundus} reconnection
+there is, to our knowledge, no standardized suite that (i) injects
+breakpoints under a fixed, reproducible protocol, (ii) reports a coherent
+family of connectivity metrics whose failure modes are characterized, and
+(iii) places a broad set of segmentation and reconnection methods on a
+single comparable leaderboard. Without such a suite, reported reconnection
+numbers are not comparable across papers, and the metrics themselves are
+used without knowing whether they can be exploited. The latter point is not
+hypothetical: as we show, one widely intuitive ``did the gap close?''
+success measure can be saturated by a degenerate over-predicting model.
+
+\subsection{A 2D-fundus disconnection--reconnection evaluation suite}
+\label{sec:intro:hook}
+
+We present, to our knowledge, the first standardized evaluation suite for
+\textbf{2D retinal-fundus vessel reconnection}. The suite combines four
+components that, taken together, constitute its novelty---no single piece is
+claimed as first in isolation:
+
+\begin{itemize}
+  \item a \textbf{synthetic-breakpoint protocol} that injects gaps with
+        fixed radius and gap parameters, aligned with a published
+        plug-and-play breakpoint procedure \cite{TODO_creatis} (whose method
+        paper we use as a protocol reference, not a competitor), arranged
+        into a four-level \emph{severity} grid (Easy / Medium / Hard /
+        Extreme); evaluation sets are strictly held out, and the protocol
+        never reads ground-truth topology into any evaluated method;
+  \item a \textbf{family of connectivity metrics} for reconnection,
+        cross-checked against standard topological measures (clDice, Betti
+        errors), \emph{together with a documented diagnosis of a metric
+        failure mode}: a ``gap closed'' success rate that we show can be
+        saturated by over-prediction;
+  \item a \textbf{full-spectrum leaderboard} that scores a broad set of
+        segmentation and reconnection methods on the same protocol across
+        datasets and severities, with \emph{severity-response} profiles that
+        track how reconnection quality degrades as breakpoints become harder;
+  \item a \textbf{pre-registered diagnostic methodology} with kill-criteria
+        fixed before the data were seen, and the \emph{honest negative
+        findings} it produced.
+\end{itemize}
+
+The load-bearing contribution is that the suite \emph{can distinguish methods
+and can expose limitations of existing methods and metrics}---not that any
+particular method wins. We are explicit about the status of these claims.
+The negative findings and the metric-saturation diagnosis are established
+results that we report as such. The strength of the separation the
+benchmark induces between methods, however, is reported as what the
+benchmark reveals rather than asserted as a sharp ranking: we present the
+leaderboard and the severity-response profiles and report the separation the
+benchmark exhibits, without claiming that it sharply ranks methods
+\TODO{批2 区分度命门未跑——确认后据实更新 hedge 措辞}.
+
+\subsection{Contributions}
+\label{sec:intro:contrib}
+
+\begin{enumerate}
+  \item \textbf{A benchmark and synthetic-breakpoint protocol for 2D
+        retinal-fundus reconnection.} We build a reproducible, held-out
+        evaluation suite with a fixed-parameter breakpoint-injection
+        protocol arranged over a four-level severity grid. We deliberately
+        scope the novelty to ``the first \emph{2D-fundus} reconnection
+        evaluation suite as a combination'' rather than the first
+        disconnection benchmark, which PTR \cite{TODO_ptr} already provides
+        in 3D lung.
+
+  \item \textbf{A connectivity-metric family with a documented
+        over-prediction failure mode.} We report a family of reconnection
+        metrics cross-checked against clDice and Betti errors, and we
+        diagnose that the ``gap closed'' success rate can be saturated by
+        over-prediction: a degenerate model with Dice~$\approx$~\TODO{0.16}
+        attains a success rate of \TODO{1.0}, because the underlying gap-closure
+        test only checks whether any foreground pixel covers the centre of
+        the erased region. We therefore use a topological continuity measure
+        as the primary reconnection axis and report the success rate only
+        alongside a specificity / over-prediction context. This metric
+        diagnosis follows the tradition of metric-failure-mode analysis
+        \cite{TODO_pixelwise,TODO_touchstone}.
+
+  \item \textbf{A full-spectrum leaderboard with severity-response curves.}
+        We evaluate \TODO{$\geq$12} segmentation and reconnection baselines on a
+        single protocol across datasets and four severity levels, reporting
+        a segmentation sanity axis, a topology axis, and a reconnection axis,
+        and we characterize how reconnection quality degrades with breakpoint
+        severity. We report the separation the benchmark reveals and the
+        severity-response profiles, deferring any stronger ranking claim
+        \TODO{批2 区分度命门未跑——核 verifier 后更新}.
+
+  \item \textbf{A pre-registered diagnostic methodology and honest negative
+        findings.} We treat two of the project's load-bearing hypotheses as
+        examples of falsify-the-crux discipline, with kill-criteria fixed
+        before evaluation. The pre-registered audits show that a delta-rule
+        associative-memory module is \emph{not} mechanistically specific on
+        2D vessels (it matches a plain gated-memory baseline at the only
+        comparable converged operating point \TODO{MQAR n=64, lr 1e-3:
+        gdn2 vs.\ gla, 核 csv}), and that a differentiable vesselness gate
+        does \emph{not} robustly improve topology (its pre-registered gate
+        failed: positive on one dataset, negative on another). We frame these
+        negative findings as positive evidence that the benchmark has
+        discriminative power: a suite that can show a gated variant to be
+        unstable and a memory mechanism to be non-specific is doing its job.
+        The corresponding modules appear on the leaderboard as evaluated
+        methods, not as headline contributions.
+\end{enumerate}
+
+\noindent The remainder of the paper details the benchmark protocol and
+connectivity-metric family (Section~\ref{sec:benchmark}), the baselines and
+leaderboard, and the diagnostic methodology and negative findings.

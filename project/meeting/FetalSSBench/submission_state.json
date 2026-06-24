@@ -1,0 +1,22 @@
+{
+  "paper": "FetalSSBench: A Unified Benchmark for Semi-Supervised Fetal/Obstetric Ultrasound Segmentation",
+  "venue": "ACCV 2026 (main)",
+  "venue_fallback": ["WACV 2027 Application Track", "MICCAI 2026 workshop", "ISBI 2026"],
+  "deadline": "TODO (ACCV 2026 CFP 待查)",
+  "page_limit": null,
+  "status": "planning",
+  "sections_done": [],
+  "sections_pending": ["intro", "related", "benchmark_design", "method_adaptive_threshold", "experiments", "conclusion"],
+  "figures_done": [],
+  "figures_pending": ["fig_annotation_efficiency_curve", "fig_ranking_stability", "fig_structure_asymmetry", "fig_adaptive_threshold_gain"],
+  "experiments_reused": ["run011_G5_pilot_PSFHS_Sup_MeanTeacher"],
+  "experiments_needed": [
+    "扩 baseline: CPS / UAMT / FixMatch-Seg (SSL4MIS 官方)",
+    "加数据集: HC18 loader + FUGC(申请后)",
+    "加低标注比例 1% / 2%",
+    "自适应置信阈值增量 vs 固定阈值",
+    "排名稳定性 Kendall-tau + PS/FH 难度不对称分析",
+    "统计检验 95%CI + Wilcoxon, >=3 seed"
+  ],
+  "last_updated": "2026-06-24"
+}

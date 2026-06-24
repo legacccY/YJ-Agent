@@ -1,0 +1,14 @@
+# HPC 覆盖配置
+# train_hypergale.py 会直接读官方 conf，此文件供 HPC 路径覆盖参考
+#
+# HPC 上运行示例：
+#   python src/hypergale_lane/train_hypergale.py \
+#       --fc-path /gpfs/work/bio/jiayu2403/hyperfid/data/external/abide2/fc_large_data.npy \
+#       --device cuda:0 \
+#       --output-dir /gpfs/work/bio/jiayu2403/hyperfid/results/hypergale \
+#       --seeds 0 1 2
+
+fc_path: /gpfs/work/bio/jiayu2403/hyperfid/data/external/abide2/fc_large_data.npy
+output_dir: /gpfs/work/bio/jiayu2403/hyperfid/results/hypergale
+device: cuda:0
+seeds: [0, 1, 2]

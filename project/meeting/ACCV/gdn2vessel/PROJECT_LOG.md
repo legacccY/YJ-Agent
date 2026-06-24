@@ -1097,3 +1097,49 @@ chase重跑(manifest修好,有数据)→重跑gate_frangi_verdict两集:
 **次要TODO**：topo_source=fallback_scipy(非official精度待核)；git_commit=unknown(HPC抓取失败小修)。
 
 **批1前置**：FR-UNet官方复现用global-stats minmax(smoke用fallback per-image=偏离红线4)→建FRUNetPreprocessor cache(DRIVE+CHASE)，train_harness传--frunet_cache_path。
+
+### Entry 32 续3 — GPU 排队期写数字无关 paper 章节（2026-06-24）
+
+批1 job 1489965 PENDING 2.5h+（gpu4090 被别人占满，我账户 0 running，scontrol 估 START 2026-06-26=2天后，纯等 fairshare）。用户拍板：等卡期草 D&B 稿数字无关部分。
+
+**STORY 重定位 benchmark-only**（writer）：两命门全死后，STORY_FRAMEWORK.md headline 从「方法赢/Frangi 门」彻底改 benchmark-only。新核心 = 首个 2D 眼底断点续连评测套件（协议+指标族+12baseline leaderboard+预登记诊断方法学+诚实负结果）。承重点=「benchmark 能区分方法+诊断局限」不是「我们赢」。记忆/Frangi 降为 leaderboard 被评测方法之一+被照出不稳健的变体。区分度 claim 全 hedge 至批2（[[feedback_falsify_crux_first]]）；诚实负结果(两命门死+SR gameable)已确证写实。跑偏定义/R-rules/故事弧全重排 D&B。
+
+**paper 数字无关章节起草**（3 writer 并行，caveman OFF）：
+- main.tex 骨架（中性 article 模板，venue 未定，\TODO 宏占位未核数字）。
+- §1 Intro（intro.tex 164 行）：benchmark-only headline + 4 贡献 + PTR/CorSegRec/GLCP/MaskVSC 划界 + 区分度 hedge。
+- §2 Related Work（related_work.tex 重写 181 行）：删旧 method-selling 框架，6 线索逐条划界 PTR/CorSegRec/GLCP/MaskVSC/creatis/GDKVM + Touchstone/Pixel-Wise Metrics 立负结果先例。
+- §3 Benchmark（benchmark.tex 300 行）：合成断点协议(creatis-aligned,severity 网格 size_max6/8/10/12 核 synth_breaks.py)+防泄漏+续连指标族公式(ε_β0/SR/reid/clDice/Betti 核 metrics.py)+SR 失效诊断(核 _is_gap_closed:640，dice0.16 烂模型 SR=1.0 已确证写实)。
+
+数字全 \TODO 占位（intro15/related1/benchmark6），禁臆造。method.tex(旧路A/B)deprecated 注释掉。本地无 pdflatex 编译验留 TODO。
+**待**：§4 leaderboard/§5 诊断/§6-7 待批2+批量数字出后写。批1 出→验 dice+severity-response+SR 判别度→批2 区分度命门。
+
+### Entry 32 续4 — 转 gpu3090 分区批1 DRIVE 起跑（2026-06-24）
+
+用户「一张卡跑」。gpu4090 PENDING 2.5h（别人占满+fairshare低估2天）。试砍walltime 5h→1h(无效,fairshare预留墙)+gpudebug QOS(无效同墙,且array被QOSMaxSubmitJobPerUserLimit拒)。**真解=转 gpu3090 分区**(AllowQos含4gpus/gpudebug,账户能投,没4090抢手)→单job DRIVE FR-UNet **job 1490552 STATE=RUNNING@gpu3090n5 秒起**。存 [[feedback_hpc_gpu3090_fallback]]。卡槽 GO 7da7b24c。poll b3wbte68f 盯。DRIVE 完→同样 gpu3090 起 CHASE→验 dice+severity-response+SR 判别度。
+
+### Entry 32 续5 — FR-UNet 训练不收敛 bug 修复（2026-06-24）
+
+批1 DRIVE 首跑（gpu3090 job 1490552）best val_dice **仅 0.293**（官方应 ~0.80），loss 卡 0.81-0.91 不降，val_dice 0.05-0.29 乱跳。审轨迹诊断=非发散是没学会。派 coder 查根因（铁证 2 条）：
+1. **val_ds 用 patch_size=48 → val 在 4 个随机 patch 上 → val_dice 噪声乱跳**（best ckpt 按噪声存，存的非真最优）。修：val 全图模式(patch_size=None)+_val_epoch 走 adapter.forward_adapt 滑窗推理+frunet_test_crop 裁回。
+2. **train_ds.__len__=16 张图, bs=512 → 每 epoch 仅 1 个梯度 step**（官方 >1000 step/epoch，差 2 数量级 → loss 不降）。修：frunet_pipeline 加 repeats 参数（每图重复 N 次随机切 1 patch），harness train_ds repeats 默认 1000(→16k items→31 step/epoch)。
+3. loss `_BCELossWithMask`=BCEWithLogitsLoss 正确(非bug)；**severity 四档 dice/cldice/eps_b0 相同=by-design**(benchmark npz image 是原图 severity 无关,只 SR/reID 随 gap 变,确认正确)。
+
+修复版上传+编译过。DRIVE refit job **1490615 RUNNING@gpu3090n5**(repeats1000)。poll bss86kuid 盯。验 val_dice 能否爬到 ~0.7-0.8。
+**张力**：官方密集 patch ~244 step/epoch(~5h/run)，repeats1000=31 step/epoch(1240 总 step)可能到 ~0.7。复现零偏离 vs 算力——先看 1000 爬到哪，不够再加(gpu3090+4gpus QOS 长 walltime 跑官方密度)。卡槽 47ab21b2。
+
+### Entry 32 续6 — DRIVE faithful 起跑 + §5+refs.bib（2026-06-24）
+FR-UNet bug 修复确认有效(refit val_dice 0.21→0.783@ep28 健康爬,官方区间)。gpudebug 1h 对 73min/run 短→改 **gpu3090+4gpus QOS+3h walltime** faithful 满 40ep+eval。DRIVE faithful job **1490773 RUNNING@gpu3090**。poll biizfsq8t 盯。
+趁训练并行草 paper：§5 diagnostics.tex(三条已确证负结果:记忆非特异+Frangi门不稳健+SR可刷,数字\TODO)+refs.bib(47条全联网核实真出处,双盲安全,2 TODO待定)。paper 现有 main+§1/§2/§3/§5+refs.bib。
+**待**：DRIVE faithful 完→验 dice~0.79+续连csv非旧货→CHASE(同4gpus QOS)→批2 全baseline区分度命门。§4 leaderboard/§6/§7/abstract 待数字。卡槽 11450d76。
+
+### Entry 32 续7 — benchmark eval 推理路径修复 = 全链路真数字通（2026-06-24）
+DRIVE faithful 训完 best_dice=0.7976(满40ep官方区间),但 benchmark eval dice=0.000 全0。根因(coder)=**benchmark eval 用通用 _tiled_inference 喂 npz image,没走 adapter 预处理/forward_adapt**→FR-UNet 见 OOD→输出近空。修:benchmark eval 改 adapter.preprocess_benchmark_image(从磁盘重载 BT.601 灰度+minmax+get_square)+adapter.forward_adapt,对齐 train val。21 pytest 过(含 BUG3 回归 canary)。
+**eval-only 重跑 best.pth 验(job 1490987,gpu3090)**:Easy.csv **dice=0.798**(从0回升,=训练val)+cldice=0.837+**SR=0.725(不再被过预测刷满的1.0,好模型真实续连率)**+reID=0.749+eps_b0=22.93。✅ **全链路 train→eval→真续连指标通**,关键解锁。per-image minmax vs global cache 担忧不成立(dice精确匹配)。
+**eval 慢**:~6min/severity(拓扑Betti+4×模型重载)→后续可优化(单次 evaluate.py loop 全 severity 省4×重载)。
+**待**:eval-only 完成 DRIVE 4 severity→DRIVE FR-UNet cell 齐→CHASE faithful→批2 全 main-venv baseline 区分度命门。卡槽 d1a38d1b。
+
+### Entry 32 续8 — eval 优化 + CHASE faithful 起跑（2026-06-24）
+**DRIVE FR-UNet cell 完成**(4 severity Bash核):dice0.798/cldice0.837/eps_b0 22.93 四档同(by-design)，**SR severity-response 单调衰减 Easy0.725→Med0.632→Hard0.626→Extreme0.555**(reID同 0.749→0.596)=benchmark 判别轴对续连指标 work。
+**eval 优化**(coder):evaluate.py 加 --severity all/多值,model 加载1次+severity loop内+infer_cache 跨severity复用同图推理(输入图severity无关)→eval ~24min/cell 降~6min,批2 24cells 省巨大。28 pytest 过(含 build_model 调1次canary)。优化版+模板上传HPC(向后兼容)。
+**CHASE faithful**:epoch=294s(图大2.5×DRIVE)→40ep+eval~3.7h 超3h walltime。scontrol延时被拒(集群禁)→cancel+改6h walltime重提 job **1491082 RUNNING@gpu3090n4**。批2 sbatch待改 --severity all 省eval。
+**待**:CHASE完成(~3.7h)→两集FR-UNet全链路通+CHASE severity-response→批2全main-venv baseline区分度命门。卡槽 7258e91e。

@@ -191,6 +191,56 @@ class BaselineAdapter(ABC):
         ...
 
     # ---------------------------------------------------------------------- #
+    #  Benchmark preprocessing hook — adapter-specific image preprocessing
+    #  for evaluate_benchmark (断点续连 leaderboard path).
+    # ---------------------------------------------------------------------- #
+
+    def preprocess_benchmark_image(
+        self,
+        npz_image: "np.ndarray",
+        image_id: str,
+        dataset_name: str,
+        data_root: Optional[str] = None,
+    ) -> "Tuple[np.ndarray, Tuple[int, int]]":
+        """
+        Return (preprocessed_image, (orig_H, orig_W)) ready to be wrapped into
+        a (1, 1, H', W') tensor and passed to forward_adapt.
+
+        Default implementation (non-FR-UNet adapters):
+          - Returns npz_image as-is (green+CLAHE+norm(0.5,0.1), float32 (H,W)).
+          - orig_H, orig_W = image height/width (no square padding needed).
+
+        FR-UNet adapter overrides this to apply the official pipeline:
+          BT.601 Grayscale → global-stats normalize → per-image minmax → [0,1]
+          → frunet_get_square(target_size) → (H_sq, W_sq) + original (H, W).
+
+        Args:
+            npz_image:    (H, W) float32 from NPZ 'image' field
+                          (green+CLAHE+norm, the default non-FR-UNet distribution).
+            image_id:     str image identifier stored in NPZ (e.g. '37').
+            dataset_name: lowercase dataset name stored in NPZ (e.g. 'drive').
+            data_root:    Optional raw dataset root dir (needed by FR-UNet to
+                          reload image with its own pipeline). None for adapters
+                          that can use npz_image directly.
+
+        Returns:
+            (processed_image, (orig_H, orig_W)):
+              processed_image — (H', W') float32, ready for forward_adapt.
+              (orig_H, orig_W) — original un-padded size for cropping logit back.
+
+        Note:
+            forward_adapt receives (1, 1, H', W') built from processed_image.
+            After forward_adapt returns (1, 1, H', W') logits, caller crops back
+            to (orig_H, orig_W) before computing metrics.
+        """
+        # Default: npz_image already has the correct distribution for most adapters
+        # (green channel + CLAHE + normalise(0.5, 0.1) — matches BaseVesselDataset).
+        import numpy as _np
+        img = npz_image.astype(_np.float32)
+        orig_H, orig_W = img.shape
+        return img, (orig_H, orig_W)
+
+    # ---------------------------------------------------------------------- #
     #  Optional: sliding window helper (patch 模型复用)
     # ---------------------------------------------------------------------- #
 

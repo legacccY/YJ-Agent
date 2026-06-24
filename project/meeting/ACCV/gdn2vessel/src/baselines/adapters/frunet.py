@@ -397,6 +397,161 @@ class FRUNetAdapter(BaselineAdapter):
             },
         }
 
+    def preprocess_benchmark_image(
+        self,
+        npz_image,
+        image_id: str,
+        dataset_name: str,
+        data_root=None,
+    ):
+        """
+        FR-UNet benchmark preprocessing override.
+
+        FR-UNet trains on BT.601 Grayscale → global mean/std normalize →
+        per-image minmax [0,1] → frunet_get_square(target_size) zero-padding.
+        The npz 'image' field uses green+CLAHE+norm(0.5,0.1) which is WRONG
+        for FR-UNet (different channel formula + different normalization scheme
+        → model sees OOD input → near-zero predictions → dice≈0).
+
+        This override reloads the image from disk (data_root required) and
+        applies the correct FR-UNet pipeline via FRUNetDRIVE/FRUNetCHASE etc.
+
+        If data_root is None (legacy call without --data_root), falls back to
+        applying per-image minmax on npz_image and a best-effort get_square.
+        The fallback will still be imperfect (wrong grayscale formula, no global
+        stats) but avoids a hard crash; a warning is printed.
+
+        Args:
+            npz_image:    (H, W) float32 — NPZ 'image' field (green+CLAHE+norm).
+                          Used only in fallback mode when data_root is None.
+            image_id:     str, e.g. '37'.
+            dataset_name: lowercase, e.g. 'drive'.
+            data_root:    Path to raw dataset root (e.g. /data/vessel/DRIVE/).
+                          Required for correct FR-UNet preprocessing.
+
+        Returns:
+            (processed_image, (orig_H, orig_W))
+              processed_image — (H_sq, W_sq) float32 in [0,1], frunet_get_square padded.
+              (orig_H, orig_W) — original image size (for crop-back after forward_adapt).
+        """
+        import numpy as np
+        from datasets.frunet_pipeline import (
+            FRUNetPreprocessor,
+            frunet_per_image_minmax,
+            frunet_get_square,
+            _FRUNET_SQUARE_SIZE,
+        )
+
+        orig_H, orig_W = npz_image.shape
+
+        if data_root is None:
+            # Fallback: cannot reload from disk, apply minmax only on npz_image.
+            # ⚠ WARNING: grayscale formula mismatch (npz=green+CLAHE+norm vs FR-UNet=BT.601).
+            # This is an approximation; pass --data_root for correct results.
+            print(
+                f'[fr_unet] WARNING: data_root=None in preprocess_benchmark_image '
+                f'for image_id={image_id!r} dataset={dataset_name!r}. '
+                f'Applying per-image minmax on npz_image (green+CLAHE distribution). '
+                f'Pass --data_root to evaluate.py for correct FR-UNet preprocessing.',
+                file=__import__('sys').stderr,
+            )
+            img = frunet_per_image_minmax(npz_image.astype(np.float32))
+            target_sz = _FRUNET_SQUARE_SIZE.get(dataset_name.lower())
+            if target_sz is None:
+                max_side = max(orig_H, orig_W)
+                target_sz = int(np.ceil(max_side / 16) * 16)
+            img_sq, _ = frunet_get_square(img, target_sz)
+            return img_sq, (orig_H, orig_W)
+
+        # --- Reload image from disk with official FR-UNet pipeline ---
+        import cv2
+        try:
+            from PIL import Image as _PILImage
+            _has_pil = True
+        except ImportError:
+            _has_pil = False
+        import torchvision.transforms as _TVT
+
+        data_root = Path(data_root)
+
+        # Build dataset path helper by dataset name to find the image file.
+        # We only need the image, not the full dataset object.
+        ds_name = dataset_name.lower()
+        _gray_tf = _TVT.Grayscale(num_output_channels=1)
+
+        def _load_gray_u8(img_path):
+            """Load image → BT.601 Grayscale (H,W) uint8. Mirrors FRUNetPreprocessor._grayscale_u8."""
+            if _has_pil:
+                try:
+                    pil_rgb = _PILImage.open(str(img_path)).convert('RGB')
+                    pil_gray = _gray_tf(pil_rgb)
+                    return np.array(pil_gray, dtype=np.uint8)
+                except Exception:
+                    pass
+            bgr = cv2.imread(str(img_path))
+            if bgr is None:
+                raise IOError(f'[fr_unet] preprocess_benchmark_image: cannot read {img_path}')
+            return cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+
+        # Resolve image path by dataset
+        if ds_name == 'drive':
+            # DRIVE: image_id is int str like '37'
+            sid = int(image_id)
+            img_path = data_root / 'training' / 'images' / f'{sid}_training.tif'
+        elif ds_name in ('chase', 'chase_db1'):
+            # CHASE: image_id is str like 'training_01'
+            img_path = data_root / 'images' / f'{image_id}_test.tif'
+        elif ds_name == 'stare':
+            # STARE: image_id like 'im0001'
+            img_path = data_root / 'images' / f'{image_id}.ppm'
+            if not img_path.exists():
+                img_path = data_root / 'images' / f'{image_id}.ppm.gz'
+        elif ds_name == 'fives':
+            img_path = data_root / 'images' / f'{image_id}.png'
+        elif ds_name == 'hrf':
+            # HRF: .jpg, case-insensitive; try lower then upper extension
+            img_path = data_root / 'images' / f'{image_id}.jpg'
+            if not img_path.exists():
+                img_path = data_root / 'images' / f'{image_id}.JPG'
+        else:
+            # Unknown dataset: fall back to minmax on npz_image
+            print(
+                f'[fr_unet] WARNING: unknown dataset {dataset_name!r} in '
+                f'preprocess_benchmark_image, falling back to minmax-on-npz.',
+                file=__import__('sys').stderr,
+            )
+            img = frunet_per_image_minmax(npz_image.astype(np.float32))
+            target_sz = max(orig_H, orig_W)
+            target_sz = int(np.ceil(target_sz / 16) * 16)
+            img_sq, _ = frunet_get_square(img, target_sz)
+            return img_sq, (orig_H, orig_W)
+
+        # Load BT.601 grayscale
+        gray_u8 = _load_gray_u8(img_path)
+        orig_H, orig_W = gray_u8.shape
+
+        # Per-image minmax only (no global stats available at benchmark eval time).
+        # ⚠ TODO: For full accuracy, compute global mean/std from training split and
+        #   apply FRUNetPreprocessor._normalize_image(gray_u8, mean, std).
+        #   Currently we apply per-image minmax only (step 2 of FR-UNet pipeline,
+        #   skipping step 1 global normalize). This approximation should still be
+        #   far better than feeding green+CLAHE+norm(0.5,0.1) OOD input.
+        #   To use full pipeline: pass cache_path so FRUNetPreprocessor.run() data
+        #   is available, or precompute mean/std separately.
+        #   # TODO: researcher/planner confirm whether global mean/std should be
+        #   #        loaded from frunet pickle cache at benchmark eval time.
+        img_f = gray_u8.astype(np.float32) / 255.0
+        img_f = frunet_per_image_minmax(img_f)  # per-image minmax → [0,1]
+
+        # Apply get_square padding (official tester.py path: FIX Q7)
+        target_sz = _FRUNET_SQUARE_SIZE.get(ds_name)
+        if target_sz is None:
+            max_side = max(orig_H, orig_W)
+            target_sz = int(np.ceil(max_side / 16) * 16)
+        img_sq, _ = frunet_get_square(img_f, target_sz)
+
+        return img_sq, (orig_H, orig_W)
+
     def forward_adapt(
         self,
         model: nn.Module,
