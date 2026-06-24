@@ -40,7 +40,11 @@ process.stdin.on('end', () => {
   // drafts_short/ drafts_long/ 等带后缀变体与 drafts/ 同等豁免；appendix/ 同 drafts
   // reference/ = 项目内技术文档/文献笔记，整目录由项目 README/LOG 统筹，单文件不逐一登记
   // paper/ = 论文稿件目录（含 sections/），由项目 README 统筹，单章节不逐一登记；PLAN/ 子目录同理（有 MASTER_PLAN 统筹）
-  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts[\w-]*|appendix|killshots?|_hpc|reference|paper|PLAN)\//.test('/' + rel)) process.exit(0);
+  // analysis/ = 项目分析脚本/中间文档子目录，整目录由 04_LOG/README 统筹，单文件不逐一登记
+  if (/\/(src|configs?|utils?|scripts?|code|eval|tools?|tests?|ideation|drafts[\w-]*|appendix|killshots?|_hpc|reference|paper|PLAN|analysis)\//.test('/' + rel)) process.exit(0);
+
+  // 文件名以 _scratch_ 开头 → 临时探针，即使不在 _scratch/ 目录也豁免
+  if (/^_scratch_/.test(base)) process.exit(0);
   // ICLR2027/ 根目录 *.tex：论文核心稿件，由项目 README 统筹索引，单文件无须逐一登记
   if (/project\/meeting\/ICLR2027\/[^/]+\.tex$/.test(rel)) process.exit(0);
 
