@@ -1,0 +1,4 @@
+# wave3 ELISpot 中间输入（可由 prep_inputs_wave3.py 重生成）
+scripts/out/prime_input_*/
+scripts/out/immuneapp_input_*/
+scripts/out/wave3_hpc_inputs.tar.gz

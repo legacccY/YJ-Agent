@@ -4,6 +4,26 @@
 
 ---
 
+## Entry 24 — 2026-06-24 第二批 ELISpot 正式测试（双关并行：HPC + 本机 WSL2）+ HLAthena 救援
+
+用户「开跑 + 大编队并行 + HPC/本机双关 + 正式测试也并行」。状态推进：
+
+**部署 SMOKE_PASS（3 工具，均跑通 demo）**：
+- **PRIME** ✅ HPC，r=1.0（Entry 23）。
+- **ImmuneApp** ✅ HPC `envs/immuneapp`（py3.7 TF1.15.0）。坑：①repo 880M 巨权重 → `git clone` 病态慢（24min 未完）改 **github tarball wget**；②TF1.15 `pip -q` 一次装**依赖回溯死循环** → 改**先单装 tensorflow==1.15 再装其余**。
+- **deepHLApan** ✅ 本机 WSL2 docker `biopharm/deephlapan:v1.1`（py2.7 TF1.12 自解版本地狱）。坑：`-O outdir` 须先建/直接输 /work。
+
+**ELISpot 正式测试（全量 34247 主干，双关并行）**：派 coder 写 `scripts/wave3_bench/`（prep_inputs_wave3.py 从 master_backbone 生成 3 工具输入+map / merge_wave3.py → 8tools）。本地 prep 出 32178 unique×MT/WT。HPC 跑 PRIME+ImmuneApp（各 65 allele）、WSL2 跑 deepHLApan（64k 肽）。
+- **ImmuneApp** ✅ 65/65 完成。
+- **deepHLApan** ✅ MT+WT 出（32178 行，列 Annotation/HLA/Peptide/binding/immunogenic），已拉本地 `scripts/out/deephlapan_out_{MT,WT}/`。
+- **PRIME** 🔄 64 allele 跑中（**A0208 是肽特异毒丸**：70 肽却 PRIME.x 死循环，`timeout` 杀不掉 perl 孙进程 → 按 PID 净杀 orphan + A0208 排除标 NaN[0.2%] + resume 重跑其余）。
+
+**MHLAPre** 🔴 大部队 4 路犄角旮旯穷尽证伪（Entry 22-23），权重全网无、自训管线也不完整 → 唯一路邮件作者。
+
+**HLAthena** ⚠️→救援中：镜像 standalone 运行时从作者 GCS bucket `gs://msmodels` 拉模型（镜像内 /models 空），bundled key 死（buckets.get 401）→ 卡 retry。**突破：bucket 对象匿名可下**（list+mediaLink 通）→ 后台匿名下全套 A0101+panpan 模型（2.2G+），待 patch `fetch_models=false` 本地跑。
+
+**待办**：PRIME 完成 → 拉 HPC PRIME+ImmuneApp 结果 → merge_wave3 出 `merged_all_tools_8tools.xlsx` → benchmark 分析出图。HLAthena 模型下完 → patch 跑 smoke。
+
 ## Entry 23 — 2026-06-24 第二批工具开跑部署（PRIME ✅ SMOKE_PASS r=1.0 + 大编队备 kit）
 
 用户「开跑 + 大编队并行」。按 CLAUDE.md：HPC 执行主线串行、部署 kit 纯软活派 coder 并行。
