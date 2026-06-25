@@ -4,6 +4,45 @@
 
 ---
 
+## Entry HLA3 — 2026-06-25【进度统一 + 10工具横评 PPT 全量版】
+
+> 窗口：`quantimmu-bench.claim`。任务=①统一全项目进度(状态版本漂移)②做全量 10 工具横评 PPT。
+
+### ① 统一全项目进度（commit f2d6fa9）
+- 根因=**状态版本漂移×单维枚举混三维**：各文档冻结在不同 Entry(headline 5/8/9/10 打架)+DEPLOY_TRACKER 状态列一格塞三事(部署步/版本/进benchmark)→NeoTImmuML(自训版已进表)被误读"没做成"、PRIME/ImmuneApp/deepHLApan(已进表)被读成"停烟测"。
+- 修：DEPLOY_TRACKER **新建顶部规范状态总表(10工具按维度拆6列)=唯一真源**；00_README/PROJECT_LANDSCAPE(8→9)/REPORT/registry.json 全对齐 **10工具/9进benchmark/1未做成(MHLAPre)**。
+- 纠错钉死：NeoTImmuML 非没做成(官方权重不可得→自训替代版进 benchmark,诚实标★)；真正未做成仅 MHLAPre。csv 真源校验 9 工具通过。
+
+### ② 全量 10 工具横评 PPT（用户拍板「新作全量版」）
+- 新生成器 `ppt/gen_ppt_v2_10tools.js` → `QuantImmuBench_10工具横评_2026-06-25.pptx`(**22 slide**,1.1MB)。不动旧 17页交付。
+- 用户 4 约束全落实：①**说人话**(术语加白话:CNN→卷积网络/XGBoost→梯度提升树/AUC→能不能分开;比喻"是非题vs打分题")②**删袁老师**(中性"课题组",pptx xml 核 0 命中)③**标引用出处**(逐工具卡脚注+独立参考文献页:10 工具 journal/年份/DOI/repo;本地产物不标)④**客观**。
+- 结构:封面→背景+4类信息→**S3 十工具横评总表(NEW,10行:预测什么/方法/进基准/AUC/版本状态)**→S4-13 逐工具4类信息卡(10个,含 MHLAPre 未做成卡+HLAthena proxy卡)→工程踩坑→benchmark方法→8工具核心结论(fig6)→统计稳健性(caterpillar)→定量能力+DS1→HLAthena proxy单列→诚实边界+许可红线→**参考文献(NEW)**→结论下一步。
+- 红线守:MHLAPre 无数字绝不臆造(标"未做成"+为什么:无权重+预处理码缺+自训路断+全网搜空→邮件作者);HLAthena=presentation proxy 单列不与免疫原性工具 apples-to-apples。
+- benchmark 数字逐一核 metrics_ds2_8tools/9tools.csv(max,>0):DeepImmuno0.481/PredIG0.661/pTuneos0.753/IMPROVE0.621/NeoTImmuML0.655/PRIME0.528/ImmuneApp0.589/deepHLApan0.419/HLAthena0.509。
+- QA:LibreOffice→PDF→pymupdf 渲染抽查 S3/S8/S13/S21 布局无溢出、颜色分级清晰。pptxgenjs 在全局 node_modules(`NODE_PATH=C:/Users/yj200/AppData/Roaming/npm/node_modules`)。
+
+### ③ deck 扩图（v3，22→26 页）+ 审稿 6 点回应（v4，→36 页）
+- **图表缺漏自查**：v2 只用 3 张图(fig6/fig7/bootstrap)。审计全项目图：当前+有价值却没用的=fig8 ROC(8工具)/fig_corr_heatmap(8工具,"工具彼此不一致")/ds1_vs_ds2+ds1_scatter("分类器非回归器")/fig_length_strat/topk。**R_v3 整套5张=旧5工具版(plot_benchmark_v3.R TOOL_ORDER只5个,读metrics_ds2.csv)→已被fig6/7/8(8工具)取代,不用**。
+- v3 加 4 图表页:S17 ROC曲线/S19 工具一致性热图/S21 DS1证伪(柱+散点)/S22 肽长分层+topK表。图 3→7 张。自动页码重排。
+- **群里审稿 6 点反馈**(导师对PPT)→ v4 全落实:①每工具+1独立**原理页**(输入→模型→输出三段说人话,派coder组装,prose主线逐字写防压缩)②输入/输出格式=**实测数据排等宽代码框**(用户拍板,非真截图)③运行命令示例(每原理页命令框)④S24踩坑改**工具归属**(哪工具哪坑)⑤工具一致性=corr热图页⑥原始数据打包`交付_原始数据包_2026-06-25.zip`(ELISpot真值+9工具合并表+指标,README标netMHCpan许可:团队内部可,勿转外)。
+- **最终 deck**:`QuantImmuBench_10工具横评_2026-06-25.pptx`(**36 slide**),生成器`ppt/gen_ppt_v2_10tools.js`(principleSlide函数+自动页码)。0 袁老师(xml核)。
+- ⚠️ MHLAPre 原理页诚实标"未做成·无输出"(绝不臆造);HLAthena原理页标提呈非免疫原性proxy。
+
+### ④ 5 工具客观版报告（用户要"去主观字眼·客观真实"）
+- 新生成器 `ppt/gen_ppt_5tools.js` → `QuantImmuBench_5工具横评_客观版_2026-06-25.pptx`(**21 slide**)。范围=第一批5工具(DeepImmuno/PredIG/pTuneos/IMPROVE/NeoTImmuML),不含Wave3/HLAthena/MHLAPre。
+- **去主观字眼**:封面删"汇报人 余嘉"→中性"内容/单位";背景"我负责"→"本报告范围";结论"我"→客观第三人称。xml 核验:袁/我负责/我的/汇报人/我这 = 0 命中。
+- **5工具用5工具图**:配 `figures_R_v3/`(plot_benchmark_v3.R 出版级 R 图,正好5工具)——fig2_bar(AUC)/fig1_roc/fig3_scatter,+ ds1 DS1证伪。统一 **mean 聚合口径**(与R_v3图一致),数字逐一核 metrics_ds2.csv(mean,>0:DeepImmuno0.519/PredIG0.750/IMPROVE0.618/NeoTImmuML0.576/pTuneos0.781;PredIG ρ0.280**/IMPROVE ρ0.207*显著)。
+- 注:R_v3对10工具deck是旧版,对5工具deck是正解(口径自洽)。两版deck并存:10工具横评(36页,8工具max聚合)+5工具客观版(21页,mean聚合)。
+- 小瑕疵:DeepImmuno 运行命令框8行最后一行略裁(同10工具deck,其余工具命令短不受影响),需要可调高。
+
+### ⑤ 口径不一致 bug 修复（用户复查 0.781 抓出）
+- **bug**:5工具deck为配 R_v3 图(mean 聚合)整体用了 **mean,>0** 口径(pTuneos 0.781/PredIG 0.750),但10工具deck/Word/全项目交付都是 **max,>0**(pTuneos 0.7525/PredIG 0.6611)→ 同一工具跨deck数字打架,评审一对比即穿帮。0.781=pTuneos mean,>0(csv真有但错口径)。
+- **修**:① coder 新建 `analysis/plot_5tools_max.py`(改编 plot_fig6to8_8tools.py)→ 重画 5工具 max,>0 图 `figures/fig6_5tools_auc.png`/`fig7_5tools_spearman.png`/`fig8_5tools_roc.png`(读 metrics_ds2.csv max/>0 + merged_all_tools_5tools.xlsx,自检吻合 csv)。② 生成器全数字回 max,>0:AUC 0.481/0.661/0.752/0.621/0.655;Spearman IMPROVE 0.243*/PredIG 0.198*/pTuneos 0.136/DeepImmuno -0.117/NeoTImmuML 0.022。③口径标签 mean→max,图换 5tools_max。④旧 mean 数字逐一扫描 0 残留。
+- 修正版 pptx=`QuantImmuBench_5工具横评_客观版_max修正_2026-06-25.pptx`(原名被占用/打开中,待关闭后覆盖回标准名)。**5工具deck 现与 10工具deck 口径完全一致**。
+- 教训:换图省事不能换口径——benchmark 数字必须全交付物统一口径,数字入稿前跨交付物对账,不只对单 csv。
+
+---
+
 ## Entry HLA2 — 2026-06-25【HLAthena 收尾窗】追踪 HPC + 续跑补全 + merge 第9列 + PPT/Word 9tools 定稿
 
 > 窗口：认领 `quantimmu-bench.claim`。任务=追踪 HPC HLAthena 训练→跑完 merge→收尾 PPT+更新项目文件。
