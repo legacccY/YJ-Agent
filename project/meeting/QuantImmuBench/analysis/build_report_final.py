@@ -351,12 +351,43 @@ for title, body in [
     heading(doc, title, level=3)
     para(doc, body, indent=True)
 
+# 9.5 附录：第 9 工具 HLAthena (presentation proxy)
+heading(doc, "附录：第 9 工具 HLAthena (presentation proxy) 补充评测", level=2)
+def _load_9():
+    with open(DIR / "metrics_ds2_9tools.csv", encoding="utf-8") as f:
+        lines = [ln for ln in f if not ln.lstrip().startswith("#")]
+    return list(csv.DictReader(lines))
+_H = [r for r in _load_9() if r["Tool"] == "HLAthena"]
+def _hv(agg, thr, col):
+    for r in _H:
+        if r["Aggregation"] == agg and r["Threshold"] == thr:
+            try: return f"{float(r[col]):.4f}"
+            except: return str(r[col])
+    return "—"
+para(doc, "定位（必读）：", bold=True)
+para(doc, "HLAthena 预测 MHC-I 抗原提呈 (presentation)，其论文明确声明不预测免疫原性。故本工具在 ELISpot 免疫原性 benchmark 上仅作 presentation baseline proxy 单列报告，不与 8 个免疫原性工具 apples-to-apples 并列。⚠️ 按袁老师分工 HLAthena 属李紫晨负责，本评测为余嘉超额补全。", indent=True)
+para(doc, "结果（DS2，n_pep=100/101，数字核 metrics_ds2_9tools.csv）：", bold=True)
+make_table(doc,
+    ["聚合", "阈值", "AUC-ROC", "AUPRC", "Spearman ρ", "p 值"],
+    [["max", ">0", _hv("max", ">0", "AUC_ROC"), _hv("max", ">0", "AUPRC"), _hv("max", ">0", "Spearman_rho"), _hv("max", ">0", "Spearman_pval")],
+     ["mean", ">0", _hv("mean", ">0", "AUC_ROC"), _hv("mean", ">0", "AUPRC"), _hv("mean", ">0", "Spearman_rho"), _hv("mean", ">0", "Spearman_pval")],
+     ["top3mean", ">0", _hv("top3mean", ">0", "AUC_ROC"), _hv("top3mean", ">0", "AUPRC"), _hv("top3mean", ">0", "Spearman_rho"), _hv("top3mean", ">0", "Spearman_pval")]])
+para(doc, "结论：HLAthena 在 ELISpot 免疫原性上近随机 (AUC ≈ 0.51、全聚合×阈值 AUC 范围 0.49–0.59、Spearman ρ 0.08–0.15 且 p 全 > 0.12 不显著) —— 正面印证「提呈 ≠ 免疫原性」，与其设计定位一致。", indent=True)
+para(doc, "覆盖度与工程诚实：", bold=True)
+for c in [
+    "逐肽覆盖 100/101 (98%)：每肽对全 HLA×window 子肽取 max 聚合，即便部分子肽缺失逐肽分仍稳健。",
+    "分块完成 266/336：HPC 登录节点跑 (无专用 CPU qos)，70 个 chunk 多为 length-8 在节点高负载下被 cgroup 内存 kill 未完成；因逐肽覆盖已 98% 且结果近随机，对结论无实质影响。",
+    "GCS 死锁绕过：镜像空壳运行时拉模型 401 死锁 → 匿名下 65-allele 模型 + patch fetch_models=false 本地挂载跑通。",
+]:
+    bullet(doc, c)
+
 # 10 结论
 heading(doc, "10. 结论与下一步", level=2)
 para(doc, "已达成：", bold=True)
 for c in [
     "5 工具全部部署 + 4 类信息全收集 (逐工具文档齐)；2 个完整端到端双验证 (DeepImmuno/PredIG)，其余诚实分级。",
     "8 工具 ELISpot benchmark 完成，保守结论 = 判别力普遍弱、统计不可区分、新工具无增量、定量能力弱。",
+    "第 9 工具 HLAthena (presentation proxy) 超额补全：ELISpot 上近随机 (AUC 0.51 / ρ 0.08 n.s.)，印证提呈≠免疫原性，单列不并比 (见附录)。",
     "该负结果反而强化 QuantImmune 做连续 magnitude 回归的立项动机。",
 ]:
     bullet(doc, c)

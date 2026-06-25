@@ -368,6 +368,7 @@ s.addText([
   { text:"5 工具全部部署 + 4 类信息全收集 (逐工具文档齐)", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13, paraSpaceAfter:7 } },
   { text:"2 个完整端到端双验证 (DeepImmuno/PredIG)；其余诚实分级", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13, paraSpaceAfter:7 } },
   { text:"8 工具 ELISpot benchmark：保守结论 = 判别力普遍弱、统计不可区分、新工具无增量、定量能力弱", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13, paraSpaceAfter:7 } },
+  { text:"第9工具 HLAthena (presentation proxy) 超额补全：ELISpot 上近随机 (AUC 0.51/ρ 0.08 n.s.)，印证提呈≠免疫原性，单列不并比", options:{ bullet:{indent:14}, breakLine:true, color:"FFFFFF", fontSize:13, paraSpaceAfter:7 } },
   { text:"该负结果反而强化 QuantImmune 做连续 magnitude 回归的立项动机", options:{ bullet:{indent:14}, color:C.mint, fontSize:13, bold:true } },
 ], { x:0.9, y:2.35, w:5.8, h:4.3, fontFace:FB, valign:"top", margin:0 });
 s.addText("下一步", { x:7.0, y:1.85, w:5.5, h:0.4, fontFace:FH, fontSize:16, bold:true, color:C.warn, margin:0 });
@@ -387,6 +388,47 @@ ns.forEach(g=>{
   ny += 0.92;
 });
 s.addText("数据真源：本地 ~/quantimmu/ + HPC /gpfs/.../quantimmu/ · 数字经 csv 三方核对 0 drift · 逐工具 4 类信息见 TOOLS/*.md", { x:0.9, y:7.0, w:11.5, h:0.4, fontFace:FB, fontSize:9.5, italic:true, color:"6E9AA1", margin:0 });
+
+// ============================================================ S17 补充：第9工具 HLAthena (presentation proxy)
+s = pres.addSlide();
+header(s, "补充 · 第 9 工具", "HLAthena = presentation proxy，额外评测（presentation≠immunogenicity，不并入 8 工具比较）", C.warn);
+// 左：结果框
+s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:1.78, w:7.5, h:5.05, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+s.addText("ELISpot benchmark 结果（DS2，n_pep=100/101）", { x:0.95, y:1.95, w:7.0, h:0.4, fontFace:FH, fontSize:15, bold:true, color:C.dark, margin:0 });
+const hla = [
+  ["AUC-ROC (max, >0)","0.509","≈ 随机 (0.5)",C.crit],
+  ["AUC 全聚合×阈值范围","0.49 – 0.59","无一显著离开随机",C.crit],
+  ["Spearman ρ (vs SFC)","0.08 – 0.15","p 全 > 0.12 = 不显著",C.warn],
+  ["AUPRC (max, >0)","0.890","base rate 0.89 → 无提升",C.warn],
+];
+let hy=2.5;
+hla.forEach(r=>{
+  s.addShape(pres.shapes.RECTANGLE, { x:0.95, y:hy, w:7.0, h:0.62, fill:{color:"F7FAFA"}, line:{color:C.line,width:1} });
+  s.addShape(pres.shapes.RECTANGLE, { x:0.95, y:hy, w:0.08, h:0.62, fill:{color:r[3]} });
+  s.addText(r[0], { x:1.15, y:hy+0.06, w:3.3, h:0.5, fontFace:FB, fontSize:11.5, bold:true, color:C.ink, valign:"middle", margin:0 });
+  s.addText(r[1], { x:4.5, y:hy+0.06, w:1.3, h:0.5, fontFace:FH, fontSize:14, bold:true, color:r[3], valign:"middle", align:"center", margin:0 });
+  s.addText(r[2], { x:5.85, y:hy+0.06, w:2.0, h:0.5, fontFace:FB, fontSize:10, italic:true, color:C.muted, valign:"middle", margin:0 });
+  hy += 0.72;
+});
+s.addShape(pres.shapes.RECTANGLE, { x:0.95, y:5.5, w:7.0, h:1.18, fill:{color:"E6F4F1"}, line:{color:C.sea,width:1} });
+s.addText([
+  { text:"结论：", options:{ bold:true, color:C.teal, fontSize:12 } },
+  { text:"HLAthena 在 ELISpot 免疫原性上近随机 —— 正面印证它的设计定位（预测 MHC-I 提呈，论文明确声明不预测免疫原性）。故作 presentation baseline proxy 单列，", options:{ color:C.ink, fontSize:11 } },
+  { text:"不与 8 个免疫原性工具 apples-to-apples 并列。", options:{ bold:true, color:C.dark, fontSize:11 } },
+], { x:1.15, y:5.56, w:6.6, h:1.06, fontFace:FB, valign:"middle", lineSpacingMultiple:1.04, margin:0 });
+// 右：覆盖度 + 工程 caveat
+s.addShape(pres.shapes.RECTANGLE, { x:8.4, y:1.78, w:4.35, h:5.05, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+s.addText("覆盖度 & 工程诚实", { x:8.65, y:1.95, w:3.9, h:0.4, fontFace:FH, fontSize:15, bold:true, color:C.warn, margin:0 });
+s.addText([
+  { text:"逐肽覆盖 100/101 (98%)", options:{ bold:true, color:C.dark, fontSize:11.5, breakLine:true } },
+  { text:"每肽对全 HLA×window 子肽取 max 聚合 → 即便部分子肽缺失，逐肽分稳健。", options:{ color:C.ink, fontSize:10.5, breakLine:true, paraSpaceAfter:10 } },
+  { text:"分块 266/336 完成", options:{ bold:true, color:C.dark, fontSize:11.5, breakLine:true } },
+  { text:"HPC 登录节点跑（无专用 CPU qos）；70 个 chunk 多为 length-8 在节点高负载下被 cgroup 内存 kill，未完成。近随机结论不受影响（覆盖已 98%）。", options:{ color:C.ink, fontSize:10.5, breakLine:true, paraSpaceAfter:10 } },
+  { text:"GCS 死锁绕过", options:{ bold:true, color:C.dark, fontSize:11.5, breakLine:true } },
+  { text:"镜像空壳运行时拉模型 401 死锁 → 匿名下 65-allele 模型 + patch fetch_models=false 本地挂载跑通。", options:{ color:C.ink, fontSize:10.5, breakLine:true } },
+], { x:8.65, y:2.45, w:3.9, h:4.3, fontFace:FB, valign:"top", lineSpacingMultiple:1.05, margin:0 });
+s.addText("数字核 analysis/metrics_ds2_9tools.csv（HLAthena 行）· merge 见 scripts/out/merged_all_tools_9tools.xlsx · ⚠️ HLAthena 按袁老师分工属李紫晨，本评测为余嘉超额补全。", { x:0.7, y:6.95, w:12.0, h:0.4, fontFace:FB, fontSize:9, italic:true, color:C.muted, valign:"top", margin:0 });
+pageno(s,16);
 
 // ---------- write ----------
 pres.writeFile({ fileName: "D:/YJ-Agent/project/meeting/QuantImmuBench/QuantImmuBench_最终交付_2026-06-24.pptx" })

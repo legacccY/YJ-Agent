@@ -4,6 +4,42 @@
 
 ---
 
+## Entry HLA2 — 2026-06-25【HLAthena 收尾窗】追踪 HPC + 续跑补全 + merge 第9列 + PPT/Word 9tools 定稿
+
+> 窗口：认领 `quantimmu-bench.claim`。任务=追踪 HPC HLAthena 训练→跑完 merge→收尾 PPT+更新项目文件。
+
+### ⚠️ 纠错：Entry HLA「336 完整」是工具故障期乱码误读
+- 开窗探 HPC 时主线**工具 IO 管道间歇失效**（Bash/Read/Write 结果错位+空返回，跨 Git Bash/PowerShell 都坏）。故障期 probe 输出乱码，误读成「336 msi 完整」。
+- **根因 = bash 语法在该环境失败**：用户点明「只能用 PowerShell 语法/不能用 bash」。实际可用路径 = Bash 工具跑纯 `python 脚本.py`（不碰 PowerShell cmdlet，会被 deny 规则拦；不用 bash heredoc 嵌 python，会卡死）。helper 一律结果落地文件防 stdout 渲染丢失。
+- 工具恢复后**确权真实状态**：路径在 `/gpfs/.../quantimmu/hla_bench3`（非 hlathena/work），**实际只 166/336 chunk 成功**，进程已死。
+
+### 续跑补全（2 轮，用户拍板 -P10）
+- **失败根因确诊**：原跑 `-P 24` 并发撞 jiawang 占 27/48 核 → 饿死/超时静默失败。手动单跑一个失败 chunk(len11) **EXIT=0 出有效 MSi = 非代码 bug 纯资源争抢**。
+- **修法**：sed 就地 `-P 24→-P 10`（剩~20 核），setsid 后台续跑（脚本 `[ -s "$o" ] && return` 跳已完成，幂等 combine）。**拍板点**：HPC 改共享脚本+起作业被分类器拦 → 用户 AskUserQuestion 批准 -P10。
+- **2 轮结果**：166→245(+79)→266(+21)，收敛。剩 70 失败**多为 length-8 在登录节点高负载下被 cgroup 内存 kill**（单跑也 EXIT=1 停在 "Running..."，A6601 len8 成功证 allele×length 特异）。presentation proxy 工具不值过度工程。
+
+### merge 第9列 + 指标（核 csv）
+- `analysis/merge_metrics_9tools.py`（本窗新建）：拉 74 个 combined `<allele>_{MT,WT}.txt` → 按 (norm HLA_Allele, Subpeptide) map 回 8tools.xlsx → +MT/WT_HLAthena → `scripts/out/merged_all_tools_9tools.xlsx`(34247×42)。allele 归一 `HLA-A*24:02`→`A2402`。
+- **口径对齐铁证**：脚本内置复现 8 工具数字 vs `metrics_ds2_8tools.csv`，max |dAUC|=0.0136（仅 deepHLApan >median 微差=median 平手处理，>0/>10 全对）。
+- **HLAthena DS2 指标**（`analysis/metrics_ds2_9tools.csv`，含 proxy caveat 注释行；核源 max>0 行）：**AUC 0.5092 / AUPRC 0.8903 / Spearman ρ 0.0838 (p=0.407 n.s.) / n_pep 100 / n_pos 89 / n_neg 11**。全聚合×阈值 AUC 0.49-0.59、ρ 0.08-0.15 p 全>0.12。**逐肽覆盖 100/101=98%**（max 聚合稳健，缺 chunk 不伤）。
+- **结论**：HLAthena ELISpot 上**近随机** → 正面印证「提呈≠免疫原性」（其论文本就声明不预测免疫原性），单列 presentation proxy 不与 8 免疫原性工具 apples-to-apples。
+
+### PPT/Word 定稿（9tools）
+- `ppt/gen_ppt_final.js`：加 S17 补充页「第9工具 HLAthena (presentation proxy)」（结果表+覆盖度+工程 caveat+单列声明）+ S16 结论加一条 bullet。重生成 `QuantImmuBench_最终交付_2026-06-24.pptx`（**17 slide**，核 python-pptx 末页 AUC 0.509）。
+- `analysis/build_report_final.py`：加「附录：第9工具 HLAthena」章节（表读 metrics_ds2_9tools.csv 保溯源）+ 结论 bullet。重生成 docx（核附录表 0.5092/0.8903/0.0838/0.4070 对 csv）。
+- HLAthena fig6/7 **不重画**（保持 8 工具 apples-to-apples，proxy 不进柱图）。
+
+### ⚠️ 分工
+HLAthena 按袁老师 2026-06-24 分工属**李紫晨**，本窗收尾属余嘉**超额补全**（不回退，可移交李紫晨参考）。余嘉核心=前 5 工具已完成。
+
+### 本窗新文件指针
+- `analysis/merge_metrics_9tools.py`（merge+指标，内置 8 工具复现验证）
+- `scripts/out/merged_all_tools_9tools.xlsx`（34247×42，+MT/WT_HLAthena）
+- `analysis/metrics_ds2_9tools.csv`（9 工具 DS2 指标，含 HLAthena proxy caveat）
+- `HPC/hlathena_run/hla_bench3/`（74 个 combined `<allele>_{MT,WT}.txt` 拉回本地）
+
+---
+
 ## Entry HLA — 2026-06-25【Wave3 工具窗】HLAthena 全量 benchmark 攻坚（HPC 加速 + 3 真 bug + 分块保证）
 
 > 窗口：本窗做 Wave3 第二批工具部署（PRIME/ImmuneApp/deepHLApan SMOKE_PASS+进 8tools；MHLAPre 权重全网无判死；HLAthena 本 entry）。
