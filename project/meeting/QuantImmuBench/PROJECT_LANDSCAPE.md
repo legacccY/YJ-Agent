@@ -8,7 +8,8 @@
 
 ## 1. 一句话现状
 
-余嘉子任务（HPC 部署测试 + 信息收集）已基本成型：**10 个新抗原免疫原性工具完成部署测试，其中 8 个通过正式 ELISpot 测试并进入统一 benchmark**（pTuneos、PredIG、IMPROVE、NeoTImmuML、ImmuneApp、PRIME、DeepImmuno、deepHLApan）；另有 MHLAPre 判为不可复现、HLAthena 仍在救援。约定的四类信息（工具能力 / 数据需求 / 性能表现 / 部署难度）已采集，PPT 材料具备成稿条件。本综述即在此之上回答「下一步该往哪走」。
+余嘉子任务（HPC 部署测试 + 信息收集）已基本成型：**10 个新抗原免疫原性工具完成部署测试，其中 9 个进入统一 benchmark** —— 8 个免疫原性工具 apples-to-apples 对比（pTuneos、PredIG、IMPROVE、NeoTImmuML、ImmuneApp、PRIME、DeepImmuno、deepHLApan）+ HLAthena 1 个 presentation proxy 单列（预测提呈非免疫原性，ELISpot 上近随机 AUC 0.51，正面印证「提呈≠免疫原性」）；唯一 MHLAPre 判为不可复现（无权重+预处理码缺）未做成。约定的四类信息（工具能力 / 数据需求 / 性能表现 / 部署难度）已采集，PPT（17 slide）+ Word 报告成稿。本综述即在此之上回答「下一步该往哪走」。
+> 进度数字真源 = `DEPLOY_TRACKER.md` 顶部规范状态总表 + `analysis/metrics_ds2_9tools.csv`。
 
 ---
 

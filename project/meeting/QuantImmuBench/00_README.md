@@ -29,8 +29,14 @@
 - **QuantImmu 组**：徐伊琳 —— HPC 部署 QuantImmune 模块
 - **数据收集组**：王子源、谢孟翰 —— 文献搜索 + 数据收集（袁老师提供输入数据）
 
-## 当前状态（2026-06-24 更新，详见 04_LOG Entry 19/20）
-- **阶段**：✅ **5 工具全部部署 + 跑通 ELISpot benchmark**（用各工具自带 example + ELISpot 数据集）；PPT + Word 报告成型。
+## 当前状态（2026-06-25 更新，详见 04_LOG Entry HLA2；**进度真源 = `DEPLOY_TRACKER.md` 顶部规范状态总表**）
+- **总账（10 工具）**：✅ **9 进 ELISpot benchmark** + ❌ **1 未做成（MHLAPre）**。
+  - **9 进 benchmark** = 8 免疫原性工具 apples-to-apples（DeepImmuno · PredIG · pTuneos · IMPROVE · NeoTImmuML · PRIME · ImmuneApp · deepHLApan）+ HLAthena 1 个 presentation proxy 单列（近随机 AUC 0.51，印证提呈≠免疫原性）。
+  - ⚠️ 版本 caveat：**NeoTImmuML = 自训版**（官方权重不可得→复刻官方 RF+LGB+XGB，PPT 标★非官方）；**pTuneos = Pre&RecNeo 子模型**；**IMPROVE = Expression 特征降级**。结论一律诚实分级，无"5/5 完美跑通"。
+  - ❌ **MHLAPre 唯一未做成**：无权重 + ProcessData npy 缺 + 预处理拼装码被注释 → 自训路也不通，唯一出路邮件作者。
+- **余嘉核心 5 工具（第一批）**：全部进 benchmark（DeepImmuno/PredIG 完整端到端；pTuneos 子模型；IMPROVE 降级；NeoTImmuML 自训版）。
+- **Wave3 5 工具（归李紫晨，余嘉超额）**：PRIME/ImmuneApp/deepHLApan ✅ 进 benchmark；HLAthena ✅ proxy；MHLAPre ❌ 阻塞。
+- PPT（17 slide）+ Word 报告成型。
 - **许可/依赖均已解决**（不再是阻塞）：
   1. **netMHCpan-4.1 / 4.0 / 2.8 已装 + 跑通**（netMHCpan-4.0 随 pTuneos 镜像内置免单独申请）；**PRIME / MixMHCpred 学术免费，已 clone**。pTuneos example VCF 端到端 + Pre&RecNeo 跑 ELISpot 进 benchmark（对账官方 r=1.0）。
   2. **NeoTImmuML 官方源码已找到**（github.com/01SYan19/NeoTImmuML，Playwright 进 tumoragdb.com.cn 抓出）。

@@ -2,6 +2,7 @@
 
 > 余嘉（legacccy）· 2026-06-23 · 袁老师癌症新抗原疫苗协作项目
 > 数据真源：各工具实测产物在 `~/quantimmu/smoke/`（本地 WSL2）+ `/gpfs/work/bio/jiayu2403/quantimmu/`（HPC）；逐工具 4 类信息详见 `TOOLS/*.md`
+> ⚠️ **范围说明**：本报告聚焦余嘉核心 5 工具。后续 Wave3 又超额部署 4 工具（PRIME/ImmuneApp/deepHLApan 进 benchmark + HLAthena presentation proxy）+ MHLAPre 阻塞未做成 → **全项目 10 工具 / 9 进 benchmark / 1 未做成**的完整账见 `DEPLOY_TRACKER.md` 顶部规范状态总表；9 工具 benchmark 数字见 `analysis/metrics_ds2_9tools.csv`，merge 8→9 工具的 PPT（17 slide）为最终交付。
 
 ---
 

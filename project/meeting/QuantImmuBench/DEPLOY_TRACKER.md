@@ -1,13 +1,41 @@
-# DEPLOY_TRACKER — 5 工具部署状态总表
+# DEPLOY_TRACKER — 10 工具部署状态总表
 
 > 真源：每工具状态 + job_id + 阻塞写这里。详细 4 类信息写 `TOOLS/<tool>.md`。
+
+---
+
+## 🎯 规范状态总表（单一真源，10 工具）
+
+> ⚠️ 此表是**唯一进度真源**。下方两张分表（第一批 5 / Wave3 5）= 部署细节归档，状态以本表为准。
+> 教训：旧表「状态」列单维枚举混了三件事（部署到第几步 / 跑哪个版本 / 进没进 benchmark），导致 NeoTImmuML（自训版进了 benchmark）被读成"没做成"、PRIME/ImmuneApp/deepHLApan（已进 benchmark）被读成"停在烟测"。本表按维度拆列。
+> **benchmark 列以 `analysis/metrics_ds2_9tools.csv` 为真源回填**（9 工具各 9 行 = 3 聚合×3 阈值；MHLAPre 0 行 = 唯一未进）。
+
+| # | 工具 | 归属 | clone | env | 烟测 | **进 benchmark** | 跑的版本 | 结论 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | DeepImmuno | 余嘉(1) | ✅ | ✅ | ✅ | ✅ | 官方权重 | **完成** |
+| 2 | PredIG | 余嘉(1) | ✅ | ✅镜像 | ✅ | ✅ | 官方镜像 | **完成** |
+| 3 | pTuneos | 余嘉(1) | ✅ | ✅镜像 | ✅ | ✅ | Pre&RecNeo 子模型(官方逻辑) | **完成**(本地端到端;HPC sif 受 fakeroot 限) |
+| 4 | IMPROVE | 余嘉(1) | ✅ | ✅ | 🟡 | ✅ | 官方 Predict, Expression 特征降级 | **完成**(主路;feature_calc 缺 self_sim/garnish/stabpan) |
+| 5 | NeoTImmuML | 余嘉(1) | ✅ | ✅ | ⚠️ | ✅ | **自训版**(复刻官方 RF+LGB+XGB, 非官方权重) | **完成·降级标注**(官方权重不可得→自训替代;PPT 标★非官方,不对标原论文) |
+| 6 | PRIME | 李紫晨(3) | ✅ | ✅ | ✅ r=1.0 | ✅ | 官方权重 | **完成** |
+| 7 | ImmuneApp | 李紫晨(3) | ✅ | ✅ | ✅ | ✅ | 官方权重 | **完成** |
+| 8 | deepHLApan | 李紫晨(3) | ✅ | ✅镜像 | ✅ | ✅ | 官方镜像 | **完成** |
+| 9 | HLAthena | 李紫晨(3) | ✅ | ✅镜像 | ✅ | ✅ **单列 proxy** | 官方 65-allele 模型 | **完成·presentation proxy**(预测提呈非免疫原性;ELISpot 近随机 AUC 0.51;不与免疫原性工具 apples-to-apples) |
+| 10 | **MHLAPre** | 李紫晨(3) | ✅ | ☐ | ❌ | ❌ | — | **未做成**(🔴 无权重+ProcessData npy 缺+预处理拼装码被注释→自训路也不通;全网搜权重空;唯一出路=邮件作者 23B903048@stu.hit.edu.cn) |
+
+**一句话结账**：10 工具 → **9 进 benchmark**（8 免疫原性工具 apples-to-apples + HLAthena 1 个 presentation proxy 单列）+ **1 个 MHLAPre 完全阻塞未做成**。NeoTImmuML 是「官方权重缺、用自训版进表并诚实降级标注」，**不是没做成**。
+> 归属：「余嘉(1)」= 余嘉核心 5 工具（第一批）；「李紫晨(3)」= 2026-06-24 袁老师分工归李紫晨的 Wave3 5 工具，余嘉**超额做的**（PRIME/ImmuneApp/deepHLApan/HLAthena 已跑通，可移交参考，不回退）。
+
+---
 
 ## 本地部署环境（重要）
 - **本机 WSL2 Ubuntu 24.04**（GPU 直通 RTX 4070 可见）= 本地部署/烟测主战场。这些工具多为 Linux-only 老链（TF2.3 / Py2.7 / netMHCpan Linux 二进制），**Windows 跑不动**（且 DeepImmuno repo 含 `HLA-A*0101.json` 非法 `*` 文件名，NTFS 无法 checkout）→ 一律在 WSL2 ext4 原生部署。
 - WSL 部署根目录：`~/quantimmu/`（`tools_repos/` 各工具 repo + `smoke/` 烟测产物）；conda 在 `~/miniconda3`。
 - HPC（dtn.hpc.xjtlu.edu.cn / jiayu2403）= 正式跑大数据时用；本地 WSL2 先把每个工具跑通 + 摸清 4 类信息。
 
-## 状态总表
+## 状态总表（第一批 5 工具·部署细节归档）
+
+> 📌 进度结论以**顶部规范状态总表**为准；本表保留部署/阻塞细节供查。
 
 | 工具 | Wave | clone | 环境 | 权重下载 | example 烟测 | 4类信息收齐 | 状态 | 阻塞 |
 |---|---|---|---|---|---|---|---|---|
@@ -81,9 +109,11 @@
 
 ## 第二批 5 工具（Wave 3，原李紫晨负责，现并入余嘉测试）
 
-> 2026-06-24 调研建档完成（5 researcher 并行查官方 repo/paper/依赖/输入输出/许可）。本轮**只到第 1 步（建档）+ 可行性判定**，未部署。逐工具 4 类信息见 `TOOLS/<tool>.md`，论文/许可见 `REFERENCES.md`/`PROVENANCE.md`。
+> 2026-06-24 调研建档完成（5 researcher 并行查官方 repo/paper/依赖/输入输出/许可）。后续 4 工具部署+进 benchmark，MHLAPre 阻塞。逐工具 4 类信息见 `TOOLS/<tool>.md`，论文/许可见 `REFERENCES.md`/`PROVENANCE.md`。
 
-### 状态总表
+### 状态总表（Wave3 5 工具·部署细节归档）
+
+> 📌 进度结论以**顶部规范状态总表**为准；本表保留部署/阻塞细节供查。
 
 | 工具 | clone | 环境 | 权重 | example 烟测 | 4类信息 | 状态 | 阻塞 |
 |---|---|---|---|---|---|---|---|
