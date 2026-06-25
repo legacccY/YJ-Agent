@@ -41,6 +41,15 @@
 - 修正版 pptx=`QuantImmuBench_5工具横评_客观版_max修正_2026-06-25.pptx`(原名被占用/打开中,待关闭后覆盖回标准名)。**5工具deck 现与 10工具deck 口径完全一致**。
 - 教训:换图省事不能换口径——benchmark 数字必须全交付物统一口径,数字入稿前跨交付物对账,不只对单 csv。
 
+### ⑥ 细节优化（审稿+用户多轮：超链接/补元素/修重叠/去校名/去"版"字）
+- **去校名**:两 deck 封面"西交利物浦大学"→中性"癌症新抗原疫苗协作项目"(xml 核 0 残留)。
+- **去"版"字+不自夸**:文件名去"客观版/更新版/max修正版"→干净名;正文"max 聚合版"→"聚合口径";扫全文无"最优/最强/出版级"吹嘘(仅有的"最优"是 PRIME 列名或主动避免吹嘘的克制声明)。
+- **超链接**(researcher 核 pptxgenjs `hyperlink:{url,tooltip}`,addText+addTable 均支持,DOI 直接用):每页脚注 citeFoot 的 DOI/repo + 参考文献表格 DOI/repo 列 → 蓝色可点(DOI→doi.org,repo→github)。
+- **补缺元素**(researcher 核 NeurIPS D&B 等最佳实践高优 3 项):新增 **目录页 + 数据集来源页(DS1/DS2 规模正负比核 csv) + 评测流程图(6框pipeline schematic)**。+之前的指标说明页。
+- **修文字/框线重叠**:codeBox 字号 10→9 + DeepImmuno 命令 8→6 行 + 四类信息卡 ch 2.36→2.28 避让 citeFoot。逐页渲染确认无溢出。
+- **最终两 deck**:`QuantImmuBench_10工具横评_2026-06-25.pptx`(**40 页**) + `QuantImmuBench_5工具横评_2026-06-25.pptx`(**26 页**)。5工具 corr 图新建 `_plot_5tools_corr.py`→`fig_corr_heatmap_5tools.png`(DS2 n=101)。
+- 工具:LibreOffice→PDF→pymupdf 逐页 QA;pptxgenjs 全局 node_modules;pptx 被 PowerPoint 打开时 EBUSY,需关闭再生成。
+
 ---
 
 ## Entry HLA2 — 2026-06-25【HLAthena 收尾窗】追踪 HPC + 续跑补全 + merge 第9列 + PPT/Word 9tools 定稿

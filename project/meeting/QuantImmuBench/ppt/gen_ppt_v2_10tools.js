@@ -40,10 +40,16 @@ function badge(slide, x, y, txt, col, w=2.5){
   slide.addText(txt, { x, y, w, h:0.42, fontFace:FB, fontSize:11.5, bold:true, color:"FFFFFF", align:"center", valign:"middle", margin:0 });
 }
 function citeFoot(slide, txt){
-  slide.addText([
-    { text:"来源  ", options:{ color:C.teal, fontSize:9, bold:true } },
-    { text:txt, options:{ color:C.muted, fontSize:9 } },
-  ], { x:0.7, y:7.02, w:12.0, h:0.36, fontFace:FB, italic:true, valign:"top", margin:0 });
+  const runs=[{ text:"来源  ", options:{ color:C.teal, fontSize:9, bold:true } }];
+  txt.split(" · ").forEach((p,i)=>{
+    let opt={ color:C.muted, fontSize:9 };
+    const dm=p.match(/DOI\s+(10\.\S+)/);
+    const gm=p.match(/(github\.com\/\S+|hlathena\.tools\S*)/);
+    if(dm) opt={ color:"1C7293", fontSize:9, hyperlink:{ url:"https://doi.org/"+dm[1], tooltip:"DOI" } };
+    else if(gm) opt={ color:"1C7293", fontSize:9, hyperlink:{ url:"https://"+gm[1], tooltip:"repo" } };
+    runs.push({ text:(i>0?" · ":"")+p, options:opt });
+  });
+  slide.addText(runs, { x:0.7, y:7.08, w:11.4, h:0.34, fontFace:FB, italic:true, valign:"top", margin:0 });
 }
 // 逐工具 4 类信息卡
 function toolSlide(o){
@@ -52,7 +58,7 @@ function toolSlide(o){
   s.addText(o.tagline, { x:0.7, y:1.46, w:8.6, h:0.5, fontFace:FB, fontSize:13, color:C.muted, margin:0 });
   badge(s, W-3.2, 0.72, o.status, o.statusCol, 2.5);
   s.addText("方法  "+o.method, { x:W-3.2, y:1.22, w:2.5, h:0.3, fontFace:FB, fontSize:11, color:C.teal, bold:true, align:"center", margin:0 });
-  const cx=0.7, cy=2.05, cw=6.0, ch=2.36, gap=0.32;
+  const cx=0.7, cy=2.0, cw=6.0, ch=2.28, gap=0.3;
   infoCard(s, cx,        cy,        cw, ch, "① 输入数据 / 格式", o.input,  o.accent);
   infoCard(s, cx+cw+gap, cy,        cw, ch, "② 运行参数",       o.params, o.accent);
   infoCard(s, cx,        cy+ch+gap, cw, ch, "③ 输出格式 / 含义", o.output, o.accent);
@@ -89,9 +95,9 @@ function principleSlide(o){
     s.addText(label, { x:bx+0.18, y:by+0.1, w:bw-0.3, h:0.3, fontFace:FH, fontSize:12, bold:true, color:C.mint, margin:0 });
     const lineObjs = lines.map((t, i) => ({
       text: t,
-      options: { breakLine: i < lines.length-1, color:"D6F2EC", fontSize:10, fontFace:"Consolas" }
+      options: { breakLine: i < lines.length-1, color:"D6F2EC", fontSize:9, fontFace:"Consolas" }
     }));
-    s.addText(lineObjs, { x:bx+0.18, y:by+0.44, w:bw-0.3, h:bh-0.54, fontFace:"Consolas", fontSize:10, color:"D6F2EC", valign:"top", margin:0 });
+    s.addText(lineObjs, { x:bx+0.18, y:by+0.44, w:bw-0.3, h:bh-0.54, fontFace:"Consolas", fontSize:9, color:"D6F2EC", valign:"top", margin:0 });
   };
 
   const outLabel = o.unfinished ? "输出数据样例（未做成·无输出）" : "输出数据样例";
@@ -117,10 +123,34 @@ s.addShape(pres.shapes.LINE, { x:0.95, y:5.1, w:3.2, h:0, line:{color:C.mint, wi
 s.addText([
   { text:"汇报人  ", options:{ color:"8FB7BD", fontSize:13 } },
   { text:"余嘉 (legacccy)", options:{ color:"FFFFFF", fontSize:13, bold:true, breakLine:true } },
-  { text:"所属  ", options:{ color:"8FB7BD", fontSize:13 } },
-  { text:"西交利物浦大学 · 课题组协作项目", options:{ color:"FFFFFF", fontSize:13 } },
+  { text:"项目  ", options:{ color:"8FB7BD", fontSize:13 } },
+  { text:"癌症新抗原疫苗协作项目", options:{ color:"FFFFFF", fontSize:13 } },
 ], { x:0.95, y:5.35, w:9, h:1.0, fontFace:FB, valign:"top", margin:0 });
 s.addText("2026-06-25", { x:W-2.4, y:6.7, w:1.8, h:0.3, fontFace:FB, fontSize:12, color:"8FB7BD", align:"right", margin:0 });
+
+// ============================================================ 目录
+s = pres.addSlide();
+header(s, "目录", "本报告的内容结构");
+const toc = [
+  ["01","项目背景与任务","要解决什么、本报告做了什么"],
+  ["02","10 工具总览横评","一张表看清装到什么程度、进没进基准"],
+  ["03","工具逐一解析","每个工具的工作原理 + 四类信息"],
+  ["04","部署工程与踩坑","环境、典型问题与解决（按工具归属）"],
+  ["05","数据与评测方法","测试数据来源、评测流程、指标说明"],
+  ["06","基准结果","判别力 / 能否定量 / 工具间一致性 / 分层"],
+  ["07","诚实边界 · 参考 · 结论","限制与许可、出处、总结与下一步"],
+];
+toc.forEach((it,i)=>{
+  const col = i<4 ? 0.7 : 6.85;
+  const row = i<4 ? i : i-4;
+  const y = 1.95 + row*1.22;
+  s.addShape(pres.shapes.RECTANGLE, { x:col, y, w:5.78, h:1.04, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+  s.addShape(pres.shapes.RECTANGLE, { x:col, y, w:0.09, h:1.04, fill:{color:C.teal} });
+  s.addText(it[0], { x:col+0.28, y:y+0.22, w:0.9, h:0.6, fontFace:FH, fontSize:26, bold:true, color:C.sea, valign:"middle", margin:0 });
+  s.addText(it[1], { x:col+1.25, y:y+0.16, w:4.4, h:0.42, fontFace:FH, fontSize:15, bold:true, color:C.ink, margin:0 });
+  s.addText(it[2], { x:col+1.25, y:y+0.58, w:4.4, h:0.38, fontFace:FB, fontSize:11, color:C.muted, margin:0 });
+});
+pageno(s);
 
 // ============================================================ S2 背景 + 4类信息
 s = pres.addSlide();
@@ -196,7 +226,7 @@ principleSlide({ idx:1, name:"DeepImmuno", accent:"028090",
   inP:"只要两样东西：一条肽段序列（9 或 10 个氨基酸）和它对应的 HLA 分型。不需要基因组、不需要表达量，是十个工具里最省事的。",
   modelP:"先把氨基酸序列和 HLA 假基序按物化性质编码成一张数字矩阵，再用卷积神经网络（CNN）像扫图像一样扫过这张矩阵，自动抓出和免疫原性有关的局部模式，最后汇总成一个分数。",
   outP:"输出一个 0 到 1 之间的连续分，越接近 1 表示越可能激活 T 细胞。实测已知强表位（如 CMV 的 NLVPMVATV）确实拿到高分，符合预期。",
-  cmd:["# 单条", "python deepimmuno-cnn.py \\", "  --mode single \\", "  --epitope NLVPMVATV \\", "  --hla HLA-A*0201", "# 批量", "python deepimmuno-cnn.py --mode \\", "  multiple --intdir in --outdir out"],
+  cmd:["# 单条", "python deepimmuno-cnn.py \\", "  --mode single \\", "  --epitope NLVPMVATV --hla HLA-A*0201", "# 批量", "#   --mode multiple --intdir IN --outdir OUT"],
   inFmt:["# CSV，两列，无表头", "# 肽段, HLA", "NLVPMVATV,HLA-A*0201", "GILGFVFTL,HLA-A*0201"],
   outFmt:["peptide    HLA          immunogenicity", "NLVPMVATV  HLA-A*0201   0.957", "GILGFVFTL  HLA-A*0201   0.887"],
   cite:"DeepImmuno, Briefings in Bioinformatics 2021 · DOI 10.1093/bib/bbab160 · github.com/frankligy/DeepImmuno",
@@ -407,6 +437,70 @@ pit.forEach((p,i)=>{
 });
 pageno(s);
 
+// ============================================================ 数据集来源与规模
+s = pres.addSlide();
+header(s, "测试数据从哪来", "ELISpot 实测数据 · 规模 · 正负比");
+const dscards = [
+  ["DS2 · 主测试集（有阴有阳）","028090",[
+    "101 条肽段：有反应 90 条 / 无反应 11 条",
+    "来自 9 位患者；反应值 SFC 范围 −34 ~ 209",
+    "用途：算 AUC（能不能分开「有/无反应」）"]],
+  ["DS1 · 定量验证集（全阳）","00A896",[
+    "82 条肽段：全部有反应，无阴性",
+    "来自 6 位患者；强度 SFC 16 ~ 677（约 40 倍跨度）",
+    "用途：检验「能不能把强弱排对」"]],
+];
+let dy=1.85;
+dscards.forEach(d=>{
+  s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:dy, w:7.3, h:1.95, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+  s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:dy, w:0.09, h:1.95, fill:{color:d[1]} });
+  s.addText(d[0], { x:0.96, y:dy+0.14, w:6.9, h:0.4, fontFace:FH, fontSize:15, bold:true, color:d[1], margin:0 });
+  s.addText(d[2].map(x=>({text:x,options:{bullet:{indent:12},breakLine:true,color:C.ink,fontSize:11.5,paraSpaceAfter:4}})),
+    { x:0.98, y:dy+0.58, w:6.85, h:1.3, fontFace:FB, valign:"top", margin:0 });
+  dy += 2.1;
+});
+s.addShape(pres.shapes.RECTANGLE, { x:8.25, y:1.85, w:4.4, h:4.05, fill:{color:C.dark}, shadow:sh() });
+s.addText("关键说明", { x:8.5, y:2.02, w:4.0, h:0.4, fontFace:FH, fontSize:15, bold:true, color:C.mint, margin:0 });
+s.addText([
+  { text:"标签 = ELISpot SFC", options:{ bold:true, color:"FFFFFF", fontSize:12, breakLine:true } },
+  { text:"SFC = 斑点形成细胞数，T 细胞反应强度的实验读数；阈值 >0 记为有反应。", options:{ color:"CADCFC", fontSize:10.5, breakLine:true, paraSpaceAfter:10 } },
+  { text:"展开规模", options:{ bold:true, color:"FFFFFF", fontSize:12, breakLine:true } },
+  { text:"每条肽按子肽×HLA 窗口展开，DS1+DS2 共 34,247 行预测。", options:{ color:"CADCFC", fontSize:10.5, breakLine:true, paraSpaceAfter:10 } },
+  { text:"局限", options:{ bold:true, color:"FFFFFF", fontSize:12, breakLine:true } },
+  { text:"样本来自有限患者 → 存在聚集；DS2 阴性仅 11 条，置信区间偏宽。", options:{ color:"CADCFC", fontSize:10.5 } },
+], { x:8.5, y:2.46, w:3.95, h:3.3, fontFace:FB, valign:"top", lineSpacingMultiple:1.05, margin:0 });
+s.addText("数据来源：课题组 ELISpot 实测（Elispot_Dataset1.xlsx / Elispot_Dataset2.xlsx）。", { x:0.7, y:6.05, w:7.3, h:0.4, fontFace:FB, fontSize:10, italic:true, color:C.muted, valign:"top", margin:0 });
+pageno(s);
+
+// ============================================================ 评测流程图
+s = pres.addSlide();
+header(s, "评测流程", "从一条肽段到工具横向对比");
+const flow = [
+  ["肽段输入","DS1 / DS2\n的肽段 + HLA",C.teal],
+  ["9 工具打分","各工具独立打分\n(8免疫原性+1提呈)",C.sea],
+  ["聚合","子肽×HLA\n逐肽取 max",C.teal],
+  ["切标签","按 SFC>0\n分有/无反应",C.sea],
+  ["算指标","AUC / Spearman\n/ PPV / MCC",C.teal],
+  ["横向对比","9 工具同口径\n排名与显著性",C.dark],
+];
+const bw=1.78, bh=1.5, by=2.6, bgap=0.26, startx=0.72;
+flow.forEach((b,i)=>{
+  const x=startx + i*(bw+bgap);
+  const fc = b[2]===C.dark ? C.dark : C.card;
+  const tc = b[2]===C.dark ? "FFFFFF" : C.ink;
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y:by, w:bw, h:bh, rectRadius:0.08, fill:{color:fc}, line:{color:b[2],width:2}, shadow:sh() });
+  s.addText(b[0], { x, y:by+0.22, w:bw, h:0.45, fontFace:FH, fontSize:15, bold:true, color:b[2]===C.dark?C.mint:b[2], align:"center", margin:0 });
+  s.addText(b[1], { x:x+0.1, y:by+0.72, w:bw-0.2, h:0.65, fontFace:FB, fontSize:10, color:tc, align:"center", valign:"top", lineSpacingMultiple:1.0, margin:0 });
+  if(i<flow.length-1) s.addText("▶", { x:x+bw-0.04, y:by+bh/2-0.22, w:bgap+0.08, h:0.44, fontFace:FB, fontSize:14, bold:true, color:C.muted, align:"center", valign:"middle", margin:0 });
+});
+s.addShape(pres.shapes.RECTANGLE, { x:0.72, y:4.7, w:11.9, h:1.95, fill:{color:"F2F7F7"}, line:{color:C.line,width:1} });
+s.addText("读这张图", { x:0.95, y:4.85, w:11, h:0.36, fontFace:FH, fontSize:14, bold:true, color:C.teal, margin:0 });
+s.addText([
+  { text:"同一批肽段喂给 9 个工具 → 每个工具独立打分 → 因一条肽会拆成多个子肽×HLA，统一「逐肽取最大分」聚合 → 按实验反应值 SFC>0 切「有/无反应」标签 → 用同一套指标评估 → 9 个工具在完全相同的口径下横向对比。", options:{ color:C.ink, fontSize:11.5, breakLine:true, paraSpaceAfter:5 } },
+  { text:"关键：所有工具走完全一致的聚合、阈值、指标口径，保证「apples-to-apples」可比。", options:{ color:C.dark, fontSize:11.5, bold:true } },
+], { x:0.95, y:5.25, w:11.45, h:1.3, fontFace:FB, valign:"top", lineSpacingMultiple:1.08, margin:0 });
+pageno(s);
+
 // ============================================================ S15 benchmark 方法/数据
 s = pres.addSlide();
 header(s, "基准方法", "用什么数据、怎么比、看什么指标");
@@ -425,6 +519,36 @@ mcards.forEach(m=>{
   my += 1.28;
 });
 s.addText("口径校验：旧 5 工具复现与历史结果最大差 ≤ 0.004（浮点精度内），口径对齐通过；所有数字经 csv 三方核对。", { x:0.7, y:6.95, w:11.9, h:0.4, fontFace:FB, fontSize:10.5, italic:true, color:C.muted, margin:0 });
+pageno(s);
+
+// ============================================================ 看懂这些指标（说人话解释每个指标）
+s = pres.addSlide();
+header(s, "先看懂这些指标", "后面每个数字是什么意思、最该信哪个");
+const metricCards = [
+  ["AUC（判别力）","随便挑「一条有反应 + 一条没反应」，模型给有反应那条打分更高的概率。","1=完美，0.5=和瞎猜一样，<0.5=反着的。本报告最主要看它。",C.teal,"★ 主看"],
+  ["Spearman 相关（能否分强弱）","模型分数的高低排序，和真实反应强弱的排序，吻合到什么程度。","+1=完全同向，0=没关系，−1=完全反着。这是「能不能分强弱」的关键。",C.sea,"★ 看定量"],
+  ["PPV@10（前10命中率）","把分数最高的 10 条挑出来，里面真有反应的比例。","临床只能合成排在最前的几条肽，所以这个最贴近实战。",C.teal,"贴临床"],
+  ["AUPRC","精确率-召回率曲线下的面积，阳性很少时比 AUC 更敏感。","⚠️ 本数据阳性本就占 89%，起点就高 → 提升空间小，参考意义有限。",C.warn,"参考有限"],
+  ["MCC","同时看「真阳/假阳/真阴/假阴」四格的平衡分。","−1 到 +1，类别不平衡时比「准确率」更稳。",C.sea,"辅助"],
+  ["95% 置信区间 / p 值","重复抽样 2000 次看指标的波动范围；p<0.05 才算「不是偶然」。","区间越宽=越不确定。本数据样本小（101 条、阴性仅 11）→ 区间普遍偏宽。",C.crit,"看可信度"],
+];
+let mcx=0.7, mcy=1.75, mcw=5.92, mch=1.5, mgapx=0.36, mgapy=0.22;
+metricCards.forEach((m,i)=>{
+  const x = mcx + (i%2)*(mcw+mgapx);
+  const y = mcy + Math.floor(i/2)*(mch+mgapy);
+  s.addShape(pres.shapes.RECTANGLE, { x, y, w:mcw, h:mch, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+  s.addShape(pres.shapes.RECTANGLE, { x, y, w:0.09, h:mch, fill:{color:m[3]} });
+  s.addText(m[0], { x:x+0.26, y:y+0.14, w:mcw-1.4, h:0.34, fontFace:FH, fontSize:14, bold:true, color:m[3], margin:0 });
+  badge(s, x+mcw-1.15, y+0.13, m[4], m[3], 1.0);
+  s.addText([
+    { text:m[1], options:{ breakLine:true, color:C.ink, fontSize:10.5, paraSpaceAfter:3 } },
+    { text:m[2], options:{ color:C.muted, fontSize:10 } },
+  ], { x:x+0.28, y:y+0.55, w:mcw-0.5, h:mch-0.62, fontFace:FB, valign:"top", lineSpacingMultiple:1.04, margin:0 });
+});
+s.addText([
+  { text:"一句话：", options:{ bold:true, color:C.dark, fontSize:11 } },
+  { text:"本报告主看 AUC（判别力）和 Spearman（能否分强弱）；AUPRC 因阳性占比高、参考有限；样本量小 → 所有指标的置信区间都偏宽，结论以「方向性」为主、不抠零点几的差距。", options:{ color:C.ink, fontSize:10.5 } },
+], { x:0.7, y:6.9, w:11.95, h:0.5, fontFace:FB, valign:"top", lineSpacingMultiple:1.02, margin:0 });
 pageno(s);
 
 // ============================================================ S16 8工具 benchmark 核心结论
@@ -670,8 +794,9 @@ const refs = [
 ];
 const rh = (t)=>({ text:t, options:{ fill:{color:C.dark}, color:"FFFFFF", bold:true, fontSize:11, align:"left", valign:"middle" } });
 const rc = (t,b)=>({ text:t, options:{ color:C.ink, fontSize:10, align:"left", valign:"middle", bold:!!b } });
-const reftbl = [[rh(" 工具"), rh("发表期刊 / 年份"), rh("DOI"), rh("代码仓库")]];
-refs.forEach(r=> reftbl.push([rc(" "+r[0],true), rc(r[1]), rc(r[2]), rc(r[3])]));
+const rcLink = (t,url)=>({ text:t, options:{ color:"1C7293", fontSize:10, align:"left", valign:"middle", hyperlink:{ url, tooltip:url } } });
+const reftbl = [[rh(" 工具"), rh("发表期刊 / 年份"), rh("DOI（可点击）"), rh("代码仓库（可点击）")]];
+refs.forEach(r=> reftbl.push([rc(" "+r[0],true), rc(r[1]), rcLink(r[2],"https://doi.org/"+r[2]), rcLink(r[3],"https://"+r[3].split(" ")[0])]));
 s.addTable(reftbl, { x:0.7, y:1.75, w:11.95, colW:[1.85,3.1,2.85,4.15],
   rowH:[0.4,0.44,0.44,0.44,0.44,0.44,0.44,0.44,0.44,0.44,0.44],
   border:{pt:1,color:C.line}, align:"left", valign:"middle", fontFace:FB, fill:{color:C.card}, margin:[2,4,2,4] });
