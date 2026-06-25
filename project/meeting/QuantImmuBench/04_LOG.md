@@ -50,6 +50,11 @@
 - **最终两 deck**:`QuantImmuBench_10工具横评_2026-06-25.pptx`(**40 页**) + `QuantImmuBench_5工具横评_2026-06-25.pptx`(**26 页**)。5工具 corr 图新建 `_plot_5tools_corr.py`→`fig_corr_heatmap_5tools.png`(DS2 n=101)。
 - 工具:LibreOffice→PDF→pymupdf 逐页 QA;pptxgenjs 全局 node_modules;pptx 被 PowerPoint 打开时 EBUSY,需关闭再生成。
 
+### ⑦ 数据交付包核验+补全（交老师）
+- 核验旧包(交付_原始数据包.zip,7文件)发现3缺口:①merged表42列无字典→不可用 ②只有DS2指标缺DS1全阳定量验证结果 ③README太简。
+- 补全→`交付_数据包_2026-06-25.zip`(11文件,6.9MB,testzip完整性OK):加**数据字典.md**(42列逐列说明,标HLAthena=提呈非免疫原性)+**DS1结果**(ds1_magnitude_spearman_bestbinder/_mean.csv+DS1_magnitude.md,全阳排强弱近0的关键证据)+**重写README**(每文件夹用途/口径/许可/配套PPT指引)。
+- 交老师完整交付=数据包zip+2 PPT(10工具40页/5工具26页)。zip按git策略不进仓库,本地发。旧简版包清出工作区。
+
 ---
 
 ## Entry HLA2 — 2026-06-25【HLAthena 收尾窗】追踪 HPC + 续跑补全 + merge 第9列 + PPT/Word 9tools 定稿
