@@ -25,6 +25,16 @@
 
 > ⚠️ HLAthena 预测 MHC 提呈非免疫原性（benchmark 只能当 proxy）；MHLAPre 权重未发布需邮件作者。详见 `DEPLOY_TRACKER.md` §第二批 Wave 3。
 
+## Tier-3 扩展工具（2026-06-26 建档；NeoaPred SMOKE_PASS，T-SCAPE 2-bug-patch PASS，ImmunoStruct ❌ NO-GO）
+
+| 工具 | 论文 | DOI | 官方 repo | 许可 |
+|---|---|---|---|---|
+| **NeoaPred** | NeoaPred: predicting neoantigen immunogenicity by structure-based peptide foreignness. *Bioinformatics*, 2024. | [10.1093/bioinformatics/btae547](https://doi.org/10.1093/bioinformatics/btae547) | https://github.com/Dulab2020/NeoaPred | Apache-2.0 |
+| **T-SCAPE** | T-SCAPE: T cell antigen specificity with antigen presentation elucidation. *Science Advances*, 2025. | [10.1126/sciadv.adz8759](https://doi.org/10.1126/sciadv.adz8759) | https://github.com/seoklab/T-SCAPE | CC BY-NC-ND 4.0 ⚠️ 禁衍生 |
+| **ImmunoStruct** | ImmunoStruct: multimodal neoantigen immunogenicity prediction integrating sequence, structure and biochemistry. *Nature Machine Intelligence*, 2025. | [10.1038/s42256-025-01163-y](https://doi.org/10.1038/s42256-025-01163-y) | https://github.com/KrishnaswamyLab/ImmunoStruct | Yale 学术非商用 |
+
+> ⚠️ T-SCAPE：CC BY-NC-ND 4.0，本项目以「官方权重 + 修复 2 个官方 bug」方式跑通（非原始发布版），对外报告数字须加 caveat，见 `PROVENANCE.md`。ImmunoStruct 工程 NO-GO（三重 blocker：无裸肽推理入口 / AF2 结构不可承受 / HLA 仅 27 allele），不产 benchmark 分数，见 `TOOLS/ImmunoStruct.md`。
+
 ## 外部依赖工具（被上述工具调用）
 
 | 工具 | 用途 / 被谁依赖 | 出处 | 许可 |

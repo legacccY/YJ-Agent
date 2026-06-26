@@ -4,6 +4,549 @@
 
 ---
 
+## Entry MK — 2026-06-26【A 主窗：第二批整合 6 工具 → 15tools 表（B 全收 + C NetMHCpan-BA）】
+
+> 窗口 `quantimmu-bench.claim`（A Lead）。滚动整合:B 窗 run_w1 全收(5/5)+ C 窗 NetMHCpan-BA 落地。
+
+**新落地(3 个,从 3→6 工具)**：BigMHC(20:27,直接schema)· Repitope(20:20,直接schema,HLA-agnostic无WT) · netmhcpan_ba(19:27,**长schema bb_idx+is_MT+pending_DTU_consent**,68494行=MT+WT)。merge_newtools 两 schema 都吃,行数守 34247。
+**产物**：`merged_all_tools_15tools.xlsx`(34247×56,16工具列)+ `metrics_ds2_15tools.csv` + `per_patient_spearman_15tools.csv`(16工具)。netmhcpan_ba 标 `pending_DTU_consent`(sidecar+metrics列已核)。
+
+**新发现(Bash 核 csv)**：
+- **结合 proxy 占中上**:MHCflurry_affinity_neg 0.203 + netmhcpan_ba 0.167(DTU pending),压过 Repitope/IEDB_Calis/BigMHC/CNNeo 等免疫原性工具 → **再证免疫原性工具没超结合 proxy**(强化 STORY/朱)。
+- **BigMHC -0.043 + CNNeo -0.158 双负**:两个最该好的 apples 免疫原性工具垫底。
+- 头部 deepHLApan(混杂caveat)/PRIME 0.253/IMPROVE 0.250/PredIG 0.230 不变。
+
+**DAG**：run_w1 ✓(B 第一波 5 全收)。余 run_w2 ▶(C DTU:NetMHCpan-BA 到,NetTepi/ICERFIRE 待) · kit_w3/run_w3 ▶(D:NeoaPred 仅烟测,T-SCAPE 待,ImmunoStruct NO-GO)。merge/metrics 待全工具落地后 done。
+
+---
+
+## Entry MJ — 2026-06-26【A 主窗协调修 G 稿：deepHLApan headline 是肽长混杂 → 换 PRIME】
+
+> 窗口 `quantimmu-bench.claim`（A Lead）。整合 G 窗 paper 时抓出跨窗致命冲突,协调 writer 修复。
+
+**问题**：G 稿（16:52 写,早于 H 去混杂）把 **deepHLApan 的 per-patient 跳升当 C2 核心 showcase**（results sec:res-perpatient + discussion sec:disc-perpatient + STORY.md C2）。但 H 窗证 deepHLApan best-binder 分数 ↔ 子肽数 ρ=**0.5696**（`pooling_count_confound.csv` 核实）= 肽长混杂,去混杂后 ≈0 → **headline 建在肽长假象上,投稿即崩**。
+
+**修复（writer 手术,数字全核值)**：三处统一——
+- 头号 showcase deepHLApan → **PRIME**（全局 0.116→per-patient Fisher-z 0.253/median 0.386,best-binder ρ_count=0.130 干净,真 within-patient 重排）；IMPROVE 作第二干净例（ρ_count=0.120）。
+- deepHLApan 降为**混杂警示例**：明标 best-binder ρ_count=0.57、去混杂≈0、仅描述性不作能力证据。
+- `4_results.tex`（小节+表 tab:perpatient+图 caption）、`5_discussion.tex`（sec:disc-perpatient）、`paper/STORY.md` C2 三处口径对齐。abstract 安全（未点名工具）。
+
+**意义**：跨窗整合的真正价值——G 单窗看不到 H 的去混杂,A Lead 整合时才暴露 headline 用了被证伪的例。投稿前修掉。
+
+---
+
+## Entry W1 — 2026-06-26【扩张 v2 第一波 5 工具部署+跑通（B-tools1 窗）】
+
+> 窗口：`quantimmu-bench-tools1.claim`，pipeline 节点 kit_w1 + run_w1。任务=部署第一波 5 工具(MHCflurry/IEDB-Calis/CNNeo/BigMHC-im/Repitope)，本地 CPU 跑通，输出统一 schema 分数 CSV。授权「跑任何实验」。
+
+### 统一输入宇宙（防 5 工具 key 漂移）
+- 新建 `scripts/newtools_universe.py` → 产 `scripts/out/newtools/{universe.csv(34247行 backbone 4-key全集), uniq_pep_hla.csv(53582唯一肽×HLA), uniq_pep.csv(11903唯一肽,HLA-agnostic用)}`。所有工具 prep 读此，parse 回贴 universe 4-key=(Dataset,Peptide_ID,HLA_Allele,MT_Subpeptide)。MT_<Tool> 按 (MT_Subpeptide,HLA) join，WT_<Tool> 按 (WT_Subpeptide,HLA)。方向统一「越高越免疫原」。
+- 派 5 个 coder 并行写各 kit(input prep + run + parse 三件套，HPC/deploy/<tool>/)，主线亲自跑烟测+全量(不信自报)。
+
+### ✅ 跑通（全量 34247 行 0 NaN，本地 CPU）
+1. **IEDB-Calis**：`IEDB_Immunogenicity-3.0`(py3 纯统计)本地 Windows 跑，65 allele(42 支持→allele-specific mask，其余默认 P1/P2/Cterm mask)。`run_local.py` 遍历 manifest。烟测已知肽 sanity 过。输出 `IEDB_Calis_DS1DS2_scores.csv`(MT/WT_IEDB_Calis)。NPOSL-3.0 自由可发。
+2. **CNNeo**：repo AaronChen007/neoantigen 无预训练权重→FCNN_TF 本地自训(复刻 notebook 超参零改：HLA前缀+补X到11+6-mer TF-IDF+FCNN1000→64→2+SMOTE+seed42，ValAcc~75%)→推理 53582。base imblearn 与 sklearn1.8 不兼容→升级 imbalanced-learn 0.14.2。输出 `CNNeo_DS1DS2_scores.csv`(MT/WT_CNNeo, 0.13-0.96)。MIT。
+3. **MHCflurry 2.0**：conda env `qib_mhcflurry`(py3.10+mhcflurry2.2.1 torch后端)。65 allele 全支持。⚠️env 内须 `PYTHONUTF8=1`(yaml GBK 坑)。烟测 NLVPMVATV/YVLDHLIVV presentation 0.97/0.99 sanity 过。输出 `MHCflurry_DS1DS2_scores.csv`(MT/WT_presentation + MT/WT_affinity_neg=-nM)。Apache-2.0。
+4. **BigMHC -m=im**：repo KarchinLab/bigmhc git 历史臃肿+LFS→clone 反复截断；改 `fetch_repo2.py` 无 API 逐文件下载(.lyr 跨 batch 同名同大小，复用 bat512 manifest 绕 GitHub API 限流)→2.5GB 全 7 batch(EL36+im4)完整。**im=7模型 ensemble**(每个 bat{X}/im 4微调层，bigmhc.py load 从父 EL 目录补基层)。**EL 对官方 .cmp 验证 PASS(diff 4.5e-7)**=权重完整管道正确。⚠️Windows 须 `--jobs 1`(多 worker spawn pickle 大数据→MemoryError)；`-t`=tgtcol 非线程。学术非商用，发数字✅。
+5. **Repitope**：MIT，R+rJava，HLA-agnostic(只肽打分→同肽各 allele 填同值)。extraTrees(ERT后端)已从 CRAN 下架→从 Archive 装源码版(Rtools43 在 E:/rtools43 编译链可用)+Repitope 3.1.7。Mendeley FST 文件实测仅 127MB(FragLib 122MB+FeatureDF_MHCI 5MB，真实文件名 `*_RepitopeV3.fst`)。修 coder 2 bug(`sys.frame$ofile`→commandArgs取script_dir；`MHCI_Human_MinimumFeatureSet$MinimumFeatureSet`→该对象是32长character向量非list)。烟测5肽 score 0.34-0.44 过。8-11mer(>11mer 4466 个填NaN)。
+
+### 新建文件（指针登记）
+- `scripts/newtools_universe.py` + `scripts/out/newtools/{universe,uniq_pep_hla,uniq_pep}.csv` + 5 工具分数 CSV
+- `HPC/deploy/{mhcflurry,iedb_calis,cnneo,bigmhc_im,repitope}/`：各三件套 + NOTES。额外：iedb_calis/run_local.py、bigmhc_im/fetch_repo2.py、repitope/{install_deps.R,retry_install.R,install_extratrees.R,run_repitope.R(修2bug)}
+- DEPLOY_TRACKER：T0-1/2/3(CNNeo/MHCflurry/IEDB)+T0-4(Repitope)+T2-2(BigMHC) 全 → RUN_DONE。
+
+### ✅ 结账：5/5 全跑通（全量 34247 行，4-key 100% 与 universe 一致）
+| 工具 | MT/WT 有分 | 分数范围 | 备注 |
+|---|---|---|---|
+| IEDB-Calis | 34247/34247 | -0.99~0.62 | 纯统计 |
+| CNNeo | 34247/34247 | 0.13~0.96 | FCNN_TF 自训 |
+| MHCflurry | 34247/34247 | presentation 0~0.99 | +affinity_neg |
+| Repitope | 22391/22391 | 0.06~0.61 | 12-14mer NaN(HLA-agnostic 8-11mer 限) |
+| BigMHC | 34247/34247 | 0~0.95 | 7模型 ensemble，EL 验证 diff 4.5e-7 |
+
+- **踩坑教训**：①BigMHC+Repitope 并发吃满 33.7G RAM→OOM-kill 杀两者→**串行化独占跑**(重型 CPU 工具本地不可并发)。②BigMHC repo git 历史臃肿+tarball 大流截断→`.lyr 跨batch同名同大小`复用 manifest 无 API 逐文件下载绕 GitHub 限流+截断。③许可全自由(BigMHC 学术非商用)，数字可发无 pending。
+- pipeline `done quantimmu-bench kit_w1/run_w1`；5 CSV 待下游 merge(run_w2/w3 完成后)+metrics 重算。
+
+## Entry MI — 2026-06-26【A 主窗：整合 H/I/F 三完成窗 → 跨窗洞察 + 综合档 + round8 反哺】
+
+> 窗口 `quantimmu-bench.claim`（A Lead）。整合三个已完成窗口成果,产权威综合档,标三节点 done。
+
+**整合对象**：H(pooling,`POOLING_STUDY.md`)· I(fusion 天花板,`FUSION_CEILING.md`)· F(QuantImmune pilot,`QUANTIMMUNE_PILOT_SUMMARY.md`)。全 Bash 核 csv(pooling_best_per_tool 自带 crosscheck_note 对账 metrics;fusion csv 注释头格式)。
+
+**产物**：`reference/INTEGRATED_FINDINGS.md`（跨窗综合,A 整合 13 工具 + 三窗 + 朱）。
+
+**四方收敛主结论**：现有工具及任意组合的 per-patient Spearman 定量能力在 ρ≈0.26–0.36 触顶,逼近理论天花板下沿 0.4;融合相对最优单工具增益落噪声内(I 三检验 p>0.8、F 配对 P=0.51、朱 p=0.70)。要定量飞跃须喂新信号(供体 TCR/HLA/precursor)或扩数据 powered study。
+
+**★跨窗洞察(只整合可见)**：
+- H 证 **deepHLApan 的"最强单工具"地位是肽长混杂假象**（max 池化分数 ↔ 子肽数 ρ=0.57,去混杂后≈0/负）→ I/F 用它当融合地板被肽长虚高 → 融合 0.33 其实没超一个正确池化的真信号单工具(H 测 PredIG count-safe 0.364/IMPROVE 0.320)→ **"融合非杀手锏"被加固**。
+- 三个独立天花板数惊人一致(理论 0.4-0.6 / 融合 0.33 / pilot 0.328 / 朱 0.43 / H 单工具 0.364)夹逼出现有信号定量上限。
+
+**整合后修正(已做/待办)**：
+- ✅ round(8) 反哺：H 抓的浮点 tie bug,改 `per_patient_spearman_multimethod.py` 的 `_agg_array`(merge_metrics 共用),重跑 12tools csv 确定性。
+- 待办：主排行榜默认 pooling max→count-safe(top3mean/mean);per-patient 头条加肽长混杂 caveat,deepHLApan 跳升不作正面 headline,改 PredIG/IMPROVE/PRIME 稳健头部;fusion 地板用 count-safe 真信号工具重跑。
+
+**DAG**：pooling_deep ✓ / fusion_ceiling ✓ / quantimmune_pilot ✓ 三节点 done。余 kit_w1/w3 + run_w*(B 余 BigMHC/Repitope、C DTU、D 重型)继续。
+
+---
+
+## Entry H1 — 2026-06-26【H 窗：Pooling 策略深挖（整合朱同学）+ 抓修 2 个数字 bug】
+
+> 服务 quantimmu-bench / pooling_deep 节点（pipeline 已标 done）。lever=承接朱同学 pooling 研究（pooling 方式对 Spearman 影响巨大：朱 netAffneg_9 max=0.196 vs topk_w=0.395 翻倍）并系统整合进 9 工具 benchmark。窗口认领 `quantimmu-bench-pooling.claim`。
+
+### 架构定位（两级聚合）
+benchmark 有两级聚合：**level-1 pooling**=子肽×HLA（DS2 每肽 105–630 行）→ 肽级单分；**level-2 跨患者**=per-patient ρ→头条（A 窗 `AGGREGATION_METHODS.md`）。朱的「pooling」=level-1。此前仅 max/mean/top3mean 三法。
+
+### 新建文件（全在 analysis/，只碰 pooling_* + figures/pooling_*）
+| 文件 | 用途 |
+|---|---|
+| `analysis/pooling_sweep.py` | 8 pooling 算子（max/mean/top3mean/sum/geomean/softmax/topk_w/rankdecay）× 9 工具，全局 + 二维(×3 跨患者法) + count 混杂诊断 + count-safe 最优。派 coder 写。|
+| `analysis/pooling_global_spearman.csv` | 9 工具 × 8 pooling 全局 Spearman（含 count_confounded 列）|
+| `analysis/pooling_2d_scan.csv` | pooling × 跨患者 agg 二维（216 行）|
+| `analysis/pooling_count_confound.csv` | 每格 rho(肽级分, 子肽数) 混杂诊断 |
+| `analysis/pooling_best_per_tool.csv` | naive 最优 + count-safe 最优（剔混杂）|
+| `analysis/POOLING_STUDY.md` | 完整研究报告（一图一结论，含引用）|
+| `analysis/figures/pooling_{heatmap_global,count_confound,max_vs_countsafe}.{png,pdf}` | 3 图。派 analyst 出。|
+
+### 核心发现
+1. **确认朱：pooling matters**——排混杂后每工具换 pooling 的 Spearman spread 达 0.05–0.22（pTuneos/HLAthena 0.22，PredIG 0.17）。例外 DeepImmuno spread 仅 0.04 全负=pooling 救不了本质不相关工具。
+2. **🔧 bug1 浮点 tie 不稳定（已修）**：pTuneos 等多 tie 工具（101 肽仅 16–19 唯一 pooled 值，83 ties），pooling 内不同求和顺序产 ~1e-16 浮点噪声，经 Spearman tie-break 放大成 0.005 级 rho 漂移（pTuneos top3mean 升序 0.0970 vs 降序 0.0905，**均假象**）。修：pooled 分数 `round(8)` → 确定性 **0.0945**。**反哺建议（报 A 窗，未改其文件）**：A 窗 `spearman_np` 同无 round，`metrics_ds2_9tools.csv` 的 pTuneos top3mean=0.0970/mean=0.0297、deepHLApan top3mean=0.0475 都是浮点幸运值（与确定性真值差 ≤0.0025），建议同样 round(8)。
+3. **🔧 bug2 sum/max-topk 肽长度混杂（铁证，已剔除）**：朴素看 `sum` 对 5/9 工具最优、让 DeepImmuno 从 −0.117 翻 +0.113。但 rho(sum 肽级分, 子肽数)=**0.96**，子肽数≈肽长度（ρ=0.79），肽长↔ELISpot=0.31 → **sum 在测肽长度非免疫原性**，纯假象，per-patient 也不消。逐格诊断（阈值 0.5）：sum 0.23–0.98（仅 pTuneos 0.23 未越阈）；**deepHLApan 的 max/top3mean/topk_w/rankdecay 全 ~0.57 混杂**（长肽多窗口连 best-binder 都虚高）。剔混杂后 deepHLApan 最优=softmax≈0=**去长度后无真信号**（诚实负例）。
+4. **H4 头条修正：max 几乎从不最优**——对有信号工具（PredIG/NeoTImmuML/IMPROVE/PRIME），count-safe 最优（geomean*/top3mean/mean）系统性高于 max **0.05–0.17**。即 best-binder（单显性表位假设）漏表位库信息，**repertoire 假设（top-k/均值类）占优**。geomean 标*（min-shift 实现注意，稳健替代 mean/top3mean）。
+5. **H1 对账朱**：朱核心 feature netAffneg_9（netMHCpan 亲和，**DTU pending + 未进我们 9 工具表**）→ 翻倍量级不可在全集复现。共有工具 **PRIME 方向吻合朱**（max=0.116 最低，其余 0.16–0.168 全高）；**deepHLApan 弱/噪声**（剔混杂后无信号）——朱的极端效应不普适所有工具（诚实分歧）。
+
+### 数字核验（红线①Bash 核 csv + scipy 独立复核）
+- max/mean/top3mean 全局 Spearman 与既有 `metrics_ds2_9tools.csv` 99% 吻合（仅 pTuneos top3mean/mean、deepHLApan top3mean 差 ≤0.0025，全是 ref 自身浮点假象，我方为确定性真值）。
+- deepHLApan max↔n_subpep=0.57、pTuneos sum↔n_subpep=0.23、PredIG geomean=0.3643、sum confound 范围 0.226–0.982：均 scipy 独立复核一致。
+
+### 给 benchmark 的建议（见 POOLING_STUDY.md §7）
+永不用 sum + 逐工具查 count 混杂（长肽工具连 max/top-k 都泄漏）；主排行榜默认从 max 改 top3mean/mean 用 count-safe 最优；pooled 分数 round(8) 防浮点不稳；报数前看 count_confounded，True 不入主报。
+
+### TODO
+- 朱 topk_w 的 k/权重、softmax T、rankdecay d 实现细节待朱本人对账（本研究用标准默认 + 敏感性扫描）。
+- netAffneg_9 需 netMHCpan-BA 波次（C 窗）+ DTU 同意后才能在全集直接复现朱的翻倍数。
+
+---
+
+## Entry G1 — 2026-06-26【G 窗：benchmark 投稿论文全写作闭环 → submission-ready draft】
+
+> 窗口：`quantimmu-bench-paper.claim`（G-paper，pipeline 节点 paper_sprint）。任务=把 benchmark 写成可投稿论文，全写作闭环 G1-G6。**到投稿拍板点停下，未投稿。**
+
+**拍板锁定**：venue = **Briefings in Bioinformatics 主投**（fallback NeurIPS D&B / ML4H workshop）；形态 = **benchmark backbone × position framing 融合**。承重 claim 三条：C1 现有工具做不了 magnitude 定量回归（全实测）/ C2 per-patient 揭示全局指标掩盖的个体差异 / C3 magnitude 是被系统忽视但有生物上界的 gap（position）。
+
+**新建 `paper/`**（全双盲 0 名，caveman OFF 保真）：
+- `STORY.md`（锚定：venue + 三承重 claim + 章节结构 + 红线 + 已核数字速查）。
+- `main.tex`（article 骨架，投前换 oup-authoring-template）+ `refs.bib`（40 条，DOI 全核）。
+- `sections/{0_abstract,1_intro,2_related,3_setup,4_results,5_discussion,6_conclusion,9_availability}.tex`（4 writer 并行写，~7850 词）。
+- `figures/`：接现有 8 工具图 fig6/7/8（AUC/Spearman/ROC）+ fig9 per-patient。
+
+**编队**：researcher×4（闭合引用 TODO + 方法学锚 + 4 工具缺失 DOI + precursor/聚合依据）→ writer×4（各节并行）→ verifier（90+ 数字三方核 csv，**0 DRIFT**，仅 1 处舍入末位已修）→ reviewer 十角色对抗审（1 🔴 4 工具缺 bib + 8 🟠，**无 reject 级科学错**）。
+
+**reviewer 修补全闭**（🔴+8🟠 全处理）：① 补 pTuneos/ImmuneApp/HLAthena/NeoTImmuML/Nibeyro/Gielis/OBrien 7 条 bib + 接引 ② per-patient Fisher-z 从「fixed-effect 估计」降为「描述性 summary」（化解与异质性叙事矛盾）③ Discussion 天花板论证改用锁定口径 0.2434（去 selection-on-max 双标）④ 三工具非官配置加「C1 对它们是保守下界」⑤ C3 收窄「12 方法+6 综述范围内」⑥ precursor 鼠→人外推软化 ⑦ Bland-Altman/Harrell 错置改为「未来回归器应补报指标」⑧ availability 补「评审期匿名代码+派生表可复现」⑨ 多重比较转为支撑 C1（Bonferroni 后两显著皆不存活）⑩ n_i 修正 5–16（PRIME p102 有 n=5）。
+
+**终核 PASS**：cite 0 孤儿 / 0 残留 \todo / 4 图齐 / \ref 0 断引（补 sec:fairness label）/ 脱敏 0 泄漏 / author Anonymous。
+
+**🛑 投稿拍板点**：draft submission-ready，呈用户拍板。投前待办：换 OUP 模板、本地 latex 编译核排版、DTU 工具数字仍 pending 书面同意（当前主结论不依赖）、fig9 建议出专用 per-patient ρ_i strip plot。
+
+---
+
+## Entry I1 — 2026-06-26【I-fusion 窗：融合与天花板研究——融合不显著超最优单工具（复现加固朱 p=0.70 负结论）】
+
+> 服务 quantimmu-bench，节点 fusion_ceiling（DAG done ✓）。承接朱同学融合实验，回答「融合能否显著超最优单分 / 是否撞天花板」——QuantImmune 立项关键决策证据。与 F 窗分工：I=方法学+天花板（能不能），F=原型（怎么建）。
+
+### 头条结论
+**多工具融合相对最优单工具 deepHLApan 的增益落在噪声内，不显著；学权重融合（ridge/GBDT）因 K=9 样本饥饿过拟合反伤；融合点估 ρ≈0.33 逼近理论天花板下沿 0.4（CI 触带 [0.4,0.6] 但未确证触顶）。复现并加固朱「融合提升不显著（p≈0.70）」。→ QuantImmune 需新信号（TCR-seq/HLA 分型/precursor 代理，THEORY C2）或扩多中心数据，融合现有工具不是杀手锏。高价值负结论。**
+
+### 关键数（全 verifier 核，27/27 ✅ 无 drift）
+- 最优单工具 = **deepHLApan**（DS2 Fisher-z ρ̄=0.252 [0.019,0.459]；per_patient_9tools 口径 0.2605），**非 IMPROVE**（skeptic 修正了 baseline）。
+- 最优融合 = rankmean_surv6 0.334 [0.108,0.527] / fixavg_surv6 0.328 [0.101,0.523]。
+- **配对 vs deepHLApan**（患者级，三检验）：fixavg Δρ=0.033，bootstrap p=0.974 / 符号检验 p=1.0 / 置换检验 p=0.984，**5 正 4 负抛硬币 = 不显著**。F 窗独立 `paired_bootstrap.py` 交叉验证一致（Δρ=0.033，P(Δ>0)=0.514）。
+- **ridge_surv6 = -0.30**（负！raw_sfc 灾难性过拟合），vs deepHLApan 置换 p=0.047 **显著更差**；F 窗 ridge patient_centered=0.241 较温和但仍 < fixavg。**简单融合赢学权重 = 样本饥饿铁证（THEORY §六 ②+③，非 ① 方向死）**。
+- shuffle 对照 ρ̄=-0.05 CI 含 0 → 管道干净，信号真。
+- DS1 跨数据集翻负（fixavg -0.16）→ 泛化未验。
+
+### 产出
+- `reference/FUSION_CEILING.md`（I6 决策文档，含给 QuantImmune 立项建议 + caveat/TODO）。
+- `analysis/fusion_study.py`（复用 F 窗 `lopo_eval.py` 口径，LOPO + 单工具地板 + 4 融合法 + 配对 bootstrap/符号/置换 + 天花板距离）。
+- `analysis/fusion_{single_floor,methods,vs_single_paired,ceiling_distance}.csv`。
+
+### 编队
+coder 写 fusion_study.py（含 skeptic 要的符号/置换检验）｜skeptic 红队挖出关键修正（最优单工具是 deepHLApan 非 IMPROVE + F 已跑 vs_floor 配对）｜verifier 27/27 核数。主线修 1 bug（np.lgamma→math.lgamma）。
+
+### 不重复 F 窗
+F 已建 LOPO 原型（ridge/fixavg/gbdt + paired_bootstrap vs_floor）。I 加 F 没做的：vs **最强**单工具配对 + rankmean 新变体 + 符号/置换检验 + 天花板距离 + 决策文档。
+
+### 残留 TODO
+多重比较未校正（投稿列全 grid 标 max）｜DS1 泛化未验｜DTU 工具入融合标 pending_DTU_consent｜朱原始 netAffneg_9 绝对值未逐位复现（缺其原始打分表）｜天花板 0.4-0.6 低置信需大样本校准。
+
+---
+
+## Entry MH — 2026-06-26【A 主窗：第一波 3 工具滚动整合进 benchmark + 全工具指标重算】
+
+> 窗口 `quantimmu-bench.claim`（A 主窗）。lever=扩张工具落地后 benchmark 表+指标重建。**滚动整合**：B 窗第一波 5 个里先落地 3 个，先并不等全到。
+
+**整合动作**：
+- B 窗产出 `scripts/out/newtools/{CNNeo,IEDB_Calis,MHCflurry}_DS1DS2_scores.csv`（schema 漂移：实际用「自然键 Dataset/Peptide_ID/HLA_Allele/MT_Subpeptide + 直接 MT_<Tool>/WT_<Tool> 列，34247 行对齐」，非我设的 bb_idx+is_MT 长格式）。
+- 改 `scripts/merge_newtools.py` 加**直接 schema 分支**（检测 MT_/WT_ 列→按自然键 merge，基表此键唯一已验，集成缝补上）。
+- 产 `scripts/out/merged_all_tools_12tools.xlsx`（34247×50，3 工具 100% 填充；MHCflurry 含 presentation+affinity_neg 两变体=13 工具列）。
+- `analysis/merge_metrics_NNtools.py` 重算 → `metrics_ds2_12tools.csv` + `per_patient_spearman_12tools.csv`（13 工具×9 患者×7 聚合法）。全 Bash 核 csv。
+
+**新发现（整合产生，与 F-PILOT/朱同学三方收敛）**：
+- **MHCflurry_affinity_neg（纯结合亲和 proxy）per-patient Fisher-z=0.203 排第 5**，碾压多数免疫原性工具 → 印证朱同学「netAffneg 是最优单分」+ 文献「binding≈弱预测」+ 强化 STORY「免疫原性工具无一明显超结合 proxy」。
+- **CNNeo（2026 最新 MIT，apples）最差**：per-patient Fisher-z=**−0.158**（全榜垫底）→ 最新≠最好，诚实负结果。
+- **IEDB_Calis**：AUC 0.59 排第 2 但 per-patient 仅 0.11 → AUC↔Spearman 背离再证。
+- 头部 deepHLApan(0.261)/PRIME(0.253)/IMPROVE(0.250)/PredIG(0.230) 不变。
+- **三方收敛主结论**：现有工具及融合在 per-patient Fisher-z ρ≈0.26-0.33 触顶（F-PILOT 定平均集成 0.328≈平手最强单工具；朱融合 0.43 p=0.70 不显著；理论天花板 0.33-0.40）→ **无定量飞跃，QuantImmune 需新信号/新数据,简单组合撞天花板**。
+
+**未 done**：merge/metrics 节点仍 deps run_w1/w2/w3（B 余 BigMHC/Repitope + C DTU + D 重型未到），本轮是 3/11 工具滚动整合，全到后重跑刷新 NN。
+
+---
+
+## Entry F-PILOT — 2026-06-26【F 窗：QuantImmune 定量原型 pilot 全闭环跑通 → GRAY】
+
+> 窗口 `quantimmu-bench-pilot.claim`，节点 quantimmune_pilot。F1 理论审计→F4 跑通→待 F5/F6 解读核数。caveman OFF 保真。
+
+**任务**：本地 DS1+DS2 真 ELISpot SFC(183 肽/15 患者[DS1 6人+DS2 9人]/172 正)，9 工具分数+序列特征 stacking 元模型回归 SFC，LOPO 评估，看能否超去偏单工具地板。检验 QuantImmune 立论。**≈0 GPU 纯 CPU 秒级，未占卡。**
+
+**F1 三层理论审计(kickoff，落 `reference/QUANTIMMUNE_THEORY_LEDGER.md`)**：theorist×2 多路投票 + skeptic 证伪 + verifier 核数。裁决=**GRAY 放行**(0 致命杀方向；skeptic 🔴-1「显著性终点+winner's curse 地板会产假 no-go」转 F2 九条强制约束修)。命门定理：组合 in-sample 上界~0.33-0.40 仅超地板 0.26 约 +0.07-0.14，拟合 9 权重收缩罚~0.08 → **唯一能超地板的是零参数固定平均**，拟合式被拉回 ≤地板。功效判决：15 患者下任何现实增量统计不显著(功效≤25%)。
+
+**F4 跑通 12 run(全 Bash 核 csv，真源 `scripts/out/merged_all_tools_9tools.xlsx` 9工具×183肽，非 plotdata 仅5工具)**：
+- **R0 防泄漏(命门)**：标签打乱 4 跑(verifier 核 json)Ridge seed42=+0.013 / seed123=+0.117 / seed999=−0.023 / FixAvg seed42=**−0.051**(前稿误写+0.05,已修)。3/4 <0.1；seed123 的 +0.117 略超阈但属 n=9 null 随机波动(已逼近真实 FixAvg CI 下界 +0.101 → **正是 15 患者欠功效的直接体现**)。整体判**无系统性泄漏 PASS**。
+- **主结果(DS2 9 患者 Fisher-z 加权 ρ̄)**：
+  - **FixAvg 等权 surv6(零参数)= +0.328** CI[0.10,0.52] median 0.371 → **赢家**，超最佳单工具地板。
+  - Ridge surv6 患者内中心化 = +0.241 CI[0.01,0.45]；Ridge all9 中心化 +0.200 → 剪枝(剔死工具)更优，**印证 H2**。
+  - ⚠️ Ridge surv6 **raw_sfc = −0.30**(负) = 目标错配(skeptic🟠-B 实证)，患者内中心化后恢复 +0.241 → 弃 raw_sfc。
+  - FixAvg all9(含死工具)= +0.299 < surv6 +0.328 → 死工具加噪，剪枝有效。
+- **主读数 配对患者级 bootstrap(FixAvg vs 预登记地板)**：
+  - vs PRIME(0.253)：Δz̄=+0.121 CI[−0.094,+0.299] P(Δ>0)=0.874
+  - **vs deepHLApan(0.261，最强单工具)：Δz̄=+0.004 CI[−0.46,+0.48] P=0.514 ≈平手**
+  - vs IMPROVE(0.250)：Δz̄=+0.064 CI[−0.05,+0.18] P=0.864；vs PredIG(0.230)：+0.078 P=0.714
+  - **集成点估超所有单工具地板，但对每个地板 CI 含 0；对最强 deepHLApan 基本平手。catastrophe gate 未触发(无反伤)。**
+- ⚠️ **DS1 敏感性(非主结论)**：FixAvg DS1 ρ̄=−0.16，与 DS2 +0.33 反号 → 跨数据集行为差异(DS1 短肽/全阳，per-patient ρ 已知不可靠)，需 F5 判是学批次还是 regime 差异。
+
+**裁决(预登记决策规则)**：**GRAY**——零参数等权集成点估最高(+0.328 vs 地板 0.26)、稳超弱单工具、与最强单工具平手、无反伤无泄漏，但 15 患者下统计不显著(CI 含地板)。精确吻合 F1 预测。**pilot 价值=已去风险(排除最坏情形:崩盘/泄漏/反伤)+ 给 powered 研究估了方差**。立项与否=后续拍板点。
+
+**新建文件(全 `quantimmune/`)**：`build_model_matrix.py`(→model_matrix.csv 183×34)、`lopo_eval.py`(LOPO 引擎)、`paired_bootstrap.py`(患者级配对 CI)、`run_all.py`(R0-R11 编排)、`make_floor_perpatient.py`(单工具预登记地板生成器)、`results/`(各 run per_patient.csv + summary.json)。LEDGER=`reference/QUANTIMMUNE_THEORY_LEDGER.md`。
+
+**F5 analyst 判读 + F6 verifier 核数(已完成)**：
+- **总判决 = GRAY**(精确吻合 F1 预测,落 §4 中性档 0.27-0.33 偏高端)。catastrophe gate 主模型全未触发,无泄漏,点估方向一致,但 CI 含所有地板 → n=15 无法排除零增量。
+- **能否超地板**:FixAvg 等权集成点估超全部 4 地板(最大 Δρ=+0.067 vs deepHLApan),但**对最强单工具 deepHLApan 配对 Δz̄=+0.004 P=0.514 = 平手**;对弱地板方向证据 P=0.71-0.87。对「现有工具组合做定量」立论=**中性偏正面**(无反伤+方向对,但未显超越最佳单工具)。
+- ⚠️ **Ridge+seq = CATASTROPHE**(配对 vs FixAvg Δz̄=−0.537 CI[−0.89,−0.16] P(Δ>0)=0.003,仅 1/9 患者正)→ **H3 序列特征在 n=183 LOPO 下严重过拟合反伤,不兑现**(per-peptide 偏相关 3/6 弱显著但 LOPO 崩)。**序列特征一律排除主模型。**
+- **DS1 反号归因(F5 深析)= 真 regime 差异(主因)**:DS1=9mer 全阳短肽直接 assay(median SFC 176,工具饱和如 ImmuneApp DS2=1.000),DS2=疫苗长肽需 APC 处理。非批次非 bug。**QuantImmune 目标场景=DS2 型,DS1 不代表**。LEDGER §5④ 预判正确处理(DS1 降级敏感性)。
+- **H2 权重**:最大占比 38.5%<85% 未塌,d_eff=2.46;但 ImmuneApp(饱和)+deepHLApan 占 70% 异号=隐性靠差值特征,「≥3 真维度」实质未完全达成 → 建议消融 ImmuneApp。
+- **图**(verifier 已核 4 张存在 `quantimmune/figures/`):forest plot Δz / per-patient ρ 箱线 / H3+DS1 regime / 全模型对比。
+- **verifier 核数**:Q2-Q6 全 ✅ 精确(主模型 ρ̄/地板三方一致 FHP 加权/配对 bootstrap/数据规模/DS1 反号);仅 R0 两处小 drift 已修(见上),不影响主结论。
+
+**最终裁决 = GRAY·去风险完成**:零参数等权集成点估最高(+0.328)、稳超弱单工具、与最强单工具平手、**无反伤无泄漏**,但 15 患者下统计不显著(CI 含地板)。**与 A 窗(朱融合 0.43 p=0.70)+理论天花板(0.33-0.40)三方收敛=现有工具及融合在 per-patient ρ≈0.26-0.33 触顶,无定量飞跃**。pilot 价值=排除最坏情形(崩盘/泄漏/反伤)+给 powered 研究估方差(80% 功效检 Δz=+0.10 需 ~55-90 患者)。
+**🛑 立项拍板点**:正式立项 QuantImmune 成独立论文/定 venue/RQ = 拍板点,呈用户。pilot 结论(简单组合撞天花板,需新信号/新数据而非新架构)是关键证据。
+**用户拍板(2026-06-26)=暂不独立立项,证据交袁老师**。产出一页纸 `reference/QUANTIMMUNE_PILOT_SUMMARY.md`(致袁老师决策综述:现有工具+融合触顶 0.26-0.33/破天花板唯一路径=供体 TCR-seq/precursor/powered 需 55-90 患者/本地 15 不够 → 立项与否=袁老师+数据组拍)。本窗 F-pilot 收口。
+
+---
+
+## Entry F1 — 2026-06-26【Coder 窗：F-pilot 建模脚本 4 件套就绪】
+
+> 服务：quantimmu-bench F-pilot（QuantImmune 定量原型）。lever=9 工具 stacking 元模型 LOPO 回归 SFC，验证能否超去偏地板，对齐 THEORY_LEDGER §5 九约束。
+
+### 新建文件（全在 `quantimmune/`）
+| 文件 | 用途 |
+|------|------|
+| `quantimmune/build_model_matrix.py` | 从 `scripts/out/merged_all_tools_9tools.xlsx` max-agg 9 工具分数 + 序列特征 → `model_matrix.csv`（183 行）|
+| `quantimmune/lopo_eval.py` | LOPO 引擎：15 折 patient-level，Ridge-HR/FixAvg/GBDT，eff_DOF 2-3，防泄漏折内填补，per-patient ρ + Fisher-z 聚合，DS1 仅敏感性 |
+| `quantimmune/paired_bootstrap.py` | 患者级配对 bootstrap：Δz̄ 点估 + 95% CI + P(Δ>0)，catastrophe gate，LEDGER 约束①② |
+| `quantimmune/run_all.py` | R0→R11 实验矩阵编排脚本（dry-run 打印 + `--run Rx` 单步执行） |
+
+### 关键实现决策
+- **数据源修正**：task 说"plotdata_perpep.csv"但实测仅 5 工具 × DS2 101 肽，改用 `merged_9tools.xlsx`（9 工具 × 183 肽，DS1+DS2）。
+- BLOSUM62/Kyte-Doolittle 全部硬编码常数（Henikoff 1992 / Kyte 1982），标源引用，无臆想。
+- Tier-2 foreignness (Łuksza 2017) 标 TODO 占位，不手搓。
+- 折内缺失填补：train fold mean（禁全局统计防泄漏）。
+
+### 静态检查
+- `py_compile quantimmune/*.py` → 待主线跑
+
+### 待主线跑（我不跑）
+```bash
+# Step 0: 语法检查
+python -m py_compile quantimmune/build_model_matrix.py
+python -m py_compile quantimmune/lopo_eval.py
+python -m py_compile quantimmune/paired_bootstrap.py
+python -m py_compile quantimmune/run_all.py
+
+# Step 1: 建模矩阵
+python quantimmune/build_model_matrix.py
+
+# Step 2: 查看实验矩阵
+python quantimmune/run_all.py
+
+# Step 3: R0 防泄漏对照（最先跑）
+python quantimmune/run_all.py --run R0
+
+# Step 4: R2 去偏地板 → R3 主模型 → R5 配对 bootstrap
+python quantimmune/run_all.py --run R2
+python quantimmune/run_all.py --run R3
+python quantimmune/run_all.py --run R5
+```
+
+---
+
+## Entry W2 — 2026-06-26【C-tools2 窗：DTU 三工具 kit_w2 完成 + run_w2 NetMHCpan-BA 就绪待用户跑】
+
+> 窗口：`quantimmu-bench-tools2.claim`（C-tools2）。认领 pipeline kit_w2 + run_w2。任务=部署 DTU 三工具（NetMHCpan-4.1 -BA / NetTepi 1.0 / ICERFIRE 1.0），跑出数标 pending_DTU_consent。**只碰 `HPC/deploy/{netmhcpan_ba,nettepi,icerfire}/` + `scripts/out/newtools/`，不碰别窗。**
+
+### ① kit_w2 完成（3 工具 kit 全写 + 本地真烟测通过，pipeline done）
+- 派 3 coder 并行写 kit + 1 researcher 核 DTU 官方规格。每工具三件：`prep_*.py`（master_backbone → 工具输入）/ `run_*.sh`（SLURM）/ `parse_*.py`（输出 → bb_idx 回贴 CSV）+ README。
+- **统一约定**：join key = `bb_idx`（master_backbone 唯一行 id 0..34247，子肽×allele 级）；输出 `scripts/out/newtools/<tool>_DS1DS2_scores.csv`；方向统一「越高越免疫原」；**DTU 数字整列 `pending_DTU_consent=True`**（PROVENANCE 红线，未经 DTU 书面同意禁发）。
+- **真烟测（红线②不信自报，全 mock 验 bb_idx 回贴/方向/pending）**：
+  - NetMHCpan-BA：prep 65 allele 出 .pep（68494 pep_index 行）；parse 用**真实 HPC xls 格式**验通（bb_idx 171 MT/WT 双行、强结合→高分）。
+  - NetTepi：prep 筛 13 HLA（11346 pep_index + 22901 unsupported=34247 齐）；parse Comb 直贴、unsupported 填 NaN。
+  - ICERFIRE：prep 34247 行无表头 mut,wt,HLA（`HLA-A0201` 格式、WT 必填、0 跳过）；parse 方向翻转 `100-rank` 验通（rank0→score100 最强）。
+- **修 3 个 bug**：① netmhcpan parse 列名——HPC 实测 `-xls` 真实表头 = `Pos Peptide ID core icore EL-score EL_Rank BA-score BA_Rank Ave NB`，**无 `Aff(nM)`/`%Rank_BA`**（nM 仅 stdout），改 parse 取 `BA-score`(0-1 越高越强)/`BA_Rank`，score=BA-score；② icerfire prep+parse 路径 `parents[3]`(=meeting 错)→`[2]`(=QuantImmuBench)；③ run_netmhcpan_ba.sh `set -e` 单 allele 失败中断→`if` 包裹不致命。
+- **researcher 核实**（来源 DTU 官方服务页）：NetTepi 13 HLA = A*01:01/02:01/03:01/11:01/24:02/26:01 + B*07:02/15:01/27:05/35:01/39:01/40:01/58:01（已填 prep）；输出列 `Pos|Allele|Peptide|Identity|Aff|Stab|Tcell|Comb|%Rank`；依赖 NetMHCcons1.1+NetMHCstab1.0。ICERFIRE 无表头 `mut,wt,HLA[,TPM]`、`HLA-A0201`、WT 必填、免疫原 %Rank 0=最强。三工具 DTU 网页表单**即时邮件发包但要学术邮箱**（gmail/hotmail 拒）。
+
+### ② run_w2：NetMHCpan-BA 就绪待用户跑；NetTepi/ICERFIRE 待 DTU 学术下载
+- **HPC 只读核验通过**：`/gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCpan-4.1/netMHCpan` 在，2 肽 `-BA -xls` 小测 EXIT 0（这步确认了真实输出列名）。**NetMHCpan-BA 不需新下载，binary 已在 HPC**。
+- 上传脚本 `tools/_scratch_qib_netmhcpan_ba_submit.py`（传 65 .pep + allele_map + pep_index + run.sh，sbatch）。HPC 上传=对外传输被门禁拦 → **用户拍板：自己跑 `! python tools/_scratch_qib_netmhcpan_ba_submit.py`**，输出回会话我接着拉结果 + parse。
+- **NetTepi/ICERFIRE**：用户拍板用 XJTLU 学术邮箱下载。下载入口见下。NetTepi 还有 stabpan glibc(el8 仅 2.28<2.29)风险，下载后需先验。
+- run_w2 仍 in-progress（另两工具待下载部署）。
+
+### ③ NetMHCpan-BA 跑完 + 核数交付（2026-06-26 晚，用户授权后自己跑上传命令）
+- 上传 + sbatch 两次空提交修正（cpudebug QOS：**MaxWall=1h + cpu=4/用户**，原脚本 12h/8cpu 卡 PD `QOSMaxWall…`/`QOSMaxCpuPerUser…`，不报错只挂起）→ 改 `--time=01:00:00 --cpus-per-task=4 --mem=16G` 重提 = **job 1496379 cpudebug COMPLETED 25:22**（墙时内，err 空），65 allele 全跑通，65 xls 拉回。
+- `parse_netmhcpan_ba.py` → `scripts/out/newtools/netmhcpan_ba_DS1DS2_scores.csv`：**68494 行（34247 MT + 34247 WT 完美对称）、matched=68494/unmatched=0、0 空分数**。
+- **核数（Bash 核 csv，红线②）**：schema 对、pending_DTU_consent 整列 True、score 范围 0.0011–0.8918（BA-score 0-1 合理）、bb_idx 171 MT BAscore 0.2007/Rnk 10.30 = **与启动前 HPC 2 肽小测逐位一致**（端到端自洽）。
+- 列义：`netmhcpan_ba_score=BA-score`（0-1 越高越强结合，方向统一）；`Rnk_BA`=%rank（越低越强，审计留）。proxy baseline，**未经 DTU 书面同意禁发数字**。
+- **run_w2 现状 = 1/3 交付（NetMHCpan-BA ✅）**，NetTepi/ICERFIRE 待用户 DTU 下包。
+
+**DTU 下载入口（学术邮箱）**：NetTepi src = `services.healthtech.dtu.dk/cgi-bin/sw_request?software=netTepi&version=1.0&packageversion=1.0&platform=src`（+依赖 NetMHCcons-1.1、NetMHCstab-1.0）；ICERFIRE = `…?software=icerfire&version=1.0&packageversion=1.0a&platform=ALL`。
+
+### ④ ICERFIRE 部署通+全量后台跑 / NetTepi 依赖链部署（2026-06-26 晚，用户下齐包）
+
+用户用 XJTLU 学术邮箱下齐包（放 `E:\Edge Download\`）。**收工时两后台仍在跑**（用户让继续）。
+
+**ICERFIRE 1.0a（apples-to-apples，高价值）= 部署通 + 全量后台跑**：
+- 上传 122M 包 → `ext_tools/ICERFIRE`；建 `envs/qib_icerfire`（py3.9 + **sklearn1.0.2/numpy1.21.5/pandas1.4.2 精确匹配 pickle** + matplotlib/seaborn/tqdm + torch CPU）；netMHCpan-4.1（HPC 已有）。
+- **关键发现：`-a false -u false`（无表达，DS1/DS2 正合）→ ICERFIRE.sh 跳过 PepX 查询 → 不需 95GB pepx-export.db**（省下巨型下载）。
+- **修 5 个 packaging bug**（均部署配置/工具自身 bug，非改算法）：① `netmhcpan_pipeline.sh` 硬编码 blosum 路径 `/tools/src/...`→包内 `blosum62.qij` ② requirements.txt 漏 matplotlib（utils 链 import）③ 漏 torch（metrics.py import）④ `run_model.py` `parent_dir` 在 main() 内 line61 用、line65 局部重赋值致 `UnboundLocalError`→删局部重赋值（line9 模块级同值保留）⑤ `hp_preds_100k.txt` 代码要此名、包内是 `preds_100k.txt`→符号链接。
+- **官方 20sample smoke PASS**：出 `ICERFIRE_predictions.csv` 含 `%Rank`（0=最强免疫原，DMKARQKAL 0.20 强 / KLSPQQDAGV 99.0 弱），方向对。
+- **全量**：prep 65-HLA 白名单过滤 → 29666 行（+4581 unsupported=34247）；ICERFIRE 输出会重排序→ parse 改成按 (Peptide,wild_type,HLA 去星) 内容 join bb_idx（coder 重写，多 bb_idx 全赋值）。**配额 cpudebug=1job/4cpu/1h** → 切 4 块串行链，每块 1 job 内 4 路并行 ICERFIRE.sh（part 0 实测 ~16min）→ 后台 `_scratch_qib_icerfire_chain.py` 链跑+收集 cat 所有 predictions → 本地 parse。
+- 列义：`icerfire_score = 100 - %Rank`（翻转，越高越强）；`prediction`=原始 RF 分留审计。pending_DTU_consent=True。
+
+**NetTepi 1.0（13 HLA，经典 baseline，依赖地狱）= 后台 agent 整包接管**：
+- 依赖链 = netMHCcons-1.1（需 netMHCpan-2.8✅ + netMHC-3.4 + PickPocket-1.1）+ netMHCstabpan-1.0（static，躲 glibc）。用户加下 netMHC-3.4a + pickpocket-1.1a。
+- 已配通：netMHCpan-2.8✅、netMHCstabpan✅（smoke 出 Thalf/%Rank_Stab）、cons 三后端路径 + `data/`（curl `…/NetMHCcons-1.1/data.tar.gz`，training.count 到位）、py2.7 env、perl env（带 Env.pm 解 cons perl 依赖）、netMHC-3.4 的 python2.5→py2.7 修。
+- **剩余坑**（后台 agent 收尾）：netMHC-3.4 缺 `etc/net/`（54MB→170MB，curl `cbs.dtu.dk/services/NetMHC-3.4/net.tar.gz`）；smoke cons→netTepi 端到端；全量切块跑 + parse。**风险**：若还要学术表单数据则 BLOCK。
+- 主线踩坑教训：NetTepi 依赖链过深（5 工具+多数据下载+跨工具 python 版本修），对 13-HLA 低价值工具 ROI 差；**长跑别主线串行守，整包甩后台 agent**（已记 memory [[feedback_no_mainthread_babysit]]）。
+
+**HPC 配额硬限实测**（已记 memory [[project-hpc-xjtlu]]）：账号 jiayu2403 CPU 只有 `cpudebug` qos = **1job/4cpu/1h/MaxSubmit=1**，无 300cores，array/并行 job 全堵，长活只能切块串行链。
+
+---
+
+## Entry E2 — 2026-06-26【Coder 窗：CNNeo (CNNeoPP) §Tier-0 deploy kit 就绪】
+
+> 服务：quantimmu-bench §扩张v2 Tier-0，lever=部署 CNNeo apples-to-apples。
+
+**改动**：
+- `HPC/deploy/cnneo/prep_input.py`：读 uniq_pep_hla.csv（53582 行）→ unique (peptide,hla) 对 → cnneo_input.csv + cnneo_input_map.csv；支持 --smoke N；HLA 保持标准格式；8-14mer 全覆盖。
+- `HPC/deploy/cnneo/run_cnneo.py`：训练+推理一体（首次自动训练 FCNN_TF 或 --model cnn_biobert）；镜像三个 notebook 超参零改动；weights/ 目录保存 TF-IDF vectorizer.pkl + model.pth；Windows 规范（num_workers=0, pin_memory=False）；支持 --smoke N。
+- `HPC/deploy/cnneo/parse_output.py`：读 cnneo_raw_output.csv → join universe.csv（MT/WT 双侧）→ CNNeo_DS1DS2_scores.csv（4-key + MT_CNNeo + WT_CNNeo，34247 行全覆盖，缺值 NaN）。
+- `HPC/deploy/cnneo/NOTES.md`：repo 结构/框架/权重状态/HLA 格式/肽长/编码方式/安装命令/已知坑。
+- `HPC/deploy/cnneo/repo/`：git clone AaronChen007/neoantigen（包含 training_data.xlsx，无预训练权重，首次自训）。
+- `DEPLOY_TRACKER.md`：新增 §Tier-0 section + CNNeo 部署文件指针表。
+
+**关键发现**（实测 repo）：
+1. 框架：**PyTorch + sklearn**（FCNN_TF 默认，无需 BioBERT）；CNN_BioBERT 需 transformers ~500MB 下载。
+2. **repo 无预训练权重**——三个 ipynb 均为训练 notebook，首次必须从 training_data.xlsx 训练。
+3. HLA 输入标准 `HLA-A*02:01`，内部去 * → `HLA-A02:01` 参与 k-mer 拼接。
+4. FCNN_BioBERT 需 BA/TAP/NetCTLpan 等额外列，当前输入不支持，已排除。
+5. 无 NTFS `*` 文件名问题，Windows NTFS 可直接 checkout。
+
+**静态检查**：py_compile 三件套全部 OK（未执行代码）。
+
+**待主线跑**：
+```bash
+# 全量（FCNN_TF，首次自动训练）
+python HPC/deploy/cnneo/prep_input.py
+python HPC/deploy/cnneo/run_cnneo.py
+python HPC/deploy/cnneo/parse_output.py
+
+# 烟测
+python HPC/deploy/cnneo/prep_input.py --smoke 5
+python HPC/deploy/cnneo/run_cnneo.py --smoke 5
+python HPC/deploy/cnneo/parse_output.py
+```
+
+---
+
+## Entry E1 — 2026-06-26【E-analysis 窗：Spearman 因素分析框架 + 9工具预备图】
+
+> 窗口：`quantimmu-bench-analysis.claim`（E-analysis，factors 节点）。任务=在现有 9 工具上搭因素分析框架 + 出预备图（E1），等 metrics 解锁后灌全 ~19 工具重出（E2）。**只写 analysis/_explore_*、SPEARMAN_FACTORS*、figures/factors_*，不碰 A/B/C/D 窗文件。**
+
+### 框架（coder 写 + 主线跑 + 口径已对账）
+- `analysis/_explore_factors_framework.py`：读真源 `scripts/out/merged_all_tools_9tools.xlsx`(34247 行炸开表)，复用 `build_per_peptide()` 重聚合，一次跑出 7 个 `SPEARMAN_FACTORS_*.csv`。
+- **口径对账 diff=0**：本框架 max 聚合 Spearman 与 A 窗 `metrics_ds2_9tools.csv` 逐工具完全一致（9 工具 max abs diff=0.0），无口径漂移。
+- 修框架缺口：原 `_bin_length` 桶把 DS2 长肽(15-29mer)全塞进单桶 → 改三分桶 15-18/19-22/23+（n=22/49/30）才有意义。
+
+### 6 因素预备结论（4 analyst 并行解读+出图，全档见 `analysis/SPEARMAN_FACTORS.md`）
+1. **聚合**：max(best-binder)非普遍最优；IMPROVE top3mean ρ=0.320 / PredIG mean ρ=0.280 都 >max。聚合是次因子，工具是主因子。
+2. **per-patient（核心⭐）**：全局 ρ 被患者间量级混淆(Simpson)；9/9 工具患者内 ρ_i 符号翻转 → all classifiers not regressors（支撑 STORY）。已对账 A 窗 `per_patient_spearman_9tools.csv` Fisher-z，定性一致。
+3. **肽长**：DS1(9mer)信号普遍弱于 DS2(长肽)；DS2 内无单调「长肽→max 虚高」；deepHLApan DS1 ρ=−0.503 强负（提呈≠免疫原性，工具边界非bug）。
+4. **阈值**：AUC 随阈值收紧单调降；>0 极不平衡(90/11)高 AUC 含结构伪迹（pTuneos >0=0.753→>median=0.530）；>median 最保守。
+5. **bootstrap**：9 工具仅 **IMPROVE** ρ CI[0.046,0.423]不跨0；PredIG 擦0；其余 7 含 proxy 全跨0。n≈100 系统宽 CI。
+6. **工具一致性**：mean 两两 ρ=0.130 极低=各说各话；唯一高相关 IMPROVE↔PRIME 0.689 且两者与 HLAthena(proxy)中相关→「提呈污染」假说待 E2；NeoTImmuML 孤立异类。
+
+### 产物 + 红线
+- 7 csv + 7 图（`figures/factors_{aggregation,perpatient,length,length_ds2strata,threshold,bootstrap,toolconsistency}.png`）。
+- 红线守：数字全从 xlsx 真源算（diff=0 对账）；HLAthena 全程 proxy 单列标注；小样本宽 CI 警告写进每条结论；netMHCpan/DTU 不涉及。
+- **E2 待办**：metrics 解锁灌全工具重跑；deepHLApan/DeepImmuno 强负 scatter 复核；IMPROVE/PRIME 提呈污染拆子集验；per-patient 主报接 A 窗 Fisher-z。
+
+---
+
+## Entry T3 — 2026-06-26【D-tools3 窗】Tier-3 重型工具部署：NeoaPred + T-SCAPE 起跑 + ImmunoStruct NO-GO
+
+> 窗口：`quantimmu-bench-tools3.claim`（窗名 D-tools3）。认领 pipeline 节点 kit_w3 + run_w3。任务=扩张 v2 Tier-3 三重型工具（NeoaPred / T-SCAPE / ImmunoStruct）。只写 `HPC/deploy/{neoapred,tscape}/` + `scripts/out/newtools/`。
+
+### 调研（researcher×3 联网钉死 recipe，红线：设计前大量调研）
+- **NeoaPred**：repo Dulab2020/NeoaPred（Apache-2.0），Docker `panda1103/neoapred:1.0.0`（3.35GB），入口 `run_NeoaPred.py --mode PepFore`。输入 CSV `ID,Allele,WT,Mut`，⚠️ HLA 缩写型 `A2402`（非 HLA-A*24:02），严格 9mer 需 MT+WT。输出 `Foreignness/MhcPep_foreignness.csv` 列 `Foreignness_Score`（越高越强）。Bioinformatics 2024 DOI 10.1093/bioinformatics/btae547，AUROC 0.81。Python3.6 锁死（Docker 绕）。
+- **T-SCAPE**：repo seoklab/T-SCAPE（CC BY-NC-ND 4.0 **学术非商用** + Linux-only），Sci Adv 2025 DOI 10.1126/sciadv.adz8759。两步 `mhc_pseudo_matching.py I` → `inference_csv.py --inf_type pmhc_im_neo`。输入 `Allele,Peptide`（HLA-A*02:01），MT-only ≤20mer。输出列 `score`（0-1）。⚠️ dropout bug 必 patch `model_fused.py:326`（PR#3 未合并）。
+- **ImmunoStruct**：repo KrishnaswamyLab/ImmunoStruct，Nat MI 2025。
+
+### 🔑 关键发现（省 HPC 大资源）
+- **T-SCAPE 权重只需 `best_param/pmhc_im_neo`=0.53GB**，HF 全 54.7GB 是 BA/EL 等不用的 task（核 HfApi files_metadata 实测各子目录大小）。→ **改本地 WSL2 跑，免 HPC 拍板点**。
+- NeoaPred Docker Hub 在 HPC 不通（00_README）→ 本地 WSL2 docker（GPU 非强制，OpenMM CPU 弛豫）。
+- 本地 WSL2：conda /root/miniconda3，GPU RTX4070 8GB 可见，779G 空闲，docker 28.4.0。
+
+### ❌ ImmunoStruct = NO-GO（诚实放弃，三重硬 blocker）
+1. 无通用「肽+HLA」推理入口——infer 脚本锁预构建 PyG 图。
+2. AF2 不可承受——34247 行需 ~500GB MSA 库 + 数百 GPU·h ColabFold，在线 MSA 限速拒 >2000 序列。
+3. HLA 覆盖不足——训 27 个 vs DS1+DS2 共 65 个唯一 allele（本地 Bash 核 master_backbone）。
+- Yale 许可不挡但工程封死。stretch 工具跑不通=诚实 block 非失败（符合窗口红线）。
+
+### kit 交付（coder×2 并行，红线：coder 不跑，主线串行跑）
+- `HPC/deploy/neoapred/`：prep_neoapred_input.py（严格9mer→unique 5692→HLA转A2402）+ run_neoapred_docker.sh + build_singularity_hpc.sh（HPC fallback 模板，标 TODO /root 坑待验）+ merge_neoapred.py + README。
+- `HPC/deploy/tscape/`：prep_tscape_input.py + setup_tscape_hpc.sh + run_tscape.sh + submit_tscape.sbatch + merge_tscape.py + README（顶部标学术非商用）。
+
+### 真烟测（主线本地跑，不信自报）— 两工具均 ✅ PASS 端到端
+- **prep 烟测 PASS**：NeoaPred `--smoke 5` 出 `ID,Allele,WT,Mut`（A2402 缩写型，WT/Mut 均 9aa）；T-SCAPE `--smoke 5` 出 `Allele,peptide`（HLA-A*02:01）。键 bb_idx 对齐 map。
+- **NeoaPred 5 肽端到端 ✅**：docker→PepConf 生成结构→OpenMM 弛豫→`Foreignness/MhcPep_foreignness.csv`（ID,Allele,WT,Mut,Foreignness_Score）→ merge → `neoapred_scores.csv`(bb_idx,MT_NeoaPred) 5/5。分数 0.0003-0.0008（WT/MT 仅差 1 残基故低，合理）。只产 MT 列（PepFore 只打 MT foreignness）。**缓存测试=无缓存**（结构已存在仍重弛豫）→ 全量必须全跑。
+- **T-SCAPE 5 肽端到端 ✅**：Step A pseudo matching → Step B `inference_csv.py --inf_type pmhc_im_neo` → `Allele,peptide,score`，分数 0.05-0.44（allele 依赖）。**CPU 推理**（inference_csv.py:54 device=cpu，不用 GPU）。
+
+### 🔧 T-SCAPE 两个官方 repo bug（实证 + researcher 核 GitHub，修法有据非臆想）
+1. **输入列名**：官方 pmhc_im 输入列 `Allele,peptide`（peptide 小写，核 example/inputs/pmhc_im.csv），coder 写成大写 → 修 prep_tscape_input.py:105 + merge_tscape.py 读 `peptide`。
+2. **pmhc_im_neo 推理崩**（README 文档化的 cancer 用例命令直接 KeyError）：发布代码 ① load 块只判 (pmhc_im|p_im)→pmhc_im_neo 权重没载入 ② 三个 task_dict 无该键→line 363 KeyError。**bug 从 initial commit 起 T-SCAPE+前身 TITANiAN+所有 fork 都有，无官方修法**。
+   - **决定性验证（非猜）**：torch.load 实测 ckpt 是 dict 含 `model_state_dict`；state_dict key=`shared_encoder...`=Finaltask1_perf；载入 model_fused.Finaltask1_perf(d_model=300) **0 missing/0 unexpected**；三 task_dict 里 pmhc_im 免疫原性头恒[3]，neo 同头。
+   - **patch**：load 分支 +pmhc_im_neo/inf；task_dict 各 +[3]。写进 setup_tscape_hpc.sh Step 2b 可复现。
+   - ⚠️ **T-SCAPE 结果须标注：用官方权重 + 修复官方 inference bug 跑（非原版代码）**。
+
+### 全量（主线本地 WSL2，22 核/RTX4070）
+- **T-SCAPE 全量 ✅ DONE**：32178 unique (MT,HLA)→ Step A 过滤 308 不支持 allele → 31871 行 CPU 批量推理 996 batch 完 → merge `tscape_scores.csv`：34247 行 **33939 有分**（308 NaN=过滤 allele，精确对上），score 0.0057-0.7716。⚠️ merge bug 修：T-SCAPE 输出 Allele 是缩写型 A2402（mhc_pseudo 转的）≠ map 的 HLA-A*24:02 → merge 加 `_norm_allele` 两边归一才对上（首跑全 NaN，已修验通）。
+- **NeoaPred 全量 5692**（11384 弛豫）：两约束依次踩——① 无线程限 → load 60 thrash（OpenMM 吃 OMP 不认 OPENMM_CPU_THREADS）→ 加 OMP/MKL/OPENBLAS 限制 ② N=9/11 → **OOM 杀**（每容器峰值 ~2.8GB，WSL 默认 15.7GB 撑不住）→ 改 `.wslconfig` memory=26GB（宿主 31GB）+ 降 **N=7×OMP3**（21 核满用 ~20GB 峰值，25GB 无 OOM）。runner 加**失败块重试**（OOM/straggler 自动补跑）。健康验证：7/7 活、OOM=0、内存 24/25 稳。ETA ~18h 过夜跑。跑完 → MhcPep_foreignness_full.csv → merge_neoapred.py → neoapred_scores.csv。
+- 跑完各产 `scripts/out/newtools/<tool>_scores.csv`（bb_idx, MT_<tool>）→ 交 merge 棒。
+
+### NeoaPred 转 HPC（本地 ~60h 不可行，用户拍板上 HPC）
+- 本地全量实测 3/min（OpenMM 弛豫并行不加速=内存带宽瓶颈，非核数），DS2 ~60h → 杀本地。
+- HPC 路径全验通：docker save 3.6GB → 上传 HPC（拍板报备）→ `singularity build neoapred.sif`（rootless，3.4G）→ **HPC singularity 5 肽 smoke PASS**（env 全在 /var/software 非 /root，非 root 可读，绕 pTuneos 当年 /root 死结）。
+- gpu_slot GO `69d573e2`（hpc 1 卡，note=CPU-only OpenMM 占卡仅为拿节点 CPU）→ **sbatch job 1496520**（gpu4090，16核/64G/1卡，N=8×OMP2 并行，walltime 24h）。⚠️ 首提 48核 被拒（节点 CPU 重占，单节点最多空闲 ~20 核）→ 降 16 核。当前 PENDING(Priority) 排队。
+- HPC 脚本：`HPC/deploy/neoapred/{hpc_neoapred.sh,run_neoapred_hpc_full.sh,neoapred_full.sbatch}`（build/smoke/full 三阶段 + N 路并行 singularity exec + 失败块重试 + 显式 5 个 /var/software env 绕 /root）。跑完拉 `MhcPep_foreignness_full.csv` → merge_neoapred.py → neoapred_scores.csv。
+
+### T-SCAPE 收口（✅ 全量完成 + verifier 核 0 DRIFT）
+- verifier 14 项全 PASS：34247 行 / 33939 有分 / 308 NaN（精确=过滤 allele）/ score 0.0057-0.7716 / 抽样 bb_idx 0,1,2=0.1457/0.4363/0.2832 精确对上 / map 展开 34247 闭环。
+- 4 类信息 + provenance 落档：`TOOLS/T-SCAPE.md`（含「部署修复」节标 2 bug + 学术非商用）·`REFERENCES.md`·`PROVENANCE.md`（T-SCAPE 用官方权重+修官方 bug，非原版代码 caveat）。
+
+### 本窗新文件指针
+- `HPC/deploy/neoapred/`：run_neoapred_full_parallel.sh（本地版）· hpc_neoapred.sh · run_neoapred_hpc_full.sh · neoapred_full.sbatch（HPC 版）
+- `HPC/deploy/tscape/`：merge_tscape.py（含 _norm_allele 修 allele 格式）等 6 文件
+- `scripts/out/newtools/`：neoapred_input.csv+_map（5692）· tscape_input.csv+_map（32178）· **tscape_scores.csv（33939 有分，✅交付）** · neoapred_smoke_scores.csv
+- `TOOLS/`：NeoaPred.md · T-SCAPE.md · ImmunoStruct.md（NO-GO）
+
+### 三工具终局
+- **T-SCAPE** ✅ 全量完成交付（scores + 4类信息 + 核数）
+- **NeoaPred** 🔄 端到端验通（本地+HPC smoke PASS）+ 4类信息齐，全量 HPC job 1496520 排队跑（跑完 merge 即交付）
+- **ImmunoStruct** ❌ NO-GO 诚实放弃（三重 blocker，4类信息标未部署+原因）
+
+---
+
+## Entry MG — 2026-06-26【MHCflurry 2.0 部署 kit（Tier-0 proxy baseline）】
+
+> 窗口：`quantimmu-bench.claim`。任务=coder 写 MHCflurry 三件套，lever=工具扩张 v2 Tier-0 第一波。
+
+**新建文件（全在 `HPC/deploy/mhcflurry/`）**：
+- `prep_input.py`：读 uniq_pep_hla.csv(53582行) → 加载 Class1PresentationPredictor.supported_alleles 过滤 → 肽长 8-15mer 过滤 → 写 `mhcflurry_input.csv` + `mhcflurry_unsupported.csv`。
+- `run_mhcflurry.py`：按 HLA_Allele 分组 → `predictor.predict(peptides, [allele], verbose=0)` → 写 `mhcflurry_raw.csv`(peptide, HLA_Allele, affinity, presentation_score, processing_score)。支持 `--smoke 5`。
+- `parse_output.py`：raw CSV + universe.csv → 回贴 MT/WT scores → 方向归一(affinity_neg=-affinity) → 写 `scripts/out/newtools/MHCflurry_DS1DS2_scores.csv`(34247行)。
+- `NOTES.md`：安装/conda/API 出处/坑/方向归一说明。
+
+⚠️ 需主线跑：烟测 `python HPC/deploy/mhcflurry/run_mhcflurry.py --smoke 5`，全量 `python HPC/deploy/mhcflurry/run_mhcflurry.py`
+
+---
+
+## Entry MG — 2026-06-26【NeoaPred 部署 kit（Tier-3 结构 foreignness）】
+
+> 窗口：`quantimmu-bench.claim`。任务=coder 写 NeoaPred 五件套，lever=工具扩张 v2 Tier-3 重型工具。
+
+**新建文件（全在 `HPC/deploy/neoapred/`）**：
+- `prep_neoapred_input.py`：读 master_backbone → 过滤严格 9mer(MT+WT 均 9mer, 6065 行) → 去重 unique(MT,WT,HLA)=5692 → HLA 转缩写型(A2402) → 写 `scripts/out/newtools/neoapred_input.csv`(ID,Allele,WT,Mut) + `neoapred_input_map.csv`(ID→bb_idxs)。支持 `--smoke N`。
+- `run_neoapred_docker.sh`：封装官方 docker detach+cp+exec PepFore+cp 回+stop/rm 流程，GPUS 变量可选。
+- `build_singularity_hpc.sh`：本地 docker save → sftp → HPC singularity build 模板；标 TODO 待验(同 pTuneos /root 访问坑)。
+- `merge_neoapred.py`：读 MhcPep_foreignness.csv + map → 按 bb_idx 回贴 MT_NeoaPred → 输出 `scripts/out/newtools/neoapred_scores.csv`。
+- `README.md`：部署步骤/4 类信息/已知坑/烟测命令。
+
+⚠️ 需主线跑烟测验格式：`python HPC/deploy/neoapred/prep_neoapred_input.py --smoke 5`
+
+---
+
+## Entry MG — 2026-06-26【扩张 v2 主窗：per-patient Spearman 多方法头条指标 + DAG + 5+2 窗编队】
+
+> 窗口：`quantimmu-bench.claim`（A 主窗/Lead）。lever=核心指标从「全局 Spearman」改「per-patient 单独算再聚合」纳入个体差异。
+
+**新方法学文档**：
+- `reference/AGGREGATION_METHODS.md`：7 种聚合法精确公式（Fisher-z 加权[w=(n-3)/(1+ρ²/2)]+CI / median / 简单均值 / HS加权 / 几何均值via(1+ρ)/2 / 幂平均M₂"乘方开根" / UWLS+3）+ 警告（K=9 不用随机效应、n_i小CI宽、几何/幂平均仅描述性）。来源 researcher 联网查 meta-analysis of correlations。
+- `reference/TOOL_EXPANSION_v2.md`：第二批 ~10 工具清单+recipe+许可分级（DTU三工具 pending、其余自由/学术）。无 2025-26 工具做连续 magnitude 回归→蓝海完好。
+
+**新脚本+结果**：
+- `analysis/per_patient_spearman_multimethod.py`（coder写，主线跑）：DS2 九患者(101,102,104-110)每人内算 ρ_i 再 7 法聚合，全局 ρ 对照。
+- `analysis/per_patient_spearman_9tools.csv`（shape 9×35）：每工具 rho_global/fisherz_weighted+CI/median/simple_mean/hs/geometric/power_p2/uwls3/rho_min/max/std + 各患者 ρ_i/n_i。
+
+**头条发现（Bash 核 csv 通过）**：per-patient 让排名大变,个体差异被全局掩盖——
+- **deepHLApan**：全局 ρ=0.042（≈噪声）但 per-patient Fisher-z=0.261/中位数=0.402（Δ+0.219）；各患者 ρ 跨 -0.43~+0.81,std=0.46。
+- **PRIME**：全局 0.116→Fisher-z 0.253/中位数 0.386（Δ+0.137）。
+- IMPROVE/PredIG 两口径都稳居前二。HLAthena(proxy) per-patient≈0 如预期。
+- ⚠️ 多工具 rho_std 0.4-0.46 + n_i 小 → 聚合 CI 很宽,主结论以 Fisher-z 加权+median 为准,余作敏感性。
+
+**Conductor DAG（18+2 节点）**：`pipeline.py` 建 quantimmu-bench 图。perpatient ✓done；kit_w1/w2/w3(B/C/D窗部署)→run_w*→merge→metrics→factors→synth；新增 quantimmune_kickoff(立项预备)+delivery_sync(交付对账)两独立轨。
+**5+2 窗编队**：A主窗(本窗,perpatient+merge+metrics+synth)、B/C/D工具窗(kit部署)、E分析窗(因素探索)、F立项窗、G交付窗。各窗完整提示词已交付用户。
+
+---
+
+## Entry MF — 2026-06-26【NetMHCpan-4.1 -BA 部署脚本（Tier-2 proxy baseline）】
+
+> 窗口：`quantimmu-bench.claim`。任务=coder 写 NetMHCpan-4.1 -BA 四件套，lever=proxy binding affinity baseline。
+
+**新建文件（全在 `HPC/deploy/netmhcpan_ba/`）**：
+- `prep_netmhcpan_ba.py`：读 master_backbone.csv → 按 unique HLA allele 分组 → 写 `<allele_safe>.pep`（MT+WT 子肽去重）+ `pep_index.csv`（allele_safe/allele_netmhcpan/subpeptide/is_MT/bb_idx）+ `allele_map.tsv`（run 脚本读）。`hla_to_netmhcpan()` = `.replace('*','')`。
+- `run_netmhcpan_ba.sh`：SLURM sbatch（cpudebug/shuihuawang，8 CPU/32G/12h）。循环 allele_map.tsv，每 allele 调 `netMHCpan -p <pep> -BA -a <allele> -xls -xlsfile <allele>_out.xls`。binary = `/gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCpan-4.1/netMHCpan`。
+- `parse_netmhcpan_ba.py`：读 `*_out.xls`（容错匹配 `%Rank_BA`/`Aff(nM)` 列）+ pep_index → 回贴 bb_idx → 输出 `scripts/out/newtools/netmhcpan_ba_DS1DS2_scores.csv`（schema: bb_idx/netmhcpan_ba_Aff_nM/netmhcpan_ba_Rnk_BA/netmhcpan_ba_score/is_MT/pending_DTU_consent）。score = `-Rnk_BA`（越高越强，方向统一）。
+- `README.md`：CLI 流程/HLA 格式/方向约定/DTU pending 红线。
+
+**方向约定**：`netmhcpan_ba_score = -Rnk_BA`（Rnk 越低结合越强 → 取负后越高越强，与其他工具方向一致）。
+
+⚠️ `pending_DTU_consent=True` 全列；XLS 列名容错匹配（TODO 注释标明，需跑后确认实际列名）。
+⚠️ 运行顺序：本地 prep → 上传 inputs/ 到 HPC → sbatch run → 本地/HPC parse。
+
+---
+
+## Entry ME — 2026-06-26【NetTepi 1.0 部署脚本（Tier-2 baseline）】
+
+> 窗口：`quantimmu-bench.claim`。任务=coder 写 NetTepi 部署三件套，pending DTU 授权。
+
+**新建文件（全在 `HPC/deploy/nettepi/`）**：
+- `prep_nettepi.py`：读 master_backbone → 筛 13 HLA → 按 allele 写 `.pep` + `pep_index.csv`；超 13 HLA 写 `unsupported_bbidx.csv`
+- `run_nettepi.sh`：SLURM sbatch 骨架，含 stabpan glibc 阻塞风险注释，CLI 占位 TODO
+- `parse_nettepi.py`：读 NetTepi 输出 → 回贴 bb_idx → 输出 `scripts/out/newtools/nettepi_DS1DS2_scores.csv`（schema: bb_idx/nettepi_Comb/nettepi_Rank/nettepi_score/pending_DTU_consent）
+- `README.md`：13 HLA 限制 / 依赖链 / glibc 阻塞风险 / pending 红线 / TODO 清单
+
+⚠️ pending_DTU_consent=True 全列；SUPPORTED_HLA 13 个为占位 TODO，需 researcher 核官方 README。
+⚠️ stabpan GLIBC_2.29 vs HPC el8 2.28 → NetTepi 可能 BLOCKED，需测试。
+
+---
+
 ## Entry MD — 2026-06-26【横评方法学补依据 + 跨成员对账李紫晨 Data_5】
 
 > 窗口：`quantimmu-bench.claim`。任务=①给「项目全解」补 benchmark 横向对比方法学 ②核李紫晨的结果跟我们符不符。

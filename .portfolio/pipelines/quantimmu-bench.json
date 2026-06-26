@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "project": "quantimmu-bench",
+  "template": "experiment",
+  "created": "2026-06-26T15:13:33+08:00",
+  "updated": "2026-06-26T22:02:12+08:00",
+  "from_phase": "",
+  "nodes": [
+    {
+      "id": "design",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "出实验矩阵，对齐判据",
+      "out": "默认模板不匹配,改用扩张v2自定义DAG",
+      "owner": "",
+      "ts": "2026-06-26T15:15:09+08:00"
+    },
+    {
+      "id": "redteam",
+      "stage": "红队",
+      "agent": "skeptic",
+      "deps": [
+        "design"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "攻设计致命伤（0 致命即过）",
+      "out": "默认模板不匹配,改用扩张v2自定义DAG",
+      "owner": "",
+      "ts": "2026-06-26T15:15:09+08:00"
+    },
+    {
+      "id": "implement",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "redteam"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "实现各 run 脚本/config，自测 pytest",
+      "out": "默认模板不匹配,改用扩张v2自定义DAG",
+      "owner": "",
+      "ts": "2026-06-26T15:15:10+08:00"
+    },
+    {
+      "id": "integrate",
+      "stage": "集成烟测",
+      "agent": "主线",
+      "deps": [
+        "implement"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
+      "out": "默认模板不匹配,改用扩张v2自定义DAG",
+      "owner": "",
+      "ts": "2026-06-26T15:15:10+08:00"
+    },
+    {
+      "id": "train",
+      "stage": "跑",
+      "agent": "主线",
+      "deps": [
+        "integrate"
+      ],
+      "status": "skipped",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
+      "out": "默认模板不匹配,改用扩张v2自定义DAG",
+      "owner": "",
+      "ts": "2026-06-26T15:15:10+08:00"
+    },
+    {
+      "id": "analyze",
+      "stage": "分析",
+      "agent": "analyst",
+      "deps": [
+        "train"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "读结果出趋势/图/对判据",
+      "out": "默认模板不匹配,改用扩张v2自定义DAG",
+      "owner": "",
+      "ts": "2026-06-26T15:15:10+08:00"
+    },
+    {
+      "id": "verify",
+      "stage": "核数",
+      "agent": "verifier",
+      "deps": [
+        "analyze"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "关键数字三方对账 + 写 LOG",
+      "out": "默认模板不匹配,改用扩张v2自定义DAG",
+      "owner": "",
+      "ts": "2026-06-26T15:15:10+08:00"
+    },
+    {
+      "id": "perpatient",
+      "stage": "per-patient多方法指标",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "metric",
+      "desc": "现有9工具:per_patient_spearman_multimethod.py(Fisher-z/median/GM/RMS等7法+全局对照),主窗核心",
+      "out": "analysis/per_patient_spearman_9tools.csv: 9工具×9患者×7聚合法; 头条=deepHLApan/PRIME per-patient跳升(全局掩盖个体差异)",
+      "owner": "",
+      "ts": "2026-06-26T15:32:37+08:00"
+    },
+    {
+      "id": "kit_w1",
+      "stage": "部署kit第一波",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "kits",
+      "desc": "MHCflurry/IEDB-Calis/CNNeo/BigMHC-IM/Repitope 各一kit",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-26T20:27:49+08:00"
+    },
+    {
+      "id": "kit_w2",
+      "stage": "部署kit-DTU波",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "kits",
+      "desc": "NetMHCpan-BA/NetTepi/ICERFIRE,数字标pending DTU",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-26T15:40:12+08:00"
+    },
+    {
+      "id": "kit_w3",
+      "stage": "部署kit重型波",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "kits",
+      "desc": "NeoaPred(9mer)/T-SCAPE,ImmunoStruct为stretch",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-26T22:02:12+08:00"
+    },
+    {
+      "id": "run_w1",
+      "stage": "跑通第一波",
+      "agent": "主线",
+      "deps": [
+        "kit_w1"
+      ],
+      "status": "done",
+      "gate": true,
+      "group": "run",
+      "desc": "主线串行跑5工具,先5肽真烟测,GPU经gpu_slot",
+      "out": "scripts/out/newtools/{IEDB_Calis,CNNeo,MHCflurry,Repitope,BigMHC}_DS1DS2_scores.csv",
+      "owner": "",
+      "ts": "2026-06-26T20:27:49+08:00"
+    },
+    {
+      "id": "run_w2",
+      "stage": "跑通DTU波",
+      "agent": "主线",
+      "deps": [
+        "kit_w2"
+      ],
+      "status": "running",
+      "gate": true,
+      "group": "run",
+      "desc": "主线串行跑3 DTU工具",
+      "out": "",
+      "owner": "C-tools2",
+      "ts": "2026-06-26T15:23:02+08:00"
+    },
+    {
+      "id": "run_w3",
+      "stage": "跑通重型波",
+      "agent": "主线",
+      "deps": [
+        "kit_w3"
+      ],
+      "status": "running",
+      "gate": true,
+      "group": "run",
+      "desc": "主线串行HPC跑NeoaPred/T-SCAPE",
+      "out": "",
+      "owner": "D-tools3",
+      "ts": "2026-06-26T15:22:23+08:00"
+    },
+    {
+      "id": "merge",
+      "stage": "合并表重建",
+      "agent": "主线",
+      "deps": [
+        "run_w1",
+        "run_w2",
+        "run_w3"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "merge",
+      "desc": "扩merge_results.py加新MT列,验行数==34247",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "metrics",
+      "stage": "全工具指标重算",
+      "agent": "coder",
+      "deps": [
+        "merge",
+        "perpatient"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "metric",
+      "desc": "merge_metrics_NNtools全工具+per-patient多方法",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "factors",
+      "stage": "Spearman因素探索",
+      "agent": "analyst",
+      "deps": [
+        "metrics"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "analyze",
+      "desc": "聚合/肽长/HLA/阈值/患者样本量/工具一致性出图",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "synth",
+      "stage": "综合报告+图+PPT",
+      "agent": "writer",
+      "deps": [
+        "metrics",
+        "factors"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "synth",
+      "desc": "verifier核数+reviewer审,更新报告+PPT",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "quantimmune_kickoff",
+      "stage": "QuantImmune立项预备",
+      "agent": "planner",
+      "deps": [],
+      "status": "skipped",
+      "gate": false,
+      "group": "forward",
+      "desc": "理论天花板+实验矩阵+退守路线汇总成立项材料,立项点等用户拍板",
+      "out": "升级为 quantimmune_pilot 全研发闭环",
+      "owner": "",
+      "ts": "2026-06-26T15:36:17+08:00"
+    },
+    {
+      "id": "delivery_sync",
+      "stage": "交付/写作/对账",
+      "agent": "writer",
+      "deps": [],
+      "status": "skipped",
+      "gate": false,
+      "group": "deliver",
+      "desc": "新数字落地后同步PPT/周报/数据包/RELATED_WORK + 跨成员(李紫晨)对账",
+      "out": "升级为 paper_sprint 全写作闭环",
+      "owner": "",
+      "ts": "2026-06-26T15:36:17+08:00"
+    },
+    {
+      "id": "quantimmune_pilot",
+      "stage": "F:QuantImmune定量原型研发",
+      "agent": "planner",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "forward",
+      "desc": "全experiment闭环:theory-audit→planner设计→coder建magnitude回归→HPC训练(gpu_slot)→analyst,benchmark当地板对照。立项点拍板",
+      "out": "QUANTIMMUNE_PILOT_SUMMARY.md: 集成0.328≈平手单工具,撞天花板,需新信号,GRAY负结论",
+      "owner": "",
+      "ts": "2026-06-26T17:17:56+08:00"
+    },
+    {
+      "id": "paper_sprint",
+      "stage": "G:benchmark投稿paper冲刺",
+      "agent": "writer",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "deliver",
+      "desc": "全写作闭环:paper-scout/deep-research补related→writer写节→verifier三方核数→reviewer十角色对抗审→pre-submit-check。投稿点拍板",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-26T16:57:48+08:00"
+    },
+    {
+      "id": "pooling_deep",
+      "stage": "H:Pooling策略深挖(整合朱)",
+      "agent": "analyst",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "analyze",
+      "desc": "对账朱成果+pooling扩到8种(max/mean/top3/sum/softmax/rankdecay/topk_w/geomean)×跨患者聚合二维扫描,生物学映射,修正max低估",
+      "out": "POOLING_STUDY.md: max非最优/sum是肽长混杂/deepHLApan信号是长度假象/round8修复",
+      "owner": "",
+      "ts": "2026-06-26T17:17:56+08:00"
+    },
+    {
+      "id": "fusion_ceiling",
+      "stage": "I:Fusion与天花板研究(承朱)",
+      "agent": "planner",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "forward",
+      "desc": "扩朱6维融合(0.43,p0.70)→多融合法+LOPO CV+对照理论天花板ρ0.4-0.6,判简单融合能否显著超单分,喂F窗pilot",
+      "out": "FUSION_CEILING.md: 融合0.33 vs 最强单工具不显著(p>0.8),学权重过拟合,逼近天花板未触顶",
+      "owner": "",
+      "ts": "2026-06-26T17:17:56+08:00"
+    }
+  ]
+}

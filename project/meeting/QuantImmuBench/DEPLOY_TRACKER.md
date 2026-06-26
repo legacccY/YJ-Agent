@@ -28,6 +28,106 @@
 
 ---
 
+## §Tier-3 扩张工具（2026-06-26，重型 GPU+结构，D-tools3 窗）
+
+> 三工具 recipe 经 researcher×3 联网钉死。**关键发现：T-SCAPE 只需 `best_param/pmhc_im_neo`=0.53GB（非全 54.7GB，那是 BA/EL 等不用的 task），→ 改本地 WSL2 跑免 HPC**。NeoaPred Docker Hub 在 HPC 不通→本地 WSL2 docker。**ImmunoStruct = NO-GO 诚实放弃**（三重硬 blocker）。
+
+| # | 工具 | 归属 | 输入 | 部署状态 | 进 benchmark | 结论 |
+|---|---|---|---|---|---|---|
+| T3-1 | **T-SCAPE** | 余嘉 §Tier-3 | CSV（Allele,peptide），MT-only，≤20mer，HLA `HLA-A*02:01` | ✅ **RUN_DONE**（本地 WSL2 CPU，全量 32178 推理完，merge→tscape_scores.csv）| ✅ 待 merge | 33939/34247 有分（308 NaN=allele 不在 MHC_classI_pseudo.csv），score 0.0057-0.7716；CC BY-NC-ND 4.0 **学术非商用**；**用官方权重+修复 2 个官方 repo bug 跑**（输入列名 peptide 小写 + pmhc_im_neo 加载/task_dict，patch 依据见 04_LOG Entry T3，非原版代码）；权重仅 0.53GB；repo seoklab/T-SCAPE，Sci Adv DOI 10.1126/sciadv.adz8759 |
+| T3-2 | **NeoaPred** | 余嘉 §Tier-3 | CSV（ID,Allele,WT,Mut），严格 9mer，HLA 缩写型 `A2402` | 🔄 **HPC_FULL**（端到端 smoke PASS；本地全量实测 ~60h 不可行[OpenMM 弛豫并行不加速，内存带宽限]→ 用户拍板上 HPC：docker save 3.6GB→上传→singularity build→gpu4090 节点 48核 N=24 并行 sbatch）| ⏳ pending | scope=严格 9mer（5692 unique，11384 弛豫）；输出 Foreignness_Score 越高越强，只产 MT 列；Apache-2.0，DOI 10.1093/bioinformatics/btae547 AUROC 0.81；env 全在 /var/software（非 /root）→ singularity 非 root 可读，绕 pTuneos 坑 |
+| T3-3 | **ImmunoStruct** | 余嘉 §Tier-3 | — | ❌ **NO-GO（诚实放弃）** | ❌ 永不 | 三重硬 blocker：①infer 脚本锁预构建 PyG 图、无通用「肽+HLA」推理入口 ②AF2 不可承受（34247 行需 ~500GB MSA 库+数百 GPU·h ColabFold）③HLA 覆盖不足（训 27 vs DS 65）。Yale 许可不挡但工程封死。repo KrishnaswamyLab/ImmunoStruct，Nat MI 2025。**stretch 工具跑不通=诚实 block 非失败** |
+
+### NeoaPred 部署文件（HPC/deploy/neoapred/）
+
+| 文件 | 作用 |
+|---|---|
+| `HPC/deploy/neoapred/prep_neoapred_input.py` | master_backbone → 严格 9mer 过滤 → unique(MT,WT,HLA)=5692 → HLA 转缩写型 A2402 → neoapred_input.csv（ID,Allele,WT,Mut）+ map；--smoke N |
+| `HPC/deploy/neoapred/run_neoapred_docker.sh` | 封装官方 docker detach 流程（起容器→cp→exec PepFore→cp 回→停删）|
+| `HPC/deploy/neoapred/build_singularity_hpc.sh` | HPC fallback 模板（docker save→sftp→singularity build）；标 TODO /root 访问坑待验 |
+| `HPC/deploy/neoapred/merge_neoapred.py` | 读 MhcPep_foreignness.csv + map → 回贴 bb_idx → neoapred_scores.csv（bb_idx, MT_NeoaPred）|
+| `HPC/deploy/neoapred/README.md` | 部署步骤 + 4 类信息 + 已知坑 + 命令 |
+
+> ⚠️ NeoaPred：HLA 缩写型 `A2402`（非 HLA-A*24:02）；严格 9mer；Python3.6 锁死（Docker 绕）。
+
+### T-SCAPE 部署文件（HPC/deploy/tscape/）
+
+| 文件 | 作用 |
+|---|---|
+| `HPC/deploy/tscape/prep_tscape_input.py` | 读 master_backbone → unique (MT, HLA) 对 → tscape_input.csv + tscape_input_map.csv；支持 --smoke N |
+| `HPC/deploy/tscape/setup_tscape_hpc.sh` | DTN 登录节点：clone repo + patch dropout bug（:326）+ conda env + HF 权重下载 |
+| `HPC/deploy/tscape/run_tscape.sh` | GPU 节点推理：mhc_pseudo_matching + inference_csv 两步 |
+| `HPC/deploy/tscape/submit_tscape.sbatch` | SLURM sbatch（gpu4090, shuihuawang, 1 卡）|
+| `HPC/deploy/tscape/merge_tscape.py` | 读 T-SCAPE output.csv + map → 回贴 bb_idx → tscape_scores.csv（列 bb_idx,MT_TSCAPE）|
+| `HPC/deploy/tscape/README.md` | 部署步骤 + 4 类信息 + 已知坑 + 烟测命令；顶部标「学术非商用 CC BY-NC-ND 4.0」|
+
+> ⚠️ **许可：CC BY-NC-ND 4.0，仅限学术非商用**。ND 条款禁止衍生发布，投稿/报告需标注。
+> ⚠️ **dropout patch 必打**：clone 后改 `src/model_fused.py` 第 326 行加 `training=self.training`，否则推理结果非确定性（PR #3 未合并）。
+> ⚠️ 权重 54.7GB，务必在 DTN 预下，GPU 节点不联网。
+
+---
+
+## §Tier-2 扩张工具（2026-06-26，apples-to-apples 扩充）
+
+| # | 工具 | 归属 | 输入 | 部署状态 | 进 benchmark | 结论 |
+|---|---|---|---|---|---|---|
+| T2-1 | **ICERFIRE 1.0** | 余嘉 §Tier-2 | 无表头 CSV mut,wt,HLA（HLA 去星去冒号）| ⚠️ **BLOCKED_PENDING**（binary 待 DTU 下载 health-software@dtu.dk）| ❌ pending | 脚本就绪，CLI/列名 TODO 待下载核实；pending_DTU_consent=True |
+| T2-2 | **BigMHC -m=im** | 余嘉 §Tier-2 | CSV（mhc,pep；HLA-A*02:01 格式，无需转换）| ✅ **RUN_DONE**（本地 Windows CPU，7模型 ensemble，53582 对）| ✅ 待 merge | 34247 行 MT+WT 0 NaN，BigMHC_IM 0.0-0.95；**EL 对官方 .cmp 验证 PASS(diff 4.5e-7)**=权重完整管道正确；im=7模型 ensemble(bat{512..32768}/im 各4微调层+从父EL目录补基层)；repo git历史臃肿→`fetch_repo2.py` 无API逐文件下2.5GB绕限流；⚠️Windows 须 `--jobs`小(spawn pickle大数据OOM)+RAM独占(与他job并发OOM-kill)；`-t`=tgtcol非线程；学术非商用，发数字✅；输出 `BigMHC_DS1DS2_scores.csv`(MT/WT_BigMHC) |
+
+### BigMHC -m=im 部署文件（HPC/deploy/bigmhc_im/）
+
+| 文件 | 作用 |
+|---|---|
+| `HPC/deploy/bigmhc_im/prep_input.py` | 读 uniq_pep_hla.csv（53582 行）→ bigmhc_inputs/bigmhc_input.csv（mhc,pep；双列+表头）；--smoke N |
+| `HPC/deploy/bigmhc_im/run_bigmhc_im.py` | Python 启动器：调 repo/src/predict.py -m=im -d=cpu；--smoke / --device / --jobs |
+| `HPC/deploy/bigmhc_im/parse_output.py` | 读 bigmhc_output.prd（mhc,pep,tgt,len,BigMHC_IM）→ join universe.csv → BigMHC_DS1DS2_scores.csv（4-key + MT_BigMHC + WT_BigMHC）|
+| `HPC/deploy/bigmhc_im/NOTES.md` | repo 结构 / predict.py CLI / 输出列名 / HLA 格式 / CPU 强制 / 许可 / LFS / 坑 |
+
+> ⚠️ **许可：BigMHC Academic License（学术非商用，Johns Hopkins Karchin Lab）**：非商用研究/教学/非营利自由使用；发数字✅；商用需另签协议。
+> ⚠️ **git clone 需 git-lfs**（~5GB 含模型权重）；clone 到 `HPC/deploy/bigmhc_im/repo/`。
+> 输出方向：BigMHC_IM ∈ [0,1]，越高越免疫原性，直接用（无需翻转）。
+> 输出列名 `BigMHC_IM` 已核实自 src/cli.py `_parseModel`（`args.modelname = "BigMHC_IM"`）。
+
+### ICERFIRE 1.0 部署文件（HPC/deploy/icerfire/）
+
+| 文件 | 作用 |
+|---|---|
+| `HPC/deploy/icerfire/prep_icerfire.py` | 读 master_backbone → 无表头 icerfire_input.csv + icerfire_index.csv（行序 join key）|
+| `HPC/deploy/icerfire/run_icerfire.sh` | SLURM sbatch 骨架；CLI 命令占位 TODO 待 README 核实 |
+| `HPC/deploy/icerfire/parse_icerfire.py` | 读 ICERFIRE 输出 + index → 回贴 bb_idx → icerfire_DS1DS2_scores.csv；方向翻转 icerfire_score=100-rank |
+| `HPC/deploy/icerfire/README.md` | 输入格式、HLA 转换、方向翻转、pending 红线、TODO |
+
+> ⚠️ **pending_DTU_consent=True**：ICERFIRE binary 尚未在 HPC，需向 health-software@dtu.dk 申请学术下载后才能真跑；所有输出列标 pending_DTU_consent=True。
+> 输出方向：ICERFIRE 原始 rank 0=最强免疫原；脚本内翻转为 icerfire_score=100-rank（越高越强，与其他工具方向一致）。
+
+---
+
+## §Tier-0 扩张工具（2026-06-26，CPU 轻量·MIT 自由·本地可跑）
+
+| # | 工具 | 归属 | 输入 | 部署状态 | 进 benchmark | 结论 |
+|---|---|---|---|---|---|---|
+| T0-1 | **CNNeo (CNNeoPP)** | 余嘉 §Tier-0 | CSV（peptide,hla；标准 HLA-A*02:01），8-14mer，MT+WT 均喂 | ✅ **RUN_DONE**（本地 Windows 自训 FCNN_TF ValAcc~75% + 推理 53582 对）| ✅ 待 merge | score 0.13-0.96，34247 行 0 NaN；FCNN_TF（PyTorch+TF-IDF，复刻 notebook 超参零改）；MIT；repo AaronChen007/neoantigen；输出 `CNNeo_DS1DS2_scores.csv`(MT/WT_CNNeo) |
+| T0-2 | **MHCflurry 2.0** | 余嘉 §Tier-0 | CSV（peptide,allele；标准 HLA-A*02:01，无需转换）| ✅ **RUN_DONE**（本地 conda env qib_mhcflurry，65 allele 全支持，53582 对）| ✅ 待 merge | Apache-2.0；mhcflurry 2.2.1 torch 后端；烟测已知强免疫原肽 sanity 通过；34247 行 0 NaN；输出 `MHCflurry_DS1DS2_scores.csv`(MT/WT_presentation + MT/WT_affinity_neg)；⚠️env 内须 PYTHONUTF8=1（yaml GBK 坑）|
+| T0-3 | **IEDB Immunogenicity (Calis)** | 余嘉 §Tier-0 | per-allele 肽 txt（HLA 去星去冒号 HLA-A0201）| ✅ **RUN_DONE**（本地 Windows 纯统计秒级，65 allele）| ✅ 待 merge | NPOSL-3.0 自由可发；42 支持 allele 用 allele-specific mask，其余默认 mask（P1,P2,Cterm）；34247 行 0 NaN；输出 `IEDB_Calis_DS1DS2_scores.csv`(MT/WT_IEDB_Calis)；工具 = IEDB_Immunogenicity-3.0 py3 |
+| T0-4 | **Repitope** | 余嘉 §Tier-0 | 肽列表（8-11mer，⚠️HLA-agnostic 不吃 HLA）| ✅ **RUN_DONE**（本地 R 4.3.3 cores=6，7437 肽 CPP 特征+ERT）| ✅ 待 merge | MIT 自由可发；34247 行 MT/WT 各 22391 有分（12-14mer NaN=超 8-11mer 限），ImmunogenicityScore 0.06-0.61；**HLA-agnostic→同肽各 allele 填同值(caveat 须标)**；extraTrees(ERT后端)CRAN已下架→Archive装源码版+Rtools43编译；Mendeley FST 实测仅127MB(`*_RepitopeV3.fst`)；修2 coder bug(ofile/`$MinimumFeatureSet`)；repo masato-ogishi/Repitope v3.1.7；输出 `Repitope_DS1DS2_scores.csv`(MT/WT_Repitope) |
+
+### CNNeo 部署文件（HPC/deploy/cnneo/）
+
+| 文件 | 作用 |
+|---|---|
+| `HPC/deploy/cnneo/prep_input.py` | 读 uniq_pep_hla.csv（53582 行）→ unique (peptide,hla) 对 → cnneo_input.csv + cnneo_input_map.csv；--smoke N |
+| `HPC/deploy/cnneo/run_cnneo.py` | 训练+推理一体：首次自动从 repo/training_data/training_data.xlsx 训练 FCNN_TF（或 --model cnn_biobert），保存 weights/；输出 cnneo_raw_output.csv（peptide,hla,score,label）；--smoke N |
+| `HPC/deploy/cnneo/parse_output.py` | 读 cnneo_raw_output.csv → join universe.csv → CNNeo_DS1DS2_scores.csv（4-key + MT_CNNeo + WT_CNNeo）|
+| `HPC/deploy/cnneo/NOTES.md` | repo 结构 / 框架 / 权重状态 / HLA 格式 / 肽长 / 训练 recipe / 已知坑 |
+| `HPC/deploy/cnneo/repo/` | git clone AaronChen007/neoantigen（含 training_data.xlsx + 三个 ipynb）|
+| `HPC/deploy/cnneo/weights/` | 训练后权重目录（fcnn_tf_model.pth + fcnn_tf_vectorizer.pkl）|
+
+> 输出方向：CNNeo score ∈ [0,1]，越高越免疫原（softmax class=1 概率），直接用（无需翻转）。
+> 关键坑：FCNN_BioBERT 子模型需 BA/TAP 等额外特征列，当前输入不支持，排除；FCNN_TF 和 CNN_BioBERT 仅需 peptide+HLA，均可用。
+> 首次跑时长：FCNN_TF 训练 CPU ~5-15 分钟（epochs=45）；CNN_BioBERT 训练 CPU ~数小时（BioBERT 嵌入重），推荐 GPU 节点。
+
+---
+
 ## 本地部署环境（重要）
 - **本机 WSL2 Ubuntu 24.04**（GPU 直通 RTX 4070 可见）= 本地部署/烟测主战场。这些工具多为 Linux-only 老链（TF2.3 / Py2.7 / netMHCpan Linux 二进制），**Windows 跑不动**（且 DeepImmuno repo 含 `HLA-A*0101.json` 非法 `*` 文件名，NTFS 无法 checkout）→ 一律在 WSL2 ext4 原生部署。
 - WSL 部署根目录：`~/quantimmu/`（`tools_repos/` 各工具 repo + `smoke/` 烟测产物）；conda 在 `~/miniconda3`。
