@@ -36,23 +36,34 @@ NOTE — Windows 规范修复（vs 官方 train.py）:
 TODO: monai 必须安装。`pip install monai`
       若 monai 未装，build_model / forward_adapt 会抛 ImportError（有明确提示）。
 
-⚠️ two_stage 说明:
-  本 adapter 的 forward_adapt 实现了完整的两阶段流程：
-    1. 调用传入的 `model`（应为 backbone 输出的初始分割）— 实际上
-       forward_adapt 在 evaluate.py 调用时接收到的是 stage-1 的 logit 输出，
-       然后二值化后送入 creatis 续连网络（creatis 模型通过 cfg 路径加载）。
-  由于 evaluate.py 接口设计是单模型前向，此 adapter 内部持有 creatis 模型
-  (self._postproc_model)，并在 build_model 时一并构建/加载。
+⚠️ two_stage 说明（evaluate_benchmark 路径）:
+  evaluate.py evaluate_benchmark 调用路径：
+    adapter = get_adapter('creatis_postproc')        # 新实例
+    model = adapter.build_model(cfg).to(device)      # build_model 内部加载 Stage-1 backbone
+                                                      # 到 adapter._stage1_model（实例属性）
+    model.load_state_dict(ckpt_stage2)               # ckpt = Stage-2 creatis 权重
+    ...
+    inp_t = preprocess_image(npz_image)              # green+CLAHE+norm (H,W) → (1,1,H,W)
+    logits = adapter.forward_adapt(model, inp_t, device)
+    # 内部：self._stage1_model(inp_t) → backbone logits → sigmoid+bin → Stage-2 → logit 返回
 
-  完整评估流程（evaluate.py 端）:
-    backbone_logits = backbone.forward_adapt(backbone_model, x, device)
-    creatis_adapter.forward_adapt(creatis_model_placeholder, backbone_logits, device)
-    ← 内部: sigmoid → 二值化 → apply_postproc_iterations → logit 返回
+  两段式关键：
+    - build_model 时从 cfg['stage1_ckpt'] 加载 Stage-1 backbone 到 self._stage1_model。
+    - forward_adapt 检测 self._stage1_model 是否存在：
+        有 → inp_t 是原始图像 tensor → Stage-1 forward → Stage-2 forward
+        无 → 兼容旧路径（train_harness Stage-2 训练时，inp_t 是 backbone logits）。
+
+  cfg keys（evaluate_benchmark 路径必填）:
+    stage1_ckpt    : str  — Stage-1 ckpt best.pth 路径（backbone_unet 或 fr_unet）
+    stage1_adapter : str  — Stage-1 架构类型（默认 'backbone_unet'；
+                            用户拍板=批1 FR-UNet ckpt 复用，设为 'fr_unet'）
+    stage1_base_ch : int  — Stage-1 backbone_unet base_ch（默认 32；fr_unet 时忽略）
 
   训练说明:
     Stage 1 训练: 用统一 backbone_unet 的 train_harness，不需要特殊处理。
-    Stage 2 训练: 调用 build_model(cfg, train=True) 返回 creatis reconnecting model，
+    Stage 2 训练: 调用 build_model(cfg) 返回 creatis reconnecting model，
                   用 build_optimizer / build_loss 做官方训练（PonderatedDiceloss + Adam）。
+                  ⚠️ Stage-2 训练时 cfg 中不传 stage1_ckpt，避免触发 Stage-1 加载。
 
 TODO_researcher: 官方仓库无 LICENSE 文件（curl 返回 404）；
   README + vendor/__init__.py 均记录 CeCILL 授权（http://www.cecill.info）。
@@ -238,13 +249,17 @@ class CreatisPostprocAdapter(BaselineAdapter):
     )
     env_tag: str = ENV_MAIN
 
+    # 实例属性：Stage-1 backbone model（evaluate_benchmark 两段式路径）
+    # 由 build_model(cfg) 在 cfg['stage1_ckpt'] 存在时设置；否则 None（兼容旧接口）。
+    _stage1_model: Optional[nn.Module] = None
+
     # ---------------------------------------------------------------------- #
     #  build_model
     # ---------------------------------------------------------------------- #
 
     def build_model(self, cfg: Dict[str, Any]) -> nn.Module:
         """
-        构建 creatis reconnecting model (monai UNet).
+        构建 creatis reconnecting model (monai UNet，Stage 2).
 
         官方架构 (train.py):
           monai.networks.nets.UNet(
@@ -256,9 +271,19 @@ class CreatisPostprocAdapter(BaselineAdapter):
         cfg keys (from creatis.yaml):
           norm           : str  (default: 'INSTANCE' — 官方 config_training.json)
           model_dir      : str | None  (预训练权重目录；None = 从头训练)
+          stage1_ckpt    : str | None  (Stage-1 ckpt best.pth 路径；
+                                        设置后 forward_adapt 走完整两段式流程)
+          stage1_adapter : str  (Stage-1 架构类型：'backbone_unet'(默认) / 'fr_unet'；
+                                  用户拍板：批1 FR-UNet ckpt 复用，置 'fr_unet')
+          stage1_base_ch : int  (backbone_unet base_ch，默认 32；fr_unet 时忽略)
+
+        Side effect（evaluate_benchmark 路径）:
+          若 cfg['stage1_ckpt'] 存在且文件可读，构建并加载 Stage-1 backbone_unet
+          到 self._stage1_model（实例属性），以便 forward_adapt 做完整两段推理。
+          若 stage1_ckpt 未设置，self._stage1_model = None（兼容 Stage-2 训练路径）。
 
         Returns:
-            monai UNet on CPU（外部 .to(device)）。
+            monai UNet（Stage-2 reconnecting model）on CPU（外部 .to(device)）。
 
         Raises:
             ImportError: monai 未安装。
@@ -271,6 +296,73 @@ class CreatisPostprocAdapter(BaselineAdapter):
         norm = str(cfg.get("norm", "INSTANCE"))
         model_dir = cfg.get("model_dir", None)
 
+        # ------------------------------------------------------------------ #
+        #  Stage-1 backbone 加载（evaluate_benchmark 两段式路径）
+        # ------------------------------------------------------------------ #
+        stage1_ckpt    = cfg.get("stage1_ckpt", None)
+        stage1_adapter = str(cfg.get("stage1_adapter", "backbone_unet")).lower()
+
+        # 保存 stage1_adapter 类型供 preprocess_benchmark_image 使用
+        self._stage1_adapter_type: str = stage1_adapter
+
+        if stage1_ckpt is not None:
+            stage1_path = Path(stage1_ckpt)
+            if stage1_path.exists():
+                # ---------------------------------------------------------- #
+                #  Stage-1 架构分支
+                # ---------------------------------------------------------- #
+                if stage1_adapter == "fr_unet":
+                    # 用户拍板：批1 FR-UNet ckpt 复用当 Stage-1。
+                    # FR_UNet 官方默认参数（frunet.py 忠实移植）：
+                    #   feature_scale=2 → filters=[32,64,128,256,512]
+                    #   num_classes=1, num_channels=1, dropout=0.2,
+                    #   fuse=True, out_ave=True
+                    from baselines.adapters.frunet import FR_UNet as _FR_UNet
+                    s1_model = _FR_UNet(
+                        num_classes=1,
+                        num_channels=1,
+                        feature_scale=2,
+                        dropout=0.2,
+                        fuse=True,
+                        out_ave=True,
+                    )
+                    s1_info = "FR_UNet(feature_scale=2, out_ave=True)"
+                else:
+                    # 默认：backbone_unet（models/unet.py UNet）
+                    from models.unet import UNet as _UNet
+                    base_ch = int(cfg.get("stage1_base_ch", 32))
+                    s1_model = _UNet(in_ch=1, out_ch=1, base_ch=base_ch)
+                    s1_info = f"backbone_unet UNet(base_ch={base_ch})"
+
+                s1_ckpt_data = torch.load(str(stage1_path), map_location="cpu",
+                                          weights_only=True)
+                if isinstance(s1_ckpt_data, dict) and "state_dict" in s1_ckpt_data:
+                    s1_ckpt_data = s1_ckpt_data["state_dict"]
+                s1_model.load_state_dict(s1_ckpt_data)
+                s1_model.eval()
+                self._stage1_model: Optional[nn.Module] = s1_model
+                print(
+                    f"[CreatisPostprocAdapter] Stage-1 loaded: "
+                    f"{stage1_path.name}  adapter={stage1_adapter!r}  ({s1_info})"
+                )
+            else:
+                import warnings
+                warnings.warn(
+                    f"[CreatisPostprocAdapter] stage1_ckpt={stage1_ckpt!r} not found. "
+                    "forward_adapt will use legacy mode (expects backbone logits as input). "
+                    "Set stage1_ckpt to a valid best.pth for benchmark eval.",
+                    UserWarning,
+                )
+                self._stage1_model = None
+        else:
+            # Stage-2 训练路径：不加载 Stage-1（forward_adapt 兼容旧 backbone-logits 输入）
+            self._stage1_model = None
+            # stage1_ckpt 未设置时仍记录 adapter 类型（默认 backbone_unet）
+            self._stage1_adapter_type = stage1_adapter
+
+        # ------------------------------------------------------------------ #
+        #  Stage-2 creatis reconnecting model 构建
+        # ------------------------------------------------------------------ #
         if model_dir is not None:
             model_path = Path(model_dir)
             if model_path.exists():
@@ -380,6 +472,61 @@ class CreatisPostprocAdapter(BaselineAdapter):
         }
 
     # ---------------------------------------------------------------------- #
+    #  preprocess_benchmark_image override
+    #  当 stage1_adapter='fr_unet' 时，必须用 FR-UNet 官方预处理（BT.601 灰度
+    #  + per-image minmax），否则 Stage-1 看到 green+CLAHE+norm(0.5,0.1) → OOD。
+    # ---------------------------------------------------------------------- #
+
+    def preprocess_benchmark_image(
+        self,
+        npz_image,
+        image_id: str,
+        dataset_name: str,
+        data_root=None,
+    ):
+        """
+        Two-stage creatis benchmark 预处理。
+
+        Stage-1 = FR-UNet 时：
+          委托给 FRUNetAdapter.preprocess_benchmark_image()
+          → BT.601 Grayscale + per-image minmax + frunet_get_square padding
+          （与 FR-UNet 训练期输入完全一致，消除 OOD）
+
+        Stage-1 = backbone_unet 时：
+          走默认路径：npz_image（green+CLAHE+norm(0.5,0.1)），直接返回。
+
+        Args:
+            npz_image:    (H, W) float32 — NPZ 'image' field (green+CLAHE+norm).
+            image_id:     str, e.g. '37'.
+            dataset_name: lowercase, e.g. 'drive'.
+            data_root:    raw dataset root（FR-UNet 分支需要；backbone_unet 不用）.
+
+        Returns:
+            (processed_image, (orig_H, orig_W))
+        """
+        import numpy as _np
+
+        # 判断 stage1_adapter 类型（若 build_model 尚未调用，_stage1_adapter_type
+        # 可能未设置，此处 getattr fallback 到 'backbone_unet' 安全）
+        adapter_type = getattr(self, "_stage1_adapter_type", "backbone_unet")
+
+        if adapter_type == "fr_unet":
+            # 委托给 FR-UNet adapter 的官方预处理路径
+            from baselines.adapters.frunet import FRUNetAdapter as _FRUNetAdapter
+            _fru = _FRUNetAdapter()
+            return _fru.preprocess_benchmark_image(
+                npz_image=npz_image,
+                image_id=image_id,
+                dataset_name=dataset_name,
+                data_root=data_root,
+            )
+        else:
+            # backbone_unet（默认）：green+CLAHE+norm(0.5,0.1) 直接用
+            img = npz_image.astype(_np.float32)
+            orig_H, orig_W = img.shape
+            return img, (orig_H, orig_W)
+
+    # ---------------------------------------------------------------------- #
     #  forward_adapt (two-stage)
     # ---------------------------------------------------------------------- #
 
@@ -390,26 +537,38 @@ class CreatisPostprocAdapter(BaselineAdapter):
         device: torch.device,
     ) -> torch.Tensor:
         """
-        两阶段推理:
-          x = backbone logits (B,1,H,W)  ← Stage-1 输出，外部传入
-          1. sigmoid + threshold(0.5) → binary_mask (B,1,H,W) float
-          2. 对每个 sample: apply_postproc_iterations (官方 10 轮) → reconnected uint8
-          3. 转回 (B,1,H,W) float [0,1] → logit 化（logit = log(p/(1-p))）返回
+        两阶段推理（支持两种调用路径）：
 
-        NOTE: creatis model 在此处使用（通过 cfg 传入的 build_model 结果）。
-              如果 model 未加载预训练权重（untrained），输出无意义但接口仍正常。
+        路径 A — evaluate_benchmark 完整两段（self._stage1_model 已在 build_model 加载）:
+          x = (B,1,H,W) 预处理图像 tensor，来自 preprocess_benchmark_image()：
+              - stage1_adapter='fr_unet'：BT.601 grayscale + per-image minmax（无 CLAHE）
+              - stage1_adapter='backbone_unet'：green+CLAHE+norm(0.5,0.1)
+          1. Stage-1: self._stage1_model(x) → backbone logits
+          2. sigmoid + threshold(0.5) → binary_mask
+          3. Stage-2: apply_postproc_iterations (10 轮) → reconnected uint8
+          4. 转回 (B,1,H,W) pseudo-logits 返回
+
+        路径 B — 兼容旧接口（self._stage1_model is None，Stage-2 训练 / 外部传 logits）:
+          x = (B,1,H,W) backbone output logits（Stage-1 已在外部计算）
+          1. sigmoid + threshold(0.5) → binary_mask
+          2. Stage-2: apply_postproc_iterations → reconnected uint8
+          3. 转回 pseudo-logits 返回
+
+        NOTE: creatis model（Stage-2）在此使用。如果 model 未加载预训练权重，
+              输出无意义但接口仍正常（train_harness Stage-2 训练时正是此情形）。
 
         Args:
-            model : creatis reconnecting monai UNet（已 build_model 返回的模型）
-            x     : (B,1,H,W) backbone output logits（来自 Stage-1）
+            model : creatis reconnecting monai UNet（Stage-2，build_model 返回的模型）
+            x     : (B,1,H,W)
+                    路径 A: 预处理图像（stage1_ckpt 设置后 build_model 启动时）
+                    路径 B: backbone logits（stage1_ckpt 未设置或旧接口时）
             device: 推理设备
 
         Returns:
-            (B,1,H,W) logits (post-processed, pseudo-logit from reconnected probs)
+            (B,1,H,W) logits（pseudo-logit from reconnected probs，evaluate.py 做 sigmoid+thr）
         """
         assert x.shape[1] == 1 and x.ndim == 4, (
-            f"CreatisPostprocAdapter.forward_adapt: expected (B,1,H,W) "
-            f"backbone logits, got {x.shape}"
+            f"CreatisPostprocAdapter.forward_adapt: expected (B,1,H,W), got {x.shape}"
         )
 
         from baselines.third_party.creatis_postproc.post_treatement import (
@@ -418,12 +577,34 @@ class CreatisPostprocAdapter(BaselineAdapter):
 
         model.eval()
         B, C, H, W = x.shape
+        x = x.to(device)
 
-        # Stage-1: threshold backbone logits → binary mask
-        prob_stage1 = torch.sigmoid(x)  # (B,1,H,W)
-        binary_mask = (prob_stage1 >= 0.5).float()  # {0,1}
+        # ------------------------------------------------------------------ #
+        #  路径 A: 完整两段式（evaluate_benchmark — 图像 tensor 输入）
+        # ------------------------------------------------------------------ #
+        if self._stage1_model is not None:
+            s1 = self._stage1_model.to(device)
+            s1.eval()
+            with torch.no_grad():
+                stage1_out = s1(x)
+                # s1 可能返回 (logits, reid_ctx) tuple（ours_gdn2 等），取 logits
+                if isinstance(stage1_out, tuple):
+                    stage1_logits = stage1_out[0]
+                else:
+                    stage1_logits = stage1_out
+            # sigmoid → binary mask
+            prob_stage1 = torch.sigmoid(stage1_logits)
+            binary_mask = (prob_stage1 >= 0.5).float()
+        else:
+            # ---------------------------------------------------------------- #
+            #  路径 B: x 是 backbone logits（兼容旧接口 / Stage-2 训练中间态）
+            # ---------------------------------------------------------------- #
+            prob_stage1 = torch.sigmoid(x)
+            binary_mask = (prob_stage1 >= 0.5).float()
 
-        # Stage-2: apply creatis reconnecting model per sample
+        # ------------------------------------------------------------------ #
+        #  Stage-2: apply creatis reconnecting model per sample
+        # ------------------------------------------------------------------ #
         results = []
         for b in range(B):
             # (1,H,W) → (H,W) numpy uint8 {0,255}

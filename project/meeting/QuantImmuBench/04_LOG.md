@@ -4,6 +4,46 @@
 
 ---
 
+## Entry MD — 2026-06-26【横评方法学补依据 + 跨成员对账李紫晨 Data_5】
+
+> 窗口：`quantimmu-bench.claim`。任务=①给「项目全解」补 benchmark 横向对比方法学 ②核李紫晨的结果跟我们符不符。
+
+### ① 第 8 章新增「怎么把十个工具拉到同一条起跑线」（横评方法与依据）
+- `项目全解_从头到尾.md` 在「数据集」与「成果」间插新第 8 章（后续章节顺延 9→13，交叉引用同步修）。四块：8.1 三个「天生不齐」(输入格式/输出尺度·粒度/评测口径)→8.2 拉齐七步流水线(统一输入→子模型降级→贴回 master_backbone→**统一聚合 max**→统一真值 ELISpot→统一阈值 >0/>10/>median→统一指标 AUC+AUPRC+Spearman)→8.3 五条公平依据(单口径锁死禁 selection-on-max/覆盖差异透明/泄漏声明/HLAthena proxy 单列/复现校验)→8.4 学界对标。
+- **8.5 把家底摊开（自创 vs 有据）**：A 表=有文献依据(max=best-binder、best-over-allele、ELISpot SFC 真值、AUPRC/Spearman 协议)，B 表=我们自定工程/红队决策(三种聚合对照、单口径锁死、三档阈值、master_backbone 实现、子模型降级、复现校验)。诚实区分不冒充学界标准。
+- **8.2 第四步加切割 caveat（评审必问）**：核 `prepare_inputs.py:171,282-290` 实证滑窗=步长 1 穷举 8-14mer 重叠覆盖→真表位必被某子窗盖到、配 max 取最强=不漏；切法真实影响=各工具长度范围不同(DeepImmuno 9-10/IMPROVE 8-12/PredIG·pTuneos 8-14)+best-binder 忽略加工偏好,都已标注。
+
+### ② best-binder/max 聚合 + ELISpot 真值文献依据回填（researcher opus 联网）
+- `reference/BENCHMARK_METHODOLOGY.md` 新增两节+引用：**max/best-binder 聚合有据**=pVACseq `Best MT IC50`(跨长度+跨 allele 取最低)、IEDB/Galaxy "Aggregator=Maximum"、NetMHCpan-4.1 "strongest binding peptide"、NetMHCpan-4.0 lowest %rank、MuPeXI/pVAC-Seq 6 allele 取最佳;生物前提=任一 HLA 强提呈即可应答(MHC-I 限制性)。**ELISpot SFC 定量真值有据**=Beyond MHC binding(quant strength+Spearman)、Ott 2017 Nature(>55 SFC)、ELISpot 综述 PMC3360522、PGV001。TODO:NetMHCpan class I 无大写"Best Binder"列名,引用以 pVACseq+IEDB 为准。
+
+### ③ 跨成员对账：李紫晨 Data_5（PRIME/ImmuneApp/deepHLApan）vs 我们 → 高度相符
+- **数据集 100% 同源**(袁老师统一源)：DS1 两边 82 行、MT-epitope 全重合、ELISpot 和都 17941.0;DS2 101 Peptide_ID 全重合、Elispot 和都 4214.33、阳性都 90。MD5 不同(xlsx 元数据)但内容逐位一致。
+- **方法学撞同**：同滑窗 8-14、同 best-allele 聚合(他 `MT_PRIME_Score_bestAllele`/`BestAllele`)、中间表同 33922 行炸开。
+- **PRIME raw 高度一致**：两边 per-肽 max 后相关 **r=0.9405**;他 PRIME Spearman 0.158≈PDF 报 +0.15。
+- **结论一致**：三工具对 ELISpot 都无显著定量相关、都难区分阳/阴。我们 DS2 Spearman 复现 BENCHMARK_8TOOLS(PRIME +0.1163/ImmuneApp +0.0885/deepHLApan +0.0415,n=100/101/98)。
+- **差异(不动摇相符判定)**：①指标=他 DS2 报 Spearman+Mann-Whitney U(无 AUC 点估),我们报 AUC(0.528/0.589/0.419)+Spearman,互补同向。②ImmuneApp/deepHLApan Spearman 符号相反(我们 +0.09/+0.04,他 −0.10/−0.07)但两边 |ρ|<0.11 全不显著=噪声区,根因取分列不同(多输出头/子模型取哪列),待统一口径。
+- 踩坑纠错:首次 groupby 没限 DS2→混入 DS1 得 n=182 错值,用李 DS2 pid 集过滤后 n=101 复现 csv 真值(数字核 csv 红线,差点报错)。
+
+### ④ 杂项
+- 修 `项目全解` DS1 行数笔误 83→82(两边源文件实证 82 行)。
+- 李紫晨 Data_5(zip 15M+PDF+解压物)归 `小组数据/`,加 .gitignore 不进仓(数据不进 git 策略)。
+
+---
+
+## Entry GH — 2026-06-25【开源 repo 发布（私有）+ 隐私脱敏 + 主页美化】
+
+> 窗口：`quantimmu-bench.claim`。任务=把全项目（含 HPC 代码）做成 GitHub 代码仓库，私有、全面、条理清晰，去掉学校/负责人/个人信息。
+
+- **隔离 staging**：源项目零改动；tar 选择性拷到 `D:/qib-repo`（与 private 组合台隔离）。排除 `data/`(3.1G 外部+团队 ELISpot 专有)、`scripts/out/`、`tools_repos/`、`reference/litlib/`(版权 PDF)、HPC 运行输出、`*.pptx/docx/pdf/xlsx`、46M 训练数据、`__pycache__`。最终 146 文件 / 5.5M。
+- **隐私脱敏（两轮 sed + gh-publisher 独立复扫，0 残留）**：人名(袁老师/徐伊琳/李紫晨/王子源/谢孟翰 + 单字袁/徐)→课题组/协作成员;余嘉/legacccy→中性;学校 XJTLU/西交利物浦→某高校;HPC `dtn.hpc.xjtlu.edu.cn`→`<HPC_HOST>`、`jiayu2403`→`hpcuser`、`/gpfs/work/bio/...`→`$PROJECT_ROOT`、本地 `D:/YJ-Agent`→`<repo>`;第三方学生/个人邮箱脱敏(留机构 licensing nbulgin@lcr.org);清内部 AI 编排行话(opus/团队/决策点/caveman/项目记录)。
+- **骨架**：新建中文 `README.md` 主页(badge+目录+十工具表+benchmark 4 嵌图[fig6 AUC+CI / caterpillar / corr 热图 / DS1 散点,各配结论]+结构+数据+许可)、`LICENSE`(MIT 仅覆盖自有码)、`NOTICE.md`(netMHCpan+团队数据再分发门+public checklist)、`DATA.md`、`CONTRIBUTING.md`、`.gitignore`。AUC 全核 `metrics_ds2_8tools.csv`。
+- **取舍**：砍 `ppt/`(内部生成器,含硬路径,低复用)。按用户要求去掉「诚实版」等土词/自夸措辞。
+- **发布**：`gh repo create quantimmu-bench --private` + push → https://github.com/legacccY/quantimmu-bench (private,搜不到)。
+- **历史清理**：剥所有 commit 的 `Co-Authored-By: Claude` 行(去掉「and claude」共同作者显示)→ 再压成单条干净 commit(`QuantImmuBench: 新抗原免疫原性预测工具部署与基准评测`)→ force push(用户授权,本地 deny 规则用户自跑)。远端历史无 AI 痕迹、无零碎措辞。
+- **遗留**：转 public 前必过 NOTICE.md 门(DTU netMHCpan 数字书面同意 + 团队 ELISpot 数据);给上级看建议离线 PDF/zip(不留协作者记录)。本地 staging 停在 `_clean` 分支(纯本地无影响)。
+
+---
+
 ## Entry HLA3 — 2026-06-25【进度统一 + 10工具横评 PPT 全量版】
 
 > 窗口：`quantimmu-bench.claim`。任务=①统一全项目进度(状态版本漂移)②做全量 10 工具横评 PPT。

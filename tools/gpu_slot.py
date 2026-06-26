@@ -35,7 +35,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 
 LOCK = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.portfolio', 'locks', 'training.lock'))
-CAP = {"local": 1, "hpc": 4}
+CAP = {"local": 1, "hpc": 4, "hpc3090": 4}  # hpc=gpu4090 4卡; hpc3090=gpu3090 fallback 池(40卡共享,保守认领4防hog)
 CN_TZ = timezone(timedelta(hours=8))
 
 
@@ -53,6 +53,9 @@ def load():
         d = {}
     d.setdefault("schema_version", 2)
     d.setdefault("capacity", dict(CAP))
+    # 合并新增 host 容量(如 hpc3090)到既有 lock，旧文件无此键不会 QUEUED=0
+    for h, cap in CAP.items():
+        d["capacity"].setdefault(h, cap)
     d.setdefault("active", [])
     d.setdefault("queue", [])
     return d

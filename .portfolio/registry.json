@@ -154,7 +154,7 @@
       "deadline": "2026-07-05 (ACCV)",
       "status": "planning",
       "priority": 4,
-      "phase": "Gate1 执行中(2026-06-25): 设计+超参+代码全备, 本地验通(管道+pytest+smoke,抓修261丢失bug). HPC BrainGB env成(dtn nohup+TMPDIR/cu118/aliyun镜像/wheelhouse离线装), gpudebug run-01 seed0 edge_node_concate fold0-3 acc68.6/60.9/64.9/59.8% 均值63.5%(落文献65-70%邻域,Gate1②基本确认). 待:hypergale env修(lightning import失败)+4gpus队列腾位上全量3-seed+HyperGALE run-03+ABIDE-II下载FC自建.",
+      "phase": "🎉Gate1核心三判据全PASS(2026-06-26): ①BrainGB GCN edge_node_concate 3seed mean64.98%(66.13/64.63/64.18)✅②HyperGALE超图cc200单seed acc65.71%/auc0.662✅(超图泳道地基闭合,转gpu3090跑通)③PyG fidelity 80/80非nan✅(数值退化Gate2修). GAT初挂(PyG2.0.4→2.5.3 edge_updater分离式版本坑)→coder加MPGATConv.forward覆盖修,smoke acc66.86%对齐文献67.9%证算法没坏(⚠️改了vendor gat.py=API shim非算法私改,待reviewer审). 数据=ABIDE-I cc200(两次拍板:ABIDE-II拿不到+Schaefer400下载6天不可行→cc200零下载,与BrainGB同cohort+atlas+split利Gate2纯比架构). hg env修通(numpy1.26.4/无需optuna+dhg/ipdb). 基建踩坑:转gpu3090破gpu4090 fairshare堵+扩hpc3090容量+hook host bug修(用户授权). 在跑留账:GAT 3seed(job1495049/slot c67e5447)+HyperGALE补seed1,2(job1495050/slot 272dbe83)SLURM PENDING(账户4gpus GrpTRES gpu=4硬限被gdn2vessel别窗3+fmreg1占满,等释放自动跑). 待:补充job跑完→3seed leaderboard+release+reviewer审gat shim+Gate2(fidelity精确化+统一leaderboard)+清fidelity csv历史nan行. ⚠️gpu_slot容量模型缺陷(hpc4+hpc3090 4累加>账户硬限4)记friction待optimizer修.",
       "home": "project/meeting/HyperFidBench/",
       "story": "project/meeting/HyperFidBench/01_STORY.md",
       "acceptance": "project/meeting/HyperFidBench/02_ACCEPTANCE.md",
@@ -178,14 +178,14 @@
       "name": "FetalSSBench",
       "venue": "ACCV 2026 (main; 截稿 2026-07-05 大阪; CORE-B) → WACV App / MICCAI workshop / ISBI",
       "deadline": "2026-07-05 (ACCV)",
-      "status": "planning",
+      "status": "active",
       "priority": 5,
-      "phase": "🆕 2026-06-24 立项 (/ideate run-011 候选A). 胎儿超声半监督分割统一benchmark+自适应阈值小增量. G5 pilot GRAY-PASS. 下一步 Phase1 扩baseline+多集.",
+      "phase": "Phase1 ✅150/150跑通(5方法×2集×5比例×3seed,HPC) + Phase2 ✅PASS: 规律3 结构难度不对称 PS vs FH 显著(Wilcoxon p=0.047/MW p=0.003,SSL增益集中难结构低标注);规律1收益递减GRAY;规律2排名洗牌=无普适最优(对齐STORY). 下一步 Phase3 自适应阈值小增量(/design-experiment).",
       "home": "project/meeting/FetalSSBench/",
       "story": "project/meeting/FetalSSBench/01_STORY.md",
       "acceptance": "project/meeting/FetalSSBench/02_ACCEPTANCE.md",
       "log": "project/meeting/FetalSSBench/04_LOG.md",
-      "updated": "2026-06-24"
+      "updated": "2026-06-25"
     }
   },
   "training_lock": {

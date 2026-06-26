@@ -100,3 +100,5 @@ project/results/_bmvc_archive/
 # Office 锁文件 + QuantImmu 临时 pptx 存档
 ~$*
 project/meeting/QuantImmuBench/scripts/ptuneos/_archive_*.pptx
+project/meeting/QuantImmuBench/小组数据/
+_scratch_*

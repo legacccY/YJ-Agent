@@ -190,13 +190,21 @@ class DSCNetAdapter(BaselineAdapter):
     ) -> torch.optim.Optimizer:
         """
         AdamW betas=(0.9, 0.95), lr=1e-4 (官方 S3_Train_Process.py).
+
+        TODO: 官方 S3_Train_Process.py torch.optim.AdamW(model.parameters(), lr=lr,
+              betas=betas) 未见显式 weight_decay 参数（PyTorch AdamW 默认 wd=0.01）。
+              # TODO: researcher 确认官方是否传 weight_decay 及具体值；
+              #       若官方无显式 wd，保持 PyTorch 默认 0.01（AdamW 默认）。
         """
         lr = float(cfg.get("lr", 1e-4))
         betas = tuple(cfg.get("betas", (0.9, 0.95)))
+        # TODO: 官方未见显式 weight_decay；PyTorch AdamW 默认 wd=0.01，此处沿用默认。
+        #       researcher 确认后回填（dscnet.yaml weight_decay 字段）。
         return torch.optim.AdamW(
             model.parameters(),
             lr=lr,
             betas=betas,
+            # weight_decay 未传 → 使用 PyTorch AdamW 默认 0.01（复现零偏离待 researcher 确认）
         )
 
     # ---------------------------------------------------------------------- #
@@ -296,6 +304,54 @@ class DSCNetAdapter(BaselineAdapter):
     #  forward_adapt
     # ---------------------------------------------------------------------- #
 
+    # DSCNet 架构下采样因子：MaxPool2d(2) × 3 = 8x，skip concat 要求 H%8==0, W%8==0。
+    # 官方训练用 224×224 ROI (224%8==0 OK)。
+    # native DRIVE 565×584: 565%8=5≠0 → upsample path 140 vs skip 141 → concat 崩。
+    # 修复：preprocess_benchmark_image pad 到 8 整数倍，forward_adapt 直接 forward。
+    # evaluate.py 之后 crop [:orig_H, :orig_W] 回 native GT 尺寸。
+    _DSCNET_PAD_MULT: int = 8
+
+    def preprocess_benchmark_image(
+        self,
+        npz_image: "np.ndarray",
+        image_id: str,
+        dataset_name: str,
+        data_root: "Optional[str]" = None,
+    ) -> "Tuple[np.ndarray, Tuple[int, int]]":
+        """
+        DSCNet benchmark 预处理：pad 输入到 8 整数倍（下采样兼容）。
+
+        DSCNet 使用 MaxPool2d(2) × 3 下采样，要求 H%8==0, W%8==0。
+        native DRIVE 565×584: 565%8=5，不整除 → skip concat 尺寸崩
+        （encoder path 下采到 141，decoder upsample 到 140，cat 崩）。
+        修复：pad 到 8 整数倍后 forward，输出保持 padded 尺寸，
+        evaluate.py crop [:orig_H, :orig_W] 回 native GT 尺寸算指标。
+
+        Args:
+            npz_image:    (H, W) float32 from NPZ (green+CLAHE+norm).
+            image_id:     image identifier (unused, kept for signature 兼容).
+            dataset_name: dataset name (unused, kept for signature 兼容).
+            data_root:    optional raw data root (unused for DSCNet).
+
+        Returns:
+            (padded_image, (orig_H, orig_W)):
+              padded_image — (H', W') float32, H'%8==0 and W'%8==0.
+              (orig_H, orig_W) — original size for crop-back in evaluate.py.
+        """
+        import numpy as _np
+
+        img = npz_image.astype(_np.float32)
+        orig_H, orig_W = img.shape
+
+        mult = self._DSCNET_PAD_MULT
+        pad_H = (mult - orig_H % mult) % mult
+        pad_W = (mult - orig_W % mult) % mult
+
+        if pad_H > 0 or pad_W > 0:
+            img = _np.pad(img, ((0, pad_H), (0, pad_W)), mode='constant', constant_values=0.0)
+
+        return img, (orig_H, orig_W)
+
     def forward_adapt(
         self,
         model: nn.Module,
@@ -303,18 +359,25 @@ class DSCNetAdapter(BaselineAdapter):
         device: torch.device,
     ) -> torch.Tensor:
         """
-        全图推理: DSCNet 是整图前向（224 ROI），直接 forward。
-        输入 (B,1,H,W) → 输出 (B,1,H,W) logits。
+        全图推理: DSCNet 整图前向。
 
-        evaluate.py 传入的是 full-resolution 图像（可能非 224）。
-        在此做 resize → 推理 → resize back 以兼容统一评估台子。
-        NOTE: 严格复现应在 224 ROI 上推理，此处 resize 可能引入轻微差异；
-              为评估公平性统一全图，此 trade-off 在 BASELINE_SPEC §2.3 已记录。
+        输入 (B,1,H,W) 其中 H%8==0, W%8==0（由 preprocess_benchmark_image 保证）。
+        → 输出 (B,1,H,W) logits（形状与输入一致）。
+        evaluate.py 之后 crop [:orig_H, :orig_W] 回 native GT 尺寸。
+
+        NOTE: 严格复现应在 224 ROI 上推理；此处全图推理用于公平统一评估台子。
+              H%8==0, W%8==0 保证 MaxPool2d(2)×3 的 skip-concat 维度匹配。
         """
         assert x.shape[1] == 1, (
             f"DSCNetAdapter.forward_adapt: expected (B,1,H,W), "
             f"got channel={x.shape[1]}"
         )
+        _, _, H, W = x.shape
+        assert H % self._DSCNET_PAD_MULT == 0 and W % self._DSCNET_PAD_MULT == 0, (
+            f"DSCNetAdapter.forward_adapt: H={H}, W={W} 不是 {self._DSCNET_PAD_MULT} "
+            f"整数倍，skip concat 会崩。请检查 preprocess_benchmark_image 是否正确 pad。"
+        )
+
         model.eval()
         with torch.no_grad():
             logits = model(x)

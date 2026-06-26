@@ -2,6 +2,8 @@
 
 > 入口读档顺序：本文 → `REPORT.md`（完整部署测试报告，PPT 素材）→ `DEPLOY_TRACKER.md`（5 工具部署状态总表）→ `TOOLS/<tool>.md`（逐工具信息）→ `04_LOG.md` 最新 entry
 >
+> 📖 **新人/复盘看这篇**：`项目全解_从头到尾.md`（从零讲清这是什么、做了什么、踩了哪些坑、得到什么结果、现状——给完全不懂的人的故事版全貌）
+>
 > 另见：`REFERENCES.md`（工具论文/DOI/repo 出处）· `PROVENANCE.md`（代码归属：哪些是我们写的 vs 外部工具 + 许可/再分发限制）· `HPC/`（从 HPC 拉回的部署脚本 + ELISpot 正式跑产物，`HPC/README.md` 说明哪些大件留 HPC）
 
 ## 一句话

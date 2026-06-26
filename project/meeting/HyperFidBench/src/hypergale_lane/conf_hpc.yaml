@@ -1,14 +1,50 @@
-# HPC 覆盖配置
-# train_hypergale.py 会直接读官方 conf，此文件供 HPC 路径覆盖参考
+# HPC 覆盖配置（HyperGALE 泳道，ABIDE-I CC200）
 #
-# HPC 上运行示例：
+# 【偏离论文声明】cohort/atlas 换 ABIDE-I CC200（原论文 ABIDE-II Schaefer400）。
+#   FC 方法换 Pearson（原 LedoitWolf correlation，随 BrainGB 已有数据）。
+#   与 BrainGB 完全同 cohort/atlas/split，Gate2 纯比 GNN vs 超图架构。
+#   K_neigs=40 沿用论文值（cc200 200节点下覆盖率翻倍，待 Gate2 调参验证）。
+#
+# 运行步骤（HPC 串行，秒级准备 + 数小时训练）：
+#
+# Step 1: abide.npy → fc_large_data_cc200.npy（秒级，零网络，BrainGB 数据直接转）
+#   cd /gpfs/work/bio/jiayu2403/hyperfid
+#   python src/hypergale_lane/build_fc_cc200_from_braingb.py \
+#       --abide-npy   vendor/BrainGB/examples/datasets/ABIDE/abide.npy \
+#       --output      data/external/abide1_cc200/fc_large_data_cc200.npy \
+#       --meta-output data/external/abide1_cc200/abide1_cc200_meta.csv
+#
+# Step 2: 对齐 BrainGB split（秒级）
+#   python src/hypergale_lane/make_split_cc200.py \
+#       --meta       data/external/abide1_cc200/abide1_cc200_meta.csv \
+#       --split-csv  data/external/abide1/split_indices.csv \
+#       --output-dir data/external/abide1_cc200/splits
+#
+# Step 3: 训练（3 seeds × fold 0，约 1-2h/seed on 4090）
 #   python src/hypergale_lane/train_hypergale.py \
-#       --fc-path /gpfs/work/bio/jiayu2403/hyperfid/data/external/abide2/fc_large_data.npy \
-#       --device cuda:0 \
-#       --output-dir /gpfs/work/bio/jiayu2403/hyperfid/results/hypergale \
+#       --fc-path    data/external/abide1_cc200/fc_large_data_cc200.npy \
+#       --split-csv  data/external/abide1_cc200/splits/split_cc200_5fold.csv \
+#       --fold       0 \
+#       --device     cuda:0 \
+#       --output-dir results/hypergale \
 #       --seeds 0 1 2
+#
+# Step 4（可选，烟测验超边维度）:
+#   python src/hypergale_lane/build_hyperedges.py \
+#       --fc-path data/external/abide1_cc200/fc_large_data_cc200.npy
+#
+# Step 5（可选，跑全 5-fold Gate2 比较）:
+#   for fold in 0 1 2 3 4; do
+#     python src/hypergale_lane/train_hypergale.py \
+#         --fc-path   data/external/abide1_cc200/fc_large_data_cc200.npy \
+#         --split-csv data/external/abide1_cc200/splits/split_cc200_5fold.csv \
+#         --fold $fold --seeds 0 --output-dir results/hypergale/fold${fold}
+#   done
 
-fc_path: /gpfs/work/bio/jiayu2403/hyperfid/data/external/abide2/fc_large_data.npy
-output_dir: /gpfs/work/bio/jiayu2403/hyperfid/results/hypergale
-device: cuda:0
-seeds: [0, 1, 2]
+fc_path:     data/external/abide1_cc200/fc_large_data_cc200.npy
+meta_path:   data/external/abide1_cc200/abide1_cc200_meta.csv
+split_csv:   data/external/abide1_cc200/splits/split_cc200_5fold.csv
+output_dir:  results/hypergale
+device:      cuda:0
+seeds:       [0, 1, 2]
+fold:        0

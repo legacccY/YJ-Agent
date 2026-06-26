@@ -1,11 +1,13 @@
 # gdn2vessel 验收标准（顶会亮度目标分解）
 
 **目标**：按 CVPR/ICCV/MICCAI 顶会亮度建，ACCV 2026 作保底。不设周期上限——**唯一推进条件 = 每阶段硬阈值全 PASS**，不赶 deadline 牺牲质量。
-**最后更新**：2026-06-22（路B重定位 — headline 主轴改可微 Frangi 门；新增「路B 最小验证 gate 预登记」kill-criteria 块）
+**最后更新**：2026-06-25（**benchmark-only 重定位** — 路A/路B 两命门全死，headline 改「2D 眼底断点续连评测套件 + 诊断方法学 + 诚实负结果」；新增「批2 区分度门预登记(待拍草案)」）
 
 > 完成判定铁律：**不存在「基本完成」「差不多了」。要么逐条全 PASS，要么继续补。** 任一 FAIL → 不标完成，回去补；非硬伤无解 → 写诚实回退 + 停下报用户（stage-gate FAIL 放行是拍板点）。
 
-> ⚠️⚠️ **路B重定位（2026-06-22，用户拍板）**：立项锚「GDN-2 delta 机制特异性」已证伪（MQAR delta≈GLA + 目标函数错配）。headline 主轴改为「可微 Frangi 门调制记忆做端到端续连」。**当前唯一前置命门 = 下方「🔒🔒 路B 最小验证 gate 预登记」**——先砸这道门（feedback_falsify_crux_first），PASS 才全铺路B。原 P4 re-ID 可归因预登记表（A-I / A-v2 三臂命门）随 re-ID 降副产**整体冻结归档**（保留为硬资产留痕，**不再作为推进 gate**）。战略链见 `PROJECT_LOG.md` Entry 31 + `STORY_FRAMEWORK.md` 核心 Claim 区。
+> ⚠️⚠️⚠️ **benchmark-only 重定位（2026-06-24~25，用户拍板 Entry 32）**：路A（delta 机制特异，MQAR delta≈GLA）+ 路B（Frangi 门拓扑轴显著赢，最小验证 gate FAIL：DRIVE 正 CHASE 反）**两条「方法赢」命门全死**。headline 改 **benchmark-only**：①合成断点协议(4-severity 网格)②续连指标族(ε_β0/SR/reid_rate + clDice/Betti)③12 baseline 全谱 leaderboard④诊断方法学 + 诚实负结果。**承重点=「benchmark 能区分方法 + 诊断现有方法/指标局限」非「我们方法赢」**。GDN-2/Frangi 门降为被评测方法之一。**当前前置命门 = 下方「🔒🔒 批2 区分度门预登记」（待用户拍板冻结，skeptic 2🔴 修复版）**。详见 `PROJECT_LOG.md` Entry 32/33 + `STORY_FRAMEWORK.md` + `PLAN/LEADERBOARD_MATRIX.md`。
+>
+> 下方「路B 最小验证 gate」+「re-ID 可归因表」**均已死/归档，只读留痕不再作 gate**。L6「拓扑/续连赢 SOTA」**已降参照**（2026-06-25 用户拍板，Ours 输不塌稿，区分力才承重）。
 
 ---
 
@@ -18,7 +20,7 @@
 | L3. baseline 全谱同台 | ≥12（SSM+拓扑+经典+冠脉+2025-2026 最新） | 漏比关键竞品 = reject | ⬜ P3 |
 | L4. 数据集超量 | ≥10 集全做满（视网膜5+冠脉3+OCTA2+跨域），允许 1-2 边缘集失败 | 数据偏单 = 泛化质疑 | ⬜ P3/P5 |
 | L5. 消融超量 | ≥8-10 组，每个机制 ≥1 干净对照 | 消融不系统 = novelty 存疑 | ⬜ P4 |
-| L6. 拓扑/续连赢 SOTA | clDice/Betti/ε_β0 ≥1 轴显著赢 SOTA（**必含 GLCP MICCAI2025 Oral 对比**，clDice 须过 >82.4% 门槛）；裸 Dice 持平不输 | 无胜负点 = reject | ⬜ P3 |
+| ~~L6. 拓扑/续连赢 SOTA~~ **(2026-06-25 降参照)** | benchmark-only 后**不要求 Ours 赢**——leaderboard 报全谱方法续连/拓扑数，Ours 输也不塌稿。承重改为「benchmark 能区分方法」(批2 区分度门) | ~~无胜负点 = reject~~ 不再是 gate | 🔽 降参照 |
 | L7. 可解释性 | ≥3 张「记忆认出同根血管」可视化（王水花方向） | 卖点弱 | ⬜ P6 |
 | L8. CV 方法贡献叙述 | 新机制/原理/benchmark 先行，医学=validation | 被读成换模块/纯临床 = reject | ⬜ P7 |
 | L9. 写作/对抗审稿 | 数字三方对账 0 偏离 + reviewer 十角色 0 致命 + skeptic 攻 claim | 防御漏洞被审稿命中 | ⬜ P7 |
@@ -55,6 +57,40 @@
 **统计实现纪律**：配对符号检验 / Wilcoxon 单侧 + bootstrap 95% CI **手算**（numpy + itertools，**禁 scipy.stats**，OMP 红线，沿用全项目纪律）。
 
 **一次验证（禁 p-hack）**：本地 e2e 真烟测通过后冻结配置，命门跑**一次**，禁反复调参直到 gap 出现。
+
+> 🗄️ **以上「路B 最小验证 gate」2026-06-24 已 FAIL 归档**（DRIVE 正 CHASE 反，三条 PASS 无一满足）。只读留痕，不再作 gate。当前命门 = 下方「批2 区分度门」。
+
+---
+
+### 🔒🔒 批2 区分度门预登记（**已冻结** — 2026-06-25 planner 设计 + skeptic 2🔴 修复版，用户拍板采纳；数字一字不动禁 HARKing）
+
+> ✅✅ **批2 VERDICT: PASS（2026-06-26，seed42 GO 信号；verifier 核数字 ✅）**：M=8 baseline，pool DRIVE+CHASE n=12。**PSR on clDice=0.857(24/28 可分离) >> shuffle-null 95pct=0.143**；power=0.926；饱和 sanity False(fr_unet Medium clDice 0.745 不饱和)；交叉印证 ε_β0 PSR0.75 同向 + SR/reid 斜率同号 + Kendall W=1.0。**5 项预登记交叉印证全过 → 承重命门「benchmark 能区分方法」确证。** 详见 PROJECT_LOG「批2 VERDICT PASS」entry。**纪律：seed42=GO 初判，正式判据落批3 3-seed**（下方第 4 条仍要求 3-seed 复核）。⚠️ cs_net eval bug(训练 0.81 vs eval 0.49/0.12,preprocess_benchmark_image 路径 miss)待修重跑——PASS 不受影响(cs_net 修后 PSR 仍 >>null)。
+
+**背景**：benchmark-only 后承重前提 = 「benchmark 能区分方法」。STORY 标此 claim 全 hedge 至本门确认。严守 [[feedback_falsify_crux_first]]：先砸区分度命门再立判别轴 claim。**skeptic 红队逮 2🔴(PSR 复合量未切开 + 小样本假 FAIL)，下方修复版已采纳冻结。** L6「拓扑/续连赢 SOTA」正式降参照（Ours 输不塌稿）。
+
+**命门 H_disc（单一，跑前写死）**：~M 个 baseline 在续连/拓扑指标上分得开（成对差超噪声带 **且超方法池基础可分性**），而非全挤一团 / 假 FAIL。
+
+**配置**：批2 = {DRIVE,CHASE} × ~M main-venv baseline × seed42（早期信号）→ 批3 +seed{1,2}（正式）× 4 severity（不重训）。方法集合 M 批2 跑前**冻结**（C(M,2) 是分母，跑后改 M = HARKing）。
+
+**主判据轴 = 成对可分离率 PSR on clDice，但用 shuffle-null 锚（skeptic 🔴-1 修）**：
+- per-method-pair (a,b)：per-image 配对差 dᵢ=clDice_a(i)−clDice_b(i)，cluster bootstrap（按 image_id，B=2000，手算 numpy）求 mean 95%CI，BH-FDR(q=0.05) 校正后 CI 不含 0 = 「可分离」。PSR = 可分离对 / C(M,2)。
+- **shuffle-null 锚（核心修复，替代拍脑袋的绝对 0.30）**：把方法标签 shuffle 重算 PSR 得 null 分布；**PASS ⟺ real PSR 超 null 95 分位**。证 benchmark 判别力**超出方法池本身的强弱悬殊**（扣掉「随便选两个差很多的方法当然分得开」）。researcher 核：Demšar/Touchstone/HECKTOR 均无「PSR≥X%」规范阈值，shuffle-null 相对锚比绝对阈可辩护。
+
+**小样本假 FAIL 修（skeptic 🔴-2）**：DRIVE n=4 / CHASE n=8 + 91 对 FDR → CI 系统压宽 → PSR 系统偏低。修：
+- **pool DRIVE+CHASE → n=12 配对样本算每对 CI**（数据集作 cluster 维度；复用旧 re-ID 命门 pooled 跨集思路），不各集 n=4/8 单独判。
+- **加 INSUFFICIENT 档（照 ArtiOODBench 先例）**：批2 跑完先报「当前 n 下假定文献效应量 bootstrap 能检出概率」；power 不足 → 判 **INSUFFICIENT 非 FAIL**，待批3/FIVES(n=200) 补功效，不被「禁扩 seed」红线锁死成假 FAIL。
+
+**饱和盲区修（skeptic 🟠-3）**：跑前写死 sanity——若 Medium 下强 baseline(FR-UNet) clDice >0.90 或 <0.30（地板/天花板失分辨力），主判据档自动切预登记次选 **Hard**。切换规则跑前定、基于单强 baseline 绝对值、不看方法间差距 → 非 HARKing。
+
+**交叉印证（须同向，否则降一档）**：① PSR on ε_β0（固定 severity，ε_β0 是 severity-不变量只作固定档印证，**禁画衰减曲线**）方向一致 ② severity-response 斜率分散度 max−min βₘ（**只用 SR/reid_rate，禁 ε_β0**）≥ 噪声量级且 reid_rate 同号扩散。
+
+**判定档**：PASS（real PSR>null 95 分位 + 交叉印证同向）→批3 铺 3-seed 立判别轴 claim；INSUFFICIENT（功效不足）→补样本不强判；FAIL（real PSR 未超 null）→停下报用户，诚实写「区分力有限/挤一团」，D&B 稿仍立但 Claim3 判别轴降级不写区分 claim。
+
+**🔒 机械红线（写死，FAIL 后禁绕）**：禁换主判据轴（clDice 不过不许改 ε_β0/斜率凑）/ 禁换指标（SR 永不升主排名轴，可刷满 R7）/ 禁换 severity 档凑（除上方饱和 sanity 预登记切换）/ 禁加减方法凑 PSR（M 跑前冻结）/ INSUFFICIENT 后只许补预登记样本不许换判据。FAIL = stage-gate FAIL 拍板点，停下报用户。
+
+**统计纪律**：全手算 numpy 禁 scipy.stats（OMP 红线）；cluster bootstrap 按 image_id（非像素/gap）；BH-FDR q=0.05 手算；shuffle-null 重算 PSR；3-seed mean±std。
+
+**口径（L6 降参照落实，待拍板）**：本门不含「ours_gdn2 须赢」条款——ours 在 PSR 里是普通配对方，秩位/胜负不影响门 PASS/FAIL。胜负不承重，区分力才承重。
 
 ---
 

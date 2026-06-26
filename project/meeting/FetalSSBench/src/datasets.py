@@ -1,7 +1,7 @@
 """
 datasets.py
 ===========
-FetalSSBench 统一数据 loader，支持 PSFHS 和 HC18 两个数据集。
+FetalSSBench 统一数据 loader，支持 PSFHS、HC18、FUGC 三个数据集。
 
 PSFHS：
   - 读 .mha（SimpleITK），resize 256²
@@ -13,10 +13,18 @@ HC18：
   - 单前景类(head)，0=背景 1=头，NUM_CLASSES=2
   - resize 256²（图双线性，mask 最近邻）
 
-Split 策略（两个数据集统一）：
+FUGC（MICCAI 2024 Challenge，宫颈口分割）：
+  - 读 PNG 灰度图 + 单通道 PNG mask，resize 256²
+  - 标签 0=bg 1=anterior cervical lip 2=posterior cervical lip，NUM_CLASSES=3
+  - **官方固定 split**：labeled=train/labeled_data(50)、unlabeled=train/unlabeled_data(450)、
+    test=test(300 含GT)。ratio 参数对 FUGC 忽略（官方固定 10%），不参与 1/2/5/20% 扫。
+  - 根目录格式：<data_dir>/FUGC (Dataset)/dataset/（目录名含空格括号，Path 直接拼接）
+
+Split 策略（PSFHS/HC18 通用）：
   - 固定 seed=42，held-out 20% test（与实验 seed 独立）
   - 从 trainpool 按 label_ratio 取标注子集，其余无标注
   - assert test ∩ train = ∅（红线：评估集不泄漏）
+  FUGC 使用官方预定义 split，不走 make_splits。
 
 用法：
     from datasets import get_dataloaders, DATASET_INFO
@@ -28,6 +36,16 @@ Split 策略（两个数据集统一）：
         seed=0,
     )
     num_classes = DATASET_INFO["hc18"]["num_classes"]  # 2
+
+    # FUGC：ratio 忽略，用官方 split（50 labeled / 450 unlabeled / 300 test）
+    labeled_loader, unlabeled_loader, test_loader = get_dataloaders(
+        dataset="fugc",
+        data_dir="path/to/FUGC_root",   # 含 "FUGC (Dataset)/dataset/" 的父目录
+        label_ratio=0.1,                 # 被忽略，官方固定 50 labeled
+        batch_size=4,
+        seed=0,
+    )
+    num_classes = DATASET_INFO["fugc"]["num_classes"]  # 3
 """
 
 from __future__ import annotations
@@ -54,6 +72,13 @@ DATASET_INFO = {
         "num_classes": 2,   # 0=bg, 1=head
         "class_names": ["bg", "head"],
         "in_channels": 1,
+    },
+    "fugc": {
+        "num_classes": 3,   # 0=bg, 1=anterior cervical lip, 2=posterior cervical lip
+        "class_names": ["bg", "anterior", "posterior"],
+        "in_channels": 1,
+        # 官方固定 split：labeled=50, unlabeled=450, test=300（ratio 参数被忽略）
+        "fixed_split": True,
     },
 }
 
@@ -413,6 +438,175 @@ class HC18UnlabeledDataset(Dataset):
 
 
 # ------------------------------------------------------------------ #
+# FUGC Dataset（MICCAI 2024 Challenge，官方固定 split）
+# 格式：PNG 灰度图 + 单通道 PNG mask，无需 mha/椭圆填充，比 PSFHS/HC18 简单。
+# 标签像素值 {0=bg, 1=anterior cervical lip, 2=posterior cervical lip}，直接读取。
+# 官方 split：labeled=train/labeled_data/images|labels (50)
+#             unlabeled=train/unlabeled_data/images (450，无 labels)
+#             test=test/images|labels (300)
+# ------------------------------------------------------------------ #
+
+def _resolve_fugc_root(data_dir: Path) -> Path:
+    """
+    解析 FUGC 数据根目录。
+    支持两种传入方式：
+      1. 直接传 <root>/FUGC (Dataset)/dataset/（已在最内层）
+      2. 传 <root>，自动拼 FUGC (Dataset)/dataset/
+    """
+    # 判断是否已经是最内层（含 train/ test/ 子目录）
+    if (data_dir / "train").is_dir() and (data_dir / "test").is_dir():
+        return data_dir
+    # 尝试拼 FUGC (Dataset)/dataset/
+    inner = data_dir / "FUGC (Dataset)" / "dataset"
+    if inner.is_dir():
+        return inner
+    raise FileNotFoundError(
+        f"FUGC 数据目录解析失败：{data_dir}\n"
+        "期望含 train/ 和 test/ 子目录，或含 'FUGC (Dataset)/dataset/' 子路径。"
+    )
+
+
+def _get_fugc_png_pairs(img_dir: Path, lbl_dir: Path) -> List[Tuple[Path, Path]]:
+    """
+    配对 img_dir/*.png 与 lbl_dir/*.png，按文件名 stem 严格对齐，排序返回。
+    两目录 stem 不一致时抛错，确保无静默丢失。
+    """
+    img_paths = sorted(img_dir.glob("*.png"))
+    lbl_paths = sorted(lbl_dir.glob("*.png"))
+    if not img_paths:
+        raise FileNotFoundError(f"FUGC：{img_dir} 下没有 PNG 图像")
+    if not lbl_paths:
+        raise FileNotFoundError(f"FUGC：{lbl_dir} 下没有 PNG mask")
+
+    img_stem_map = {p.stem: p for p in img_paths}
+    lbl_stem_map = {p.stem: p for p in lbl_paths}
+    common = sorted(img_stem_map.keys() & lbl_stem_map.keys())
+    only_img = sorted(img_stem_map.keys() - lbl_stem_map.keys())
+    only_lbl = sorted(lbl_stem_map.keys() - img_stem_map.keys())
+
+    if only_img or only_lbl:
+        raise FileNotFoundError(
+            f"FUGC 图/mask stem 不匹配。\n"
+            f"  仅图无mask({len(only_img)}): {only_img[:5]}\n"
+            f"  仅mask无图({len(only_lbl)}): {only_lbl[:5]}"
+        )
+
+    return [(img_stem_map[s], lbl_stem_map[s]) for s in common]
+
+
+class FUGCDataset(Dataset):
+    """
+    FUGC 有标注数据集（labeled train 或 test）。
+    PNG 灰度图 + 单通道 PNG mask，像素值 {0,1,2} 直接用。
+    返回 (image [1,H,W] float32, label [H,W] int64)
+    """
+    def __init__(self, pairs: List[Tuple[Path, Path]],
+                 augment: bool = False, size: int = IMAGE_SIZE):
+        self.pairs = pairs
+        self.augment = augment
+        self.size = size
+
+    def __len__(self):
+        return len(self.pairs)
+
+    def __getitem__(self, idx):
+        img_path, lbl_path = self.pairs[idx]
+
+        # 读图像（灰度）
+        img = np.array(Image.open(img_path).convert("L"), dtype=np.float32)
+        img = _normalize(img)
+        img = _resize_2d(img, self.size, is_label=False)
+
+        # 读 mask（单通道 PNG，像素值 {0,1,2}，直接用最近邻 resize）
+        lbl = np.array(Image.open(lbl_path).convert("L"), dtype=np.uint8)
+        lbl = _resize_2d(lbl.astype(np.float32), self.size, is_label=True)
+
+        if self.augment:
+            img, lbl = _random_flip(img, lbl)
+
+        img_t = torch.from_numpy(img).unsqueeze(0).float()
+        lbl_t = torch.from_numpy(lbl.astype(np.int64)).long()
+        return img_t, lbl_t
+
+
+class FUGCUnlabeledDataset(Dataset):
+    """
+    FUGC 无标注数据集（train/unlabeled_data/images，只有图无 mask）。
+    返回 image [1,H,W] float32。
+    """
+    def __init__(self, img_paths: List[Path],
+                 size: int = IMAGE_SIZE, augment_weak: bool = False):
+        self.img_paths = img_paths
+        self.size = size
+        self.augment_weak = augment_weak
+
+    def __len__(self):
+        return len(self.img_paths)
+
+    def __getitem__(self, idx):
+        img = np.array(Image.open(self.img_paths[idx]).convert("L"), dtype=np.float32)
+        img = _normalize(img)
+        img = _resize_2d(img, self.size, is_label=False)
+        if self.augment_weak:
+            img, _ = _random_flip(img, img)
+        return torch.from_numpy(img).unsqueeze(0).float()
+
+
+def _get_fugc_dataloaders(
+    data_dir: Path,
+    label_ratio: float,   # FUGC 官方固定 split，此参数被忽略（注释说明）
+    batch_size: int,
+    seed: int,            # 无标注 loader shuffle 用，不影响 split
+    num_workers: int,
+    fixmatch_mode: bool,
+) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    """
+    FUGC 官方固定 split loader。
+    label_ratio 对 FUGC 忽略——官方已预定义 labeled(50)/unlabeled(450)/test(300)，
+    不参与 1/2/5/20% 扫（守复现零偏离；若 harness 传非 0.1 的 ratio，记警告但不报错）。
+    """
+    root = _resolve_fugc_root(data_dir)
+    print(f"[FUGC] root: {root}")
+
+    if abs(label_ratio - 0.1) > 1e-6:
+        print(
+            f"[FUGC] ⚠️  label_ratio={label_ratio:.2f} 被忽略。"
+            "FUGC 使用官方固定 split（50 labeled / 450 unlabeled），不参与 ratio 扫。"
+        )
+
+    # --- labeled：train/labeled_data/images + labels ---
+    labeled_img_dir = root / "train" / "labeled_data" / "images"
+    labeled_lbl_dir = root / "train" / "labeled_data" / "labels"
+    labeled_pairs = _get_fugc_png_pairs(labeled_img_dir, labeled_lbl_dir)
+    print(f"[FUGC] labeled: {len(labeled_pairs)} 对")
+
+    # --- unlabeled：train/unlabeled_data/images（无 labels）---
+    unlabeled_img_dir = root / "train" / "unlabeled_data" / "images"
+    unlabeled_img_paths = sorted(unlabeled_img_dir.glob("*.png"))
+    if not unlabeled_img_paths:
+        raise FileNotFoundError(f"FUGC：{unlabeled_img_dir} 下没有 PNG 图像")
+    print(f"[FUGC] unlabeled: {len(unlabeled_img_paths)} 张")
+
+    # --- test：test/images + labels（GT 全公开，直接作 held-out test）---
+    test_img_dir = root / "test" / "images"
+    test_lbl_dir = root / "test" / "labels"
+    test_pairs = _get_fugc_png_pairs(test_img_dir, test_lbl_dir)
+    print(f"[FUGC] test: {len(test_pairs)} 对")
+
+    # 构建 Dataset
+    labeled_ds = FUGCDataset(labeled_pairs, augment=True)
+    test_ds = FUGCDataset(test_pairs, augment=False)
+
+    if fixmatch_mode:
+        base_unlabeled = FUGCUnlabeledDataset(unlabeled_img_paths, augment_weak=False)
+        unlabeled_ds = WeakStrongUnlabeledDataset(base_unlabeled)
+    else:
+        unlabeled_ds = FUGCUnlabeledDataset(unlabeled_img_paths)
+
+    return _make_loaders(labeled_ds, unlabeled_ds, test_ds, batch_size, num_workers)
+
+
+# ------------------------------------------------------------------ #
 # FixMatch 双增广包装（弱+强同一张图）
 # ------------------------------------------------------------------ #
 
@@ -495,7 +689,7 @@ def get_dataloaders(
     fixmatch_mode: bool = False,  # FixMatch 无标注 loader 返回 (weak, strong) 对
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
-    统一入口：支持 dataset ∈ {"psfhs", "hc18"}。
+    统一入口：支持 dataset ∈ {"psfhs", "hc18", "fugc"}。
 
     返回 (labeled_loader, unlabeled_loader, test_loader)
       - labeled_loader:   有标注，开增广，drop_last=True
@@ -503,6 +697,8 @@ def get_dataloaders(
       - test_loader:      固定 held-out test，无增广，batch_size=4，不 shuffle
 
     pin_memory=False（Windows spawn 不支持）
+
+    FUGC 特殊说明：label_ratio 被忽略，官方固定 split 50/450/300。
     """
     dataset = dataset.lower()
     if dataset not in DATASET_INFO:
@@ -516,8 +712,12 @@ def get_dataloaders(
         return _get_psfhs_dataloaders(
             data_dir, label_ratio, batch_size, seed, num_workers, fixmatch_mode
         )
-    else:  # hc18
+    elif dataset == "hc18":
         return _get_hc18_dataloaders(
+            data_dir, label_ratio, batch_size, seed, num_workers, fixmatch_mode
+        )
+    else:  # fugc
+        return _get_fugc_dataloaders(
             data_dir, label_ratio, batch_size, seed, num_workers, fixmatch_mode
         )
 

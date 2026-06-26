@@ -109,6 +109,7 @@ class BaseVesselDataset(Dataset):
         clahe_clip: float = CLAHE_CLIP,
         pad_multiple: int = PAD_MULTIPLE,
         skip_missing: bool = False,
+        color_mode: str = 'green',
     ):
         """
         Args:
@@ -120,7 +121,15 @@ class BaseVesselDataset(Dataset):
             pad_multiple: Pad H/W to multiple of this.
             skip_missing: If True, skip missing files instead of raising (for HPC
                           path validation before data is fully copied).
+            color_mode:   'green' (default) — CLAHE + normalize green channel → (1,H,W);
+                          'rgb'             — /255 only, no CLAHE → (3,H,W).
+                          Only CS-Net uses 'rgb' (官方 ToTensor RGB, iMED-Lab/CS-Net).
+                          All other 11 baselines keep 'green' (default, no behaviour change).
         """
+        if color_mode not in ('green', 'rgb'):
+            raise ValueError(
+                f"BaseVesselDataset color_mode must be 'green' or 'rgb', got {color_mode!r}"
+            )
         super().__init__()
         self.data_root = Path(data_root)
         self.split = split
@@ -129,6 +138,7 @@ class BaseVesselDataset(Dataset):
         self.clahe_clip = clahe_clip
         self.pad_multiple = pad_multiple
         self.skip_missing = skip_missing
+        self.color_mode = color_mode
 
         # Anti-leakage: validate split disjointness at class definition level
         self._check_split_disjoint()
@@ -194,11 +204,28 @@ class BaseVesselDataset(Dataset):
     # ---------------------------------------------------------------------- #
 
     def _load_image(self, sid) -> np.ndarray:
-        """Load image → (H,W) float32 normalised green channel + CLAHE.
+        """Load image → float32 array.
+
+        color_mode='green' (default):
+            → (H, W) float32, green channel + CLAHE + normalize(0.5, 0.1).
+            Used by all 11 baselines except CS-Net.
+
+        color_mode='rgb':
+            → (H, W, 3) float32, RGB /255 only, no CLAHE, no mean/std subtract.
+            Matches CS-Net official dataloader: Image.open → transforms.ToTensor()
+            (source: iMED-Lab/CS-Net dataloader/drive.py, confirmed 2026-06-25).
+
         Override in subclasses that have non-RGB or special format.
         """
         img_bgr = cv2.imread(str(self._img_path(sid)))
         assert img_bgr is not None, f"cv2 failed to read {self._img_path(sid)}"
+
+        if self.color_mode == 'rgb':
+            # RGB /255 — CS-Net official pipeline (no CLAHE, no normalization)
+            img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+            return img_rgb.astype(np.float32) / 255.0   # (H, W, 3)
+
+        # Default: green channel + CLAHE + normalize
         green = img_bgr[:, :, 1]  # green channel index=1 in BGR
         green_clahe = apply_clahe(green, clip_limit=self.clahe_clip)
         img_f = green_clahe.astype(np.float32) / 255.0
@@ -235,7 +262,9 @@ class BaseVesselDataset(Dataset):
     # ---------------------------------------------------------------------- #
 
     def _augment(self, img, gt, mask):
-        """Random H-flip, V-flip, 90° rotation."""
+        """Random H-flip, V-flip, 90° rotation.
+        Works for both (H,W) green and (H,W,3) RGB images.
+        """
         if random.random() > 0.5:
             img = np.fliplr(img).copy()
             gt = np.fliplr(gt).copy()
@@ -246,6 +275,7 @@ class BaseVesselDataset(Dataset):
             mask = np.flipud(mask).copy()
         k = random.randint(0, 3)
         if k > 0:
+            # np.rot90 rotates in the first two axes (H,W) regardless of extra dims
             img = np.rot90(img, k).copy()
             gt = np.rot90(gt, k).copy()
             mask = np.rot90(mask, k).copy()
@@ -260,7 +290,11 @@ class BaseVesselDataset(Dataset):
         if h < size or w < size:
             pad_h = max(0, size - h)
             pad_w = max(0, size - w)
-            img = np.pad(img, ((0, pad_h), (0, pad_w)), mode='reflect')
+            if img.ndim == 3:
+                # (H, W, C) RGB mode
+                img = np.pad(img, ((0, pad_h), (0, pad_w), (0, 0)), mode='reflect')
+            else:
+                img = np.pad(img, ((0, pad_h), (0, pad_w)), mode='reflect')
             gt = np.pad(gt, ((0, pad_h), (0, pad_w)), mode='constant')
             mask = np.pad(mask, ((0, pad_h), (0, pad_w)), mode='constant')
             h, w = img.shape[:2]
@@ -296,13 +330,18 @@ class BaseVesselDataset(Dataset):
         else:
             img, gt, fov_mask = self._center_pad(img, gt, fov_mask)
 
-        # → tensor: (1, H, W) float32
-        img_t = torch.from_numpy(img).unsqueeze(0)
+        # → tensor
+        if self.color_mode == 'rgb':
+            # img shape: (H, W, 3) → (3, H, W)
+            img_t = torch.from_numpy(img).permute(2, 0, 1)   # (3, H, W)
+        else:
+            # img shape: (H, W) → (1, H, W)
+            img_t = torch.from_numpy(img).unsqueeze(0)        # (1, H, W)
         gt_t = torch.from_numpy(gt.astype(np.float32)).unsqueeze(0)
         fov_t = torch.from_numpy(fov_mask.astype(np.float32)).unsqueeze(0)
 
         return {
-            'image': img_t,   # (1, H, W) float32, normalised green channel
+            'image': img_t,   # (1,H,W) green or (3,H,W) RGB depending on color_mode
             'gt': gt_t,       # (1, H, W) float32 {0,1}
             'fov': fov_t,     # (1, H, W) float32 {0,1}
             'id': sid,

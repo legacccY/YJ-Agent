@@ -3,14 +3,17 @@ harness.py
 ==========
 FetalSSBench 统一训练 harness。
 
-支持 5 种 SSL 方法：
-  supervised    — 仅用标注数据 CE loss
-  mean_teacher  — EMA teacher + MSE 一致性（MT_EMA=0.99, cons=0.1, rampup=40ep）
-  cps           — 双 UNet 互换伪标签（cons=0.1, sigmoid rampup 200 epoch 换算）
-  uamt          — MT + MC-dropout T=8 不确定性掩码（thresh=(0.75+0.25*rampup)*ln2）
-  fixmatch      — 弱增广伪标签(conf=0.8) + 强增广一致性（cons=0.1 sigmoid rampup）
+支持 6 种 SSL 方法：
+  supervised      — 仅用标注数据 CE loss
+  mean_teacher    — EMA teacher + MSE 一致性（MT_EMA=0.99, cons=0.1, rampup=40ep）
+  cps             — 双 UNet 互换伪标签（cons=0.1, sigmoid rampup 200 epoch 换算）
+  uamt            — MT + MC-dropout T=8 不确定性掩码（thresh=(0.75+0.25*rampup)*ln2）
+  fixmatch        — 弱增广伪标签(conf=--conf_thresh, 默认0.8) + 强增广一致性（cons=0.1 sigmoid rampup）
+  freematch_sat   — FreeMatch SAT-only：SAT 自适应类别阈值替换固定阈值（关 SAF，单变量 A/B）
+                    Phase 3 核心贡献臂；SAF 留 G5 消融，不进主对照。
 
 超参真源：project/meeting/FetalSSBench/reference/SSL4MIS_hparams.md（禁臆想）
+         FreeMatch SAT 真源：reference/ADAPTIVE_THRESHOLD_hparams.md（USB 官方核实）
 对照协议：训练预算统一（Adam lr=1e-3 / CosineAnneal / base_ch=32 / batch=4 / AMP）
 评估：Dice+HD95，前景类 per-structure；MT/UAMT/CPS 用 teacher/model1 评估
 
@@ -20,6 +23,22 @@ FetalSSBench 统一训练 harness。
 
   # 全量
   python harness.py --method cps --dataset hc18 --ratio 0.05 --seed 0
+
+  # Phase 3 固定阈值臂 τ 扫（τ∈{0.7,0.8,0.9} 取最优作公平 baseline）
+  python harness.py --method fixmatch --dataset psfhs --ratio 0.01 --seed 0 --conf_thresh 0.7
+  python harness.py --method fixmatch --dataset psfhs --ratio 0.01 --seed 0 --conf_thresh 0.8
+  python harness.py --method fixmatch --dataset psfhs --ratio 0.01 --seed 0 --conf_thresh 0.9
+
+  # Phase 3 SAT-only 自适应臂
+  python harness.py --method freematch_sat --dataset psfhs --ratio 0.01 --seed 0
+
+  # Phase 3 seed 5 轮（seed 0-4 均合法，--seed 接任意 int）
+  python harness.py --method freematch_sat --dataset psfhs --ratio 0.01 --seed 4
+
+  # FUGC（官方固定 split，--ratio 被忽略，传任意值均可）
+  python harness.py --method freematch_sat --dataset fugc --ratio 0.1 --seed 0
+  python harness.py --method fixmatch --dataset fugc --ratio 0.1 --seed 0 --conf_thresh 0.8
+  python harness.py --method supervised --dataset fugc --ratio 0.1 --seed 0 --quick
 
 结果：
   results/results.csv
@@ -103,9 +122,16 @@ UAMT_RAMPUP_EPOCHS = 200       # 官方 iteration 200，转 epoch 制
 UAMT_T = 8                     # MC-dropout 次数（官方 T=8）
 
 # FixMatch
-FIXMATCH_CONF_THRESH = 0.8     # 官方 SSL4MIS conf_thresh（≠ 原始 FixMatch 0.95）
+FIXMATCH_CONF_THRESH = 0.8     # 官方 SSL4MIS conf_thresh 默认值（≠ 原始 FixMatch 0.95）
+                                # Phase 3 τ 扫：可经 --conf_thresh CLI 覆盖（{0.7, 0.8, 0.9}）
 FIXMATCH_CONSISTENCY = 0.1     # 并入一致性权重 sigmoid rampup
 FIXMATCH_RAMPUP_EPOCHS = 200
+
+# FreeMatch SAT-only（Phase 3 自适应臂，单变量 A/B 只换阈值，关 SAF）
+# 真源：reference/ADAPTIVE_THRESHOLD_hparams.md，USB 官方 FreeMatchThresholingHook 核实
+FREEMATCH_SAT_EMA_M = 0.999        # 全局阈值 EMA 动量（USB --ema_p 0.999）
+FREEMATCH_SAT_CONSISTENCY = 0.1    # 一致性权重上限（对齐 fixmatch，sigmoid rampup）
+FREEMATCH_SAT_RAMPUP_EPOCHS = 200  # rampup 长度对齐 fixmatch
 
 # ------------------------------------------------------------------ #
 # 工具函数
@@ -643,6 +669,7 @@ def train_fixmatch(
     n_epochs: int,
     num_classes: int,
     run_id: str,
+    conf_thresh: float = FIXMATCH_CONF_THRESH,  # Phase 3 τ 扫：{0.7, 0.8, 0.9}，默认 0.8 保持向后兼容
 ) -> dict:
     model = create_model(num_classes).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
@@ -682,8 +709,8 @@ def train_fixmatch(
                     logits_weak = model(imgs_weak)
                     prob_weak = F.softmax(logits_weak, dim=1)
                     conf, pseudo_label = prob_weak.max(dim=1)   # [B, H, W]
-                    # 置信掩码：max prob > conf_thresh 的像素
-                    conf_mask = (conf >= FIXMATCH_CONF_THRESH).float()  # [B, H, W]
+                    # 置信掩码：max prob > conf_thresh 的像素（conf_thresh 由调用方传入，支持 τ 扫）
+                    conf_mask = (conf >= conf_thresh).float()  # [B, H, W]
 
                 # 强增广预测
                 logits_strong = model(imgs_strong)
@@ -710,10 +737,150 @@ def train_fixmatch(
         if (epoch + 1) % log_every == 0 or epoch == n_epochs - 1:
             dices, _ = evaluate(model, test_loader, device, num_classes)
             print(
-                f"  [fixmatch] {run_id} ep={epoch+1}/{n_epochs} "
+                f"  [fixmatch τ={conf_thresh}] {run_id} ep={epoch+1}/{n_epochs} "
                 f"sup={total_sup/max(n_batches,1):.4f} "
                 f"fix={total_fix/max(n_batches,1):.4f} "
                 f"cw={cw:.3f} dice_mean={np.mean(dices):.4f}"
+            )
+
+    dices, hds = evaluate(model, test_loader, device, num_classes)
+    return {"dices": dices, "hds": hds, "train_time_min": (time.time() - t0) / 60.0}
+
+
+# ------------------------------------------------------------------ #
+# 6. FreeMatch SAT-only（Phase 3 自适应阈值臂）
+# 真源：reference/ADAPTIVE_THRESHOLD_hparams.md，USB 官方 FreeMatch 核实
+#       arXiv:2205.07246，ICLR 2023
+#
+# 与 fixmatch 的唯一区别：固定 conf_thresh 换成 FreeMatch SAT 自适应阈值。
+# SAF（self-adaptive fairness 正则）intentionally omitted：
+#   SAF 是额外公平正则项，带入=换两个变量，污染单变量 A/B 归因。
+#   SAF 保留给 G5 消融臂（freematch_full = SAT+SAF）。
+#   — Phase 3 设计约束，见 PLAN/PHASE_3_ADAPTIVE_THRESHOLD.md § ②
+#
+# 分割适配（参考 ADAPTIVE_THRESHOLD_hparams.md § 3）：
+#   max_probs/argmax 逐像素；p_model 类别分布按像素统计（分母用像素数，
+#   防 background 像素数量淹没 foreground 的 p_model 估计）。
+#   C = num_classes（含背景）；类别索引 0 = 背景。
+# ------------------------------------------------------------------ #
+
+def train_freematch_sat(
+    labeled_loader: DataLoader,
+    unlabeled_loader: DataLoader,   # 需 WeakStrongUnlabeledDataset（同 fixmatch）
+    test_loader: DataLoader,
+    device: torch.device,
+    n_epochs: int,
+    num_classes: int,
+    run_id: str,
+) -> dict:
+    """
+    FreeMatch SAT-only：用 self-adaptive threshold（SAT）替换 fixmatch 固定 conf_thresh。
+
+    SAT 公式（USB FreeMatchThresholingHook 核实，arXiv:2205.07246）：
+      全局阈值 EMA：time_p = m * time_p + (1-m) * max_probs.mean()
+                    初始 time_p = 1 / num_classes
+      局部类别因子：mod = p_model / p_model.max()
+                    mask = max_probs >= time_p * mod[argmax_per_pixel]
+                    p_model EMA 维护，初始 uniform(1/num_classes)
+    分割适配：p_model 按像素统计（像素数为分母，非图数）。
+    SAF 关闭（单变量 A/B），注释已说明原因。
+    """
+    model = create_model(num_classes).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs)
+    scaler = GradScaler(enabled=device.type == "cuda")
+    ce_loss = nn.CrossEntropyLoss()
+    unlabeled_iter = InfiniteLoader(unlabeled_loader)
+
+    # --- SAT 状态变量 ---
+    # time_p：全局置信阈值，初始 1/C（USB 官方初始值，ADAPTIVE_THRESHOLD_hparams.md 第 12 行）
+    time_p: float = 1.0 / num_classes
+    # p_model：逐类别概率分布估计（像素级），初始 uniform
+    # shape [num_classes]，存 CPU float，用于 mod 计算
+    p_model = torch.full((num_classes,), 1.0 / num_classes, dtype=torch.float32)
+
+    t0 = time.time()
+    log_every = max(1, n_epochs // 5)
+
+    for epoch in range(n_epochs):
+        model.train()
+        cw = FREEMATCH_SAT_CONSISTENCY * sigmoid_rampup(epoch, FREEMATCH_SAT_RAMPUP_EPOCHS)
+        total_sup, total_sat, n_batches = 0.0, 0.0, 0
+
+        for imgs_l, lbls_l in labeled_loader:
+            imgs_l, lbls_l = imgs_l.to(device), lbls_l.to(device)
+
+            # unlabeled_loader 返回 (weak_aug, strong_aug) 对（WeakStrongUnlabeledDataset）
+            batch_u = unlabeled_iter.next()
+            if isinstance(batch_u, (list, tuple)) and len(batch_u) == 2:
+                imgs_weak, imgs_strong = batch_u[0].to(device), batch_u[1].to(device)
+            else:
+                # fallback：不是双视图 loader，用同一图（兼容性保留，理论上不触发）
+                imgs_weak = batch_u.to(device)
+                imgs_strong = imgs_weak
+
+            optimizer.zero_grad()
+
+            with autocast(enabled=device.type == "cuda"):
+                # 有监督损失
+                sup_loss = ce_loss(model(imgs_l), lbls_l)
+
+                # 弱增广生成伪标签
+                with torch.no_grad():
+                    logits_weak = model(imgs_weak)
+                    prob_weak = F.softmax(logits_weak, dim=1)  # [B, C, H, W]
+                    max_probs, pseudo_label = prob_weak.max(dim=1)  # [B, H, W]
+
+                    # --- SAT 状态 batch-level EMA 更新（USB 官方 FreeMatchThresholingHook，逐 batch）---
+
+                    # time_p：全局置信阈值 EMA（USB 官方每 batch 更新）
+                    batch_mean_max = max_probs.mean().item()
+                    time_p = FREEMATCH_SAT_EMA_M * time_p + (1.0 - FREEMATCH_SAT_EMA_M) * batch_mean_max
+
+                    # p_model：像素级类别分布 EMA（USB 官方每 batch 更新，分割适配：分母用像素数防 bg 淹没）
+                    batch_pixel_count = float(pseudo_label.numel())
+                    batch_p_est = torch.zeros(num_classes, dtype=torch.float32)
+                    for c in range(num_classes):
+                        batch_p_est[c] = (pseudo_label == c).sum().item() / batch_pixel_count
+                    p_model = (
+                        FREEMATCH_SAT_EMA_M * p_model + (1.0 - FREEMATCH_SAT_EMA_M) * batch_p_est
+                    )
+                    p_model = p_model / p_model.sum().clamp(min=1e-8)  # 归一化（数值安全）
+
+                    # 逐像素类别阈值：τ(c) = time_p * mod[argmax_pixel]
+                    p_model_dev = p_model.to(device)  # [C]
+                    mod = p_model_dev / p_model_dev.max().clamp(min=1e-8)  # [C]
+                    per_pixel_thresh = time_p * mod[pseudo_label]  # [B, H, W]
+                    conf_mask = (max_probs >= per_pixel_thresh).float()  # [B, H, W]
+
+                # 强增广预测 → Masked CE（只对通过 SAT 掩码的像素计损失）
+                logits_strong = model(imgs_strong)
+                ce_strong = F.cross_entropy(
+                    logits_strong, pseudo_label, reduction="none"
+                )  # [B, H, W]
+                n_valid = conf_mask.sum().clamp(min=1.0)
+                sat_loss = (ce_strong * conf_mask).sum() / n_valid
+
+                loss = sup_loss + cw * sat_loss
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+            total_sup += sup_loss.item()
+            total_sat += sat_loss.item()
+            n_batches += 1
+
+        scheduler.step()
+
+        if (epoch + 1) % log_every == 0 or epoch == n_epochs - 1:
+            dices, _ = evaluate(model, test_loader, device, num_classes)
+            mask_rate = conf_mask.mean().item() if n_batches > 0 else 0.0  # 最后一批的掩码率（监控用）
+            print(
+                f"  [freematch_sat] {run_id} ep={epoch+1}/{n_epochs} "
+                f"sup={total_sup/max(n_batches,1):.4f} "
+                f"sat={total_sat/max(n_batches,1):.4f} "
+                f"cw={cw:.3f} time_p={time_p:.4f} "
+                f"mask_rate={mask_rate:.3f} dice_mean={np.mean(dices):.4f}"
             )
 
     dices, hds = evaluate(model, test_loader, device, num_classes)
@@ -750,7 +917,7 @@ def _csv_fieldnames(num_classes: int, class_names: List[str]) -> List[str]:
     dice_cols = [f"dice_{n}" for n in fg_names]
     hd_cols = [f"hd95_{n}" for n in fg_names]
     return (
-        ["method", "dataset", "label_ratio", "seed"]
+        ["method", "dataset", "label_ratio", "seed", "conf_thresh"]
         + dice_cols + ["dice_mean"]
         + hd_cols + ["hd95_mean"]
         + ["n_labeled", "n_unlabeled", "n_test", "epochs", "train_time_min"]
@@ -781,6 +948,9 @@ _DEFAULT_DATA_ROOT = Path(os.environ["FETALSS_DATA_ROOT"]) if os.environ.get("FE
 DATASET_DATA_DIRS = {
     "psfhs": _DEFAULT_DATA_ROOT / "PSFHS",
     "hc18": _DEFAULT_DATA_ROOT / "HC18",
+    # FUGC：目录名含空格括号，Path 直接拼接（不走 _find_subdir 探测）
+    # 传给 datasets.py 的是 FUGC_root，内部再拼 "FUGC (Dataset)/dataset/"
+    "fugc": _DEFAULT_DATA_ROOT / "FUGC",
 }
 
 
@@ -798,8 +968,13 @@ def run_one(
     state: dict,
     data_dir: Optional[str] = None,
     batch_size: int = BATCH_SIZE,
+    conf_thresh: float = FIXMATCH_CONF_THRESH,  # fixmatch τ 扫用；freematch_sat 不使用
 ) -> Optional[dict]:
-    run_id = f"{method}_{dataset}_r{int(label_ratio*100):03d}_s{seed}"
+    # fixmatch τ 扫：run_id 带 conf_thresh 后缀以区分不同 τ 的结果（freematch_sat 不需要）
+    if method == "fixmatch" and conf_thresh != FIXMATCH_CONF_THRESH:
+        run_id = f"{method}_t{int(conf_thresh*10):02d}_{dataset}_r{int(label_ratio*100):03d}_s{seed}"
+    else:
+        run_id = f"{method}_{dataset}_r{int(label_ratio*100):03d}_s{seed}"
 
     if run_already_done(state, run_id):
         print(f"[skip] {run_id} 已完成，跳过")
@@ -821,8 +996,8 @@ def run_one(
     else:
         d_dir = data_dir
 
-    # FixMatch 需要 WeakStrongUnlabeledDataset
-    fixmatch_mode = (method == "fixmatch")
+    # FixMatch / FreeMatch SAT 均需要 WeakStrongUnlabeledDataset（弱/强增广对）
+    fixmatch_mode = (method in ("fixmatch", "freematch_sat"))
 
     labeled_loader, unlabeled_loader, test_loader = get_dataloaders(
         dataset=dataset,
@@ -861,6 +1036,11 @@ def run_one(
         )
     elif method == "fixmatch":
         result = train_fixmatch(
+            labeled_loader, unlabeled_loader, test_loader, device, n_epochs, num_classes, run_id,
+            conf_thresh=conf_thresh,
+        )
+    elif method == "freematch_sat":
+        result = train_freematch_sat(
             labeled_loader, unlabeled_loader, test_loader, device, n_epochs, num_classes, run_id
         )
     else:
@@ -875,6 +1055,8 @@ def run_one(
         "dataset": dataset,
         "label_ratio": f"{label_ratio:.2f}",
         "seed": seed,
+        # conf_thresh：fixmatch τ 扫记录使用的阈值；freematch_sat 填 "adaptive"（自适应，无固定值）
+        "conf_thresh": "adaptive" if method == "freematch_sat" else f"{conf_thresh:.2f}",
         "dice_mean": f"{np.mean(dices):.4f}",
         "hd95_mean": f"{np.mean(hds):.2f}",
         "n_labeled": n_labeled,
@@ -908,10 +1090,10 @@ def run_one(
 # 主入口
 # ------------------------------------------------------------------ #
 
-METHODS = ["supervised", "mean_teacher", "cps", "uamt", "fixmatch"]
-DATASETS = ["psfhs", "hc18"]
+METHODS = ["supervised", "mean_teacher", "cps", "uamt", "fixmatch", "freematch_sat"]
+DATASETS = ["psfhs", "hc18", "fugc"]
 LABEL_RATIOS = [0.01, 0.02, 0.05, 0.10, 0.20]
-SEEDS = [0, 1, 2]
+SEEDS = [0, 1, 2]           # Phase 1/2 默认 3 seed；Phase 3 升 5 seed（--seed 接任意 int，0-4 均合法）
 
 
 def main():
@@ -945,6 +1127,14 @@ def main():
         help=f"batch size（默认 {BATCH_SIZE}）"
     )
     parser.add_argument(
+        "--conf_thresh", type=float, default=FIXMATCH_CONF_THRESH,
+        help=(
+            f"fixmatch 置信阈值（默认 {FIXMATCH_CONF_THRESH}，向后兼容）。"
+            "Phase 3 τ 扫：传 0.7/0.8/0.9 取每 setting 最优作公平 baseline。"
+            "freematch_sat 不使用此参数（SAT 自适应，无需手调）。"
+        )
+    )
+    parser.add_argument(
         "--quick", action="store_true",
         help="烟测模式：5 epoch（验算子通路）"
     )
@@ -954,7 +1144,8 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[harness] method={args.method} dataset={args.dataset} "
-          f"ratio={args.ratio} seed={args.seed} epochs={n_epochs}")
+          f"ratio={args.ratio} seed={args.seed} epochs={n_epochs} "
+          f"conf_thresh={args.conf_thresh}")
     print(f"[harness] device={device}")
     if device.type == "cuda":
         print(f"  GPU: {torch.cuda.get_device_name(0)}")
@@ -975,6 +1166,7 @@ def main():
         state=state,
         data_dir=args.data_dir,
         batch_size=args.batch_size,
+        conf_thresh=args.conf_thresh,
     )
 
     state["phase"] = "done"

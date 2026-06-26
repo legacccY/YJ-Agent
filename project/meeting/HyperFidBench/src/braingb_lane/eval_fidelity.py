@@ -50,6 +50,7 @@ from typing import Optional
 
 import numpy as np
 import torch
+import torch.nn as nn
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,6 +60,48 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# ---------------------------------------------------------------------------
+# BrainNNWrapper
+# ---------------------------------------------------------------------------
+# BrainNN.forward(data) 接收单个 PyG Data 对象，但 PyG Explainer/GNNExplainer
+# 调用 model 的约定是 model(x, edge_index, edge_attr=..., batch=..., **kwargs)。
+# 本 wrapper 把后者签名适配回 BrainNN 期望的 Data 包装形式。
+#
+# edge_attr=None fallback 假设：
+#   GCN.forward 第一行即 torch.abs(edge_attr)，edge_attr 不能为 None。
+#   GNNExplainer 内部某些前向调用（perturbed forward）可能不传 edge_attr；
+#   fallback = 全 1 边权（形状 [E]），含义="所有边等权"，是保守合理默认值。
+#   注意这会让被掩盖边（edge_mask→0 的边）在 perturbed forward 里以"权1"而非
+#   原始 FC 权值参与，但对 Gate1 目标（fidelity 非 nan）不影响正确性。
+#   TODO: 若需要精确 fidelity 数值，应在 wrapper 缓存原始 edge_attr 并在
+#         edge_attr=None 时用缓存值而非全 1（届时升级 Opus 核设计）。
+# ---------------------------------------------------------------------------
+
+
+class BrainNNWrapper(nn.Module):
+    """适配 BrainNN.forward(data) 到 PyG Explainer 期望的 (x, edge_index, **kwargs) 签名。"""
+
+    def __init__(self, model: nn.Module):
+        super().__init__()
+        self.model = model  # 注册为子模块，梯度/参数访问正常
+
+    def forward(self, x, edge_index, edge_attr=None, batch=None, **kwargs):
+        from torch_geometric.data import Data
+
+        # batch 为 None（单图无 batch 维）时，全部节点归属图 0
+        if batch is None:
+            batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
+
+        # edge_attr 为 None（GNNExplainer perturbed forward 可能不传）时 fallback 全 1 边权
+        if edge_attr is None:
+            # [E] 标量边权，与 GCN.forward 里 torch.abs(edge_attr) 兼容
+            edge_attr = torch.ones(edge_index.size(1), dtype=x.dtype, device=x.device)
+
+        data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, batch=batch)
+        return self.model(data)  # BrainNN.forward(data) → F.log_softmax 输出
+
+
 BRAINGB_DIR = REPO_ROOT / "vendor" / "BrainGB"
 RESULTS_DIR = REPO_ROOT / "results" / "braingb"
 
@@ -247,15 +290,22 @@ def eval_fidelity(
         model.eval()
 
     # 构造 PyG Explainer
+    # BrainNN.forward(data) 签名与 Explainer 期望的 (x, edge_index, **kwargs) 不兼容
+    # → 用 BrainNNWrapper 适配（见文件头注释）；wrapper 把 model 注册为子模块，
+    #   eval()/parameters() 自动传导，梯度流向正常。
+    wrapped_model = BrainNNWrapper(model)
+    wrapped_model.eval()
     # GNNExplainer epochs=200（来自实验设计 doc + PyG 官方 example）
     explainer = Explainer(
-        model=model,
+        model=wrapped_model,
         algorithm=GNNExplainer(epochs=explainer_epochs),
         explanation_type="model",
         node_mask_type="attributes",
         edge_mask_type="object",
         model_config=dict(
-            mode="binary_classification",
+            # BrainGB brainnn.py 输出 F.log_softmax(2类) → multiclass+log_probs
+            # (PyG binary_classification 不收 log_probs，只收 raw/probs)
+            mode="multiclass_classification",
             task_level="graph",
             return_type="log_probs",
         ),

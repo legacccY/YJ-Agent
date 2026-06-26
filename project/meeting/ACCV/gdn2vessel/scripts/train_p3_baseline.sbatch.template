@@ -1,0 +1,146 @@
+#!/bin/bash
+#
+# train_p3_baseline.sbatch.template — gdn2vessel P3 baseline 训练 sbatch 模板
+#
+# 用途：批2 训练战役——对各 (baseline, dataset, seed) 提交独立训练 job，
+#       产出 {OUT_DIR}/best.pth + {OUT_DIR}/state.json，
+#       供 eval_benchmark_all_sev.sbatch.template 后续评测消费。
+#
+# ⚠️  creatis_postproc 不走此模板（两段式，Stage-1 = backbone_unet 独立训练；
+#     Stage-2 需官方 disconnect.py 生成断点数据，路径 TODO 待 researcher 确认；
+#     当前 train_harness 会检测并打印说明后退出，不静默空跑）。
+#
+# 使用方式：
+#   1. 用 launch_p3_baseline_sweep.py 的 make_train_sbatch_placeholders() 填占位符，
+#      保存为实例化文件（如 train_backbone_unet_DRIVE_s42.sbatch）。
+#   2. dos2unix 去 CRLF → 上传 HPC → 单独 sbatch。
+#   3. 看 logs/{job-name}_{jobid}.out + {OUT_DIR}/state.json 确认训练完成。
+#
+# Placeholders（实例化时全部替换）：
+#   {BASELINE}         — registry 注册名（如 fr_unet / backbone_unet / vmunet）
+#   {DATASET}          — 数据集大写（DRIVE / CHASE / STARE / FIVES）
+#   {SEED}             — 种子整数（42 / 1 / 2）
+#   {CONFIG}           — config 相对路径（如 src/configs/baselines/frunet.yaml）
+#   {DATA_ROOT}        — 该集 data_root 完整路径（如 /gpfs/.../data/vessel/DRIVE）
+#   {OUT_DIR}          — 输出目录完整路径（如 /gpfs/.../outputs/p3/DRIVE_fr_unet_seed42）
+#   {ENV_TAG}          — main | mamba（决定激活哪个 venv）
+#   {EPOCHS}           — 训练 epoch 数（从 config train.epochs 取）
+#   {FRUNET_CACHE}     — fr_unet cache pickle 路径；non-fr_unet 填 NONE（脚本内判断跳过）
+#
+# HPC 提交 checklist（必过，feedback_hpc_submit_checklist）：
+#   ① 上传后去 CRLF：dos2unix <file>.sbatch  或  sed -i 's/\r$//' <file>.sbatch
+#   ② 看 logs/{job-name}_{jobid}.out 确认真跑，不信 jobid（可能串别人 job）
+#   ③ 单独提交，不批量并发（入队静默失败难排查）
+#   ④ mamba 系提交前确认 mamba_venv build + python -c "from mamba_ssm import Mamba" 烟测过
+#   ⑤ 训练完成标志：state.json status="done"，not "running" / "error"
+
+# ─── SLURM 头 ────────────────────────────────────────────────────────────────
+#SBATCH --partition=gpu4090
+#SBATCH --account=shuihuawang
+#SBATCH --qos=4gpus
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=12:00:00
+#SBATCH --job-name=train_{DATASET}_{BASELINE}_s{SEED}
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
+
+# ─── 0. 常量 ─────────────────────────────────────────────────────────────────
+GDN2_ROOT=/gpfs/work/bio/jiayu2403/gdn2vessel
+
+# ─── 1. 防 logs / 输出目录缺失静默失败 ──────────────────────────────────────
+mkdir -p logs
+mkdir -p {OUT_DIR}
+
+# ─── 2. Triton / FLA NFS 死锁修复（所有 GDN-2 job 必带）────────────────────
+export TRITON_CACHE_DIR=/tmp/$USER/triton_train
+mkdir -p "$TRITON_CACHE_DIR"
+rm -rf "$HOME/.triton/cache" 2>/dev/null || true
+
+# ─── 3. 激活 venv（按 {ENV_TAG} 切换）───────────────────────────────────────
+if [ "{ENV_TAG}" = "mamba" ]; then
+    source /gpfs/work/bio/jiayu2403/mamba_venv/bin/activate
+    # mamba 系 RTX4090(sm_89) 须无 AMP；train_harness 已按 env_tag=mamba 自动关 AMP
+else
+    source /gpfs/work/bio/jiayu2403/gdn2venv/bin/activate
+fi
+
+# ─── 4. 打印环境信息 ─────────────────────────────────────────────────────────
+echo "[train] start: $(date)"
+echo "[train] host: $(hostname)"
+echo "[train] baseline={BASELINE}  dataset={DATASET}  seed={SEED}  env={ENV_TAG}  epochs={EPOCHS}"
+echo "[train] config={CONFIG}"
+echo "[train] data_root={DATA_ROOT}"
+echo "[train] out_dir={OUT_DIR}"
+echo "[train] frunet_cache={FRUNET_CACHE}"
+echo "[train] gpu: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo 'no nvidia-smi')"
+python -c "import torch; print(f'[train] torch={torch.__version__}  cuda={torch.cuda.is_available()}')"
+
+# mamba 系额外烟测（装不上早失败，别浪费 12h walltime）
+if [ "{ENV_TAG}" = "mamba" ]; then
+    python -c "from mamba_ssm import Mamba; print('[train] mamba_ssm OK')" \
+        || { echo "[train] FATAL: mamba_ssm import failed"; exit 90; }
+fi
+
+# ─── 5. 训练（train_harness.py 统一训练台）───────────────────────────────────
+# 核心参数（data_root 传单集目录，与 _build_datasets 约定一致）：
+#   --data_root {DATA_ROOT}   — 如 .../data/vessel/DRIVE（单集，非 data/vessel 根）
+#   --output_dir {OUT_DIR}    — 如 .../outputs/p3/DRIVE_fr_unet_seed42
+#   --num_workers 2           — HPC Linux 安全（非 Windows spawn 限制）
+#   --frunet_cache_path       — 仅 fr_unet 传，其他 baseline 此行被 if 跳过
+
+if [ "{FRUNET_CACHE}" != "NONE" ]; then
+    FRUNET_CACHE_ARG="--frunet_cache_path {FRUNET_CACHE}"
+else
+    FRUNET_CACHE_ARG=""
+fi
+
+python $GDN2_ROOT/src/train_harness.py \
+    --config      $GDN2_ROOT/{CONFIG} \
+    --base_eval   $GDN2_ROOT/src/configs/_base_eval.yaml \
+    --baseline    {BASELINE} \
+    --data_root   {DATA_ROOT} \
+    --dataset     {DATASET} \
+    --seed        {SEED} \
+    --epochs      {EPOCHS} \
+    --output_dir  {OUT_DIR} \
+    --num_workers 2 \
+    $FRUNET_CACHE_ARG
+
+TRAIN_EXIT=$?
+
+# ─── 6. 结果验证 ─────────────────────────────────────────────────────────────
+echo "[train] done: $(date)  exit_code=$TRAIN_EXIT"
+
+if [ $TRAIN_EXIT -ne 0 ]; then
+    echo "[train] FATAL: train_harness exit=$TRAIN_EXIT"
+    exit $TRAIN_EXIT
+fi
+
+echo "[train] --- 产出验证 ---"
+if [ -f "{OUT_DIR}/best.pth" ]; then
+    PTHSIZE=$(du -sh "{OUT_DIR}/best.pth" | cut -f1)
+    echo "[train] OK: best.pth  ($PTHSIZE)"
+else
+    echo "[train] MISSING: best.pth"
+fi
+
+if [ -f "{OUT_DIR}/state.json" ]; then
+    STATUS=$(python -c "import json; d=json.load(open('{OUT_DIR}/state.json')); print(d.get('status','?'), 'best_dice=', round(d.get('best_dice',0),4))" 2>/dev/null || echo "parse error")
+    echo "[train] OK: state.json  ($STATUS)"
+else
+    echo "[train] MISSING: state.json"
+fi
+
+exit $TRAIN_EXIT
+
+# ─── 注：creatis_postproc 两段式说明 ─────────────────────────────────────────
+# creatis_postproc 不走此模板。两段式流程：
+#   Stage 1 (backbone_unet)：用此模板，--baseline backbone_unet
+#   Stage 2 (creatis reconnecting)：
+#     1. 生成断点训练数据：python .../disconnect.py（官方 sources/source_2D/disconnect.py）
+#        TODO: 未找到官方源，需 researcher 确认 HPC 断点数据路径
+#     2. 配置 creatis.yaml data.stage2_data_dir
+#     3. 用此模板，--baseline creatis_postproc（train_harness 检测 two_stage=True 走两段）
+#   评测：配置 stage1_ckpt + --creatis_stage1_adapter fr_unet（见 launch_p3_baseline_sweep.py）

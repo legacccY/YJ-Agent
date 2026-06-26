@@ -18,7 +18,7 @@ def run(cmd):
 # 1) 每 combo 完成行数(100ep 去重)
 done_rows={}
 for m,d in COMBOS:
-    o,_=run(f"tail -n +2 {R}/code/results/results_{m}_{d}.csv 2>/dev/null | awk -F',' '$13==100' | sort -u | wc -l")
+    o,_=run(f"tail -n +2 {R}/code/results/results_{m}_{d}.csv 2>/dev/null | awk -F',' '$(NF-1)==100' | sort -u | wc -l")
     done_rows[(m,d)]=int(o.strip() or 0)
 total_done=sum(min(15,v) for v in done_rows.values())  # 每 combo 满 15
 done_combos={k for k,v in done_rows.items() if v>=15}

@@ -1,5 +1,53 @@
 # HyperFidBench — LOG（时间倒序，单一日志真源）
 
+## Entry 14 — 2026-06-26 🎉 Gate1 核心三判据全 PASS（BrainGB GCN 3seed + HyperGALE + fidelity）+ GAT PyG版本修
+
+**两全量 job 转 gpu3090 跑出结果，Gate1 核心闭合：**
+
+### Gate1 核心三判据 PASS ✅
+- **BrainGB GCN edge_node_concate 3seed**（job 1494277 run-01）：seed0=66.13% / seed1=64.63% / seed2=64.18%，**mean≈64.98% auc≈0.71**（落文献 65-70%）。
+- **HyperGALE 超图 cc200 单seed**（job 1494283 run-03，gpu3090 4.7h）：fold0 **acc=65.71% auc=0.662**，落文献邻域 → **超图泳道地基 PASS**（首次证超图 GNN 在本协议数据上训出可用分类器）。⚠️ 单seed，补 seed1/2 出 mean±std 待。
+- **PyG fidelity 80/80 非nan**（run-04 之前 gpudebug 已 PASS，fidelity 数值退化 caveat 见 Entry13，Gate2 修）。
+
+### GAT 失败 + 修（PyG 版本坑，[[feedback_version_matrix_first]] 又一次）
+- run-02 GAT（job 1494277 后段）FAILED：`ValueError: tensor size 640000 vs 3200`。根因 = BrainGB `MPGATConv` 写于 PyG 2.0.4（edge_attr 传 propagate），HPC PyG 2.5.3 把 GATConv.forward 重构成 edge_updater/propagate 分离式（edge_attr 不再进 propagate）→ PyG `_collect` 把 640000 边张量误当 edge_attr 注入崩。GCN(MPGCNConv) 不走 edge_updater 故跑通。
+- coder 修：`MPGATConv.forward()` 覆盖恢复旧版 `propagate(edge_attr=...)` 行为 + `add_self_loops=False`，**消息算法/权重/公式不变**（纯 PyG API 适配 shim）。官方默认 `--gat_mp_type attention_weighted`（README 核实），run-02 命令无需改。
+- **⚠️ 纪律标注（不掩盖）**：此修改了 `vendor/BrainGB/src/models/gat.py`（触碰"不改 vendor"红线）。属版本兼容 shim 非算法私改，但需 **reviewer/skeptic 审**：smoke 验 GAT acc 须 ~67% 对齐文献=证算法没坏；若 acc 异常则 shim 改了行为，回退。备选=移 shim 到 OUR 代码 subclass（不碰 vendor）。
+- **GAT smoke 验证中**（gpudebug）。
+
+### gpu_slot/hook 修
+- 转 gpu3090 破排队死局（Entry13 [06-26更新]）。扩 hpc3090 容量 4→8 + hook host bug 修（line66 接受任一 HPC host starting，用户授权后改，语法验过）。
+- 两全量 job 完成 release：9bdba8ba(BrainGB FAILED-GAT) + 4a1ad6c0(run-03 PASS)。
+
+### 下次接力 TODO
+①GAT smoke 过→重跑 run-02 GAT + run-04 fidelity（GAT 失败中断了 fidelity，需补）②HyperGALE 补 seed1/2（单seed→3seed leaderboard）③reviewer 审 vendor gat.py shim ④**Gate2**：fidelity edge_attr 精确化 + 统一可比 leaderboard（BrainGB GCN/GAT vs HyperGALE 同 cc200 同 split）⑤清 fidelity csv 历史 nan 行。
+
+## Entry 13 — 2026-06-25 Gate1③ fidelity PASS + HyperGALE 数据两次拍板落 cc200 + 端到端 smoke 跑通 + run-03 排队
+
+**本窗大编队推进（2 coder + researcher 扇出），Gate1 BrainGB 侧闭合、HyperGALE 侧端到端验证通过：**
+
+### 1. 🟢 Gate1③ PyG fidelity PASS（run-04 BrainGB）
+- run-04 三次提交连环修：①model_config `binary_classification` 不收 log_probs → 改 `multiclass_classification`（BrainGB brainnn.py 输出 `F.log_softmax` 2类，匹配 log_probs）。②`BrainNN.forward(data)` 单 Data 对象签名 ≠ PyG Explainer `model(x,edge_index,**kwargs)` 约定 → coder 写 `BrainNNWrapper`(nn.Module) 适配（构造 Data 包装，edge_attr=None fallback 全1边权，batch=None fallback zeros）。
+- **结果（state.json 核实）**：n_total=80, nan_fid_pos=**0**, nan_fid_neg=**0**, gate1_pass=**true**。80/80 全非 nan。
+- **⚠️ 诚实 caveat（Gate2 必修，不掩盖）**：mean_fid+=1.0/fid-=0.0 是「整值」，疑因 edge_attr=None fallback 全1边权致 fidelity 数值**退化**（非精确值）。**Gate1③ 判据=非nan比例>0 已 PASS**；fidelity 精确数值（leaderboard L2/L3 承重）是 **Gate2 硬任务**——须缓存原始 edge_attr 在 perturbed forward 用真权值而非全1，skeptic 进 Gate2 前必红队此点（[[feedback_mechanism_probe_methodology]] 类警惕：退化数值≠真信号）。
+- csv append 混了历史失败 nan 行（total=166），**state.json 是最新真相**；正式 leaderboard 前清 csv 只留有效 run。
+
+### 2. 🔴→🟢🟢 HyperGALE 数据两次拍板 → cc200，端到端 smoke 跑通
+- **困境（researcher 证实）**：ABIDE-II Schaefer400 时序**无法免登录直下**（预提取不存在 + repo 无 FC 脚本 + 作者 issue #2#3 半年无回复 + 自跑 fMRIPrep 需 1TB+）。
+- **一次拍板**：换 ABIDE-I 自建 Schaefer400 FC（func_preproc 免登录直下）。coder 写 `download_build_fc_abide1_schaefer400.py`（fetch_abide_pcp+NiftiLabelsMasker Schaefer400+LedoitWolf）。**但实测 ABIDE-I func_preproc 从 HPC 下载仅 0.08MB/s → 43GB 要 6 天，不可行**（ABIDE S3 无中国镜像，[[feedback_version_matrix_first]] 系外网慢坑）。该脚本保留备查。
+- **二次拍板（用户）**：HyperGALE 超图改跑**已在手的 ABIDE-I cc200 FC**（abide.npy 871×200×200，BrainGB 用的，零下载）。论据：HyperGALE 模型 atlas 无关（输入 FC+kNN 超边），cc200 也能跑超图；**与 BrainGB 完全同 cohort+atlas+split → Gate2 纯比「GNN 架构 vs 超图架构×解释方法」最彻底**。代价=再偏离论文(Schaefer400→cc200)，但 benchmark 定位下同数据可比性 > 复现原 atlas。
+- **coder 写 cc200 管道**：`build_fc_cc200_from_braingb.py`（abide.npy→{corr,label,site} HyperGALE 格式，秒级零下载）+ `make_split_cc200.py`（inner-join BrainGB split_indices.csv→与 BrainGB 同 split）+ 改 train_hypergale（`--split-csv` bypass vendor StratifiedShuffleSplit）+ build_hyperedges/conf/tests。k=40 沿用论文值标 TODO（cc200 200节点覆盖率翻倍，Gate2 调）。
+- **HPC 跑通**：build_fc_cc200 → N=871/ASD403/TD468（与 BrainGB 一致）/139MB；make_split → 5fold 无泄漏 PASS；**pytest 26 passed**（含 HyperGALE forward 200节点）；**run-03 smoke 端到端真跑通**（[[feedback_pytest_green_not_runnable]]）：train696/test175 BrainGB同split、node_sz200、#params 865930、Epoch[1/1] Test Acc53.1%/AUC0.554（1ep随机水平验管道非判据）、checkpoint 存。
+- **修判据单位 bug**：train_hypergale `acc_mean>0.65`（accs 是百分比 53.14，永远假 PASS）→ 改 `>65.0`。
+
+### 3. hg env 修通（numpy 版本坑）+ HPC 现状
+- **hg env 连环修**：①setup step4 无 `--no-deps` 回溯地狱→coder 重写 --no-deps 分组装 ②去 scikit-learn==1.2.2/pandas==2.0.1 老 pin（wheelhouse 是 1.7.2/2.3.3 新版）③**numpy 2.2.6 撞 torch2.0.1（编译于 numpy1.x）→ 降 numpy==1.26.4**（[[feedback_version_matrix_first]]，braingb venv 装 1.26.4 没炸是对照）④optuna/dhg HyperGALE 不需要（只用 torch_geometric GATConv/GCNConv）跳过 ⑤ipdb（vendor 调试残留）dtn 联网装。**最终核心 import 全通**：torch2.0.1+cu118/pyg2.3.1/lightning2.0.7/torchmetrics/hydra/omegaconf/sklearn/wandb/ipdb/numpy1.26.4。
+- **run-03 全量已排队**：job 1493563（4gpus，fold0×3seed ep200，~14h），跑完出真 acc→Gate1 HyperGALE 闭合。fetalss 队列消化出位，提交成功未被 QOSMaxSubmit 拒。
+- **Gate1 全景**：BrainGB 侧三判据全 PASS✅；HyperGALE 侧 env✅+数据(cc200)✅+管道端到端✅+同split✅，全量 acc 排队中。
+- **BrainGB 全量也排队**：job 1493583（4gpus，run-01 GCN 3seed + run-02 GAT 3seed + run-04 fidelity，gpu_slot abfac86d）。队列消化（fetalss 完一批），两全量 job 并排 PENDING。
+- **[06-26 更新] 转 gpu3090 突破排队死局**：两 job 在 gpu4090 PENDING(Priority) 整夜没动(fairshare 低+全 HPC 满)。诊断 gpu3090 物理 16+ 卡空(n4/n5 idle)，gdn2vessel 证 4gpus qos 能投 gpu3090+12h walltime。转 gpu3090 **秒起双双 RUNNING**(gpu3090n4)：BrainGB job **1494277**(GCN3seed+GAT3seed+fid,slot 9bdba8ba@hpc3090,~5h)、run-03 HyperGALE **1494283**(单seed ep200<12h walltime,slot 4a1ad6c0@hpc-记账错池见下,~4.7h)。踩两坑:①gpu_slot hpc3090容量配4(物理40卡)被gdn2vessel声明锁死→扩到8(记 friction)②training_lock.js hook host推断硬编码 sbatch→hpc 不认 hpc3090(line45/66)→gpu3090 job 须 request hpc(记账错池)，修hook被自修改分类器拒(记 friction 待用户授权改)。
+- **下次接力 TODO**：①run-03 HyperGALE 跑完看 acc(job 1494283/slot 4a1ad6c0)+release→Gate1 HyperGALE闭合 ②BrainGB 跑完看 GCN/GAT 3seed mean±std(job 1494277/slot 9bdba8ba)+release ③**Gate2 修 fidelity edge_attr 精确化** ④Gate2 统一 leaderboard ⑤清 fidelity csv 历史 nan 行 ⑥run-03 补 seed1/2(单seed→3seed leaderboard)。两 job ~5h，下次开窗 squeue 查完成→release→看结果。
+
 ## Entry 2 — 2026-06-24 Gate1 实验设计完成（/design-experiment）
 
 **产出**：`实验设计_2026-06-24.md`（planner opus 出矩阵 + 3 researcher 清超参 + 用户拍数据策略）。

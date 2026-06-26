@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=hf_bgb
 #SBATCH --account=shuihuawang
-#SBATCH --partition=gpu4090
+#SBATCH --partition=gpu3090
 #SBATCH --qos=4gpus
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
@@ -26,11 +26,12 @@ if ! $PY -c "import torch, torch_geometric" 2>/dev/null; then
 fi
 $PY -c "import torch; print('CUDA avail', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NOGPU')"
 
-echo "===== run-01 BrainGB GCN edge_node_concate (headline, 对齐文献65%) ====="
-$PY src/braingb_lane/train_braingb.py --run_id run-01-braingb-gcn-cc200 --model_name gcn \
-    --seeds 0 1 2 --gcn_mp_type edge_node_concate --hidden_dim 256
+# run-01 GCN 3seed 已完成(mean 64.98%, csv 已有)，跳过省时；重跑见 git 历史
+# echo "===== run-01 BrainGB GCN edge_node_concate (headline, 对齐文献65%) ====="
+# $PY src/braingb_lane/train_braingb.py --run_id run-01-braingb-gcn-cc200 --model_name gcn \
+#     --seeds 0 1 2 --gcn_mp_type edge_node_concate --hidden_dim 256
 
-echo "===== run-02 BrainGB GAT ====="
+echo "===== run-02 BrainGB GAT (PyG版本shim修复后正式跑) ====="
 $PY src/braingb_lane/train_braingb.py --run_id run-02-braingb-gat-cc200 --model_name gat --seeds 0 1 2
 
 echo "===== run-04 fidelity on BrainGB GCN ====="

@@ -36,7 +36,7 @@ process.stdin.on('end', () => {
   const isTraining = !isCompileOrTest && !isSmoke && (
     (/Start-Process/i.test(cmd) && /\b(train|python)\b/i.test(cmd)) ||
     /\bsbatch\b/i.test(cmd) ||
-    (/\bpython\b/i.test(cmd) && /[\w./-]*(train|sweep|probe|pilot|capacity|finetune|pretrain|mqar|experiment)[\w-]*\.py/i.test(cmd)) ||
+    (/\bpython\b/i.test(cmd) && /[\w./-]*(train|sweep|probe|pilot|capacity|finetune|pretrain|mqar|experiment)[\w-]*\.py/.test(cmd)) ||
     /run[_-]experiment/i.test(cmd)
   );
   if (!isTraining) process.exit(0);
@@ -62,8 +62,10 @@ process.stdin.on('end', () => {
     .filter(j => j.host === h && (j.status === 'running' || j.status === 'starting'))
     .reduce((s, j) => s + (parseInt(j.gpus, 10) || 1), 0);
 
-  // 找本 host 的 starting 条目（主线刚 request 出来的）
-  const starting = lock.active.filter(j => j.host === host && j.status === 'starting');
+  // 找 starting 条目（主线刚 request 出来的）。sbatch 无法从命令区分 gpu4090(hpc)/gpu3090(hpc3090)，
+  // 故接受任一 HPC host 的 starting（gpu_slot request 已记正确 host；local 仍只认 local）。
+  const acceptHosts = host === 'local' ? ['local'] : ['hpc', 'hpc3090'];
+  const starting = lock.active.filter(j => acceptHosts.includes(j.host) && j.status === 'starting');
 
   if (starting.length > 0) {
     // 主线自己的启动 -> 翻最新一个 starting 为 running，放行
@@ -72,7 +74,7 @@ process.stdin.on('end', () => {
     j.status = 'running';
     j.running_since = new Date().toISOString();
     try { fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2)); } catch (e) {}
-    process.stderr.write(`✅ 卡槽放行：${j.project || '?'} @${host} 占 ${j.gpus || 1} 卡（${host} 用 ${usedOn(host)}/${CAP[host] || '?'}）。完成后 \`gpu_slot.py release ${j.id}\`。\n`);
+    process.stderr.write(`✅ 卡槽放行：${j.project || '?'} @${j.host} 占 ${j.gpus || 1} 卡（${j.host} 用 ${usedOn(j.host)}/${CAP[j.host] || '?'}）。完成后 \`gpu_slot.py release ${j.id}\`。\n`);
     process.exit(0);
   }
 

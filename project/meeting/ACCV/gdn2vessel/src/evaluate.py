@@ -1203,9 +1203,13 @@ def _run_benchmark_single_severity(
                 dataset_name = ds_name,
                 data_root    = data_root_str,
             )
-            inp_t = torch.tensor(
-                proc_image, dtype=torch.float32
-            ).unsqueeze(0).unsqueeze(0).to(device)   # (1, 1, H', W')
+            _proc_t = torch.tensor(proc_image, dtype=torch.float32)
+            if _proc_t.ndim == 3:
+                # (H', W', C) → (1, C, H', W')  — 多通道 adapter（如 CS-Net RGB）
+                inp_t = _proc_t.permute(2, 0, 1).unsqueeze(0).to(device)
+            else:
+                # (H', W') → (1, 1, H', W')  — 单通道 adapter（默认 green channel）
+                inp_t = _proc_t.unsqueeze(0).unsqueeze(0).to(device)
 
             with torch.no_grad():
                 logits_t = adapter.forward_adapt(model, inp_t, device)  # (1, 1, H', W')
@@ -1307,6 +1311,7 @@ def evaluate_benchmark(
     tile_size: int = 512,
     overlap: int = 64,
     data_root: "Optional[str | Path]" = None,
+    extra_cfg: "Optional[Dict[str, Any]]" = None,
 ) -> List[Dict[str, Any]]:
     """
     Run three-axis evaluation on the frozen breakpoint benchmark.
@@ -1402,7 +1407,9 @@ def evaluate_benchmark(
     # ---- build adapter + model ONCE ----
     device  = torch.device(device_str)
     adapter = get_adapter(adapter_name)
-    cfg: Dict[str, Any] = {}
+    # extra_cfg: 外部传入的额外 cfg 项（如 creatis_postproc 的 stage1_ckpt）
+    # 优先级：extra_cfg 覆盖默认空 cfg（adapter 内部默认值也遵守）。
+    cfg: Dict[str, Any] = dict(extra_cfg) if extra_cfg else {}
     model = adapter.build_model(cfg).to(device)
     ckpt  = torch.load(str(ckpt_path), map_location=device, weights_only=True)
     if isinstance(ckpt, dict) and 'state_dict' in ckpt:
@@ -1575,6 +1582,33 @@ def _parse_args():
                    help="Tile size for tiled inference in benchmark mode (default 512).")
     p.add_argument("--tile_overlap", type=int, default=64,
                    help="Tile overlap for benchmark tiled inference (default 64).")
+    # ---- creatis_postproc 两段式专用参数 ----
+    p.add_argument(
+        "--creatis_stage1_ckpt", default=None,
+        help=(
+            "creatis_postproc 专用：Stage-1 backbone_unet best.pth 路径。"
+            "设置后 CreatisPostprocAdapter.build_model 会加载 Stage-1 backbone "
+            "到 _stage1_model，forward_adapt 走完整两段式（图像→backbone→creatis）。"
+            "不设置则走旧接口（forward_adapt 接收 backbone logits）。"
+            "# TODO: 未找到官方源，需 researcher 确认 Stage-1 ckpt HPC 路径"
+        ),
+    )
+    p.add_argument(
+        "--creatis_stage1_base_ch", type=int, default=32,
+        help=(
+            "creatis_postproc 专用：Stage-1 backbone UNet 的 base_ch（默认 32，"
+            "与 backbone_unet 统一超参一致）。fr_unet 时忽略。"
+        ),
+    )
+    p.add_argument(
+        "--creatis_stage1_adapter", default="backbone_unet",
+        choices=["backbone_unet", "fr_unet"],
+        help=(
+            "creatis_postproc 专用：Stage-1 架构类型。"
+            "backbone_unet（默认）= models/unet.py UNet(base_ch)；"
+            "fr_unet = FR_UNet(feature_scale=2) — 用户拍板：批1 FR-UNet ckpt 复用当 Stage-1。"
+        ),
+    )
     return p.parse_args()
 
 
@@ -1603,6 +1637,34 @@ def _main():
         if severity_arg is not None and len(severity_arg) == 0:
             # --severity with no values (edge case: treat as no-filter)
             severity_arg = None
+
+        # ---- extra_cfg: adapter 特有参数 ----
+        # creatis_postproc 两段式：stage1_ckpt 传入 cfg，trigger build_model 加载 Stage-1 backbone。
+        # 其余 adapter 的 extra_cfg 为空，build_model(cfg={}) 与原行为一致。
+        extra_cfg: Optional[Dict[str, Any]] = None
+        if args.adapter == "creatis_postproc":
+            extra_cfg = {}
+            if getattr(args, "creatis_stage1_ckpt", None) is not None:
+                extra_cfg["stage1_ckpt"] = args.creatis_stage1_ckpt
+                extra_cfg["stage1_base_ch"] = getattr(
+                    args, "creatis_stage1_base_ch", 32
+                )
+                extra_cfg["stage1_adapter"] = getattr(
+                    args, "creatis_stage1_adapter", "backbone_unet"
+                )
+                print(
+                    f"[evaluate] creatis_postproc 两段式模式: "
+                    f"stage1_ckpt={args.creatis_stage1_ckpt!r}  "
+                    f"stage1_adapter={extra_cfg['stage1_adapter']!r}  "
+                    f"stage1_base_ch={extra_cfg['stage1_base_ch']}"
+                )
+            else:
+                print(
+                    "[evaluate] creatis_postproc: --creatis_stage1_ckpt 未设置，"
+                    "将使用旧接口（forward_adapt 接收 backbone logits）。",
+                    file=sys.stderr,
+                )
+
         evaluate_benchmark(
             adapter_name      = args.adapter,
             ckpt_path         = args.ckpt,
@@ -1617,6 +1679,7 @@ def _main():
             tile_size         = args.tile_size,
             overlap           = args.tile_overlap,
             data_root         = args.data_root,  # BUG3 FIX: pass to adapter.preprocess_benchmark_image
+            extra_cfg         = extra_cfg,       # adapter 特有 cfg（creatis Stage-1 ckpt 等）
         )
     else:
         # ---- LEGACY path: val-split overlap+topo only (向后兼容，续连轴 NaN) ----

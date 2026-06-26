@@ -1,0 +1,75 @@
+# ours_gdn2.yaml — Ours GDN-2 (UNetGDN2) 配置（自证公平评估路径）
+# =======================================================================
+# 超参来源  : src/train_pilot.py 默认值（P1/P2 pilot 实证使用）
+# 用途      : Ours 走 train_harness.py 同一台子，与所有 baseline 共用
+#             评估路径，自证公平（无后门）。
+# 复现红线  : 不得私自修改超参；与 train_pilot.py 保持零偏离。
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "ours_gdn2"
+  kind: "architecture"
+  source_repo: "internal — project/meeting/ACCV/gdn2vessel/src/models/unet_gdn2.py"
+  env_tag: "main"
+  paper_ref: "GDN-2 Associative Memory + Mechanism B (Ours)"
+
+# --------------------------------------------------------------------------
+# 模型超参（src/models/unet_gdn2.py UNetGDN2 默认值）
+# --------------------------------------------------------------------------
+
+model:
+  in_ch: 1             # 绿通道 CLAHE 单通道
+  out_ch: 1            # 二值血管/背景
+  base_ch: 32          # 与统一 backbone 同规模（对比公平，BASELINE_SPEC §2.4）
+  use_memory: true     # 开启 GDN-2 关联记忆模块
+  backend: "naive"     # FLA 后端（naive=纯 PyTorch，chunk=FLA 加速）
+
+# --------------------------------------------------------------------------
+# 训练超参（src/train_pilot.py 默认值，P1/P2 pilot 已用）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "Adam"
+  lr: 1.0e-3                     # train_pilot.py 默认 lr=1e-3
+  scheduler: "ReduceLROnPlateau"
+  scheduler_mode: "max"
+  scheduler_factor: 0.5          # train_pilot.py 默认
+  scheduler_patience: 10         # train_pilot.py 默认
+  scheduler_min_lr: 1.0e-6       # train_pilot.py 默认
+  epochs: 100                    # 主实验轮数（与 loss 类 baseline 对齐）
+  batch_size: 2                  # train_pilot.py 默认
+
+# --------------------------------------------------------------------------
+# Loss（0.5 BCE + 0.5 Dice，train_pilot.py combined_loss 配置）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "BCEDice"
+  loss_bce_weight: 0.5           # train_pilot.py 默认 bce_weight=0.5
+  loss_dice_weight: 0.5          # train_pilot.py 默认 dice_weight=0.5
+
+# --------------------------------------------------------------------------
+# 预处理（与 Ours 训练期一致：绿通道 + CLAHE，全图，pad 32 倍数）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_clahe"    # 绿通道 + CLAHE（DRIVEDataset 默认，与 Ours 一致）
+  input_mode: "fullimg"      # 整图训练
+  patch_size: null
+  clahe: true
+  clahe_clip: 2.0
+  normalize_mean: [0.5]
+  normalize_std: [0.1]
+  pad_multiple: 32            # 填充为 32 倍数（U-Net 下采样对齐）
+
+# --------------------------------------------------------------------------
+# 数据增强（与 DRIVEDataset 默认增强一致）
+# --------------------------------------------------------------------------
+
+augment:
+  strategy: "unified_loss_class"
+  # TODO: 确认 DRIVEDataset augment 精确策略后对齐（与 loss 类 baseline 共用同台）

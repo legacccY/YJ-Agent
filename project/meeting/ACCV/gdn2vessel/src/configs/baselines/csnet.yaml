@@ -52,14 +52,14 @@ loss:
 # --------------------------------------------------------------------------
 
 preprocess:
-  channels: "rgb"
+  channels: 3              # RGB 三通道（int，官方 iMED-Lab/CS-Net ToTensor /255，2026-06-25 核实）
+  color_mode: "rgb"        # 供 train_harness._build_datasets 识别，走 RGB pipeline
   input_mode: "fullimg"
   patch_size: null         # 整图模式，无 patch
-  clahe: false             # 官方无 CLAHE
+  clahe: false             # 官方无 CLAHE（官方 dataloader 无 CLAHE，2026-06-25 核实）
   resize: 512              # 官方整图 resize 到 512×512
-  # TODO: 官方仅做 /255 归一化，未使用 ImageNet mean/std
-  normalize_mean: [0.0, 0.0, 0.0]   # TODO_researcher: 官方仅 /255，无显式 mean/std
-  normalize_std: [1.0, 1.0, 1.0]    # TODO_researcher: 官方仅 /255，无显式 mean/std
+  normalize_mean: [0.0, 0.0, 0.0]   # 官方仅 /255，无 mean/std 标准化（ToTensor only）
+  normalize_std: [1.0, 1.0, 1.0]    # 占位，无额外标准化
 
 # --------------------------------------------------------------------------
 # 数据增强（官方: 未在 BASELINE_SPEC 中明示 → TODO）

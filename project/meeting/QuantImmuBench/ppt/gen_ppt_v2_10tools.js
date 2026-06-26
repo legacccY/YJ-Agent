@@ -219,6 +219,35 @@ s.addText([
 ], { x:0.55, y:6.05, w:12.25, h:0.95, fontFace:FB, valign:"top", lineSpacingMultiple:1.05, margin:0 });
 pageno(s);
 
+// ============================================================ S3b ⭐ 各工具环境与依赖速查表
+s = pres.addSlide();
+header(s, "总览", "各工具的运行环境与依赖包（部署到什么环境、装了哪些包）");
+const eh = (t)=>({ text:t, options:{ fill:{color:C.dark}, color:"FFFFFF", bold:true, fontSize:11, align:"center", valign:"middle" } });
+const en = (t,col)=>({ text:t, options:{ color:col||C.ink, fontSize:9, align:"left", valign:"middle" } });
+const enl= (t)=>({ text:t, options:{ color:C.ink, fontSize:10.5, bold:true, align:"left", valign:"middle" } });
+const erows = [
+  [eh("工具"), eh("运行环境"), eh("关键包 / 版本"), eh("外部工具 / 权重")],
+  [enl("DeepImmuno"),   en("conda · Python 3.8"),       en("tensorflow 2.3.0 · numpy 1.18.5 · pandas 1.1.1 · protobuf 3.20.3"), en("无（纯肽段 + HLA）",C.ok)],
+  [enl("PredIG"),       en("Docker / Singularity 镜像"), en("镜像内置 R + XGBoost 全套"),                                       en("NetCleave · NOAH · netCTLpan · MHCflurry（镜像自带）")],
+  [enl("pTuneos"),      en("Docker 镜像 · Python 2.7"),  en("Python 2.7 · R 3.2.3 · scikit-learn（容器内）"),                   en("netMHCpan-4.0 · VEP+cache 14G · GATK · PyClone（镜像自带）",C.warn)],
+  [enl("IMPROVE"),      en("conda · Python 3.11"),       en("numpy ≥2.0 · scikit-learn 1.9 · pandas · seaborn"),                en("netMHCpan-4.1 · netMHCstabpan · PRIME · MixMHCpred + models.zip 1.9G(git-lfs)",C.warn)],
+  [enl("NeoTImmuML ★"), en("conda · Python 3.10 + R"),   en("lightgbm · xgboost · scikit-learn · pandas · numpy + R Peptides 2.4.6"), en("无外部许可工具；权重自训（官方未发布）",C.warn)],
+  [enl("PRIME"),        en("conda · Python 3.11"),       en("numpy · pandas · scipy · logomaker · matplotlib（+MAFFT 可选）"),   en("PRIME.x（g++ 编译）· MixMHCpred 3.0（Python）")],
+  [enl("ImmuneApp"),    en("conda · Python 3.7"),        en("tensorflow 1.15.0"),                                               en("权重随 repo（880M）")],
+  [enl("deepHLApan"),   en("Docker 镜像 · Python 2.7"),  en("keras 2.0.8 · tensorflow 1.12（容器内）"),                         en("权重随镜像")],
+  [enl("HLAthena"),     en("Docker / Singularity（sif 792M）"), en("镜像内置"),                                                 en("65-allele 模型 6.6G（从 GCS 下载）",C.warn)],
+  [enl("MHLAPre"),      en("未配通",C.crit),             en("文献：CUDA 10.2 · PyTorch（元学习 + Transformer）"),               en("❌ 无官方权重（部署阻塞）",C.crit)],
+];
+s.addTable(erows, { x:0.45, y:1.62, w:12.45, colW:[1.75,2.5,4.05,4.15],
+  rowH:[0.42,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46],
+  border:{pt:1,color:C.line}, valign:"middle", fontFace:FB, fill:{color:C.card} });
+s.addText([
+  { text:"环境分两类：", options:{ bold:true, color:C.teal, fontSize:9.5 } },
+  { text:"轻量工具用 conda 建独立 Python 环境装包；老链 / 多依赖工具用官方 Docker 镜像（HPC 转 Singularity）打包整套环境。", options:{ color:C.muted, fontSize:9.5, breakLine:true } },
+  { text:"★ NeoTImmuML 官方未发布权重，用公开数据自训替代；MHLAPre 缺权重未做成。学术工具（netMHCpan 等）需 DTU 许可，禁再分发。", options:{ color:C.ink, fontSize:9.5 } },
+], { x:0.45, y:6.7, w:12.45, h:0.6, fontFace:FB, valign:"top", lineSpacingMultiple:1.04, margin:0 });
+pageno(s);
+
 // ============================================================ S4-S23 逐工具 (10) 每工具=原理页+四类信息页
 // —— 第一批 5 工具 ——
 principleSlide({ idx:1, name:"DeepImmuno", accent:"028090",
@@ -405,36 +434,126 @@ let sMh = toolSlide({ idx:10, page:13, name:"MHLAPre（未完成）", accent:"B2
   cite:"MHLAPre, Briefings in Bioinformatics 2024 · DOI 10.1093/bib/bbae625 · github.com/ChanganMakeYi/MHLAPre（无 LICENSE）",
 });
 
-// ============================================================ S14 部署工程 + 踩坑
+// ============================================================ 部署工程 ① 两套战场总览
+// 按工具列问题：每卡 = 工具名 + 元信息 + 带[本机]/[HPC]来源标签的问题条目
+const ENVCOL = { "本机":C.sea, "HPC":C.warn, "—":C.gray };
+function toolIssueGrid(s, tools){
+  tools.forEach((t,i)=>{
+    const x = (i%2===0)? 0.7 : 6.95;
+    const y = 1.92 + Math.floor(i/2)*1.72;
+    const w = 5.68, h = 1.62;
+    const acc = t.accent || C.teal;
+    s.addShape(pres.shapes.RECTANGLE, { x, y, w, h, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+    s.addShape(pres.shapes.RECTANGLE, { x, y, w:0.07, h, fill:{color:acc} });
+    s.addText(t.name, { x:x+0.22, y:y+0.1, w:3.5, h:0.32, fontFace:FH, fontSize:12.5, bold:true, color:acc, valign:"middle", margin:0 });
+    s.addText(t.meta, { x:x+w-2.7, y:y+0.12, w:2.5, h:0.28, fontFace:FB, fontSize:9, color:C.muted, align:"right", valign:"middle", margin:0 });
+    const runs = [];
+    t.issues.forEach((is)=>{
+      runs.push({ text:is.env+" ", options:{ color:ENVCOL[is.env]||C.gray, bold:true, fontSize:8.5 } });
+      runs.push({ text:is.text, options:{ color:C.ink, fontSize:8.5, breakLine:true } });
+    });
+    s.addText(runs, { x:x+0.22, y:y+0.46, w:w-0.42, h:h-0.54, fontFace:FB, valign:"top", lineSpacingMultiple:1.04, margin:0 });
+  });
+}
+function srcLegend(s){
+  s.addText([
+    { text:"来源标签：", options:{ color:C.muted, fontSize:11, bold:true } },
+    { text:" 本机 ", options:{ color:C.sea, fontSize:11, bold:true } },
+    { text:"= 本地 WSL2   ", options:{ color:C.muted, fontSize:11 } },
+    { text:" HPC ", options:{ color:C.warn, fontSize:11, bold:true } },
+    { text:"= 学校集群   ", options:{ color:C.muted, fontSize:11 } },
+    { text:" — ", options:{ color:C.gray, fontSize:11, bold:true } },
+    { text:"= 未做成无输出", options:{ color:C.muted, fontSize:11 } },
+  ], { x:0.7, y:1.5, w:11.9, h:0.34, fontFace:FB, valign:"top", margin:0 });
+}
+
 s = pres.addSlide();
-header(s, "工程", "装这些工具踩过的坑（为什么不是点一下就能跑）");
-s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:1.8, w:4.6, h:4.85, fill:{color:C.dark}, shadow:sh() });
-s.addText("部署环境", { x:0.95, y:2.05, w:4, h:0.4, fontFace:FH, fontSize:17, bold:true, color:C.mint, margin:0 });
-s.addText([
-  { text:"本机 WSL2 Ubuntu", options:{ bold:true, color:"FFFFFF", fontSize:13.5, breakLine:true } },
-  { text:"调试主场 · 直通显卡 · conda + Docker", options:{ color:"9FD9CF", fontSize:11.5, breakLine:true, paraSpaceAfter:10 } },
-  { text:"学校 HPC 集群", options:{ bold:true, color:"FFFFFF", fontSize:13.5, breakLine:true } },
-  { text:"最终部署目标 · Singularity 容器", options:{ color:"9FD9CF", fontSize:11.5, breakLine:true, paraSpaceAfter:10 } },
-  { text:"出网情况", options:{ bold:true, color:"FFFFFF", fontSize:13.5, breakLine:true } },
-  { text:"GitHub / PyPI / DTU 通；Docker Hub 不通", options:{ color:"9FD9CF", fontSize:11.5 } },
-], { x:0.95, y:2.5, w:4.15, h:4.0, fontFace:FB, valign:"top", margin:0 });
-s.addText("典型的坑与解法", { x:5.6, y:1.9, w:7, h:0.4, fontFace:FH, fontSize:16, bold:true, color:C.ink, margin:0 });
-const pit = [
-  ["DeepImmuno：版本敏感","protobuf 必须降到 3.20，否则报 Descriptors 错；TF2.3 + Python3.8 严格对版本"],
-  ["ImmuneApp：装 TF1.15 卡死","一次性 pip 装会依赖回溯死循环(卡 20min+)→ 改先单独装 tensorflow==1.15 再装其余才过"],
-  ["deepHLApan：输出目录","工具不自建输出目录，outdir 必须先 mkdir，否则报 No such file；用官方 Docker 绕版本不兼容"],
-  ["pTuneos：老链 + 大缓存","镜像老依赖修了 8 处坑 + VEP 注释缓存 14G 才端到端跑通；HPC 因容器权限受限未跑"],
-  ["HLAthena：下载凭证失效","镜像自带 GCS 凭证 401 死锁 → 改匿名直链下模型 + 关掉自动拉取、本地挂载才跑通"],
-  ["MHLAPre：缺权重","官方未放预训练权重 + 预处理中间数据缺 + 拼装代码被注释 → 跑不通(未做成)"],
-];
-pit.forEach((p,i)=>{
-  const col = (i%2===0)? 5.6 : 9.2;
-  const yrow = 2.4 + Math.floor(i/2)*1.52;
-  s.addShape(pres.shapes.RECTANGLE, { x:col, y:yrow, w:3.4, h:1.4, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
-  s.addShape(pres.shapes.RECTANGLE, { x:col, y:yrow, w:3.4, h:0.06, fill:{color:C.sea} });
-  s.addText(p[0], { x:col+0.18, y:yrow+0.14, w:3.05, h:0.34, fontFace:FH, fontSize:12, bold:true, color:C.teal, margin:0 });
-  s.addText(p[1], { x:col+0.18, y:yrow+0.5, w:3.08, h:0.82, fontFace:FB, fontSize:9.5, color:C.ink, valign:"top", lineSpacingMultiple:1.1, margin:0 });
-});
+header(s, "04 · 部署工程", "两套部署战场：为什么不是「点一下就能跑」");
+s.addText("本机 WSL2 负责逐个调通 + 摸清四类信息；HPC 集群负责正式大规模跑。两边出网都受限，工具多是老链需逐个适配。",
+  { x:0.7, y:1.46, w:11.9, h:0.5, fontFace:FB, fontSize:13, color:C.muted, margin:0 });
+infoCard(s, 0.7,  2.1, 3.97, 4.35, "本机 · WSL2 Ubuntu 24.04", [
+  "角色：调试主场——逐个工具跑通、摸清四类信息",
+  "环境：直通显卡 + conda + Docker",
+  "为什么不用 Windows：仓库含带 * 的非法文件名，且工具多为 Linux 老链",
+], C.sea);
+infoCard(s, 4.93, 2.1, 3.97, 4.35, "HPC · 学校集群", [
+  "角色：正式大规模跑 + 团队最终交付目标",
+  "环境：Singularity 容器（无 Docker）+ 多核 CPU",
+  "推理多为 CPU（梯度提升树 / 随机森林 / CNN 推理），基本不占显卡",
+], C.teal);
+infoCard(s, 9.16, 2.1, 3.47, 4.35, "两边共同约束", [
+  "出网：GitHub / PyPI / DTU 通；Docker Hub 两边都不通",
+  "对策：本机打包镜像 → 上传 → 转 Singularity",
+  "学术工具（netMHCpan 等）禁止再分发，含其跑出的数字",
+], C.warn);
+s.addText("下面两页按工具逐个列出遇到的问题，并标注来源环境（本机 / HPC）。",
+  { x:0.7, y:6.62, w:11.9, h:0.4, fontFace:FB, fontSize:10.5, italic:true, color:C.muted, margin:0 });
+pageno(s);
+
+// ============================================================ 部署工程 ② 第一批 5 工具（按工具）
+s = pres.addSlide();
+header(s, "04 · 部署工程 · 按工具", "各工具遇到的问题（第一批 5 工具）", C.sea);
+srcLegend(s);
+toolIssueGrid(s, [
+  { name:"DeepImmuno", meta:"CNN · 本机+HPC 均通", accent:C.teal, issues:[
+    { env:"本机", text:"仓库含 * 文件名，Windows 存不了 → 搬 WSL2" },
+    { env:"本机", text:"protobuf 须降 3.20；TF2.3 / Py3.8 严格对版本" },
+    { env:"HPC",  text:"顺利跑通，结果与本机一字不差" },
+  ]},
+  { name:"PredIG", meta:"XGBoost · 官方镜像", accent:C.teal, issues:[
+    { env:"本机", text:"镜像 14.4G + Docker Hub 墙 → mirrored + 代理 + 删旧源" },
+    { env:"本机", text:"单次输入硬限 <5000 行 → 切块串跑再按序拼" },
+    { env:"HPC",  text:"镜像转 Singularity；只读容器写 tmp 需 writable-tmpfs" },
+  ]},
+  { name:"pTuneos", meta:"Py2.7 流水线", accent:C.teal, issues:[
+    { env:"本机", text:"自带样例连修 8 处 bug 才端到端跑通" },
+    { env:"本机", text:"VEP 注释库 14G 龟速 → 多连接下载提速约 12×" },
+    { env:"本机", text:"完整版喂不了 ELISpot → 用 Pre&RecNeo 子模型进基准" },
+    { env:"HPC",  text:"镜像程序在 /root + 无 fakeroot → 改本机容器验证" },
+  ]},
+  { name:"IMPROVE", meta:"随机森林", accent:C.teal, issues:[
+    { env:"本机", text:"模型用新版 numpy 存 → 换 Py3.11 才读得了" },
+    { env:"本机", text:"老二进制 netMHCpan-2.8 崩 → 内核 vsyscall 救活" },
+    { env:"本机", text:"表达量特征需 RNA-seq，ELISpot 没有 → 该特征降级" },
+    { env:"HPC",  text:"glibc 2.28 < stabpan 要 2.29 → 稳定性特征跑不了" },
+  ]},
+  { name:"NeoTImmuML ★", meta:"集成 ML · 自训替代", accent:C.teal, issues:[
+    { env:"本机", text:"源码 URL 未公开 → 浏览器自动化从数据库站抓出" },
+    { env:"本机", text:"无官方权重 → 公开数据自训（已确认全网无权重）" },
+    { env:"本机", text:"78 特征 R 库接口随版本变 → 逐列核对修对 76/78" },
+  ]},
+]);
+pageno(s);
+
+// ============================================================ 部署工程 ③ 第二批 5 工具（按工具）
+s = pres.addSlide();
+header(s, "04 · 部署工程 · 按工具", "各工具遇到的问题（第二批 5 工具）", C.teal);
+srcLegend(s);
+toolIssueGrid(s, [
+  { name:"PRIME", meta:"提呈 + TCR", accent:C.teal, issues:[
+    { env:"HPC", text:"26 个罕见 allele 不支持 → PRIME.x 卡死不报错" },
+    { env:"HPC", text:"按 PID 净杀僵死进程 + 预筛排除标 NaN 才跑完" },
+    { env:"HPC", text:"输出与官方完全一致（r=1.0），防伪通过" },
+  ]},
+  { name:"ImmuneApp", meta:"提呈 + 免疫原性", accent:C.teal, issues:[
+    { env:"HPC", text:"repo 880M 巨权重 git clone 卡死 → 改 tarball 下载" },
+    { env:"HPC", text:"TF1.15 一次 pip 依赖死循环 → 先单装 TF 再装其余" },
+  ]},
+  { name:"deepHLApan", meta:"双模型 · 镜像", accent:C.teal, issues:[
+    { env:"本机", text:"py2.7 + 老 keras 版本地狱 → 用官方 Docker" },
+    { env:"本机", text:"输出目录不自建须先 mkdir；HLA 格式无星号" },
+  ]},
+  { name:"HLAthena", meta:"仅提呈 · proxy 单列", accent:C.warn, issues:[
+    { env:"本机", text:"镜像空壳，GCS 凭证 401 死锁 → 改匿名直链下模型" },
+    { env:"HPC",  text:"误拉整模型目录会暴涨几百 G → 精确下" },
+    { env:"HPC",  text:"3 真 bug：CRLF 进肽长 / 混长度崩 / 孤儿抢 CPU" },
+    { env:"HPC",  text:"分块跑 70 块被内存杀（覆盖 266/336，逐肽 98%）" },
+  ]},
+  { name:"MHLAPre", meta:"未做成", accent:C.crit, issues:[
+    { env:"—", text:"无官方权重 + 预处理数据缺 + 拼装码被注释 → 跑不通" },
+    { env:"—", text:"全网搜权重为空，唯一出路：邮件作者" },
+  ]},
+]);
 pageno(s);
 
 // ============================================================ 数据集来源与规模

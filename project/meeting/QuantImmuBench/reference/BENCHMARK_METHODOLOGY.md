@@ -48,6 +48,19 @@
 
 ### Ground truth 标准
 功能性 T 细胞实验(IFNγ ELISpot、barcoded multimer/tetramer、41BB/TNFα 染色)，非仅 binding。
+- **ELISpot SFC 作定量真值有据**(2026-06-26 researcher 回填)：Beyond MHC binding (10.37349/ei.2023.00091) 明确"a quantitative value which reflects the strength of the immunogenicity was set"并跑 Spearman(预测分 vs ELISpot 值,ρ=0.47)；Ott 2017 Nature (10.1038/nature22991) ">55 SFC 判阳"；ELISpot 综述 PMC3360522 (Vaccine 2012) "ELISpot is highly quantitative, can measure a broad range of magnitudes of response"；PGV001 (Cancer Discovery 2025) 用 SFC/million 量化(60–2000)。→ 我们用 ELISpot SFC 当连续 magnitude 真值对齐学界。
+
+### 子窗/多 allele 聚合方法依据（best-binder / max-over-windows，2026-06-26 researcher 回填）
+我们把"变长肽滑窗切子肽 × 多 HLA"聚合成肽级一个分,主口径 **max(取最强子窗/最强 allele)** —— 这是 neoantigen pipeline 标准做法,**有据**：
+- **pVACseq 官方** (pvactools.readthedocs.io/pvacseq/output_files): `Best MT IC50 Score = Lowest IC50 binding affinity`,跨长度+跨 allele 取最强 —— "pVACseq reviews all localized peptides and chooses the single best binding value representative across different epitope lengths...lowest MT binding score...per mutation between all independent HLA alleles"。`--top-score-metric=lowest` 是标准参数。
+- **IEDB/Galaxy neoantigen 教程**: "The Aggregator Function is set to Maximum, meaning that for each allele, only the highest binding affinity (best percentile rank) is retained"。
+- **NetMHCpan-4.1** (NAR 2020, PMC7319546): FASTA 扫描"print only the strongest binding peptide overlapping a given binding core"；下游取最低 %Rank=最强 binder。
+- **NetMHCpan-4.0** (PMC5679736) 评 neoantigen: "the lowest percentile rank score to each of the HLA-A and B molecules expressed by the given cell line"。
+- **MuPeXI** (PMC11028452) / **pVAC-Seq** (Genome Medicine 2016, 10.1186/s13073-016-0264-5): 对病人全部 6 个 allele 取最佳。
+- **生物学依据**：肽段只要被病人**任一** HLA allele 强提呈即可能引发 T 细胞应答(MHC-I 限制性) → best-over-allele 是该生物前提的直接操作化。
+- **我们的映射**：分数越高 = IC50 越低 = %Rank 越低 = 最强 binder → max-over-windows/alleles 与 pVACseq "best MT IC50 across alleles" 一一对应。
+- ⚠️ TODO/盲区：NetMHCpan class I 无大写"Best Binder"单列列名(该 label class II 更明确)；class I 的 best-binder 逻辑体现在 pVACseq `Best MT IC50` + IEDB Maximum aggregation,引用以这两处为准,勿直引 DTU 官网"Best Binder"术语。
+- ⚠️ 区分自定 vs 有据：**max 聚合本身有据(上述)**；但"同时报 max/mean/top3mean 三种做稳健性对照""主口径锁 max,>0 单口径禁 selection-on-max""阈值取 >0/>10/>median 三档"=**我们自己的工程/红队决策**(无单一文献规定这三档),诚实标注,不冒充文献依据。
 
 ### 行业共识（必引对标）
 - 真实性能天花板低：独立 neoantigen 集 ROC-AUC 普遍 0.52–0.65。"AI 报 0.85–0.90"几乎都是 binding 任务非免疫原性。
@@ -84,3 +97,8 @@
 - Comprehensive analysis — 10.3389/fimmu.2023.1094236（AUC 0.52–0.60 天花板）
 - Beyond MHC binding — 10.37349/ei.2023.00091（overlap 量化 + ELISpot 相关）
 - Schaap-Johansen — PMC8479193（homology reduction）
+- pVACseq 聚合 — pvactools.readthedocs.io/en/latest/pvacseq/output_files.html（Best MT IC50 = lowest across alleles）
+- IEDB/Galaxy neoantigen 教程 — training.galaxyproject.org（Aggregator Function = Maximum）
+- NetMHCpan-4.1 — PMC7319546（strongest binding peptide）/ NetMHCpan-4.0 — PMC5679736（lowest %rank across alleles）
+- MuPeXI — PMC11028452 / pVAC-Seq — 10.1186/s13073-016-0264-5（6 allele 取最佳）
+- ELISpot 定量真值 — Ott 2017 10.1038/nature22991（>55 SFC）/ ELISpot 综述 PMC3360522 / PGV001 Cancer Discovery 2025

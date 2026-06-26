@@ -56,3 +56,26 @@
 
 ## 交接
 coder=creatis两段式入口+benchmark×4severity批量脚本+nnUNet桥接 | researcher=补超参TODO | 主线串行=gpu_slot分批 | analyst=批1三轴sane/批2区分度命门/全量出表+衰减曲线 | verifier=核22列+topo_source同值+复现差距
+
+## 批量评测脚本（coder 交付 2026-06-25）
+- `scripts/launch_p3_baseline_sweep.py` — P3 ×4 severity 批量评测 driver
+  - `--dry-run`（默认）打印全矩阵命令 + DEP 清单；真提交由主线串行
+  - 产出 `outputs/p3/<DS>_<baseline>_seed<s>/p3_<ds>_<baseline>_s<s>_{Easy,Medium,Hard,Extreme}.csv`
+  - creatis_postproc Stage1 ckpt: **seed42 路径已填（FR-UNet ckpt，用户拍板 2026-06-25）；seed1/2 待核 HPC 路径后回填**
+  - `--creatis_stage1_adapter fr_unet` 参数已自动注入命令（FR-UNet 架构加载）
+- `src/baselines/adapters/creatis_postproc.py` — 两段式 adapter 更新
+  - `build_model(cfg)` 接受 `stage1_ckpt` + `stage1_adapter`（`backbone_unet`/`fr_unet`）
+  - `stage1_adapter=fr_unet` 时用 FR_UNet(feature_scale=2, out_ave=True) 加载权重（用户拍板 2026-06-25）
+  - `forward_adapt` 路径 A（图像 tensor → Stage-1 → Stage-2），路径 B 兼容旧接口
+- `src/evaluate.py` — 新增 `--creatis_stage1_ckpt` / `--creatis_stage1_adapter` / `--creatis_stage1_base_ch` CLI 参数
+- `scripts/analyze_discrimination_gate.py` — **批2区分度门分析脚本（coder 2026-06-25）**
+  - 输入: 批2 per-image CSV（27列），输出: verdict JSON
+  - 实现: PSR on clDice（cluster bootstrap B=2000, BH-FDR q=0.05, pool DRIVE+CHASE n=12）
+  - shuffle-null 锚（≥1000 perm），PASS ⟺ real PSR > null 95pct
+  - INSUFFICIENT 功效档（bootstrap power，阈默认0.5）
+  - 饱和 sanity（FR-UNet Medium clDice >0.90/<0.30 → 切 Hard）
+  - 交叉印证（PSR on ε_β0 + OLS 斜率分散度 SR/reid_rate）
+  - Kendall's W 闭式手算
+  - 全 numpy 禁 scipy.stats（OMP 红线）
+- `tests/test_disc_gate.py` — 配套 pytest（主线跑 `python -m pytest tests/test_disc_gate.py -x -q`）
+- `src/train_harness.py` — 新增 creatis two_stage 分支（Stage-2 数据未接好时 exit(1) + 详细说明）

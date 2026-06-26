@@ -282,36 +282,114 @@ toolSlide({ idx:5, name:"NeoTImmuML ★ 自训版", accent:"028090", method:"集
   intro:[ "纯肽段特征，不要 HLA、不要任何收费工具，装起来最省心", "限制：是研究用 notebook，没带权重 → 用公开肿瘤抗原库重训了一版", "不含 78 特征的计算代码 → 要自己用 R 算" ],
   cite:"NeoTImmuML, Frontiers in Immunology 2025 · DOI 10.3389/fimmu.2025.1681396 · github.com/01SYan19/NeoTImmuML" });
 
-// ============================================================ 部署工程 + 踩坑（5 工具归属）
+// ============================================================ 部署工程 ① 两套战场总览
+// 按工具列问题：每卡 = 工具名 + 元信息 + 带[本机]/[HPC]来源标签的问题条目
+const ENVCOL = { "本机":C.sea, "HPC":C.warn, "—":C.gray };
+function toolIssueGrid(s, tools){
+  tools.forEach((t,i)=>{
+    const x = (i%2===0)? 0.7 : 6.95;
+    const y = 1.92 + Math.floor(i/2)*1.72;
+    const w = 5.68, h = 1.62;
+    const acc = t.accent || C.teal;
+    s.addShape(pres.shapes.RECTANGLE, { x, y, w, h, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
+    s.addShape(pres.shapes.RECTANGLE, { x, y, w:0.07, h, fill:{color:acc} });
+    s.addText(t.name, { x:x+0.22, y:y+0.1, w:3.5, h:0.32, fontFace:FH, fontSize:12.5, bold:true, color:acc, valign:"middle", margin:0 });
+    s.addText(t.meta, { x:x+w-2.7, y:y+0.12, w:2.5, h:0.28, fontFace:FB, fontSize:9, color:C.muted, align:"right", valign:"middle", margin:0 });
+    const runs = [];
+    t.issues.forEach((is)=>{
+      runs.push({ text:is.env+" ", options:{ color:ENVCOL[is.env]||C.gray, bold:true, fontSize:8.5 } });
+      runs.push({ text:is.text, options:{ color:C.ink, fontSize:8.5, breakLine:true } });
+    });
+    s.addText(runs, { x:x+0.22, y:y+0.46, w:w-0.42, h:h-0.54, fontFace:FB, valign:"top", lineSpacingMultiple:1.04, margin:0 });
+  });
+}
+
 s = pres.addSlide();
-header(s, "工程", "部署环境与典型技术问题（按工具归属）");
-s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:1.8, w:4.6, h:4.85, fill:{color:C.dark}, shadow:sh() });
-s.addText("部署环境", { x:0.95, y:2.05, w:4, h:0.4, fontFace:FH, fontSize:17, bold:true, color:C.mint, margin:0 });
-s.addText([
-  { text:"本机 WSL2 Ubuntu", options:{ bold:true, color:"FFFFFF", fontSize:13.5, breakLine:true } },
-  { text:"调试主场 · 直通显卡 · conda + Docker", options:{ color:"9FD9CF", fontSize:11.5, breakLine:true, paraSpaceAfter:10 } },
-  { text:"学校 HPC 集群", options:{ bold:true, color:"FFFFFF", fontSize:13.5, breakLine:true } },
-  { text:"最终部署目标 · Singularity 容器", options:{ color:"9FD9CF", fontSize:11.5, breakLine:true, paraSpaceAfter:10 } },
-  { text:"出网情况", options:{ bold:true, color:"FFFFFF", fontSize:13.5, breakLine:true } },
-  { text:"GitHub / PyPI / DTU 通；Docker Hub 不通", options:{ color:"9FD9CF", fontSize:11.5 } },
-], { x:0.95, y:2.5, w:4.15, h:4.0, fontFace:FB, valign:"top", margin:0 });
-s.addText("典型的坑与解法（标明工具）", { x:5.6, y:1.9, w:7, h:0.4, fontFace:FH, fontSize:16, bold:true, color:C.ink, margin:0 });
-const pit = [
-  ["DeepImmuno：版本敏感","protobuf 必须降到 3.20，否则报 Descriptors 错；TF2.3 + Python3.8 严格对版本"],
-  ["PredIG：镜像体积大","官方 Docker 14.4G；HPC 不通 Docker Hub → 转 Singularity（4.6G）"],
-  ["pTuneos：老链 + 大缓存","老依赖修了 8 处坑 + VEP 注释缓存 14G 才端到端跑通；HPC 因容器权限受限未跑"],
-  ["IMPROVE：外部工具受限","稳定性特征依赖的 netMHCstabpan 受系统库版本所限；表达特征因无 RNA 降级"],
-  ["NeoTImmuML：无官方权重","研究用 notebook 不带权重 → 用公开数据自训；78 特征需先用 R 算"],
-  ["通用：Docker Hub 不通","HPC 出网受限 → 镜像转 Singularity；老二进制改内核兼容配置绕过"],
+header(s, "工程", "两套部署战场：本机调试 + HPC 正式跑");
+s.addText("本批 5 个工具均经两套环境：本机 WSL2 逐个调通并摸清四类信息，HPC 集群作为最终部署目标。两边出网均受限，工具多为老链需逐个适配。",
+  { x:0.7, y:1.46, w:11.9, h:0.5, fontFace:FB, fontSize:13, color:C.muted, margin:0 });
+infoCard(s, 0.7,  2.1, 3.97, 4.35, "本机 · WSL2 Ubuntu 24.04", [
+  "角色：调试主场——逐个工具跑通、摸清四类信息",
+  "环境：直通显卡 + conda + Docker",
+  "为什么不用 Windows：仓库含带 * 的非法文件名，且工具多为 Linux 老链",
+], C.sea);
+infoCard(s, 4.93, 2.1, 3.97, 4.35, "HPC · 学校集群", [
+  "角色：正式大规模跑 + 团队最终交付目标",
+  "环境：Singularity 容器（无 Docker）+ 多核 CPU",
+  "推理多为 CPU（梯度提升树 / 随机森林 / CNN 推理），基本不占显卡",
+], C.teal);
+infoCard(s, 9.16, 2.1, 3.47, 4.35, "两边共同约束", [
+  "出网：GitHub / PyPI / DTU 通；Docker Hub 两边都不通",
+  "对策：本机打包镜像 → 上传 → 转 Singularity",
+  "学术工具（netMHCpan 等）禁止再分发，含其跑出的数字",
+], C.warn);
+s.addText("下面先看各工具的运行环境与依赖包，再按工具逐个列出遇到的问题（标来源环境）。",
+  { x:0.7, y:6.62, w:11.9, h:0.4, fontFace:FB, fontSize:10.5, italic:true, color:C.muted, margin:0 });
+pageno(s);
+
+// ============================================================ 部署工程 ①b 各工具环境与依赖速查表
+s = pres.addSlide();
+header(s, "工程 · 环境", "各工具的运行环境与依赖包（部署到什么环境、装了哪些包）", C.teal);
+const eh = (t)=>({ text:t, options:{ fill:{color:C.dark}, color:"FFFFFF", bold:true, fontSize:11.5, align:"center", valign:"middle" } });
+const en = (t,col)=>({ text:t, options:{ color:col||C.ink, fontSize:9.5, align:"left", valign:"middle" } });
+const enl= (t)=>({ text:t, options:{ color:C.ink, fontSize:11, bold:true, align:"left", valign:"middle" } });
+const erows = [
+  [eh("工具"), eh("运行环境"), eh("关键包 / 版本"), eh("外部工具 / 权重")],
+  [enl("DeepImmuno"),   en("conda · Python 3.8"),       en("tensorflow 2.3.0 · numpy 1.18.5 · pandas 1.1.1 · protobuf 3.20.3"), en("无（纯肽段 + HLA）",C.ok)],
+  [enl("PredIG"),       en("Docker / Singularity 镜像"), en("镜像内置 R + XGBoost 全套"),                                       en("NetCleave · NOAH · netCTLpan · MHCflurry（镜像自带）")],
+  [enl("pTuneos"),      en("Docker 镜像 · Python 2.7"),  en("Python 2.7 · R 3.2.3 · scikit-learn（容器内）"),                   en("netMHCpan-4.0 · VEP+cache 14G · GATK · PyClone（镜像自带）",C.warn)],
+  [enl("IMPROVE"),      en("conda · Python 3.11"),       en("numpy ≥2.0 · scikit-learn 1.9 · pandas · seaborn"),                en("netMHCpan-4.1 · netMHCstabpan · PRIME · MixMHCpred + models.zip 1.9G(git-lfs)",C.warn)],
+  [enl("NeoTImmuML ★"), en("conda · Python 3.10 + R"),   en("lightgbm · xgboost · scikit-learn · pandas · numpy + R Peptides 2.4.6"), en("无外部许可工具；权重自训（官方未发布）",C.warn)],
 ];
-pit.forEach((p,i)=>{
-  const col = (i%2===0)? 5.6 : 9.2;
-  const yrow = 2.4 + Math.floor(i/2)*1.42;
-  s.addShape(pres.shapes.RECTANGLE, { x:col, y:yrow, w:3.4, h:1.28, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
-  s.addShape(pres.shapes.RECTANGLE, { x:col, y:yrow, w:3.4, h:0.06, fill:{color:C.sea} });
-  s.addText(p[0], { x:col+0.18, y:yrow+0.13, w:3.05, h:0.35, fontFace:FH, fontSize:11.5, bold:true, color:C.teal, margin:0 });
-  s.addText(p[1], { x:col+0.18, y:yrow+0.5, w:3.08, h:0.72, fontFace:FB, fontSize:9.5, color:C.ink, valign:"top", lineSpacingMultiple:1.04, margin:0 });
-});
+s.addTable(erows, { x:0.55, y:1.95, w:12.25, colW:[1.9,2.6,3.95,3.8],
+  rowH:[0.5,0.72,0.72,0.72,0.72,0.72],
+  border:{pt:1,color:C.line}, valign:"middle", fontFace:FB, fill:{color:C.card} });
+s.addText([
+  { text:"环境分两类：", options:{ bold:true, color:C.teal, fontSize:10 } },
+  { text:"轻量工具用 conda 建独立 Python 环境装包；老链 / 多依赖工具用官方 Docker 镜像（HPC 转 Singularity）打包整套环境。", options:{ color:C.muted, fontSize:10, breakLine:true } },
+  { text:"★ NeoTImmuML 官方未发布权重，用公开数据自训替代。学术工具（netMHCpan 等）需 DTU 许可，禁再分发。", options:{ color:C.ink, fontSize:10 } },
+], { x:0.55, y:6.4, w:12.25, h:0.7, fontFace:FB, valign:"top", lineSpacingMultiple:1.05, margin:0 });
+pageno(s);
+
+// ============================================================ 部署工程 ② 按工具列问题（5 工具）
+s = pres.addSlide();
+header(s, "工程 · 按工具", "各工具遇到的问题与解法（按工具 / 标来源）", C.sea);
+s.addText([
+  { text:"来源标签：", options:{ color:C.muted, fontSize:11, bold:true } },
+  { text:" 本机 ", options:{ color:C.sea, fontSize:11, bold:true } },
+  { text:"= 本地 WSL2     ", options:{ color:C.muted, fontSize:11 } },
+  { text:" HPC ", options:{ color:C.warn, fontSize:11, bold:true } },
+  { text:"= 学校集群", options:{ color:C.muted, fontSize:11 } },
+], { x:0.7, y:1.5, w:11.9, h:0.34, fontFace:FB, valign:"top", margin:0 });
+toolIssueGrid(s, [
+  { name:"DeepImmuno", meta:"CNN · 本机+HPC 均通", accent:C.teal, issues:[
+    { env:"本机", text:"仓库含 * 文件名，Windows 存不了 → 搬 WSL2" },
+    { env:"本机", text:"protobuf 须降 3.20；TF2.3 / Py3.8 严格对版本" },
+    { env:"HPC",  text:"顺利跑通，结果与本机一字不差" },
+  ]},
+  { name:"PredIG", meta:"XGBoost · 官方镜像", accent:C.teal, issues:[
+    { env:"本机", text:"镜像 14.4G + Docker Hub 墙 → mirrored + 代理 + 删旧源" },
+    { env:"本机", text:"单次输入硬限 <5000 行 → 切块串跑再按序拼" },
+    { env:"HPC",  text:"镜像转 Singularity；只读容器写 tmp 需 writable-tmpfs" },
+  ]},
+  { name:"pTuneos", meta:"Py2.7 流水线", accent:C.teal, issues:[
+    { env:"本机", text:"自带样例连修 8 处 bug 才端到端跑通" },
+    { env:"本机", text:"VEP 注释库 14G 龟速 → 多连接下载提速约 12×" },
+    { env:"本机", text:"完整版喂不了 ELISpot → 用 Pre&RecNeo 子模型进基准" },
+    { env:"HPC",  text:"镜像程序在 /root + 无 fakeroot → 改本机容器验证" },
+  ]},
+  { name:"IMPROVE", meta:"随机森林", accent:C.teal, issues:[
+    { env:"本机", text:"模型用新版 numpy 存 → 换 Py3.11 才读得了" },
+    { env:"本机", text:"老二进制 netMHCpan-2.8 崩 → 内核 vsyscall 救活" },
+    { env:"本机", text:"表达量特征需 RNA-seq，ELISpot 没有 → 该特征降级" },
+    { env:"HPC",  text:"glibc 2.28 < stabpan 要 2.29 → 稳定性特征跑不了" },
+  ]},
+  { name:"NeoTImmuML ★", meta:"集成 ML · 自训替代", accent:C.teal, issues:[
+    { env:"本机", text:"源码 URL 未公开 → 浏览器自动化从数据库站抓出" },
+    { env:"本机", text:"无官方权重 → 公开数据自训（已确认全网无权重）" },
+    { env:"本机", text:"78 特征 R 库接口随版本变 → 逐列核对修对 76/78" },
+  ]},
+]);
 pageno(s);
 
 // ============================================================ 数据集来源与规模

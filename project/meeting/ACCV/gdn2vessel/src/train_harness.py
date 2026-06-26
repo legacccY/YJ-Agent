@@ -308,9 +308,66 @@ def _build_datasets(
         return train_ds, val_ds
 
     # ------------------------------------------------------------------ #
+    #  CS-Net 专用 RGB pipeline（color_mode='rgb'，官方 iMED-Lab/CS-Net /255 无 CLAHE）
+    # ------------------------------------------------------------------ #
+    if adapter_name == "cs_net":
+        # CS-Net 官方用 RGB 3ch 输入（Image.open → ToTensor，/255，无 CLAHE）。
+        # dataset 输出 image: (3, H, W) float32 /255。
+        # 其余超参（patch_size / augment）与通用流程一致。
+        # 来源：iMED-Lab/CS-Net dataloader/drive.py（2026-06-25 核实）
+        cs_patch_size = int(cfg.get("patch_size") or 512)
+        if ds_upper == "DRIVE":
+            from datasets.drive import DRIVEDataset
+            train_ds = DRIVEDataset(
+                data_root=data_root, split="train",
+                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+            )
+            val_ds = DRIVEDataset(
+                data_root=data_root, split="val",
+                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+            )
+        elif ds_upper in ("CHASE", "CHASE_DB1"):
+            from datasets.chase import CHASEDataset
+            train_ds = CHASEDataset(
+                data_root=data_root, split="train",
+                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+            )
+            val_ds = CHASEDataset(
+                data_root=data_root, split="val",
+                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+            )
+        elif ds_upper == "STARE":
+            from datasets.stare import STAREDataset
+            train_ds = STAREDataset(
+                data_root=data_root, split="train",
+                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+            )
+            val_ds = STAREDataset(
+                data_root=data_root, split="val",
+                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+            )
+        elif ds_upper == "FIVES":
+            from datasets.fives import FIVESDataset
+            train_ds = FIVESDataset(
+                data_root=data_root, split="train",
+                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+            )
+            val_ds = FIVESDataset(
+                data_root=data_root, split="val",
+                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+            )
+        else:
+            raise ValueError(
+                f"[train_harness] cs_net: 不支持的 dataset {dataset!r}. "
+                "Supported: DRIVE / CHASE / STARE / FIVES"
+            )
+        return train_ds, val_ds
+
+    # ------------------------------------------------------------------ #
     #  通用 BaseVesselDataset pipeline（backbone_unet / ours_gdn2 / 未来 adapter）
     # ------------------------------------------------------------------ #
-    patch_size = int(cfg.get("patch_size", 512))
+    # patch_size None(yaml null, 如 backbone_unet input_mode=fullimg) → 512 全图 pad-crop 默认
+    patch_size = int(cfg.get("patch_size") or 512)
 
     if ds_upper == "DRIVE":
         from datasets.drive import DRIVEDataset
@@ -614,6 +671,68 @@ def main(argv=None):
         sys.exit(1)
 
     print(f"[train_harness] adapter={adapter}")
+
+    # ------------------------------------------------------------------ #
+    #  creatis_postproc 两段式分支（识别 two_stage kind，特殊处理）
+    # ------------------------------------------------------------------ #
+    # creatis baseline 是两段式：
+    #   Stage 1 = backbone_unet 标准训练（单独跑 train_harness --baseline backbone_unet）
+    #   Stage 2 = creatis reconnecting model 训练（需要官方 disconnect.py 生成的断点数据）
+    # 当前 harness 对 Stage-2 训练的支持状态：
+    #   - Stage-2 数据集（断点图 + GT 对）尚未接好（见 creatis.yaml data.stage2_train_source）
+    #   - 需要先跑 sources/source_2D/disconnect.py 生成断点训练数据
+    #   - TODO: 未找到官方源，需 researcher 确认 Stage-2 训练数据 HPC 路径
+    # 当 baseline = creatis_postproc 时：
+    #   - 若 cfg.two_stage=True 且无 Stage-2 训练数据路径 → 打印说明并提示
+    #   - 若 cfg.stage2_data_dir 已配置 → 继续走常规训练循环（Stage-2 训练）
+    _two_stage = bool(cfg.get("two_stage", False))
+    if args.baseline == "creatis_postproc" and _two_stage:
+        stage2_data_dir = cfg.get("stage2_data_dir", None)
+        if stage2_data_dir is None:
+            # Stage-2 训练数据未配置 → 无法继续
+            print(
+                "\n[train_harness] creatis_postproc 两段式说明:\n"
+                "  Stage 1 (backbone_unet) 必须先独立训练:\n"
+                "    python src/train_harness.py --baseline backbone_unet "
+                "--dataset DRIVE --output_dir outputs/backbone_drive_s42\n"
+                "\n"
+                "  Stage 2 (creatis reconnecting model) 训练步骤:\n"
+                "    1. 生成断点训练数据:\n"
+                "       python third_party/creatis_postproc/disconnect.py "
+                "--data_root <vessel_data> --out_dir <stage2_data_dir>\n"
+                "       # TODO: 未找到官方源，需 researcher 确认 HPC 断点数据路径\n"
+                "       # 官方: sources/source_2D/disconnect.py (main branch)\n"
+                "    2. 配置 creatis.yaml data.stage2_data_dir 指向生成的断点数据\n"
+                "    3. 重新运行 train_harness --baseline creatis_postproc\n"
+                "\n"
+                "  评估（Stage-2 权重已有或使用官方预训权重）:\n"
+                "    python src/evaluate.py --adapter creatis_postproc\n"
+                "      --ckpt <stage2.pth>  (或 --config creatis.yaml model.model_dir=<dir>)\n"
+                "    cfg: stage1_ckpt=<backbone_best.pth>  (两段式完整评估)\n"
+                "    # TODO: 需 researcher 确认官方预训权重 2D_model_stare 的 HPC 路径\n"
+                "    #       官方 repo: sources/source_2D/models/2D_model_stare/\n",
+                file=sys.stderr,
+            )
+            print(
+                "[train_harness] creatis Stage-2 训练数据未配置，退出。\n"
+                "  配置 creatis.yaml data.stage2_data_dir 后重试。",
+                file=sys.stderr,
+            )
+            _write_state(state_path, 0, 0.0, 0.0, 0.0, "error")
+            sys.exit(1)
+        else:
+            # stage2_data_dir 已设置 → 继续走常规训练循环
+            # TODO: Stage-2 训练循环需配套断点 dataset 类（pos_i mask 用于 PonderatedDiceloss）
+            #       当前 _build_datasets 对 creatis_postproc 走通用 BaseVesselDataset
+            #       （不含 pos_i 列），PonderatedDiceloss dice_2 项会用 fov_mask 近似。
+            #       精确复现须接入官方断点 dataloader（见 creatis_postproc.py TODO_harness）。
+            print(
+                f"[train_harness] creatis_postproc Stage-2 训练模式\n"
+                f"  stage2_data_dir={stage2_data_dir!r}\n"
+                f"  WARNING: PonderatedDiceloss dice_2 项用 fov_mask 近似（非官方 pos_i）\n"
+                f"  精确复现需官方断点 dataloader（见 creatis_postproc.py TODO_harness）"
+            )
+            # 继续下面的常规训练循环
 
     # --- device ---
     if args.device is not None:

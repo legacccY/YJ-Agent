@@ -353,10 +353,11 @@
   }
  },
  "fetal_us_seg": {
-  "subsets": "PSFHS(耻骨联合+胎头,像素mask) / HC18(胎儿头围,椭圆GT填mask) / FUGC(宫颈超声,需申请)",
-  "local": "PSFHS: project/meeting/_run011_pilot/data/PSFHS/PSFHS/{image_mha,label_mha}/ (2716 .mha=1358图+mask) ; HC18/FUGC TODO",
-  "source": "PSFHS=Zenodo 10969427(免申请132MB) ; HC18=Zenodo 1322001(免申请,training_set.zip 133MB+test_set.zip) ; FUGC=Zenodo 14305302(需签协议邮件 fugc.isbi25@gmail.com)",
+  "subsets": "PSFHS(耻骨联合PS+胎头FH,像素mask,2类前景) / HC18(胎儿头围,椭圆GT填mask,1类) / FUGC(宫颈超声,anterior+posterior cervical lip 2类前景)",
+  "local": "PSFHS: project/meeting/_run011_pilot/data/PSFHS/PSFHS/{image_mha,label_mha}/ (2716 .mha=1358图+mask) ; HC18: project/meeting/_run011_pilot/data/HC18/ ; FUGC: project/meeting/_run011_pilot/data/FUGC/FUGC_Dataset.zip (Zenodo 16893174 Open直下 2026-06-25,161.7MB,待解压核GT)",
+  "source": "PSFHS=Zenodo 10969427(免申请132MB) ; HC18=Zenodo 1322001(免申请,training_set.zip 133MB+test_set.zip) ; FUGC=Zenodo 16893174 Open直下免申请(curl API https://zenodo.org/api/records/16893174/files/FUGC%20(Dataset).zip/content, CC-BY-4.0; 旧 record 14305302 需签协议已弃用; 备 GDrive folder 1iaCGYgvMXJvASX5pbNxz87E-V2AguoIi 含nnUNet预处理版)",
+  "fugc_spec": "✅已解压验通 2026-06-25: FUGC (Dataset)/dataset/{train/{labeled_data 50,unlabeled_data 450},val 90,test 300}; 全 PNG 336×544; label 类别{0=bg,1=anterior lip,2=posterior lip}2前景类(占比~16%/13%,落PS2.5%与FH22%之间补难度谱); ⭐test/labels 300张GT全公开(此Zenodo版含,无需Codabench/自建held-out,修正旧情报); 顶队SSL mDSC=90.26%(T4队对标)",
   "purpose": "FetalSSBench 胎儿超声半监督分割统一benchmark主战场(候选A). 候选C(speckle)用 BUSI Kaggle+Nakagami合成; 候选B(OOD)用 BraTS-Africa/M&Ms 不在此条.",
-  "status": "partial (PSFHS ready, HC18 todo下, FUGC 需申请)"
+  "status": "partial (PSFHS+HC18 ready, FUGC downloading-local 2026-06-25 待解压验GT)"
  }
 }

@@ -184,6 +184,19 @@ class OursGDN2Adapter(BaselineAdapter):
             },
         }
 
+    # GDN-2 bottleneck = H/16 × W/16 tokens; hard limit = 1024.
+    # Training size: 512×512 → 32×32 = 1024 (exactly at limit).
+    # Native DRIVE 565×584 → 35×36 = 1260 > 1024 → assert fires.
+    # Fix: if bottleneck token count > 1024, resize input to 512×512
+    # (the training resolution), forward, then upsample output back to
+    # the original padded size H'×W'.  This is the method's hard capacity
+    # ceiling — eval runs at max feasible resolution (512²) and upsamples
+    # predictions back to native GT size.  evaluate.py then crops to
+    # (orig_H, orig_W) for metric computation.
+    _GDN2_MAX_TOKENS: int = 1024
+    _GDN2_STRIDE: int = 16       # total spatial stride of 4 MaxPool2d(2) blocks
+    _GDN2_TRAIN_SIZE: int = 512  # training resolution (32×32 = 1024 tokens exactly)
+
     def forward_adapt(
         self,
         model: nn.Module,
@@ -191,14 +204,56 @@ class OursGDN2Adapter(BaselineAdapter):
         device: torch.device,
     ) -> torch.Tensor:
         """
-        全图推理：UNetGDN2 是整图训练模型，直接 forward。
-        输入 (B,1,H,W) → 输出 (B,1,H,W) logits。
+        全图推理：UNetGDN2 整图训练模型。
+
+        分辨率兼容处理（GDN-2 容量天花板）：
+          训练尺寸 512×512 → bottleneck 32×32 = 1024 token（恰好上限）。
+          eval native DRIVE 565×584 → bottleneck 35×36 = 1260 > 1024 → assert 崩。
+          修复：bottleneck token 超限时，resize 输入到 512×512（训练分辨率）→
+                forward → F.interpolate 输出回原 H'×W'。
+          evaluate.py 之后做 logits[:, :, :orig_H, :orig_W] crop 回 native GT 尺寸。
+          这是方法固有容量限制（benchmark 诚实注记：GDN-2 容量限制分辨率）。
+
+        输入 (B,1,H,W) → 输出 (B,1,H,W) logits（输出尺寸 = 输入尺寸）。
         """
+        _, _, H, W = x.shape
+        out_H, out_W = H, W  # 目标输出尺寸 = 输入尺寸（evaluate.py 期望一致）
+
+        # 检查 bottleneck token 数是否超限
+        bot_H = H // self._GDN2_STRIDE
+        bot_W = W // self._GDN2_STRIDE
+        tokens = bot_H * bot_W
+
+        if tokens > self._GDN2_MAX_TOKENS:
+            # resize 到训练分辨率 512×512（不超 1024 token）
+            x_fwd = F.interpolate(
+                x,
+                size=(self._GDN2_TRAIN_SIZE, self._GDN2_TRAIN_SIZE),
+                mode='bilinear',
+                align_corners=False,
+            )
+        else:
+            x_fwd = x
+
         model.eval()
         with torch.no_grad():
-            logits = model(x)
+            logits = model(x_fwd)
+
+        # 若做了 resize，把输出 upsample 回原始 H'×W'
+        if tokens > self._GDN2_MAX_TOKENS:
+            logits = F.interpolate(
+                logits,
+                size=(out_H, out_W),
+                mode='bilinear',
+                align_corners=False,
+            )
+
         # 输出形状断言
         assert logits.shape[1] == 1 and logits.ndim == 4, (
             f"OursGDN2Adapter.forward_adapt: expected (B,1,H,W), got {logits.shape}"
+        )
+        assert logits.shape[2] == out_H and logits.shape[3] == out_W, (
+            f"OursGDN2Adapter.forward_adapt: output size mismatch, "
+            f"expected ({out_H},{out_W}), got {logits.shape[2:]}"
         )
         return logits

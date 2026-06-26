@@ -1,0 +1,75 @@
+# backbone_unet.yaml — 统一 backbone U-Net 配置（BASELINE_SPEC §2.4 loss 类基准）
+# =======================================================================
+# 超参来源  : BASELINE_SPEC §2.4 统一配方（内部设计，非外部官方 repo）
+# 用途      : loss 类 baseline（cldice/cbdice/skeleton_recall）的公共主干
+#             + 独立出现在结果表作"UNet + BCE+Dice"对照行
+# 复现红线  : loss 类 backbone/optimizer/scheduler 由代码强制钉死（backbone_unet.py
+#             _UNIFIED_* 常量）；此 yaml 记录为文档 + train_harness --config 入口。
+# =======================================================================
+
+# --------------------------------------------------------------------------
+# Baseline 元数据
+# --------------------------------------------------------------------------
+
+baseline:
+  name: "backbone_unet"
+  kind: "loss"
+  source_repo: "internal — project/meeting/ACCV/gdn2vessel/src/models/unet.py"
+  env_tag: "main"
+  paper_ref: "Unified backbone U-Net (BASELINE_SPEC §2.4)"
+
+# --------------------------------------------------------------------------
+# 模型超参（BASELINE_SPEC §2.4 loss 类统一 backbone，代码强制 base_ch=32）
+# --------------------------------------------------------------------------
+
+model:
+  in_ch: 1            # 绿通道 CLAHE 单通道
+  out_ch: 1           # 二值血管/背景
+  base_ch: 32         # 统一 base_ch=32（代码强制，yaml 仅记录文档对齐）
+
+# --------------------------------------------------------------------------
+# 训练超参（BASELINE_SPEC §2.4 loss 类统一，代码强制）
+# --------------------------------------------------------------------------
+
+train:
+  optimizer: "Adam"
+  lr: 1.0e-3                     # 统一 lr=1e-3（代码强制 _UNIFIED_LR）
+  scheduler: "ReduceLROnPlateau"
+  scheduler_mode: "max"
+  scheduler_factor: 0.5          # 统一 factor=0.5（代码强制）
+  scheduler_patience: 10         # 统一 patience=10（代码强制）
+  scheduler_min_lr: 1.0e-6       # 统一 min_lr=1e-6（代码强制）
+  epochs: 100                    # 与 Ours 主实验对齐（BASELINE_SPEC §2.4）
+  batch_size: 2
+
+# --------------------------------------------------------------------------
+# Loss（默认 0.5 BCE + 0.5 Dice，backbone_unet.py _UnifiedBCEDiceLoss）
+# --------------------------------------------------------------------------
+
+loss:
+  type: "BCEDice"
+  # 真源 = adapter build_loss()，此处记录为文档
+  bce_weight: 0.5
+  dice_weight: 0.5
+
+# --------------------------------------------------------------------------
+# 预处理（BASELINE_SPEC §2.4 loss 类统一预处理，与 Ours 一致）
+# --------------------------------------------------------------------------
+
+preprocess:
+  channels: "green_clahe"    # 绿通道 + CLAHE（与 Ours 同）
+  input_mode: "fullimg"      # 全图推理
+  patch_size: null
+  clahe: true
+  clahe_clip: 2.0
+  normalize_mean: [0.5]
+  normalize_std: [0.1]
+  pad_multiple: 32            # 填充为 32 倍数（U-Net 下采样对齐）
+
+# --------------------------------------------------------------------------
+# 数据增强（BASELINE_SPEC §2.4 loss 类统一，与 Ours 一致）
+# --------------------------------------------------------------------------
+
+augment:
+  strategy: "unified_loss_class"
+  # TODO: 确认 Ours 精确增强策略后对齐

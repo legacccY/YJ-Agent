@@ -304,6 +304,35 @@ class _MSEDiceLoss:
 #  Adapter
 # --------------------------------------------------------------------------- #
 
+def _parse_channels(val: Any, default: int = 3) -> int:
+    """
+    容错解析 channels 配置值。
+
+    csnet.yaml 的 preprocess 段历史上用了 channels: "rgb" 字符串；
+    model 段用 int。两处均需解析。
+
+    映射规则（官方 in_channels 已核：iMED-Lab/CS-Net dataloader/drive.py,
+              Image.open → ToTensor → (3,H,W) RGB，确认 2026-06-25）：
+      3 / 'rgb' / 'RGB'                → 3
+      1 / 'green' / 'gray' / 'grey'   → 1
+      其他 int 字符串                  → int(val)
+    """
+    if isinstance(val, int):
+        return val
+    if isinstance(val, str):
+        low = val.strip().lower()
+        if low in ('rgb',):
+            return 3
+        if low in ('green', 'gray', 'grey', 'grayscale'):
+            return 1
+        try:
+            return int(low)
+        except ValueError:
+            pass
+    # fallback
+    return default
+
+
 @register
 class CSNetAdapter(BaselineAdapter):
     """
@@ -312,6 +341,11 @@ class CSNetAdapter(BaselineAdapter):
     官方 repo : https://github.com/iMED-Lab/CS-Net (MIT)
     超参来源  : BASELINE_SPEC §1; researcher 二轮核实。
     特殊点    : RGB 全图 512×512 输入（3 通道）；官方 forward 含 sigmoid 输出概率。
+
+    通道来源确认（2026-06-25）：
+      iMED-Lab/CS-Net dataloader/drive.py 用 PIL.Image.open（无 .convert()）→
+      transforms.ToTensor() → shape (3, H, W) RGB，/255，无 CLAHE，无 mean/std。
+      故 in_channels=3，color_mode='rgb'。
     """
 
     name: str = "cs_net"
@@ -326,10 +360,13 @@ class CSNetAdapter(BaselineAdapter):
         cfg keys (from baselines/csnet.yaml):
           classes  : int (default 1)
           channels : int (default 3, RGB)
+
+        channels 字段容错：'rgb'→3 / 'green'/'gray'→1 / int 直接用。
+        历史上 preprocess.channels 曾写 "rgb" 字符串，_parse_channels 负责兼容。
         """
         return CSNet(
             classes=int(cfg.get("classes", 1)),
-            channels=int(cfg.get("channels", 3)),
+            channels=_parse_channels(cfg.get("channels", 3), default=3),
         )
 
     def build_loss(self, cfg: Dict[str, Any]) -> _MSEDiceLoss:
@@ -416,32 +453,226 @@ class CSNetAdapter(BaselineAdapter):
         device: torch.device,
     ) -> torch.Tensor:
         """
-        全图推理适配器。
+        全图推理适配器（含官方推理尺寸对齐）。
 
-        CS-Net 整图训练，直接 forward。
-        官方模型输出是 sigmoid 概率 [0,1]，需转换为 logits 以符合 adapter 接口
-        （evaluate.py 期望 logits，自行 threshold 0.5）。
+        官方 CS-Net test 协议（BASELINE_SPEC §1 + preprocess_cfg test_only.resize=512）：
+          整图 resize 到 512×512 推理，再 resize 回原尺寸。
+          来源：iMED-Lab/CS-Net dataloader/drive.py test_transform = Resize(512)+ToTensor()。
+
+        evaluate.py 接口约定：
+          - preprocess_benchmark_image 返回 pad_to_32 整图（H'×W'），orig_H/W = native。
+          - forward_adapt 返回 (B,1,H',W') logits，evaluate.py 再做 [:orig_H,:orig_W] 裁回。
+
+        所以此处做：
+          (B,3,H',W') → resize 到 512×512 → CSNet → resize 回 (B,1,H',W')
+
+        训练时是 random_crop(512)，模型永远只见 512×512 patch。
+        eval 喂整图不 resize 会造成 ~30 点 Dice 下降（已实测复现）。
 
         Args:
             model : CSNet 实例，eval 模式，已 .to(device)。
-            x     : (B, 3, H, W) RGB 输入，已在 device 上。
+            x     : (B, 3, H', W') RGB 输入，pad_to_32 尺寸，已在 device 上。
             device: 推理设备。
 
         Returns:
-            (B, 1, H, W) logits（prob → logit via logit = log(p/(1-p))）。
+            (B, 1, H', W') logits（与输入同尺寸，prob → logit，evaluate.py [:orig_H,:orig_W] 裁回）。
         """
         assert x.shape[1] == 3, (
             f"CSNetAdapter: 期望 3 通道 RGB 输入 (B,3,H,W), 实际 C={x.shape[1]}"
         )
+
+        _INFER_SIZE = 512  # 官方 test resize 目标（BASELINE_SPEC §1）
+
+        _, _, H_inp, W_inp = x.shape
+
+        # ---- step 1: resize 到 512×512（官方 test_transform Resize(512)）----
+        if H_inp != _INFER_SIZE or W_inp != _INFER_SIZE:
+            x_512 = F.interpolate(
+                x,
+                size=(_INFER_SIZE, _INFER_SIZE),
+                mode='bilinear',
+                align_corners=False,
+            )
+        else:
+            x_512 = x
+
+        # ---- step 2: CSNet forward（512×512）----
         model.eval()
         with torch.no_grad():
-            prob = model(x)  # (B, 1, H, W), values in [0,1]
+            prob_512 = model(x_512)  # (B, 1, 512, 512), values in [0,1]
 
-        # 概率 → logits（防 log(0) 数值溢出）
-        prob_clamp = prob.clamp(1e-6, 1.0 - 1e-6)
-        logits = torch.log(prob_clamp / (1.0 - prob_clamp))
+        # ---- step 3: 概率 → logits（防 log(0) 溢出）----
+        prob_clamp = prob_512.clamp(1e-6, 1.0 - 1e-6)
+        logits_512 = torch.log(prob_clamp / (1.0 - prob_clamp))
+
+        # ---- step 4: resize logits 回 (H_inp, W_inp)（配合 evaluate.py [:orig_H,:orig_W] 裁回）----
+        if H_inp != _INFER_SIZE or W_inp != _INFER_SIZE:
+            logits = F.interpolate(
+                logits_512,
+                size=(H_inp, W_inp),
+                mode='bilinear',
+                align_corners=False,
+            )
+        else:
+            logits = logits_512
 
         assert logits.shape[1] == 1 and logits.ndim == 4, (
             f"CSNetAdapter.forward_adapt: expected (B,1,H,W), got {logits.shape}"
         )
         return logits
+
+    def preprocess_benchmark_image(
+        self,
+        npz_image: "np.ndarray",
+        image_id: str,
+        dataset_name: str,
+        data_root: Optional[str] = None,
+    ) -> "Tuple[np.ndarray, Tuple[int, int]]":
+        """
+        CS-Net benchmark 预处理 override。
+
+        官方 CS-Net 使用 RGB 3ch 输入（/255，无 CLAHE，无 mean/std）。
+        benchmark NPZ 里存的是 green+CLAHE+norm 的 (H,W) float32，不能直接用。
+        此处从原始图像磁盘重载，走官方 CS-Net 预处理管道（RGB /255）。
+
+        与训练/官方推理管道对齐：
+          train_harness → DRIVEDataset/CHASEDataset(color_mode='rgb')
+          → _load_image → cv2.cvtColor BGR→RGB → /255 → (H,W,3) float32
+          → random_crop(512) → (512,512,3)  [模型永远只见 512×512 patch]
+          官方 test: resize 到 512×512（dataloader/drive.py test_transform = Resize(512)+ToTensor()）
+          benchmark eval: 此函数返回 BGR→RGB → /255 → pad_to_mult(32) 的整图（H'×W'）；
+          forward_adapt 内部负责 resize-to-512 推理 + resize-back-to-(H'×W')，
+          再由 evaluate.py 做 [:orig_H,:orig_W] 裁回 native 尺寸算指标。
+          ⚠️ 旧注释「无需 resize，CS-Net 全卷积」已更正：模型训练全为 512×512 patch，
+           整图不 resize 直接推理会导致 Dice 下降 ~30 点（2026-06-26 实测）。
+
+        路径约定（与各 dataset 的 _img_path 一致，保证不漂移）：
+          DRIVE:      training/images/{id:02d}_training.tif
+                      image_id 为整数字符串（如 '37'）→ int 后格式化两位
+          CHASE:      images/{image_id}_test.tif
+                      image_id 已含前缀（如 'test_01' / 'training_17'）
+          STARE:      images/{image_id}.ppm（或 .ppm.gz）
+          FIVES/HRF:  通用：data_root/images/ 下 glob 含 image_id 的文件
+          其他:       同 FIVES/HRF 通用逻辑
+
+        data_root 为 None 或路径不存在时：直接 raise RuntimeError（不静默 fallback
+        到绿通道堆叠——那会让 dice 崩掉但无任何错误提示，难以排查）。
+        主线跑 benchmark eval 时必须传真实 --data_root（对应数据集根目录）。
+
+        输出 shape: (H', W', 3) float32，evaluate.py 检测 ndim==3 后走
+          .permute(2,0,1).unsqueeze(0) → (1,3,H',W')
+
+        Args:
+            npz_image:    (H, W) float32 from NPZ (green+CLAHE+norm).  本函数不用此值，
+                          仅保留参数签名与基类一致（万一未来 raise 改为 warn+fallback 时用）。
+            image_id:     str image identifier stored in NPZ manifest (e.g. '37', 'test_01').
+            dataset_name: lowercase dataset name stored in NPZ (e.g. 'drive', 'chase').
+            data_root:    原图数据集根目录（必须传真实路径，否则 raise）。
+
+        Returns:
+            (proc_image, (orig_H, orig_W)):
+              proc_image — (H', W', 3) float32 RGB /255, padded to 32-multiple.
+              (orig_H, orig_W) — original un-padded size.
+
+        Raises:
+            RuntimeError: data_root 为 None 或图像文件找不到。
+        """
+        import cv2 as _cv2
+        import numpy as _np
+        import pathlib as _pl
+
+        PAD_MULT = 32
+
+        def _pad_to_mult(arr: _np.ndarray, mult: int) -> _np.ndarray:
+            h, w = arr.shape[:2]
+            ph = (mult - h % mult) % mult
+            pw = (mult - w % mult) % mult
+            if arr.ndim == 3:
+                return _np.pad(arr, ((0, ph), (0, pw), (0, 0)), mode='constant')
+            return _np.pad(arr, ((0, ph), (0, pw)), mode='constant')
+
+        # ---- data_root 必须有效 ----
+        if data_root is None:
+            raise RuntimeError(
+                f"CSNetAdapter.preprocess_benchmark_image: data_root=None。\n"
+                f"CS-Net 需要原始 RGB 图像（/255），NPZ 只存 green+CLAHE+norm 单通道，\n"
+                f"无法直接用于 CS-Net（会导致 dice 崩至 ~0.1-0.5）。\n"
+                f"请在 evaluate.py 命令行传入 --data_root <真实数据集目录>，\n"
+                f"对应 image_id={image_id!r} dataset={dataset_name!r}。"
+            )
+
+        root = _pl.Path(data_root)
+        ds = dataset_name.lower().strip()
+
+        # ---- 按数据集构建候选路径（与各 dataset._img_path 保持一致）----
+        candidates = []
+        if ds == 'drive':
+            # DRIVEDataset._img_path: training/images/{sid:02d}_training.tif
+            # image_id 从 NPZ = str(int_id)，如 '37'
+            try:
+                sid_int = int(image_id)
+                sid_str = f'{sid_int:02d}'
+            except ValueError:
+                sid_str = str(image_id)
+            candidates = [
+                root / 'training' / 'images' / f'{sid_str}_training.tif',
+            ]
+        elif ds in ('chase', 'chase_db1'):
+            # CHASEDataset._img_path: images/{image_id}_test.tif
+            # image_id 已是完整前缀，如 'test_01' / 'training_17'
+            candidates = [
+                root / 'images' / f'{image_id}_test.tif',
+            ]
+        elif ds == 'stare':
+            # STAREDataset: images/{image_id}.ppm  (or .ppm.gz)
+            candidates = [
+                root / 'images' / f'{image_id}.ppm',
+                root / 'images' / f'{image_id}.ppm.gz',
+            ]
+        else:
+            # 通用：在 data_root/images/ 下 glob 含 image_id 的文件
+            img_dir = root / 'images'
+            if img_dir.exists():
+                candidates = [
+                    p for p in img_dir.iterdir()
+                    if str(image_id) in p.name
+                ]
+
+        # ---- 加载原图 BGR → RGB /255 ----
+        img_bgr = None
+        found_path = None
+        for p in candidates:
+            # .ppm.gz：STARE 压缩格式，需特殊读取
+            if str(p).endswith('.ppm.gz') and p.exists():
+                try:
+                    from datasets.stare import _load_ppm_gz as _lpg
+                    img_bgr = _lpg(p)
+                    found_path = p
+                    break
+                except Exception as _e:
+                    raise RuntimeError(
+                        f"CSNetAdapter: 无法读取 STARE ppm.gz {p}: {_e}"
+                    ) from _e
+            if p.exists():
+                _tmp = _cv2.imread(str(p))
+                if _tmp is not None:
+                    img_bgr = _tmp
+                    found_path = p
+                    break
+
+        if img_bgr is None:
+            raise RuntimeError(
+                f"CSNetAdapter.preprocess_benchmark_image: 找不到原图。\n"
+                f"  dataset={dataset_name!r}  image_id={image_id!r}\n"
+                f"  data_root={data_root!r}\n"
+                f"  已搜路径: {[str(p) for p in candidates]}\n"
+                f"请确认 --data_root 指向正确的数据集根目录，\n"
+                f"且图像文件存在于对应子目录中。"
+            )
+
+        img_rgb = _cv2.cvtColor(img_bgr, _cv2.COLOR_BGR2RGB)
+        orig_H, orig_W = img_rgb.shape[:2]
+        img_f = img_rgb.astype(_np.float32) / 255.0   # (H, W, 3) RGB /255
+        img_pad = _pad_to_mult(img_f, PAD_MULT)        # (H', W', 3) H'%32==0
+
+        return img_pad, (orig_H, orig_W)

@@ -140,8 +140,8 @@ def parse_args():
     p.add_argument(
         "--fc-path",
         type=Path,
-        default=_root / "data" / "external" / "abide2" / "fc_large_data.npy",
-        help="fc_large_data.npy 路径",
+        default=_root / "data" / "external" / "abide1_cc200" / "fc_large_data_cc200.npy",
+        help="fc_large_data_cc200.npy 路径（ABIDE-I CC200，build_fc_cc200_from_braingb.py 产出）",
     )
     p.add_argument("--k", type=int, default=K_NEIGS_DEFAULT, help="K_neigs（默认40）")
     p.add_argument("--n-sample", type=int, default=3, help="抽查 subject 数")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     )
     args = parse_args()
     if not args.fc_path.exists():
-        print(f"fc_large_data.npy 不存在: {args.fc_path}")
-        print("请先运行 build_fc_abide2.py")
+        print(f"fc_large_data_cc200.npy 不存在: {args.fc_path}")
+        print("请先运行 build_fc_cc200_from_braingb.py")
         sys.exit(1)
     validate_hyperedge_dimensions(args.fc_path, k=args.k, n_sample=args.n_sample)
