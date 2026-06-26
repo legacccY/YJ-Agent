@@ -914,6 +914,9 @@ def run_already_done(state: dict, run_id: str) -> bool:
 
 def _csv_fieldnames(num_classes: int, class_names: List[str]) -> List[str]:
     fg_names = class_names[1:]   # 排除背景
+    # fieldnames 必须 = append_csv 传入 row dict 的 key（按数据集真实前景类名 dice_PS/dice_FH/dice_head），
+    # 否则 DictWriter 报 "dict contains fields not in fieldnames"。注：CSV 列宽按数据集变（HC18 单类 14 列 / PSFHS·FUGC 双类 16 列），
+    # 分析一律按位置解析不信首行 header（见 04_LOG Entry 14）。
     dice_cols = [f"dice_{n}" for n in fg_names]
     hd_cols = [f"hd95_{n}" for n in fg_names]
     return (

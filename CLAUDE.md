@@ -175,6 +175,7 @@
 /loop /run-experiment <train.py> <config.yaml>
 ```
 用户说「开始训练」「跑实验」「train 一下」「跑一下」时：**先 `gpu_slot.py request` 申请卡槽**（GO 即起、QUEUED 即排队），不裸 `python` 启动。训练已改自主——有空卡直接起 + 一行回报，不再卡拍板。详细流程/错误分类见 `.claude/commands/run-experiment.md`。
+**长等训练完成用 ScheduleWakeup（`/run-experiment` 已内置 270s 轮询），禁用后台 bash `while...sleep` 循环——约 10-15min 被 Bash timeout kill，监控断链。**
 
 ## 📋 标准流水线 Skills
 

@@ -16,6 +16,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - **复现零偏离**：复现官方方法时**完全按官方**，禁私自加裁剪 / 降 lr / 改步数 / 换实现凑收敛 / 加提速 subclass。
 - **超参禁臆想**：backbone / lr / 增强 / 架构默认值查不到官方源 → 代码里标 `# TODO: 未找到官方源，需 researcher 确认` 占位，**绝不照搬别的库或凭印象填**。
 - **不碰封印 BMVC**；不改论文 tex/bib（那是 writer 的活）。
+- **并发写风险**：改被活跃 sweep/训练进程依赖的文件（CSV 输出、共享 config、fieldnames 常量）前，先确认无正在运行的 sweep 读写该文件——并发写 DictWriter header 等会直接崩进程。有疑问先报主线停 sweep 再改。
 
 ## Windows 训练环境规范（生成代码必须遵守）
 | 项 | 正确 | 错误 |

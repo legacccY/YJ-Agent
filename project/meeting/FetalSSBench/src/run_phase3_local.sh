@@ -28,11 +28,12 @@ for DS in psfhs hc18; do
   run_arm fixmatch      "--conf_thresh 0.8" $DS "0.01 0.02 0.05 0.10 0.20"
   run_arm fixmatch      "--conf_thresh 0.9" $DS "0.01 0.02 0.05 0.10 0.20"
 done
-# FUGC (官方固定 split, ratio 0.1, 4 臂 × 5 seed = 20 run)
-run_arm freematch_sat ""               fugc "0.1"
-run_arm fixmatch      "--conf_thresh 0.7" fugc "0.1"
-run_arm fixmatch      "--conf_thresh 0.8" fugc "0.1"
-run_arm fixmatch      "--conf_thresh 0.9" fugc "0.1"
+# FUGC 已在 HPC gpu3090 跑完(job 1496155, 20 run RUN_FAIL=0)→ 本地跳过, 避免重跑/dup
+echo "==== FUGC done on HPC (job 1496155), skip local ====" | tee -a $LOG
+# run_arm freematch_sat ""               fugc "0.1"
+# run_arm fixmatch      "--conf_thresh 0.7" fugc "0.1"
+# run_arm fixmatch      "--conf_thresh 0.8" fugc "0.1"
+# run_arm fixmatch      "--conf_thresh 0.9" fugc "0.1"
 
 echo "=== Phase3 local sweep DONE $(date) ===" | tee -a $LOG
 wc -l results/results.csv | tee -a $LOG

@@ -61,6 +61,17 @@ cd D:/YJ-Agent/project && python -m pytest tests/ -v -x --timeout=60 2>&1
 
 ## STEP 2：启动训练（主会话执行，不用 Haiku）
 
+**⚡ Step 2-0（强制前置，不可跳过）：申请 GPU 卡槽**
+```bash
+python D:/YJ-Agent/tools/gpu_slot.py request <project> local 1 "run-experiment"
+```
+- `GO <id>` → 继续后续步骤（training_lock hook 见 starting 条目自动放行）
+- `QUEUED <id>` → 卡满已排队，**停在这里不启动**；等其他任务 `release` 后自动取出再起
+- 跳过此步 → training_lock hook 阻断 + 记 friction，2 次以上触发 /optimize 告警
+
+**⚠️ 长等训练完成：用 ScheduleWakeup，不用后台 bash sleep 循环**
+`while...sleep 60` 后台 bash 约 10-15min 被 Bash timeout kill，监控断链。本流水线 STEP 6 已用 ScheduleWakeup 轮询，无需额外 sleep loop。
+
 **说明**：训练脚本启动后会自己把 PID 写入 state.json，无需外部捕获 PID。
 
 1. 获取当前时间戳（格式 YYYYMMDD_HHMMSS），构造：
