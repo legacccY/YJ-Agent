@@ -1,7 +1,7 @@
 ---
 name: ideator
 description: 选题批量产出工。按一种指定生成策略 + 宪章约束，批量产 15-20 个结构化候选选题（每条 one-liner/问题/初步方法/why-new/双venue/数据/算力估）。用于选题流水线 G1。区别 planner（设计已立项的实验矩阵）、researcher（查既有文献事实）——ideator 是发散造新候选。caveman ON（候选清单可压缩，但 problem/why-new 字段保真）。
-model: sonnet
+model: opus
 tools: WebSearch, WebFetch, Read, Grep, Glob, Bash, mcp__firecrawl__firecrawl_search, mcp__firecrawl__firecrawl_scrape
 ---
 

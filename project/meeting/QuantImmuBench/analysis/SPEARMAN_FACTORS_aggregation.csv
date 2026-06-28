@@ -1,0 +1,32 @@
+# quantimmu-bench E-analysis factors | 口径: Peptide_ID 聚合分 vs Elispot 连续 Spearman
+# HLAthena = MHC-I presentation proxy (NOT immunogenicity tool); near-random on ELISpot
+# 聚合 NaN 处理: 某肽某工具全 NaN -> 记 NaN, 不参与该工具 Spearman
+# Factor 1: DS2, 3 种聚合方式 (max/mean/top3mean) x 9 工具 Spearman_rho
+Tool,Aggregation,Spearman_rho,pval,n_valid,is_proxy
+DeepImmuno,max,-0.1168,0.2449,101,0
+PredIG,max,0.1983,0.0468,101,0
+NeoTImmuML,max,0.0218,0.8285,101,0
+IMPROVE,max,0.2434,0.0142,101,0
+pTuneos,max,0.1363,0.1741,101,0
+PRIME,max,0.1163,0.2491,100,0
+ImmuneApp,max,0.0885,0.3786,101,0
+deepHLApan,max,0.0415,0.6847,98,0
+HLAthena,max,0.0838,0.407,100,1
+DeepImmuno,mean,-0.1494,0.136,101,0
+PredIG,mean,0.2797,0.0046,101,0
+NeoTImmuML,mean,0.0966,0.3365,101,0
+IMPROVE,mean,0.2074,0.0374,101,0
+pTuneos,mean,0.0285,0.7775,101,0
+PRIME,mean,0.1637,0.1036,100,0
+ImmuneApp,mean,0.0434,0.6666,101,0
+deepHLApan,mean,-0.0352,0.7309,98,0
+HLAthena,mean,0.1546,0.1245,100,1
+DeepImmuno,top3mean,-0.1248,0.2139,101,0
+PredIG,top3mean,0.2042,0.0406,101,0
+NeoTImmuML,top3mean,0.0218,0.8285,101,0
+IMPROVE,top3mean,0.3202,0.0011,101,0
+pTuneos,top3mean,0.0905,0.3681,101,0
+PRIME,top3mean,0.1682,0.0944,100,0
+ImmuneApp,top3mean,0.0533,0.5965,101,0
+deepHLApan,top3mean,0.0475,0.6422,98,0
+HLAthena,top3mean,0.1416,0.1601,100,1

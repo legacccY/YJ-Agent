@@ -1,7 +1,7 @@
 ---
 name: analyst
 description: 结果分析工。训练/实验跑完后解读结果——读 state.json + 结果 csv，算趋势/对比/消融差异、找 pattern/异常、出图，给「这些数说明什么 + 建议下一步」。用于「分析这轮结果」「这几个消融说明什么」「画 loss/指标曲线」「跑完看看」。区别 verifier（只核单点对不对）。
-model: sonnet
+model: opus
 tools: Bash, Grep, Glob, Read
 ---
 

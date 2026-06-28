@@ -3,6 +3,12 @@ Generated: 2026-06-23
 Source: merged_all_tools_4tools.xlsx (34247 rows = subpeptide x HLA)
 Data source columns: AUC_ROC/AUPRC/Spearman from analysis/metrics_ds2.csv (真跑 sklearn)
 
+> ⚠️ **HLA-bug 修复修正（2026-06-27，详见 04_LOG Entry HLA-FIX）**：backbone 对患者 P101/P102 误读了源 `Elispot_Dataset2.xlsx` 的伪迹列 HLA-1..6（2268 行 / 6.6% 污染，仅这两名患者），HLA-相关工具受影响。修正后（剔除 P101/P102，真源 `analysis/metrics_ds2_fixed_exclP101P102.csv`）：
+> - **PredIG 全局 Spearman 显著性不存活**：max-pool ρ 0.198→**0.104（p=0.343，不显著）**；mean-agg ρ 0.280→**0.188（p=0.084，不显著）**。本档凡标 PredIG「显著」之处均已失效。
+> - **IMPROVE 仍稳健显著**：max-pool ρ 0.243→**0.226（p=0.037）**；top3mean ρ 0.320→**0.283（p=0.008）**。
+> - **NeoTImmuML/Repitope 为 HLA-agnostic**，修正后与修复前完全一致；**deepHLApan 双重不可信**（肽长混杂假象 + merge 传播 bug 2069 行 NaN 回填）。
+> - **caveat**：P101/P102 用正确等位的重推理（Phase B）尚未完成（待袁老师确认 P102 等位 + 本地重跑），现阶段结论以 corrected-excl（剔 P101/P102）为准。
+
 ## 0. 数据概况
 
 | 项目 | 值 |
@@ -25,7 +31,7 @@ Data source columns: AUC_ROC/AUPRC/Spearman from analysis/metrics_ds2.csv (真�
 
 | Tool | agg=max | agg=mean | agg=top3mean | Spearman-rho (max) | Spearman-p (max) |
 |------|---------|----------|--------------|-------------------|-----------------|
-| PredIG | 0.661 | **0.750** | 0.663 | 0.198 | 0.047 |
+| PredIG | 0.661 | **0.750** | 0.663 | 0.198 → 0.104 | 0.047 → 0.343 |
 | NeoTImmuML | **0.655** | 0.576 | 0.655 | 0.022 | 0.829 |
 | IMPROVE | 0.621 | 0.618 | 0.626 | 0.243 | 0.014 |
 | DeepImmuno | 0.481 | 0.519 | 0.499 | -0.117 | 0.245 |
@@ -58,9 +64,9 @@ Data source columns: AUC_ROC/AUPRC/Spearman from analysis/metrics_ds2.csv (真�
 
 | Tool | rho | p-value | 显著? |
 |------|-----|---------|-------|
-| IMPROVE | 0.243 | 0.014 | 是 (p<0.05) |
-| PredIG | 0.198 | 0.047 | 是 (p<0.05) |
-| NeoTImmuML | 0.022 | 0.829 | 否 |
+| IMPROVE | 0.243 | 0.014 | 是 (p<0.05)（修复前；HLA-FIX 修正 ρ=0.226 p=0.037，仍显著）|
+| PredIG | 0.198 | 0.047 | ~~是 (p<0.05)~~（修复前，已失效；HLA-FIX 修正 ρ=0.104 p=0.343，**不显著**）|
+| NeoTImmuML | 0.022 | 0.829 | 否（HLA-agnostic，修正后不变）|
 | DeepImmuno | -0.117 | 0.245 | 否 (负相关!) |
 
 ## 2. DS1 Spearman (全阳性, 无 AUC)
@@ -102,7 +108,8 @@ PredIG mean 聚合最优的可能原因: PredIG 评分代表序列内在结合�
 
 **DS2 综合判别能力排名** (综合最优 AUC-ROC):
 
-1. **PredIG** — 最优 AUC=0.750 (mean agg), Spearman 显著 (rho=0.198, p=0.047); 覆盖最全 8-14mer
+1. **PredIG** — 最优 AUC=0.750 (mean agg), ~~Spearman 显著 (rho=0.198, p=0.047)~~; 覆盖最全 8-14mer
+   - **(2026-06-27 HLA bug 修复后修正，详见 04_LOG Entry HLA-FIX)**：剔 P101/P102 后 **PredIG 全局 Spearman 显著性不存活**（max ρ=0.198→0.104 p=0.343 不显著；mean ρ=0.280→0.188 p=0.084 不显著）。AUC 数字亦受 P101/P102 污染影响，corrected AUC 待 Phase B 重推理后更新。
 2. **NeoTImmuML** — AUC=0.655 (max agg), Spearman 不显著; 覆盖 8-13mer
 3. **IMPROVE** — AUC=0.621 (max); Spearman 最强 (rho=0.243, p=0.014); 严格阈值 (>10/>median) 时表现最稳
 4. **DeepImmuno** — AUC=0.481 低于随机 (max), 仅 9-10mer; Spearman 负向; 本数据集表现最差

@@ -6,6 +6,16 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 
 ---
 
+> ⚠️ **HLA-bug 修复修正（2026-06-27，详见 04_LOG Entry HLA-FIX）**：backbone 对患者 P101/P102 误读了源 `Elispot_Dataset2.xlsx` 的伪迹列 HLA-1..6（未读规范列），共 2268 行 / 6.6% 污染，仅这两名患者；HLA-相关工具（PredIG/deepHLApan 等）受影响。修正后（剔除 P101/P102，真源 `analysis/metrics_ds2_fixed_exclP101P102.csv`）：
+> - **PredIG 全局 Spearman 显著性不存活**：max-pool ρ 0.198→**0.104（p=0.343，不显著）**；mean-agg ρ 0.280→**0.188（p=0.084，不显著）**。本档凡标 PredIG「显著」之处均已失效。
+> - **IMPROVE 仍稳健显著**：max-pool ρ 0.243→**0.226（p=0.037）**；top3mean ρ 0.320→**0.283（p=0.008）**。
+> - **TSCAPE 由不显著翻为显著负**：ρ −0.135（ns）→**−0.230（p=0.033）**。
+> - **NeoTImmuML / Repitope 为 HLA-agnostic**，修正后与修复前完全一致（自检通过）。
+> - **deepHLApan 双重不可信**：原有肽长混杂饱和假象 + 新发现的 merge 传播 bug（2069 行 NaN 回填），数字不可用。
+> - **caveat**：P101/P102 用正确等位的重推理（Phase B）尚未完成（待袁老师确认 P102 等位 + 本地重跑），per-patient 头条数字（PRIME/deepHLApan）会随 Phase B 再变；现阶段结论以 corrected-excl（剔 P101/P102）为准。
+
+---
+
 ## 0. 口径对齐声明
 
 严格复刻第一批方法（analysis/BENCHMARK_REPORT.md）：
@@ -72,8 +82,8 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 
 | 排名 | 工具 | rho | p-value | 显著? |
 |------|------|-----|---------|-------|
-| 1 | IMPROVE | 0.2434 | 0.0142 | 是 |
-| 2 | PredIG | 0.1983 | 0.0468 | 是 |
+| 1 | IMPROVE | 0.2434 | 0.0142 | 是（修复前；HLA-FIX 修正 ρ=0.226 p=0.037，仍显著）|
+| 2 | PredIG | 0.1983 | 0.0468 | ~~是~~（修复前，已失效；HLA-FIX 修正 ρ=0.104 p=0.343，**不显著**）|
 | 3 | pTuneos | 0.1363 | 0.1741 | 否 |
 | 4 | **PRIME** | 0.1163 | 0.2491 | 否 |
 | 5 | **ImmuneApp** | 0.0885 | 0.3786 | 否 |
@@ -96,6 +106,7 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 
 - 三新工具 Spearman rho 均 < 0.17，p 均 > 0.09，无法对 ELISpot SFU 做有意义的连续预测
 - 第一批中 IMPROVE (rho=0.243, p=0.014) 和 PredIG (rho=0.198, p=0.047) 是本 DS2 上定量相关性点估最高且显著的工具（但样本小、CI 宽，需扩负样本复核）
+  - **(2026-06-27 HLA bug 修复后修正，详见 04_LOG Entry HLA-FIX)**：剔除 P101/P102 后 **PredIG 全局显著性不存活**（max-pool ρ=0.198→0.104 p=0.343 不显著；mean ρ=0.280→0.188 p=0.084 不显著）；**仅 IMPROVE 仍稳健显著**（ρ=0.243→0.226 p=0.037）。此处「IMPROVE 和 PredIG 均显著」的旧结论失效。
 
 **5c. ImmuneApp 聚合方式敏感：mean 比 max 高 0.055 AUC**
 
@@ -117,7 +128,7 @@ New tools added: PRIME, ImmuneApp, deepHLApan (vs first batch: DeepImmuno/PredIG
 | 需求 | 点估居前的工具 | 理由（含不确定性） |
 |------|---------|------|
 | 阳性/阴性判别（ELISpot >0） | **pTuneos**（AUC 0.781 mean agg）/ **PredIG**（AUC 0.750 mean agg） | 两者 AUC 点估居前，但 bootstrap 证对 PredIG/NeoTImmuML 统计不可区分（CI 重叠、ΔAUC 跨 0）；pTuneos 高分对聚合/阈值敏感（换 >median 阈值掉到 ~0.46，低于随机），非稳健能力 |
-| 定量强弱排序（ELISpot SFU） | **IMPROVE**（rho=0.320 top3mean，p=0.001）/ **PredIG**（rho=0.280，p=0.005） | 在本 DS2 上 IMPROVE 定量相关性最高且唯一稳定显著（但样本小、n_neg=11、CI 宽，结论待扩负样本复核）；新工具无显著相关 |
+| 定量强弱排序（ELISpot SFU） | **IMPROVE**（rho=0.320 top3mean，p=0.001；修复前值）/ ~~**PredIG**（rho=0.280，p=0.005）~~ | 在本 DS2 上 IMPROVE 定量相关性最高且唯一稳定显著（但样本小、n_neg=11、CI 宽，结论待扩负样本复核）；新工具无显著相关。**(2026-06-27 HLA bug 修复后修正)**：剔 P101/P102 后 IMPROVE top3mean ρ=0.320→**0.283（p=0.008）仍显著**；**PredIG mean ρ=0.280→0.188（p=0.084）不显著、已从本格移除**，详见 04_LOG Entry HLA-FIX |
 | 部署简便性（全覆盖，无 NaN） | **PredIG**、**pTuneos**、**ImmuneApp** | NaN=0，覆盖全部 HLA+长度 |
 
 新 3 工具在本 ELISpot benchmark 上**没有提供增量价值**，不建议替换现有第一批推荐工具（pTuneos/PredIG/IMPROVE）。

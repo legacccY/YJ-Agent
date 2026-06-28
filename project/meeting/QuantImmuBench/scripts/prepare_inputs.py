@@ -170,6 +170,22 @@ def load_ds2(data_dir: Path) -> pd.DataFrame:
 
 _DS2_WINDOW_SIZES = list(range(8, 15))   # 8,9,10,11,12,13,14
 
+# ---------------------------------------------------------------------------
+# HLA 等位修正覆盖表（2026-06-26 Entry HLA-AUDIT）
+# ---------------------------------------------------------------------------
+# bug: 源 Elispot_Dataset2.xlsx 的 HLA-1..6 列对 P101/P102 是「未解析等位家族递增
+# 伪迹」（P101 HLA-3/4 逐行变 → 9 个 A*66:xx + 9 个 C*06:xx；P102 HLA-1/2/3 逐行变）。
+# 旧代码逐行读 HLA-1..6（伪迹）→ P101 膨胀 4→20 等位、P102 膨胀 3→18，污染 2268 行。
+# 真值口径 = 袁老师 PRIME 模板（Sample_merged_prime_results.xlsx）的患者级 HLA 分型，
+# 与干净患者（P104-110，每肽×全部患者等位）同模型。
+# ⚠️ P102 的 B*35 2-field（源 HLA_of_best 给 B*35:01 与 PRIME B*35:03 不自洽）+ 是否真无
+#    C 位点，仍待袁老师书面确认；当前采用 PRIME 模板 B*35:03、无 C 为工作真值。
+# 仅覆盖 P101/P102；其余 DS2 患者源 HLA-1..6 干净，照常读取。
+_DS2_HLA_OVERRIDE = {
+    '101': ['A6601', 'B4001', 'B5701', 'C0602'],
+    '102': ['A0201', 'B3503', 'B3801'],
+}
+
 
 def expand_ds1(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -269,9 +285,14 @@ def expand_ds2(df: pd.DataFrame) -> pd.DataFrame:
         pep_pos   = row.iloc[46] if pd.notna(row.iloc[46]) else None
 
         # HLA 列（9-14）：紧凑格式
-        hla_values = [row.iloc[i] for i in range(9, 15)]
+        # 修正：P101/P102 源列是递增伪迹，改用 PRIME 模板患者级真值覆盖（Entry HLA-AUDIT）
+        pid_key = patient_id.split('.')[0]   # '101.0' → '101'
+        if pid_key in _DS2_HLA_OVERRIDE:
+            hla_raw_values = _DS2_HLA_OVERRIDE[pid_key]
+        else:
+            hla_raw_values = [row.iloc[i] for i in range(9, 15)]
         hla_norm_list = []
-        for hv in hla_values:
+        for hv in hla_raw_values:
             n = normalize_hla(hv)
             if n and n not in hla_norm_list:
                 hla_norm_list.append(n)

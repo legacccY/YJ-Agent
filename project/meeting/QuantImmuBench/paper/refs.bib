@@ -1,0 +1,372 @@
+% QuantImmuBench refs — DOI 已核（researcher 2026-06-26）。标 TODO 处投前人工核。
+% 红线：不引「Nature Cancer 2025 reproducibility crisis」（疑幻觉）、NeoPepDB（=NEPdb 笔误）。
+
+% ---------- magnitude gap 核心证据 ----------
+@article{explorationpub2023,
+  author  = {Buckley, Patrick R. and others},
+  title   = {Beyond {MHC} binding: immunogenicity prediction tools to refine neoantigen selection in cancer patients},
+  journal = {Exploration of Immunology},
+  year    = {2023},
+  volume  = {3},
+  pages   = {82--103},
+  doi     = {10.37349/ei.2023.00091},
+  note    = {magnitude gap 最强直接证据；年份 2023（DOI 编码 ei.2023.00091）}
+}
+
+% ---------- benchmark 锚 + 评估范式 ----------
+@article{TESLA2020,
+  author  = {Wells, Daniel K. and others},
+  title   = {Key Parameters of Tumor Epitope Immunogenicity Revealed Through a Consortium Approach Improve Neoantigen Prediction},
+  journal = {Cell},
+  year    = {2020},
+  volume  = {183},
+  number  = {3},
+  pages   = {818--834},
+  doi     = {10.1016/j.cell.2020.09.015}
+}
+@article{Muller2023,
+  author  = {M{\"u}ller, Markus and others},
+  title   = {Machine learning methods and harmonized datasets improve immunogenic neoantigen prediction},
+  journal = {Immunity},
+  year    = {2023},
+  doi     = {10.1016/j.immuni.2023.09.002}
+}
+@article{Buckley2022,
+  author  = {Buckley, Patrick R. and others},
+  title   = {Evaluating performance of existing computational models in predicting {CD8+} {T} cell pathogenic epitopes and cancer neoantigens},
+  journal = {Briefings in Bioinformatics},
+  year    = {2022},
+  doi     = {10.1093/bib/bbac141}
+}
+@article{Zhao2025,
+  author  = {Zhao, and others},
+  title   = {Computational methods for neoantigen prediction: a systematic review},
+  journal = {Briefings in Bioinformatics},
+  year    = {2025},
+  volume  = {26},
+  number  = {4},
+  pages   = {bbaf302},
+  doi     = {10.1093/bib/bbaf302}
+}
+@article{BiomarkerRes2025,
+  author  = {Wang, and others},
+  title   = {Neoantigen prediction pipelines for personalized cancer immunotherapy},
+  journal = {Biomarker Research},
+  year    = {2025},
+  doi     = {10.1186/s40364-025-00808-9}
+}
+
+% ---------- benchmark 范式范本（researcher 2026-06-26 补）----------
+@article{Nibeyro2023,
+  author  = {Nibeyro, Guadalupe and others},
+  title   = {Unraveling tumor specific neoantigen immunogenicity prediction: a comprehensive analysis},
+  journal = {Frontiers in Immunology},
+  year    = {2023},
+  volume  = {14},
+  pages   = {1094236},
+  doi     = {10.3389/fimmu.2023.1094236}
+}
+@article{Gielis2023,
+  author  = {Gielis, Sofie and others},
+  title   = {Benchmarking of {TCR-pMHC} binding prediction tools},
+  journal = {Frontiers in Immunology},
+  year    = {2023},
+  volume  = {14},
+  pages   = {1128326},
+  doi     = {10.3389/fimmu.2023.1128326}
+}
+@article{OBrien2023,
+  author  = {O'Brien, and others},
+  title   = {Data quality and dataset bias constrain neoantigen immunogenicity model generalization},
+  journal = {Nature Cancer},
+  year    = {2023},
+  volume  = {4},
+  pages   = {1618--1621},
+  doi     = {10.1038/s43018-023-00675-z}
+}
+
+% ---------- L1-L2 binding / presentation ----------
+@article{NetMHCpan2020,
+  author  = {Reynisson, Birkir and others},
+  title   = {{NetMHCpan-4.1} and {NetMHCIIpan-4.0}: improved predictions of {MHC} antigen presentation},
+  journal = {Nucleic Acids Research},
+  year    = {2020},
+  doi     = {10.1093/nar/gkaa379}
+}
+@article{MHCflurry2020,
+  author  = {O'Donnell, Timothy J. and others},
+  title   = {{MHCflurry} 2.0: Improved Pan-Allele Prediction of {MHC} Class {I}-Presented Peptides},
+  journal = {Cell Systems},
+  year    = {2020},
+  doi     = {10.1016/j.cels.2020.06.010}
+}
+@article{PRIME2023,
+  author  = {Gfeller, David and others},
+  title   = {Improved predictions of antigen presentation and {TCR} recognition with {MixMHCpred2.2} and {PRIME2.0}},
+  journal = {Cell Systems},
+  year    = {2023},
+  doi     = {10.1016/j.cels.2023.01.001}
+}
+
+% ---------- L3 immunogenicity 二分类工具 ----------
+@article{DeepImmuno2021,
+  author  = {Li, Guangyuan and others},
+  title   = {{DeepImmuno}: deep learning-empowered prediction and generation of immunogenic peptides for {T-cell} immunity},
+  journal = {Briefings in Bioinformatics},
+  year    = {2021},
+  volume  = {22},
+  number  = {6},
+  pages   = {bbab160},
+  doi     = {10.1093/bib/bbab160}
+}
+@article{deepHLApan2019,
+  author  = {Wu, Jingcheng and others},
+  title   = {{DeepHLApan}: A Deep Learning Approach for Neoantigen Prediction Considering Both {HLA}-Peptide Binding and Immunogenicity},
+  journal = {Frontiers in Immunology},
+  year    = {2019},
+  volume  = {10},
+  pages   = {2559},
+  doi     = {10.3389/fimmu.2019.02559}
+}
+@article{IMPROVE2024,
+  author  = {Borch, Annie and others},
+  title   = {{IMPROVE}: a feature model to predict neoepitope immunogenicity through broad-scale validation},
+  journal = {Frontiers in Immunology},
+  year    = {2024},
+  volume  = {15},
+  pages   = {1360281},
+  doi     = {10.3389/fimmu.2024.1360281}
+}
+@article{PredIG2025,
+  author  = {Farriol-Duran, Roc and Dom{\'i}nguez-Dalmases, Christian and Ca{\~n}ellas-Sol{\'e}, Albert and Vazquez, Miguel and Porta-Pardo, Eduard and Guallar, V{\'i}ctor},
+  title   = {{PredIG}: predicting the immunogenicity of neoantigens and pathogen-derived epitopes},
+  journal = {Genome Medicine},
+  year    = {2025},
+  volume  = {17},
+  pages   = {140},
+  doi     = {10.1186/s13073-025-01569-8}
+}
+@article{ICERFIRE2024,
+  author  = {Tadros, Daniel M. and others},
+  title   = {The {MHC} Motif Atlas and {ICERFIRE}: tools for neoantigen immunogenicity prediction},
+  journal = {NAR Cancer},
+  year    = {2024},
+  doi     = {10.1093/narcancer/zcae002}
+}
+@article{BigMHC2023,
+  author  = {Albert, Benjamin Alexander and others},
+  title   = {Deep neural networks predicting oncogenic peptide-{MHC} class {I} presentation and immunogenicity ({BigMHC})},
+  journal = {Nature Machine Intelligence},
+  year    = {2023},
+  doi     = {10.1038/s42256-023-00694-6}
+}
+@article{NeoaPred2024,
+  author  = {Wang, and others},
+  title   = {{NeoaPred}: a structure-based deep learning method for predicting neoantigen immunogenicity},
+  journal = {Bioinformatics},
+  year    = {2024},
+  doi     = {10.1093/bioinformatics/btae547}
+}
+@article{ImmunoStruct2025,
+  author  = {Liu, and others},
+  title   = {{ImmunoStruct}: integrating structure and sequence for neoantigen immunogenicity prediction},
+  journal = {Nature Machine Intelligence},
+  year    = {2025},
+  doi     = {10.1038/s42256-025-01163-y}
+}
+@article{NetTepi2014,
+  author  = {Trolle, Thomas and Nielsen, Morten},
+  title   = {{NetTepi}: an integrated method for the prediction of {T} cell epitopes},
+  journal = {Immunogenetics},
+  year    = {2014},
+  volume  = {66},
+  pages   = {449--456},
+  doi     = {10.1007/s00251-014-0779-0}
+}
+@article{Seq2Neo2022,
+  author  = {Diao, Kaixuan and others},
+  title   = {{Seq2Neo}: a comprehensive pipeline for neoantigen prediction and immunogenicity assessment},
+  journal = {International Journal of Molecular Sciences},
+  year    = {2022},
+  volume  = {23},
+  number  = {19},
+  pages   = {11624},
+  doi     = {10.3390/ijms231911624}
+}
+@article{TSCAPE2025,
+  author  = {others},
+  title   = {{T-SCAPE}: cross-domain integration for {T-cell} epitope prediction},
+  journal = {Science Advances},
+  year    = {2025},
+  doi     = {10.1126/sciadv.adz8759}
+}
+@article{CNNeoPP2026,
+  author  = {others},
+  title   = {{CNNeoPP}: convolutional neural network for neoantigen immunogenicity prediction},
+  journal = {Frontiers in Immunology},
+  year    = {2026},
+  doi     = {10.3389/fimmu.2026.1722117}
+}
+
+@article{pTuneos2019,
+  author  = {Zhou, Chi and Wei, Zhiting and Zhang, Zhanbing and others},
+  title   = {{pTuneos}: prioritizing tumor neoantigens from next-generation sequencing data},
+  journal = {Genome Medicine},
+  year    = {2019},
+  volume  = {11},
+  pages   = {67},
+  doi     = {10.1186/s13073-019-0679-x}
+}
+@article{ImmuneApp2024,
+  author  = {Xu, Haodong and Hu, Ruifeng and Dong, Xianjun and others},
+  title   = {{ImmuneApp} for {HLA-I} epitope prediction and immunopeptidome analysis},
+  journal = {Nature Communications},
+  year    = {2024},
+  volume  = {15},
+  pages   = {8926},
+  doi     = {10.1038/s41467-024-53296-0}
+}
+@article{HLAthena2020,
+  author  = {Sarkizova, Siranush and Klaeger, Susan and Le, Phuong M. and others},
+  title   = {A large peptidome dataset improves {HLA} class {I} epitope prediction across most of the human population},
+  journal = {Nature Biotechnology},
+  year    = {2020},
+  volume  = {38},
+  pages   = {199--209},
+  doi     = {10.1038/s41587-019-0322-9}
+}
+@article{NeoTImmuML2025,
+  author  = {Shao, Yan and others},
+  title   = {{NeoTImmuML}: a machine learning-based prediction model for human tumor neoantigen immunogenicity},
+  journal = {Frontiers in Immunology},
+  year    = {2025},
+  volume  = {16},
+  pages   = {1681396},
+  doi     = {10.3389/fimmu.2025.1681396}
+}
+
+% ---------- 连续近邻对照（须设防）----------
+@article{pMTnet2021,
+  author  = {Lu, Tianshi and others},
+  title   = {Deep learning-based prediction of the {T} cell receptor-antigen binding specificity},
+  journal = {Nature Machine Intelligence},
+  year    = {2021},
+  volume  = {3},
+  number  = {10},
+  doi     = {10.1038/s42256-021-00383-2}
+}
+@article{NetMHCstabpan2016,
+  author  = {Rasmussen, Michael and others},
+  title   = {Pan-Specific Prediction of Peptide-{MHC} Class {I} Complex Stability, a Correlate of {T} Cell Immunogenicity},
+  journal = {The Journal of Immunology},
+  year    = {2016},
+  volume  = {197},
+  number  = {4},
+  pages   = {1517--1524},
+  doi     = {10.4049/jimmunol.1600582}
+}
+
+% ---------- 评估方法学锚 ----------
+@article{Saito2015,
+  author  = {Saito, Takaya and Rehmsmeier, Marc},
+  title   = {The Precision-Recall Plot Is More Informative than the {ROC} Plot When Evaluating Binary Classifiers on Imbalanced Datasets},
+  journal = {PLOS ONE},
+  year    = {2015},
+  volume  = {10},
+  number  = {3},
+  pages   = {e0118432},
+  doi     = {10.1371/journal.pone.0118432}
+}
+@article{Harrell1996,
+  author  = {Harrell, Frank E. and Lee, Kerry L. and Mark, Daniel B.},
+  title   = {Multivariable prognostic models: issues in developing models, evaluating assumptions and adequacy, and measuring and reducing errors},
+  journal = {Statistics in Medicine},
+  year    = {1996},
+  volume  = {15},
+  number  = {4},
+  pages   = {361--387},
+  doi     = {10.1002/(SICI)1097-0258(19960229)15:4<361::AID-SIM168>3.0.CO;2-4}
+}
+@article{BlandAltman1986,
+  author  = {Bland, J. Martin and Altman, Douglas G.},
+  title   = {Statistical methods for assessing agreement between two methods of clinical measurement},
+  journal = {The Lancet},
+  year    = {1986},
+  volume  = {327},
+  number  = {8476},
+  pages   = {307--310},
+  doi     = {10.1016/S0140-6736(86)90837-8}
+}
+
+% ---------- 数据库 / 标签源 ----------
+@article{NEPdb2021,
+  author  = {Xia, Jiaqi and others},
+  title   = {{NEPdb}: A Database of {T-Cell} Experimentally-Validated Neoantigens and Pan-Cancer Predicted Neoepitopes},
+  journal = {Frontiers in Immunology},
+  year    = {2021},
+  volume  = {12},
+  pages   = {644637},
+  doi     = {10.3389/fimmu.2021.644637}
+}
+
+% ---------- 临床关联（降档引用，加 low-TMB 限定）----------
+@article{Sahin2023,
+  author  = {Rojas, Luis A. and others},
+  title   = {Personalized {RNA} neoantigen vaccines stimulate {T} cells in pancreatic cancer},
+  journal = {Nature},
+  year    = {2023},
+  doi     = {10.1038/s41586-023-06063-y},
+  note    = {magnitude/breadth 关联 RFS 候选支撑；低 TMB 瘤种，无多变量校正 TMB，引用须加限定}
+}
+
+% ---------- precursor frequency 上界（理论天花板支撑）----------
+@article{Jenkins2012,
+  author  = {Jenkins, Marc K. and Moon, James J.},
+  title   = {The Role of Naive {T} Cell Precursor Frequency and Recruitment in Dictating Immune Response Magnitude},
+  journal = {The Journal of Immunology},
+  year    = {2012},
+  volume  = {188},
+  number  = {9},
+  pages   = {4135--4140},
+  doi     = {10.4049/jimmunol.1102661}
+}
+@article{Moon2007,
+  author  = {Moon, James J. and others},
+  title   = {Naive {CD4+} {T} Cell Frequency Varies for Different Epitopes and Predicts Repertoire Diversity and Response Magnitude},
+  journal = {Immunity},
+  year    = {2007},
+  volume  = {27},
+  number  = {2},
+  pages   = {203--213},
+  doi     = {10.1016/j.immuni.2007.07.007}
+}
+
+% ---------- best-binder/max 聚合方法学出处 ----------
+@article{pVACtools2020,
+  author  = {Hundal, Jasreet and others},
+  title   = {{pVACtools}: A Computational Toolkit to Identify and Visualize Cancer Neoantigens},
+  journal = {Cancer Immunology Research},
+  year    = {2020},
+  volume  = {8},
+  number  = {3},
+  pages   = {409--420},
+  doi     = {10.1158/2326-6066.CIR-19-0401}
+}
+@article{pVACseq2016,
+  author  = {Hundal, Jasreet and others},
+  title   = {{pVAC-Seq}: A genome-guided in silico approach to identifying tumor neoantigens},
+  journal = {Genome Medicine},
+  year    = {2016},
+  volume  = {8},
+  pages   = {11},
+  doi     = {10.1186/s13073-016-0264-5}
+}
+
+% ---------- 临床侧 predicted != immunogenic ----------
+@article{NatRevImmunol2023,
+  author  = {others},
+  title   = {Challenges and opportunities in personalized neoantigen cancer vaccines},
+  journal = {Nature Reviews Immunology},
+  year    = {2023},
+  doi     = {10.1038/s41577-023-00937-y}
+}

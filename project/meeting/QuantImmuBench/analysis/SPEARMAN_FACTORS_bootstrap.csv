@@ -1,0 +1,15 @@
+# quantimmu-bench E-analysis factors | 口径: Peptide_ID 聚合分 vs Elispot 连续 Spearman
+# HLAthena = MHC-I presentation proxy (NOT immunogenicity tool); near-random on ELISpot
+# 聚合 NaN 处理: 某肽某工具全 NaN -> 记 NaN, 不参与该工具 Spearman
+# Factor 5: DS2 max-agg 肽级 bootstrap Spearman CI (B=2000, seed=42)
+# ci_low/ci_high = 2.5/97.5 百分位; CI 跨 0 = 该工具 rho 在此样本量下不稳
+Tool,rho_point,rho_median_boot,ci_low,ci_high,rho_std_boot,n_valid,is_proxy
+DeepImmuno,-0.1168,-0.1176,-0.309,0.0858,0.1018,101,0
+PredIG,0.1983,0.1997,-0.0012,0.3799,0.0985,101,0
+NeoTImmuML,0.0218,0.0257,-0.1787,0.2189,0.1015,101,0
+IMPROVE,0.2434,0.2425,0.0458,0.4226,0.0976,101,0
+pTuneos,0.1363,0.1348,-0.0698,0.3301,0.1023,101,0
+PRIME,0.1163,0.1206,-0.0684,0.3019,0.098,100,0
+ImmuneApp,0.0885,0.0881,-0.1187,0.2857,0.1022,101,0
+deepHLApan,0.0415,0.0457,-0.1551,0.2449,0.1025,98,0
+HLAthena,0.0838,0.08,-0.1137,0.2881,0.1039,100,1

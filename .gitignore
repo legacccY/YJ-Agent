@@ -101,4 +101,21 @@ project/results/_bmvc_archive/
 ~$*
 project/meeting/QuantImmuBench/scripts/ptuneos/_archive_*.pptx
 project/meeting/QuantImmuBench/小组数据/
+project/meeting/QuantImmuBench/.archive/
 _scratch_*
+
+# nested/partial repo leftovers (deployment artifacts)
+project/meeting/QuantImmuBench/HPC/deploy/**/_repo_partial_del/
+**/_repo_partial_del/
+# embedded tool-clone repos under QuantImmuBench (not tracked, per git_hygiene)
+project/meeting/QuantImmuBench/data/external/ITSNdb/
+project/meeting/QuantImmuBench/HPC/deploy/bigmhc_im/repo/
+project/meeting/QuantImmuBench/HPC/deploy/bigmhc_im/repo2/
+project/meeting/QuantImmuBench/HPC/deploy/cnneo/repo/
+project/meeting/QuantImmuBench/tools_repos/DeepImmuno/
+# 大文件/模型权重/数据产物（GitHub 100MB 限 + git_hygiene 不进 git）
+project/meeting/QuantImmuBench/HPC/deploy/**/*.tar.gz
+project/meeting/QuantImmuBench/HPC/deploy/**/*.fst
+project/meeting/QuantImmuBench/HPC/deploy/**/*.lyr
+project/meeting/QuantImmuBench/HPC/deploy/bigmhc_im/bigmhc-master/
+project/meeting/QuantImmuBench/HPC/deploy/repitope/mendeley_data/

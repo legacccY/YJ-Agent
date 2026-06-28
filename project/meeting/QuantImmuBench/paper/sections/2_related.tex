@@ -1,0 +1,121 @@
+\section{Background and Related Work}
+\label{sec:related}
+
+We organize the related work around the capability ladder introduced above,
+tracing the progression from binding through presentation to binary
+immunogenicity, and then situating the orthogonal magnitude dimension that our
+benchmark targets. We also explicitly delimit a set of tools that produce
+continuous outputs but along axes distinct from response magnitude, since these
+are the most likely to be mistaken for existing magnitude predictors.
+
+\subsection{The neoantigen prediction ladder}
+\label{sec:related:ladder}
+
+Computational prediction of tumour neoantigens has progressed along a capability
+ladder: from peptide--MHC binding affinity, to antigen presentation, to binary
+T-cell immunogenicity, and---only nominally---to the magnitude of the elicited
+T-cell response. Recent surveys frame the discovery pipeline as a sequence of
+stages running from HLA typing and variant calling through pMHC presentation to
+pMHC recognition \cite{Zhao2025,BiomarkerRes2025}. A recurring lesson across this
+literature is that MHC binding is necessary but not sufficient for
+immunogenicity: in the TESLA consortium benchmark, only on the order of six
+percent of strongly presented candidate peptides were experimentally
+immunogenic \cite{TESLA2020}. We emphasize that this ladder describes a
+stratification of prediction \emph{targets} rather than a partition of tools into
+mutually exclusive bins; modern tools routinely span levels, with binding
+predictors emitting both affinity and eluted-ligand scores and immunogenicity
+models consuming presentation percentiles as input features.
+
+\subsection{From binding to presentation (L1--L2)}
+\label{sec:related:binding}
+
+Binding predictors such as NetMHCpan-4.1 \cite{NetMHCpan2020} and MHCflurry~2.0
+\cite{MHCflurry2020} estimate peptide--MHC affinity or eluted-ligand presentation
+across thousands of alleles. Presentation-aware models, including PRIME
+\cite{PRIME2023} and the eluted-ligand variant of BigMHC \cite{BigMHC2023},
+integrate mass-spectrometry eluted-ligand data to estimate the probability that a
+peptide is genuinely presented. It is important to recognize that these
+continuous outputs quantify binding strength or presentation likelihood, not
+response magnitude: the affinity scale is a different physical dimension from the
+intensity of a polyclonal T-cell response, and benchmark studies report only weak
+correlation between binding scores and ELISpot magnitude
+\cite{explorationpub2023,Buckley2022}.
+
+This distinction matters because several established tools produce continuous
+scores and could be misread as pre-existing quantitative magnitude predictors.
+Three classes warrant explicit delimitation. First, binding-affinity predictors
+report a continuous affinity in nanomolar units or a percentile rank
+\cite{NetMHCpan2020,MHCflurry2020}. Second, stability predictors such as
+NetMHCstabpan estimate a continuous peptide--MHC complex half-life
+\cite{NetMHCstabpan2016}. Third, TCR--pMHC models such as pMTnet output a
+continuous recognition ranking percentile \cite{pMTnet2021}. None of these
+targets the quantity of interest here. Each is continuous along a dimension---
+binding affinity, complex stability, or TCR--pMHC recognition propensity---whose
+units are not those of a population-level T-cell response measured in
+spot-forming cells, and each correlates only weakly with ELISpot magnitude. We
+therefore treat these continuous neighbours not as magnitude predictors but as
+natural control baselines against which any genuine magnitude regression should
+be compared.
+
+\subsection{Immunogenicity classification (L3)}
+\label{sec:related:immuno}
+
+The bulk of neoantigen immunogenicity tools target a binary outcome---whether a
+given peptide is T-cell immunogenic. Methodologically they cluster into several
+families. Classical machine-learning models build on hand-crafted features:
+IMPROVE uses a random forest over physicochemical, cleavage, and binding-derived
+features \cite{IMPROVE2024}; PredIG uses gradient-boosted trees \cite{PredIG2025};
+and ICERFIRE uses a random-forest ensemble \cite{ICERFIRE2024}. Deep
+sequence models learn end-to-end representations, as in the convolutional
+architecture of DeepImmuno \cite{DeepImmuno2021}, the recurrent model deepHLApan
+\cite{deepHLApan2019}, and the eluted-ligand-to-immunogenicity transfer of BigMHC
+\cite{BigMHC2023}. Structure-aware models incorporate pMHC surface or
+AlphaFold-derived geometry to recover spatial, TCR-facing information lost by
+sequence alone, as in NeoaPred \cite{NeoaPred2024} and ImmunoStruct
+\cite{ImmunoStruct2025}. A further family pursues multi-modal or cross-domain
+integration of presentation, binding, and TCR--pMHC signals \cite{TSCAPE2025},
+and earlier tools combined binding with T-cell propensity terms, as in NetTepi
+\cite{NetTepi2014} and the integrated pipeline of Seq2Neo \cite{Seq2Neo2022}.
+Despite this architectural diversity, every one of these methods ultimately
+produces a classification probability or a ranking score rather than a calibrated
+quantitative response magnitude.
+
+\subsection{The magnitude gap (L4)}
+\label{sec:related:gap}
+
+Within the twelve methods and six reviews we surveyed, no published tool is
+explicitly designed to regress the continuous magnitude of the T-cell response and
+to report correlation or error against a continuous experimental readout. A recent
+review of immunogenicity predictors concludes that the tools it surveys perform
+binary classification and that prediction of T-cell response magnitude remains an
+unaddressed gap \cite{explorationpub2023}, and a 2025 survey of the field
+likewise does not list regression-based magnitude prediction among solved tasks
+\cite{Zhao2025}. Existing comparative benchmarks reinforce this boundary by their
+scope: prior head-to-head evaluations target binary neoantigen immunogenicity
+\cite{Nibeyro2023} or TCR--pMHC binding \cite{Gielis2023}, and recent commentary
+attributes the performance ceiling of immunogenicity models to data quality and
+dataset bias \cite{OBrien2023}---but none of these benchmarks evaluates the
+recovery of continuous response magnitude, which is the gap our benchmark
+addresses. The gap persists despite the presence of usable signal. PredIG's
+training data carry graded positive-low, intermediate, and high labels that are
+binarized before use \cite{PredIG2025}; ICERFIRE states that the labels for a
+given peptide--HLA pair are collapsed into a single class
+\cite{ICERFIRE2024}; and CNNeoPP's validation ELISpot data distinguish weak from
+strong responders, yet the model still emits only a binary call
+\cite{CNNeoPP2026}. Across these cases, a magnitude signal that is present in the
+underlying data is selectively discarded at the labelling stage.
+
+We are deliberately cautious about how much this gap can be filled. The magnitude
+of a polyclonal T-cell response is shaped by donor-specific precursor frequencies
+and other host factors that are not observable from peptide and allele sequence
+alone, which places a biological ceiling on the variance that any sequence-level
+predictor can explain. Accordingly, related work that frames magnitude prediction
+as an open frontier must also acknowledge that the achievable correlation is
+bounded, and that the practical contribution of continuous prediction lies in
+recovering ranking-relevant signal for clinical prioritization rather than in
+high-precision regression. Our benchmark is positioned to make exactly this
+question empirical: it measures how well existing tools, repurposed as continuous
+predictors, track ELISpot magnitude under a harmonized protocol, and it provides
+the controls---including the continuous binding, stability, and TCR--pMHC
+neighbours delimited above---against which future magnitude predictors should be
+judged.

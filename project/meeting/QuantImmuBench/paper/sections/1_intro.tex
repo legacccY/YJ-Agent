@@ -1,0 +1,97 @@
+\section{Introduction}
+\label{sec:intro}
+
+Personalized neoantigen vaccines have moved from concept to the clinic, with
+early-phase trials reporting durable, mutation-specific T-cell responses and
+encouraging signals of clinical benefit across several tumour types
+\cite{Sahin2023,NatRevImmunol2023}. Their central computational bottleneck is
+selection: from the hundreds of somatic mutations in a tumour, only a handful of
+mutated peptides will actually be recognized by a patient's T cells, and only a
+fraction of those will mount a response strong enough to matter clinically.
+Decades of work have made it clear that peptide--MHC binding, while necessary, is
+far from sufficient for immunogenicity. The TESLA consortium benchmark made this
+gap quantitative: of the strongly presented candidate peptides nominated across
+participating teams, only on the order of six percent proved experimentally
+immunogenic \cite{TESLA2020}. Prioritizing neoantigens for a vaccine therefore
+demands predictors that reach beyond binding into the immunological consequences
+of presentation.
+
+The literature has approached this problem along what is best described as a
+capability ladder. At the first level (L1), binding predictors such as
+NetMHCpan and MHCflurry estimate peptide--MHC affinity or eluted-ligand
+likelihood across thousands of alleles \cite{NetMHCpan2020,MHCflurry2020}. At
+the second level (L2), presentation-aware models such as PRIME and BigMHC
+incorporate mass-spectrometry eluted-ligand evidence to estimate the probability
+that a peptide is genuinely presented \cite{PRIME2023,BigMHC2023}. At the third
+level (L3), a large and architecturally diverse family of immunogenicity tools
+asks the binary question of whether a presented peptide will be recognized by T
+cells at all
+\cite{DeepImmuno2021,deepHLApan2019,IMPROVE2024,PredIG2025,ICERFIRE2024,NeoaPred2024,ImmunoStruct2025,NetTepi2014,Seq2Neo2022,TSCAPE2025,CNNeoPP2026}.
+A fourth concern, the \emph{magnitude} of the elicited response---how strong the
+T-cell reaction is, rather than merely whether it occurs---remains essentially
+unaddressed. We stress that this fourth concern is not a strictly higher rung of
+the same ladder. Levels L1 through L3 sharpen a single binary judgement, whereas
+magnitude is a \emph{regression axis orthogonal} to that judgement: one can ask
+how strong a response will be at the presentation layer just as well as at the
+recognition layer. We therefore treat magnitude (L4) as an orthogonal
+quantitative dimension layered across the binary ladder, not as a successor to
+it.
+
+This orthogonal magnitude dimension is the gap that motivates our study.
+Surveying more than a dozen immunogenicity methods published between 2024 and
+2026, together with six recent reviews, we find that no tool is explicitly
+designed to regress the continuous magnitude of the T-cell response and report
+correlation or error against a continuous experimental readout; every method
+ultimately emits a binary call or a binding-strength score
+\cite{explorationpub2023,Zhao2025,BiomarkerRes2025}. The gap is striking
+precisely because the signal is often available and then discarded: PredIG is
+trained on data carrying graded positive-low, intermediate, and high labels that
+are binarized before use \cite{PredIG2025}; ICERFIRE explicitly collapses graded
+labels into a single class \cite{ICERFIRE2024}; and CNNeoPP's validation ELISpot
+data distinguish weak from strong responders yet the model still outputs only a
+binary decision \cite{CNNeoPP2026}. That a gap has gone unfilled, however, is not
+by itself evidence that filling it is worthwhile. An absence in the literature
+admits two readings: an open opportunity, or a problem that practitioners have
+quietly judged intractable. Sequence-level magnitude prediction has a genuine
+biological ceiling---the magnitude of a polyclonal T-cell response depends
+heavily on donor-specific precursor frequencies that no peptide-and-allele input
+can observe, plausibly capping the explainable variance at a Spearman
+correlation of roughly $0.4$ to $0.6$. We take this ceiling seriously throughout,
+and frame the value of continuous prediction not as high-precision regression but
+as recovering ranking-relevant signal for clinical top-$K$ prioritization that
+binary tools throw away.
+
+Before a new magnitude predictor can be justified, however, a prior question must
+be answered empirically: how well do today's tools actually track response
+magnitude when their scores are repurposed as continuous predictors, and are the
+apparent differences between them real? This question has not been asked under a
+controlled, apples-to-apples protocol, in part because immunogenicity tools
+differ in input formats, allele handling, score scales, and aggregation
+conventions, so that head-to-head numbers are rarely comparable across papers. We
+close this gap with a unified benchmark. Using a common ELISpot ground truth and
+a seven-step harmonization protocol that standardizes inputs, alleles, and
+scoring across tools, we evaluate eight immunogenicity tools and one presentation
+proxy against the continuous ELISpot spot-forming-cell readout, and against the
+binary positive/negative outcome, on a common patient cohort.
+
+Our findings and contributions are threefold.
+\textbf{First}, under this harmonized protocol the correlation between existing
+tool scores and ELISpot magnitude is uniformly weak or non-significant: all tools
+fall below an absolute Spearman correlation of $0.33$, with only IMPROVE and
+PredIG reaching significance under particular aggregation choices, and the
+binary-discrimination performance, while higher in point estimate, has bootstrap
+confidence intervals that overlap so broadly---and shift so much with aggregation
+and threshold choices---that no single tool can be declared best. A presentation
+proxy performs near chance on magnitude, reinforcing that presentation,
+immunogenicity, and response magnitude are distinct quantities. \textbf{Second},
+we show that the global correlation metric used by default in the field masks
+substantial individual variation, and we introduce a per-patient evaluation
+protocol---computing a correlation within each patient and then aggregating---that
+exposes it: tools whose pooled global correlation is indistinguishable from noise
+recover meaningful within-patient ranking ability, while across-patient spread is
+large. This aligns benchmark evaluation with the cohort-level paradigm of the
+clinical literature \cite{TESLA2020,Muller2023}. \textbf{Third}, we quantify the
+magnitude gap and synthesize the evidence that the field has systematically set
+it aside, providing a reproducible benchmark and protocol that any future
+continuous-magnitude predictor can be measured against, while being explicit
+about the biological ceiling that bounds what such a predictor can achieve.

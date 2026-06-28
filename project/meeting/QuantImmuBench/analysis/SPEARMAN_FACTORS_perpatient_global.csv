@@ -1,0 +1,14 @@
+# quantimmu-bench E-analysis factors | 口径: Peptide_ID 聚合分 vs Elispot 连续 Spearman
+# HLAthena = MHC-I presentation proxy (NOT immunogenicity tool); near-random on ELISpot
+# 聚合 NaN 处理: 某肽某工具全 NaN -> 记 NaN, 不参与该工具 Spearman
+# Factor 2a: DS2 max-agg 全局 Spearman_rho (所有肽一起)
+Tool,global_rho,global_pval,global_n,is_proxy
+DeepImmuno,-0.1168,0.2449,101,0
+PredIG,0.1983,0.0468,101,0
+NeoTImmuML,0.0218,0.8285,101,0
+IMPROVE,0.2434,0.0142,101,0
+pTuneos,0.1363,0.1741,101,0
+PRIME,0.1163,0.2491,100,0
+ImmuneApp,0.0885,0.3786,101,0
+deepHLApan,0.0415,0.6847,98,0
+HLAthena,0.0838,0.407,100,1

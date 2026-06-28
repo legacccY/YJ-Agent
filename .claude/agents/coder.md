@@ -1,7 +1,7 @@
 ---
 name: coder
 description: 实验工程工。写/改实验代码、训练脚本、数据预处理、画图脚本、修 bug、写 pytest。用于「写个训练脚本」「实现这个 model/loss」「加数据增强」「改 dataloader」「修这个报错」。纯软件——**绝不跑任何代码**（含本地烟测/pytest/python 直跑），写完交主线串行跑。
-model: sonnet
+model: opus
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 

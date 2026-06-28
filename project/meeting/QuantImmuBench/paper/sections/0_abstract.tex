@@ -1,0 +1,30 @@
+\noindent\textbf{Motivation.} Personalized neoantigen vaccines depend on
+selecting, from many candidate mutations, the few that will provoke a strong
+T-cell response. A large family of immunogenicity predictors now decides whether
+a peptide is recognized at all, but \emph{how strong} the response will
+be---its magnitude---is essentially unaddressed, even though graded experimental
+readouts such as ELISpot spot-forming counts make this quantity measurable. It is
+not known how well existing tools track response magnitude when their scores are
+repurposed as continuous predictors, nor whether the apparent differences between
+them are real.
+
+\noindent\textbf{Results.} We assemble a unified benchmark that places eight
+immunogenicity tools and one presentation proxy on a common footing through a
+seven-step harmonization protocol, and scores them against a continuous ELISpot
+magnitude readout as well as a binary recognition label on a common patient
+cohort (DS2, $101$ peptides). Three findings emerge. First, the correlation with
+response magnitude is uniformly weak: every tool falls below an absolute Spearman
+correlation of $0.33$, and binary-discrimination differences, while larger in
+point estimate, have broadly overlapping bootstrap intervals that shift with
+aggregation and threshold, so no single tool is statistically distinguishable as
+best at the top of the panel. Second, a per-patient evaluation
+protocol---correlating within each patient before aggregating---surfaces
+within-patient ranking ability in a subset of patients that the default global
+metric conceals, together with large individual variation. Third, we quantify
+the magnitude gap and argue, with an explicit biological ceiling, that it is an
+open opportunity rather than a closed problem.
+
+\noindent\textbf{Conclusion.} Response magnitude remains an unfilled gap with a
+genuine biological upper bound; our reproducible benchmark and per-patient
+protocol provide a measuring stick for the continuous-magnitude predictors that
+this gap invites.

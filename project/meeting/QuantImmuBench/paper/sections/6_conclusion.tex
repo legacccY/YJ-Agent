@@ -1,0 +1,28 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We set out to ask whether today's neoantigen immunogenicity tools can quantify the
+\emph{magnitude} of a T-cell response, and to do so under a controlled,
+apples-to-apples protocol rather than across incomparable papers. Three
+conclusions follow. First, under a unified seven-step harmonization protocol,
+existing tools do not quantify magnitude: across eight immunogenicity predictors
+and one presentation proxy, every absolute Spearman correlation with the
+continuous ELISpot readout falls below $0.33$, binary-discrimination differences
+have broadly overlapping bootstrap intervals that shift with aggregation and
+threshold, and no single tool is statistically distinguishable as best. Second, a
+per-patient evaluation protocol recovers within-patient ranking ability that the
+default global correlation conceals, exposing substantial individual variation
+and arguing that benchmarks in this area should compute their metrics per patient
+before aggregating. Third, response magnitude is a systematically overlooked gap,
+but one bounded by a genuine biological ceiling: because the leading driver of
+magnitude is a donor-specific precursor frequency invisible to peptide-and-allele
+inputs, the explainable variance is structurally capped, and the value of
+continuous prediction is best framed as ranking gain for clinical
+top-$K$ selection rather than as high-precision regression.
+
+Taken together, these findings reframe magnitude prediction as an open and
+worthwhile---yet bounded---problem, and supply a reproducible benchmark and
+per-patient protocol against which future continuous-magnitude predictors can be
+measured. We hope the benchmark serves both as an honest baseline for what current
+tools achieve and as a measuring stick for the quantitative immunogenicity models
+that this gap invites.

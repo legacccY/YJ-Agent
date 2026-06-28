@@ -1,0 +1,19 @@
+{
+  "meta": "lopo_fixavg_surv6_raw_sfc.per_patient.csv",
+  "baseline": "floor_PRIME.per_patient.csv",
+  "n_patients": 9,
+  "n_boot": 2000,
+  "seed": 42,
+  "delta_z_point": 0.120936,
+  "delta_rho_point": 0.098714,
+  "delta_z_ci_lo": -0.094132,
+  "delta_z_ci_hi": 0.299274,
+  "delta_z_ci_width": 0.393406,
+  "P_delta_gt0": 0.8735,
+  "n_patients_positive": 6,
+  "n_patients_negative": 3,
+  "direction_frac": 0.666667,
+  "catastrophe_gate_threshold": -0.05,
+  "decision": "点估正向 + CI 含0: 值得上 powered 研究 (n=15 功效不足)",
+  "ledger_notes": "主读数=点估+CI宽 (非p值). catastrophe gate: 点估<-0.05=stacking反伤. 点估正+CI含0=值得上powered研究 (LEDGER §5 约束①②)"
+}

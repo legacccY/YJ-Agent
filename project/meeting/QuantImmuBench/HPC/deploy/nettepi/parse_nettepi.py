@@ -63,10 +63,14 @@ def parse_raw_file(filepath: str) -> dict[str, dict]:
     with open(filepath, encoding="utf-8", errors="replace") as f:
         lines = [l.rstrip("\n") for l in f.readlines()]
 
-    # 找 header 行（含 Peptide 或 peptide 关键词的行）
+    # 找 header 行：真实数据表头同时含 Peptide 和 Comb（避开注释行
+    # "# Input is in PEPTIDE format"，它只有 PEPTIDE 没有 Comb）
     header_idx = None
     for i, line in enumerate(lines):
-        if re.search(r"\bpeptide\b", line, re.IGNORECASE):
+        if line.lstrip().startswith("#"):
+            continue
+        if re.search(r"\bpeptide\b", line, re.IGNORECASE) and \
+           re.search(r"\bcomb\b", line, re.IGNORECASE):
             header_idx = i
             break
 

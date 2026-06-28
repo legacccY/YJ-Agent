@@ -107,8 +107,15 @@ squeue 无 gdn2 job → 批1「CHASE FR-UNet faithful」早完成，lock 残留�
 - **cs_net seed42 旧崩 csv 删**(强制 resize-512 修复重评)。
 - **3-seed eval drip b917ghh3b**(`_scratch/submit_eval_3seed_drip.py`)：48 cell=8baseline×2集×seed{42,1,2}，幂等跳 done seed42，做 batch3(28)+fr_unet s1,2(4)+cs_net s42 重评(2)。QOS 节流。
 
-### 待续(3-seed eval 完后 = 正式 verdict)
-1. **3-seed eval**：drip 收尾全 48 cell csv。
+### 收工(2026-06-26) — 3-seed eval 44/48，差 fr_unet s1,2 评测
+- **批3 训练 28/28 全 done** + **fr_unet s1,2 补训完**(4 run)。3-seed eval drip(b917ghh3b)TIMEOUT at **44/48**——差 **fr_unet seed{1,2}×{DRIVE,CHASE} 4 cell**(fr_unet s1,2 训练完成晚于该轮 eval drip,ckpt 现已齐,squeue 空)。
+- 收工时无 HPC job 运行(全 done)。我的 gdn2vessel 工作已由别窗 quantimmu 收工 commit(49790f2)`git add -A` 顺手提交并 push(误挂 quantimmu 消息,工作未丢)。
+
+### 待续(下次起点 = 收尾 verdict)
+1. **补 fr_unet s1,2 eval(4 cell)**：squeue 空、ckpt 齐 → 重启 `_scratch/submit_eval_3seed_drip.py`(幂等,只跑缺的 4)→ 48/48。
+2. **3-seed 正式 verdict**：48 cell 齐 → 拉本地 → `analyze_discrimination_gate.py`(seed{42,1,2} 3-seed mean±std 重算 PSR)→ 正式落 Claim 3 判别轴(替代 seed42 GO 初判,写死区分度结论)。
+3. **核 cs_net resize-512 修后 dice**(应回 ~0.78,seed42 重评 csv 已含修复)；creatis 补(Stage2 权重 TODO)→M 扩 9；FIVES 入 pool。
+4. stage-gate(verifier+reviewer)→ 写 §3 leaderboard + §3.3 指标解离诊断。
 2. **3-seed 正式 verdict**：seed{42,1,2} 全 csv → `analyze_discrimination_gate.py` 3-seed mean±std 重算 PSR → 正式落 Claim 3 判别轴(写死区分度结论,替代 seed42 GO 初判)。
 3. creatis 补(Stage2 2D_model_stare 权重 TODO)→M 扩 9；FIVES(n=200)入 pool 压窄 CI。
 4. stage-gate(verifier+reviewer 严判)→ 写 §3 leaderboard + §3.3 指标解离诊断(cs_net CHASE 过预测/fr_unet clDice#2 但 SR 低/skeleton_recall 三案例)。

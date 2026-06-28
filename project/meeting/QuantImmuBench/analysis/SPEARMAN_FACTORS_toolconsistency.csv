@@ -1,0 +1,42 @@
+# quantimmu-bench E-analysis factors | 口径: Peptide_ID 聚合分 vs Elispot 连续 Spearman
+# HLAthena = MHC-I presentation proxy (NOT immunogenicity tool); near-random on ELISpot
+# 聚合 NaN 处理: 某肽某工具全 NaN -> 记 NaN, 不参与该工具 Spearman
+# Factor 6: DS2 max-agg 工具两两预测分 Spearman rho (仅两工具都非 NaN 的肽)
+# pivot Tool_A x Tool_B 得 9x9 热图; 高 rho = 预测方向相似/冗余
+Tool_A,Tool_B,Spearman_rho,pval,n_common
+DeepImmuno,PredIG,0.0339,0.7364,101
+DeepImmuno,NeoTImmuML,-0.1437,0.1516,101
+DeepImmuno,IMPROVE,0.031,0.7579,101
+DeepImmuno,pTuneos,0.0821,0.4141,101
+DeepImmuno,PRIME,0.075,0.4581,100
+DeepImmuno,ImmuneApp,-0.0583,0.5624,101
+DeepImmuno,deepHLApan,0.5028,0.0,98
+DeepImmuno,HLAthena,0.0872,0.3882,100
+PredIG,NeoTImmuML,0.1396,0.1638,101
+PredIG,IMPROVE,0.2787,0.0048,101
+PredIG,pTuneos,0.029,0.7733,101
+PredIG,PRIME,0.0555,0.5837,100
+PredIG,ImmuneApp,0.4187,0.0,101
+PredIG,deepHLApan,0.1533,0.1319,98
+PredIG,HLAthena,0.0884,0.3816,100
+NeoTImmuML,IMPROVE,-0.0043,0.966,101
+NeoTImmuML,pTuneos,0.0041,0.9677,101
+NeoTImmuML,PRIME,-0.0284,0.7792,100
+NeoTImmuML,ImmuneApp,0.1323,0.1871,101
+NeoTImmuML,deepHLApan,-0.161,0.1132,98
+NeoTImmuML,HLAthena,-0.2289,0.022,100
+IMPROVE,pTuneos,0.3149,0.0013,101
+IMPROVE,PRIME,0.6885,0.0,100
+IMPROVE,ImmuneApp,0.1929,0.0532,101
+IMPROVE,deepHLApan,0.0912,0.3717,98
+IMPROVE,HLAthena,0.4639,0.0,100
+pTuneos,PRIME,0.2022,0.0436,100
+pTuneos,ImmuneApp,0.0309,0.7592,101
+pTuneos,deepHLApan,-0.1271,0.2124,98
+pTuneos,HLAthena,0.1733,0.0846,100
+PRIME,ImmuneApp,0.1223,0.2255,100
+PRIME,deepHLApan,0.155,0.1295,97
+PRIME,HLAthena,0.5216,0.0,100
+ImmuneApp,deepHLApan,-0.0342,0.7382,98
+ImmuneApp,HLAthena,0.0401,0.6918,100
+deepHLApan,HLAthena,0.3584,0.0003,97

@@ -1,0 +1,11 @@
+# fusion_ceiling_distance.csv
+# 各方法 rho_bar 到理论天花板 [0.4, 0.6] 的距离
+# ceiling_low=0.4 / ceiling_high=0.6 (precursor frequency 锁, THEORY_quant.md)
+# dist_to_0.4 = 0.4 - fisherz_rho (正值=未触及天花板下沿)
+# ci_touches_ceiling = (ci_hi >= 0.4)
+method,fisherz_rho,ci_hi,ceiling_low,ceiling_high,dist_to_0.4,ci_touches_ceiling
+single_MT_deepHLApan,0.251852,0.458968,0.4,0.6,0.148148,True
+fixavg_surv6,0.328129,0.522514,0.4,0.6,0.071871,True
+rankmean_surv6,0.333563,0.526534,0.4,0.6,0.066437,True
+ridge_surv6,-0.30078,-0.072241,0.4,0.6,0.70078,False
+gbdt_surv6,-0.042078,0.187676,0.4,0.6,0.442078,False

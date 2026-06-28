@@ -3,6 +3,8 @@
 > 致袁老师 · 余嘉整理 · 2026-06-24
 > 本文整合本轮 8 人调研编队（工具普查、数据集普查、benchmark 方法学对标、红队审计、理论可行性论证、本地深度重析）的全部产出，目标是一页纸看懂「现状 + 蓝海 + 命门 + 建议」，供您对 QuantImmune 立项方向拍板。
 > 所有关键数字均经本地 csv 核对，文献结论均带来源；不确定项一律显式标注，未掩盖盲区。
+>
+> ⚠️ **2026-06-27 HLA-FIX 后置 caveat**：本综述写于 2026-06-24（修复前）。后查出 DS2 患者 P101/P102 的 HLA 等位为 Excel 拖拽填充伪迹，已修复并 promote canonical。**对本文影响**：涉及 Spearman 显著性的表述（如 §2 中 PredIG）已变——剔 P101/P102 后 PredIG 全局显著性失效，「PredIG/IMPROVE 都显著」修正为「仅 IMPROVE 稳健显著」；AUC 排序结论（pTuneos 不确定性宽、无统计显著最优工具）不受影响。立项蓝海/命门/天花板论证方向不变。最新 benchmark 数字以 `analysis/metrics_ds2_fixed_exclP101P102.csv` + 04_LOG Entry HLA-FIX 为准。
 
 ---
 

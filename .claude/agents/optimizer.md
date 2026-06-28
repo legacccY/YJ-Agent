@@ -1,7 +1,7 @@
 ---
 name: optimizer
 description: 协作系统自优化工。读摩擦信号 + git log + hooks/commands/CLAUDE.md，聚类反复出现的问题找根因，小的安全修复直接改，大的报主线拍板。用于「优化一下流程」「/optimize」「最近老踩同一个坑」「收工自检」。改的是协作系统本身，不碰论文内容/数据/实验。
-model: sonnet
+model: opus
 tools: Read, Edit, Grep, Glob, Bash
 ---
 

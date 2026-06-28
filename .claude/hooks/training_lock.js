@@ -30,10 +30,18 @@ process.stdin.on('end', () => {
   const isCompileOrTest = /py_compile|pyflakes|flake8|\bpytest\b|-m\s+pytest|--version|--help|gpu_slot\.py/i.test(cmd)
     || /\bsftp\b|\bscp\b/i.test(cmd)
     || isReadOnlyViewer;
+  // 纯 CPU 分析/出图/交付脚本豁免：这类产出图表/表格/汇总/合并，从不占 GPU，
+  // 却被通用词 sweep/experiment/probe 误判成训练（实证 analysis/pooling_sweep_17tools.py 被 ×8 拦，
+  // 主线被迫反复 `gpu_slot.py request <p> local 0` 绕过）。两条高置信信号：
+  //   1) 脚本在 analysis/ 目录下；2) .py 文件名以「出产物」动词开头/结尾（plot/build/merge/pool/agg/report/fig/table/export/collect/summary/delivery…）。
+  // 仅匹配 .py 文件名本身（[\w-]*\.py 锚定），不误伤路径里的同名目录；训练脚本约定为 train*/_probe/pretrain 等不在此列。
+  const isCpuAnalysis = /(^|[\/\\])analysis[\/\\][\w./-]*\.py/i.test(cmd)
+    || /[\/\\]?(plot|build|merge|make|agg|aggregate|summar\w*|report|pool|pooling|fig|figure|table|export|collect|gather)[\w-]*\.py/i.test(cmd)
+    || /_(delivery|report|plot|fig|figure|figures|summary|table|export)\.py/i.test(cmd);
   // 洞 A 修：训练识别不止文件名 train*.py——扩到 probe/sweep/pilot/capacity/finetune/pretrain/mqar/experiment
   // 这类「训到收敛/扫描」脚本名（防 mqar_capacity_probe.py 之类绕过）；--smoke/--dry-run/test_ 仍放行（tiny 烟测）。
   const isSmoke = /--smoke|--dry[-_]?run|\btest_|tests\//i.test(cmd);
-  const isTraining = !isCompileOrTest && !isSmoke && (
+  const isTraining = !isCompileOrTest && !isSmoke && !isCpuAnalysis && (
     (/Start-Process/i.test(cmd) && /\b(train|python)\b/i.test(cmd)) ||
     /\bsbatch\b/i.test(cmd) ||
     (/\bpython\b/i.test(cmd) && /[\w./-]*(train|sweep|probe|pilot|capacity|finetune|pretrain|mqar|experiment)[\w-]*\.py/.test(cmd)) ||

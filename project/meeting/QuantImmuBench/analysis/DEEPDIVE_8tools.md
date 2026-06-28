@@ -4,11 +4,13 @@
 > 口径锁定(已三方对账)：指标=DS2 101 肽，肽级分数=max over 全部(HLA×Window_Size)子肽，标签=Elispot>0(90 正/11 负)。8 工具肽级 max-agg AUC 重算与 metrics_ds2_8tools.csv(max,>0) 逐工具精确吻合。
 > 澄清：「8/9/10/11-mer」=滑窗子肽长度 Window_Size(8-14)，**不是**肽全长(DS2 全长肽 15-29mer)。现成 length_stratified_auc.csv 是 fallback 占位(非真分层)，本分析从 merged_all_tools_8tools.xlsx 逐子肽重算替代。
 
+> ⚠️ **HLA-bug 修复修正（2026-06-27，详见 04_LOG Entry HLA-FIX）**：backbone 对患者 P101/P102 误读了源 `Elispot_Dataset2.xlsx` 的伪迹列 HLA-1..6（2268 行 / 6.6% 污染，仅这两名患者），PredIG/deepHLApan 等 HLA-相关工具受影响。修正后（剔除 P101/P102，真源 `analysis/metrics_ds2_fixed_exclP101P102.csv`）：**PredIG 全局 Spearman 显著性不存活**（max ρ 0.198→0.104 p=0.343 不显著；mean ρ 0.280→0.188 p=0.084 不显著）；**IMPROVE 仍稳健显著**（max ρ 0.243→0.226 p=0.037；top3mean 0.320→0.283 p=0.008）；**deepHLApan 双重不可信**（肽长混杂饱和假象 + merge 传播 bug 2069 行 NaN 回填）；**NeoTImmuML/Repitope HLA-agnostic 不变**。本档涉 PredIG/deepHLApan 的 AUC、ensemble、长度分层数字均受 P101/P102 污染影响，corrected 值待 Phase B 重推理后更新；现阶段结论以 corrected-excl 为准。
+
 ## 单工具总体 (max-agg/>0)
 | 工具 | AUC(>0) | Spearman ρ |
 |---|---|---|
 | **pTuneos** | **0.7525** ← AUC 最优 | 0.1363 |
-| PredIG | 0.6611 | 0.1983 |
+| PredIG | 0.6611 | 0.1983（修复前，已失效→修正 0.104 p=0.343 不显著，见 HLA-FIX）|
 | NeoTImmuML | 0.6551 | 0.0218 |
 | IMPROVE | 0.6207 | **0.2434** ← ρ 最优 |
 | ImmuneApp | 0.5889 | 0.0885 |

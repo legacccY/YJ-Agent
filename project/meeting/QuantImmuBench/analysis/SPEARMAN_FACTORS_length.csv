@@ -1,0 +1,51 @@
+# quantimmu-bench E-analysis factors | 口径: Peptide_ID 聚合分 vs Elispot 连续 Spearman
+# HLAthena = MHC-I presentation proxy (NOT immunogenicity tool); near-random on ELISpot
+# 聚合 NaN 处理: 某肽某工具全 NaN -> 记 NaN, 不参与该工具 Spearman
+# Factor 3: 肽长分层 DS1_all / DS2_all / DS2_len8/9/10/11plus
+# n<6 的桶 Spearman_rho=NaN; Peptide_Length = 整肽长 (非 Window_Size)
+Tool,stratum,n,Spearman_rho,pval,is_proxy
+DeepImmuno,DS1_all,82,-0.028,0.803,0
+PredIG,DS1_all,82,0.0278,0.8043,0
+NeoTImmuML,DS1_all,82,-0.157,0.1589,0
+IMPROVE,DS1_all,82,0.0066,0.9528,0
+pTuneos,DS1_all,82,-0.022,0.8444,0
+PRIME,DS1_all,82,-0.1231,0.2704,0
+ImmuneApp,DS1_all,82,0.0388,0.7292,0
+deepHLApan,DS1_all,81,-0.503,0.0,0
+HLAthena,DS1_all,82,-0.0711,0.5254,1
+DeepImmuno,DS2_all,101,-0.1168,0.2449,0
+PredIG,DS2_all,101,0.1983,0.0468,0
+NeoTImmuML,DS2_all,101,0.0218,0.8285,0
+IMPROVE,DS2_all,101,0.2434,0.0142,0
+pTuneos,DS2_all,101,0.1363,0.1741,0
+PRIME,DS2_all,100,0.1163,0.2491,0
+ImmuneApp,DS2_all,101,0.0885,0.3786,0
+deepHLApan,DS2_all,98,0.0415,0.6847,0
+HLAthena,DS2_all,100,0.0838,0.407,1
+DeepImmuno,DS2_len15to18,22,-0.492,0.02,0
+PredIG,DS2_len15to18,22,0.1559,0.4885,0
+NeoTImmuML,DS2_len15to18,22,0.1322,0.5577,0
+IMPROVE,DS2_len15to18,22,0.0486,0.83,0
+pTuneos,DS2_len15to18,22,-0.0445,0.8441,0
+PRIME,DS2_len15to18,22,-0.0514,0.8203,0
+ImmuneApp,DS2_len15to18,22,0.0459,0.8392,0
+deepHLApan,DS2_len15to18,20,-0.146,0.5392,0
+HLAthena,DS2_len15to18,22,-0.2378,0.2866,1
+DeepImmuno,DS2_len19to22,49,0.1934,0.183,0
+PredIG,DS2_len19to22,49,0.169,0.2456,0
+NeoTImmuML,DS2_len19to22,49,0.0697,0.6342,0
+IMPROVE,DS2_len19to22,49,0.1947,0.1801,0
+pTuneos,DS2_len19to22,49,0.1831,0.2078,0
+PRIME,DS2_len19to22,48,-0.0643,0.6643,0
+ImmuneApp,DS2_len19to22,49,-0.0513,0.7264,0
+deepHLApan,DS2_len19to22,48,0.1235,0.403,0
+HLAthena,DS2_len19to22,48,0.0372,0.8016,1
+DeepImmuno,DS2_len23plus,30,-0.478,0.0076,0
+PredIG,DS2_len23plus,30,0.0759,0.6902,0
+NeoTImmuML,DS2_len23plus,30,0.0474,0.8036,0
+IMPROVE,DS2_len23plus,30,0.2824,0.1306,0
+pTuneos,DS2_len23plus,30,0.0583,0.7597,0
+PRIME,DS2_len23plus,30,0.2503,0.1821,0
+ImmuneApp,DS2_len23plus,30,0.0663,0.7276,0
+deepHLApan,DS2_len23plus,30,-0.1274,0.5024,0
+HLAthena,DS2_len23plus,30,0.202,0.2843,1

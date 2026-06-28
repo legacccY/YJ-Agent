@@ -1,0 +1,16 @@
+Patient_ID,Dataset,n_pep,rho,rho_z,in_main_analysis,note
+1,DS1,13,0.263736,0.27012,False,DS1: sensitivity only
+2,DS1,15,0.132143,0.13292,False,DS1: sensitivity only
+3,DS1,8,-0.119048,-0.119615,False,DS1: sensitivity only
+4,DS1,8,-0.238095,-0.242754,False,DS1: sensitivity only
+5,DS1,15,0.196429,0.199015,False,DS1: sensitivity only
+6,DS1,23,-0.231225,-0.235484,False,DS1: sensitivity only
+101,DS2,9,0.2,0.202733,True,
+102,DS2,6,-0.142857,-0.143841,True,
+104,DS2,14,-0.054945,-0.055,True,
+105,DS2,16,0.064706,0.064796,True,
+106,DS2,13,0.192308,0.194732,True,
+107,DS2,8,0.214286,0.217659,True,
+108,DS2,12,-0.174825,-0.17664,True,
+109,DS2,10,-0.442424,-0.475241,True,
+110,DS2,13,-0.104396,-0.104777,True,

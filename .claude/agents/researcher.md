@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: 科研文献/官方源码/超参检索工。联网查 paper、官方 repo、默认超参、SOTA 设置，返回带引用的压缩结论。用于「查文献」「这个超参官方是多少」「SOTA 怎么设的」「调研 X 方法」。只读，不改代码不写论文。
-model: sonnet
+model: opus
 tools: WebSearch, WebFetch, Read, Grep, Glob, Bash, mcp__firecrawl__firecrawl_search, mcp__firecrawl__firecrawl_scrape, mcp__firecrawl__firecrawl_extract
 ---
 

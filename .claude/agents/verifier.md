@@ -1,7 +1,7 @@
 ---
 name: verifier
 description: 论文数字核源工。用 Bash/Grep 直接核 csv 原值，三方对账 registry↔STORY↔tex，禁用 Read 看数据。用于「核这个数字对不对」「这些数字溯源」「投稿前数字一致性」。只核不改。
-model: sonnet
+model: opus
 tools: Bash, Grep, Glob
 ---
 

@@ -1,0 +1,14 @@
+# fusion_vs_single_paired.csv
+# 融合 vs 最优单工具 患者级配对检验 (bootstrap B=10000 + sign + permutation)
+# delta_z = arctanh(rho_fusion) - arctanh(rho_best_single) per patient
+# delta_z_mean=简单均值点估; delta_z_ci_lo/hi=bootstrap percentile 95%CI
+# p_two_sided=bootstrap 2*min(P(D>0),P(D<0)); prob_delta_gt0=P(Dz>0)
+# sign_test_p=精确符号检验 p (二项 p=0.5, K=9 首选); n_pos/n_neg=正负个数
+# perm_test_p=配对置换检验 p (全枚举 2^K=512 符号翻转, K=9 首选)
+# fusion_rho/single_rho=整体 Fisher-z rho_bar
+# headline: 三检验 p 若均大→融合不显著超最优单工具 (复现朱结论)
+method,best_single_tool,delta_z_mean,delta_z_ci_lo,delta_z_ci_hi,p_two_sided,prob_delta_gt0,sign_test_p,n_pos,n_neg,perm_test_p,fusion_rho,single_rho
+fixavg_surv6,MT_deepHLApan,0.003689,-0.459662,0.448838,0.974,0.513,1.0,5,4,0.984375,0.328129,0.251852
+rankmean_surv6,MT_deepHLApan,0.039879,-0.350734,0.417244,0.8332,0.5834,1.0,5,4,0.851562,0.333563,0.251852
+ridge_surv6,MT_deepHLApan,-0.581696,-1.036177,-0.116374,0.0162,0.0081,0.179687,2,7,0.046875,-0.30078,0.251852
+gbdt_surv6,MT_deepHLApan,-0.300736,-0.888347,0.257679,0.3118,0.1559,1.0,4,5,0.355469,-0.042078,0.251852

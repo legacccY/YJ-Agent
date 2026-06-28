@@ -9,6 +9,8 @@
 > ⚠️ 此表是**唯一进度真源**。下方两张分表（第一批 5 / Wave3 5）= 部署细节归档，状态以本表为准。
 > 教训：旧表「状态」列单维枚举混了三件事（部署到第几步 / 跑哪个版本 / 进没进 benchmark），导致 NeoTImmuML（自训版进了 benchmark）被读成"没做成"、PRIME/ImmuneApp/deepHLApan（已进 benchmark）被读成"停在烟测"。本表按维度拆列。
 > **benchmark 列以 `analysis/metrics_ds2_9tools.csv` 为真源回填**（9 工具各 9 行 = 3 聚合×3 阈值；MHLAPre 0 行 = 唯一未进）。
+>
+> ⚠️ **2026-06-27 HLA-FIX caveat（部署状态不变，benchmark 数字变）**：本表「进 benchmark」列只表「工具是否跑通进表」，**与部署完成度无关、不受 HLA-FIX 影响**。但 benchmark 的**结论数字**已因 P101/P102 等位伪迹修正而变：PredIG 全局 Spearman 显著性失效、TSCAPE 翻显著负、deepHLApan 有 merge bug。HLA-dependent 工具的 P101/P102 格已置 NaN 待 Phase B 重推理。**当前有效 benchmark 真源 = `analysis/metrics_ds2_fixed_exclP101P102.csv`（corrected-excl），非 `metrics_ds2_9tools.csv`**。详见 04_LOG Entry HLA-FIX / HLA-FIX2。
 
 | # | 工具 | 归属 | clone | env | 烟测 | **进 benchmark** | 跑的版本 | 结论 |
 |---|---|---|---|---|---|---|---|---|

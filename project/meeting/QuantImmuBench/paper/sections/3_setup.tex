@@ -1,0 +1,228 @@
+\section{Benchmark Setup}
+\label{sec:setup}
+
+This section specifies the datasets, the panel of tools under evaluation, the
+seven-step harmonization pipeline that places heterogeneous predictors on a
+common footing, the per-patient evaluation protocol, and the metrics together
+with the fairness safeguards that govern every comparison reported in
+Section~\ref{sec:results}. The design goal throughout is a single,
+\emph{apples-to-apples} measurement: each tool sees the same inputs, is reduced
+to the same peptide-level score under the same aggregation rule, and is scored
+against the same continuous ground truth under the same thresholds.
+
+\subsection{Datasets}
+\label{sec:datasets}
+
+We evaluate on two cohorts of neoantigen candidates with functional T-cell
+readouts measured by interferon-$\gamma$ ELISpot. ELISpot spot-forming counts
+(SFC) provide a quantitative, continuous measure of response magnitude rather
+than a binary recognition call, and have been used as a quantitative
+immunogenicity readout in prior work~\cite{TESLA2020}. The first cohort (DS1)
+serves as a development set on which the harmonization pipeline and its scoring
+conventions were established and reproduced. DS1 contains $82$ peptides
+($325$ sub-peptide rows) and is entirely positive (ELISpot SFC ranging from $16$
+upward, with no negative controls); it therefore does not admit a binary
+discrimination analysis and is used only to check rank-correlation behavior, where
+all evaluated tools were non-significant ($|\rho| \le 0.16$). The second cohort
+(DS2) is the primary benchmark and is reported in full below.
+
+DS2 comprises $101$ peptides. Because the tools accept inputs of differing
+lengths and allele specificities, each peptide is expanded by exhaustive
+sliding-window enumeration over its constituent sub-peptides paired with the
+relevant HLA alleles, yielding $33{,}922$ sub-peptide~$\times$~HLA rows
+(Section~\ref{sec:harmonization}). The ELISpot SFC value is recorded once per
+peptide and propagated to all of its rows. We treat SFC both as a continuous
+magnitude target and, after thresholding, as a binary positive/negative label.
+Three thresholds are used: SFC $>0$ ($n_{\mathrm{pos}}=90$,
+$n_{\mathrm{neg}}=11$), SFC $>10$ ($n_{\mathrm{pos}}=64$), and SFC above the
+cohort median of $22.67$ ($n_{\mathrm{pos}}=50$). The strong class imbalance at
+the $>0$ threshold (positivity $\approx 89\%$) is intrinsic to this cohort and
+directly motivates the use of precision--recall--based metrics
+(Section~\ref{sec:metrics}).
+
+\subsection{Tools under benchmark}
+\label{sec:tools}
+
+The primary panel consists of eight immunogenicity predictors evaluated under
+identical conditions: DeepImmuno~\cite{DeepImmuno2021}, PredIG~\cite{PredIG2025},
+IMPROVE~\cite{IMPROVE2024}, NeoTImmuML~\cite{NeoTImmuML2025},
+pTuneos~\cite{pTuneos2019}, PRIME~\cite{PRIME2023},
+ImmuneApp~\cite{ImmuneApp2024}, and deepHLApan~\cite{deepHLApan2019}. In addition,
+HLAthena~\cite{HLAthena2020} is
+included as a \emph{presentation proxy} and is reported separately rather than
+ranked alongside the immunogenicity tools, because peptide presentation is a
+necessary but not sufficient condition for a functional T-cell response; its
+near-random performance serves as a calibration anchor rather than a competitor.
+
+Three version caveats are stated explicitly and carried through every table.
+First, official pre-trained weights for NeoTImmuML are not publicly available;
+we therefore evaluate a model retrained by us on the published architecture,
+denoted NeoTImmuML$^\star$, and we do not claim that its scores reflect the
+performance of the original published model. Second, pTuneos is run through its
+Pre\&RecNeo sub-model, which is the component applicable to our input format.
+Third, IMPROVE is run with its expression feature degraded, since transcript
+abundance is unavailable for the benchmark candidates; the model is otherwise
+used as published. These caveats bound the conclusions we draw about each tool
+to the configuration actually evaluated.
+
+A second, expanding wave of predictors---including netMHCpan\_ba, NetTepi,
+MHCflurry, and NeoaPred---is integrated into the pipeline and is reported as
+\emph{in progress}. Their results are withheld from the main conclusions and
+marked \pendingDTU, pending written data-use consent; the headline claims of
+this paper do not depend on them.
+
+\subsection{Seven-step harmonization pipeline}
+\label{sec:harmonization}
+
+A central methodological contribution is a single pipeline that reduces every
+predictor to a comparable peptide-level score, so that observed differences
+reflect the tools rather than incidental differences in input handling. The
+pipeline proceeds in seven steps:
+
+\begin{enumerate}
+  \item \textbf{Unified input.} All candidates are cast to a common record
+        format (mutant peptide, source peptide context, and the patient HLA set),
+        so that every tool is presented with identical information.
+  \item \textbf{Sub-peptide sliding window.} Each peptide is exhaustively
+        enumerated into overlapping sub-peptides of lengths $8$--$14$ with a
+        stride of $1$, covering the binding-core windows that the predictors
+        are designed to score.
+  \item \textbf{Sub-model degradation.} For tools that support only a subset of
+        lengths or features, the input is restricted accordingly (e.g.,
+        DeepImmuno is scored on $9$--$10$-mers only), and the restriction is
+        recorded in the coverage table (Table~\ref{tab:coverage}).
+  \item \textbf{Re-mapping to the master backbone.} Every sub-peptide~$\times$~HLA
+        score is mapped back to its originating master backbone peptide, so that
+        scores from different tools are indexed by the same peptide identifier.
+  \item \textbf{Unified aggregation.} The per-window, per-allele scores for a
+        peptide are aggregated into a single peptide-level value. The primary
+        rule is the \emph{best-binder} (maximum) aggregation; \texttt{mean} and
+        \texttt{top3mean} are computed as robustness comparators
+        (Section~\ref{sec:fairness}).
+  \item \textbf{Unified ground truth.} All tools are scored against the same
+        ELISpot SFC target for the peptide.
+  \item \textbf{Unified evaluation.} A fixed set of thresholds
+        (SFC $>0$, $>10$, $>$ median) and a fixed metric set
+        (Section~\ref{sec:metrics}) are applied identically to every tool.
+\end{enumerate}
+
+The choice of best-binder (maximum-over-windows-and-alleles) aggregation as the
+primary rule is grounded in standard neoantigen pipeline practice, in which a
+peptide is summarized by its strongest predicted binder across alleles and
+lengths~\cite{NetMHCpan2020,PRIME2023}; the same best-binder convention is
+codified in established neoantigen pipelines, which summarize a candidate by the
+strongest-binding mutant peptide across sub-peptides and alleles (the
+``Best MT IC50'' criterion)~\cite{pVACtools2020,pVACseq2016}.
+Biologically, this operationalizes the premise that strong presentation by
+\emph{any one} of a patient's HLA alleles is sufficient to enable a T-cell
+response. We emphasize that, while the maximum rule itself is supported by the
+literature, the decision to additionally report \texttt{mean} and
+\texttt{top3mean} as sensitivity analyses, to lock the primary comparison to a
+single aggregation--threshold combination, and to span the three thresholds
+above are our own engineering choices rather than conventions prescribed by any
+single source.
+
+\subsection{Per-patient evaluation protocol}
+\label{sec:perpatient}
+
+Pooling all peptides across patients and computing a single global Spearman
+correlation can mask a tool's ability to rank candidates \emph{within} an
+individual patient. We therefore adopt a per-patient protocol that mirrors the
+cohort-level evaluation paradigm of prior neoantigen
+benchmarks~\cite{TESLA2020,Muller2023}: for each patient $i$ we compute the
+Spearman correlation $\rho_i$ between the tool score and ELISpot SFC over that
+patient's $n_i$ peptides, and then aggregate the per-patient coefficients.
+
+The primary aggregate is a fixed-effect Fisher-$z$ weighted mean. Each
+coefficient is transformed by $z_i = \operatorname{arctanh}(\rho_i)$, with the
+Spearman-specific sampling variance
+$\operatorname{Var}(z_i) \approx (1+\rho_i^2/2)/(n_i-3)$ and inverse-variance
+weight $w_i = (n_i-3)/(1+\rho_i^2/2)$; the pooled estimate is
+$\bar{\rho} = \tanh\!\big(\sum_i w_i z_i / \sum_i w_i\big)$, with a $95\%$
+confidence interval $\tanh\!\big(\bar{z} \pm 1.96/\sqrt{\sum_i w_i}\big)$. The
+median $\tilde{\rho} = \operatorname{median}_i(\rho_i)$ is reported alongside it
+as a robust co-primary estimate. The cohort contains only $K=9$ patients with
+small per-patient sample sizes ($n_i = 5$--$16$), which is too few to fit a
+random-effects model reliably; we therefore report the Fisher-$z$ weighted mean
+and its interval as a \emph{descriptive} summary of central tendency rather than
+as an estimate of a single common correlation, since the large between-patient
+dispersion documented in Section~\ref{sec:res-perpatient} indicates that no common
+$\rho$ exists. A random-effects treatment would only widen the intervals, so our
+descriptive intervals are, if anything, optimistic. We treat the simple
+unweighted mean, the sample-size-weighted (Hunter--Schmidt) mean, the geometric
+mean, and the power mean ($p=2$) purely as additional sensitivity analyses; the
+last two are computed on the transformed quantity $(1+\rho_i)/2$ and are not used
+to construct confidence intervals. We stress that the small $K$ and small $n_i$
+imply wide confidence intervals on every per-patient aggregate, and we report
+them as such rather than over-interpreting point estimates.
+
+\subsection{Metrics and fairness safeguards}
+\label{sec:metrics}
+
+\paragraph{Metrics.} We report three complementary metrics. The area under the
+ROC curve (AUC-ROC) measures binary discrimination at each threshold. The area
+under the precision--recall curve (AUPRC) is reported as the primary
+discrimination metric under class imbalance, where ROC-AUC can be optimistic and
+precision--recall analysis is more informative~\cite{Saito2015}. The Spearman
+rank correlation between predicted score and ELISpot SFC measures the ability to
+recover the continuous magnitude of response; we use a rank correlation rather
+than a parametric one because the existing tools emit uncalibrated scores on
+heterogeneous scales, so only their ordering relative to magnitude is comparable
+across tools. Every reported correlation is accompanied by its $p$-value and,
+where applicable, a bootstrap confidence interval. We note that a future tool that
+emits a \emph{calibrated} magnitude estimate should additionally be evaluated with
+agreement and concordance metrics---such as the concordance index and
+Bland--Altman limits of agreement~\cite{Harrell1996,BlandAltman1986}---which the
+rank correlation used here does not capture.
+
+\paragraph{Fairness safeguards.}\label{sec:fairness} Five safeguards govern the comparisons.
+\emph{(i) Single-criterion lock-down.} The headline ranking is fixed to one
+aggregation--threshold combination (best-binder, SFC $>0$); per-tool
+``best-of-nine'' selection over aggregation~$\times$~threshold combinations is
+explicitly forbidden as a ranking basis, since it would award different tools
+different operating points and inflate apparent performance
+(\emph{selection-on-max}). \emph{(ii) Transparent coverage.} Tools differ in the
+peptides and windows they can score; all coverage gaps and the resulting
+effective sample sizes are reported in Table~\ref{tab:coverage} so that
+differences in denominators are visible. \emph{(iii) Leakage disclosure.}
+Several tools were trained on IEDB-derived data that may overlap with the
+benchmark peptides; any such overlap would bias their scores optimistically, and
+we disclose this explicitly rather than presenting the tools as fully
+independent. \emph{(iv) Proxy separation.} The presentation proxy (HLAthena) is
+reported separately and never ranked against immunogenicity predictors.
+\emph{(v) Reproducibility check.} The harmonized re-run reproduces the
+first-batch scoring to within a maximum absolute AUC difference of $0.004$,
+confirming that the pipeline conventions are stable across runs.
+
+\paragraph{Coverage and missingness.} Table~\ref{tab:coverage} summarizes, for
+each tool, the number of peptides with a valid aggregated score and the source
+of any missing values. Two tools have reduced denominators that we carry through
+all downstream analyses: PRIME loses a single peptide (all $210$ of its rows are
+unscored because its alleles are unsupported by the underlying predictor),
+leaving $n=100$ peptides with $n_{\mathrm{pos}}=89$; deepHLApan loses three
+peptides, leaving $n=98$ with $n_{\mathrm{neg}}=10$ rather than $11$. These
+differences are small but are reported so that cross-tool comparisons account for
+them.
+
+\begin{table}[t]
+\centering
+\caption{Per-tool coverage and missingness on DS2 ($101$ peptides expanded to
+$33{,}922$ sub-peptide~$\times$~HLA rows). ``Valid peptides'' counts peptides
+with a non-missing aggregated score. NeoTImmuML$^\star$ denotes the
+self-retrained model (official weights unavailable).}
+\label{tab:coverage}
+\begin{tabular}{lccl}
+\toprule
+Tool & Valid peptides & NaN rows & Note \\
+\midrule
+DeepImmuno        & $101$ & $22{,}889/33{,}922$ & $9$--$10$-mers only \\
+PredIG            & $101$ & $0$                 & full $8$--$14$-mer coverage \\
+IMPROVE           & $101$ & $7{,}457$           & $8$--$12$-mers \\
+NeoTImmuML$^\star$ & $101$ & $3{,}508$          & $8$--$13$-mers \\
+pTuneos           & $101$ & $0$                 & full coverage \\
+PRIME             & $100$ & $210$               & $1$ peptide unsupported (rare allele); $n_{\mathrm{pos}}=89$ \\
+ImmuneApp         & $101$ & $0$                 & full coverage \\
+deepHLApan        & $98$  & $2{,}065$           & missing across $10$ peptides; $n_{\mathrm{neg}}=10$ \\
+\bottomrule
+\end{tabular}
+\end{table}

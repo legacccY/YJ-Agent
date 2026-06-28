@@ -1,0 +1,3 @@
+Annotation,HLA,Peptide,binding score,immunogenic score
+dp_0,HLA-A66:01,STRDPLSE,0.9795,0.0137
+dp_1,HLA-B40:01,STRDPLSE,0.6272,0.1537

@@ -1,0 +1,33 @@
+# quantimmu-bench E-analysis factors | 口径: Peptide_ID 聚合分 vs Elispot 连续 Spearman
+# HLAthena = MHC-I presentation proxy (NOT immunogenicity tool); near-random on ELISpot
+# 聚合 NaN 处理: 某肽某工具全 NaN -> 记 NaN, 不参与该工具 Spearman
+# Factor 4: DS2 max-agg x 三阈值 (>0 / >10 / >median=22.67) x AUC_ROC
+# 注: Spearman 不受阈值影响; 此因素看分类可分性随阈值的变化
+Tool,Threshold,n_pos,n_neg,AUC_ROC,is_proxy
+DeepImmuno,>0,90,11,0.4813,0
+DeepImmuno,>10,64,37,0.5188,0
+DeepImmuno,>median,50,51,0.4535,0
+PredIG,>0,90,11,0.6611,0
+PredIG,>10,64,37,0.5576,0
+PredIG,>median,50,51,0.5676,0
+NeoTImmuML,>0,90,11,0.6551,0
+NeoTImmuML,>10,64,37,0.5046,0
+NeoTImmuML,>median,50,51,0.5173,0
+IMPROVE,>0,90,11,0.6207,0
+IMPROVE,>10,64,37,0.6556,0
+IMPROVE,>median,50,51,0.5982,0
+pTuneos,>0,90,11,0.7525,0
+pTuneos,>10,64,37,0.5796,0
+pTuneos,>median,50,51,0.5304,0
+PRIME,>0,90,11,0.5276,0
+PRIME,>10,64,37,0.5897,0
+PRIME,>median,50,51,0.5848,0
+ImmuneApp,>0,90,11,0.5889,0
+ImmuneApp,>10,64,37,0.5241,0
+ImmuneApp,>median,50,51,0.5188,0
+deepHLApan,>0,90,11,0.4188,0
+deepHLApan,>10,64,37,0.571,0
+deepHLApan,>median,50,51,0.561,0
+HLAthena,>0,90,11,0.5092,1
+HLAthena,>10,64,37,0.5566,1
+HLAthena,>median,50,51,0.557,1

@@ -1,0 +1,4 @@
+MT_pep	WT_pep	HLA_type	Hydrophobicity_score	Recognition_score	Self_sequence_similarity	MT_Binding_EL	WT_Binding_EL	hydro_defaulted	model_pro
+STRDPLSE	STRDPLSE	HLA-A*66:01	0.5	9.05439578084747e-07	1.0	18.3433	18.3433	True	0.0
+STRDPLSE	STRDPLSE	HLA-B*40:01	0.5	9.05439578084747e-07	1.0	48.5000	48.5000	True	0.0
+STRDPLSE	STRDPLSE	HLA-B*57:01	0.5	9.05439578084747e-07	1.0	18.3237	18.3237	True	0.0

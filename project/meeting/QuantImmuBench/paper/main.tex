@@ -1,0 +1,56 @@
+% QuantImmuBench — benchmark × position paper
+% 主投 Briefings in Bioinformatics（OUP）。先用通用 article 类成稿，投稿前换 oup-authoring-template。
+% 双盲：0 个人/机构/导师/HPC 名。数字只用已核 csv，DTU 工具标 pending DTU consent。
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{siunitx}
+
+% \todo 占位（投前必清零）
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+% pending DTU 标记
+\newcommand{\pendingDTU}{\textcolor{orange}{$^{\dagger}$}}
+
+\title{\textbf{Existing Neoantigen Immunogenicity Predictors Do Not Quantify
+T-Cell Response Magnitude: A Benchmark and the Case for Per-Patient Evaluation}}
+
+\author{Anonymous (double-blind submission)}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/0_abstract}
+\end{abstract}
+
+\noindent\textbf{Keywords:} neoantigen; immunogenicity prediction; T-cell response magnitude;
+benchmark; ELISpot; per-patient evaluation; cancer vaccine.
+
+\input{sections/1_intro}
+\input{sections/2_related}
+\input{sections/3_setup}
+\input{sections/4_results}
+\input{sections/5_discussion}
+\input{sections/6_conclusion}
+
+% 数据/代码可用性 + DTU pending 声明
+\section*{Data and Code Availability}
+\input{sections/9_availability}
+
+\bibliographystyle{unsrtnat}
+\bibliography{refs}
+
+\end{document}

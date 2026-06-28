@@ -2,6 +2,8 @@
 
 > 服务 quantimmu-bench / 袁 QuantImmune。analyst(opus) 本地 Bash+scipy 实算，2026-06-24。判据=工具能否给出连续 magnitude 排序。
 
+> ⚠️ **HLA-bug 修复修正（2026-06-27，详见 04_LOG Entry HLA-FIX）**：本档**主体为 DS1**（不受此 bug 影响——污染仅在 DS2 患者 P101/P102）。但文中引用的 **DS2 交叉对照数字已变**：剔 P101/P102 后 PredIG DS2 mean ρ 0.280→**0.188（p=0.084，不显著）**、max 0.198→0.104（p=0.343）；IMPROVE DS2 top3mean 0.320→**0.283（p=0.008，仍显著）**。另：**deepHLApan 另有 merge 传播 bug（2069 行 NaN 回填）+ 肽长混杂假象，双重不可信**，本档 deepHLApan DS1 ρ=−0.503 的解读待 merge bug 修复后复核。
+
 ## 数据可用性确认（Bash 实查）
 | 项 | 结果 |
 |---|---|
@@ -27,7 +29,7 @@ DS1 SFC：全阳(min 16，无≤0，**无阴性对照→算不了 AUC**)，range
 
 源：merged_all_tools_8tools.xlsx 各 MT_<tool> vs Elispot。落表 `analysis/ds1_magnitude_spearman_bestbinder.csv`(+_mean.csv 结论一致)。
 
-对照 DS2(metrics_ds2.csv)：IMPROVE top3mean ρ=0.32(p=0.001)、PredIG mean ρ=0.28(p=0.005) —— DS2 头部工具能正向显著排 SFC。
+对照 DS2(metrics_ds2.csv)：IMPROVE top3mean ρ=0.32(p=0.001)、PredIG mean ρ=0.28(p=0.005) —— DS2 头部工具能正向显著排 SFC。**(2026-06-27 HLA-FIX 修正)**：剔 P101/P102 后 IMPROVE top3mean ρ=0.32→0.283(p=0.008，仍显著)；**PredIG mean ρ=0.28→0.188(p=0.084，不显著)，「PredIG 正向显著」已失效**，见 04_LOG Entry HLA-FIX。
 
 ## 关键发现
 - **DS1 全阳子集上没有任何工具能排 SFC 强弱**：8/9 工具 |ρ|<0.16 p 全不显著(≈随机)。唯一显著的 deepHLApan ρ=−0.50 是**反向**(负贡献非能力，待 verifier 核分数极性语义)。

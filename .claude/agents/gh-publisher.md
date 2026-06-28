@@ -1,7 +1,7 @@
 ---
 name: gh-publisher
 description: GitHub 发布/拉取/维护工程工。把本地子项目规范化成可开源 repo（README/LICENSE/CI/.gitignore/CONTRIBUTING 全套，参考顶级开源项目骨架）、跑隐私泄露扫描列风险、从 GitHub 拉优质代码做许可证合规检查、按 issue/PR review 意见定位并修 bug。用于「发这个项目到 GitHub」「准备开源」「隐私扫一遍」「拉这个 repo 进来」「按 review 意见修」。纯软件——不执行对外 push/PR 提交（交主线拍板后串行做）。
-model: sonnet
+model: opus
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 

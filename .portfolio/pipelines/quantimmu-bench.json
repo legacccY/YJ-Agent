@@ -3,7 +3,7 @@
   "project": "quantimmu-bench",
   "template": "experiment",
   "created": "2026-06-26T15:13:33+08:00",
-  "updated": "2026-06-26T22:02:12+08:00",
+  "updated": "2026-06-27T00:15:18+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -183,13 +183,13 @@
       "deps": [
         "kit_w2"
       ],
-      "status": "running",
+      "status": "done",
       "gate": true,
       "group": "run",
       "desc": "主线串行跑3 DTU工具",
-      "out": "",
-      "owner": "C-tools2",
-      "ts": "2026-06-26T15:23:02+08:00"
+      "out": "ICERFIRE 29666行0miss + NetTepi 7443scored(8-11mer) + NetMHCpan-BA 68494, 均pending_DTU_consent; scripts/out/newtools/{netmhcpan_ba,icerfire,nettepi}_DS1DS2_scores.csv",
+      "owner": "",
+      "ts": "2026-06-27T00:15:18+08:00"
     },
     {
       "id": "run_w3",

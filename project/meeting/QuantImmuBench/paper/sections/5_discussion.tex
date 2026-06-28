@@ -1,0 +1,159 @@
+% TODO[HLA-FIX 2026-06-27]: PredIG 全局显著性已失效(max-pool rho 0.198->0.104 p=0.343 ns; mean-agg 0.280->0.188 p=0.084 ns)，剔污染患者 P101/P102 后不存活；IMPROVE 仍稳健显著(0.226 p=0.037)，TSCAPE 翻为显著负(-0.230 p=0.033)，deepHLApan 另有 merge bug 双重不可信；per-patient 头条数字(PRIME/deepHLApan)待 Phase B 正确等位重推理后更新。正文数字暂不动(投稿=拍板点 + P102 等位待袁老师确认)。详见 04_LOG Entry HLA-FIX。
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Existing tools do not quantify response magnitude}
+\label{sec:disc-gap}
+
+The benchmark gives a direct, empirical answer to the question that motivated it:
+when the scores of current immunogenicity predictors are repurposed as continuous
+estimators of T-cell response magnitude, they track it poorly. Across the eight
+tools, every absolute Spearman correlation with ELISpot magnitude falls below
+$0.33$, and only IMPROVE and PredIG reach significance, and then only under
+% XXX_HLA-FIX[投稿前必改]: 修复后此句不再成立——剔 P101/P102 后 PredIG 全局显著性失效(p=0.343 ns)，"only IMPROVE and PredIG" 须改为 "only IMPROVE"。数字暂不动=拍板点，见文件头 TODO + 04_LOG Entry HLA-FIX。
+particular aggregation choices (Section~\ref{sec:results}). This is consistent
+with, and quantifies, the gap we identified in the literature survey: no surveyed
+method is designed to regress magnitude, and several discard the graded signal
+their own training data contain. IMPROVE and PredIG are trained on data that
+distinguish graded response levels but are binarized before use
+\cite{IMPROVE2024,PredIG2025}, and other tools collapse graded labels into a
+single recognition class. The benchmark therefore turns a documentary
+observation---that the field reports binary calls---into a measured one: even the
+best-performing current scores explain only a small fraction of the variance in
+how strongly patients respond. We read the convergence of the survey evidence and
+the empirical correlations as showing that the magnitude gap is real rather than
+an artifact of how individual papers report their results.
+
+A weak correlation, however, is not automatically a deficiency to be engineered
+away. The same result is compatible with two readings---tools that could do
+better but were never asked to, or a target that is intrinsically hard to predict
+from the available inputs---and the next subsection argues that both readings hold
+simultaneously.
+
+\subsection{A biological ceiling bounds what sequence-level prediction can achieve}
+\label{sec:disc-ceiling}
+
+There is a structural reason to expect that magnitude prediction from peptide and
+allele alone is bounded well short of perfect. The magnitude of a polyclonal
+T-cell response is, to a first approximation, the product of a recruitment-and-
+expansion chain whose leading term is the number of naive precursor T cells
+specific for the epitope; in mouse models, naive precursor frequency is reported
+to be a major determinant of the magnitude of the elicited
+response~\cite{Jenkins2012,Moon2007}. The quantitative form of this dependence in
+human neoantigen-specific CD8 responses has not been established and the
+extrapolation across species and T-cell subset is uncertain, but the qualitative
+direction---that a host-specific, sequence-invisible quantity gates response
+size---is expected to carry over. That quantity is a property of the
+host's T-cell repertoire and thymic selection history, varies substantially
+across donors for the same peptide and allele, and is in principle unobservable
+from a peptide-and-HLA input. Writing the explainable variance as a ratio,
+\begin{equation}
+  \rho_{\max}^2 \;\le\; \frac{\operatorname{Var}\!\big(\mathbb{E}[Y \mid X]\big)}
+                              {\operatorname{Var}(Y)},
+  \label{eq:ceiling}
+\end{equation}
+where $Y$ is the measured magnitude and $X$ the peptide-and-allele input, the
+donor-specific precursor and repertoire terms sit in the numerator's complement
+and cannot be recovered no matter how much sequence data are supplied. A
+first-order analysis along these lines places the attainable rank correlation at
+roughly $\rho_{\max}\approx 0.4$ to $0.6$; we present this figure as a positional
+estimate rather than a measured bound, since it rests on biological variance
+parameters we did not measure directly. Read against this ceiling, the best
+magnitude correlation under the locked primary protocol (IMPROVE,
+$\rho = 0.2434$) already reaches roughly half of the lower end of the plausible
+maximum; even the per-tool upper envelope obtained by allowing each tool its own
+best-of-nine operating point---a descriptive figure we do not treat as a fair
+ranking (Section~\ref{sec:fairness})---tops out near $\rho\approx 0.32$ for IMPROVE,
+on the order of half to two-thirds of the ceiling. Either way the headroom for
+pure sequence-level magnitude regression appears modest rather than large.
+
+We take a deliberate position on what this implies for tool design. If the
+ceiling on pure peptide-and-HLA inputs is genuinely in the middle of the range,
+then the value of a continuous-magnitude model should not be advertised as
+high-precision regression. It should instead be framed as recovering
+ranking-relevant signal for clinical top-$K$ prioritization---where only a handful
+of peptides can be synthesized into a vaccine and the quality of the ordering is
+what matters---which binary tools discard by construction. Breaking past the
+ceiling would require feeding donor-specific information (HLA typing, T-cell
+receptor repertoire, or precursor estimates) rather than a more elaborate
+sequence model.
+
+\subsection{Per-patient evaluation should be the default}
+\label{sec:disc-perpatient}
+
+A methodological lesson generalizes beyond the tools we ranked. Pooling all
+peptides across patients into a single global correlation can hide a tool's
+ability to order candidates \emph{within} an individual patient, which is the
+quantity that actually governs vaccine selection. Several tools whose pooled
+global correlation is indistinguishable from noise show within-patient ranking
+ability in a subset of patients---alongside substantial dispersion---once the
+correlation is computed per patient and then summarized: PRIME moves from a global
+Spearman of $0.116$ to a per-patient median coefficient of $0.386$ (and a
+Fisher-$z$ weighted mean of $0.253$), and because its best-binder scores are
+essentially uncorrelated with peptide length, this gain reflects a genuine
+within-patient reordering rather than a length artifact
+(Section~\ref{sec:results}). A per-patient jump must nonetheless be checked against
+aggregation-level confounds before it is read as capability: deepHLApan shows the
+numerically largest shift (global $0.042$ to a per-patient median of $0.402$), but
+under best-binder aggregation its pooled scores correlate with peptide length
+($\rho \approx 0.57$) and the signal collapses to $\approx 0$ under
+length-insensitive pooling, so we treat its jump as a cautionary case rather than
+as evidence of within-patient ranking ability. Because of the wide individual
+heterogeneity ($\rho_i$ spanning roughly $-0.43$ to $+0.81$ for the most dispersed
+tools) we read the per-patient aggregates as descriptive summaries of central
+tendency rather than as estimates of a single common correlation, and we anchor the
+qualitative claim on the median together with the reported spread. The global metric is not wrong, but it answers a
+different question---can a single score threshold separate responders across an
+entire cohort---than the clinically relevant one. We therefore recommend that
+benchmarks of magnitude or ranking ability compute the metric per patient before
+aggregating, mirroring the cohort-level paradigm of the clinical neoantigen
+literature \cite{TESLA2020,Muller2023}, and report the across-patient spread
+rather than a single pooled number.
+
+\subsection{Limitations}
+\label{sec:disc-limits}
+
+Several limitations bound our conclusions and we state them plainly. First, the
+primary cohort is small and imbalanced: DS2 contains $101$ peptides with only
+$11$ negatives at the SFC $>0$ threshold and $K=9$ patients with $5$ to $16$
+peptides each, so every per-patient aggregate carries a wide confidence interval
+and the per-patient point estimates should not be over-read. We report bootstrap
+and Fisher-$z$ intervals throughout for this reason, and we draw conclusions from
+the consistency of the pattern across aggregation choices rather than from any
+single coefficient. Second, our results rest on a single benchmark cohort;
+external replication on independent ELISpot cohorts is needed before the ranking
+behavior can be generalized. Third, several tools were trained on IEDB-derived
+data that may overlap with the benchmark peptides, which would bias those tools
+optimistically; we note that this works \emph{against} our central claim rather
+than for it, since even with any such advantage no tool achieves a strong
+magnitude correlation. Fourth, three tools are evaluated in non-canonical
+configurations that we carry through every table: NeoTImmuML is a model retrained
+by us because official weights are unavailable (denoted NeoTImmuML$^\star$),
+pTuneos is run through its Pre\&RecNeo sub-model, and IMPROVE is run with its
+expression feature degraded; our statements about these tools refer to the
+configuration actually evaluated, not necessarily to the original published
+models. Because a degraded or retrained configuration can only lower a tool's
+apparent performance relative to its full published form, our central claim---that
+current tools do not recover response magnitude---is, for these three tools, a
+conservative statement rather than an upper bound on what the original models could
+achieve; it remains directly supported by the five tools evaluated in their
+intended configurations. Finally, the expanding second wave of predictors and the tools governed by
+restrictive academic data-use terms are integrated into the pipeline but their
+results are withheld from the main conclusions, which do not depend on them.
+
+\subsection{Future work}
+\label{sec:disc-future}
+
+The natural sequel to this benchmark is a predictor built to occupy the L4 rung
+directly: a model that regresses continuous response magnitude against ELISpot
+SFC rather than emitting a binary call. The benchmark supports such an effort in
+two concrete ways. It establishes that the gap is real and currently unfilled,
+which is the empirical justification for attempting it, and it provides a
+reproducible evaluation protocol---harmonized inputs, the best-binder aggregation,
+the per-patient analysis, and the bootstrap intervals---against which any
+candidate magnitude predictor can be measured on equal terms. Consistent with the
+ceiling argued in Section~\ref{sec:disc-ceiling}, we expect the realistic payoff
+of such a model to lie in improved clinical top-$K$ ranking rather than in
+high-accuracy regression, and we regard the incorporation of donor-specific
+information as the most promising, if speculative, route to pushing past the
+sequence-level ceiling.

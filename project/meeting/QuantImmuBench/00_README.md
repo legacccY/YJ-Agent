@@ -4,7 +4,7 @@
 >
 > 📖 **新人/复盘看这篇**：`项目全解_从头到尾.md`（从零讲清这是什么、做了什么、踩了哪些坑、得到什么结果、现状——给完全不懂的人的故事版全貌）
 >
-> 另见：`REFERENCES.md`（工具论文/DOI/repo 出处）· `PROVENANCE.md`（代码归属：哪些是我们写的 vs 外部工具 + 许可/再分发限制）· `HPC/`（从 HPC 拉回的部署脚本 + ELISpot 正式跑产物，`HPC/README.md` 说明哪些大件留 HPC）
+> 另见：`NEWTOOLS_LIT_MATRIX.md`（7 新工具文献矩阵+为什么选作对比基线，PPT 素材）· `analysis/NEWTOOLS_ANALYSIS.md`（7 新工具 benchmark 结果分析）· `REFERENCES.md`（工具论文/DOI/repo 出处）· `PROVENANCE.md`（代码归属：哪些是我们写的 vs 外部工具 + 许可/再分发限制）· `HPC/`（从 HPC 拉回的部署脚本 + ELISpot 正式跑产物，`HPC/README.md` 说明哪些大件留 HPC）
 
 ## 一句话
 袁老师牵头的**癌症个性化新抗原疫苗**协作项目。总目标 = 做一个能预测 T 细胞免疫反应**「强弱定量程度」**的工具（比现有只判「有/无免疫原性」的二分类更进一步），路线 = 大量跑现有工具 + 数据集做 benchmark，再结合自研 QuantImmune 算法。
@@ -31,7 +31,10 @@
 - **QuantImmu 组**：徐伊琳 —— HPC 部署 QuantImmune 模块
 - **数据收集组**：王子源、谢孟翰 —— 文献搜索 + 数据收集（袁老师提供输入数据）
 
-## 当前状态（2026-06-25 更新，详见 04_LOG Entry HLA2；**进度真源 = `DEPLOY_TRACKER.md` 顶部规范状态总表**）
+## 当前状态（2026-06-27 更新，详见 04_LOG Entry HLA-FIX2；**进度真源 = `DEPLOY_TRACKER.md` 顶部规范状态总表**）
+
+> ⚠️ **2026-06-27 HLA 数据修正（HLA-FIX，已 promote 为 canonical）**：DS2 患者 P101/P102 的 HLA 等位曾被 Excel 拖拽自动填充弄出伪迹，已查清根因并统一修复。正确等位 P101={A\*66:01,B\*40:01,B\*57:01,C\*06:02}、P102={A\*02:01,B\*35:03,B\*38:01}。**头条结论翻转**：① PredIG 全局 Spearman 显著性失效（剔 P101/P102 后 max ρ 0.198→0.104 p=0.343 不显著）→「PredIG 和 IMPROVE 都显著」修正为「仅 IMPROVE 稳健显著」（0.226 p=0.037）；② TSCAPE 翻为显著负（-0.230 p=0.033）；③ deepHLApan 另有 merge bug。当前**有效数字真源 = `analysis/metrics_ds2_fixed_exclP101P102.csv`（corrected-excl）**。Phase B（P101/P102 正确等位重推理恢复）待补，非阻塞。完整上报见 `data/HLA数据错误_完整上报_给袁老师_2026-06-27.md`。
+
 - **总账（10 工具）**：✅ **9 进 ELISpot benchmark** + ❌ **1 未做成（MHLAPre）**。
   - **9 进 benchmark** = 8 免疫原性工具 apples-to-apples（DeepImmuno · PredIG · pTuneos · IMPROVE · NeoTImmuML · PRIME · ImmuneApp · deepHLApan）+ HLAthena 1 个 presentation proxy 单列（近随机 AUC 0.51，印证提呈≠免疫原性）。
   - ⚠️ 版本 caveat：**NeoTImmuML = 自训版**（官方权重不可得→复刻官方 RF+LGB+XGB，PPT 标★非官方）；**pTuneos = Pre&RecNeo 子模型**；**IMPROVE = Expression 特征降级**。结论一律诚实分级，无"5/5 完美跑通"。
