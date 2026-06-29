@@ -149,3 +149,7 @@ project/meeting/QuantImmuBench/HPC/deploy/*/weights/
 project/meeting/QuantImmuBench/scripts/out/merged_all_tools_25tools.xlsx
 project/meeting/QuantImmuBench/HPC/deploy/mixmhcpred/mix_out.txt
 project/meeting/QuantImmuBench/HPC/deploy/mixmhcpred/mix_peptides.txt
+
+# CXR-SSLBench pilot 缓存/权重/大产物(不进 git)
+project/meeting/CXR-SSLBench/cache/
+project/meeting/CXR-SSLBench/results/*.npz
