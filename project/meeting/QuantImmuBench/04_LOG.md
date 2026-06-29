@@ -4,6 +4,170 @@
 
 ---
 
+## Entry TOOLS-IMMUNO-CPU — 2026-06-29【conductor 节点 tools_immuno_cpu：ImmugenX CPU 全量跑通(34247×100%覆盖) + 扩搜备份 TLImm + 修双BLAS崩+pandas版本坑】
+
+> 窗口认领 conductor DAG 节点 `tools_immuno_cpu`（CPU 免疫原补位 I20=ImmugenX，不抢本地 GPU=主窗占）。服务 quantimmu-bench §工具部署 免疫原侧 lever=补满到 20。产 scores+patch，**不 merge 共享 xlsx**（merge DAG 节点统一跑，避多窗撞）。编队=2 researcher（官方 API + 备份扩搜）+1 coder（四件套 kit）+主线串行跑+核数。
+
+### ImmugenX 全摸清（主线亲手解包逐文件核 + researcher 交叉验证，零臆想）
+- 出处：PLOS Comput Biol 2024 DOI 10.1371/journal.pcbi.1012511，Zenodo record 13850954 `immugenx_runner_pub.zip`（22.5MB）；AUROC 0.619。
+- 命门 PASS：**自包含 TorchScript JIT 模型（无外部 binary，不调 netMHCpan）+ 纯 CPU 可跑**（论文实测 50k 对 M1 笔记本 52s）。
+- IO：输入 CSV `Antigen`+`HLA`（universe `HLA-A*02:01` 带星号直喂，官方 mhcnames 内部 normalize）；输出加 `ImmugenX`+`Stability` 列（sigmoid∈[0,1]，**越高越免疫原，不翻转**）；肽 >15 官方跳过（universe 8-14mer 全过；validated 范围 8-11，12-14 在外标 caveat）；config 实际名=`genesis_pub_config.json`（README 写的 `immugenx_pub_config.json` 不存在）。
+- **许可裁决**：Academic Software License v1.0（GPL 式）。Section 0 明示「运行不受限，输出仅当构成基于本程序的衍生软件作品时才受约束」→ benchmark **数字是数据非衍生软件 → 可发表**（学术非商用，我方 XJTLU 符合）；无 DTU 式禁第三方发布数字条款 → **非 DTU pending，不写 PENDING_DTU sidecar**。唯一红线=别把 runner 代码/JIT 权重塞进公开 repo（保持本地 zenodo/）。
+
+### kit 四件套（coder 写 py_compile 过，HPC/deploy/immugenx/）
+- `prep_input.py`（纯 stdlib）：uniq_pep_hla.csv 53582 行→肽长 8-15+MHC-I 过滤→`immugenx_input.csv`（Antigen,HLA,HLA_Allele,source）。全 53582 通过 0 剔。
+- `run_immugenx.py`：镜像官方 `encoders.HLAEncoder` 逻辑精过滤未知 allele（读 class1_pseudosequences.csv，65 allele 全支持 0 剔）→subprocess 调官方 cli（**cwd=RUNNER_REPO**[models/ 相对加载]+**CUDA_VISIBLE_DEVICES=""** 强制 CPU 不抢主窗 GPU）→`immugenx_raw.csv`（peptide,HLA_Allele,ImmugenX,Stability）。
+- `parse_output.py`：raw join universe（(pep,HLA) MT/WT 双 key，不翻转）→ scores csv（含 Stability 副产列）。
+- `NOTES.md`：4 类信息+5 坑+官方源出处。
+- `scripts/patch_add_immugenx.py`（coder）：单列自然键贴 MT/WT_ImmugenX→22tools.xlsx，**本窗只产出不执行**（merge 节点跑）。
+
+### 真烟测踩 2 坑（主线串行跑，非 mock）
+1. **conda torch1.12 双 BLAS/iomp5 崩 `free(): double free detected in tcache 2`**（SIGABRT）：根因=env.yml pip 段把 conda MKL numpy 覆盖成 pip OpenBLAS numpy，与 torch 自带 MKL/libiomp5 两套 runtime 共存（单独 import 各 OK，一起做运算才间歇崩）。试线程封顶/LD_PRELOAD libgomp/换 MKL numpy **均无效**（torch 自带又一份 MKL）→ 真解=**移 conda torch+冗余 torchtext，装 pip CPU wheel `torch==1.12.0+cpu`**（自包含、社区验证）→烟测过（GILGFVFTL 0.816/NLVPMVATV 0.848 已知强表位高分=方向确认）。
+2. **pandas 1.3.4 `to_csv` 无 `lineterminator`**（1.5 才改名，旧名 `line_terminator`）：coder 用了新名，全量推理跑完(~80s)在写盘崩→主线 3 处改回 `line_terminator`。
+
+### ✅ 交付（Bash 核 csv 非 print）
+- `scripts/out/newtools/ImmugenX_DS1DS2_scores.csv`：**34247 行，MT/WT NaN=0（100% 覆盖）**，MT_ImmugenX∈[0.0714,0.8577] mean 0.252。8 列含 Stability 副产。
+- per-patient 信号读数 **pending merge 后 metrics 节点**（需 per-peptide pooling；本窗指示性行级 global Spearman≈0.008 是错粒度不作结论，诚实标）。
+
+### 扩搜备份候选（researcher，ImmugenX 万一失败的替补）
+- **#1 TLImm**（KavrakiLab/TL-MHC）最稳：class-I pMHC 免疫原性，**CPU 原生（pytorch-cpu）+15 集成权重含 repo+无外部 binary**，CC-BY 文章可发数字；输入 `allele,peptide`（`HLA-B*15:01`），8-10mer，输出连续概率。论文 ImmunoInformatics 2024 DOI 10.1016/j.immuno.2023.10.0（PMC10994007）。⚠️repo 无 SPDX license（文章 CC-BY，跑工具报分非再分发代码，按 DeepImmuno/BigMHC 惯例可发）。
+- #2 diffRBM（bravib）次选：生成式 RBM 免疫原，但**仅训 3 等位**（A*02:01/B*35:01/B*07:02）覆盖窄。
+
+### 下一步（本节点 DoD 达成停）
+- ImmugenX scores csv ✅就绪 + patch ✅就绪（不跑）+ 备份候选 ✅交付 = 节点 DoD 完成。
+- 移交 merge DAG 节点：跑 `scripts/patch_add_immugenx.py`（base 当前最高活真源 xlsx，确认指针后）→ merge→metrics 出官方 per-patient 信号。⚠️coder 标 `merged_all_tools_22tools.xlsx` 已存在仅 2086 字节疑 ghost，merge 前确认。
+
+---
+
+## Entry TOOLS-IMMUNO-HPC — 2026-06-29【conductor 节点 tools_immuno_hpc：andy90 HPC 部署推进中 + Seq2Neo 卡 DTU(Kaggle 路证空)】
+
+> 窗口 `quantimmu-bench`，认领 conductor DAG 节点 `tools_immuno_hpc`（HPC 免疫原 andy90+Seq2Neo）。用户拍板：给 HPC 上传权限但「只完成本窗预定部分不超计划」；Seq2Neo 提示「你有 kaggle api」。本 entry = 节点执行中段记账。
+
+### 两路裁决（researcher 核官方源 + HPC 只读核实）
+- **andy90 immunogenicity_predictor（MIT，可发布）= 可达，推进中**：
+  - netMHCpan 版本风险**解除**：4.1 默认 stdout col13=Rnk_EL(%Rank) 与 4.0 同序 → 官方 src `c(2,13)` 解析不用改（researcher 核 DTU 4.0/4.1 output_format 页）。用 4.1 排序安全。
+  - 真实依赖（3 个 src 的 library）：`tidyverse`+`seqinr`+`here`+**`Biostrings`**(pairwiseAlignment Smith-Waterman, self_peps 252214 条 × 每肽)+`doParallel`(cores=2 硬编码)。复现零偏离不裁 tidyverse。
+  - ⚠️ Biostrings≥2.72(Bioc3.19/R4.4) 把 pairwiseAlignment 移到 pwalign → 复现须 **r-base=4.1**(Bioc3.14, biostrings 2.62 含 pairwiseAlignment)。
+  - HPC 现状：连通✅ / netMHCpan-4.1✅ / repo 已 clone(tools_repos/immunogenicity_predictor, data/ 齐) / R 走 spack(零包) → 建 conda env `envs/andy90_r`。
+  - 已上传(用户授权)：kit 4 脚本+65 fasta+manifest+universe+uniq → `deploy/andy90_immpred/`。
+  - env build：micromamba(curl|exec 被分类器拦)→改 split conda(conda-forge 建 r-base+tidyverse → bioconda 加 biostrings=2.62)，后台跑 `deploy/andy90_immpred/split_env_build.log`。
+  - 跑法：因每 HLA ~4-13min(肽×252k 比对)、cpudebug qos walltime≤3h，顺序 65 个超时 → **SLURM array 1-65%10**(partition cpu6348/qos cpudebug/account shuihuawang)，每 task copy 独立 repo 避 output.out 并行撞(NOTES 坑#4)，算法零改。脚本备好(scratch andy90_array.sh/merge_raw.py)。parse 放本地跑(纯 pandas 有 universe)。
+  - 待：env build 完 → smoke HLA-B15:11(16 肽)实测+验 pairwiseAlignment → 提 array → merge raw → 拉回本地 parse → `scripts/out/newtools/Andy90ImmPred_DS1DS2_scores.csv`(产第 20 工具)。
+- **Seq2Neo 🔴 硬阻塞 DTU consent**：immuno 硬依赖 netCTLpan-1.1(+连带 netMHCpan-2.3)，无 skip flag(researcher 核 XSLiuLab/Seq2Neo README+源)。netCTLpan DTU 仍可下但要走学术 sw_request(人工)。**Kaggle 路证空**：netctlpan/seq2neo/netmhcpan/pvactools/netchop/dtu-tools 全搜 0 dataset（DTU 许可禁再分发）。→ 标 pending_consent，kit 就绪(deploy/seq2neo)，netCTLpan 到位即跑。本节点 DoD 不含 Seq2Neo 真跑。
+
+### 拍板点（已停报/待定）
+- HPC 上传新代码：已报，用户授权放行 andy90。
+- Seq2Neo netCTLpan DTU 学术申请=人工对外动作，待用户/团队走 sw_request（拿 netCTLpan-1.1+netMHCpan-2.3）。
+
+---
+
+## Entry MAIN-DEPLOY — 2026-06-29【✅ 主窗本地批端到端 19→22/30（MHCnuggets/TransHLA/MUNIS）+ DAG 扩 4 并行窗 + 守 merge 串行集成闸】
+
+> 主窗（持本地 RTX4070 GPU 卡槽 gpu_slot 4efd9bd4 GO→release）。用户拍板「开跑本地批 + HPC 授权传 + 不降级 + 分窗用多窗 skill」。3 工具部署→推理→patch→merge_metrics→per-patient ρ 全核实。**TransHLA/MUNIS 实测本地 4070 够（HLA-agnostic 仅 11903 肽 / ESM2-8M 小），免 HPC。**
+
+### 本地批端到端（19→22/30，真源 merged_all_tools_{20,21,22}tools.xlsx + per_patient_spearman_22tools.csv）
+- **MHCnuggets ✅ 20/30**：env mhcnuggets；版本矩阵坑 TF2.21/keras3 删 `Adam(lr=)`→降 **TF2.10.1/keras2.10**（未改工具码）；53582 对→patch→20tools(94.1%)；fisherz **0.2024** CI[-0.036,0.419] n=8。
+- **TransHLA ✅ 21/30**：env transhla torch2.7+cu118 GPU；坑①transformers5.12 删 all_tied_weights_keys→**4.46.3** ②esm2-650M SSL 断流→wget -c 重下 ③HF remote 缺 matplotlib/seaborn/sklearn 补装；11903 肽(肽-only 广播)→patch→21tools(100%)；fisherz **0.0675** CI[-0.167,0.295] n=9（弱=HLA-agnostic 同 Repitope）。
+- **MUNIS ✅ 22/30**：env munis_env torch2.3.1+cu121 GPU；坑 pl2.0.2 用 `pkg_resources.declare_namespace`(setuptools81+删)→**setuptools<80** + esm2-8M 断流重下；Zenodo 840MB no-flanks 5-model ensemble；50574 对(HLA-aware)→patch(score 直用)→22tools(94.1%)；fisherz **0.0477** CI[-0.190,0.280] n=8（弱=EL 呈递印证 presentation≠immunogenicity）。
+- ICERFIRE 仍登顶 0.3077 显著。脚本 `scripts/patch_add_{mhcnuggets,transhla,munis}.py`（patch 模板族，本地未改工具码）。
+
+### DAG 扩窗（用 Conductor 引擎非手搓，纠正反模式）
+- 用户「分其他窗 + 用多窗 skill」。**纠正**：先手写长 prompt=反模式（[[feedback_use_tool_not_rebuild]]）→改用 `tools/pipeline.py add/dep/claim` 扩 DAG(→19/28)：加 4 节点 tools_present/tools_immuno_hpc/tools_immuno_cpu/paper_table2，全 dep 进 `merge`(串行集成闸)/`synth`，claim 给窗 tools1/2/3/paper。各窗 `/conductor` 接节点大编队，DoD(scores+patch,不动共享xlsx)汇主窗。
+- 已见并行窗产出：paper 窗写完 §2.2 表2；tools1 窗 netMHCpan-EL(零 HPC,重 parse 既有 -xls)+stabpan kit 就绪待 merge。
+- 新 memory `feedback_no_default_downgrade`(不默认降级)。andy90 归 tools2(netMHCpan 4.0/4.1 拍板)。
+
+---
+
+## Entry PAPER-TABLE2 — 2026-06-29【✅ Conductor 节点 paper_table2：§2.2「The tools surveyed」表2(30 工具 roster/5 类)+方法学 provenance 写完，数字核 csv】
+
+> 窗口 `quantimmu-bench`，认领 DAG 节点 `paper_table2`（owner=paper，喂 synth）。编队：writer(起草+续修，caveman OFF) ∥ verifier(核 csv 计数口径)。改 `paper/sections/3_setup.tex` §sec:tools→扩成完整 §2.2，其余子节(datasets/harmonization/per-patient/metrics/tab:coverage)未动。
+
+### ① 表 2 = `tab:roster`（30 工具目标全集，诚实 Status）
+- 35 行，5 大类：(1) Binding affinity 4 / (2) Presentation·EL 7 / (3) Immunogenicity ML-deep 17 / (4) statistical·sequence 2 / (5) structural·foreignness·pipeline 5。
+- 每行 8 列：工具+cite｜输出分名｜原生任务｜MT/WT｜肽长窗｜HLA-aware/agn./partial｜许可｜Status。`\scriptsize`+`\resizebox{\textwidth}`，符号/许可说明进 caption。
+- **Status 计数（csv ground truth 对齐）**：✅ **22 score 列 = 21 distinct 工具**（MHCflurry 同模型贡献 pres.+aff. 两列；BigMHC EL/IM 两不同模型各一列）｜○ 8 in-progress｜× 5 blocked/excluded（不计入 30）。
+- **诚实红线**：prose 明说「target 30；currently 21 integrated」，**删掉脆弱的「21+9=30」算术等式**（netMHCpan Aff/EL 是已接入工具的额外列、非新工具，不强凑）。绝不把未跑写成已跑。
+
+### ② 方法学 provenance 三段
+- **版本来源**四层可信度：官方权重/镜像(多数) → 诚实降级(pTuneos Pre&RecNeo / IMPROVE 表达特征降级) → 自训复刻(NeoTImmuML★ / CNNeo★) → proxy(HLAthena)。
+- **HLA-agnostic caveat**：TransHLA + Repitope 不吃 HLA（同肽各 allele 同值，弱信号是设计预期非能力证据）；IEDB-Calis partial。
+- **Restricted-license caveat 拆两类**：(a) DTU pending written consent（netMHCpan BA/Aff/EL、NetMHCstabpan、ICERFIRE、NetTepi、Seq2Neo-via-netCTLpan，标 `\pendingDTU`）；(b) CC-BY-NC-ND ND 衍生限制（T-SCAPE，单列说明，**不标** `\pendingDTU`）。
+
+### ③ verifier 核源抓到两处 drift（已修）
+- **NetTepi 状态错**：csv 有完整 9 行打分=已 benchmark（低覆盖），writer 初稿误标 ○ → 修为 `\checkmark$^{\ddagger}$`（保低覆盖 caveat + DTU）。
+- **T-SCAPE 许可误标**：csv `pending_DTU_consent=False`（许可=CC-BY-NC-ND 非 DTU），初稿误标 `\pendingDTU` → 去除，单列 ND 条款 caveat。
+- **DEPLOY「呈递7+免疫原14」口径内部矛盾**（免疫原实为 15、HLAthena 塞呈递凑数）→ 弃用，改采 csv 一致口径「21 工具/22 列」。
+- 核源真源 = `analysis/metrics_ds2_21tools.csv`（22 Tool 列各 9 行；pending_DTU=True 仅 ICERFIRE/NetTepi/netmhcpan_ba 3 个，Bash 实测）。
+
+### ④ 结构核验（无本地 tex 链，结构检查 PASS）
+- roster 22✅/8○/5×=35 行；8 列 7 个 `&` 对齐全对；5 类头；表内 `\pendingDTU` 7 处（=(a) 类全集）。
+- preamble 依赖齐：graphicx(`\resizebox`)/booktabs/amssymb(`\checkmark`)/xcolor(`\pendingDTU`/`\todo`)。
+
+### ⑤ 遗留（非本节 DoD，交后续节点）
+- **11 处 `\todo` 缺 bib key**（MHCnuggets/TransHLA/MAAP/MUNIS/andy90/ImmugenX/DeepNeo/内部 Inference/MHLAPre/IEDB-Calis/Repitope）→ researcher 补 refs.bib，投稿前清零。MAAP 身份未明、内部 Inference 待徐伊琳组。
+- **ACCEPTANCE G1 门槛**（文称 30 须表内满 30）：已按「target 30/currently 21」诚实写法处理；若袁老师要求正文不出现「30」字样需回调措辞 = 投稿拍板点。
+
+---
+
+## Entry TOOLS-PRESENT — 2026-06-29【✅ Conductor 节点 tools_present(HPC 呈递列)：netMHCpan-EL 完成核验(零 HPC) + NetMHCstabpan deploy kit ready(glibc2.29 apptainer 解法)】
+
+> 窗口 `quantimmu-bench`，认领 DAG 节点 `tools_present`。编队：coder×2(EL parser+patch / stabpan kit) + researcher(glibc 攻坚) 并行。
+
+### ① netMHCpan-EL（presentation 列）= 完成 + 已核 ✅
+- **关键发现**：netMHCpan-4.1 `-xls` 输出**同表同时含 EL 列(EL-score/EL_Rank)+BA 列**。run_w2 跑 `-BA` 时只 parse 了 BA，**EL presentation 信号已躺在本地 65 个 `scripts/out/newtools/netmhcpan_ba_inputs/*_out.xls` 里** → **零 HPC 重跑**，纯本地重 parse。
+- 产出：
+  - `HPC/deploy/netmhcpan_ba/parse_netmhcpan_el.py`（抽 EL-score/EL_Rank，方向 score=EL-score 越高越呈递）
+  - `scripts/out/newtools/netmhcpan_el_DS1DS2_scores.csv`：**68494 行，matched=68494 unmatched=0，0 nan，EL-score∈[0,0.9922]**（Bash 核）
+  - `scripts/patch_add_netmhcpan_el.py`：(bb_idx,is_MT) join，参数化 --base/--out（链序交 merge 节点定）
+- **本地验证 patch 应用**（merge 节点后续重编链序）：21→22tools.xlsx = **34247 行 × 67 列**，MT/WT_netMHCpan_EL **双列 100% 非空(34247/34247)**，P101/P102 HLA-FIX 4018 行非空不置 NaN（openpyxl 独立核）。
+- DTU 许可：pending_DTU_consent 全 True，sidecar `PENDING_DTU_tools.txt` 加 `NetMHCpan_EL`（未拿 DTU 书面同意禁发数）。
+- ⚠️ 层次 caveat：EL=presentation，与 HLAthena 同层，**不与免疫原性工具 apples-to-apples 并列**（同 HLAthena 标注）。
+
+### ② NetMHCstabpan（stability）= deploy kit READY，执行卡拍板 ⏸️
+- **阻塞根因**（researcher 多源核）：netMHCstabpan-1.0 二进制需 GLIBC_2.29；HPC el8 仅 glibc 2.28 → `version GLIBC_2.29 not found`（RHEL8 全家通病）。
+- **解法裁决 = GO/apptainer**：base ubuntu:20.04(glibc2.31)+tcsh/gawk，bind ext_tools+netMHCpan-2.8 后端进容器跑。先例=LENS(uselens.io) 官方就这么容器化 DTU net 三件套。conda sysroot 路否决(只解决编译期)、patchelf 路否决(极脆)。
+- kit 产出（coder，py_compile/bash -n ✅，**未执行**）：`HPC/deploy/netmhcstabpan/{net.def, run_netmhcstabpan.sh, parse_netmhcstabpan.py, README.md}`。输入零重造(复用 netmhcpan_ba_inputs .pep+pep_index)，输出隔离(_stab.xls)，schema 含 Pred/Thalf/RnkStab，方向 score=Pred 越高越稳。
+- **🛑 三步真活=拍板点**：①申请 DTU 二进制装 ext_tools ②build net.sif(fakeroot 或本地 build+scp=对外传输) ③sbatch 跑+parse。kit ready 未执行。
+- TODO（部署时实测）：stabpan 确切 flag(`-h` 核，老 backend 可能无 -xls)、tcsh wrapper NMHOME/TMPDIR/后端路径改容器内 bind 路径、首跑复核 -xls 表头列名。
+
+### DoD 状态
+- EL 列：✅ 完成核验，scores csv + patch + 22tools 验证就位，等 merge 节点统一编链序。
+- stabpan：⏸️ kit ready，等主线拍板(DTU 二进制+容器 build+HPC upload)。
+
+---
+
+## Entry TOOLS-30-PATH — 2026-06-29【✅ 攻坚补 30 路线打通(不靠 blocker) + 全档读档纠正(17→19) + 新候选 TransHLA/MHCnuggets/MUNIS/andy90 + DeepNeo 抢救穷尽转邮件】
+
+> 窗口 `quantimmu-bench`。用户指令链：「读全档→30 工具还缺多少→调研缺口工具补 30」，中途纠正两条：①「你到底读档读完没有→读所有档」②「不要想降级，天天降级」。本 entry = 补读全档纠错 + 攻坚扩搜把 30 凑满路径打通（不依赖团队/blocker）。**plan = `~/.claude/plans/async-painting-deer.md`**。
+
+### 读档纠正（根因）
+- 主线早先报「17/30 缺 13」= 只读 DEPLOY_TRACKER 顶部旧表，**漏读今天 Entry P0-RUN（已 19/30）**。补读全链（00_README→01_STORY→02_ACCEPTANCE→paper outline→LOG）后纠正：**真·现状 19/30**（16 基+ICERFIRE+NetTepi+BigMHC_EL）。DEPLOY_TRACKER 顶部表 A/B 已回填到 19，各 row 状态翻新（ICERFIRE/BigMHC_EL→✅、加 NetTepi I19/ImmugenX I20）。
+
+### 攻坚扩搜（5 researcher/coder 编队，全联网核官方源零臆造）
+- **MAAP ❌ 身份未明**：researcher 两轮多源全检零命中（生信"MAAP"均无关工具）；袁大纲只给缩写无引用 → 转袁/徐取全称（`reference/TEAM_ASK_LIST.md` §1）。
+- **Seq2Neo ✅ 可填**：`immuno` 子模块单喂肽+HLA（AFL-3.0 可发），命门=须装 netMHCpan4.1b+netCTLpan 前置。
+- **DeepNeo 🔴 抢救穷尽转邮件**：researcher 穷尽 Wayback（唯一快照是代码提交前空壳/raw 仅 1 png）+ fork(404)+Zenodo/HF(无 deposit)+kaistomics 现存仓(无残留) → 唯一路=邮件通讯作者 Jung Kyoon Choi `jungkyoon@kaist.ac.kr`（`TEAM_ASK_LIST.md` §3）。**不空等，用 MUNIS/andy90 补位**。
+- **新候选（许可自由可发数字）**：呈递 **TransHLA**(MIT,HF权重,肽-only,HLA-agnostic)+**MHCnuggets**(JHU BSD,pip,IC50取负)；免疫原 **MUNIS**(Nat MI 2025,CC-BY-4.0,Zenodo 840MB含权重,肽+HLA-I 连续分,强推)+**andy90 immunogenicity_predictor**(MIT,R/CPU 自包含)。TRAP ⚠️备选(需 NetMHCpan rank+gdrive 权重)。
+
+### kit 产出（coder 写，py_compile✅，主线未跑）
+- `HPC/deploy/transhla/`（prep/run/parse/NOTES）：官方 API 核自 repo（model `SkywalkerLu/TransHLA_I`+ESM2 tokenizer+prob=Result[:,1]）。待跑=pip torch/transformers/fair-esm+ESM2 650M(2.5GB)，**全量需 GPU→HPC（上传拍板）**。
+- `HPC/deploy/mhcnuggets/`（同四件套）：官方 API 核（`predict(class_='I')`，IC50 越低越强→parse 取负，HLA 去星号）。**本地 WSL2 CPU 即可跑**。⚠️closest_allele 软迁移非 exact-match。
+
+### 🎯 补 30 路线打通（不靠任何 blocker）
+- 呈递 10 = P1-4 + BigMHC_EL✅ + TransHLA + MHCnuggets + netMHCpan Aff列 + EL列 + NetMHCstabpan(解glibc)。
+- 免疫原 20 = I1-13 + ICERFIRE✅ + NetTepi✅ + NeoaPred(解HPC) + Seq2Neo(解netCTLpan) + ImmugenX + MUNIS + andy90。
+- **bonus**：DeepNeo/MAAP/内部 Inference（解了更好，不解也满 30）。仅 MHLAPre/ImmunoStruct 永久排除。
+
+### 落档
+- DEPLOY_TRACKER 顶部表+一句话结账回填 19/30 + 30 路线；新建 `reference/TEAM_ASK_LIST.md`（MAAP/Inference/DeepNeo 三索取项）；memory 存 `feedback_no_default_downgrade`（不默认降级）。
+
+### 下一步（瓶颈=跑不是写）
+- **本地可跑（自主）**：MHCnuggets(WSL2 CPU)、andy90(R/CPU)、netMHCpan Aff/EL 列（已有 binary HPC，re-run 加 flag）。
+- **HPC 拍板（GPU+上传对外传输）**：TransHLA、MUNIS（均 ESM-2）。
+- 写 MUNIS/andy90 部署 kit（coder）+ 跑 kit 产真列 → merge → 核数 → 接近 30。
+
+---
+
 ## Entry P0-RUN — 2026-06-29【✅ 工具补齐(→18/30,ICERFIRE登顶) + P0 四核心实验全跑通(大编队) + geomean headline 本地不复现(拍板点)】
 
 > 窗口 `quantimmu-bench`。用户指令「读 QuantImmuBench 所有档，把 30 工具按计划搞好，参考之前工作，先大编队调研写计划」。拍板范围=**工具补齐 + P0 四核心实验全推**；外部阻塞「先把能干的干了」。plan 见 `~/.claude/plans/quantimmubench-30-ancient-hedgehog.md`。本 entry = 大编队执行收口（2 Explore 读档→planner 设计→6 coder 写脚本→主线串行跑→analyst+verifier 核）。所有数字 Bash 核 csv。

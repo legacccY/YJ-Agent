@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-06-24",
+ "updated": "2026-06-29",
  "note": "跨论文共享数据集地址单一真源。本地 + HPC 路径、下载源、用途、状态都在此。任何脚本/config 引用数据集前先查此表，不重复硬编码、不臆想路径。新增数据集或换路径只改这里 + 在引用处指向。状态: ready=就位可用 / partial=部分就位 / todo=待下载。",
  "hosts": {
   "local": "D:/YJ-Agent",
@@ -21,7 +21,7 @@
     "ideation-run010"
    ],
    "purpose": "run-010 G5 杀手锏 M1-05 (实例感知分割) loss 消融: 验自提 count/instance loss 比 blob/ICI 多降<5mm 微转移误并率",
-   "status": "todo (用户 DUA + 下子集 + 拍板上传 HPC 后才能跑)"
+   "status": "todo (用户 DUA + 下子集 + 拍板上传 HPC 后才能跑) ｜ ⚠️本地已删 2026-06-29 清盘(原 328 case/51G 超量, run-010 非活跃)；复活重下 Kaggle ahmedfb/bratsmet24 子集(见 source)"
   },
   "vessel_collection_kaggle": {
    "name": "Retinal Vessel Seg Collection (DRIVE+CHASE+FIVES+HRF+STARE)",
@@ -60,7 +60,7 @@
     "nca-phasemap"
    ],
    "purpose": "NCA-PhaseMap 主数据：Med-NCA 复现 + update 稀疏度功能塌缩相边界 killshot (C044/C044b/C044c)；r1_hippocampus epoch_300 ckpt 在 MEDNCA_ROOT/checkpoints",
-   "status": "ready"
+   "status": "⚠️本地已删 2026-06-29 清盘(nca-phasemap shelved, Med-NCA/data/ 整删)；HPC 仍在 /gpfs/work/bio/jiayu2403/run003/mednca/data/；复活重下 MSD Task04 medicaldecathlon.com"
   },
   "isic2020": {
    "name": "ISIC 2020",
@@ -187,7 +187,7 @@
     "nca-jepa"
    ],
    "purpose": "NCA-JEPA pilot 预训练 + linear probe; 对齐 CheXWorld 224² 输入",
-   "status": "ready(本地+HPC 均部署验通)"
+   "status": "⚠️本地已删 2026-06-29 清盘(nca-jepa shelved)；HPC 仍部署验通 /gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/ (112120 png)；复活重下 Kaggle khanfashee/nih-chest-x-ray-14-224x224-resized"
   },
   "medianomaly_bench": {
    "name": "MedIAnomaly benchmark (7 集)",
@@ -349,7 +349,7 @@
     "disagree"
    ],
    "purpose": "DisagreePred 主 benchmark: 预测 4-annotator 分歧本身(非 majority-vote 取 GT)。KILL-1 gating=下载后跑分歧可预测性 baseline,AUROC≤0.60 即砍。QUBIQ 备用第二集验普适",
-   "status": "todo"
+   "status": "todo ｜ ⚠️本地 LIDC_subset(150 scan/15G)已删 2026-06-29 清盘(disagree shelved)；HPC 仍存 ~25M 派生件 /gpfs/work/bio/jiayu2403/disagree/；复活重下 TCIA NBIA 子集(见 source 精简路径)"
   },
   "cholec80_spr": {
    "name": "Cholec80 (SPR, LoViT features + phase labels)",

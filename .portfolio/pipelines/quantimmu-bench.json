@@ -3,7 +3,7 @@
   "project": "quantimmu-bench",
   "template": "experiment",
   "created": "2026-06-26T15:13:33+08:00",
-  "updated": "2026-06-27T00:15:18+08:00",
+  "updated": "2026-06-29T20:26:22+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -213,7 +213,10 @@
       "deps": [
         "run_w1",
         "run_w2",
-        "run_w3"
+        "run_w3",
+        "tools_present",
+        "tools_immuno_hpc",
+        "tools_immuno_cpu"
       ],
       "status": "pending",
       "gate": false,
@@ -260,7 +263,8 @@
       "agent": "writer",
       "deps": [
         "metrics",
-        "factors"
+        "factors",
+        "paper_table2"
       ],
       "status": "pending",
       "gate": false,
@@ -347,6 +351,58 @@
       "out": "FUSION_CEILING.md: 融合0.33 vs 最强单工具不显著(p>0.8),学权重过拟合,逼近天花板未触顶",
       "owner": "",
       "ts": "2026-06-26T17:17:56+08:00"
+    },
+    {
+      "id": "tools_present",
+      "stage": "自定义",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "新工具波w4",
+      "desc": "HPC呈递列: netMHCpan Aff/EL独立列(已装binary重跑加flag) + NetMHCstabpan(解glibc容器)。产scores csv+patch脚本,不merge共享xlsx",
+      "out": "netMHCpan-EL 完成核验: netmhcpan_el_DS1DS2_scores.csv(68494行/0nan) + patch_add_netmhcpan_el.py(bb_idx join,100%命中,22tools 34247x67验证) + DTU sidecar标NetMHCpan_EL. NetMHCstabpan: deploy kit ready(HPC/deploy/netmhcstabpan/ 4文件,apptainer glibc2.29解法) 待拍板执行(DTU二进制+build+upload). EL列就位喂merge.",
+      "owner": "",
+      "ts": "2026-06-29T20:00:27+08:00"
+    },
+    {
+      "id": "tools_immuno_hpc",
+      "stage": "自定义",
+      "agent": "coder",
+      "deps": [],
+      "status": "running",
+      "gate": false,
+      "group": "新工具波w4",
+      "desc": "HPC免疫原: andy90(kit就绪,netMHCpan4.0vs4.1版本拍板) + Seq2Neo(kit就绪,需装netCTLpan)。产scores+patch,不merge",
+      "out": "",
+      "owner": "tools2",
+      "ts": "2026-06-29T19:42:53+08:00"
+    },
+    {
+      "id": "tools_immuno_cpu",
+      "stage": "自定义",
+      "agent": "coder",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "新工具波w4",
+      "desc": "CPU免疫原补位: ImmugenX(Zenodo解包) + 扩搜1备份。不抢本地GPU(主窗占)。产scores+patch,不merge",
+      "out": "ImmugenX CPU全量跑通: scripts/out/newtools/ImmugenX_DS1DS2_scores.csv 34247行 MT/WT 100%覆盖(65 allele全支持) mean0.252; 四件套kit+patch_add_immugenx.py就绪(不merge,交merge节点); 许可非DTU pending可发数字; 备份候选TLImm(CPU原生/CC-BY). 坑=conda torch双BLAS崩→pip cpu wheel + pandas line_terminator旧名",
+      "owner": "",
+      "ts": "2026-06-29T20:26:22+08:00"
+    },
+    {
+      "id": "paper_table2",
+      "stage": "自定义",
+      "agent": "writer",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "新工具波w4",
+      "desc": "§2.2表2 30工具(5属性列)+方法学provenance(版本矩阵/HLA-agnostic/DTU pending caveat)随部署同步。caveman OFF,不碰scripts",
+      "out": "paper/sections/3_setup.tex §2.2: tab:roster 35行(5类/✅22列=21工具+○8+×5)+provenance三段;数字核csv;11处\\todo缺bib待补",
+      "owner": "",
+      "ts": "2026-06-29T19:59:46+08:00"
     }
   ]
 }

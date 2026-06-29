@@ -40,36 +40,170 @@ the $>0$ threshold (positivity $\approx 89\%$) is intrinsic to this cohort and
 directly motivates the use of precision--recall--based metrics
 (Section~\ref{sec:metrics}).
 
-\subsection{Tools under benchmark}
+\subsection{The tools surveyed}
 \label{sec:tools}
 
-The primary panel consists of eight immunogenicity predictors evaluated under
-identical conditions: DeepImmuno~\cite{DeepImmuno2021}, PredIG~\cite{PredIG2025},
-IMPROVE~\cite{IMPROVE2024}, NeoTImmuML~\cite{NeoTImmuML2025},
-pTuneos~\cite{pTuneos2019}, PRIME~\cite{PRIME2023},
-ImmuneApp~\cite{ImmuneApp2024}, and deepHLApan~\cite{deepHLApan2019}. In addition,
-HLAthena~\cite{HLAthena2020} is
-included as a \emph{presentation proxy} and is reported separately rather than
-ranked alongside the immunogenicity tools, because peptide presentation is a
-necessary but not sufficient condition for a functional T-cell response; its
-near-random performance serves as a calibration anchor rather than a competitor.
+The survey targets a panel of $30$ tools spanning the biological cascade from
+peptide--HLA binding to functional T-cell immunogenicity: $10$
+presentation/binding predictors and $20$ immunogenicity predictors. We organize
+this panel into five categories by the quantity each tool natively predicts:
+(1)~binding affinity, (2)~presentation / eluted-ligand likelihood,
+(3)~immunogenicity via machine-learning or deep models, (4)~immunogenicity via
+statistical / sequence-based scores, and (5)~immunogenicity via structural,
+foreignness, or composite-pipeline scores. Table~\ref{tab:roster} lists the full
+roster together with, for every tool, its output score name, native prediction
+task, whether it produces scores for both the mutant (MT) and wild-type (WT)
+peptide (a prerequisite for the differential-agretopicity transforms of
+Section~\ref{sec:harmonization}), the peptide-length window it scores, whether it
+is HLA-aware or HLA-agnostic, its license, and its current integration status.
 
-Three version caveats are stated explicitly and carried through every table.
-First, official pre-trained weights for NeoTImmuML are not publicly available;
-we therefore evaluate a model retrained by us on the published architecture,
-denoted NeoTImmuML$^\star$, and we do not claim that its scores reflect the
-performance of the original published model. Second, pTuneos is run through its
-Pre\&RecNeo sub-model, which is the component applicable to our input format.
-Third, IMPROVE is run with its expression feature degraded, since transcript
-abundance is unavailable for the benchmark candidates; the model is otherwise
-used as published. These caveats bound the conclusions we draw about each tool
-to the configuration actually evaluated.
+\paragraph{Integration status (honesty about coverage).} The $30$-tool panel is a
+\emph{target}. At the time of writing, $21$ tools are integrated and benchmarked,
+producing $22$ harmonized score columns (Status \checkmark in
+Table~\ref{tab:roster})---MHCflurry contributes two columns from a single model
+(presentation and affinity), whereas BigMHC's eluted-ligand (EL) and
+immunogenicity (IM) columns come from two distinct models. A further eight tools
+are in progress ($\circ$), and five additional candidates are blocked or have been
+excluded ($\times$); the latter are listed only for transparency and are
+\emph{not} counted among the $30$. We do not force the integrated and in-progress
+counts into an exact arithmetic identity with the $30$ target, because some
+in-progress entries (for example, the additional netMHCpan Aff/EL columns) extend
+an already-integrated tool rather than adding a new one; the panel should be read
+as a $30$-tool target of which $21$ are currently integrated and the remainder are
+in progress. Two of the integrated tools are reported with caveats and are never
+ranked apples-to-apples against the rest (marked $\ddagger$): HLAthena is included
+only as a \emph{presentation proxy}, because peptide presentation is a necessary
+but not sufficient condition for a functional T-cell response and its near-random
+performance serves as a calibration anchor rather than a competitor; and NetTepi
+covers only a subset of the cohort's alleles (no HLA-C), so its column is sparse.
+We never present an in-progress or blocked tool as if it were benchmarked. Among
+the integrated tools, the eight immunogenicity predictors with full per-peptide
+coverage---DeepImmuno, PredIG, IMPROVE, NeoTImmuML$^\star$, pTuneos, PRIME,
+ImmuneApp, and deepHLApan---form the primary apples-to-apples panel analyzed in
+detail in Section~\ref{sec:results}; their per-tool coverage and missingness are
+given in Table~\ref{tab:coverage}.
 
-A second, expanding wave of predictors---including netMHCpan\_ba, NetTepi,
-MHCflurry, and NeoaPred---is integrated into the pipeline and is reported as
-\emph{in progress}. Their results are withheld from the main conclusions and
-marked \pendingDTU, pending written data-use consent; the headline claims of
-this paper do not depend on them.
+\begin{table}[t]
+\centering
+\caption{The $30$-tool target roster surveyed by QuantImmu, grouped into five
+categories. Columns: output score name; native prediction task; whether scores
+are produced for both mutant and wild-type peptides (MT/WT); native
+peptide-length window; HLA-aware vs.\ HLA-agnostic (\emph{agn.}; \emph{partial}
+= position-based with allele-specific masks for a subset of alleles); license
+(acad.\ = academic-use; n.c.\ = non-commercial); and integration status.
+\textbf{Status:} \checkmark\ = integrated and benchmarked; $\circ$ = integration
+in progress; $\times$ = blocked or excluded (not part of the $30$). \pendingDTU\
+marks tools under a DTU academic license whose benchmark numbers may
+not be redistributed to third parties without written consent (Section~\ref{sec:fairness});
+$\star$ denotes a self-retrained model (official weights unavailable); $\ddagger$
+denotes an integrated tool reported with a caveat and never ranked
+apples-to-apples (HLAthena, presentation proxy; NetTepi, low allele coverage).}
+\label{tab:roster}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llllccll}
+\toprule
+Tool & Output score & Native task & MT/WT & Len. & HLA & License & Status \\
+\midrule
+\multicolumn{8}{l}{\textit{(1) Binding affinity}}\\
+netMHCpan-4.1 (BA)~\cite{NetMHCpan2020}      & netmhcpan\_ba       & affinity ($-$nM)        & both & 8--14 & aware & DTU\pendingDTU        & \checkmark \\
+netMHCpan-4.1 (Aff)~\cite{NetMHCpan2020}     & netMHCpan\_Aff      & affinity ($-$nM)        & both & 8--14 & aware & DTU\pendingDTU        & $\circ$ \\
+MHCflurry-2.0 (aff.)~\cite{MHCflurry2020}    & MHCflurry\_affinity & affinity ($-$nM)        & both & 8--15 & aware & Apache-2.0            & \checkmark \\
+MHCnuggets~\todo{cite MHCnuggets}            & MHCnuggets ($-$IC$_{50}$) & affinity          & MT   & 8--15 & aware & BSD-3                & \checkmark \\
+\midrule
+\multicolumn{8}{l}{\textit{(2) Presentation / eluted-ligand}}\\
+MHCflurry-2.0 (pres.)~\cite{MHCflurry2020}   & MHCflurry\_pres.    & presentation prob.      & both & 8--15 & aware & Apache-2.0           & \checkmark \\
+netMHCpan-4.1 (EL)~\cite{NetMHCpan2020}      & netMHCpan\_EL       & EL \%rank               & both & 8--14 & aware & DTU\pendingDTU       & $\circ$ \\
+BigMHC\_EL~\cite{BigMHC2023}                 & BigMHC\_EL          & EL prob.                & both & 8--15 & aware & acad.\ (n.c.)        & \checkmark \\
+HLAthena~\cite{HLAthena2020}                 & HLAthena            & presentation prob.      & MT   & 8--11 & aware & academic             & \checkmark$^{\ddagger}$ \\
+NetMHCstabpan-1.0~\cite{NetMHCstabpan2016}   & stab.\ \%rank       & stability               & both & 8--14 & aware & DTU\pendingDTU       & $\circ$ \\
+TransHLA~\todo{cite TransHLA}                & MT\_TransHLA        & epitope prob.           & MT   & 8--14 & \emph{agn.} & MIT            & \checkmark \\
+MAAP~\todo{identify/cite MAAP}               & ---                 & presentation            & ---  & ---   & ---   & ---                  & $\times$ \\
+\midrule
+\multicolumn{8}{l}{\textit{(3) Immunogenicity --- ML / deep}}\\
+DeepImmuno~\cite{DeepImmuno2021}             & DeepImmuno          & prob.                   & both & 9--10 & aware & academic             & \checkmark \\
+deepHLApan~\cite{deepHLApan2019}             & deepHLApan (Imm)    & prob.                   & both & 8--14 & aware & academic             & \checkmark \\
+PRIME-2.1~\cite{PRIME2023}                   & PRIME               & combined score          & both & 8--14 & aware & academic             & \checkmark \\
+PredIG~\cite{PredIG2025}                     & PredIG              & prob.                   & both & 8--14 & aware & academic             & \checkmark \\
+ImmuneApp~\cite{ImmuneApp2024}               & Immuno.\ score      & imm.\ score             & both & 8--14 & aware & academic             & \checkmark \\
+BigMHC\_IM~\cite{BigMHC2023}                 & BigMHC\_IM          & prob.                   & both & 8--15 & aware & acad.\ (n.c.)        & \checkmark \\
+CNNeo$^{\star}$~\cite{CNNeoPP2026}           & CNNeo               & prob.                   & both & 8--14 & aware & MIT                  & \checkmark \\
+NeoTImmuML$^{\star}$~\cite{NeoTImmuML2025}   & NeoTImmuML          & prob.                   & both & 8--13 & aware & academic             & \checkmark \\
+ICERFIRE-1.0~\cite{ICERFIRE2024}             & icerfire\_score     & $100-$\%rank (DAI)      & MT   & 8--14 & aware & DTU\pendingDTU       & \checkmark \\
+NetTepi-1.0~\cite{NetTepi2014}               & MT\_NetTepi         & combined T-cell prop.   & MT   & 8--11 & aware & DTU\pendingDTU       & \checkmark$^{\ddagger}$ \\
+MUNIS~\todo{cite MUNIS}                      & MUNIS               & prob.                   & MT   & 8--15 & aware & CC-BY-4.0            & $\circ$ \\
+andy90~\todo{cite andy90}                    & amplitude           & prob.                   & MT   & 8--11 & aware & MIT                  & $\circ$ \\
+Seq2Neo~\cite{Seq2Neo2022}                   & Seq2Neo\_imm.       & prob.\ (0--1)           & MT   & 8--11 & aware & AFL-3.0\pendingDTU   & $\circ$ \\
+ImmugenX~\todo{cite ImmugenX}               & ---                 & prob.                   & MT   & 8--11 & aware & acad.\ SW            & $\circ$ \\
+DeepNeo~\todo{cite DeepNeo}                  & ---                 & binding+imm.            & ---  & ---   & aware & ---                  & $\times$ \\
+Inference (8-class)~\todo{internal tool}     & class\_0..7         & multiclass              & ---  & ---   & ---   & internal             & $\times$ \\
+MHLAPre~\todo{cite MHLAPre}                  & ---                 & prob.                   & ---  & ---   & aware & ---                  & $\times$ \\
+\midrule
+\multicolumn{8}{l}{\textit{(4) Immunogenicity --- statistical / sequence}}\\
+IEDB-Calis~\todo{cite IEDB Calis}           & IEDB\_Calis         & sequence score          & both & 8--11 & \emph{partial} & NPOSL-3.0  & \checkmark \\
+Repitope~\todo{cite Repitope}               & Immuno.Score        & sequence score          & both & 8--11 & \emph{agn.} & MIT           & \checkmark \\
+\midrule
+\multicolumn{8}{l}{\textit{(5) Immunogenicity --- structural / foreignness / pipeline}}\\
+NeoaPred~\cite{NeoaPred2024}                 & MT\_NeoaPred        & foreignness (struct.)   & MT   & 9     & aware & Apache-2.0           & $\circ$ \\
+T-SCAPE$^{\star}$~\cite{TSCAPE2025}          & MT\_TSCAPE          & T-cell prop.\ (struct.) & MT   & $\le$20 & aware & CC-BY-NC-ND          & \checkmark \\
+pTuneos~\cite{pTuneos2019}                   & pTuneos             & pipeline composite      & both & 8--14 & aware & academic             & \checkmark \\
+IMPROVE~\cite{IMPROVE2024}                   & IMPROVE             & pipeline composite      & both & 8--12 & aware & academic             & \checkmark \\
+ImmunoStruct~\cite{ImmunoStruct2025}         & ---                 & structural              & ---  & ---   & aware & academic             & $\times$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+We now state the methodological provenance of the panel, which governs how much
+weight each integrated tool's numbers can bear.
+
+\paragraph{Version provenance.} The integrated tools fall into a hierarchy of
+decreasing source fidelity, and we annotate this hierarchy explicitly rather than
+presenting all numbers as equally authoritative. \emph{(i) Official weights or
+official images.} The majority of integrated predictors are run with their
+published weights or official containers (for example, MHCflurry, PRIME with
+MixMHCpred, ImmuneApp, deepHLApan, PredIG, BigMHC, DeepImmuno, and the structural
+tool NeoaPred), and where a vendor reference implementation exists we verified
+reproduction against it. \emph{(ii) Honestly degraded configurations.} Two tools
+are run in a configuration weaker than their published best, and the limitation
+is carried through every table: pTuneos is run through its Pre\&RecNeo sub-model,
+the component applicable to our input format; and IMPROVE is run with its
+expression feature degraded, since transcript abundance is unavailable for the
+benchmark candidates, while the model is otherwise used as published. \emph{(iii)
+Self-retrained replicas.} Official pre-trained weights for NeoTImmuML and for the
+CNN-based CNNeo are not publicly available; we therefore evaluate models
+retrained by us on the published architectures, denoted NeoTImmuML$^{\star}$ and
+CNNeo$^{\star}$, and we do not claim that their scores reflect the performance of
+the original published models. \emph{(iv) Proxy.} HLAthena is a presentation
+predictor used as a presentation \emph{proxy} (Section above), not an
+immunogenicity tool. These annotations bound the conclusions we draw about each
+tool to the configuration actually evaluated.
+
+\paragraph{HLA-agnostic caveat.} TransHLA and Repitope do not take the HLA allele
+as input; under our harmonized protocol they therefore assign the \emph{same}
+value to a given peptide across all of a patient's alleles, and IEDB-Calis is
+HLA-aware only in part (a position-based score with allele-specific masks for a
+subset of alleles). For the fully HLA-agnostic tools, a weak per-patient signal
+is the \emph{expected} consequence of their design rather than evidence of poor
+ability, and we flag this caveat wherever their results appear; their numbers are
+not used as evidence about HLA-aware discrimination.
+
+\paragraph{Restricted-license caveat.} Two distinct kinds of license restriction
+apply to subsets of the panel, and we keep them separate because they impose
+different obligations. \emph{(a) DTU pending-consent.} netMHCpan (BA, Aff, and
+EL), NetMHCstabpan, ICERFIRE, NetTepi, and Seq2Neo (which depends on the DTU tool
+netCTLpan) are distributed under DTU academic licenses whose terms forbid
+redistributing, without written consent, benchmark numbers computed with their
+software. Every such entry is marked \pendingDTU\ in Table~\ref{tab:roster} and
+throughout the paper; their numbers are withheld from the main claims and will be
+released only once written consent is obtained at the submission stage.
+\emph{(b) No-derivatives restriction.} T-SCAPE is distributed under the
+CC-BY-NC-ND 4.0 license, whose no-derivatives clause forbids distributing modified
+versions of the work. This is a different constraint from DTU pending-consent and
+is therefore \emph{not} marked \pendingDTU; it nevertheless requires that the
+tool's use be declared and that no modified redistribution occur. None of this
+paper's headline conclusions depends on any of the tools in either category.
 
 \subsection{Seven-step harmonization pipeline}
 \label{sec:harmonization}

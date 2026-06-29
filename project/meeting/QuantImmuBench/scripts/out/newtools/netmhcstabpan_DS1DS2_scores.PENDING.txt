@@ -1,0 +1,18 @@
+PLACEHOLDER — netmhcstabpan_DS1DS2_scores.csv not yet produced.
+
+Tool: netMHCstabpan-1.0 (DTU, MHC-peptide stability)
+Status: kit ready, NOT run. Blocked on:
+  1. DTU academic binary install at ext_tools/netMHCstabpan-1.0/  (MAIN THREAD)
+  2. build + upload net.sif to HPC                                 (MAIN THREAD, outbound)
+  3. sbatch run_netmhcstabpan.sh on HPC                            (MAIN THREAD)
+  4. python parse_netmhcstabpan.py  -> produces this dir's
+       netmhcstabpan_DS1DS2_scores.csv
+
+Kit location: HPC/deploy/netmhcstabpan/  (net.def, run_netmhcstabpan.sh,
+              parse_netmhcstabpan.py, README.md)
+
+Inputs reused from: netmhcpan_ba_inputs/ (.pep + allele_map.tsv + pep_index.csv)
+Job outputs land in: netmhcstabpan_inputs/<allele>_stab.xls
+
+pending_DTU_consent = True on all rows once produced — do NOT publish until
+DTU written consent received.

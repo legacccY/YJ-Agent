@@ -1,0 +1,54 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+# ============================================================================
+# net.def — apptainer/singularity container for netMHCstabpan-1.0
+# Service: quantimmu-bench §tools_present  lever=netMHCstabpan-1.0 (MHC-peptide
+#          stability, DTU tool)
+#
+# WHY A CONTAINER (root cause, do NOT re-debug):
+#   The netMHCstabpan-1.0 binary (and its netMHCpan-2.8 backend) is linked
+#   against GLIBC_2.29. The HPC login/compute nodes run el8 with glibc 2.28,
+#   so running the binary directly fails with:
+#       ./netMHCpan: version `GLIBC_2.29' not found
+#   ubuntu:20.04 ships glibc 2.31 → satisfies GLIBC_2.29 at RUNTIME.
+#
+#   Rejected alternatives (researcher 2026-06-29):
+#     - conda sysroot / cross-glibc: fixes COMPILE time, NOT runtime → no good.
+#     - patchelf --set-interpreter: extremely brittle on a closed-source DTU
+#       binary that also dlopen's helpers → rejected.
+#   Container = the path LENS (uselens.io) officially uses to ship the DTU
+#   net* trio. Proven precedent.
+#
+# WHAT GOES IN THE CONTAINER vs WHAT IS BIND-MOUNTED:
+#   In container : only the runtime (glibc 2.31) + tcsh + gawk (the wrapper
+#                  scripts are tcsh and use gawk).
+#   Bind-mounted : the ext_tools tree (netMHCstabpan-1.0 + netMHCpan-2.8
+#                  backend + their data dirs) — see run_netmhcstabpan.sh.
+#   We do NOT copy the DTU binaries into the image (academic license + size).
+#
+# BUILD — two routes (pick by whether HPC has fakeroot/user-namespaces):
+#   Route 1 (HPC has fakeroot enabled):
+#       apptainer build --fakeroot net.sif net.def
+#   Route 2 (no fakeroot on HPC):
+#       # build where you have root (local Linux box / WSL2 / a VM):
+#       sudo apptainer build net.sif net.def        # or singularity build
+#       # then copy the .sif up to HPC:
+#       scp net.sif jiayu2403@<hpc>:/gpfs/work/bio/jiayu2403/quantimmu/HPC/deploy/netmhcstabpan/
+#   ⚠️ scp of net.sif to HPC = outbound transfer = MAIN-THREAD decision point
+#      (this kit does NOT upload anything).
+# ============================================================================
+
+%post
+    apt-get update && apt-get install -y tcsh gawk wget vim
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+%labels
+    Tool netMHCstabpan-1.0
+    Service quantimmu-bench
+    Purpose MHC-peptide stability scoring (DTU), glibc-2.29 runtime shim
+
+%help
+    Runtime container for netMHCstabpan-1.0. Bind ext_tools in, run the
+    DTU binary through `apptainer exec`. See run_netmhcstabpan.sh and README.md
+    for the bind layout and the tcsh-wrapper NMHOME/TMPDIR rewrite checklist.

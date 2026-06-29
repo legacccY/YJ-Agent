@@ -129,3 +129,20 @@ project/meeting/复现/CheXWorld/repo/
 project/meeting/复现/CheXWorld/assets/
 project/meeting/复现/CheXWorld/runs/
 project/meeting/复现/CheXWorld/*.pdf
+
+# QuantImmuBench：中间合表大 xlsx 不进 git（每个 ~15MB，regenerable；只留最新真源）
+project/meeting/QuantImmuBench/scripts/out/merged_all_tools_20tools.xlsx
+project/meeting/QuantImmuBench/scripts/out/merged_all_tools_21tools.xlsx
+project/meeting/QuantImmuBench/scripts/out/merged_all_tools_22tools.xlsx
+project/meeting/QuantImmuBench/scripts/out/merged_all_tools_23tools.xlsx
+project/meeting/QuantImmuBench/scripts/out/merged_all_tools_24tools.xlsx
+# scratchpad 路径残渣（冒号被剥导致的乱码名文件）
+/C:Users*
+
+# QuantImmuBench deploy：外部 repo/权重/数据/cache 不进 git（嵌套仓+大权重 ~4GB，regenerable 靠 clone/下载）
+project/meeting/QuantImmuBench/HPC/deploy/*/repo/
+project/meeting/QuantImmuBench/HPC/deploy/*/zenodo/
+project/meeting/QuantImmuBench/HPC/deploy/*/esm_cache/
+project/meeting/QuantImmuBench/HPC/deploy/*/weights/
+# scratchpad 残渣（全角冒号乱码名）
+*scratchpadproject_summary.txt
