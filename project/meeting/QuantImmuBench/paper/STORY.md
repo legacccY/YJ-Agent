@@ -1,5 +1,7 @@
 <!-- TODO[HLA-FIX 2026-06-27]: PredIG 全局显著性已失效(max-pool rho 0.198->0.104 p=0.343 ns; mean-agg 0.280->0.188 p=0.084 ns)，剔污染患者 P101/P102 后不存活；IMPROVE 仍稳健显著(0.226 p=0.037)，TSCAPE 翻为显著负(-0.230 p=0.033)，deepHLApan 另有 merge bug 双重不可信；per-patient 头条数字(PRIME/deepHLApan)待 Phase B 正确等位重推理后更新。STORY 锁定数字/headline 暂不动(投稿=拍板点 + P102 等位待袁老师确认)，待 Phase B 后据 corrected-excl 复核。详见 04_LOG Entry HLA-FIX。 -->
 
+<!-- ⚠️ 已降级（2026-06-29）：本档为旧窄框架（magnitude gap + per-patient 评估，8-9 工具，仅 ds2）。项目权威框架已升级为袁老师 `paper/QuanImmu-Paper-Outline.md`（QuantImmu 三步框架 + 30 工具 + 人鼠四数据 + 三重检验），headline 锚定文件改为项目根 `../01_STORY.md`。本档保留为袁框架内 §3.1 单工具 + per-patient 评估协议（§2.6）的子章节素材，其防御写法/引用修正仍有效。对齐说明见 `ALIGNMENT_TO_OUTLINE.md`。 -->
+
 # QuantImmuBench — 投稿论文 STORY / Headline 框架（锁定 2026-06-26）
 
 > 本文是 paper_sprint 的锚定文件。所有章节、claim、措辞以此为准；偏离须停下澄清。

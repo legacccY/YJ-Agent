@@ -312,6 +312,32 @@
    "extract_size_warn": "IEDB zip 43M→解压csv 1.3G;VDJdb全表406M。盘D:仅~27G空余,只留派生量",
    "status": "partial (5集已下;NEPdb/harmonized/dbPepNeo2全库/TESLA/NeoTImmuML训练集 TODO需Playwright/邮件/账号)"
   },
+  "quantimmu_elispot_human": {
+   "name": "人源 ELISpot 主分析集 (QuantImmu DS1/DS2)",
+   "n": "DS1=6例黑色素瘤 | DS2=9患者(P101-P110缺P103)/101有效肽(90阳11阴SFC>0);HLA-FIX剔P101/P102后7有效患者",
+   "local": "project/meeting/QuantImmuBench/data/Elispot_Dataset1.xlsx (16K;DS1) + Elispot_Dataset2.xlsx (29K;DS2,2026-06-27 HLA-FIX修正版)",
+   "hpc": "N/A(本机CPU推理够)",
+   "source": "袁老师/团队内部提供(临床ELISpot真值)",
+   "used_by": [
+    "quantimmu-bench"
+   ],
+   "purpose": "QuantImmu论文主真值集。DS2=主分析集(per-patient Spearman vs ELISpot SFC);DS1=补充/复现集(netMHCpan+PRIME合并)。聚合键:人=Patient_ID|Peptide_ID(mut_key)",
+   "caveat": "⚠️口径拍板点:袁老师outline标DS2=92突变/8有效病人(P102 inference近缺席),本地真相=101肽/9患者(HLA-FIX剔P101/P102后7有效)。投稿前需袁老师/朱同学统一主分析集定义。P101真分型{A*66:01,B*40:01,B*57:01,C*06:02}/P102{A*02:01,B*35:03,B*38:01}",
+   "status": "ready (人源已跑通17工具)"
+  },
+  "quantimmu_elispot_mouse": {
+   "name": "小鼠 ELISpot 数据 (QuantImmu B16F10/CT26)",
+   "n": "TODO 未知(袁老师outline要求*_M1/M2/M3.xlsx及Merged版,含BigMHC_IM/PRIME合并)",
+   "local": "❌ MISSING 仓库完全缺失",
+   "hpc": "TODO",
+   "source": "TODO 待数据组(王子源/谢孟翰)或袁老师提供",
+   "used_by": [
+    "quantimmu-bench"
+   ],
+   "purpose": "袁老师QuantImmu框架要求的跨物种验证集(§2.1);用于pooling类别规律/fusion跨物种泛化(图1人鼠分面)。聚合键:鼠=27AA_Sequence_MT",
+   "caveat": "⚠️P0缺口:袁md三步范式要求四数据集(人ds1/ds2+鼠B16F10/CT26)同口径跑通,鼠数据缺失阻塞跨物种章节+小鼠框架camp.py。详见 reference/GAP_ROADMAP_vs_outline.md",
+   "status": "missing (待数据组提供)"
+  },
   "lidc_idri": {
    "name": "LIDC-IDRI",
    "n": "1018 CT (4-annotator 结节标注)",

@@ -4,6 +4,40 @@
 
 ---
 
+## Entry ALIGN-OUTLINE — 2026-06-29【✅ 以袁老师 paper outline 为权威框架，全档对齐 + 出 gap roadmap（大编队）】
+
+> 窗口 `quantimmu-bench`。用户指令：袁老师发来 `paper/QuanImmu-Paper-Outline.md`（微信传，VSCode md-preview 导出 HTML，正文 line 1894+，原始 md ~214 行），「以这个 md 为最核心框架，更新到各档，调研理解、找需优化/实验增改部分，大编队」。用户两拍板：① 以袁 md 为准框架；② 数字以本地已核 csv 为真源。范围=**文档对齐 + gap 清单，不动实验代码**。
+
+### 关键认知：袁 md = 项目升级框架（非余嘉本地那篇）
+- 袁 md = 完整论文 **QuantImmu**（投 BiB）：三步范式（逐行打分→pooling→rank-fusion）+ 30 工具（10 呈递+20 免疫原性）+ 人鼠四数据集（ds1/ds2/B16F10/CT26）+ 三重检验（nested-LOPO/ablation/删突变 robustness）+ 12 fusion；headline=geomean rank-fusion 唯一双检验通过，但整合 vs 最强单工具统计持平→按鲁棒性部署。
+- 本地旧 `paper/STORY.md`+`sections/*.tex` = **更窄的旧框架**（magnitude gap + per-patient，8-9 工具，仅 ds2），是袁 md §3.1 的子集 → 收编为袁框架子结论，不丢。
+- 「朱同学」= 袁 md pooling 框架原创者；本地 `analysis/pooling_sweep_17tools.py`/`fusion_study.py`/`quantimmune/lopo_eval.py` 是整合朱同学发现的平行实现。
+
+### 编队（3 Explore 核查 → 6 writer 写档 + 1 planner 设计 → verifier 核数 + skeptic 红队 → 1 writer 修正）
+- **6 档对齐（writer 并行，数字全过 `_scratch/ALIGN_FACTS.md` 已核值）**：重写 `00_README.md`（轻量工程台→论文项目）；新建 `01_STORY.md`（袁框架 headline + 收编旧 C1/C2/C3）；新建 `02_ACCEPTANCE.md`（8 gate 投稿达标）；升级 `DEPLOY_TRACKER.md`（30 工具表）；新建 `reference/GAP_ROADMAP_vs_outline.md`（**核心交付**：缺口+归属+优先级）；新建 `paper/ALIGNMENT_TO_OUTLINE.md`（旧 tex→袁框架差距，tex 本次不重写）。
+- **planner 设计** `reference/EXPERIMENT_MATRIX_three_checks.md`（5 实验补三重检验+12fusion，纯 CPU <0.1 CPU·h 0 GPU 可本地跑，附验收门槛+风险红线）。
+- **主线小改**：`paper/STORY.md` 顶部降级注；`.portfolio/datasets.json` 补人 ELISpot DS1/DS2 + 鼠 B16F10/CT26(missing) 条目；`CLAUDE.md` 入口行升级；`.portfolio/registry.json` quantimmu-bench 块（venue→BiB、phase 升级、加 story/acceptance 指针、updated 2026-06-29）。
+
+### 核验收口
+- **verifier 全 ✅ 零 drift**：per-patient/pooling/全局max/fusion/配对 五类数字五档逐处与 csv 一致；袁 md 声称值（geomean 删10% +0.4643 等）五档全隔离标注「声称/本地无支撑/待核」，零混入真源表。
+- **skeptic 0 致命放行**：袁 md 七核心 §+附录 A/B 全覆盖无漏；数字红线无破；口径冲突如实记录无擅自二选一；无范围跑偏。揪出 2 🟠 已修。
+
+### 三大缺口（详见 GAP_ROADMAP_vs_outline.md）
+1. **工具**：17/30（4 呈递+13 免疫原性），缺 13（呈递缺 6 + 免疫原缺 7：Seq2Neo/DeepNeo/ICERFIRE/MAAP/BigMHC_EL/Inference 8-class 等）。
+2. **数据**：人 ds1/ds2 ✓；**鼠 B16F10/CT26 完全缺失**（P0，归数据组）。
+3. **实验脚本**：nested-LOPO 双层/ablation/robustness 删10-20%/fusion 扩12法（现4法）/部署脚本/小鼠框架 缺——经 planner 确认全是余嘉本窗**纯 CPU 本地可立即推进（P0），非徐伊琳 HPC**（skeptic 纠偏前 STORY 误判已修）。
+
+### 修正（skeptic 两条 🟠）
+- **数字桥诚实降级**：原「袁 md netAffneg topk +0.3946 ≈ 本地 geomean 0.3956 对得上」是逻辑跳步——主线核 `pooling_global_spearman_17tools.csv`：本地 netmhcpan_ba **topk_w 实测仅 0.1062**（≠0.3946），与袁 md 接近的 geomean 0.3956 是**不同算子的数值巧合**。全档改「数值接近但算子不同，非已坐实数字桥，待按 k=20,α=0 重跑 topk 核」。
+- **归属纠偏**：robustness/geomean/nested-LOPO/ablation 改判余嘉本窗纯软件 P0；ACCEPTANCE G6 ✅→⚠️。
+
+### 拍板点（记录在案，不擅自定）
+- **口径统一**：袁 md DS2=92 突变/8 有效病人 inference 子集 vs 本地=101 肽/9 患者（HLA-FIX 剔 P101/P102 后 7 有效）→ 投稿前需袁老师/朱同学统一主分析集定义。
+- **是否本窗开跑补缺实验**：planner 矩阵就绪，5 实验纯 CPU 可即跑，待用户拍是否本窗推进。
+- **是否催外部**：鼠数据（数据组）、13 工具补齐、DTU/ICERFIRE 许可。
+
+---
+
 ## Entry GH-SYNC — 2026-06-29【✅ GitHub private repo 全量更新到当前真相 + 学术主页加 portfolio 条目】
 
 > 窗口 `quantimmu-bench`。用户指令「读档→完整更新 GitHub repo→主页也更新」。用户三拍板：repo 保持 private / 主页详细带数字+链接 / repo 范围=全量同步含交付包 Results。

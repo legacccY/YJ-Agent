@@ -1,78 +1,149 @@
-# QuantImmuBench — 新抗原免疫原性「强弱定量」工具 Benchmark
+# QuantImmu — 新抗原免疫原性「突变级定量」框架 + 30 工具系统 benchmark（论文项目）
 
-> 入口读档顺序：本文 → `REPORT.md`（完整部署测试报告，PPT 素材）→ `DEPLOY_TRACKER.md`（5 工具部署状态总表）→ `TOOLS/<tool>.md`（逐工具信息）→ `04_LOG.md` 最新 entry
->
-> 📖 **新人/复盘看这篇**：`项目全解_从头到尾.md`（从零讲清这是什么、做了什么、踩了哪些坑、得到什么结果、现状——给完全不懂的人的故事版全貌）
->
-> 另见：`NEWTOOLS_LIT_MATRIX.md`（7 新工具文献矩阵+为什么选作对比基线，PPT 素材）· `analysis/NEWTOOLS_ANALYSIS.md`（7 新工具 benchmark 结果分析）· `REFERENCES.md`（工具论文/DOI/repo 出处）· `PROVENANCE.md`（代码归属：哪些是我们写的 vs 外部工具 + 许可/再分发限制）· `HPC/`（从 HPC 拉回的部署脚本 + ELISpot 正式跑产物，`HPC/README.md` 说明哪些大件留 HPC）
+> 📐 **权威框架 = `paper/QuanImmu-Paper-Outline.md`（袁老师定稿，投 Briefings in Bioinformatics）。本地所有档以此对齐。** 任何本地结论、数字口径、章节结构与该 outline 冲突时，以 outline 为准，本地不擅自改写，遇冲突停下报袁老师/朱同学拍板。
 
-## 一句话
-袁老师牵头的**癌症个性化新抗原疫苗**协作项目。总目标 = 做一个能预测 T 细胞免疫反应**「强弱定量程度」**的工具（比现有只判「有/无免疫原性」的二分类更进一步），路线 = 大量跑现有工具 + 数据集做 benchmark，再结合自研 QuantImmune 算法。
+> **入口读档顺序**：本文 `00_README.md` → `01_STORY.md`（claims + 锁定数字 + 跑偏定义）→ `02_ACCEPTANCE.md`（各 lever 验收措辞）→ `paper/QuanImmu-Paper-Outline.md`（袁老师权威框架）→ `DEPLOY_TRACKER.md`（工具部署状态总表）→ `04_LOG.md` 最新 entry。
+>
+> 对齐辅助档：`reference/GAP_ROADMAP_vs_outline.md`（本地 vs outline 缺口清单 + 补齐路线）· `paper/ALIGNMENT_TO_OUTLINE.md`（本地真源数字 ↔ outline 声称值逐条对账）。
+>
+> 📖 **新人/复盘**：`项目全解_从头到尾.md`（故事版全貌：这是什么、做了什么、踩了哪些坑、现状）。
+
+---
+
+## 一句话定位
+
+**QuantImmu** 是一个把任意上游预测工具的输出转成**突变级（mutation-level）连续免疫原性强度分**的统一框架，并在该框架下**系统评测 30 种工具（10 呈递 + 20 免疫原性）**，跨人（ds1/ds2）与小鼠（B16F10/CT26）、以 ELISpot 为真值、以 **Spearman 秩相关**为主指标。投 **Briefings in Bioinformatics**（系统性 benchmark / problem-solving protocol 类）。
+
+三个卖点（须进标题/摘要）：
+
+1. **Quantitative（连续强度，非二分类）** —— 临床要的是在一个病人几十个突变里做精细排序，免疫原性本是连续强度，应以 Spearman 衡量而非 AUC 二分类。
+2. **Mutation-level（突变级，非肽–分型级）** —— 工具在「肽–等位基因」对上打分，但临床决策单元是**突变**；如何把多条候选肽–HLA 行聚合（pooling）到突变级是被忽视的关键方法学选择。
+3. **30-tool systematic benchmark（10 呈递 + 20 免疫原性）** —— 统一无泄漏口径、公平定量比较 30 种异质工具，并研究如何最优整合。
+
+三步范式（方法学主体，详见 outline §2.3）：
+
+- **Step 1 逐行打分 + 定向（orientation）**：每条肽–HLA 行取标量并统一成「越大越免疫原」；亲和力取 `−Aff(nM)`；可选 **DAI（MT vs WT）**；逐病人 min-shift + RMS 归一化（仅用病人自身特征，CV 无泄漏基础）。
+- **Step 2 pooling（多行 → 突变级 1 分）**：四法 max / topk_w(k,α) / softmax(T) / rankdecay(γ)。
+- **Step 3 rank-fusion（多维 rank → 综合分）**：各维病人内转 rank 再融合（mean-rank、geomean 等）。
+
+三重严格检验（outline §3.3 方法学高潮）：**nested-LOPO**（外层留一病人评测、内层选超参，报告 oracle vs LOPO）+ **ablation**（维度留一 + 加权对比）+ **robustness**（随机删 10%/20% 突变 × 多种子，比子采样均值/胜率而非单点）。
+
+---
+
+## 当前状态总表（2026-06-29，真源数字见 `_scratch/ALIGN_FACTS.md` / `analysis/*.csv`）
+
+> ⚠️ 本节数字一律取本地已核值。袁 md 中本地无支撑的声称值（如 fusion 删 10% geomean +0.4643、单工具 max subset92 值）标注「袁 md 声称值，本地待核」，不混入本地真源。完整对账见 `paper/ALIGNMENT_TO_OUTLINE.md`。
+
+### A. 30 工具接入进度（目标 10 呈递 + 20 免疫原性；当前本地实测 17）
+
+| 类别 | 目标 | 本地已接入 | 已接入清单 | 主要缺口 |
+|---|---|---|---|---|
+| 呈递 / 结合 | 10 | **4** | netmhcpan_ba（DTU）· MHCflurry_presentation · MHCflurry_affinity_neg · HLAthena（presentation proxy 单列，AUC≈0.51 近随机） | ~6：netMHCpan Aff/EL 独立列（现仅 BA）、MAAP、NetMHCstabpan 独立预测列（现 glibc 挡）、BigMHC_EL（有 -m=el 未接）等 |
+| 免疫原性 | 20 | **13** | DeepImmuno · PredIG · IMPROVE · NeoTImmuML（★自训版）· pTuneos（Pre&RecNeo 子模型）· PRIME · ImmuneApp · deepHLApan · BigMHC(-m=im) · CNNeo（自训）· IEDB_Calis · Repitope · TSCAPE（DTU） | ~7：Seq2Neo、DeepNeo/DeepNeo-v2、ICERFIRE（DTU pending）、内部 Inference 8-class（徐伊琳组源码未确认）、NeoaPred（HPC pending，结构 foreignness）等 |
+| **合计** | **30** | **17** | | **缺 13**；另 MHLAPre 权重缺彻底阻塞、ImmunoStruct 已 NO-GO |
+
+### B. 四数据集进度
+
+| 数据集 | 物种 | 状态 | 说明 |
+|---|---|---|---|
+| ds1（`Elispot_Dataset1.xlsx`，16KB，6 例黑色素瘤）| 人 | ✅ 在仓 | netMHCpan+PRIME 合并补充/复现集 |
+| ds2（`Elispot_Dataset2.xlsx`，29KB，HLA-FIX 修正版，**主分析集**）| 人 | ✅ 在仓 | 9 患者 P101–P110 缺 P103；101 有效肽（90 阳/11 阴 SFC>0）；HLA-FIX 剔 P101/P102 后 **7 有效患者**。⚠️袁 md 标「92 突变/8 有效病人」≠本地口径，投稿前需统一（拍板点） |
+| B16F10 | 鼠 | ❌ 缺失 | outline §2.1 要求，归数据组（王子源/谢孟翰/袁老师） |
+| CT26 | 鼠 | ❌ 缺失 | 同上 |
+
+### C. 三层结果 + 三重检验进度
+
+| 环节 | outline 章节 | 本地状态 | 备注 |
+|---|---|---|---|
+| 单工具 max-pooling 基线 | §3.1 | 🟡 部分 | DS2 已有：per-patient Fisher-Z 主指标最强 PRIME 0.279 [0.050,0.481] ✓、IMPROVE 0.250 [0.021,0.455] ✓（唯二 CI 排 0）；天花板 ρ<0.4 |
+| 单工具 × pooling | §3.2 | 🟡 部分 | 本地 `pooling_sweep_17tools.py`（8 算子，超集 outline 4 法）；领域规律已复现：结合类要聚合（netmhcpan_ba 最优 geomean 0.3956），免疫原类 max 即最优。⚠️袁 md 称 netAffneg topk(k=20,α=0)+0.3946 与本地 geomean 0.3956 **数值接近但算子不同**（本地 topk_w 仅 0.1062），非已坐实数字桥，待按 k=20 重跑 topk 核 |
+| 多工具 fusion | §3.3.1 | 🟡 部分 | 本地仅 4 法（rankmean/fixavg/ridge/gbdt），**缺扩至 12 法**（geomean/median/powmean/softmax-rank/stacking 等）；ridge/gbdt 负=小样本过拟合 |
+| nested-LOPO | §3.3.3 | ❌ 缺 | 本地仅单层 LOPO（`quantimmune/lopo_eval.py`），缺双层内选超参 |
+| ablation | §3.3.2 | ❌ 缺 | 维度留一 + 加权 ablation 未做 |
+| robustness 删 10/20% | §3.3.4（图3核心）| ❌ 缺 | 本地无 robustness_subsample；袁 md geomean +0.4643/+0.4488 = 声称值本地待核 |
+| 显著性配对检验 | §3.3.5 | 🟡 部分 | 本地 `fusion_vs_single_paired.csv`：整合 vs 最强单工具**统计持平**（fixavg Δz=0.0037 p=0.974；rankmean Δz=0.0399 p=0.833），方向对齐袁 md headline |
+| 综合排名 + 部署 | §3.4 | ❌ 缺 | `rank_T01_deploy.py` 等部署脚本未做 |
+| 小鼠全框架 | 跨节 | ❌ 缺 | `camp.py` 等小鼠管线 0%（数据未到位） |
+
+**一句话现状**：人 ds2 主分析链（max 基线 / pooling / 4 法 fusion / 持平显著性）部分跑通，**缺口集中在工具补齐到 30、小鼠数据与全框架、nested-LOPO/ablation/robustness 三重检验、fusion 扩 12 法**。详细缺口与补齐路线见 `reference/GAP_ROADMAP_vs_outline.md`。
+
+---
 
 ## 我（余嘉 / legacccy）的子任务
-在 HPC 上**部署并测试现有预测工具**，每个工具测试运行后收集 4 类信息，最终以 **PPT** 形式记录：
+
+在 HPC 上**部署并测试预测工具**，每个工具测试运行后收集 4 类信息，最终以 **PPT** 形式记录：
+
 1. 输入数据的模板 / 格式
 2. 预测工具运行的参数设置（可调参数的类型及功能）
 3. 输出数据的格式及含义
 4. 工具的简要介绍（特点、优势）
 
 **余嘉的 5 工具（✅ 全部署 + 跑通 ELISpot benchmark + 4 类信息 + PPT，核心任务已完成）**：PredIG · DeepImmuno · pTuneos · IMPROVE · NeoTImmuML
-**李紫晨的 5 工具（⚠️ 2026-06-24 袁老师分工明确=李紫晨负责，非余嘉核心任务）**：PRIME · deepHLApan · ImmuneApp · MHLAPre · HLAthena
-- ⚠️ **分工纠正（2026-06-24 袁老师分组消息，见 04_LOG Entry 25）**：后 5 工具是李紫晨的活，余嘉此前做的 Wave3 部署+benchmark（3 工具 SMOKE_PASS+进 8tools 表）属**超额/可移交李紫晨参考**，不回退（已做的 benchmark 仍有效）。余嘉后续重心 = 前 5 工具 + 配合 QuantImmu 组（徐伊琳）/ 数据组（王子源、谢孟翰）。
-- 可行性矩阵 + 部署排序 + 两红旗见 `DEPLOY_TRACKER.md` §第二批 Wave 3。要点：PRIME 最易（HPC 已半 clone）；**HLAthena 仅预测提呈非免疫原性→只能当 presentation proxy**；**MHLAPre 权重未发布需邮件作者（阻塞）**。
 
-**📚 2026-06-24 大面积推动产出（13 路 opus 编队，全景调研+深析+红队+理论+路线，见 04_LOG Entry 25）**：
-- `PROJECT_LANDSCAPE.md`（项目根）= 给袁老师的**一页纸决策综述**（现状+蓝海+命门+理论天花板+下一步），QuantImmune 立项拍板入口。
-- `reference/`（新建调研档）：`LANDSCAPE_tools.md`（工具全景+撞车=蓝海）· `LANDSCAPE_datasets.md`（数据集全景+定量 GT 命门）· `BENCHMARK_METHODOLOGY.md`（学界方法学对标）· `REDTEAM_benchmark.md`（红队 🔴-1）· `VERIFY_numbers.md`（0 drift 核数）· `THEORY_quant.md`（可行性理论 ρ~0.4-0.6）· `REVIEW_deliverables.md`（十角色审稿）· `EXPERIMENT_MATRIX_quantimmune.md`（QuantImmune 实验路线）。
-- `analysis/` 新增：`DEEPDIVE_8tools.md`（组合最优深析）· `DS1_magnitude.md`（DS1 证伪工具定量能力）· `bootstrap_ci.py`+csv（pTuneos「最优」统计不可区分铁证）· `metrics_topk.py`+csv（AUPRC+ISSR）· `patient_strat_check.py`+csv（患者聚集）· `iedb_overlap_check.py`（待跑，需下 IEDB csv）。
+- ⚠️ **分工纠正（2026-06-24 袁老师分组消息，见 04_LOG Entry 25）**：后 5 工具（PRIME · deepHLApan · ImmuneApp · MHLAPre · HLAthena）是李紫晨的活；余嘉此前做的 Wave3 部署 + benchmark（PRIME/ImmuneApp/deepHLApan 进 benchmark、HLAthena proxy）属**超额/可移交李紫晨参考**，不回退（已做的 benchmark 仍有效）。
+- ⚠️ **NeoTImmuML = 自训版**（官方权重不可得 → 复刻官方 RF+LGB+XGB，PPT 标★非官方）；**pTuneos = Pre&RecNeo 子模型**；**IMPROVE = Expression 特征降级**。结论一律诚实分级，无「5/5 完美跑通」。
+- ❌ **MHLAPre 唯一彻底阻塞**：无权重 + ProcessData npy 缺 + 预处理拼装码被注释，唯一出路邮件作者。**ImmunoStruct 已 NO-GO**（三重 blocker）。
+- 余嘉后续重心 = 工具部署 + 配合 QuantImmu 组（徐伊琳）/ 数据组（王子源、谢孟翰），并把本地 benchmark 资产对齐袁老师 outline。
 
-## 团队分工（背景，非我任务）
-- **预测工具组**：李紫晨（5 工具）+ 余嘉（5 工具，本档）
-- **QuantImmu 组**：徐伊琳 —— HPC 部署 QuantImmune 模块
-- **数据收集组**：王子源、谢孟翰 —— 文献搜索 + 数据收集（袁老师提供输入数据）
+---
 
-## 当前状态（2026-06-27 更新，详见 04_LOG Entry HLA-FIX2；**进度真源 = `DEPLOY_TRACKER.md` 顶部规范状态总表**）
+## 团队分工（背景）
 
-> ⚠️ **2026-06-27 HLA 数据修正（HLA-FIX，已 promote 为 canonical）**：DS2 患者 P101/P102 的 HLA 等位曾被 Excel 拖拽自动填充弄出伪迹，已查清根因并统一修复。正确等位 P101={A\*66:01,B\*40:01,B\*57:01,C\*06:02}、P102={A\*02:01,B\*35:03,B\*38:01}。**头条结论翻转**：① PredIG 全局 Spearman 显著性失效（剔 P101/P102 后 max ρ 0.198→0.104 p=0.343 不显著）→「PredIG 和 IMPROVE 都显著」修正为「仅 IMPROVE 稳健显著」（0.226 p=0.037）；② TSCAPE 翻为显著负（-0.230 p=0.033）；③ deepHLApan 另有 merge bug。当前**有效数字真源 = `analysis/metrics_ds2_fixed_exclP101P102.csv`（corrected-excl）**。Phase B（P101/P102 正确等位重推理恢复）待补，非阻塞。完整上报见 `data/HLA数据错误_完整上报_给袁老师_2026-06-27.md`。
+- **预测工具组**：李紫晨（后 5 工具）+ 余嘉（前 5 工具 + Wave3 超额，本档）。
+- **QuantImmu 框架组**：徐伊琳 —— HPC 部署 QuantImmu / Inference 模块（含内部 Inference 8-class 源码）。
+- **数据收集组**：王子源、谢孟翰 —— 文献搜索 + 数据收集（含小鼠 B16F10/CT26，袁老师提供输入数据）。
+- **pooling / fusion 研究**：朱同学 —— **pooling 范式原创**（本地 pooling/fusion 整合自其发现，三步范式 Step 2/3 的方法学来源）。
+- **统筹**：袁老师 —— 项目牵头 + outline 定稿。
 
-- **总账（10 工具）**：✅ **9 进 ELISpot benchmark** + ❌ **1 未做成（MHLAPre）**。
-  - **9 进 benchmark** = 8 免疫原性工具 apples-to-apples（DeepImmuno · PredIG · pTuneos · IMPROVE · NeoTImmuML · PRIME · ImmuneApp · deepHLApan）+ HLAthena 1 个 presentation proxy 单列（近随机 AUC 0.51，印证提呈≠免疫原性）。
-  - ⚠️ 版本 caveat：**NeoTImmuML = 自训版**（官方权重不可得→复刻官方 RF+LGB+XGB，PPT 标★非官方）；**pTuneos = Pre&RecNeo 子模型**；**IMPROVE = Expression 特征降级**。结论一律诚实分级，无"5/5 完美跑通"。
-  - ❌ **MHLAPre 唯一未做成**：无权重 + ProcessData npy 缺 + 预处理拼装码被注释 → 自训路也不通，唯一出路邮件作者。
-- **余嘉核心 5 工具（第一批）**：全部进 benchmark（DeepImmuno/PredIG 完整端到端；pTuneos 子模型；IMPROVE 降级；NeoTImmuML 自训版）。
-- **Wave3 5 工具（归李紫晨，余嘉超额）**：PRIME/ImmuneApp/deepHLApan ✅ 进 benchmark；HLAthena ✅ proxy；MHLAPre ❌ 阻塞。
-- PPT（17 slide）+ Word 报告成型。
-- **许可/依赖均已解决**（不再是阻塞）：
-  1. **netMHCpan-4.1 / 4.0 / 2.8 已装 + 跑通**（netMHCpan-4.0 随 pTuneos 镜像内置免单独申请）；**PRIME / MixMHCpred 学术免费，已 clone**。pTuneos example VCF 端到端 + Pre&RecNeo 跑 ELISpot 进 benchmark（对账官方 r=1.0）。
-  2. **NeoTImmuML 官方源码已找到**（github.com/01SYan19/NeoTImmuML，Playwright 进 tumoragdb.com.cn 抓出）。
-- **遗留（非阻塞 / 小缺口）**：
-  - **netMHCstabpan-1.0** 仍 glibc 挡（HPC el8 仅 glibc 2.28，需 ≥2.29）→ 仅 IMPROVE feature_calc 的 Stability 特征用它，Predict 步与 benchmark 不受影响。
-  - **pTuneos HPC 真跑** 受 singularity 非 root/fakeroot 限制（本地 WSL2 docker 已端到端验证）。
-  - **袁老师输入数据待给** → 到位后第二阶段做格式转换 + 正式测试。
-- ⚠️ 许可红线：netMHCpan/stabpan 学术许可禁再分发（含其跑出的数字），投稿前取 DTU 书面同意（见 `PROVENANCE.md` / `DEPLOY_TRACKER.md`）。
+---
 
 ## HPC / 部署规范
+
 - HPC：`dtn.hpc.xjtlu.edu.cn` / 用户 `jiayu2403` / 分区 `gpu4090`（详见 `project/HPC_WORKFLOW.md` + memory `project_hpc_xjtlu`）。
-- 这些工具多为 **CPU 推理**（XGBoost / RandomForest / CNN inference），基本不占 GPU 卡槽；如某步要 GPU 才走 `tools/gpu_slot.py request`。
+- 这些工具多为 **CPU 推理**（XGBoost / RandomForest / CNN inference），基本不占 GPU 卡槽；某步要 GPU 才走 `tools/gpu_slot.py request`。
 - **拍板点**：HPC 上传新代码 / 数据 / 许可证 = 对外传输，每次上传前一行报；本地 clone、写脚本、读 README、填 md 自主推进。
 - 部署一个工具的标准 6 步见 `DEPLOY_TRACKER.md` 顶部。
 
+---
+
 ## 文档结构
+
 ```
 QuantImmuBench/
-├── 00_README.md          # 本文：总目标 + 我的子任务 + 状态
-├── 04_LOG.md             # 时间倒序日志
-├── DEPLOY_TRACKER.md     # 5 工具部署状态总表 + 标准流程 + 许可清单
-├── REFERENCES.md         # 工具论文/DOI/repo 出处 + 外部依赖 + 数据集
-├── PROVENANCE.md         # 代码归属（我们写的 vs 外部）+ 许可/再分发限制
-├── TOOLS/                # 每工具一份 info 文档（= PPT 素材）
-│   ├── _TEMPLATE.md
-│   ├── 第一批：PredIG.md / DeepImmuno.md / pTuneos.md / IMPROVE.md / NeoTImmuML.md
-│   ├── 第二批：PRIME.md / deepHLApan.md / ImmuneApp.md / MHLAPre.md / HLAthena.md
-├── HPC/                  # 从 HPC 拉回的部署脚本 + ELISpot 正式跑产物（HPC/README.md 说明）
-├── analysis/            # benchmark 指标/出图（figures_R_v3 为终版）/报告
-└── scripts/              # 部署 / 烟测 / 格式转换脚本（均我们写的，见 PROVENANCE）
+├── 00_README.md                       # 本文：定位 + 权威框架指针 + 状态总表 + 子任务
+├── 01_STORY.md                        # claims + 锁定数字 + 跑偏定义 + R-rules
+├── 02_ACCEPTANCE.md                   # 各 lever 验收措辞
+├── 04_LOG.md                          # 时间倒序日志
+├── paper/
+│   ├── QuanImmu-Paper-Outline.md      # 📐 袁老师权威框架（投 BiB）
+│   └── ALIGNMENT_TO_OUTLINE.md        # 本地真源数字 ↔ outline 声称值逐条对账
+├── reference/
+│   ├── GAP_ROADMAP_vs_outline.md      # 本地 vs outline 缺口清单 + 补齐路线
+│   ├── LANDSCAPE_tools.md / LANDSCAPE_datasets.md / BENCHMARK_METHODOLOGY.md
+│   ├── REDTEAM_benchmark.md / VERIFY_numbers.md / THEORY_quant.md / REVIEW_deliverables.md
+│   └── EXPERIMENT_MATRIX_quantimmune.md
+├── DEPLOY_TRACKER.md                  # 工具部署状态总表 + 标准流程 + 许可清单
+├── REFERENCES.md                      # 工具论文/DOI/repo 出处 + 外部依赖 + 数据集
+├── PROVENANCE.md                      # 代码归属（我们写的 vs 外部）+ 许可/再分发限制
+├── TOOLS/                             # 每工具一份 info 文档（= PPT 素材）
+├── data/                             # ds1/ds2 + HLA-FIX 上报
+├── analysis/                         # benchmark 指标/出图/报告（figures_R_v3 终版）
+├── quantimmune/                      # QuantImmu 框架代码 + LOPO 产物
+├── HPC/                             # 从 HPC 拉回的部署脚本 + ELISpot 正式跑产物
+└── scripts/                         # 部署 / 烟测 / 格式转换脚本（均我们写的，见 PROVENANCE）
 ```
 
+---
+
+## 许可红线（写档 / 投稿必带）
+
+- **netmhcpan_ba / TSCAPE**：pending DTU consent（DTU 学术许可禁第三方再分发，含其跑出的数字）→ 投稿前取书面同意。
+- **BigMHC**：学术非商用；**TSCAPE**：CC BY-NC-ND；**NeoTImmuML 自训★非官方**。
+- **netMHCstabpan-1.0** 仍 glibc 挡（HPC el8 仅 glibc 2.28，需 ≥2.29）→ 仅 IMPROVE feature_calc 的 Stability 特征用它，不影响 benchmark。
+- **双盲**：对外档（`GAP_ROADMAP` / `ALIGNMENT_TO_OUTLINE`）须 0 个人/机构/导师/HPC 名；内部档（`00_README` / `01_STORY` / `04_LOG`）人名保留。
+
+---
+
 ## 注
-本项目现为**轻量工程台档**（benchmark 阶段），暂不建 `01_STORY` / `02_ACCEPTANCE`；若日后成论文再补论文 schema。
+
+本项目已从「轻量工程台」**升级为 QuantImmu 论文项目 schema**，论文档见 `01_STORY.md` / `02_ACCEPTANCE.md` + 权威框架 `paper/QuanImmu-Paper-Outline.md`。后续写 tex / 核数字 / 跑实验前，先读对应 STORY + ACCEPTANCE 对齐 claim 与验收口径。

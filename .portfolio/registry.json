@@ -139,14 +139,16 @@
     },
     "quantimmu-bench": {
       "name": "QuantImmuBench",
-      "venue": "TBD（袁老师协作项目，benchmark 阶段；非论文）",
+      "venue": "Briefings in Bioinformatics (主; 袁老师 QuantImmu 论文) → NeurIPS D&B / ML4H workshop (fallback)",
       "deadline": "TBD",
       "status": "active",
       "priority": 5,
-      "phase": "✅10工具部署测试完成:9进ELISpot benchmark(8免疫原性工具apples-to-apples+HLAthena presentation proxy单列,近随机AUC0.51印证提呈≠免疫原性)+1未做成(MHLAPre无权重+预处理码缺不可复现). 版本caveat诚实分级:NeoTImmuML自训版(官方权重不可得)/pTuneos子模型/IMPROVE降级. 余嘉核心前5全进bench;Wave3后5(分工归李紫晨,余嘉超额)PRIME/ImmuneApp/deepHLApan进bench+HLAthena proxy. PPT17页+Word成稿. 进度真源=DEPLOY_TRACKER顶部规范状态总表+analysis/metrics_ds2_9tools.csv. [战略]QuantImmune退守:连续magnitude命门实测FAIL(IEDB肿瘤quant455/0.9%,私有neoepitope定量GT公开源≈0)→序数A/频率B数据够但撞命门,开发工具三路线(自补ELISpot/共享抗原迁移/放宽scope)呈袁拍板,推荐(b)共享训练+自补验证. 落reference/×11+RETREAT_ROUTE_ordinal+EXPERIMENT_MATRIX_ordinal_retreat",
+      "phase": "📐2026-06-29 升级论文项目:权威框架=paper/QuanImmu-Paper-Outline.md(袁老师定稿,QuantImmu三步范式 逐行打分→pooling→rank-fusion + 30工具(10呈递+20免疫原性) + 人鼠四数据(ds1/ds2/B16F10/CT26) + 三重检验 nested-LOPO/ablation/删突变robustness). 本次对齐:00_README升级+新建01_STORY/02_ACCEPTANCE+reference/GAP_ROADMAP_vs_outline.md+DEPLOY_TRACKER扩30工具表+paper/ALIGNMENT_TO_OUTLINE.md. 现状:工具17/30(4呈递+13免疫原,缺13);数据 人ds1(6例黑色素瘤)+ds2(9患者缺P103/101肽,HLA-FIX剔P101P102=7有效)✅,鼠B16F10/CT26❌缺(数据组);实验 pooling(8算子✅)/fusion(仅4法,缺geomean+8法)/LOPO单层✅,nested-LOPO/ablation/robustness删10-20%❌缺. 数字真源analysis/*.csv(Bash核不信md):per-patient Fisher-Z PRIME0.2794[.050,.481]/IMPROVE0.2502[.021,.455]唯二显著;pooling netmhcpan_ba max0.0901→geomean0.3956(DTU);fusion fixavg0.3281/rankmean0.3336 vs最优单工具MT_deepHLApan0.2519配对持平p0.974/0.833;DS1上fusion不复现(-0.16). 拍板点:口径袁92突变8患者 vs 本地101肽9患者HLA-FIX7 投稿前需袁老师/朱同学统一. 许可:netmhcpan_ba/TSCAPE/netMHCstabpan/ICERFIRE pending DTU consent. [历史]QuantImmune连续magnitude命门实测FAIL→序数/频率退守(reference/×11). 分工:余嘉=工具部署/朱同学=pooling原创/徐伊琳=QuantImmu组HPC/数据组=鼠数据",
       "home": "project/meeting/QuantImmuBench/",
+      "story": "project/meeting/QuantImmuBench/01_STORY.md",
+      "acceptance": "project/meeting/QuantImmuBench/02_ACCEPTANCE.md",
       "log": "project/meeting/QuantImmuBench/04_LOG.md",
-      "updated": "2026-06-25"
+      "updated": "2026-06-29"
     },
     "hyperfid": {
       "name": "HyperFidBench",

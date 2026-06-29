@@ -1,12 +1,68 @@
-# DEPLOY_TRACKER — 10 工具部署状态总表
+# DEPLOY_TRACKER — 30 工具部署状态总表（10 呈递 + 20 免疫原性）
 
 > 真源：每工具状态 + job_id + 阻塞写这里。详细 4 类信息写 `TOOLS/<tool>.md`。
+> 服务 QuantImmu §工具部署总表（lever = 扩为袁 md 30 工具进度视图）。框架真源 = `paper/QuanImmu-Paper-Outline.md` §2.2「30 tools surveyed」表 2。
 
 ---
 
-## 🎯 规范状态总表（单一真源，10 工具）
+## 🎯 目标 vs 现状（30 工具进度，单一真源）
 
-> ⚠️ 此表是**唯一进度真源**。下方两张分表（第一批 5 / Wave3 5）= 部署细节归档，状态以本表为准。
+> 袁老师 md（论文大纲 §2.2 / §1.4 卖点 3）要求系统评测 **30 种工具 = 10 种呈递预测（presentation/binding）+ 20 种免疫原性预测（immunogenicity）**。
+> **当前 17/30 接入 benchmark**（4 呈递 + 13 免疫原性），**缺 13**（呈递缺 6 + 免疫原性缺 7）。
+> **DTU 工具 `netmhcpan_ba` / `TSCAPE` / `netMHCstabpan` / `ICERFIRE` = pending DTU consent**（学术许可禁第三方再分发其软件上跑出的 benchmark 数字，投稿前需取书面同意）。
+> 状态图例：✅ 已进 benchmark｜⚠️ 降级/proxy 进 benchmark（标注层次不可 apples-to-apples）｜🔄 部署中/阻塞待跑｜❌ 缺（待补/归属）。下面两张分组表是 30 工具目标的**进度真源**；本文件后半的 10 工具规范表/Tier 分表 = 部署细节归档。
+
+### 表 A — 呈递 / binding 组（目标 10，现 4 ✅）
+
+| # | 工具 | 输出分名 | 状态 | 跑的版本 / caveat | 许可 | 归属 |
+|---|---|---|---|---|---|---|
+| P1 | **netMHCpan-4.1 (BA)** | `netmhcpan_ba`（−Aff，越大越强）| ✅ 进 benchmark | geomean pooling ρ=0.3956 = 全榜聚合最强（max 仅 0.0901）；**DTU pending consent** | DTU 学术（禁再分发数字）| 余嘉 |
+| P2 | **MHCflurry 2.0 (presentation)** | `MHCflurry_presentation` | ✅ 进 benchmark | mhcflurry 2.2.1 torch 后端，65 allele 全支持 | Apache-2.0 | 余嘉 |
+| P3 | **MHCflurry 2.0 (affinity)** | `MHCflurry_affinity_neg`（−Aff）| ✅ 进 benchmark | 同 P2 同一次推理；top3mean pooling spread 0.50 最大 | Apache-2.0 | 余嘉 |
+| P4 | **HLAthena** | presentation proxy 单列 | ⚠️ proxy 进 benchmark | 65-allele 模型；ELISpot AUC 0.51 / ρ 0.08 近随机 = 印证 presentation≠immunogenicity；**仅 presentation baseline proxy，不与免疫原性工具 apples-to-apples** | 学术 | 李紫晨/余嘉 |
+| P5 | **netMHCpan Aff / EL 独立列** | netMHCpan_Aff / netMHCpan_EL | ❌ 缺 | 现仅接 BA 一列；Aff/EL 作独立口径列待接 | DTU 学术 | 余嘉 |
+| P6 | **MAAP** | — | ❌ 缺 | 待补；官方源/许可待调研（标 TODO，勿臆造）| TODO | 待定 |
+| P7 | **NetMHCstabpan（独立预测列）** | stability proxy | 🔄 阻塞 | binary 需 GLIBC_2.29，HPC el8 仅 2.28 挡；现仅作 IMPROVE feature_calc 输入，**未作独立预测列进 benchmark**；解 = 新 glibc 容器 | DTU 学术 | 余嘉 |
+| P8 | **BigMHC_EL** | `BigMHC_EL` | ❌ 缺 | repo 有 `-m=el`（已对官方 `.cmp` 验证 PASS，diff 4.5e-7），权重/管道就绪但**未接 benchmark 列**（现仅接 `-m=im`）| 学术非商用 | 余嘉 |
+| P9 | 待补 | — | ❌ 缺 | 候选：netMHCpan 可变窗作独立口径列 / 其他呈递工具，按实际接入填 | TODO | 待定 |
+| P10 | 待补 | — | ❌ 缺 | 同上，达 10 需再补 1 个呈递工具 | TODO | 待定 |
+
+### 表 B — 免疫原性组（目标 20，现 13 ✅）
+
+| # | 工具 | 输出分名 | 状态 | 跑的版本 / caveat | 许可 | 归属 |
+|---|---|---|---|---|---|---|
+| I1 | **DeepImmuno** | DeepImmuno | ✅ 进 benchmark | 官方权重；WSL2 全跑通 | 学术 | 余嘉 |
+| I2 | **PredIG** | PredIG | ✅ 进 benchmark | 官方镜像（docker recombinant）；边界显著 ρ=0.2286 | 学术 | 余嘉 |
+| I3 | **IMPROVE** | IMPROVE | ✅ 进 benchmark·降级 | 官方 Predict；**Expression 特征降级**（feature_calc 缺 self_similarity/antigen.garnish/stabpan）；count-safe top3mean ρ=0.3227 全榜最强稳健 | 学术 | 余嘉 |
+| I4 | **NeoTImmuML ★** | NeoTImmuML | ✅ 进 benchmark·降级 | **自训版**（复刻官方 RF+LGB+XGB，**非官方权重**，官方权重不可得）；PPT/论文须标 ★ 非官方、不对标原论文 | 学术 | 余嘉 |
+| I5 | **pTuneos** | pTuneos | ✅ 进 benchmark | Pre&RecNeo 子模型（官方逻辑，对账官方 r=1.0）；本地端到端跑通，HPC sif 受 fakeroot 限 | 学术 | 余嘉 |
+| I6 | **PRIME** | PRIME | ✅ 进 benchmark | 官方权重（PRIME 2.1 + MixMHCpred 3.0，对账官方 diff=0）；Fisher-Z ρ=0.2794 最强单工具 | 学术免费（Gfeller lab）| 李紫晨/余嘉 |
+| I7 | **ImmuneApp** | Immunogenicity_score | ✅ 进 benchmark | 官方权重（py3.7+TF1.15）| 学术 | 李紫晨/余嘉 |
+| I8 | **deepHLApan** | deepHLApan（Imm/Bind 双分）| ✅ 进 benchmark | 官方镜像 `biopharm/deephlapan:v1.1`；⚠️肽长混杂警示，去混杂后无信号，不作能力证据 | 学术 | 李紫晨/余嘉 |
+| I9 | **BigMHC_IM** | `BigMHC_IM` | ✅ 进 benchmark | `-m=im` 7 模型 ensemble；34247 行 0 NaN | 学术非商用 | 余嘉 |
+| I10 | **CNNeo (CNNeoPP)** | `CNNeo` | ✅ 进 benchmark·自训 | 自训 FCNN_TF（PyTorch+TF-IDF，复刻 notebook 超参零改，ValAcc~75%）| MIT | 余嘉 |
+| I11 | **IEDB Immunogenicity (Calis)** | `IEDB_Calis` | ✅ 进 benchmark | IEDB_Immunogenicity-3.0 纯统计；42 allele-specific mask，其余默认 mask | NPOSL-3.0 | 余嘉 |
+| I12 | **Repitope** | ImmunogenicityScore | ✅ 进 benchmark | R 4.3.3 ERT 后端；**HLA-agnostic（不吃 HLA）→ 同肽各 allele 填同值（caveat 须标）**；8-11mer 外 NaN | MIT | 余嘉 |
+| I13 | **T-SCAPE ★** | `MT_TSCAPE` | ✅ 进 benchmark（待 merge）| 官方权重 + 修 2 个官方 repo bug（peptide 列名小写 + pmhc_im_neo 加载）；MT-only；负相关 ρ=-0.1386；**DTU/CC BY-NC-ND 4.0 学术非商用·ND 禁衍生发布·pending consent** | CC BY-NC-ND 4.0 | 余嘉 |
+| I14 | **NeoaPred** | `MT_NeoaPred`（Foreignness）| 🔄 阻塞（HPC pending）| 结构 foreignness 物理工具；严格 9mer；本地全量 ~60h 不可行 → 上 HPC singularity gpu4090；端到端 smoke PASS，全量 pending | Apache-2.0 | 余嘉 |
+| I15 | **ICERFIRE 1.0** | `icerfire_score`（100−rank）| 🔄 阻塞（DTU binary pending）| 脚本/管道就绪；binary 待 DTU 下载（health-software@dtu.dk）；**pending DTU consent** | DTU 学术 | 余嘉 |
+| I16 | **Seq2Neo** | — | ❌ 缺 | 待补；官方源/输入输出/许可待调研（标 TODO，勿臆造）| TODO | 待定 |
+| I17 | **DeepNeo / DeepNeo-v2** | — | ❌ 缺 | 待补；同上 | TODO | 待定 |
+| I18 | **内部 Inference 8-class** | Inference class_0..7 | ❌ 缺 | 袁 md §3.1 引用（class_2/3 +0.31）；**徐伊琳组源码未确认**，待团队提供 | 内部 | 徐伊琳组 |
+| I19 | 待补 | — | ❌ 缺 | 达 20 需再补免疫原性工具，按实际接入填 | TODO | 待定 |
+| I20 | 待补 | — | ❌ 缺 | 同上 | TODO | 待定 |
+
+**未做成 / 放弃（不计入 20，诚实标注，勿假装已有）**：
+- **MHLAPre** — ❌ **未做成**（🔴 权重缺：全网 GitHub/Kaggle/Zenodo/HF 搜空；ProcessData npy 缺 + 预处理拼装码被注释 → 自训路也不通；唯一出路 = 邮件作者 23B903048@stu.hit.edu.cn）。许可：repo 无 LICENSE。归属：李紫晨/余嘉。
+- **ImmunoStruct** — ❌ **NO-GO 诚实放弃**（三重硬 blocker：infer 锁预构建 PyG 图无通用推理入口 + AF2 不可承受 ~500GB MSA+数百 GPU·h + HLA 覆盖训 27 vs DS 65 不足）。Yale 许可不挡但工程封死。归属：余嘉 §Tier-3。
+
+**一句话结账**：17/30 接入 benchmark（呈递 4 + 免疫原性 13），缺 13（呈递 6 + 免疫原性 7）；NeoaPred/ICERFIRE 已部署但阻塞待跑（pending），MHLAPre 未做成、ImmunoStruct 放弃（均不计入目标）。
+
+---
+
+## 规范状态总表（首批 10 工具·部署细节归档）
+
+> 📌 30 工具进度真源 = 顶部「表 A / 表 B」。本表是**首批 10 工具（余嘉核心 5 + Wave3 5）的逐工具部署细节归档**，仍是这 10 个的细节真源；下方两张分表（第一批 5 / Wave3 5）= 更细的部署步骤归档，状态以本表为准。
 > 教训：旧表「状态」列单维枚举混了三件事（部署到第几步 / 跑哪个版本 / 进没进 benchmark），导致 NeoTImmuML（自训版进了 benchmark）被读成"没做成"、PRIME/ImmuneApp/deepHLApan（已进 benchmark）被读成"停在烟测"。本表按维度拆列。
 > **benchmark 列以 `analysis/metrics_ds2_9tools.csv` 为真源回填**（9 工具各 9 行 = 3 聚合×3 阈值；MHLAPre 0 行 = 唯一未进）。
 >
