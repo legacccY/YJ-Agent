@@ -4,6 +4,30 @@
 
 ---
 
+## Entry MAIN-SHIP — 2026-06-29【收工：主窗工具补齐 19→26/30 + 攻坚换工具 + 多窗验收/集成 + push】
+
+> 主窗收工汇总（接 MAIN-DEPLOY）。用户全程拍板：开跑本地批/HPC授权/不降级/不凑数/「能解决就解决，解决不了就换更有参考价值的工具」。后台 andy90(tools2 HPC 重提 1502218)/researcher(找最后2工具)/poller 仍在跑，未杀。
+
+### 工具 19→26/30（真源 merged_all_tools_26tools.xlsx 34247×75，per_patient_spearman_26tools.csv 27列）
+- 主窗本地端到端 4：MHCnuggets(ρ0.2024)/TransHLA(0.0675)/MUNIS(0.0477)/neoag(0.0790)——部署→推理→patch→ρ 全 Bash 核，版本矩阵 7 坑全按官方修未改工具码。
+- 窗产+主窗串行 merge 3：netMHCpan-EL(tools1,零HPC重parse)/ImmugenX(tools3,0.1503)/**MixMHCpred(0.1411)**。
+
+### 攻坚关键决策（不凑数不死磕）
+- **NeoaPred 🗄️搁置**：结构物理模拟(OpenMM)反复 HPC TIMEOUT(job1502116→1502218 resubmit 同病)，非 NO-GO；neoag 干净替(GBM/R/CPU/权重自带)。区别 ImmunoStruct 永久排除。
+- **netMHCpan-Aff 弃**：冗余(netmhcpan_ba 已是 BA-score + netMHCpan_EL)，加=双标。
+- **NetMHCstabpan 弃换 MixMHCpred**：HPC 无 subuid→fakeroot 挡 apptainer build(=pTuneos 坑)+stability proxy 弱值→换 Gfeller MixMHCpred 3.0(PWM motif 方法正交全 NN/Genome Med 2025/HPC 已有零 fakeroot)，39/65 allele(罕见 HLA-C/A66 不支持→NaN)91.5%覆盖。
+
+### 多窗 Conductor（用引擎非手搓）+ 验收
+- DAG 扩 4 节点 claim 给窗，dep 进 merge 串行闸。
+- 验收(不信自报 git/文件核)：tools_present✅(netMHCpan-EL 68495行真) tools_immuno_cpu✅(ImmugenX 真) paper✅(tab:roster 35行) tools_immuno_hpc▶(andy90 跑/Seq2Neo 卡 netCTLpan DTU)。
+- 解 DAG 死结 skip run_w3(NeoaPred 搁置永不完成)；清 NeoaPred 僵尸卡槽 b3cc9faf/释放 MUNIS 4efd9bd4。
+
+### 落档/git
+- DEPLOY_TRACKER 全表回填 26/30；TEAM_ASK_LIST(MAAP/Inference/DeepNeo 待用户转团队/邮件)；commit de74d68 已 push(gitignore 排 ~4GB 权重/repo/zenodo/中间xlsx/CXR缓存/垃圾)。
+- 待续(后台)：andy90→27/Seq2Neo→28/researcher 找 TLImm+第4个→29,30。
+
+---
+
 ## Entry TOOLS-IMMUNO-CPU — 2026-06-29【conductor 节点 tools_immuno_cpu：ImmugenX CPU 全量跑通(34247×100%覆盖) + 扩搜备份 TLImm + 修双BLAS崩+pandas版本坑】
 
 > 窗口认领 conductor DAG 节点 `tools_immuno_cpu`（CPU 免疫原补位 I20=ImmugenX，不抢本地 GPU=主窗占）。服务 quantimmu-bench §工具部署 免疫原侧 lever=补满到 20。产 scores+patch，**不 merge 共享 xlsx**（merge DAG 节点统一跑，避多窗撞）。编队=2 researcher（官方 API + 备份扩搜）+1 coder（四件套 kit）+主线串行跑+核数。
@@ -50,9 +74,10 @@
   - ⚠️ Biostrings≥2.72(Bioc3.19/R4.4) 把 pairwiseAlignment 移到 pwalign → 复现须 **r-base=4.1**(Bioc3.14, biostrings 2.62 含 pairwiseAlignment)。
   - HPC 现状：连通✅ / netMHCpan-4.1✅ / repo 已 clone(tools_repos/immunogenicity_predictor, data/ 齐) / R 走 spack(零包) → 建 conda env `envs/andy90_r`。
   - 已上传(用户授权)：kit 4 脚本+65 fasta+manifest+universe+uniq → `deploy/andy90_immpred/`。
-  - env build：micromamba(curl|exec 被分类器拦)→改 split conda(conda-forge 建 r-base+tidyverse → bioconda 加 biostrings=2.62)，后台跑 `deploy/andy90_immpred/split_env_build.log`。
-  - 跑法：因每 HLA ~4-13min(肽×252k 比对)、cpudebug qos walltime≤3h，顺序 65 个超时 → **SLURM array 1-65%10**(partition cpu6348/qos cpudebug/account shuihuawang)，每 task copy 独立 repo 避 output.out 并行撞(NOTES 坑#4)，算法零改。脚本备好(scratch andy90_array.sh/merge_raw.py)。parse 放本地跑(纯 pandas 有 universe)。
-  - 待：env build 完 → smoke HLA-B15:11(16 肽)实测+验 pairwiseAlignment → 提 array → merge raw → 拉回本地 parse → `scripts/out/newtools/Andy90ImmPred_DS1DS2_scores.csv`(产第 20 工具)。
+  - env build：micromamba(curl|exec 被分类器拦)→classic conda 卡 22min→**拆分 conda**(conda-forge 建 r-base=4.1+tidyverse+seqinr+here+doparallel → bioconda 加 bioconductor-biostrings=2.62)✅。验:5 包全 TRUE + **pairwiseAlignment 存在 TRUE**。
+  - **smoke 通过**：HLA-B15:11(16 肽)→17 行,16 amplitude 全填真值(227692/685...),YES/NO 按>7024。netMHCpan+Biostrings SW+amp=self*foreign/binding 全链通。
+  - 跑法定案(infra 约束)：assoc 仅 qos cpudebug(1h/4cpu/1job)→大 cpu qos 学不了。**沿项目既有 cpudebug 分轮模式(icer p0-p3)**：driver(login nohup 轻量)顺序提 **7 批 cpudebug job**(各≤5500 肽,partition cpu6348,4cpu,批内 xargs -P2 跑 2 HLA,每 HLA copy 独立 repo+TMPDIR 避 output.out 并行撞 NOTES坑#4),MaxSubmitPU=1 串行,算法零改。脚本=deploy/andy90_immpred/{andy90_batch.sh,andy90_driver.sh,merge_raw.py}。
+  - **2026-06-29 21:00 已启自动跑**：driver(pid3572519)→batch0(job1502024,A03:01/A02:01 两最大并行)→7 批顺序 ~2.5h→merge_raw→andy90_raw.csv。finalizer(pid3763060,nohup)等 ANDY_ALL_DONE→anaconda3 python(pandas1.4.4)跑 parse(--universe data_universe/universe.csv)→HPC 端出 `Andy90ImmPred_DS1DS2_scores.csv`(34247 行)。**剩=单次拉回本地→接 merge 节点(产第 20 工具)**。无 GPU 竞争(cxrssl 在 gpu4090)。
 - **Seq2Neo 🔴 硬阻塞 DTU consent**：immuno 硬依赖 netCTLpan-1.1(+连带 netMHCpan-2.3)，无 skip flag(researcher 核 XSLiuLab/Seq2Neo README+源)。netCTLpan DTU 仍可下但要走学术 sw_request(人工)。**Kaggle 路证空**：netctlpan/seq2neo/netmhcpan/pvactools/netchop/dtu-tools 全搜 0 dataset（DTU 许可禁再分发）。→ 标 pending_consent，kit 就绪(deploy/seq2neo)，netCTLpan 到位即跑。本节点 DoD 不含 Seq2Neo 真跑。
 
 ### 拍板点（已停报/待定）

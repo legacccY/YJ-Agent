@@ -146,3 +146,6 @@ project/meeting/QuantImmuBench/HPC/deploy/*/esm_cache/
 project/meeting/QuantImmuBench/HPC/deploy/*/weights/
 # scratchpad 残渣（全角冒号乱码名）
 *scratchpadproject_summary.txt
+project/meeting/QuantImmuBench/scripts/out/merged_all_tools_25tools.xlsx
+project/meeting/QuantImmuBench/HPC/deploy/mixmhcpred/mix_out.txt
+project/meeting/QuantImmuBench/HPC/deploy/mixmhcpred/mix_peptides.txt
