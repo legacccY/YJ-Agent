@@ -201,6 +201,21 @@ def run(cmd, timeout=30):
 c.close()
 ```
 
+### 远端后台启动（detached）—— 别让 o.read() 卡死
+`exec_command('nohup ... &')` 后调 `o.read()` **会阻塞**：后台进程继承了 channel 的 stdout/stderr，channel 不关闭、read 不返回，本地直接 timeout（本会话多次踩）。正解 = 远端命令**断开标准流 + 脱离会话**，且**启动后不 read**：
+
+```python
+# 正确：< /dev/null 断 stdin、>log 2>&1 重定向输出、setsid 脱离会话、& 后台
+cmd = "cd ~/proj && setsid nohup python train.py < /dev/null > run.log 2>&1 &"
+stdin, o, e = c.exec_command(cmd)
+# 不要 o.read()！直接关 channel（命令已被 shell fork 到后台，与本 channel 无关）
+o.channel.close()
+# 想确认起没起：另起一条 run() 查进程/日志，别等这条
+import time; time.sleep(2)
+print(run("pgrep -af train.py | head; tail -n 5 ~/proj/run.log"))
+```
+> 注：sbatch 提交本身**不需要** detached（提交即返回，正常 `o.read()` 拿 jobid）。本段只针对**裸跑远端常驻进程**（如 DTN 上长时下载/非 SLURM 后台任务）。SLURM 训练一律走 `sbatch`。
+
 ---
 
 ## 故障排查

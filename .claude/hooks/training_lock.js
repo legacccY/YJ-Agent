@@ -41,7 +41,16 @@ process.stdin.on('end', () => {
   // 洞 A 修：训练识别不止文件名 train*.py——扩到 probe/sweep/pilot/capacity/finetune/pretrain/mqar/experiment
   // 这类「训到收敛/扫描」脚本名（防 mqar_capacity_probe.py 之类绕过）；--smoke/--dry-run/test_ 仍放行（tiny 烟测）。
   const isSmoke = /--smoke|--dry[-_]?run|\btest_|tests\//i.test(cmd);
-  const isTraining = !isCompileOrTest && !isSmoke && !isCpuAnalysis && (
+  // 纯 CPU / 纯推理豁免：显式 CPU 设备标志 或 特征抽取/probe-only 推理脚本名 → 放行（不占 GPU，
+  // 却被通用词 probe/pilot/sweep/experiment 误判成训练。实证 run_pilot.py(冻结特征抽取)/probe_only.py(numpy LR)
+  // 本会话被 ×7 拦，被迫为 0-GPU 活反复 request 卡槽 + 改名绕过）。两类高置信信号：
+  //   1) 命令显式 --device cpu / --cpu / CUDA_VISIBLE_DEVICES=（空）—— 用户已声明不用 GPU；
+  //   2) .py 名含纯推理动词 extract_features/feature_extract/linear_probe/probe_only/infer/inference。
+  // 真 GPU 训练绝不会带这些标志/名，故零漏洞。需占 GPU 的活仍照常走调度器。
+  const isCpuInference =
+    /--device[=\s]+cpu\b|--cpu\b|CUDA_VISIBLE_DEVICES\s*=\s*(?:""|''|)(?:\s|$)/i.test(cmd)
+    || /[\/\\]?(extract_features|feature_extract\w*|linear_probe|probe_only|inference|\binfer)[\w-]*\.py/i.test(cmd);
+  const isTraining = !isCompileOrTest && !isSmoke && !isCpuAnalysis && !isCpuInference && (
     (/Start-Process/i.test(cmd) && /\b(train|python)\b/i.test(cmd)) ||
     /\bsbatch\b/i.test(cmd) ||
     (/\bpython\b/i.test(cmd) && /[\w./-]*(train|sweep|probe|pilot|capacity|finetune|pretrain|mqar|experiment)[\w-]*\.py/.test(cmd)) ||
