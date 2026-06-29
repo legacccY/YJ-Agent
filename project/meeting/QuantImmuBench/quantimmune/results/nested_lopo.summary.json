@@ -1,0 +1,68 @@
+{
+  "design": "nested-LOPO (outer leave-one-DS2-patient, inner LOPO θ-selection)",
+  "leakage_guard": "inner θ-selection never touches outer test patient p",
+  "features": "surv6",
+  "feature_cols": [
+    "MT_PredIG",
+    "MT_IMPROVE_mean_prediction_rf",
+    "MT_pTuneos",
+    "MT_PRIME",
+    "MT_ImmuneApp",
+    "MT_deepHLApan"
+  ],
+  "target": "raw_sfc",
+  "shuffled": false,
+  "seed": 42,
+  "min_pep": 4,
+  "theta_space": [
+    "fixavg",
+    "ridge@dof2",
+    "ridge@dof2.5",
+    "ridge@dof3"
+  ],
+  "dof_grid": [
+    2.0,
+    2.5,
+    3.0
+  ],
+  "theta_oracle": "fixavg",
+  "oracle_agg_by_theta": {
+    "fixavg": 0.328129,
+    "ridge@dof2": -0.309491,
+    "ridge@dof2.5": -0.30078,
+    "ridge@dof3": -0.305893
+  },
+  "outer_folds": [
+    101,
+    102,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110
+  ],
+  "lopo_fisherz_rho": 0.328129,
+  "lopo_ci_lo": 0.101319,
+  "lopo_ci_hi": 0.522514,
+  "lopo_n_used": 9,
+  "oracle_fisherz_rho": 0.328129,
+  "oracle_ci_lo": 0.101319,
+  "oracle_ci_hi": 0.522514,
+  "oracle_n_used": 9,
+  "consistency_delta_lopo_minus_oracle": 0.0,
+  "consistency_paired_spearman": 1.0,
+  "consistency_mean_abs_dev": 0.0,
+  "theta_selected_per_fold": {
+    "101": "fixavg",
+    "102": "fixavg",
+    "104": "fixavg",
+    "105": "fixavg",
+    "106": "fixavg",
+    "107": "fixavg",
+    "108": "fixavg",
+    "109": "fixavg",
+    "110": "fixavg"
+  }
+}

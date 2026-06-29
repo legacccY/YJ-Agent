@@ -1,0 +1,11 @@
+patient_id,dataset,n_pep,theta_selected,lopo_test_rho,oracle_rho
+101,DS2,9,ridge@dof2.5,0.3,0.3
+102,DS2,6,fixavg,-0.314286,-0.028571
+104,DS2,14,ridge@dof2,0.221978,0.116484
+105,DS2,16,ridge@dof2.5,0.058824,0.058824
+106,DS2,13,ridge@dof3,-0.39011,-0.395604
+107,DS2,8,ridge@dof2,-0.52381,-0.571429
+108,DS2,12,ridge@dof2,-0.181818,-0.160839
+109,DS2,10,ridge@dof2.5,0.515152,0.515152
+110,DS2,13,ridge@dof3,0.10989,0.181319
+SUMMARY,DS2,101,oracle=ridge@dof2.5,0.00901,0.013278

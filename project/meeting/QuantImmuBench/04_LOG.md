@@ -4,6 +4,68 @@
 
 ---
 
+## Entry P0-RUN — 2026-06-29【✅ 工具补齐(→18/30,ICERFIRE登顶) + P0 四核心实验全跑通(大编队) + geomean headline 本地不复现(拍板点)】
+
+> 窗口 `quantimmu-bench`。用户指令「读 QuantImmuBench 所有档，把 30 工具按计划搞好，参考之前工作，先大编队调研写计划」。拍板范围=**工具补齐 + P0 四核心实验全推**；外部阻塞「先把能干的干了」。plan 见 `~/.claude/plans/quantimmubench-30-ancient-hedgehog.md`。本 entry = 大编队执行收口（2 Explore 读档→planner 设计→6 coder 写脚本→主线串行跑→analyst+verifier 核）。所有数字 Bash 核 csv。
+
+### 工具轨（A1 ✅ / A2 侧支 / A3 调研）
+- **A1 ✅ 18/30（内部）**：`scripts/patch_add_icerfire_nettepi.py` patch 进活真源 16tools.xlsx（不重 join 保 HLA-FIX）→ `scripts/out/merged_all_tools_18tools.xlsx`(34247×59，+MT_ICERFIRE 86.6%/MT_NetTepi 21.7%)→`merge_metrics_NNtools.py`→`metrics_ds2_18tools.csv`+`per_patient_spearman_18tools.csv`。**ICERFIRE per-patient fisherz=0.3077 登顶全工具**(CI[0.078,0.507]排0显著>PRIME0.279>IMPROVE0.250)；NetTepi 弱0.023(n=8低覆盖)。DTU pending sidecar=[netmhcpan_ba,ICERFIRE,NetTepi]，**发表前数字能否用=袁老师拍板**。⚠️计数语义：文件名`18tools`但per_patient含19打分列(MHCflurry presentation+affinity_neg各1列)，非数据错。
+- **A2 侧支 pending**：NeoaPred HPC job 1496564 卡——`neoapred_hpc/full/outs` 14724 pdb(弛豫部分done)但 surf=0(foreignness打分0产出)，需 squeue 查 job 死活+可能重启 scoring。不主线 babysit。完成 merge_neoapred.py→19/30。
+- **A3 调研+部署(researcher+coder)**：
+  - **BigMHC_EL ✅已部署进表 → 19/30**：复用现装 bigmhc repo `-m=el`(base bat{N}模型,非im子目录),本地CPU全量打分53582对(`bigmhc_el_output.prd`)→`patch_add_bigmhc_el.py`自然键join→`merged_all_tools_19tools.xlsx`(34247×61,MT/WT_BigMHC_EL 94.1%填充)→metrics_ds2_19tools.csv。BigMHC_EL per-patient fisherz=0.108(弱正,胜IM -0.014)。**JHU学术许可可发表,非DTU pending**。
+  - **Seq2Neo 🟡kit就绪待阻塞解**：`HPC/deploy/seq2neo/`(prep_input+run_seq2neo+parse_output+NOTES 4文件)。批量CLI`seq2neo immuno --mode multiple`,输入`Pep,HLA`(HLA去星号HLA-A02:01),conda liuxslab linux-64。**阻塞:netCTLpan 1.1.b未部署(DTU许可)+linux-only(需WSL/HPC)+12mer行为/分数列名待实跑确认**。netCTLpan到位即跑(命令链在NOTES)。
+  - 外部阻塞 TODO：DeepNeo(repo 今日404已删,查Wayback/邮件KAIST) + 内部8-class(徐伊琳框架组) + MAAP(零命中,需袁/徐给全称)。
+
+### P0 实验轨（E0 前置 + E1-E4 四实验，全纯 CPU 本地跑通）
+- **E0 ✅**：`quantimmune/build_model_matrix_v2.py`→`model_matrix_v2.csv`(183×38)，桥接 pooled 亲和力维(pool_netAffneg_top20/pool_mhcfluAffneg_top20，topk_w k=20 α=0)，183/183非NaN。无泄漏守住(定向/pool/逐病人min+RMS全 label-blind)。**这是 planner 揪出的隐藏关键路径**(原 model_matrix 仅9免疫原维,geomean headline主角维度缺席)。
+- **E1 robustness ✅**(核心图3)：`analysis/robustness_subsample.py`→results.csv(1159行=19法×2drop×30seed+19满数据)+summary.csv(38行)。病人内删10/20%×30seed，7维。**删10% median排1(mean0.343,win0.60)/geomean排2(0.335,win0.267)；删20% median0.316/geomean0.312**；单工具地板PRIME/IMPROVE/deepHLApan 0.246-0.254；fusion win_vs_base=1.0(30seed全胜单工具)。learned型(ridge/gbdt)垫底塌零。
+- **E2 fusion12 ✅**：`analysis/fusion_12methods.py`(import复用fusion_study引擎,零改原脚本)→fusion_12methods.csv(48行=12法×{3,4,6,7}维,geomean独立单列✅)。**6维 median0.374>geomean0.355>mean_rank0.349>max0.267**,learned全更差。
+- **E3 nested-LOPO ✅**：`quantimmune/nested_lopo_ensemble.py`→results/nested_lopo.csv。**honest: θ_oracle=fixavg,LOPO=oracle=0.3281 CI[0.101,0.522],Δ=0,配对Spearman=1.0→零过拟合无泄漏铁证(G3§3.3.3表8)**；shuffle负对照 nested_lopo_shuffle.csv LOPO0.009/oracle0.013≈0(信号不造)。θ空间{fixavg,ridge@dof2-3}——honest选fixavg(框架正确避开ridge,ridge真数据-0.30过拟合翻负)。
+- **E4 ablation ✅**：`analysis/sixdim_ablation_weights.py`→ablation_dim_weights.csv。维度留一+4加权(LOPO无泄漏)。**DS2无普适最承重维**(7维=MT_deepHLApan -0.081/6维meanrank=PredIG/6维geomean=pTuneos,删任一|delta|≤0.08 CI全叠=真共识)。**DS2加权全劣于等权**(learned_simplex-0.241最惨)→「加权塌回等权」实证✅。DS1(n=6)全不复现(与E1/E2 DS1 sensitivity一致)。
+
+### 🔑 核心裁决：geomean headline 本地不复现（analyst+verifier 双核）
+- 大纲§3.3 headline=「geomean 唯一跨3/4/6/7维一致≥mean_rank,故唯一双检验通过」。**本地两腿都断**：①geomean dim4(0.326)跌破mean_rank(0.336),「唯一性」证伪;②robustness median两档都排1,geomean第2。大纲声称值(geomean删10%+0.4643/max+0.4834)绝对值也对不上(本地fusion~0.33,单工具~0.25)。
+- **更稳 headline 建议**：「共识 rank-fusion(median/geomean/mean_rank 同档,统计不可分)一致优于任何单工具(~0.25)和任何learned融合(全负/塌零);融合win_vs_base=1.0」。承重点从「哪个算子第一」挪到「共识融合>单工具+learned」(csv真撑得住)。geomean 的 AND型共识可解释性入 Discussion 当机制叙事,不独尊性能。
+
+### 修的 bug
+- E3 json int64 不可序列化(主线1行加 _json_default)。
+- E3 shuffle 跑覆盖 honest 主结果(脚本固定文件名)→改 shuffle 加`_shuffle`后缀分文件,重跑恢复 honest+shuffle 双文件。
+
+### 验收状态(analyst判,未跑正式/stage-gate)
+- **G1 工具**：**19/30内部**(16基+ICERFIRE+NetTepi+BigMHC_EL;per_patient csv 20行因MHCflurry presentation+affinity分2列)。Seq2Neo kit就绪待netCTLpan。缺口靠外部(鼠数据/源码/许可/netCTLpan)。
+- **G3 三重检验**：robustness✅ + ablation✅ + nested-LOPO✅(honest已恢复) = **结构齐全**。
+- **G4 fusion**：12法+geomean单列结构✅,但 headline复现性❌(拍板点)。
+
+### 拍板点(记录在案,需袁老师/朱同学定,不擅自)
+1. **【最高】geomean headline 是否回退**为「共识rank-fusion」叙事(本地median略胜+geomean唯一性证伪)。不定则§3.3全段没法写。
+2. **nested-LOPO θ空间**是否剔ridge(真数据-0.30拖累;honest已避开选fixavg)——方法学口径。
+3. **最承重维怎么报**(本地无普适:随method/维数变;大纲称deepHLApan仅7维成立)。
+4. **加权定义**(本地全劣于uniform;表4「加权变体」列正式法还是只作"塌回等权"反例)。
+5. **DS1主文角色**(n=6全不复现,当sensitivity诚实呈现还是移出主表)。
+6. DTU consent(ICERFIRE/NetTepi/netmhcpan_ba/TSCAPE数字进稿)+口径统一(92/8 vs 101/9→7)仍待袁老师。
+
+### 图3建议(analyst)
+分组箱线/小提琴图(x=drop{0,10,20%},median/geomean/mean_rank/max/PRIME五条画30seed分布不画裸均值),median与geomean箱体大重叠须让读者看出不可分,叠单工具地板参考带。
+
+---
+
+## Entry CODE-NESTED-LOPO — 2026-06-29【🟢就绪·coder 新建 nested_lopo_ensemble.py（单层 LOPO 扩双层 nested-LOPO，lever=G3 §3.3.3 表8 无泄漏严格性）】
+
+**新文件**：`quantimmune/nested_lopo_ensemble.py` — 双层留一病人评测。外层留一 DS2 病人 p（口径照 lopo_eval：DS2 9 患者主聚合、DS1 仅训练池、min_pep=4、Fisher-z 加权），内层在「其余病人=全体−p」上再做一轮 LOPO 选超参 θ*（**绝不碰 p**=无泄漏卖点）；用 θ* 训其余病人评测 p = lopo_test_rho。oracle 对照=全数据（含 p）选全局 θ_oracle 的作弊上界。θ 空间=fusion 法选择(fixavg vs ridge)×Ridge 正则强度(dof_target grid [2.0,2.5,3.0])，共 4 候选。复用 lopo_eval 的 spearman_np/fisherz_weighted_agg/find_ridge_alpha/impute_fold/FEATURE_SETS/患者集（import 不重造）。
+**输出**：`quantimmune/results/nested_lopo.csv`（每外层 fold 一行 patient_id/theta_selected/lopo_test_rho/oracle_rho + SUMMARY 行报 LOPO ρ̄ vs oracle ρ̄ 一致性）+ `nested_lopo.summary.json`。
+**静态检查**：py_compile ✅（未执行）。**待主线跑**：`python quantimmune/nested_lopo_ensemble.py --features surv6 --target raw_sfc`（+ `--shuffle --seed 42` 防泄漏对照，期望 LOPO≈oracle≈0）。
+**TODO**：DOF_GRID [2.0,2.5,3.0] 为 coder 按 LEDGER 约束⑨(2-3)选的合理候选，非官方源 → 待 researcher/planner 确认登记；pool_* 亲和力维未入 FEATURE_SETS（沿用 lopo_eval 注册集），如需纳入需新增特征集并在 LEDGER 预登记。
+
+## Entry CODE-POOLEDAFF-V2 — 2026-06-29【🟢就绪·coder 新建 build_model_matrix_v2.py（桥接 pooled 亲和力维进 model_matrix，lever=G2）】
+
+> coder 窗。服务 G2（无泄漏 + 多维 fusion 物理前提）。planner 揪出隐藏关键路径：现有 `quantimmune/model_matrix.csv` 只含 9 免疫原 max 维 + seq 维，**不含 pooled 亲和力维**，headline geomean rank-fusion 的「亲和力-pooled 维」（netAffneg topk k=20,α=0）根本不在矩阵里。
+- **新建 `quantimmune/build_model_matrix_v2.py`**（不破坏现有产物）：读基矩阵 `model_matrix.csv` + 合表 `merged_all_tools_18tools.xlsx`(优先)→`16tools.xlsx`(回退) → 对亲和力工具列（`MT_netmhcpan_ba`/`MT_MHCflurry_affinity_neg`，源 parse 已定向=越高越强）按 topk_w(k=20,α=0=等权前20) pool 到突变层 → 逐病人 min 平移+RMS 标准化（label-blind） → 输出 `quantimmune/model_matrix_v2.csv`（=原全列 + `pool_netAffneg_top20`/`pool_mhcfluAffneg_top20` + `_raw` 伴列）。
+- **复用** `analysis/pooling_sweep_17tools.py` 的 `pool_topk_w`（import，import 失败回退逐字搬运同款），不另造算子。
+- **无泄漏**：定向/pool/归一化全程只用工具分数+Peptide_ID/Patient_ID 分组，Elispot 原样带过未参与构造。py_compile ✅。**未运行**（coder 不跑）。
+- 下游 `fusion_study.py`/`lopo_eval.py` 用 `--matrix quantimmune/model_matrix_v2.csv` 指向它。待主线跑生成 csv + 核行数/列。
+
+---
+
 ## Entry ALIGN-OUTLINE — 2026-06-29【✅ 以袁老师 paper outline 为权威框架，全档对齐 + 出 gap roadmap（大编队）】
 
 > 窗口 `quantimmu-bench`。用户指令：袁老师发来 `paper/QuanImmu-Paper-Outline.md`（微信传，VSCode md-preview 导出 HTML，正文 line 1894+，原始 md ~214 行），「以这个 md 为最核心框架，更新到各档，调研理解、找需优化/实验增改部分，大编队」。用户两拍板：① 以袁 md 为准框架；② 数字以本地已核 csv 为真源。范围=**文档对齐 + gap 清单，不动实验代码**。
