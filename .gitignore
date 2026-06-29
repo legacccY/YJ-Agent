@@ -119,3 +119,13 @@ project/meeting/QuantImmuBench/HPC/deploy/**/*.fst
 project/meeting/QuantImmuBench/HPC/deploy/**/*.lyr
 project/meeting/QuantImmuBench/HPC/deploy/bigmhc_im/bigmhc-master/
 project/meeting/QuantImmuBench/HPC/deploy/repitope/mendeley_data/
+
+# CheXWorld 复现 clone (嵌套 repo, All-rights-reserved 官方代码, 不进库)
+project/meeting/复现/CheXWorld/repo/
+project/meeting/复现/CheXWorld/assets/
+
+# CheXWorld 复现：repo/权重/数据/PDF 不进 git
+project/meeting/复现/CheXWorld/repo/
+project/meeting/复现/CheXWorld/assets/
+project/meeting/复现/CheXWorld/runs/
+project/meeting/复现/CheXWorld/*.pdf
