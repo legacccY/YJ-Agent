@@ -4,6 +4,22 @@
 
 ---
 
+## Entry GH-SYNC — 2026-06-29【✅ GitHub private repo 全量更新到当前真相 + 学术主页加 portfolio 条目】
+
+> 窗口 `quantimmu-bench`。用户指令「读档→完整更新 GitHub repo→主页也更新」。用户三拍板：repo 保持 private / 主页详细带数字+链接 / repo 范围=全量同步含交付包 Results。
+
+### repo `legacccY/quantimmu-bench`（private，`e02bd16..fcc3266`）
+- 现 repo 停在 06-25 旧版（10/9 工具，无 HLA-FIX/Tier 扩张/per-patient/IMPROVE-FIX）→ clone 后全量刷新（gh-publisher 编队 prep，主线 commit+push）。
+- **README 重写**为当前真相（数字先派 verifier 核 `metrics_ds2_16tools.csv`+`per_patient_spearman_16tools.csv` 逐一对账）：16 已授权工具进主榜 + netMHCpan-BA(第17,pending DTU,不入榜不入库) + HLAthena proxy 单列 + MHLAPre 未做成；主指标 per-patient Fisher-Z（PRIME +0.279 CI[.050,.481]、IMPROVE +0.250 CI[.021,.455] 唯二显著）；全局 max IMPROVE ρ0.252 p0.011 + PredIG ρ0.201 p0.044（IMPROVE 唯一双口径显著）；天花板 ρ<0.4；AUC(SFC>0) IMPROVE 0.616/PRIME 0.517；版本 caveat 诚实分级 + HLA-FIX 注 + 许可红线。
+- 同步 TOOLS/ analysis/(16/17 工具 csv+figures) reference/ scripts/(phaseB 全套) HPC/ + 8 顶层 md；新增脱敏交付包 Results/(15 docs+15 xlsx)；`.gitignore` 加 Results 强制纳入 + DTU 例外(netMHCpan-BA 排除) + `*.log`；NOTICE.md 补 MIT 范围澄清 + TSCAPE/BigMHC 红线；清旧残留(8/9 工具 csv+6 旧图+5 构建日志)。
+- **隐私扫**：无硬密钥；HPC 凭证全运行时从仓外读、无明文入库；DTU 产物(netMHCpan-BA xlsx/md)挡在提交外；Results/ 脱敏干净。**保持 private 即因许可红线+协作项目+潜在双盲**。
+
+### 学术主页 `legacccY.github.io`（public，`40641b4..2825abb`）
+- 新建 `_portfolio/quantimmu-bench.md`（详细带数字版：做了什么/关键结论/工程要点/代码链接）+ 2 张图(ceiling/perpatient)入 images/ + navigation.yml 启用 Portfolio 导航。
+- ⚠️ repo private → 主页 GitHub 链接对公开访客 404，已在页内标注「仓库私有/可应需提供」。GitHub Pages 数分钟内构建生效。
+
+---
+
 ## Entry DELIVERY-FIX — 2026-06-28【✅ 交付包口径统一（per-patient Fisher-Z 主）+ 全员隐私清洗 + 目录改名 Results】
 
 > 窗口 `quantimmu-bench`。用户验收交付包揪出问题 + 要求脱敏。本 entry 记三件收尾。
