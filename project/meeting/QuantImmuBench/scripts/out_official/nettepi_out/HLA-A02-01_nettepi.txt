@@ -1,0 +1,177 @@
+# /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netTepi-1.0/netTepi.py -a HLA-A02:01 -p /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-A02-01.pep -l 9
+# Tue Jun 30 2026 15:00
+# USER: jiayu2403
+# CWD: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs
+# HOST: Linux x86_64 4.18.0-372.9.1.el8.x86_64 xpszlogin2
+# COMMAND LINE PARAMETERS SET TO:
+#	input_file          /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-A02-01.pep
+#	alleles             HLA-A02:01                    
+#	cons                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCcons-1.1/netMHCcons
+#	inptype             1                             
+#	lengths             9                             
+#	pep_mode            True                          
+#	print_alleles       False                         
+#	sort                0                             
+#	stab                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCstabpan-1.0/netMHCstabpan
+#	stab_weight         0.16                          
+#	tcell_weight        0.1                           
+#	tmpdir              /gpfs/work/bio/jiayu2403/quantimmu/nettepi_tmp
+#	www                 False                         
+#	xls                 False                         
+#	xlsfile             NetTepi_out.xls               
+
+# NetTepi version 1.0
+
+# Inputfile: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-A02-01.pep
+
+# Input is in PEPTIDE format
+
+# Peptide lengths: 9
+
+----------------------------------------------------------------------------------------------------
+ Pos       Allele         Peptide          Identity      Aff     Stab    Tcell     Comb   %Rank
+----------------------------------------------------------------------------------------------------
+   0   HLA-A02:01       AALQKLQQP           PEPLIST    0.037    0.006   -0.506   -0.022   50.00       
+   0   HLA-A02:01       ADGLWELPV           PEPLIST    0.104    0.006    0.294    0.107   20.00       
+   0   HLA-A02:01       AERLWFCPT           PEPLIST    0.062    0.022    0.280    0.077   32.00       
+   0   HLA-A02:01       AGPERLDQM           PEPLIST    0.054    0.005    0.088    0.050   50.00       
+   0   HLA-A02:01       ALLALPLQR           PEPLIST    0.135    0.031   -0.063    0.099   32.00       
+   0   HLA-A02:01       ALPDMVVSH           PEPLIST    0.140    0.137   -0.175    0.108   20.00       
+   0   HLA-A02:01       ALPLQRTWN           PEPLIST    0.039    0.000    0.083    0.037   50.00       
+   0   HLA-A02:01       ALQKLQQPD           PEPLIST    0.058    0.005   -0.479   -0.004   50.00       
+   0   HLA-A02:01       ALSPPTSPR           PEPLIST    0.085    0.069   -0.185    0.055   50.00       
+   0   HLA-A02:01       AQPTRRGPP           PEPLIST    0.037    0.000    0.157    0.043   50.00       
+   0   HLA-A02:01       AQRLKLSTR           PEPLIST    0.048    0.006   -0.332    0.003   50.00       
+   0   HLA-A02:01       ARLSAQPTR           PEPLIST    0.037    0.006   -0.228    0.006   50.00       
+   0   HLA-A02:01       ARVAQRLKL           PEPLIST    0.044    0.007   -0.147    0.019   50.00       
+   0   HLA-A02:01       ASVYHKPPN           PEPLIST    0.040    0.001   -0.178    0.012   50.00       
+   0   HLA-A02:01       ASWGAVQPA           PEPLIST    0.267    0.527    0.079    0.290    6.00       
+   0   HLA-A02:01       ATLPLRTHC           PEPLIST    0.058    0.105    0.075    0.067   32.00       
+   0   HLA-A02:01       ATRKFLKKK           PEPLIST    0.035    0.003   -0.405   -0.014   50.00       
+   0   HLA-A02:01       AVEVDNFRF           PEPLIST    0.059    0.045    0.219    0.073   32.00       
+   0   HLA-A02:01       DGLWELPVE           PEPLIST    0.027    0.000    0.321    0.052   50.00       
+   0   HLA-A02:01       DHASWGAVQ           PEPLIST    0.027    0.000    0.151    0.035   50.00       
+   0   HLA-A02:01       DMVVSHLFW           PEPLIST    0.049    0.011   -0.017    0.036   50.00       
+   0   HLA-A02:01       DNFRFTPPN           PEPLIST    0.032    0.000    0.225    0.046   50.00       
+   0   HLA-A02:01       DQMVHPVAE           PEPLIST    0.042    0.000    0.063    0.037   50.00       
+   0   HLA-A02:01       ELPVEGRAE           PEPLIST    0.022    0.000    0.234    0.040   50.00       
+   0   HLA-A02:01       ERLDQMVHP           PEPLIST    0.029    0.001   -0.206    0.001   50.00       
+   0   HLA-A02:01       EVDNFRFTP           PEPLIST    0.043    0.006    0.285    0.061   50.00       
+   0   HLA-A02:01       FAVEVDNFR           PEPLIST    0.079    0.013    0.238    0.084   32.00       
+   0   HLA-A02:01       FHLATRKFL           PEPLIST    0.072    0.045    0.009    0.061   50.00       
+   0   HLA-A02:01       FLKKKFLRV           PEPLIST    0.582    0.642   -0.366    0.497    3.00       
+   0   HLA-A02:01       FLRVTITTK           PEPLIST    0.090    0.047    0.277    0.102   20.00       
+   0   HLA-A02:01       FRFTPPNPE           PEPLIST    0.038    0.000    0.044    0.033   50.00       
+   0   HLA-A02:01       FTPPNPEAE           PEPLIST    0.044    0.001    0.076    0.040   50.00       
+   0   HLA-A02:01       GLWELPVEG           PEPLIST    0.463    0.100    0.245    0.383    4.00       
+   0   HLA-A02:01       GPERLDQMV           PEPLIST    0.038    0.003   -0.106    0.018   50.00       
+   0   HLA-A02:01       GPPALSPPT           PEPLIST    0.054    0.003   -0.147    0.026   50.00       
+   0   HLA-A02:01       HASWGAVQP           PEPLIST    0.044    0.005    0.206    0.054   50.00       
+   0   HLA-A02:01       HKPPNAFVE           PEPLIST    0.030    0.000    0.139    0.036   50.00       
+   0   HLA-A02:01       HLATRKFLK           PEPLIST    0.068    0.047   -0.009    0.057   50.00       
+   0   HLA-A02:01       HPVAERLWF           PEPLIST    0.043    0.004    0.319    0.064   32.00       
+   0   HLA-A02:01       ITTKFQLVK           PEPLIST    0.052    0.007   -0.185    0.021   50.00       
+   0   HLA-A02:01       KAGPERLDQ           PEPLIST    0.026    0.000    0.150    0.034   50.00       
+   0   HLA-A02:01       KFLKKKFLR           PEPLIST    0.048    0.027   -0.541   -0.014   50.00       
+   0   HLA-A02:01       KFLRVTITT           PEPLIST    0.102    0.084    0.260    0.115   20.00       
+   0   HLA-A02:01       KKFLRVTIT           PEPLIST    0.064    0.016    0.227    0.073   32.00       
+   0   HLA-A02:01       KKKFLRVTI           PEPLIST    0.050    0.003    0.143    0.052   50.00       
+   0   HLA-A02:01       KLQQPDHAS           PEPLIST    0.110    0.086   -0.094    0.086   32.00       
+   0   HLA-A02:01       KLSTRQKYW           PEPLIST    0.070    0.135   -0.257    0.048   50.00       
+   0   HLA-A02:01       KPPNAFVEE           PEPLIST    0.035    0.000    0.232    0.049   50.00       
+   0   HLA-A02:01       KYWLLATLP           PEPLIST    0.058    0.003    0.113    0.055   50.00       
+   0   HLA-A02:01       LALPLQRTW           PEPLIST    0.052    0.016   -0.068    0.034   50.00       
+   0   HLA-A02:01       LASVYHKPP           PEPLIST    0.040    0.001   -0.174    0.012   50.00       
+   0   HLA-A02:01       LATLPLRTH           PEPLIST    0.033    0.003    0.047    0.030   50.00       
+   0   HLA-A02:01       LATRKFLKK           PEPLIST    0.036    0.002   -0.170    0.010   50.00       
+   0   HLA-A02:01       LDQMVHPVA           PEPLIST    0.050    0.004   -0.129    0.025   50.00       
+   0   HLA-A02:01       LKKKFLRVT           PEPLIST    0.037    0.003   -0.116    0.016   50.00       
+   0   HLA-A02:01       LKLSTRQKY           PEPLIST    0.029    0.002   -0.307   -0.009   50.00       
+   0   HLA-A02:01       LLALPLQRT           PEPLIST    0.232    0.437   -0.087    0.233    8.00       
+   0   HLA-A02:01       LLATLPLRT           PEPLIST    0.358    0.226    0.051    0.306    6.00       
+   0   HLA-A02:01       LPDMVVSHL           PEPLIST    0.083    0.033   -0.211    0.046   50.00       
+   0   HLA-A02:01       LPLQRTWNS           PEPLIST    0.046    0.008    0.150    0.050   50.00       
+   0   HLA-A02:01       LPLRTHCLS           PEPLIST    0.037    0.002    0.065    0.034   50.00       
+   0   HLA-A02:01       LQKLQQPDH           PEPLIST    0.037    0.002   -0.299   -0.002   50.00       
+   0   HLA-A02:01       LQQPDHASW           PEPLIST    0.071    0.025   -0.060    0.051   50.00       
+   0   HLA-A02:01       LQRTWNSLR           PEPLIST    0.062    0.007    0.119    0.059   50.00       
+   0   HLA-A02:01       LRVTITTKF           PEPLIST    0.043    0.021    0.125    0.048   50.00       
+   0   HLA-A02:01       LSAQPTRRG           PEPLIST    0.033    0.001   -0.004    0.024   50.00       
+   0   HLA-A02:01       LSTRQKYWL           PEPLIST    0.072    0.061   -0.125    0.051   50.00       
+   0   HLA-A02:01       LWELPVEGR           PEPLIST    0.032    0.001    0.154    0.039   50.00       
+   0   HLA-A02:01       MVHPVAERL           PEPLIST    0.248    0.254    0.191    0.243    8.00       
+   0   HLA-A02:01       MVVSHLFWE           PEPLIST    0.130    0.009    0.096    0.107   20.00       
+   0   HLA-A02:01       NAFVEEVME           PEPLIST    0.032    0.000    0.204    0.044   50.00       
+   0   HLA-A02:01       NFRFTPPNP           PEPLIST    0.029    0.000    0.149    0.036   50.00       
+   0   HLA-A02:01       NSLRLSPLK           PEPLIST    0.045    0.001   -0.134    0.020   50.00       
+   0   HLA-A02:01       PALSPPTSP           PEPLIST    0.028    0.000   -0.255   -0.005   50.00       
+   0   HLA-A02:01       PDHASWGAV           PEPLIST    0.029    0.000    0.149    0.036   50.00       
+   0   HLA-A02:01       PDMVVSHLF           PEPLIST    0.043    0.003   -0.110    0.021   50.00       
+   0   HLA-A02:01       PERLDQMVH           PEPLIST    0.024    0.000   -0.206   -0.003   50.00       
+   0   HLA-A02:01       PFAVEVDNF           PEPLIST    0.030    0.002    0.206    0.043   50.00       
+   0   HLA-A02:01       PLQRTWNSL           PEPLIST    0.129    0.031    0.159    0.116   20.00       
+   0   HLA-A02:01       PLRTHCLSL           PEPLIST    0.117    0.063   -0.069    0.090   32.00       
+   0   HLA-A02:01       PNAFVEEVM           PEPLIST    0.034    0.000    0.374    0.063   50.00       
+   0   HLA-A02:01       PPALSPPTS           PEPLIST    0.028    0.000   -0.157    0.005   50.00       
+   0   HLA-A02:01       PPFAVEVDN           PEPLIST    0.029    0.000    0.260    0.047   50.00       
+   0   HLA-A02:01       PPNAFVEEV           PEPLIST    0.055    0.032    0.333    0.079   32.00       
+   0   HLA-A02:01       PTRRGPPAL           PEPLIST    0.037    0.002    0.105    0.038   50.00       
+   0   HLA-A02:01       PVAERLWFC           PEPLIST    0.112    0.363    0.409    0.182   15.00       
+   0   HLA-A02:01       QALPDMVVS           PEPLIST    0.054    0.004   -0.099    0.031   50.00       
+   0   HLA-A02:01       QKLQQPDHA           PEPLIST    0.035    0.005   -0.206    0.006   50.00       
+   0   HLA-A02:01       QKYWLLATL           PEPLIST    0.146    0.179    0.256    0.162   15.00       
+   0   HLA-A02:01       QMVHPVAER           PEPLIST    0.064    0.038    0.166    0.070   32.00       
+   0   HLA-A02:01       QPDHASWGA           PEPLIST    0.082    0.009    0.129    0.075   32.00       
+   0   HLA-A02:01       QPTRRGPPA           PEPLIST    0.043    0.006    0.131    0.046   50.00       
+   0   HLA-A02:01       QQPDHASWG           PEPLIST    0.054    0.001    0.077    0.048   50.00       
+   0   HLA-A02:01       QRLKLSTRQ           PEPLIST    0.028    0.000   -0.324   -0.012   50.00       
+   0   HLA-A02:01       QRTWNSLRL           PEPLIST    0.052    0.036    0.094    0.054   50.00       
+   0   HLA-A02:01       RARLSAQPT           PEPLIST    0.045    0.006   -0.223    0.012   50.00       
+   0   HLA-A02:01       RFTPPNPEA           PEPLIST    0.069    0.065    0.034    0.065   32.00       
+   0   HLA-A02:01       RGPPALSPP           PEPLIST    0.038    0.003   -0.133    0.015   50.00       
+   0   HLA-A02:01       RKFLKKKFL           PEPLIST    0.053    0.010   -0.500   -0.009   50.00       
+   0   HLA-A02:01       RLDQMVHPV           PEPLIST    0.806    0.984   -0.221    0.732    0.25  <=Epi
+   0   HLA-A02:01       RLKLSTRQK           PEPLIST    0.036    0.013   -0.230    0.006   50.00       
+   0   HLA-A02:01       RLSAQPTRR           PEPLIST    0.054    0.034   -0.075    0.038   50.00       
+   0   HLA-A02:01       RQKYWLLAT           PEPLIST    0.170    0.290    0.145    0.187   15.00       
+   0   HLA-A02:01       RRGPPALSP           PEPLIST    0.031    0.000   -0.080    0.015   50.00       
+   0   HLA-A02:01       RRWARVAQR           PEPLIST    0.054    0.015    0.166    0.059   50.00       
+   0   HLA-A02:01       RTWNSLRLS           PEPLIST    0.094    0.055   -0.069    0.071   32.00       
+   0   HLA-A02:01       RVAQRLKLS           PEPLIST    0.056    0.048   -0.252    0.024   50.00       
+   0   HLA-A02:01       RVTITTKFQ           PEPLIST    0.035    0.001    0.107    0.037   50.00       
+   0   HLA-A02:01       RWARVAQRL           PEPLIST    0.080    0.066    0.074    0.077   32.00       
+   0   HLA-A02:01       SADGLWELP           PEPLIST    0.044    0.000    0.317    0.064   32.00       
+   0   HLA-A02:01       SAQPTRRGP           PEPLIST    0.026    0.000    0.101    0.029   50.00       
+   0   HLA-A02:01       SHLFWEGRN           PEPLIST    0.030    0.000    0.483    0.071   32.00       
+   0   HLA-A02:01       SLASVYHKP           PEPLIST    0.149    0.078   -0.216    0.101   20.00       
+   0   HLA-A02:01       SLRLSPLKV           PEPLIST    0.320    0.141   -0.301    0.229    9.00       
+   0   HLA-A02:01       STRQKYWLL           PEPLIST    0.130    0.057   -0.133    0.092   32.00       
+   0   HLA-A02:01       SVYHKPPNA           PEPLIST    0.307    0.164   -0.202    0.233    8.00       
+   0   HLA-A02:01       TALLALPLQ           PEPLIST    0.051    0.001   -0.003    0.038   50.00       
+   0   HLA-A02:01       TITTKFQLV           PEPLIST    0.277    0.381   -0.152    0.251    8.00       
+   0   HLA-A02:01       TKAGPERLD           PEPLIST    0.024    0.000    0.167    0.034   50.00       
+   0   HLA-A02:01       TLPLRTHCL           PEPLIST    0.333    0.501    0.068    0.333    5.00       
+   0   HLA-A02:01       TQALPDMVV           PEPLIST    0.207    0.168   -0.112    0.169   15.00       
+   0   HLA-A02:01       TRKFLKKKF           PEPLIST    0.027    0.000   -0.474   -0.027   50.00       
+   0   HLA-A02:01       TRQKYWLLA           PEPLIST    0.058    0.005   -0.066    0.037   50.00       
+   0   HLA-A02:01       TRRGPPALS           PEPLIST    0.026    0.000    0.056    0.025   50.00       
+   0   HLA-A02:01       TTKFQLVKF           PEPLIST    0.049    0.011   -0.167    0.021   50.00       
+   0   HLA-A02:01       TWNSLRLSP           PEPLIST    0.035    0.000   -0.237    0.002   50.00       
+   0   HLA-A02:01       VAERLWFCP           PEPLIST    0.041    0.001    0.350    0.066   32.00       
+   0   HLA-A02:01       VAQRLKLST           PEPLIST    0.053    0.006   -0.305    0.010   50.00       
+   0   HLA-A02:01       VDNFRFTPP           PEPLIST    0.043    0.000    0.303    0.062   50.00       
+   0   HLA-A02:01       VEVDNFRFT           PEPLIST    0.052    0.014    0.252    0.066   32.00       
+   0   HLA-A02:01       VHPVAERLW           PEPLIST    0.032    0.001    0.207    0.045   50.00       
+   0   HLA-A02:01       VSHLFWEGR           PEPLIST    0.051    0.001    0.426    0.080   32.00       
+   0   HLA-A02:01       VTALLALPL           PEPLIST    0.299    0.241    0.012    0.261    7.00       
+   0   HLA-A02:01       VTITTKFQL           PEPLIST    0.229    0.289   -0.052    0.210    9.00       
+   0   HLA-A02:01       VVSHLFWEG           PEPLIST    0.123    0.065    0.324    0.134   15.00       
+   0   HLA-A02:01       VYHKPPNAF           PEPLIST    0.041    0.007   -0.210    0.010   50.00       
+   0   HLA-A02:01       WARVAQRLK           PEPLIST    0.032    0.000    0.025    0.026   50.00       
+   0   HLA-A02:01       WELPVEGRA           PEPLIST    0.044    0.010    0.179    0.052   50.00       
+   0   HLA-A02:01       WLLATLPLR           PEPLIST    0.196    0.121    0.047    0.169   15.00       
+   0   HLA-A02:01       WNSLRLSPL           PEPLIST    0.096    0.028   -0.171    0.058   50.00       
+   0   HLA-A02:01       YHKPPNAFV           PEPLIST    0.085    0.075    0.003    0.075   32.00       
+   0   HLA-A02:01       YWLLATLPL           PEPLIST    0.307    0.309    0.044    0.281    7.00       
+---------------------------------------------------------------------------------------------------- 
+

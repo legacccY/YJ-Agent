@@ -3,7 +3,7 @@
   "project": "quantimmu-bench",
   "template": "experiment",
   "created": "2026-06-30T14:24:22+08:00",
-  "updated": "2026-06-30T14:25:56+08:00",
+  "updated": "2026-06-30T18:15:30+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -114,65 +114,65 @@
       "stage": "自定义",
       "agent": "主线",
       "deps": [],
-      "status": "pending",
+      "status": "running",
       "gate": false,
       "group": "tools",
       "desc": "DTU呈递:netMHCpan_BA/EL,netMHCstabpan,NetTepi,TSCAPE,ICERFIRE(ext_tools+qib env)",
       "out": "",
-      "owner": "",
-      "ts": ""
+      "owner": "W1",
+      "ts": "2026-06-30T14:31:01+08:00"
     },
     {
       "id": "tools_presml",
       "stage": "自定义",
       "agent": "主线",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "tools",
       "desc": "ML呈递:MHCflurry,MHCnuggets,MHCseqNet,TransHLA,HLAthena",
-      "out": "",
+      "out": "W2 5/5 PASS(MHCflurry/MHCnuggets/MHCSeqNet/TransHLA/HLAthena) MHCflurry+TransHLA溯源新raw maxdiff=0,非对齐claim造数",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-30T18:00:48+08:00"
     },
     {
       "id": "tools_immml",
       "stage": "自定义",
       "agent": "主线",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "tools",
       "desc": "torch免疫原:BigMHC_IM,CNNeo,MUNIS,DeepNetBim,DeepImmuno,andy90,ImmuGenX,NeoaG",
-      "out": "",
+      "out": "W3 8/8 PASS(ImmuGenX/MUNIS/CNNeo/DeepImmuno/BigMHC_IM/DeepNetBim/andy90=amplitude/Neoag广播) W0验收:结构+反造数+本地raw溯源",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-30T18:00:48+08:00"
     },
     {
       "id": "tools_immbox",
       "stage": "自定义",
       "agent": "主线",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "tools",
       "desc": "容器/R免疫原:PredIG,pTuneos,IMPROVE,NeoTImmuML,deepHLApan,Repitope",
-      "out": "",
+      "out": "W4 6/6 PASS(PredIG/pTuneos/deepHLApan/NeoTImmuML/Repitope/IMPROVE) IMPROVE全1761/29-29/14-14无NaN无雷同",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-30T18:15:30+08:00"
     },
     {
       "id": "tools_finish",
       "stage": "自定义",
       "agent": "主线",
       "deps": [],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "tools",
       "desc": "PRIME补12等位(MixMHCpred坑)+NeoaPred(GPU)",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-30T17:01:56+08:00"
     },
     {
       "id": "merge",

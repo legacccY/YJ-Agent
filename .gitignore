@@ -155,3 +155,7 @@ project/meeting/QuantImmuBench/HPC/deploy/mixmhcpred/mix_peptides.txt
 # CXR-SSLBench pilot 缓存/权重/大产物(不进 git)
 project/meeting/CXR-SSLBench/cache/
 project/meeting/CXR-SSLBench/results/*.npz
+
+# W0 TRAP/T-SCAPE 克隆外部仓+下载日志(不进 git)
+project/meeting/QuantImmuBench/tools_local/
+project/meeting/QuantImmuBench/tools_local/*.log

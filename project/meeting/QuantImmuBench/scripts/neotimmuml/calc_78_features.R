@@ -141,14 +141,18 @@ compute_features <- function(pep) {
     # 14. aaComp_1
     # aaComp() -> list, [[1]] = 9x2 matrix(rows=AA categories, cols=Number/Mole%)
     # Row names: Tiny/Small/Aliphatic/Aromatic/NonPolar/Polar/Charged/Basic/Acidic
-    # TODO: demo.csv aaComp_1 values cannot be fully matched to any single Mole% row.
-    #   GLSPNLNRFL=0 & TSVFDKLKHLVD=16.667 match Acidic Mole%, but
-    #   HILFRRRRRG=85.714 (R Acidic Mole%=0) — severe mismatch.
-    #   Hypothesis: original NeoTImmuML used a different R package (e.g. protr/seqinr)
-    #   for amino acid composition with a different grouping scheme.
-    #   Placeholder: Acidic Mole% (partial match). After demo verify, update if needed.
+    #
+    # CONCLUSION (2026-06-30, researcher + R Peptides 2.4.6 实测, 见脚本尾注):
+    #   demo.csv 的 aaComp_1 列「损坏/不可复现」——铁证: STLPETAVV/STLPETTVI/STLPETCVV
+    #   三条近乎相同的肽 demo aaComp_1=2/27.778/38.889 天差地别(分母 7/17/18 ≠ 肽长),
+    #   而 R aaComp 任一类 Mole%/Number 对这三条几乎相同。无法对齐 demo (官方产物本身有缺陷)。
+    #   => 不再追 demo 值。改用论文语义口径: 论文将 aaComp_1 描述为 "non-polar amino acid
+    #      ratio" → 取 NonPolar Mole%。这是「自洽口径」(训练/推理用同一管道即可),非 demo 复刻。
+    #   COUPLING: 若复用旧 models/*.joblib(用 Acidic 训练的) 必须把本行改回 "Acidic";
+    #      若重训(推荐,因旧模型类不平衡 1:364 已失真)则本 NonPolar 口径训练+推理一致即可。
+    #   TODO: 邮件作者(13401930670@163.com)或查 Supplementary Table 1 / TumorAgDB2.0 在线计算器确认。
     aacomp_mat <- aaComp(pep)[[1]]
-    aaComp_1   <- as.numeric(aacomp_mat["Acidic", "Mole%"])
+    aaComp_1   <- as.numeric(aacomp_mat["NonPolar", "Mole%"])
 
     # 15-24. blosum_1..10
     # blosumIndices() -> list, [[1]] = named numeric vector length 10
@@ -156,7 +160,10 @@ compute_features <- function(pep) {
 
     # 25. cruciani_1
     # crucianiProperties() -> list, [[1]] = named numeric vector length 3 (PP1/PP2/PP3)
-    # Taking [1] = PP1; TODO: verify against demo which position matches cruciani_1
+    # CONCLUSION (2026-06-30): demo.csv cruciani_1 列同样损坏——STLPET* 三条 demo 全 = 0.179048
+    #   (该变不变), 而 R PP1 = -0.28/-0.1222/-0.2344 (各不同)。无法对齐 demo。
+    #   论文将 cruciani_1 描述为 "polarity (PP1)" → 保留 cr[1] = PP1 (语义最匹配的口径)。
+    #   同样是自洽口径,非 demo 复刻。TODO: 同 aaComp_1, 待作者/Supp 确认。
     cr <- crucianiProperties(pep)[[1]]
 
     # 26-31. fasgai_1..6
@@ -338,8 +345,17 @@ cat("[DONE]\n")
 # vhseScales               list(1)       [[1]][1..8]    -
 # zScales                  list(1)       [[1]][1..5]    -
 #
-# TODO 待 demo 核验后确认：
-#   aaComp_1   : 暂用 Acidic Mole%；demo HILFRRRRRG=85.714 vs R=0，严重不符
-#                可能原始 NeoTImmuML 用不同包/函数（如 protr::extractAAC）
-#   cruciani_1 : 暂用 cr[1]=PP1；待 compare 输出核实
+# aaComp_1 / cruciani_1 结论（2026-06-30，researcher + 本机 R Peptides 2.4.6 实测）：
+#   官方 demo.csv 这两列「损坏/不可复现」，并非参数没调对：
+#     - STLPETAVV / STLPETTVI / STLPETCVV（仅 7-9 位不同）demo aaComp_1 = 2 / 27.778 / 38.889
+#       天差地别，分母 7/17/18 ≠ 肽长(9)，任何 R aaComp Mole%/Number 都解释不了；
+#     - 同三条 demo cruciani_1 全 = 0.179048（该变不变），R PP1 = -0.28/-0.1222/-0.2344；
+#     - 对照列 lengthpep/mol_weight/zscale_* 与肽完全对齐且可复现 → 仅这两列坏。
+#   官方 NeoTImmuML repo 只有 ipynb+README+demo.csv，算 78 特征的 R 脚本未公开；论文仅称
+#   用 "Peptides package in R (v2.4.6)"，公式在未取到的 Supplementary Table 1。
+#   => 放弃对齐 demo（官方产物缺陷），改用论文语义自洽口径：
+#        aaComp_1 = NonPolar Mole%（论文 "non-polar amino acid ratio"）
+#        cruciani_1 = PP1（论文 "polarity"）
+#   只要训练/推理用同一管道即自洽。TODO：邮件作者 13401930670@163.com 或查 TumorAgDB2.0
+#   在线特征计算器 / Supplementary Table 1 确认确切定义后回改。
 # -------------------------------------------------------------------------

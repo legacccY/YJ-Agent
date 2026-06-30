@@ -177,27 +177,70 @@ def build_models():
 
 # ---- 子命令实现 ----
 
+def _report_heldout(model_rf, model_lgb, model_xgb, X_te, y_te):
+    """在 held-out 测试集上报 per-model + 4:8:9 加权融合 AUC/ACC/混淆，
+    证明模型真学到东西(非全判负)。复刻 notebook cell20 融合口径。"""
+    from sklearn.metrics import (accuracy_score, roc_auc_score,
+                                 confusion_matrix, f1_score)
+    p_rf  = model_rf.predict_proba(X_te)[:, 1]
+    p_lgb = model_lgb.predict_proba(X_te)[:, 1]
+    p_xgb = model_xgb.predict_proba(X_te)[:, 1]
+    score = (WEIGHTS["rf"] * p_rf + WEIGHTS["lgb"] * p_lgb +
+             WEIGHTS["xgb"] * p_xgb) / WEIGHTS_TOTAL
+    y_pred = (score >= 0.5).astype(int)
+    print("\n=== Held-out test 评估 (test_size split, 证明模型有效) ===")
+    print(f"  test n={len(y_te)}, 正={int((y_te==1).sum())}, 负={int((y_te==0).sum())}")
+    for nm, p in [("RF", p_rf), ("LGB", p_lgb), ("XGB", p_xgb)]:
+        print(f"  {nm}  AUC={roc_auc_score(y_te, p):.4f}")
+    auc = roc_auc_score(y_te, score)
+    acc = accuracy_score(y_te, y_pred)
+    f1  = f1_score(y_te, y_pred, zero_division=0)
+    tn, fp, fn, tp = confusion_matrix(y_te, y_pred).ravel()
+    print(f"  Ensemble(4:8:9) AUC={auc:.4f}  ACC={acc:.4f}  F1={f1:.4f}")
+    print(f"  pred 正={int(y_pred.sum())}/{len(y_pred)} (全判负检测: 若≈0 则模型失效)")
+    print(f"  confusion TN={tn} FP={fp} FN={fn} TP={tp}")
+    print(f"  Specificity={tn/(tn+fp) if (tn+fp) else 0:.4f}  "
+          f"Recall={tp/(tp+fn) if (tp+fn) else 0:.4f}")
+
+
 def cmd_train(args):
     """
     train: feature_csv (R产出78特征) + label_csv (Peptide+immunogenicity) → 训练+保存模型
+    --test_size>0: 复刻 notebook train_test_split(test_size, random_state=42)，在 train 分区
+      拟合(=cell17 dump 的口径)、在 held-out test 报融合 AUC 证明模型有效；保存 train-fitted 模型。
+    --test_size=0: 全量拟合(旧行为)。
     """
+    from sklearn.model_selection import train_test_split
     pathlib.Path(args.model_dir).mkdir(parents=True, exist_ok=True)
     X, y = merge_features_labels(args.feature_csv, args.label_csv)
 
-    print(f"[INFO] Training on {len(X)} samples, {X.shape[1]} features")
+    ts = getattr(args, "test_size", 0.0)
+    if ts and ts > 0:
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            X, y, test_size=ts, random_state=RANDOM_SEED, stratify=y)
+        print(f"[INFO] train_test_split(test_size={ts}, random_state={RANDOM_SEED}, stratify=y): "
+              f"train={len(X_tr)}, test={len(X_te)}")
+    else:
+        X_tr, y_tr, X_te, y_te = X, y, None, None
+        print(f"[INFO] Full-fit on {len(X)} samples (no held-out)")
+
+    print(f"[INFO] Fitting on {len(X_tr)} samples, {X_tr.shape[1]} features")
     model_rf, model_lgb, model_xgb = build_models()
 
     print("[INFO] Fitting RandomForest...")
-    model_rf.fit(X, y)
+    model_rf.fit(X_tr, y_tr)
     dump(model_rf,  os.path.join(args.model_dir, "model_rf.joblib"))
 
     print("[INFO] Fitting LightGBM...")
-    model_lgb.fit(X, y)
+    model_lgb.fit(X_tr, y_tr)
     dump(model_lgb, os.path.join(args.model_dir, "model_lgb.joblib"))
 
     print("[INFO] Fitting XGBoost...")
-    model_xgb.fit(X, y)
+    model_xgb.fit(X_tr, y_tr)
     dump(model_xgb, os.path.join(args.model_dir, "model_xgb.joblib"))
+
+    if X_te is not None:
+        _report_heldout(model_rf, model_lgb, model_xgb, X_te, y_te)
 
     print(f"[DONE] Models saved to: {args.model_dir}")
 
@@ -276,6 +319,10 @@ if __name__ == "__main__":
     p_train.add_argument(
         "--model_dir", default="scripts/neotimmuml/models/",
         help="Directory to save .joblib models"
+    )
+    p_train.add_argument(
+        "--test_size", type=float, default=0.0,
+        help="held-out 比例(复刻论文 0.2, random_state=42)；>0 时报 held-out 融合 AUC 证明模型有效"
     )
     p_train.set_defaults(func=cmd_train)
 

@@ -57,25 +57,34 @@
 
 ---
 
-## 4. 输出格式（TODO，需烟测后回填）
+## 4. 输出格式（✅ 已核：prior 本地 WSL2 docker 跑出样例 + 官方 README）
 
-官方 README 未列精确输出列名。**主线跑完 smoke 后回填**：
+输出文件 `<input_basename>_predicted_result.csv`（另有 `_predicted_result_rank.csv` 多一列 rank）。
+确切列名（核 `scripts/out/deephlapan_out_MT/deephlapan_input_MT_predicted_result.csv`）：
+
+```
+Annotation,HLA,Peptide,binding score,immunogenic score
+0,HLA-A24:02,RLETIRNPK,0.0519,0.0315
+```
 
 | 列名 | 含义 | 数值范围 |
 |---|---|---|
-| TODO | binding score | 0–1 |
-| TODO | immunogenicity score | 0–1 |
+| `binding score` | HLA 结合预测分 | 0–1 |
+| `immunogenic score` | 免疫原性预测分 | 0–1 |
 
+HLA 列输出为**无星号**格式（`HLA-A24:02`），与输入/map key 同格式，回贴时直接 (peptide,HLA) 精确匹配。
 高置信新抗原定义（文档声称）：immunogenicity > 0.5 AND binding 排名 top 20。
 
 ---
 
-## 5. 主入口脚本（TODO，需跑一次确认）
+## 5. 主入口（✅ 已核：官方 README + setup.py console_scripts）
 
-官方 repo 入口脚本名称待确认：
-- 候选：`deephlapan.py` / `main.py` / `predict.py`
-- smoke 脚本已做双重尝试（先 `deephlapan.py`，失败再 `main.py`）
-- **TODO**：主线 `ls $REPO_DIR/*.py` 确认后填回此处
+安装后是命令 `deephlapan`（非裸 .py），两种用法：
+- 单条：`deephlapan -P LNIMNKLNI -H HLA-A02:01`
+- 批量：`deephlapan -F <input.csv> -O <output_dir>` ← 官方数据补跑用此
+
+输入 CSV header 必须 `Annotation,HLA,peptide`（HLA 无星号 `HLA-A02:01`，肽 8–15AA）。
+⚠️ 坑：`-O` 输出目录须**先 mkdir**，否则报错（DEPLOY_TRACKER L296）。
 
 ---
 

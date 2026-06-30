@@ -1,0 +1,96 @@
+# /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netTepi-1.0/netTepi.py -a HLA-B40:01 -p /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-B40-01.pep -l 9
+# Tue Jun 30 2026 15:00
+# USER: jiayu2403
+# CWD: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs
+# HOST: Linux x86_64 4.18.0-372.9.1.el8.x86_64 xpszlogin2
+# COMMAND LINE PARAMETERS SET TO:
+#	input_file          /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-B40-01.pep
+#	alleles             HLA-B40:01                    
+#	cons                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCcons-1.1/netMHCcons
+#	inptype             1                             
+#	lengths             9                             
+#	pep_mode            True                          
+#	print_alleles       False                         
+#	sort                0                             
+#	stab                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCstabpan-1.0/netMHCstabpan
+#	stab_weight         0.16                          
+#	tcell_weight        0.1                           
+#	tmpdir              /gpfs/work/bio/jiayu2403/quantimmu/nettepi_tmp
+#	www                 False                         
+#	xls                 False                         
+#	xlsfile             NetTepi_out.xls               
+
+# NetTepi version 1.0
+
+# Inputfile: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-B40-01.pep
+
+# Input is in PEPTIDE format
+
+# Peptide lengths: 9
+
+----------------------------------------------------------------------------------------------------
+ Pos       Allele         Peptide          Identity      Aff     Stab    Tcell     Comb   %Rank
+----------------------------------------------------------------------------------------------------
+   0   HLA-B40:01       AAASSRRPS           PEPLIST    0.043    0.001   -0.229    0.009   50.00       
+   0   HLA-B40:01       AASSRRPSS           PEPLIST    0.042    0.001   -0.227    0.009   50.00       
+   0   HLA-B40:01       ACSIVDQKL           PEPLIST    0.078    0.020   -0.082    0.053   50.00       
+   0   HLA-B40:01       AKPVIFLGK           PEPLIST    0.036    0.001    0.288    0.056   50.00       
+   0   HLA-B40:01       AMPPGSPEP           PEPLIST    0.050    0.002   -0.088    0.029   50.00       
+   0   HLA-B40:01       ANITLPVYS           PEPLIST    0.041    0.001    0.094    0.040   50.00       
+   0   HLA-B40:01       ASSRRPSSP           PEPLIST    0.038    0.000   -0.198    0.008   50.00       
+   0   HLA-B40:01       CSIVDQKLW           PEPLIST    0.040    0.017   -0.191    0.013   50.00       
+   0   HLA-B40:01       DGQPIFANI           PEPLIST    0.050    0.002    0.220    0.059   50.00       
+   0   HLA-B40:01       DQKLWLLRP           PEPLIST    0.037    0.002    0.145    0.042   50.00       
+   0   HLA-B40:01       ERAMPPGSP           PEPLIST    0.034    0.001   -0.253    0.000   50.00       
+   0   HLA-B40:01       FANITLPVY           PEPLIST    0.081    0.024    0.174    0.081   20.00       
+   0   HLA-B40:01       GGQKAKPVI           PEPLIST    0.062    0.006   -0.405    0.006   50.00       
+   0   HLA-B40:01       GQKAKPVIF           PEPLIST    0.147    0.206   -0.138    0.128    7.00       
+   0   HLA-B40:01       GQPIFANIT           PEPLIST    0.076    0.041    0.353    0.098   15.00       
+   0   HLA-B40:01       HKNVPPKSL           PEPLIST    0.078    0.186   -0.260    0.061   32.00       
+   0   HLA-B40:01       IFANITLPV           PEPLIST    0.098    0.033    0.156    0.093   15.00       
+   0   HLA-B40:01       ITLPVYSER           PEPLIST    0.040    0.001   -0.059    0.024   50.00       
+   0   HLA-B40:01       IVDQKLWLL           PEPLIST    0.084    0.046   -0.149    0.055   50.00       
+   0   HLA-B40:01       IYGGQKAKP           PEPLIST    0.027    0.000   -0.364   -0.016   50.00       
+   0   HLA-B40:01       KAKPVIFLG           PEPLIST    0.042    0.009    0.177    0.050   50.00       
+   0   HLA-B40:01       KLWLLRPLR           PEPLIST    0.050    0.002    0.083    0.046   50.00       
+   0   HLA-B40:01       KNVPPKSLF           PEPLIST    0.056    0.050   -0.358    0.014   50.00       
+   0   HLA-B40:01       KPVIFLGKS           PEPLIST    0.035    0.006    0.153    0.042   50.00       
+   0   HLA-B40:01       KSLFQLVEI           PEPLIST    0.077    0.042    0.084    0.072   32.00       
+   0   HLA-B40:01       LPVYSERAM           PEPLIST    0.052    0.014    0.009    0.042   50.00       
+   0   HLA-B40:01       MPPGSPEPS           PEPLIST    0.033    0.002   -0.063    0.018   50.00       
+   0   HLA-B40:01       NITLPVYSE           PEPLIST    0.040    0.000   -0.070    0.023   50.00       
+   0   HLA-B40:01       NNVVRNSRT           PEPLIST    0.029    0.001   -0.010    0.021   50.00       
+   0   HLA-B40:01       NQRNNVVRN           PEPLIST    0.046    0.001    0.108    0.045   50.00       
+   0   HLA-B40:01       NVPPKSLFQ           PEPLIST    0.034    0.000   -0.321   -0.007   50.00       
+   0   HLA-B40:01       NVVRNSRTS           PEPLIST    0.038    0.000   -0.030    0.025   50.00       
+   0   HLA-B40:01       PGSPEPSQA           PEPLIST    0.029    0.000   -0.185    0.003   50.00       
+   0   HLA-B40:01       PIFANITLP           PEPLIST    0.036    0.001    0.223    0.049   50.00       
+   0   HLA-B40:01       PKSLFQLVE           PEPLIST    0.030    0.000   -0.045    0.018   50.00       
+   0   HLA-B40:01       PPGSPEPSQ           PEPLIST    0.026    0.000   -0.178    0.001   50.00       
+   0   HLA-B40:01       PPKSLFQLV           PEPLIST    0.035    0.002   -0.241    0.002   50.00       
+   0   HLA-B40:01       PVYSERAMP           PEPLIST    0.032    0.000   -0.091    0.015   50.00       
+   0   HLA-B40:01       QKAKPVIFL           PEPLIST    0.129    0.174    0.004    0.124    8.00       
+   0   HLA-B40:01       QKLWLLRPL           PEPLIST    0.149    0.198    0.235    0.165    5.00       
+   0   HLA-B40:01       QPIFANITL           PEPLIST    0.111    0.073    0.328    0.127    7.00       
+   0   HLA-B40:01       QRNNVVRNS           PEPLIST    0.032    0.001    0.110    0.035   50.00       
+   0   HLA-B40:01       RAAASSRRP           PEPLIST    0.043    0.001   -0.191    0.013   50.00       
+   0   HLA-B40:01       RAMPPGSPE           PEPLIST    0.076    0.002   -0.193    0.037   50.00       
+   0   HLA-B40:01       RIYGGQKAK           PEPLIST    0.053    0.002   -0.202    0.019   50.00       
+   0   HLA-B40:01       RNNVVRNSR           PEPLIST    0.036    0.000    0.026    0.029   50.00       
+   0   HLA-B40:01       RPSSPSWGS           PEPLIST    0.041    0.007   -0.180    0.013   50.00       
+   0   HLA-B40:01       RRPSSPSWG           PEPLIST    0.034    0.001   -0.352   -0.010   50.00       
+   0   HLA-B40:01       SERAMPPGS           PEPLIST    0.079    0.014   -0.115    0.049   50.00       
+   0   HLA-B40:01       SIVDQKLWL           PEPLIST    0.072    0.023   -0.160    0.041   50.00       
+   0   HLA-B40:01       SRAAASSRR           PEPLIST    0.034    0.001   -0.175    0.008   50.00       
+   0   HLA-B40:01       SRRPSSPSW           PEPLIST    0.050    0.067   -0.417    0.006   50.00       
+   0   HLA-B40:01       SSRRPSSPS           PEPLIST    0.042    0.000   -0.244    0.007   50.00       
+   0   HLA-B40:01       TLPVYSERA           PEPLIST    0.042    0.004   -0.007    0.031   50.00       
+   0   HLA-B40:01       VDQKLWLLR           PEPLIST    0.033    0.000   -0.073    0.017   50.00       
+   0   HLA-B40:01       VPPKSLFQL           PEPLIST    0.055    0.045   -0.361    0.012   50.00       
+   0   HLA-B40:01       VRNSRTSGY           PEPLIST    0.043    0.051   -0.201    0.020   50.00       
+   0   HLA-B40:01       VVRNSRTSG           PEPLIST    0.036    0.000   -0.166    0.010   50.00       
+   0   HLA-B40:01       VYSERAMPP           PEPLIST    0.042    0.001   -0.020    0.029   50.00       
+   0   HLA-B40:01       YGGQKAKPV           PEPLIST    0.053    0.005   -0.467   -0.007   50.00       
+   0   HLA-B40:01       YSERAMPPG           PEPLIST    0.059    0.002   -0.058    0.038   50.00       
+---------------------------------------------------------------------------------------------------- 
+

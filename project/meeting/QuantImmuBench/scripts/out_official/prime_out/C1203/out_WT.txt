@@ -1,0 +1,27 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: C1203
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/out_official/prime_input_C1203/peps_WT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_C1203	Score_C1203	%RankBinding_C1203
+EQNTTKSWT	18.660	0.002535	38.532	C1203	18.660	0.002535	38.532
+KSWTPSVQS	15.973	0.003040	16.613	C1203	15.973	0.003040	16.613
+NTTKSWTTP	8.199	0.005515	14.578	C1203	8.199	0.005515	14.578
+PKSWTPSVQ	16.352	0.002964	56.446	C1203	16.352	0.002964	56.446
+PSVQSEQNT	62.201	0.000575	35.351	C1203	62.201	0.000575	35.351
+QNTTKSWTT	8.701	0.005212	15.602	C1203	8.701	0.005212	15.602
+QSEQNTTKS	38.243	0.001166	25.345	C1203	38.243	0.001166	25.345
+SEQNTTKSW	10.845	0.004297	8.823	C1203	10.845	0.004297	8.823
+SVQSEQNTT	19.407	0.002408	11.412	C1203	19.407	0.002408	11.412
+SWTPSVQSE	10.284	0.004469	8.592	C1203	10.284	0.004469	8.592
+TPKSWTPSV	2.060	0.019499	4.915	C1203	2.060	0.019499	4.915
+TPSVQSEQN	63.950	0.000548	60.303	C1203	63.950	0.000548	60.303
+TTKSWTTPM	0.997	0.035129	2.795	C1203	0.997	0.035129	2.795
+VQSEQNTTK	16.200	0.002994	10.944	C1203	16.200	0.002994	10.944
+WTPSVQSEQ	28.566	0.001615	23.204	C1203	28.566	0.001615	23.204

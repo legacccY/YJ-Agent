@@ -2282,3 +2282,161 @@ coder 写 `scripts/hpc_official/`（run_prime_official.sh / run_immuneapp_offici
 **两修**：① parse 删肽级兜底（精确 肽+等位 匹配，缺等位→诚实 NaN）→ 派 coder 改 official parse（不动共享 merge_wave3 防破坏旧链，official 用修正版）。② PRIME 补完 26 等位（pandas KeyError:0 调通后重跑缺的 12）。
 
 **意义**：run-once「数字必核不信」红线实战救场——若信 parse 自报全覆盖，PRIME 12 等位假分进 paper 必翻盘。ImmuneApp 26/26 真完成但也要用修正 parse 重核（确认无兜底误填）。
+
+### 2026-06-30 续9（W0 主窗 orchestrator 开窗：收口备料就绪 + 多窗调度待命）
+
+**认领**：`.portfolio/locks/quantimmu-tools-W0-orchestrator.claim`（不领工具节点，只编排/检测/收口）。
+
+**收口备料（纯本地，不抢工具，run-once de-risk）—— 2 脚本写完即端到端验通**：
+1. `scripts/merge_official_30.py`：合 30 工具 official 补跑分 + 87 复用肽旧分 → `scripts/out/merged_all_tools_30_official.csv`（子肽×HLA 长表，p0e 输入）。
+   - **合并语义（零造数）**：reuse(87)=全取旧；rerun_full(29)=全取新 backbone+official；rerun_partial(14,P104)=旧不变等位(HLA∈新 patient_hla 集)复用 + 新 A\*30:01 取 official + **丢弃旧换出 A\*03:01**（用 patient_hla.csv 做等位真源过滤）。
+   - **工具名 canonical 化**：修旧↔新命名漂移（netmhcpan_ba↔netMHCpan_BA / IMPROVE_mean_prediction_rf↔IMPROVE / Andy90↔andy90 / BigMHC↔BigMHC_IM …），防 p0e 拆成重复工具。未识别旧列(MHCflurry_affinity_neg/BigMHC_EL/MixMHCpred)标 __AUX_ 留档不计 roster。
+   - **5 校验门全 PASS**：M1 distinct mut_key=130 / M2 每肽≥1 工具有分 / M3 partial 无 A\*03:01 含 A\*30:01 / M4 无重复 canonical 列 / M5 逐工具覆盖报告。
+   - **抽核反造数**：PRIME 补跑分 official↔merged 一致；deepHLApan 复用分回贴正确。
+2. `analysis/phase0/smoke_integration.py`：集成烟测放行闸。merged_30→p0e→per-patient Spearman。**GATE ✅ PASS**：S1 pooled 130 行 / S2 9 患者每≥8 肽 / S3 anchor 工具(IEDB_Calis/ImmuneApp/PRIME)×4 op 9 患者全非 NaN / S4 无 silent dropna / S5 43 补跑肽全进分析。
+
+**当前覆盖快照（merge M5 报告，待 W1-W5 补跑填齐）**：
+- ✅130/130：IEDB_Calis、ImmuneApp、PRIME（PRIME 43 补跑侧仍 13-14 等位，待补完 26）。
+- 🟡部分(101/130=87 复用+14 partial 旧等位，缺 29 全新肽+14 新等位)：其余 24 工具——补跑后即达 130。
+- ⬜PENDING(旧新皆无列)：NeoaPred、netMHCstabpan、Seq2Neo(bonus)。
+- 工具边界(等位少)：NetTepi 7 / andy90 14 / HLAthena 20 等位——诚实 NaN，非降级。
+
+**意义**：地基管道 run-once 验通——W1-W5 每补一个工具 official csv，重跑 merge→p0e→smoke 即自动并入并放行，零返工。检测验收红线（Bash 抽核≥2 (肽,等位) 分属真输出）已固化进 merge M3+抽核流程。
+
+**🛑 留拍板（roster 定义，不阻塞备料）**：30-roster 中 BigMHC 取 IM 头(EL 入 AUX)？MHCflurry 取 presentation 头(affinity_neg 入 AUX)？MixMHCpred(PRIME 依赖)算独立工具否？Seq2Neo(阻塞 netCTLpan)是否进 headline 30？—— 收口前与袁/朱对齐。
+
+**待**：W1-W5 工具节点回报 → W0 Bash 抽核验收 → pipeline.py done <slice> → 5 节点全 done → 重跑 merge(--strict-roster) → p0e → smoke 闸 → 解锁 R1-R9。
+
+### 2026-06-30 W1 窗（tools_dtu slice）：6 DTU 工具补跑 → 5 done + TSCAPE defer
+
+**认领**：`pipeline.py claim quantimmu-bench tools_dtu W1`。服务 §Phase0 P0-d / lever=DTU 6 工具新官方数据补跑产 out_official csv。
+
+**编队**：researcher(查DTU确切CLI/列/方向/覆盖)+coder(写10 prep/parse脚本)并行扇出，主线串行 HPC 执行(survey/smoke/upload/run/pull)。
+
+**HPC survey 去险（关键）**：
+- netMHCpan-4.1/2.8 ✅、netMHCstabpan-1.0 ✅、netTepi-1.0 ✅、ICERFIRE ✅(env qib_icerfire) 全已装。
+- **netMHCstabpan 登录节点 glibc2.28 直跑通**（旧 run 脚本假设需 net.sif 容器=错，W1 smoke 实证直跑出 Pred/Thalf/Rank）。
+- **netMHCpan `-BA -xls` 一次输出 BA-score+EL-score 两列** → 一跑出 BA+EL 两工具。
+- TSCAPE：t_scape repo 未装 + 54.7GB 权重 + 需 GPU（researcher 核）→ **W1 判 defer**，5 工具先交。
+
+**踩坑修复链（不堵塞/上网查/不硬扛）**：
+1. NetTepi `KeyError:NTHOME` → tcsh wrapper 里硬设的 env，bash 里 export NTHOME/NETMHCCONS_ENV/NETMHCSTAB_ENV/TMPDIR/PYTHON_ENV。
+2. NetTepi `Can't locate Env.pm`（netMHCcons perl 脚本缺）→ 系统 perl @INC 无 Env.pm，`qib_perl` env 的 perl 含核心 Env.pm → 前插 `envs/qib_perl/bin` 到 PATH + PERL5LIB。修后 ok=6。
+3. ICERFIRE 输出落 `output/<ts>_NoExpr_<jobid>/ICERFIRE_predictions.csv`（非 _scored_output）→ find latest。parse 改用 `prediction` 列（researcher 定论：RF 免疫原概率越高越强，弃 100-%Rank）。
+
+**5 工具 DoD（全 1761 行对齐 backbone，Bash 抽核≥2 (肽,等位) 真值 MATCH 防造数）**：
+| 工具 | MT非空 | distinct等位 | 肽覆盖 | WT | 分列/方向 |
+|---|---|---|---|---|---|
+| netMHCpan_BA★ | 1761(100%) | 26 | 43/43 | 244 | BA-score 越大越强 |
+| netMHCpan_EL | 1761(100%) | 26 | 43/43 | 244 | EL-score 越大越强 |
+| netMHCstabpan | 1761(100%) | 26 | 43/43 | 244 | Pred 越高越稳 |
+| NetTepi | 470(26.7%) | 6 | 29/43 | 30 | Comb 越大越强；13等位模型→P104全NaN（工具边界） |
+| ICERFIRE | 244(13.9%) | 7 | 14/43 | — | prediction 越高越强；需WT→仅14 SNV肽（工具边界） |
+
+**诚实边界（非降级）**：NetTepi 仅 13 等位训练→命中 6/26→P104(A\*30:01等)全 NaN；ICERFIRE 需 WT→indel 无 WT→29 肽 NaN。均工具固有边界，写明非偷懒。
+
+**产物**：`scripts/out_official/{netMHCpan_BA,netMHCpan_EL,netMHCstabpan,NetTepi,ICERFIRE}_official.csv`。脚本：`scripts/hpc_official/{prep_dtu_netmhcpan,prep_icerfire,prep_tscape,parse_*}_official.py` + `run_dtu_{netmhcpan,nettepi,icerfire}_official.sh`。
+
+**🛑 待 W0**：Bash 抽核验收 5 csv → pipeline done。DTU 5 工具 pending_DTU_consent（书面同意前不对外发）。TSCAPE 是否过夜拉 54.7GB 权重补 = 拍板。**W1 到 DoD 停，不冲下个节点。**
+
+---
+
+### 2026-06-30 W5 收 finish slice：PRIME 26/26 ✅ + NeoaPred 提交(job1502935)
+
+**slice=tools_finish（PRIME 补12等位 + NeoaPred）。conductor claim W5。**
+
+**① PRIME：13/26 → 26/26 done ✅**
+- KeyError:0 根因双查（实证+researcher 官方源交叉）：①12个失败等位(B40/B44/B55/B57/全C)**全在** MixMHCpred3.0 alleles_list.txt + PRIME alleles.txt，非工具不支持 → **并发撞共享 temp**(`PRIME/lib/../temp/MixMHCpred_<pid>.txt`)致原批量run串扰；**顺序重跑12等位即全通**(B3503..C1203，MT 25-80分/等位)。②B2706 单独确定性崩(非 transient)：**B*27:06 不在 alleles_list** → 走纯 pan 预测路径(`predict_model→arrays_to_pwm_dataframes` 字母索引PWM)→ `Blosum_Corr_pred:151 PWM[i+1][j]`(j=int) 在 pandas3.0.3 被当标签查→`KeyError:0`。25个trained等位走trained分支不碰此函数故不崩。
+- **修法=`.iloc` 忠实 compat**：`PWM[i+1][j]`→`.iloc[j]`、`PWM[i+1][z]`→`.iloc[z]`(blosum_t是numpy无需改)。位置索引=作者原意(PWM行按AA顺序)，仅影响pan路径(本数据唯一pan等位B2706)。**备份→patch→跑B2706(38行37肽分,ARVAQRLKL=0.164强结合)→还原repo原文件(verify identical=True)**。复现零偏离：repo保持pristine，仅B2706经compat-fix产分。
+- parse(strict (肽,等位) 匹配，按输出目录名)：**MT 1761非空/26 distinct等位、WT 244/7等位**。反造数抽核：B*27:06 ARVAQRLKL=0.164259、C*05:01 AALQKLQQP=0.000578 与 raw out_MT.txt `Score_bestAllele` 精确一致。产 `scripts/out_official/PRIME_official.csv`(+prime_out/ 26等位全)。
+
+**② NeoaPred：提交 job 1502935（用户授权）**
+- 官方输入=**244 严格9mer**(MT+WT均9mer，prep_neoapred_input.py 从 master_backbone_official.csv 生成；非全量5692，因PepFore需MT/WT配对9mer)。
+- HPC部署就绪：`neoapred.sif`(3.4G已build)+smoke验通(Foreignness_Score有效)；上传`neoapred_hpc/neoapred_official_input.csv`(244)；写gpu4090 sbatch`deploy/neoapred_official.sbatch`(slot 8e419949,N=8 OMP=2,CPU-only OpenMM占1卡仅拿节点CPU)。
+- **job 1502935 PD**(排2个cxrssl_s后,gpu4090)；弛豫~55s×488≈起跑后1h。完→pull `full_official/MhcPep_foreignness_full.csv`→merge_neoapred.py map回bb_idx产 `NeoaPred_official.csv`(仅MT_NeoaPred,非9mer NaN)。
+
+**DoD**：PRIME ✅达标(26/26+Bash核+溯源)。NeoaPred 🟡跑中待完成→拉回map→核。**W5 到 PRIME-DoD + NeoaPred-提交，不冲下个节点；NeoaPred 完成后收尾产csv报W0验收。**
+
+### 2026-06-30 W3 immml slice：8 torch 免疫原工具补跑 → 7/8 done + andy90 拍板点
+
+**认领** tools_immml (W3)。8 工具(BigMHC_IM/CNNeo/MUNIS/DeepNetBim/DeepImmuno/andy90/ImmuGenX/NeoaG)在新官方 1596 (肽,HLA)对(=backbone MT+WT distinct，含43补跑肽)重跑。
+
+**关键发现**：旧 `<tool>_raw.csv`(HPC/deploy/) 跑的是**旧子肽宇宙**，对新 official backbone 子肽 **0% 覆盖**(Bash核)→ 8 工具全须新输入重跑，不可复用。各 `prep_input.py` 都支持 `--uniq-csv`；新输入=`scripts/out_official/newtools/{uniq_pep_hla.csv(1596)/uniq_pep.csv/universe.csv}`，精确=backbone MT+WT distinct对。
+
+**通用 builder**=`scripts/build_official_from_raw.py`(精确(肽,HLA)/peptide/(MT,WT)对级 join→`<Tool>_official.csv`[bb_idx,MT_,WT_];缺→诚实NaN禁兜底;HLA带星/去星norm统一)。
+
+**执行(本地优先/不堵塞,7工具落地)**：
+- WSL2 conda env(/root/miniconda3/envs)=旧管道真跑处：ImmuGenX(immugenx,CPU JIT)✅ / MUNIS(munis_env,ESM-2 CPU 9:46min)✅ / DeepImmuno(deepimmuno,TF2.3,9/10mer)✅ / DeepNetBim(qib_tf1,TF1.15/keras2.2.4,9mer ONLY)✅
+- 本地 Win：CNNeo(fcnn_tf CPU)✅ / BigMHC_IM(CPU,**repo/src完整clone非残缺bigmhc-master缺dataset.py**)✅ / NeoaG(R4.3.3 GBM,89对)✅
+
+**7 official csv 全 Bash 核 PASS**：6 HLA-aware=1761行/MT100%/WT244/26等位/P104(414行A3001)全覆盖;NeoaG肽-对级89对→134行(7等位广播,WT结构NaN,其余诚实NaN)。每工具抽核2(肽,等位)值=raw精确匹配(反造数)。方向均查NOTES确认(全higher=强no flip;MUNIS=EL presentation非旧IC50误说)。命名经W0别名表case-insensitive全匹配。
+
+**派编队**：researcher×2(neoag官方API清全TODO=用run_neoag_main.R非死壳/type=raw回归分;DeepImmuno+DeepNetBim定位WSL repo+env+机制)。
+
+**andy90(8/8)✅**：HPC netMHCpan-4.1依赖(=DTU pending consent)。official FASTA prep(26HLA/1596对)。**用户授权后**(口头授权这次放行)HPC登录节点 xargs-P4 跑 26HLA(~4.5min,15:15→15:20)+merge(用`envs/improve`python——`andy90_r`无python=旧merge失败根因)。pull `andy90_raw_official.csv`(1596)→build→`andy90_official.csv` 1761MT/26HLA/P104(414)全;amplitude越高越强no flip;抽核2值(NQRNNVVRN/A66:01=6.49、VFKTLPRPK/A30:01=17470.59)=raw精确。
+
+**W3 DoD ✅ 8/8 达成**：8 工具 official csv 全落地+Bash全核(6 HLA-aware=1761MT/26HLA;NeoaG=134对级;andy90=1761MT)+每工具抽核2值=raw。caveat: DeepNetBim license=null发表前邮件;andy90 netMHCpan=DTU pending consent。**到此停,报W0验收,不冲integrate/下个节点。** 通用工具 `scripts/build_official_from_raw.py` + per-tool runner 留档复用。
+
+### 2026-06-30 W2-presml：5 ML 呈递工具补跑（MHCflurry/MHCnuggets/MHCseqNet/TransHLA/HLAthena）
+
+**地基判定**：新 HPC 根 `/gpfs/.../quantimmu` 上 presml 4 工具(flurry/nuggets/seqnet/transhla)**无 env/repo**(老部署在别处),HLAthena 仅 sif+老 `hla_arr` ecdf 残留。登录节点有外网(pypi/HF 200)→从零建 env(不降级,攻坚补满)。喂料 `out_official/newtools/uniq_pep_hla.csv`(1596 对/26等位)。backbone `master_backbone_official.csv` = 43 补跑肽全集(1761 行,distinct Peptide_ID=43)。
+
+**4/5 ✅ done + 1 收尾中**(各产 `scripts/out_official/<Tool>_official.csv`,strict (肽,等位) 回贴 bb_idx,1761 行)：
+- **MHCSeqNet ✅**：env=复用 `envs/immuneapp`(py3.7/tf1.15/keras2.3.1)+pip 装 sklearn。CLI=`MHCSeqNet.py -p PretrainedModels/sequence_model/ -m sequence -i paired pep allele out`(**-p 必尾斜杠**,源码 `model_path+"model_%d.h5"` 无分隔符;cwd=repo;等位带星;5模型集成)。MT 1761/WT 244/26等位;prob↑不翻;抽核3值=raw。
+- **MHCnuggets ✅**：新建 `envs/mhcnuggets`(py3.9)。坑=`tensorflow-cpu` pin 不满足 mhcnuggets 的 `tensorflow` 依赖→pip 回溯死;改 pin **`tensorflow==2.12.0` 全量**+清华镜像装通。MT 1761/WT 244/26等位;值=-ic50(越低越强取负);抽核3值。
+- **MHCflurry ✅**：新建 `envs/mhcflurry`(py3.10+tf-cpu2.12)。models(135MB)github 直连 20kB/s 太慢→走 **ghfast.top 镜像** wget+`fetch --already-downloaded-dir`(14883等位全 SUP 含 B2706)。MT 1761/WT 244/26等位;`MT_MHCflurry_presentation`(取 presentation 头,W0 别名 mhcflurry_presentation)+affinity_neg(=-aff,AUX);抽核3值(pres+aff)。
+- **HLAthena ✅**：复用 sif `hlathena.sif`+老 `hla_arr/models/ecdf`(MSiC presentation proxy)。从 uniq_pep_hla 按(等位×长度)切 chunk→singularity predict(star→PRIME,单长度8-11mer,xargs-P10)→merge。MT 1708/WT 244/**25等位**;**B*27:06 无 ecdf(仅 B2705)→诚实 NaN 53 行(=全部 B2706 行,工具边界非造数)**;MSi↑;抽核2值。
+- **TransHLA 🟡 收尾**：env=复用 `envs/yjcu124py310`(torch2.6/transformers4.50)+pip fair-esm(modeling 文件 import esm)。HLA-agnostic(肽-only 广播);ESM2-650M+TransHLA_I 已缓存(HF_HOME gpfs home 共享)。登录节点 CPU 跑被 reaper 杀(15min)→改 **cpudebug CPU sbatch(job 1503013,-c4,qos cpu=4/wall1h)**,跑完拉回 parse。
+
+**踩坑修复(复用)**：
+1. **🔴 上传损坏丢尾'r'根因**：hx `bg`/`run` 命令串里写 `sed -i 's/\r$//'` 被外层 `setsid bash -c '...'` 嵌套单引号吞反斜杠→变 `s/r$//`→**删行尾'r'**(`AutoTokenizer→AutoTokenize`/`hla_arr→hla_ar`)。修=上传时 python 端去 CRLF(`replace(b"\r\n",b"\n")`),命令串绝不用远端 sed。
+2. **`mapfile < <(process-subst)`** 在 setsid 非交互 bash 下没填上数组→改字符串 `ECDF=" $(...) "`+`case`。
+3. **pip 慢**=HPC→pypi 国际线路(20-40kB/s)→清华镜像;TF 依赖回溯→pin 精确版本名(`tensorflow==2.12.0` 非 tensorflow-cpu)。
+4. **github release 慢**→ghfast.top 镜像。
+5. **登录节点 reaper** 杀长 CPU(>15min)→计算节点 sbatch(cpudebug qos cpu≤4/wall1h)。
+
+**DoD 覆盖核(Bash 非 parse 自报)**：4 done 工具全 **43/43 Peptide_ID 覆盖**(每补跑肽 ≥1 MT 分)。代码：`scripts/hpc_official/prep_presml_official.py`(派 coder)+`parse_presml_official.py`(派 coder,加 hlathena 分支)+`run_mhcseqnet_official.py`/`run_hlathena_official.sh`(主线写)。
+
+**✅ W2 DoD 5/5 达成(收口)**：TransHLA 卡顿真因=ESM2-650M backbone 权重(2.6GB)走 fair-esm 从 `dl.fbaipublicfiles.com` 下,国内 685KB/s 且每次 kill 不续传→cpudebug 1h wall 内永下不完(`conda run` 还吞输出致看不见)。修=8 线程 curl range(per-part 精确尺寸校验+续传)下到 `~/.cache/torch/hub/checkpoints/esm2_t33_650M_UR50D.pt` 一次性,后 job 秒加载+551 肽推理~5min 完。**5 official csv 全 Bash 核**:flurry/nuggets/seqnet/transhla=1761/MT全/WT244/26等位;HLAthena=1761/MT1708/WT244/25等位(B2706 诚实 NaN);**全 43/43 肽覆盖**;每工具抽核 2-3 值=raw 精确(反造数);TransHLA 额外核广播(同肽 1 值)。命名对齐 W0 契约(flurry 取 presentation 头)。claim 写 DONE,pipeline tools_presml→done。**报 W0 验收,不冲 integrate。**
+
+### 2026-06-30 W5 收尾：NeoaPred done ✅（job 1502935）
+
+NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，244 严格 9mer（MT+WT 均 9mer）全完成（NEOAPRED_HPC_FULL_DONE，merged 244 行）。
+- 收集：pull `full_official/MhcPep_foreignness_full.csv`(244) → merge_neoapred.py（map ID→bb_idx，244/244 全匹配）→ `scripts/out_official/NeoaPred_official.csv`。
+- **NeoaPred_official.csv**：1761 行，cols [bb_idx, MT_NeoaPred]，**MT_NeoaPred 244 非空**（非 9mer 行 NaN = NeoaPred 严格 9mer 口径边界，诚实非降级）；仅 MT 列（PepFore foreignness 无 WT 分列）。分布 0–0.9796 / mean 0.244 / 62 候选 >0.5。
+- 反造数抽核：ID_0 Foreignness=0.0020007924(bb_idx226) / ID_233=0.3285872936(bb_idx1660) 与 csv MT_NeoaPred 精确一致。
+- slot 8e419949 已 release。
+- 收集 collector 后台脚本在 job 完成后 log() 写报告时 Windows gbk read_text 崩（仅日志编码 bug，不影响数据）→ 主线手动收尾完成。
+
+**W5 tools_finish slice DONE**：PRIME 26/26 ✅ + NeoaPred ✅，2 工具 official csv 全产 + Bash 核 + 溯源验真。报 W0 验收。到此停，不冲下个节点。
+
+---
+
+## 2026-06-30 W4 immbox slice DONE（6/6 容器/R 免疫原工具补跑）
+
+**6 工具 official csv 全产 + Bash 核 ≥2 值溯源 raw MATCH**（均 1761 行对齐 master_backbone_official.csv）：
+- **deepHLApan** ✅ 本机 WSL docker biopharm/deephlapan:v1.1（proven）。MT 1761 全（bind+immuno 双列）+ WT 244。3 值抽核对原始输出一致。
+- **pTuneos** ✅ 本机 WSL docker bm2lab/ptuneos:v2.1。HPC sif 死路(/root perm700+无fakeroot+无blastdb)→本地（blastp blastdb 在 /root，root daemon 可读，无需 sudo）。MT 244/1517 NaN（1517 无 WT 配对=工具边界，诚实非 bug），仅 MT_pTuneos 列。
+- **PredIG** ✅ HPC `singularity run`（OCI entrypoint=micromamba run -n predig_env python /Immuno/run_predig/run.py，非 exec）+ --modelXG neoant --type recombinant。MT 1761+WT 244，位置 join+3 断言。
+- **NeoTImmuML** ✅ 本机 R4.3.3。无官方权重/训练CSV→**忠实复现**：TumorAgDB2.0 真实带标重建平衡集 5147:5147（≈论文 5156:5156），论文超参重训 RF/LGBM/XGB+4:8:9。**held-out Ensemble AUC=0.867≈论文 0.86**，正预测 829/2059 非全判负=模型有效。demo aaComp_1/cruciani_1 损坏→论文语义口径(NonPolar/PP1)。MT 1757+WT 244。非 bit-exact（原权重需作者）。
+- **Repitope** ✅ 本机 R4.3.3。**复用 2026-06-26 proven pipeline**（HPC/deploy/repitope/，v3.1.7+rJava+extratrees+mendeley 数据全在）——HPC conda 5 次堵死后改本机，工具早建好（「用工具别重造」）。补跑 551 肽：Features 551×33+ERT(5seed×5fold)+Immunogenicity_Predict 外推。MT 1761+WT 244，HLA-agnostic 广播。
+- **IMPROVE** ✅（档III）HPC envs/imp_feat+improve。官方 feature_calculations.py 全 1761 跑通（netMHCpan4.1+PRIME+MixMHCpred+**STAB=1 真算 stab**），3 缺特征(Expression/NetMHCExp/Foreigness 纯肽结构性不可得)走**官方 predict 自带 mean-impute**（论文明示=合法非降级）。MT 1761。**档II（antigen.garnish 真算 foreignness）HPC 受阻**：garnish 装通+1.3GB 数据下全+blastp 2.17 跑起，但 Biostrings≥2.77.1 pairwiseAlignment defunct（antigen.garnish 2.3.1 调它挂），降级 Biostrings 撞 conda solver 墙 → 待本地 antigen.garnish(R4.3.3/Bioc3.18 原生 pairwiseAlignment)补 II。
+
+**踩坑教训**：① HPC 该 conda 无 libmamba/mamba，classic solver 啃不动重 R 依赖树(caret+mlr/antigen.garnish↔Biostrings)——重 R 工具优先本机 install.packages 预编译二进制。② Repitope/deepHLApan/pTuneos 本机早部署，先查再造（白耗 5 轮 HPC conda）。③ install_github 撞 HPC 共享 IP GitHub API 限流→git clone 绕。
+
+**⚠️ W0 注意**：deepHLApan 有 bind+immuno 两子分（列 MT_deepHLApan_bind/immuno），merge 别名表需加；免疫原横评取 immuno 头。
+报 W0 验收。到此停，不冲 merge 节点。
+
+### 2026-06-30 续10（W0 主窗 orchestrator 收工：28 工具验收 PASS + 收口备料 + TSCAPE/Seq2Neo 收尾路线）
+
+**W0 编排/验收（不领工具节点）本场产出**：
+1. **收口备料 run-once de-risk**：`scripts/merge_official_30.py`（30 工具 official + 87 复用旧分 → 长表，5 校验门 + canonical 化修旧↔新命名漂移 + partial P104 等位过滤 + 覆盖报告）+ `analysis/phase0/smoke_integration.py`（merged→p0e→per-patient Spearman 9 患者非 NaN 闸）。端到端验通。
+2. **28 工具检测验收 PASS**（不信自报，Bash 抽核结构+反造数+诚实边界，账本 `W0_VERIFY_LEDGER.md`）：跨工具 24 列两两无雷同（反 copy）；MHCflurry/TransHLA 中途快照疑没跑（旧 stale raw），重核确认 W2 真补完（溯源新 raw maxdiff=0，非对齐 claim 造数）；andy90=amplitude/MHCnuggets=−ic50 朝向核；HLAthena B*27:06 无 ecdf 诚实 NaN；ICERFIRE/Neoag/NeoaPred/pTuneos 需 WT/9mer 仅 SNV（1/29 full）= 工具边界。
+3. **节点 done**：tools_presml(W2 5/5)、tools_immml(W3 8/8)、tools_immbox(W4 6/6 含 IMPROVE)、tools_finish(W5)。merge 仅余 tools_dtu。
+4. **TSCAPE 收尾**（3 researcher 调研）：TSCAPE=Science Advances 2025 顶刊，54.7GB=12 任务权重，本任务只需 pmhc_im_neo 单 529MB+CPU——但**公开代码 HEAD 跑不了 pmhc_im_neo**（权重未加载分支+task_dict KeyError，作者公开 release 漏实现）→ 复现零偏离不 patch → **改用 TRAP**（Genome Medicine 2023，CPU，复用 netMHCpan EL_Rank，代码干净）。用户拍板用 TRAP。
+5. **Seq2Neo 收尾**：researcher 查明 = 装 netCTLpan-1.1（DTU 同源 consent，CNN 硬依赖其 TAP，绕不开）→ seq2neo immuno 模块。
+6. **runner 全就绪**：TRAP（prep 已跑 1761 覆盖/repo cloned/RANK=EL+MODEL=self）、Seq2Neo（prep/run/parse）。**执行手工**（用户拍板「手工吧」）——手工命令序列见 `W0_VERIFY_LEDGER.md` 收尾 handoff。
+
+**当前**：30-roster = 28 验收齐 + TRAP（装中，手工）+ Seq2Neo（卡 netCTLpan DTU 许可）。两者落地后 merge --strict 收口 → p0e → smoke → p0f 冻结 → 解锁 R1-R9。
+
+**harness 摩擦记录**：W0 paramiko 连 HPC 被 auto-mode 分类器拦（andy90 同款）；后台 bash 下载~10min 被 kill；PowerShell-via-Bash deny；git schannel SSL 对 TRAP repo 失败（openssl 后端绕过）。→ TRAP/Seq2Neo 重型部署改用户手工跑。

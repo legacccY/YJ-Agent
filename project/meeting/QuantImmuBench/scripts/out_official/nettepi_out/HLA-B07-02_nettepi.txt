@@ -1,0 +1,74 @@
+# /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netTepi-1.0/netTepi.py -a HLA-B07:02 -p /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-B07-02.pep -l 9
+# Tue Jun 30 2026 15:00
+# USER: jiayu2403
+# CWD: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs
+# HOST: Linux x86_64 4.18.0-372.9.1.el8.x86_64 xpszlogin2
+# COMMAND LINE PARAMETERS SET TO:
+#	input_file          /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-B07-02.pep
+#	alleles             HLA-B07:02                    
+#	cons                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCcons-1.1/netMHCcons
+#	inptype             1                             
+#	lengths             9                             
+#	pep_mode            True                          
+#	print_alleles       False                         
+#	sort                0                             
+#	stab                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCstabpan-1.0/netMHCstabpan
+#	stab_weight         0.16                          
+#	tcell_weight        0.1                           
+#	tmpdir              /gpfs/work/bio/jiayu2403/quantimmu/nettepi_tmp
+#	www                 False                         
+#	xls                 False                         
+#	xlsfile             NetTepi_out.xls               
+
+# NetTepi version 1.0
+
+# Inputfile: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/dtu_netmhcpan_inputs/HLA-B07-02.pep
+
+# Input is in PEPTIDE format
+
+# Peptide lengths: 9
+
+----------------------------------------------------------------------------------------------------
+ Pos       Allele         Peptide          Identity      Aff     Stab    Tcell     Comb   %Rank
+----------------------------------------------------------------------------------------------------
+   0   HLA-B07:02       ALGLYHTAR           PEPLIST    0.056    0.008    0.082    0.051   50.00       
+   0   HLA-B07:02       AQDLHAERS           PEPLIST    0.040    0.001    0.179    0.048   50.00       
+   0   HLA-B07:02       ARWHRAQDL           PEPLIST    0.113    0.147    0.107    0.118   10.00       
+   0   HLA-B07:02       ATKSWTTPM           PEPLIST    0.350    0.706    0.042    0.376    1.50  <=Epi
+   0   HLA-B07:02       EQNATKSWT           PEPLIST    0.051    0.003   -0.138    0.024   50.00       
+   0   HLA-B07:02       EQNTTKSWT           PEPLIST    0.048    0.003   -0.138    0.022   50.00       
+   0   HLA-B07:02       GALGLYHTA           PEPLIST    0.067    0.032    0.066    0.061   32.00       
+   0   HLA-B07:02       GGALGLYHT           PEPLIST    0.041    0.001    0.040    0.035   50.00       
+   0   HLA-B07:02       GLYHTARWH           PEPLIST    0.055    0.009    0.279    0.070   32.00       
+   0   HLA-B07:02       HRAQDLHAE           PEPLIST    0.055    0.010   -0.043    0.038   50.00       
+   0   HLA-B07:02       HTARWHRAQ           PEPLIST    0.098    0.024    0.377    0.114   15.00       
+   0   HLA-B07:02       KSWTPSVQS           PEPLIST    0.055    0.004   -0.088    0.033   50.00       
+   0   HLA-B07:02       LGLYHTARW           PEPLIST    0.055    0.004    0.124    0.054   50.00       
+   0   HLA-B07:02       LYHTARWHR           PEPLIST    0.042    0.004    0.342    0.066   32.00       
+   0   HLA-B07:02       NATKSWTTP           PEPLIST    0.053    0.003   -0.102    0.029   50.00       
+   0   HLA-B07:02       NTTKSWTTP           PEPLIST    0.047    0.002   -0.102    0.025   50.00       
+   0   HLA-B07:02       PKSWTPSVQ           PEPLIST    0.037    0.000    0.081    0.035   50.00       
+   0   HLA-B07:02       PSVQSEQNA           PEPLIST    0.038    0.001   -0.272    0.001   50.00       
+   0   HLA-B07:02       PSVQSEQNT           PEPLIST    0.036    0.000   -0.272   -0.001   50.00       
+   0   HLA-B07:02       QNATKSWTT           PEPLIST    0.046    0.008   -0.104    0.025   50.00       
+   0   HLA-B07:02       QNTTKSWTT           PEPLIST    0.043    0.003   -0.104    0.022   50.00       
+   0   HLA-B07:02       QSEQNATKS           PEPLIST    0.040    0.001   -0.147    0.015   50.00       
+   0   HLA-B07:02       QSEQNTTKS           PEPLIST    0.042    0.001   -0.147    0.017   50.00       
+   0   HLA-B07:02       RAQDLHAER           PEPLIST    0.073    0.049    0.096    0.071   32.00       
+   0   HLA-B07:02       RWHRAQDLH           PEPLIST    0.051    0.003    0.004    0.039   50.00       
+   0   HLA-B07:02       SEQNATKSW           PEPLIST    0.058    0.028   -0.248    0.023   50.00       
+   0   HLA-B07:02       SEQNTTKSW           PEPLIST    0.056    0.017   -0.248    0.019   50.00       
+   0   HLA-B07:02       SVQSEQNAT           PEPLIST    0.095    0.088   -0.198    0.065   32.00       
+   0   HLA-B07:02       SVQSEQNTT           PEPLIST    0.068    0.050   -0.198    0.039   50.00       
+   0   HLA-B07:02       SWTPSVQSE           PEPLIST    0.044    0.001   -0.315    0.001   50.00       
+   0   HLA-B07:02       TARWHRAQD           PEPLIST    0.102    0.017    0.285    0.107   15.00       
+   0   HLA-B07:02       TPKSWTPSV           PEPLIST    0.560    0.840   -0.090    0.540    0.40  <=Epi
+   0   HLA-B07:02       TPSVQSEQN           PEPLIST    0.056    0.009   -0.264    0.016   50.00       
+   0   HLA-B07:02       TTKSWTTPM           PEPLIST    0.226    0.529    0.042    0.256    3.00       
+   0   HLA-B07:02       VQSEQNATK           PEPLIST    0.046    0.025   -0.016    0.036   50.00       
+   0   HLA-B07:02       VQSEQNTTK           PEPLIST    0.046    0.027   -0.016    0.037   50.00       
+   0   HLA-B07:02       WHRAQDLHA           PEPLIST    0.082    0.061   -0.026    0.068   32.00       
+   0   HLA-B07:02       WTPSVQSEQ           PEPLIST    0.050    0.001   -0.320    0.005   50.00       
+   0   HLA-B07:02       YHTARWHRA           PEPLIST    0.068    0.066    0.368    0.098   15.00       
+---------------------------------------------------------------------------------------------------- 
+
