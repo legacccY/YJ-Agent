@@ -3,7 +3,7 @@
   "project": "quantimmu-bench",
   "template": "experiment",
   "created": "2026-06-30T14:24:22+08:00",
-  "updated": "2026-06-30T18:15:30+08:00",
+  "updated": "2026-07-01T00:55:21+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -56,13 +56,13 @@
       "deps": [
         "freeze"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-01T00:49:32+08:00"
     },
     {
       "id": "train",
@@ -86,13 +86,13 @@
       "deps": [
         "integrate"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "读结果出趋势/图/对判据",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-01T00:55:21+08:00"
     },
     {
       "id": "verify",
@@ -101,26 +101,26 @@
       "deps": [
         "analyze"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "关键数字三方对账 + 写 LOG",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-01T00:55:21+08:00"
     },
     {
       "id": "tools_dtu",
       "stage": "自定义",
       "agent": "主线",
       "deps": [],
-      "status": "running",
+      "status": "done",
       "gate": false,
       "group": "tools",
       "desc": "DTU呈递:netMHCpan_BA/EL,netMHCstabpan,NetTepi,TSCAPE,ICERFIRE(ext_tools+qib env)",
       "out": "",
-      "owner": "W1",
-      "ts": "2026-06-30T14:31:01+08:00"
+      "owner": "",
+      "ts": "2026-07-01T00:49:02+08:00"
     },
     {
       "id": "tools_presml",
@@ -185,13 +185,13 @@
         "tools_immbox",
         "tools_finish"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "合并30工具official csv+87复用旧分→merged_30_official(IEDB/ImmuneApp已done)",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-01T00:49:02+08:00"
     },
     {
       "id": "pool",
@@ -200,13 +200,13 @@
       "deps": [
         "merge"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "p0e pooling到肽级(round8+count混杂诊断)",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-01T00:49:02+08:00"
     },
     {
       "id": "freeze",
@@ -215,13 +215,13 @@
       "deps": [
         "pool"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "p0f sha256冻结provenance",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-01T00:49:02+08:00"
     }
   ]
 }

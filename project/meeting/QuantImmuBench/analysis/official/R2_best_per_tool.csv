@@ -1,0 +1,35 @@
+# R2_best_per_tool.csv
+# QuantImmuBench §3.2: 每工具 max vs 最优 pooling 提升
+# gain_best_minus_max>0 = 该工具靠非 max 聚合受益 (验大纲: 亲和/结合类靠 topk)
+# gain≈0 = max 即峰 (验大纲: 免疫原类)
+Tool,pending_DTU,max_rho,best_pooling,best_rho,gain_best_minus_max
+Seq2Neo,True,-0.0577,sum,0.8573,0.9151
+netMHCstabpan,True,0.1565,rankdecay,0.7466,0.5901
+MUNIS,False,-0.0287,softmax,0.3634,0.3921
+DeepNetBim,False,-0.1903,sum,0.199,0.3894
+ImmuGenX,False,0.0117,geomean,0.387,0.3752
+MHCnuggets,False,0.0842,mean,0.452,0.3678
+NeoaPred,False,0.11,mean,0.4732,0.3631
+NeoTImmuML,False,-0.0389,geomean,0.2261,0.265
+NetTepi,True,0.0422,mean,0.2589,0.2166
+BigMHC_IM,False,0.0344,geomean,0.2328,0.1985
+MHCseqNet,False,-0.2421,geomean,-0.0447,0.1974
+PredIG,False,0.2143,geomean,0.4035,0.1892
+netMHCpan_BA,True,0.228,geomean,0.3856,0.1577
+TransHLA,False,0.0428,mean,0.1902,0.1473
+DeepImmuno,False,0.0311,sum,0.1656,0.1345
+ImmuneApp,False,0.0413,geomean,0.1547,0.1135
+netMHCpan_EL,True,0.1478,sum,0.2362,0.0884
+CNNeo,False,-0.0044,sum,0.0761,0.0806
+PRIME,False,0.3204,top3mean,0.3792,0.0588
+HLAthena,False,0.4166,rankdecay,0.4687,0.0521
+pTuneos,False,0.0645,sum,0.1157,0.0512
+Repitope,False,0.0748,sum,0.1041,0.0293
+IMPROVE,False,0.2496,rankdecay,0.2789,0.0293
+MHCflurry,False,0.255,topk_w,0.2776,0.0227
+deepHLApan,False,0.2357,top3mean,0.256,0.0204
+andy90,False,0.2439,sum,0.2607,0.0169
+NeoaG,False,0.061,sum,0.0678,0.0067
+TSCAPE,True,0.1261,max,0.1261,0.0
+IEDB_Calis,False,0.1231,max,0.1231,0.0
+ICERFIRE,True,0.3066,max,0.3066,0.0

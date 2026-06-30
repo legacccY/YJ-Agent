@@ -1,0 +1,60 @@
+{
+  "design": "nested-LOPO (outer leave-one-DS2, inner LOPO θ-selection)",
+  "leakage_guard": "inner θ-selection never touches outer test patient",
+  "input": "pooled_peptide_level_30tools.csv",
+  "integration_dims": [
+    "PredIG_rankdecay",
+    "IMPROVE_sum",
+    "pTuneos_geomean",
+    "PRIME_top3mean",
+    "ImmuneApp_max",
+    "deepHLApan_sum"
+  ],
+  "integration_dims_TODO": "成员=selection, 待袁/朱确认 outline 表8",
+  "shuffled": true,
+  "seed": 42,
+  "min_pep": 3,
+  "theta_space": [
+    "fixavg",
+    "ridge@dof2",
+    "ridge@dof2.5",
+    "ridge@dof3"
+  ],
+  "dof_grid": [
+    2.0,
+    2.5,
+    3.0
+  ],
+  "theta_oracle": "ridge@dof3",
+  "oracle_agg_by_theta": {
+    "fixavg": -0.033351,
+    "ridge@dof2": 0.046699,
+    "ridge@dof2.5": 0.044316,
+    "ridge@dof3": 0.061775
+  },
+  "lopo_fisherz_rho": 0.0649,
+  "lopo_ci_lo": -0.130118,
+  "lopo_ci_hi": 0.255083,
+  "lopo_n_used": 9,
+  "oracle_fisherz_rho": 0.061775,
+  "oracle_ci_lo": -0.133016,
+  "oracle_ci_hi": 0.251971,
+  "oracle_n_used": 9,
+  "consistency_delta_lopo_minus_oracle": 0.003125,
+  "consistency_paired_spearman": 0.995825,
+  "consistency_mean_abs_dev": 0.008861,
+  "strongest_single_tool": "Repitope_mean",
+  "strongest_single_rho": 0.206503,
+  "integration_minus_single": -0.141603,
+  "theta_selected_per_fold": {
+    "101": "ridge@dof3",
+    "102": "ridge@dof3",
+    "104": "ridge@dof2",
+    "105": "ridge@dof2.5",
+    "106": "ridge@dof2",
+    "107": "ridge@dof3",
+    "108": "ridge@dof3",
+    "109": "ridge@dof3",
+    "110": "ridge@dof3"
+  }
+}

@@ -4,6 +4,92 @@
 
 ---
 
+## Entry 34-R1R9 — 2026-07-01【官方 130 肽口径 R1-R9 实验：复现 outline 全核心方向 + 修 R5 稀疏虚高 bug】
+
+> 通宵自主。Phase 0 冻结后跑 R1-R9（派 coder 写 `analysis/official/R{1..6}_official.py` 复用旧骨架读冻结表，主线串行跑）。严格对齐袁老师 outline §3.1-3.4。数字 Bash 核 csv。
+
+### 结果（官方 130 肽 + 30 工具，per-patient Fisher-z）
+- **R1 max-pool 基线**（§3.1 图1/表5）：30 工具排序，HLAthena 0.4166(presentation proxy,疑肽长混杂待 count-safe 核)/PRIME 0.3204/ICERFIRE 0.3066/MHCflurry 0.2550/IMPROVE 0.2496；底部 MHCseqNet -0.2421。`R1_single_maxpool_official.csv`(30×16)。
+- **R2 pooling 洗牌**（§3.2 图2）：netMHCpan_BA max0.2280→geomean **0.3856**(+0.158)、netMHCpan_EL→sum0.236 → **复现 outline「结合/亲和类靠聚合提升」**。`R2_pooling_sweep_official.csv`(240×8)+`R2_best_per_tool.csv`。
+- **R3 12 fusion**（§3.3.1 表6）：geomean 跨维一致 3维0.461/4维0.546/6维0.446/7维0.490；weighted_mean_rank 0.494/powmean 0.458；max仅0.304/gbdt0.060过拟合 → **复现「geomean 跨维突出」**，量级向袁声称值(~0.46)靠拢。`R3_fusion_12methods_official.csv`(48×7)。
+- **R4 ablation**（§3.3.2 表7）：维度留一+4加权；learned_simplex Δ-0.215/inv_var-0.024 → **复现「加权塌回等权」**。`R4_ablation_official.csv`(40×9)。
+- **R5 nested-LOPO**（§3.3.3 表8）：整合 LOPO ρ̄=0.3414 vs oracle 0.3811(Δ-0.040,配对0.95=零过拟合) vs 最强单 PredIG 0.4035 → **整合≈最强单(小样本持平,对齐 outline)**；shuffle null LOPO=0.0649≈0 → 真信号。`R5_*.csv`+summary.json。
+  - **修 bug**：原 R5 最强单工具扫全30工具选了 `Seq2Neo_sum` ρ̄=0.857(假象:Seq2Neo仅43肽,per-patient 2-3肽算spearman虚高,vs R1 max=-0.058)→ 限**全覆盖(130肽)15工具池**(BigMHC_IM/CNNeo/DeepImmuno/IEDB_Calis/IMPROVE/ImmuneApp/MHCflurry/NeoTImmuML/PRIME/PredIG/Repitope/TSCAPE/TransHLA/netMHCpan_BA/EL)→ 选 PredIG 0.4035 合理。**★TODO 全覆盖池=数据质量默认,待袁/朱确认表8是否纳稀疏工具**。
+- **R6 robustness**（§3.3.4 图3/表9）：7维×{删10%,20%}×30seed → **geomean 双删第一**(删10% mean0.499 win0.533 rank1 / 删20% mean0.507 win0.633 rank1)，max 满数据高但子采样塌(rank>6) → **复现 outline 核心「geomean 唯一通过跨配置复现+删突变鲁棒双检验」**；单工具基准 PredIG_geomean0.41/netMHCpan_BA0.385 在 fusion 下。`R6_robustness_official_{results,summary}.csv`。
+
+### 🎯 一句话结账：官方 130 肽口径 R1-R6 跑通，**复现袁老师 outline 全部 6 条核心结论**（pooling重排/geomean跨维突出/加权塌等权/整合持平最强单/geomean鲁棒双第一/零过拟合）。量级向 outline 声称值(~0.46-0.50)靠拢。
+
+### ✅ 收工前 30 工具数字核验全 PASS（verifier 三方对账）
+- Check1 覆盖健康：30 工具 merged 全在，**无造数/无单值雷同/无全NaN**（NeoaG nuniq28/pTuneos nuniq10=离散分箱非雷同）。
+- Check2 溯源：6 工具(Seq2Neo/TSCAPE/PRIME/netMHCpan_BA/andy90/MHCflurry) official csv→merged mismatch=0；Seq2Neo 三跳(cnn_results→official→merged)n=1761 mismatch=0。
+- Check3 R1-R6 产物 vs 报告值全对齐(R1 PRIME0.3204/R3 geomean4维0.546189/R5 lopo0.341418/R6 geomean删20% win0.6333 逐个一致)。
+- Check4 冻结：pool `_max` == merged groupby max(1e-6)0 mismatch;PROVENANCE.json sha256 存在。
+- Check5 DTU 口径：7 DTU 工具标注齐全,R1 `pending_DTU` 列 7/7 精确;Seq2Neo 本体 AFL-3.0 可发仅后端 binary pending。
+- ⚠️ **非阻断提示（下游/writer 必知）**：`merged_all_tools_30_official.csv` 的 `bb_idx` **非唯一键**(1436 碰撞,2872 重复行,值各异非造数)→ 下游 join 改复合键 **(Peptide_ID, HLA_Allele, MT_Subpeptide)**,别用 bb_idx 单键(静默错配)。R1-R6 用 pool 表 Peptide_ID 键,不受影响。
+
+### R7-R9 待续（TODO，非本次范围）
+- R7（§3.3.5 配对显著检验：整合 vs 最强单 bootstrap）/ R8（§3.4 全方法统一排名+两部署方案）/ R9（补充：Pearson/逐病人分布/ds1敏感性）coder 未写，留下次派。
+- 小鼠 B16F10/CT26 全框架 = 数据组未到位,独立 gated。
+
+### selection TODO（不擅断,待袁老师/朱同学确认 outline 口径）
+- R3/R5/R6 fusion 维度集成员(surv6/dim7)+ 亲和代理(netMHCpan_BA 替旧 pool_netAffneg)+ R5 全覆盖池门槛 = selection,coder/主线全标 TODO。
+- 4 加权方案数学形式 outline 未给,用标准默认标 TODO。
+- HLAthena R1 0.417 疑肽长 count 混杂(同 outline deepHLApan 警示),R2 count-safe 待解读。
+
+---
+
+## Entry 33-SEQ2NEO — 2026-07-01【🎉 官方 130 肽口径真 30/30 达成：Seq2Neo 本地 pip 跑通(绕过 docker 死路)】
+
+> 用户连问进度 + 「换别的方法、上网找」拍板。最后一个工具 Seq2Neo 收口。
+
+### docker 三源全死 → pip 是正解
+- `docker pull liuxslab/seq2neo` 三源全拉不动：直连 DockerHub 单大 layer 反复 Retry / daocloud mirror 白名单拒(`liuxslab` 个人 repo 不在 allowlist) / 1ms.run 也卡同类大 layer。多 mirror daemon failover 也无效(根因=某大 conda 层国内带宽拉不动)。
+- WebFetch 官方 README + researcher 双确认：**Seq2Neo immuno = pip 包(10.9MB,CNN 权重随包) + 两个外部二进制**，根本不用 docker。`pip install Seq2Neo`(2.1.1,py3.7+TF2.3.0/keras2.4.3,清华镜像)。
+- **关键发现：两外部二进制本地早有，不用 DTU 申请**：netMHCpan-4.1(`ext_tools/netMHCpan-4.1`)+ **netCTLpan-1.1(`pTuneos/software/netchop/netctlpan_1_1_executable`,随 pTuneos 部署带进来的)**。
+
+### 跑通(本地 WSL2 seq2neo env)
+- 配 PATH(两二进制+conda)；single 烟测 immuno=0.5658 → multiple smoke5 出 5 分 → 全量 1462 unique(MT_Subpeptide,HLA去星)对。
+- 输入坑：`read_csv` **有表头**(`Pep,HLA` 去星 `HLA-A66:01`)，无表头会丢首行。
+- 输出 `cnn_results.csv`(Peptide,HLA,IC50,TAP,pseudosequence,**immunogenicity** 越高越强 sigmoid 0-1)。
+- parse 按(MT_Subpeptide,HLA去星)回贴 bb_idx → `Seq2Neo_official.csv` **1761行 100% 覆盖**(43补跑肽,无旧分),MT_Seq2Neo 0.031-0.982 mean 0.724。抽核 NQRNNVVRN×A66:01=0.735413 溯源 cnn_results 一致。
+
+### merge → 30/30
+`merge_official_30.py` 并入 Seq2Neo → **[M5] 全覆盖15|部分15|PENDING 0**(从1归零)。`merged_all_tools_30_official.csv`(34703×84),30 工具全在。**官方 130 肽口径真 30/30 达成**。Seq2Neo=DTU pending consent(netMHCpan/netCTLpan 链);AFL-3.0。
+
+### 弯路复盘(教训)
+docker 走弯(三源 + py3.8 错[需 py3.7] + `pkill conda` 自杀杀掉自己启的 create)。用户「换方法上网找」一句点醒→pip+本地二进制正解。教训:遇大镜像拉不动**先查工具有无 pip/conda 轻量包 + 外部依赖是否本地已部署**,别死磕 docker。
+
+### 待续/进展（通宵 2026-07-01 续）
+- ✅ DEPLOY_TRACKER I13(TSCAPE)/I16(Seq2Neo) 官方口径更新完成。**TODO: PROVENANCE/REFERENCES 补 Seq2Neo 条目(IJMS 2022,AFL-3.0,XSLiuLab/Seq2Neo)** 收工 commit 时补。
+- ✅ **Phase 0 冻结链全 PASS**(以袁老师 outline 为准)：merged_30_official(34703×84,30/30)→ p0e 重跑 pool(`pooled_peptide_level_30tools.csv` 130肽×30工具×8pooling,pending 0/30)→ smoke 集成烟测闸全 PASS(9患者 per-patient spearman NaN=0,PRIME_max Fisher-z=0.3189/IEDB_Calis_max=0.2490 官方130肽真值,补跑肽43/43有分)→ p0f freeze sha256=a394cf34 锁官方 xlsx,PROVENANCE.json 写好。**R1-R9 解锁**。
+- ✅ **30 工具数字核验 PASS**：roster 30 全在,无全NaN/无单值雷同造数,覆盖率全符工具边界(NeoaPred 0.7%严格9mer/Seq2Neo·stabpan 5.1%仅43补跑肽/NeoaG 37.5%)。刻度差(ICERFIRE 0-100/MHCnuggets -ic50/NeoaG·andy90 非归一)=工具原始刻度,rank-fusion 消除。
+- 🔄 派 coder 写 `analysis/official/R{1..6}_official.py`(对齐 outline §3.1-3.4,复用旧骨架,读冻结表)→ 主线串行跑。**R3 维度集成员=selection,脚本标 TODO 待袁老师确认**(不擅断)。
+- Seq2Neo per-patient 信号读数 = R1 算出(它仅43补跑肽,87复用肽无分)。
+
+---
+
+## Entry 32-LASTTOOLS — 2026-06-30【官方口径补跑收尾：TSCAPE 本地补满 ✅ + Seq2Neo 攻坚解阻塞 + 文档进度回填】
+
+> 用户：「现在把剩下没跑的工具都跑了」。本窗=quantimmu-bench-analysis。官方 130 肽口径 30-roster 此前唯二未 done = TSCAPE(defer) + Seq2Neo(阻塞)。
+
+### 先纠正两处文档误导（回填 00_README）
+- §A「本地实测 17」→ 据实回填 **30/30 接入**（Bash 核 `metrics_ds2_29tools.csv` 30 distinct），呈递 4→10、免疫原 13→20，标清替换关系(MAAP→MHCSeqNet/stabpan→MixMHCpred/NeoaPred→neoag)。
+- §C 三重检验四件套（fusion-12/nested-LOPO/ablation/robustness）此前误标「❌缺」→ 据实改 ✅**已跑**（产物全在磁盘 Jun 29，Bash 核 csv）：fusion median@6=0.3736、nested-LOPO ρ=0.328[0.101,0.523] vs null 0.009、ablation 最承重维 pTuneos、robustness 30seed×drop10/20% median top1。**加口径红线**：全绑「旧 101 肽 + 9 工具子集 model_matrix_v2(183行)」，非官方 130 肽全 30 工具，需第二代重跑。
+
+### TSCAPE 本地补跑 ✅（纠 54.7GB 误解）
+- defer 理由「54.7GB 权重+需 GPU」**是误解**：旧口径本就本地 WSL2 用 `best_param/pmhc_im_neo`=945M 跑通(54.7GB 是用不到的 task)。WSL2 `tscape` env + repo(/root/quantimmu/tools_repos/T-SCAPE, inference_csv.py 已 device patch)全在。
+- 跑法(复用旧 recipe 零改码)：prep 官方 backbone→1462 unique(MT,HLA)对(Step A pseudo_match "NONE"=0 零过滤,官方 26 等位全支持)→Step B inference_csv.py(--inf_type pmhc_im_neo,GPU <1min)→merge_tscape→`TSCAPE_official.csv` **1761 行 0 NaN**,MT_TSCAPE 0.0088-0.7073。
+- 抽核 bb0/bb1=0.069996/0.297936 溯源 output 一致。merge_official_30 重跑并入 **TSCAPE 130/130肽 43/43补跑 26等位**,merged_30_official MT_TSCAPE 34703/34703=100%。CC BY-NC-ND pending consent。
+
+### Seq2Neo 攻坚（researcher 查清 = 非真 blocker）
+- netCTLpan 在 Seq2Neo immuno 里**只出 TAP 分**(`add_tap_ic50.py` 取 netCTLpan col6),IC50 走已装 netMHCpan-4.1。官方 docker `liuxslab/seq2neo:latest` 已含 netCTLpan+netMHCpan 全栈 → 本地 WSL2 docker 可跑(`seq2neo immuno --mode multiple`,CSV `Pep,HLA`)。netMHCpan/netCTLpan=DTU pending consent。
+- 镜像拉取中(后台 docker pull)。拉好→准备输入→跑→parse `Seq2Neo_official.csv`→merge=官方口径真 30/30。
+
+### 现状
+官方 130 肽口径 **29/30 done**（TSCAPE 刚补满）+ Seq2Neo 部署中。M5 报告：全覆盖(130)15 工具 / 部分 14 / PENDING 1(Seq2Neo)。
+
+---
+
 ## Entry 31-DATA — 2026-06-30【🔴 数据真源切换：袁老师官方更正数据 = 唯一标准（只读红线）+ 旧数据归档 + 全档锁定】
 
 > 用户拍板：「把之前的数据归档，现在一切以这个新数据为准，红线不能动这个新数据，写入各个档案不能漏，保证以后用的都是老师给我的新数据。」

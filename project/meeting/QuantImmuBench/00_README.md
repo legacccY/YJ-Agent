@@ -40,13 +40,16 @@
 
 > ⚠️ 本节数字一律取本地已核值。袁 md 中本地无支撑的声称值（如 fusion 删 10% geomean +0.4643、单工具 max subset92 值）标注「袁 md 声称值，本地待核」，不混入本地真源。完整对账见 `paper/ALIGNMENT_TO_OUTLINE.md`。
 
-### A. 30 工具接入进度（目标 10 呈递 + 20 免疫原性；当前本地实测 17）
+### A. 30 工具接入进度（目标 10 呈递 + 20 免疫原性；✅ 30/30 接入达成 2026-06-30）
 
-| 类别 | 目标 | 本地已接入 | 已接入清单 | 主要缺口 |
+> ✅ **30/30 接入达成**。真源 = `scripts/out/merged_all_tools_29tools.xlsx`（34247×81，**30 distinct score 工具**）+ `analysis/metrics_ds2_29tools.csv`（30 distinct，Bash 核过）。文件名 "29tools" 因 MHCflurry 计 1 工具占 2 列。**逐工具状态真源 = `DEPLOY_TRACKER.md` 表 A/表 B + 04_LOG Entry 30-COMPLETE**。
+> ✅ **官方 130 肽口径也 30/30 达成**（2026-07-01）：`merge_official_30.py` 报告 **PENDING 0**，`merged_all_tools_30_official.csv`(34703×84) 30 工具全并入。收尾两个：TSCAPE 本地补满 130/130（纠 54.7GB 误解，0.53GB 本地 WSL2 跑）+ Seq2Neo 本地 pip 跑通（绕过 docker 三源拉不动死路：`pip install Seq2Neo` + 本地早有的 netMHCpan-4.1/netCTLpan-1.1，无需 DTU 申请）。详见 `TOOL_RERUN_STATUS.md` + 04_LOG Entry 32/33。
+
+| 类别 | 目标 | 本地已接入 | 已接入清单 | 备注 |
 |---|---|---|---|---|
-| 呈递 / 结合 | 10 | **4** | netmhcpan_ba（DTU）· MHCflurry_presentation · MHCflurry_affinity_neg · HLAthena（presentation proxy 单列，AUC≈0.51 近随机） | ~6：netMHCpan Aff/EL 独立列（现仅 BA）、MAAP、NetMHCstabpan 独立预测列（现 glibc 挡）、BigMHC_EL（有 -m=el 未接）等 |
-| 免疫原性 | 20 | **13** | DeepImmuno · PredIG · IMPROVE · NeoTImmuML（★自训版）· pTuneos（Pre&RecNeo 子模型）· PRIME · ImmuneApp · deepHLApan · BigMHC(-m=im) · CNNeo（自训）· IEDB_Calis · Repitope · TSCAPE（DTU） | ~7：Seq2Neo、DeepNeo/DeepNeo-v2、ICERFIRE（DTU pending）、内部 Inference 8-class（徐伊琳组源码未确认）、NeoaPred（HPC pending，结构 foreignness）等 |
-| **合计** | **30** | **17** | | **缺 13**；另 MHLAPre 权重缺彻底阻塞、ImmunoStruct 已 NO-GO |
+| 呈递 / 结合 | 10 | **10 ✅** | netmhcpan_ba（DTU）· MHCflurry_presentation · MHCflurry_affinity_neg · HLAthena（proxy AUC≈0.51）· netMHCpan_EL（DTU）· MixMHCpred（替 stabpan）· BigMHC_EL · TransHLA · MHCSeqNet（替 MAAP）· MHCnuggets | MAAP 身份未明→MHCSeqNet 替；NetMHCstabpan 弃换 MixMHCpred（fakeroot 挡）|
+| 免疫原性 | 20 | **20 ✅** | DeepImmuno · PredIG · IMPROVE（Expr 降级）· NeoTImmuML★（自训）· pTuneos（子模型）· PRIME · ImmuneApp · deepHLApan · BigMHC_IM · CNNeo（自训）· IEDB_Calis · Repitope · TSCAPE（DTU）· ICERFIRE（DTU）· NetTepi（DTU 低覆盖）· ImmugenX · MUNIS · Neoag · andy90（低覆盖）· DeepNetBim（license=null）| Seq2Neo/DeepNeo/Inference = bonus（外部阻塞，解了 31+，不解 30 已满）|
+| **合计** | **30** | **30 ✅** | | 永久排除：MHLAPre（无权重）/ImmunoStruct（NO-GO 三重 blocker）；NeoaPred 🗄️搁置（OpenMM 物理模拟反复 HPC TIMEOUT，neoag 替）|
 
 ### B. 四数据集进度
 
@@ -61,19 +64,21 @@
 
 ### C. 三层结果 + 三重检验进度
 
-| 环节 | outline 章节 | 本地状态 | 备注 |
-|---|---|---|---|
-| 单工具 max-pooling 基线 | §3.1 | 🟡 部分 | DS2 已有：per-patient Fisher-Z 主指标最强 PRIME 0.279 [0.050,0.481] ✓、IMPROVE 0.250 [0.021,0.455] ✓（唯二 CI 排 0）；天花板 ρ<0.4 |
-| 单工具 × pooling | §3.2 | 🟡 部分 | 本地 `pooling_sweep_17tools.py`（8 算子，超集 outline 4 法）；领域规律已复现：结合类要聚合（netmhcpan_ba 最优 geomean 0.3956），免疫原类 max 即最优。⚠️袁 md 称 netAffneg topk(k=20,α=0)+0.3946 与本地 geomean 0.3956 **数值接近但算子不同**（本地 topk_w 仅 0.1062），非已坐实数字桥，待按 k=20 重跑 topk 核 |
-| 多工具 fusion | §3.3.1 | 🟡 部分 | 本地仅 4 法（rankmean/fixavg/ridge/gbdt），**缺扩至 12 法**（geomean/median/powmean/softmax-rank/stacking 等）；ridge/gbdt 负=小样本过拟合 |
-| nested-LOPO | §3.3.3 | ❌ 缺 | 本地仅单层 LOPO（`quantimmune/lopo_eval.py`），缺双层内选超参 |
-| ablation | §3.3.2 | ❌ 缺 | 维度留一 + 加权 ablation 未做 |
-| robustness 删 10/20% | §3.3.4（图3核心）| ❌ 缺 | 本地无 robustness_subsample；袁 md geomean +0.4643/+0.4488 = 声称值本地待核 |
-| 显著性配对检验 | §3.3.5 | 🟡 部分 | 本地 `fusion_vs_single_paired.csv`：整合 vs 最强单工具**统计持平**（fixavg Δz=0.0037 p=0.974；rankmean Δz=0.0399 p=0.833），方向对齐袁 md headline |
-| 综合排名 + 部署 | §3.4 | ❌ 缺 | `rank_T01_deploy.py` 等部署脚本未做 |
-| 小鼠全框架 | 跨节 | ❌ 缺 | `camp.py` 等小鼠管线 0%（数据未到位） |
+> ⚠️⚠️ **口径红线（回填 2026-06-30，必读）**：下表「✅ 已跑」的方法学产物**全部绑「旧 101 肽 DS2 + 9 工具子集」** = 输入 `quantimmune/model_matrix_v2.csv`（183 行突变级：DS1 患者 1-6 + DS2 P101-110 共 9 患者；工具维仅 DeepImmuno/PredIG/IMPROVE/NeoTImmuML/pTuneos/PRIME/ImmuneApp/deepHLApan/HLAthena 9 个，fusion/LOPO 用其中 surv6 即 3-7 维子集）。**三重检验方法学链跑通≠官方口径定稿**：① 数据待换官方 130 肽（2026-06-30 数据真源切换，见 §B）② 工具维待扩到全 30。两者皆需在 conductor 第二代 merge→pool→freeze 后重跑（`TOOL_RERUN_STATUS.md`）。数字真源见各 csv，Bash 核过。
 
-**一句话现状**：人 ds2 主分析链（max 基线 / pooling / 4 法 fusion / 持平显著性）部分跑通，**缺口集中在工具补齐到 30、小鼠数据与全框架、nested-LOPO/ablation/robustness 三重检验、fusion 扩 12 法**。详细缺口与补齐路线见 `reference/GAP_ROADMAP_vs_outline.md`。
+| 环节 | outline 章节 | 本地状态 | 备注（旧 101 肽 + 9 工具口径，数字 Bash 核） |
+|---|---|---|---|
+| 单工具 max-pooling 基线 | §3.1 | 🟡 部分 | DS2 旧口径：per-patient Fisher-Z 最强 PRIME 0.279 [0.050,0.481]、IMPROVE 0.250 [0.021,0.455]；30 工具全量见 `per_patient_spearman_29tools.csv`；天花板 ρ<0.4 |
+| 单工具 × pooling | §3.2 | 🟡 部分 | `pooling_sweep_17tools.py`（8 算子，超集 outline 4 法）；规律复现：结合类要聚合（netmhcpan_ba geomean 0.3956），免疫原类 max 即最优。⚠️袁 md netAffneg topk(k=20,α=0)+0.3946 与本地 geomean 0.3956 数值近但算子不同，待按 k=20 核 |
+| 多工具 fusion | §3.3.1 | ✅ **已跑（旧口径）** | `analysis/fusion_12methods.csv`：**12 法 ×{3,4,6,7}维全跑**。最优 median@6维 fisherz **0.3736** [0.152,0.560]、geomean@6 0.3553；max@6 仅 0.267；gbdt 负=小样本过拟合。（取代旧「仅 4 法」记录）|
+| nested-LOPO | §3.3.3 | ✅ **已跑（旧口径）** | `quantimmune/results/nested_lopo.csv`+summary：surv6 双层，**ρ=0.3281** [0.101,0.523] n=9 患者，θ 每折选 fixavg；**vs 打乱 null ρ=0.0090** [-0.220,0.237] → 真信号非泄漏；LOPO=oracle（consistency delta=0，paired-spearman=1.0）。（取代旧「仅单层 LOPO」记录）|
+| ablation | §3.3.2 | ✅ **已跑（旧口径）** | `analysis/ablation_dim_weights.csv`：维度留一最承重维=**pTuneos**(Δ−0.034)、PRIME 反害(+0.025)；加权对比 learned_simplex 过拟合害事(Δ−0.241)、inv_var(−0.123)，**等权最稳**。|
+| robustness 删 10/20% | §3.3.4（图3核心）| ✅ **已跑（旧口径）** | `robustness_subsample_results.csv`+summary：30 seed × drop 10/20%（7 维）。**median 法 top1 胜率最高**（10% drop=0.60、20%=0.33），fusion 胜最强单工具 baseline 在 10% drop 下 93-100% seed。⚠️袁 md geomean +0.4643/+0.4488 = 不同口径声称值，本地未复现该绝对量级 |
+| 显著性配对检验 | §3.3.5 | 🟡 部分 | `fusion_vs_single_paired.csv`：整合 vs 最强单工具**统计持平**（fixavg Δz=0.0037 p=0.974；rankmean Δz=0.0399 p=0.833），方向对齐袁 md headline |
+| 综合排名 + 部署 | §3.4 | ❌ 缺 | `rank_T01_deploy.py` 等部署脚本未做 |
+| 小鼠全框架 | 跨节 | ❌ 缺 | `camp.py` 等小鼠管线 0%（数据未到位）|
+
+**一句话现状（2026-06-30 回填校正）**：① **工具 = 30/30 接入达成**（旧 101 肽口径），官方 130 肽重跑 29/30 工具完成。② **三重检验方法学链全跑通**（fusion-12 / nested-LOPO+null / ablation / robustness 四件套据实已存在，此前 §C 误标「缺」），但**全绑「旧 101 肽 + 9 工具子集 model_matrix_v2」**。③ **真正剩的活**：在官方 130 肽 + 全 30 工具上重跑下游（conductor 8/15，待 merge→pool→freeze→重出四件套）+ 综合排名/部署 §3.4 + 小鼠数据与全框架（数据未到位）。详细缺口见 `reference/GAP_ROADMAP_vs_outline.md`。
 
 ---
 

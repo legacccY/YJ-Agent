@@ -1,0 +1,54 @@
+# R3_fusion_12methods_official.csv
+# QuantImmuBench §3.3.1 表6: 12 fusion 法 × {3,4,6,7} 维 LOPO per-patient Spearman
+# 输入=pooled_peptide_level_30tools.csv; DS2 9 患者; 无监督法不碰标签, 学习型 LOPO 无泄漏
+# ★ 维度集成员=selection, TODO 待袁/朱确认 (见脚本 DIM_TOOLSETS); 各维取 R2 最优 pooling 列
+# dims=该维度集实际使用的 <Tool>_<pooling> 列 (分号分隔)
+method,ndim,dims,fisherz_rho,ci_low,ci_high,n_pat
+mean_rank,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.449174,0.272859,0.596297,9
+geomean,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.460707,0.286186,0.605641,9
+median,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.438865,0.261239,0.587744,9
+powmean,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.423862,0.244331,0.575298,9
+max,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.29334,0.103239,0.462766,9
+min,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.499593,0.330599,0.637545,9
+weighted_mean_rank,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.451109,0.275042,0.5979,9
+softmax_rank,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.268453,0.077122,0.440714,9
+stacking,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.366716,0.179891,0.528006,9
+constrained,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.38565,0.201447,0.543506,9
+ridge,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.377687,0.191891,0.537347,9
+gbdt,3,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean,0.124189,-0.072081,0.311199,9
+mean_rank,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.517468,0.351192,0.652103,9
+geomean,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.546189,0.38496,0.675068,9
+median,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.519924,0.354181,0.654,9
+powmean,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.486789,0.315817,0.627144,9
+max,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.318568,0.129556,0.48524,9
+min,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.490032,0.319691,0.629689,9
+weighted_mean_rank,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.517468,0.351192,0.652103,9
+softmax_rank,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.294652,0.104216,0.464246,9
+stacking,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.343088,0.153914,0.508,9
+constrained,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.38565,0.201447,0.543506,9
+ridge,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.403026,0.22042,0.558338,9
+gbdt,4,netMHCpan_BA_geomean;PRIME_top3mean;deepHLApan_top3mean;PredIG_geomean,0.117433,-0.076946,0.303211,9
+mean_rank,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.455761,0.280222,0.601806,9
+geomean,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.44613,0.269682,0.593592,9
+median,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.431049,0.252461,0.581238,9
+powmean,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.408682,0.2272,0.562732,9
+max,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.240074,0.045107,0.417424,9
+min,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.378936,0.195351,0.536863,9
+weighted_mean_rank,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.455866,0.280337,0.601895,9
+softmax_rank,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.203262,0.006735,0.384671,9
+stacking,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.302243,0.112424,0.470779,9
+constrained,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.285549,0.095074,0.455853,9
+ridge,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.321412,0.132714,0.487626,9
+gbdt,6,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean,0.095548,-0.098432,0.282533,9
+mean_rank,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.49564,0.325908,0.634418,9
+geomean,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.490049,0.319408,0.629907,9
+median,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.468454,0.295269,0.611833,9
+powmean,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.457532,0.281861,0.603522,9
+max,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.304056,0.113934,0.472694,9
+min,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.453658,0.278321,0.599734,9
+weighted_mean_rank,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.494016,0.324032,0.633099,9
+softmax_rank,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.256873,0.064751,0.430632,9
+stacking,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.285506,0.092928,0.457493,9
+constrained,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.38565,0.201447,0.543506,9
+ridge,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.379829,0.195863,0.537969,9
+gbdt,7,PredIG_geomean;IMPROVE_rankdecay;pTuneos_sum;PRIME_top3mean;ImmuneApp_geomean;deepHLApan_top3mean;netMHCpan_BA_geomean,0.060368,-0.13362,0.249901,9
