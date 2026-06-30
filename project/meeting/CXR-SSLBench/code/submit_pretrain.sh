@@ -68,15 +68,17 @@ else
   E_EQ=100           # 全预算 images-seen=11.21M
 fi
 
-# ---- eff_bs 凑官方值：batch_size_per_gpu / accum_iter（主线按 4090 24GB 显存 + 烟测 imgs/sec 标定调）----
-# ⚠️ TODO 主线：以下 BPG/ACCUM 是占位默认，须用 smoke 标定的单卡可容 batch 回填（OOM 则降 BPG 升 ACCUM）。
+# ---- per-GPU batch 用官方值（4090 24GB 能容）；eff_bs=BPG×ACCUM×GPUS，recipe 按 images-seen 重算步数 ----
+# BPG_CAP 可被 env 覆盖（烟测 OOM 则降）。官方 eff_bs（MAE/MoCo 4096 / DINO 512 / CheX 2048）经 ACCUM 凑；
+# 单/4 卡装不下官方 per-GPU → reduced-batch（矩阵 §2 预登记 TODO-B），recipe 内部按 eff_bs 线性缩放 lr。
 case "$METHOD" in
-  mae)       OFF_EFF=4096; BPG=256; ACCUM=$(( OFF_EFF / (BPG*GPUS) )) ;;     # 4096=256×accum×gpus
-  dino)      OFF_EFF=512;  ACCUM=1; BPG=$(( OFF_EFF / GPUS )) ;;             # DINO 无 accum，512=BPG×gpus
-  moco)      OFF_EFF=4096; ACCUM=1; BPG=$(( OFF_EFF / GPUS )) ;;             # MoCo 无 accum；4090×4 装不下 4096→见 TODO-B reduced 路径
-  chexworld) OFF_EFF=2048; BPG=128; ACCUM=$(( OFF_EFF / (BPG*GPUS) )) ;;     # 2048=128×accum×gpus
+  mae)       OFF_EFF=4096; BPG=${BPG_CAP:-256}; ACCUM=$(( (OFF_EFF + BPG*GPUS - 1) / (BPG*GPUS) )) ;;  # mask0.90 仅~10%token,轻
+  dino)      OFF_EFF=512;  BPG=${BPG_CAP:-32};  ACCUM=1 ;;                    # DINO 官方 per-gpu=32(multi-crop 重)；无 accum,eff_bs=32×GPUS(reduced)
+  moco)      OFF_EFF=4096; BPG=${BPG_CAP:-128}; ACCUM=1 ;;                    # MoCo 无 accum;4090 单卡~128;eff_bs=128×GPUS(reduced,recipe 缩 lr)
+  chexworld) OFF_EFF=2048; BPG=${BPG_CAP:-128}; ACCUM=$(( (OFF_EFF + BPG*GPUS - 1) / (BPG*GPUS) )) ;;  # accum 凑 2048
 esac
-echo "[budget] E_eq=$E_EQ off_eff_bs=$OFF_EFF BPG=$BPG ACCUM=$ACCUM GPUS=$GPUS"
+EFF_ACTUAL=$(( BPG * ACCUM * GPUS ))
+echo "[budget] E_eq=$E_EQ off_eff_bs=$OFF_EFF eff_actual=$EFF_ACTUAL BPG=$BPG ACCUM=$ACCUM GPUS=$GPUS"
 
 OUT=$ROOT/runs/${METHOD}_s${SEED}_${MODE}
 mkdir -p $OUT
@@ -92,9 +94,13 @@ echo "[train-cmd] $CMD"
 RUN=${METHOD}_s${SEED}_${MODE}
 ( cd $OUT && PYTHONPATH=$REPO $PY -c "pass" )   # 占位，确保 $OUT 可写
 echo "[$(date)] === TRAIN START run=$RUN ==="
-# ⚠️ TODO-MONITOR-HOOK：DINO teacher 熵/特征 std 需在官方 loop 调 smoke_monitor.MonitorWriter.log_step 灌入。
-#    官方 main_dino 不 emit → 须主线在 vendor/dino/main_dino.py 训练 loop 末插 ~5 行 monitor hook（监控非算法改）。
-#    未挂 hook 时 gate 走 --tail 只拿 loss → DINO/MoCo collapse 判据返回 INCOMPLETE（不放行假 PASS）。
+# MONITOR-HOOK 已由 apply_monitor_hook.py 注入 vendor/dino+moco（main_<m>.py.cxrssl_orig 备份）。
+# 运行时钩子读以下 env emit teacher熵/feat_std/contrastive_baseline → results/smoke_<method>.csv。
+export CXRSSL_RESULTS_DIR=$RESULTS
+export CXRSSL_CODE_DIR=$CODE
+export CXRSSL_RUN=$RUN
+export CXRSSL_SEED=$SEED
+export CXRSSL_LOG_EVERY=50
 ( cd $OUT && PYTHONPATH=$REPO eval "$CMD" ) 2>&1 | tee $OUT/train.log
 echo "[$(date)] === TRAIN DONE ==="
 
