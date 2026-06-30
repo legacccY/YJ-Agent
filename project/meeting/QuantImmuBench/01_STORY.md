@@ -126,8 +126,12 @@ QuantImmu 相对既有新抗原免疫原性工具与 benchmark 的三个差异�
 - BigMHC 学术非商用；TSCAPE CC BY-NC-ND；NeoTImmuML★ = 自训版（官方权重不可得），标非官方。
 
 ### 7.4 数据集口径
-- DS2（主分析集，`data/Elispot_Dataset2.xlsx`，HLA-FIX 修正版）：9 患者 P101–P110 **缺 P103**；101 有效肽（90 阳 / 11 阴 SFC>0）；HLA-FIX 剔 P101/P102 后 **7 有效患者**。袁 md 标「92 突变 / 8 有效病人（P102 inference 近缺席）」≠ 本地口径 → 投稿前需袁老师 / 朱同学统一（**拍板点**）。
-- DS1（`data/Elispot_Dataset1.xlsx`，6 例黑色素瘤）= 人源补充 / 复现集。
+> 🔴 **2026-06-30 数据真源切换（红线）**：DS2 唯一标准 = 袁老师下发官方更正数据 `data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx`（**只读，不可改**；Braun *Nature* 2025 MOESM4，HLA 拖拽 bug 已采纳我方修正）。旧 `Elispot_Dataset2.xlsx`（101 肽）**已废**→ `data/_archive_superseded_20260630/`。一律读官方文件。详见 `data/README_DATA_OFFICIAL.md`。
+- DS2（主分析集，官方版）：两页 —— **In Vitro 130 肽 / 9 患者**（P101–P110 缺 P103）+ **Ex Vivo 36 行**（9 患者 × 4 Pool × 逐周 Week0–24，两治疗组）。⚠️ 旧 101 肽口径**作废**（旧为过滤子集；官方 In Vitro = 130 肽全量，多 29 肽 = 28 阳/1 阴；101 共有肽 Elispot 逐个一致）。⚠️ 官方版无我方旧表 5 列注释（`WT Peptide Seq` 等，DAI 命脉，需从归档旧表按 `Peptide_ID` 回贴）。
+- HLA 真值（官方版已修正）：P101 `{A*66:01,B*40:01,B*57:01,C*06:02}`、P102 `{A*02:01,B*35:03,B*38:01}`（确认仅 3 等位）。
+- ⚠️ **口径拍板点**：官方 130 肽 vs 袁 md「92 突变/8 病人」vs 旧「101 肽/9 患者→7 有效」三套不一致 → 投稿前需袁老师/朱同学统一。
+- ⚠️ **现有结果待重跑**：`analysis/metrics_ds2_*` / `per_patient_spearman_*` / pooling / fusion 全部基于旧 101 肽口径，需在官方 130 肽上**重跑才生效**（改 paper 数字，已由用户 2026-06-30 授权方向）。
+- DS1（`data/Elispot_Dataset1.xlsx`，6 例黑色素瘤）= 人源补充 / 复现集（官方更正版只含 DS2，DS1 独立保留）。
 - 小鼠 B16F10 / CT26：**仓库完全缺失**（袁 md §2.1 要求），列 GAP。
 
 ### 7.5 双盲

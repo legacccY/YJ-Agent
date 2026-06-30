@@ -4,6 +4,36 @@
 
 ---
 
+## Entry 31-DATA — 2026-06-30【🔴 数据真源切换：袁老师官方更正数据 = 唯一标准（只读红线）+ 旧数据归档 + 全档锁定】
+
+> 用户拍板：「把之前的数据归档，现在一切以这个新数据为准，红线不能动这个新数据，写入各个档案不能漏，保证以后用的都是老师给我的新数据。」
+
+### 老师新数据 vs 我们旧 DS2 差异核对（Bash 核 xlsx，不信 Read）
+新文件 = `A neoantigen vaccine...MOESM4_ESM(1).xlsx` = Braun *Nature* 2025 RCC 疫苗论文官方补充表 MOESM4，两页 **Ex Vivo** + **In Vitro**。
+1. **HLA 拖拽 bug 老师已采纳我方修正**：新数据 P101 全行 `{B5701,B4001,C0602,A6601}`、P102 全行 `{B3503,A0201,B3801}`，与 2026-06-27 上报真值一字不差；P102 确认仅 3 等位（无 C、单 A），坐实残留疑点非漏记。
+2. **Elispot 值完全一致**：101 个共有肽逐个相同，0 变化。
+3. **新数据多 29 肽**（In Vitro **130** 行 vs 旧 101）：旧 101 肽全在新数据里（0 缺失），新多出 29 肽（28 阳/1 阴 SFC）。旧 101 肽 = 过滤子集，官方 = 全量。
+4. **新数据缺我方旧表 5 列注释**：`WT Peptide Seq`/`Parsed_Gene`/`Parsed_Mutation`/`Ref UniProt ID`/`Peptide Position`。**WT 序列是 DAI 命脉**，需从归档旧表按 Peptide_ID 回贴。
+5. **Ex Vivo 页全新**（36 行 = 9 患者×4 Pool×逐周 Week0–24，两治疗组），我方从无。
+
+### 执行（Filesystem MCP move，不用 rm）
+- 新数据 → `data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx`（规范名，保持只读 `-r--r--r--`）= **唯一标准**。
+- 旧数据 → `data/_archive_superseded_20260630/`：旧 DS2（101 肽）、`_source_backup_20260627/`（buggy 原始）、`Sample_merged_prime_results.xlsx`、HLA 上报 md/pdf、P102 confirm md。
+- 保留：DS1（黑色素瘤，非被取代）、`external/`+IEDB 公开数据。
+- 新建 `data/README_DATA_OFFICIAL.md`（红线总档：唯一标准+只读+归档清单+差异+待办）。
+
+### 全档锁定（写入不漏）
+`data/README_DATA_OFFICIAL.md`（新）· `.portfolio/datasets.json`（quantimmu_elispot_human 加 OFFICIAL_SINGLE_SOURCE）· `00_README.md`（表 B）· `01_STORY.md`（§7.4）· `02_ACCEPTANCE.md`（G2）· 本 LOG。
+
+### ⚠️ 待办（数据切换后续，非本次范围；改 paper 数字 = 已授权方向）
+- 重跑全 benchmark：`analysis/metrics_ds2_*` / `per_patient_spearman_*` / pooling / fusion 全基于旧 101 肽口径，需在官方 130 肽重跑才生效。
+- 代码脚本仍引用旧 `Elispot_Dataset2.xlsx` 路径（已归档→跑会 FileNotFound，是硬保险逼改读新数据），重跑时统一改读 OFFICIAL。
+- WT 序列回贴方案（DAI 依赖）。
+- 口径统一：官方 130 肽 vs 袁 md 92 突变/8 病人 vs 旧 101 肽 → 袁老师/朱同学拍板。
+- Ex Vivo 是否纳入免疫原性真值，待定。
+
+---
+
 ## Entry 30-COMPLETE — 2026-06-30【30/30 工具部署达成：补 MHCSeqNet + andy90 + DeepNetBim 三工具，一夜自动跑完】
 
 > 用户睡前全自主放行（「不用征求意见，给跑的权限」）。目标=凑满 30 工具不靠 blocker。真源 `merged_all_tools_29tools.xlsx`（34247×81，**30 distinct score 工具** = 呈递 10 + 免疫原 20）+ `metrics_ds2_29tools.csv`（30 distinct）+ `per_patient_spearman_29tools.csv`。文件名 "29tools" 因 MHCflurry 计 1 工具占 2 列，distinct=30。
@@ -2136,3 +2166,88 @@ python analysis/build_report_docx.py
 - `python analysis/iedb_overlap_check.py --iedb data/iedb_tcell_full.csv`（需用户先下 IEDB csv）
 
 Windows 规范已遵守：Spearman 纯 numpy 实现（避 scipy.stats × torch OMP 冲突）、pathlib 路径、零 GPU。
+
+---
+
+## 2026-06-30（建档：run-once 严谨实验+消融阶段计划 `03_EXPERIMENT_PLAN.md`）
+
+**背景**：用户要求把「论文严谨实验 + 消融」做成一次跑出 paper-ready 数据、零返工的阶段计划；并下发新官方 ground-truth 数据 `data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx` 为唯一准则（禁旧 DS2、禁改数据）。铁律：不允许降级，只允许找新方法。
+
+**情报采集**（3 Explore 读权威框架/进度缺口/方法细节 + planner 出实验矩阵 + skeptic 红队返工风险，全 opus）。
+
+**Bash 自核硬地基**（非转述）：
+- 新官方 In Vitro = **130 肽/9 患者**（101,102,104-110，缺 103），每患者 8-19 肽全 ≥8 → per-patient Spearman 9 患者全可用。
+- ground truth=`Elispot` 连续 SFC（−33.7~392.3），**118 阳/12 阴**（极不平衡）。
+- 🔴 头号返工风险：新 130 肽里 **29 肽在最新预测 `merged_all_tools_29tools.xlsx`（183 键）完全缺失**，含全数据 top-10 应答者 6 个（最强 392.3/376.3）→ silent dropna 会让分析退回旧肽集、ρ 系统性偏低。
+- HLA 新旧比对：**8/9 患者一致，仅 P104 DIFF**（新 A3001 vs 旧 A0301）；P101/P102 已 match → 补跑=**增量**（29 缺失肽 + P104×A3001，~46 肽），非全量。
+
+**交付 = `03_EXPERIMENT_PLAN.md`**：Phase 0 数据地基重建协议（6 步冻结 + fail-loud 守肽行 + sha256 锁）→ 实验矩阵 R1-R9（对齐表 5-10 + 图 1-4）→ 消融 AB-1..11（含新数据特有 Treatment 分层）→ run-once 冻结清单（Spearman 连续主指标不二值化、geomean 不预焊 headline、多重检验 FDR/Bonferroni、bootstrap-over-patients CI）→ 5 拍板点（分析单元/维度集/DTU/30 工具达标/geomean 复现）→ **不卡执行策略（本地优先、HPC 不等、冻结表 v1/v2 分层增量解锁、NeoaPred 后台非阻塞）**。
+
+**已锁设计决定**：分析单元=肽级 n=130（突变 collapse 入附录+拍板）；主指标=per-patient Spearman Fisher-z 9 患者等权（round(8) 后算）；AUC 降补充（n_neg=12 不进 headline）；承重 headline 落 Claim iii（整合≈最强单工具）。
+
+**指针**：00_README.md 读档链已补 `03_EXPERIMENT_PLAN.md`。
+
+**下一步**：Phase 0 派 coder 写 6 步脚本 + R1-R9/AB 跑批 + 新 `robustness_subsample_official.py`；CPU 工具补跑本地立即扇出、NeoaPred 后台申卡不等；拍板 1-2（分析单元/维度集）跑前与袁/朱对齐冻结。
+
+### 2026-06-30 续：Phase 0 本地 4 步跑通（冻结表就绪）
+
+coder 交付 6 脚本（`analysis/phase0/`，静态过）。主线串行跑前 4 步，**全校验门 PASS**：
+- `p0a` → `data/frozen/ds2_official_groundtruth.csv`（130 肽/118 阳 12 阴/9 患者，每患者≥8）✅
+- `p0b` → `patient_hla.csv`（39 行，B5701→HLA-B\*57:01，P104 含新等位 A\*30:01、P109 去重生效）✅
+- `p0_reuse` → `REUSE_DECISION.csv` + `RERUN_PEPTIDE_LIST.csv`：**reuse=87 / rerun_full=29(缺失肽) / rerun_partial=14(P104×A\*30:01) = 130**；HLA diff 仅 P104 确认 ✅
+- `p0c` → `subpep_hla_expansion.csv`（43 待补跑肽 × 9mer 滑窗 = **1761 子肽×HLA 行**）✅
+
+**架构摸清**：旧 merged 由 `scripts/prepare_inputs.py`（读旧 DS2 建 master_backbone + 各工具输入）→ 各工具 runner（Docker/conda/HPC）→ `merge_newtools.py` 合并；29 工具逐个 `patch_add_<tool>.py` 加。
+
+**用户拍板（2026-06-30）**：工具补跑执行 = **主线自主推进 + HPC 到点报**。即：coder 适配 prepare_inputs 到新数据生成 43 肽输入 → CPU 工具本地立即逐个补跑 → DTU 5 工具 + NeoaPred 走 HPC，到「上传新数据/代码」拍板线停下报再传。不卡：本地能跑的先跑满，HPC 后台不等。
+
+**待**：coder 写 `prepare_inputs_official.py`（从冻结表生成 43 肽各工具输入）→ 主线本地跑 CPU 工具补跑 → p0e/p0f 冻结。
+
+### 2026-06-30 续2：43 肽工具输入就绪 + 撞 HPC 上传拍板线
+
+coder 交付 `scripts/prepare_inputs_official.py`（读 frozen 4 件套、不碰旧 xlsx）。主线跑通烟测，**覆盖 PASS：43 肽全覆盖**（backbone 1761 子肽×HLA 行，HLA 归一化 1761/1761），输出 `scripts/out_official/`：
+- 标准格式：DeepImmuno(1462 uniq) / PredIG(1761) / IMPROVE(1761) / PRIME(26 等位目录,1462) / ImmuneApp / deepHLApan(1462) / pTuneos(1761)
+- 通用喂料 `newtools/uniq_pep_hla.csv`(1462) + `universe.csv`(1761) + `uniq_pep.csv`(462)：供 MHCflurry/IEDB_Calis/CNNeo/BigMHC/Repitope/MHCnuggets/MHCseqNet/TransHLA/MuNIS/ImmuGenX/NeoaG/NetMHCpan_EL/DeepNetBim/andy90/NeoaPred + DTU5
+
+**WT 侧缺口（coder 标 TODO 未臆造）**：frozen 无 WT 子肽/全长、GT 无 WT 列 → 全工具 WT_<tool> 列空、DAI 特征无法重生成。**主分析 MT 侧不受影响**；WT/DAI（消融 AB-6）需从 Gene_and_Protein_Change 突变记法回推 WT，另起子任务。
+
+**环境现实勘察**：工具舰队几乎全在 `HPC/deploy/`（iedb_calis/mhcflurry/mhcnuggets/repitope/... 全 HPC）；本地无 Docker 镜像、WSL Ubuntu 停着。→ **43 肽重跑 = HPC 操作**，撞「HPC 上传新数据/代码」拍板线（用户已预期「HPC 到点报」）。
+
+**🛑 停在拍板：等用户放行 HPC 上传新输入 + 确认 HPC 跑工具的批次/工作流。** Phase 0 本地侧已做满（4 冻结表 + 43 肽输入），不卡处全跑完。
+
+### 2026-06-30 续3：用户放行 HPC 上传（校内直连）+ WT/DAI 地基补齐
+
+**用户拍板**：放行上传 + 主线驱 HPC 批跑；在校内（无需 VPN，HPC 直连）。WT 问题用户要先听明白。
+
+**WT 数据真相（已核，新数据非缺陷）**：新官方表无显式 WT 列（补充表常态），但 `Gene_and_Protein_Change` 的 `p.XnY` 记法可回推：**101 SNV 全可解析**；29 indel（DEL23/INS5/Variant_Type 缺1）WT 本无定义（移码新抗原无对齐 WT，DAI 不适用，标准跳过）。
+
+**WT 回推（coder 两轮，run-once 排序：WT 先于上传，避免二次 HPC 跑）**：
+- 方法验证 100%：回推值 vs 旧 xlsx 金标准 `WT_FullPeptide` 59/59 match。
+- 优化：旧 xlsx 有的肽 WT 直接取金标准（gold_reuse=100），只 1 真新肽回推（derived=1），**ambiguous=0**；indel_NA=29。
+- 产物冻结：`data/frozen/wt_fullpeptide_official.csv`(130) + `subpep_hla_expansion_WT.csv`(244 行,14 待补跑肽 WT 子肽×HLA) + `WT_NA_indel_list.csv`(29)。
+
+**在跑**：coder 把 WT 侧接进 `prepare_inputs_official.py`（现 MT-only），生成含 MT+WT 输入 → 上传 HPC 一趟跑 MT+WT。
+
+**下一步（主线串行）**：WT 接线跑通 → 重生成 out_official(MT+WT) → 上传 HPC `/gpfs/work/bio/jiayu2403/quantimmu` → 各工具 deploy 跑 43 肽 → 拉回合并 merged_30_official → p0e/p0f 冻结 → 解锁 R1-R9。
+
+### 2026-06-30 续4：MT+WT 输入生成 + 上传 HPC 完成
+
+- WT 接线进 `prepare_inputs_official.py`：重生成 `out_official/`，**MT 侧不变**（DeepImmuno 1462 等）+ **WT 侧填入**（PredIG 2005=1761MT+244WT、PRIME-WT 244/7 等位、deepHLApan-WT 244、newtools uniq_pep_hla 1596）。COVERAGE PASS 43 肽。
+- HPC 连通确认（校内直连无需 VPN，登录节点 xpszlogin2，squeue 空=4090 卡空闲）。
+- **上传完成**：`out_official.tar.gz`(188KB,142 文件) → `/gpfs/work/bio/jiayu2403/quantimmu/official_inputs/`，解压 87 文件就位。
+- HPC 工作区摸清：deploy/ 各工具 + wave3_inputs/out + envs/ conda + sif/ singularity + ext_tools/ DTU + neoapred_hpc/。各工具 deploy 目录有 `prep_input.py`/`run_<tool>.py`/`run_<tool>_101102.py`（增量重跑先例）。
+
+**待**：各工具 run 脚本适配新官方输入路径 `official_inputs/out_official/` → HPC 批跑 43 肽（MT+WT）→ 拉回 parse 合并 → merged_30_official → p0e/p0f。
+
+### 2026-06-30 续5：管道端到端验通（IEDB_Calis 打头，1/25 工具，纯本地）
+
+**用户拍板**：25 工具补跑 = 主线逐工具驱（本窗持续）。策略=先 1 个简单工具端到端验通管道再规模化。
+
+**IEDB_Calis（纯 python Calis 2013，本地可跑不占 HPC）**：
+- 克隆 `run_iedb_calis_101102.py` → `scripts/run_iedb_calis_official.py`（仅改输入/输出路径，算法零改）
+- 本地跑通：smoke 2 等位 OK → 正式 26 等位，产 `out_official/IEDB_Calis_official.csv`(1761 行，MT 1761/0NaN，WT 244)
+- **管道验通 PASS**：score 按 bb_idx join 回 backbone → **43 rerun 肽全有 MT 分**（run→parse→join→覆盖 整条链证明可行）
+
+意义：管道验通 de-risk 后续 24 工具——同 pattern（克隆 _101102/_deploy runner 改输入路径 → 跑 → parse → join bb_idx）。IEDB_Calis 是 1/30（含已复用 87 肽的旧分，本工具补的是 43 肽缺口）。
+
+**待续**：逐工具适配剩余 24 个（本地可跑的 DeepImmuno/MHCflurry/MHCnuggets/Repitope/PredIG 优先本地；DTU5/NeoaPred/sif 容器类走 HPC）→ 全 parse 合并 merged_30_official → p0e/p0f 冻结 → 解锁 R1-R9。

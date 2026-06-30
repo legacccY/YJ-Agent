@@ -1,5 +1,7 @@
 # paper/ 现有成稿 → 袁老师 QuantImmu 框架 对齐说明
 
+> 🔴 **2026-06-30 数据真源切换**：DS2 唯一标准已切为袁老师官方更正数据 `data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx`（只读，In Vitro 130 肽 + Ex Vivo 36 行）。旧 101 肽数据已废归档。**本档及 `_scratch/ALIGN_FACTS.md` 里所有 DS2 数字均基于旧 101 肽口径，待官方 130 肽重跑后失效/重核**。详见 `data/README_DATA_OFFICIAL.md`。
+
 > 建档 2026-06-29。本档记录 `paper/` 下旧成稿（窄框架）与权威框架 `paper/QuanImmu-Paper-Outline.md`（袁老师定稿）的差距 + 待改清单。
 > **本次任务（文档对齐）不重写 `main.tex` / `sections/*.tex` 正文**（量大，属后续 writer 编队执行）；本档只列差距与改法，供下一阶段动手。
 > 数字红线：tex 改写时数字只用 `_scratch/ALIGN_FACTS.md` 已核值过 verifier；袁 md 声称值标待核。

@@ -313,17 +313,18 @@
    "status": "partial (5集已下;NEPdb/harmonized/dbPepNeo2全库/TESLA/NeoTImmuML训练集 TODO需Playwright/邮件/账号)"
   },
   "quantimmu_elispot_human": {
-   "name": "人源 ELISpot 主分析集 (QuantImmu DS1/DS2)",
-   "n": "DS1=6例黑色素瘤 | DS2=9患者(P101-P110缺P103)/101有效肽(90阳11阴SFC>0);HLA-FIX剔P101/P102后7有效患者",
-   "local": "project/meeting/QuantImmuBench/data/Elispot_Dataset1.xlsx (16K;DS1) + Elispot_Dataset2.xlsx (29K;DS2,2026-06-27 HLA-FIX修正版)",
+   "name": "人源 ELISpot 主分析集 (QuantImmu DS1 + DS2官方版)",
+   "OFFICIAL_SINGLE_SOURCE": "🔴2026-06-30起唯一标准=袁老师下发官方更正数据 data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx(只读不可改)。旧 Elispot_Dataset2.xlsx 已废→data/_archive_superseded_20260630/。详见 data/README_DATA_OFFICIAL.md",
+   "n": "DS1=6例黑色素瘤 | DS2(官方版)=2页:In Vitro 130肽/9患者(P101-P110缺P103) + Ex Vivo 36行(9患者×4pool×逐周Week0-24,两治疗组)。⚠️旧101肽口径已作废(旧是过滤子集),官方In Vitro=130肽全量(多29肽:28阳1阴);101共有肽Elispot逐个一致",
+   "local": "DS2官方=project/meeting/QuantImmuBench/data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx (52K,只读,In Vitro+Ex Vivo两页) | DS1=project/meeting/QuantImmuBench/data/Elispot_Dataset1.xlsx (16K,保留)",
    "hpc": "N/A(本机CPU推理够)",
-   "source": "袁老师/团队内部提供(临床ELISpot真值)",
+   "source": "DS2=Braun DA et al. Nature 2025 (DOI 10.1038/s41586-024-08507-5; NCT02950766/协议16-097) 补充表MOESM4,袁老师下发官方更正版(HLA拖拽bug已采纳我方修正) | DS1=团队内部提供",
    "used_by": [
     "quantimmu-bench"
    ],
-   "purpose": "QuantImmu论文主真值集。DS2=主分析集(per-patient Spearman vs ELISpot SFC);DS1=补充/复现集(netMHCpan+PRIME合并)。聚合键:人=Patient_ID|Peptide_ID(mut_key)",
-   "caveat": "⚠️口径拍板点:袁老师outline标DS2=92突变/8有效病人(P102 inference近缺席),本地真相=101肽/9患者(HLA-FIX剔P101/P102后7有效)。投稿前需袁老师/朱同学统一主分析集定义。P101真分型{A*66:01,B*40:01,B*57:01,C*06:02}/P102{A*02:01,B*35:03,B*38:01}",
-   "status": "ready (人源已跑通17工具)"
+   "purpose": "QuantImmu论文主真值集。DS2(官方版In Vitro)=主分析集(per-patient Spearman vs ELISpot SFC);DS1=补充/复现集(netMHCpan+PRIME合并)。聚合键:人=Patient_ID|Peptide_ID(mut_key)",
+   "caveat": "⚠️红线:一律读OFFICIAL文件,禁改禁用旧版。⚠️官方版无我方旧表5列注释(WT Peptide Seq/Parsed_Gene/Parsed_Mutation/Ref UniProt ID/Peptide Position),WT序列是DAI命脉需从归档旧表按Peptide_ID回贴。⚠️口径拍板点:官方130肽 vs 袁md 92突变/8病人 vs 旧101肽,投稿前袁老师/朱同学统一。HLA真值P101{A*66:01,B*40:01,B*57:01,C*06:02}/P102{A*02:01,B*35:03,B*38:01}(官方版已修正)。⚠️现有metrics_ds2_*等结果全基于旧101肽口径,需在官方130肽重跑才生效(TODO)",
+   "status": "🔄数据已切换官方版(2026-06-30);现有17工具结果待新130肽重跑"
   },
   "quantimmu_elispot_mouse": {
    "name": "小鼠 ELISpot 数据 (QuantImmu B16F10/CT26)",
@@ -385,5 +386,10 @@
   "fugc_spec": "✅已解压验通 2026-06-25: FUGC (Dataset)/dataset/{train/{labeled_data 50,unlabeled_data 450},val 90,test 300}; 全 PNG 336×544; label 类别{0=bg,1=anterior lip,2=posterior lip}2前景类(占比~16%/13%,落PS2.5%与FH22%之间补难度谱); ⭐test/labels 300张GT全公开(此Zenodo版含,无需Codabench/自建held-out,修正旧情报); 顶队SSL mDSC=90.26%(T4队对标)",
   "purpose": "FetalSSBench 胎儿超声半监督分割统一benchmark主战场(候选A). 候选C(speckle)用 BUSI Kaggle+Nakagami合成; 候选B(OOD)用 BraTS-Africa/M&Ms 不在此条.",
   "status": "partial (PSFHS+HC18 ready, FUGC downloading-local 2026-06-25 待解压验GT)"
+ },
+ "vindrcxr_domainB": {
+  "labels": "✅图像级28类标签已下(Kaggle镜像tuktuai/vindr-cxr-physionet,绕PhysioNet账号). labels/image_labels_train.csv(45001行=15000图×3放射师,需按多数/并集聚合)+image_labels_test.csv(3001行已聚合). image_id=DICOM hash直接join本地train/*.png(已验精确对上). 28类含global(Pneumonia/TB/COPD/Lung tumor/Other diseases/No finding).",
+  "nih_intersect": "NIH∩VinDr干净对齐~10-11类:Atelectasis/Cardiomegaly/Effusion↔Pleural effusion/Infiltration/Pneumothorax/Consolidation/Edema/Emphysema/Fibrosis↔Pulmonary fibrosis/Pleural_Thickening;Mass+Nodule需合并;Hernia剔除",
+  "label_path": "D:/YJ-Agent/data/external/vindr_cxr/labels/image_labels_{train,test}.csv"
  }
 }

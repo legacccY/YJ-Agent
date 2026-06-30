@@ -1,5 +1,7 @@
 # GAP_ROADMAP —— 以袁老师权威大纲为准的「需优化 / 实验需增改」完整清单
 
+> 🔴 **2026-06-30 数据真源切换**：DS2 唯一标准 = 袁老师官方更正数据 `data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx`（只读，In Vitro 130 肽 + Ex Vivo 36 行）；旧 101 肽已废归档。本档所有 DS2 数字基于旧口径，**待官方 130 肽重跑**。新增首要 GAP = 全 benchmark 在官方 130 肽重跑。详见 `data/README_DATA_OFFICIAL.md`。
+
 > **本档定位**：以 `paper/QuanImmu-Paper-Outline.md`（袁老师定稿大纲，下称「大纲」）为唯一权威框架，逐节比对本地仓库当前真相，列全 **缺什么、为什么需要、能不能本窗纯软件推进、该谁做、多急**，供团队分发认领。
 >
 > **数字纪律**：本档所有本地数字只引自 `_scratch/ALIGN_FACTS.md`（主线 2026-06-29 Bash 直核 csv 产出）。大纲里出现、但本地 csv 对不上的数字一律标注「大纲声称值 / 本地无支撑」，绝不混为本地真源。

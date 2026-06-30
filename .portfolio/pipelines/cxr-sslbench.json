@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "project": "cxr-sslbench",
+  "template": "experiment",
+  "created": "2026-06-30T13:25:58+08:00",
+  "updated": "2026-06-30T13:26:09+08:00",
+  "from_phase": "",
+  "nodes": [
+    {
+      "id": "design",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "running",
+      "gate": false,
+      "group": "",
+      "desc": "出实验矩阵，对齐判据",
+      "out": "",
+      "owner": "",
+      "ts": "2026-06-30T13:26:09+08:00"
+    },
+    {
+      "id": "redteam",
+      "stage": "红队",
+      "agent": "skeptic",
+      "deps": [
+        "design"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "攻设计致命伤（0 致命即过）",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "implement",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "redteam"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "实现各 run 脚本/config，自测 pytest",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "integrate",
+      "stage": "集成烟测",
+      "agent": "主线",
+      "deps": [
+        "implement"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "train",
+      "stage": "跑",
+      "agent": "主线",
+      "deps": [
+        "integrate"
+      ],
+      "status": "pending",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "analyze",
+      "stage": "分析",
+      "agent": "analyst",
+      "deps": [
+        "train"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "读结果出趋势/图/对判据",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "verify",
+      "stage": "核数",
+      "agent": "verifier",
+      "deps": [
+        "analyze"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "关键数字三方对账 + 写 LOG",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    }
+  ]
+}

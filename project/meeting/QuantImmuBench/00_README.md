@@ -6,6 +6,8 @@
 >
 > 对齐辅助档：`reference/GAP_ROADMAP_vs_outline.md`（本地 vs outline 缺口清单 + 补齐路线）· `paper/ALIGNMENT_TO_OUTLINE.md`（本地真源数字 ↔ outline 声称值逐条对账）。
 >
+> 🧪 **跑实验前必读**：`03_EXPERIMENT_PLAN.md`（run-once 严谨实验+消融阶段计划：Phase 0 新官方数据地基重建协议 + 实验矩阵 R1-R9 + 消融 AB-1..11 + 冻结清单 + 5 拍板点 + 不卡执行策略。一次跑出 paper-ready 数据、零返工的唯一执行依据）。
+>
 > 📖 **新人/复盘**：`项目全解_从头到尾.md`（故事版全貌：这是什么、做了什么、踩了哪些坑、现状）。
 
 ---
@@ -44,10 +46,12 @@
 
 ### B. 四数据集进度
 
+> 🔴 **2026-06-30 数据真源切换（红线）**：DS2 唯一标准 = 袁老师下发官方更正数据 `data/OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx`（**只读不可改**）。旧 `Elispot_Dataset2.xlsx`（101 肽）已废→ `data/_archive_superseded_20260630/`。完整红线 + 差异 + 待办见 `data/README_DATA_OFFICIAL.md`。
+
 | 数据集 | 物种 | 状态 | 说明 |
 |---|---|---|---|
-| ds1（`Elispot_Dataset1.xlsx`，16KB，6 例黑色素瘤）| 人 | ✅ 在仓 | netMHCpan+PRIME 合并补充/复现集 |
-| ds2（`Elispot_Dataset2.xlsx`，29KB，HLA-FIX 修正版，**主分析集**）| 人 | ✅ 在仓 | 9 患者 P101–P110 缺 P103；101 有效肽（90 阳/11 阴 SFC>0）；HLA-FIX 剔 P101/P102 后 **7 有效患者**。⚠️袁 md 标「92 突变/8 有效病人」≠本地口径，投稿前需统一（拍板点） |
+| ds1（`Elispot_Dataset1.xlsx`，16KB，6 例黑色素瘤）| 人 | ✅ 在仓 | netMHCpan+PRIME 合并补充/复现集（官方更正版只含 DS2，DS1 独立保留）|
+| **ds2 官方版**（`OFFICIAL_DO_NOT_TOUCH/ELISPOT_OFFICIAL_Braun2025_MOESM4.xlsx`，52KB，🔴只读，**主分析集**）| 人 | ✅ 唯一标准 | Braun *Nature* 2025 MOESM4（HLA bug 已采纳我方修正）。两页：**In Vitro 130 肽**/9 患者（P101–P110 缺 P103）+ **Ex Vivo 36 行**（pool×逐周）。⚠️旧 101 肽口径作废；官方多 29 肽（28 阳/1 阴），101 共有肽 Elispot 逐个一致；官方无我方 5 列注释（WT 序列需回贴）。⚠️现有 metrics_ds2_* 全基于旧 101 肽，待新 130 肽**重跑才生效** |
 | B16F10 | 鼠 | ❌ 缺失 | outline §2.1 要求，归数据组（王子源/谢孟翰/袁老师） |
 | CT26 | 鼠 | ❌ 缺失 | 同上 |
 
