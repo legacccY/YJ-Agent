@@ -1,0 +1,27 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: A2501
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/out_official/prime_input_A2501/peps_WT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_A2501	Score_A2501	%RankBinding_A2501
+EQNTTKSWT	11.671	0.005119	19.390	A2501	11.671	0.005119	19.390
+KSWTPSVQS	22.736	0.002563	40.691	A2501	22.736	0.002563	40.691
+NTTKSWTTP	4.839	0.010904	7.961	A2501	4.839	0.010904	7.961
+PKSWTPSVQ	29.273	0.001858	69.318	A2501	29.273	0.001858	69.318
+PSVQSEQNT	52.023	0.000760	27.088	A2501	52.023	0.000760	27.088
+QNTTKSWTT	17.050	0.003572	14.035	A2501	17.050	0.003572	14.035
+QSEQNTTKS	19.610	0.003000	19.654	A2501	19.610	0.003000	19.654
+SEQNTTKSW	2.826	0.016816	0.955	A2501	2.826	0.016816	0.955
+SVQSEQNTT	11.191	0.005291	3.321	A2501	11.191	0.005291	3.321
+SWTPSVQSE	36.848	0.001354	12.286	A2501	36.848	0.001354	12.286
+TPKSWTPSV	2.488	0.018618	9.571	A2501	2.488	0.018618	9.571
+TPSVQSEQN	66.396	0.000475	33.583	A2501	66.396	0.000475	33.583
+TTKSWTTPM	0.730	0.043370	4.867	A2501	0.730	0.043370	4.867
+VQSEQNTTK	40.573	0.001156	26.819	A2501	40.573	0.001156	26.819
+WTPSVQSEQ	6.598	0.008383	9.806	A2501	6.598	0.008383	9.806

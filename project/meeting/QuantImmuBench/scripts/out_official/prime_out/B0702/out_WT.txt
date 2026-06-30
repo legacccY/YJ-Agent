@@ -1,0 +1,27 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: B0702
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/out_official/prime_input_B0702/peps_WT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_B0702	Score_B0702	%RankBinding_B0702
+EQNTTKSWT	22.228	0.002234	45.640	B0702	22.228	0.002234	45.640
+KSWTPSVQS	20.620	0.002388	22.284	B0702	20.620	0.002388	22.284
+NTTKSWTTP	17.478	0.002849	33.081	B0702	17.478	0.002849	33.081
+PKSWTPSVQ	7.452	0.005755	25.220	B0702	7.452	0.005755	25.220
+PSVQSEQNT	77.416	0.000367	79.547	B0702	77.416	0.000367	79.547
+QNTTKSWTT	22.330	0.002224	45.901	B0702	22.330	0.002224	45.901
+QSEQNTTKS	54.070	0.000716	54.824	B0702	54.070	0.000716	54.824
+SEQNTTKSW	18.921	0.002614	16.150	B0702	18.921	0.002614	16.150
+SVQSEQNTT	10.317	0.004408	5.563	B0702	10.317	0.004408	5.563
+SWTPSVQSE	22.459	0.002213	19.826	B0702	22.459	0.002213	19.826
+TPKSWTPSV	0.058	0.110322	0.236	B0702	0.058	0.110322	0.236
+TPSVQSEQN	19.958	0.002456	7.424	B0702	19.958	0.002456	7.424
+TTKSWTTPM	1.550	0.019069	6.276	B0702	1.550	0.019069	6.276
+VQSEQNTTK	31.964	0.001512	26.480	B0702	31.964	0.001512	26.480
+WTPSVQSEQ	45.592	0.000942	48.272	B0702	45.592	0.000942	48.272

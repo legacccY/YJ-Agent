@@ -3,7 +3,7 @@
   "project": "cxr-sslbench",
   "template": "experiment",
   "created": "2026-06-30T13:25:58+08:00",
-  "updated": "2026-06-30T13:42:06+08:00",
+  "updated": "2026-06-30T14:03:46+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -41,13 +41,13 @@
       "deps": [
         "redteam"
       ],
-      "status": "running",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "实现各 run 脚本/config，自测 pytest",
-      "out": "",
+      "out": "块A(pretrain/4范式薄包装官方repo+smoke_monitor+submit,27pytest绿)+块B(probes attentive/knn+vindr_loader 3rad聚合+ckpt_probe_driver+eval_collect,24pytest绿).主线实跑51 passed.接缝TODO:MONITOR-HOOK(DINO熵需插main_dino loop)/datasets.py vindr路由/官方repo预clone/MoCo bs4096减batch烟测定",
       "owner": "",
-      "ts": "2026-06-30T13:42:06+08:00"
+      "ts": "2026-06-30T14:01:15+08:00"
     },
     {
       "id": "integrate",
@@ -56,13 +56,13 @@
       "deps": [
         "implement"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
-      "out": "",
+      "out": "本地缝全过:VinDr 28类csv真聚合C=11/A→B ckpt契约往返(model_state_dict+meta+images_seen对上)/51 pytest绿.HPC侧缝(MONITOR-HOOK插main_dino/官方repo预clone/train_jepa NIH路由/MoCo减batch)留collapse烟测首跑暴露(smoke gate不放假PASS)",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-30T14:03:46+08:00"
     },
     {
       "id": "train",

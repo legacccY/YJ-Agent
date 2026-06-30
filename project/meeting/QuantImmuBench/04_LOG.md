@@ -2272,3 +2272,13 @@ coder 写 `scripts/hpc_official/`（run_prime_official.sh / run_immuneapp_offici
 **PRIME ⚠️ 卡住待调**：跑到 14/26 等位停住不前，`envs/prime` 的 PRIME 2.0 内部 pandas `KeyError: 0`（PRIME bash 脚本本身无 python，错在工具内部某 allele 的 python 后处理）。卡死 3 进程已 kill -9 清（登录节点礼仪）。**继续点**：查 PRIME 2.0 哪步用 pandas + 哪个 allele 触发 KeyError:0（疑某等位 MixMHCpred 输出格式/空结果致索引 0 缺）；修后重跑剩 12 等位。
 
 **本轮净进度**：IEDB_Calis ✅done(本地) + ImmuneApp ✅跑通(HPC,待跑完拉回) + PRIME ⚠️待调 = 工具补跑链路三态全验（本地通/HPC-conda通/工具内部bug需调）。HPC 踩坑全文档化复用：MixMHCpred 路径=tools_repos/MixMHCpred、conda=module load miniconda3/22.11.1、setsid 脱离、相对路径工具要 cd repo。剩余 ~22 工具继续 grind（每个或有自身环境/路径/格式坑，类重部署）。
+
+### 2026-06-30 续8：🔴 抓到 parse 静默造数 bug（run-once 纪律救场）
+
+拉回 PRIME(14/26等位)+ImmuneApp(26/26) parse 后核 43 肽覆盖：两者都显示 1761 非空/43全覆盖。**反直觉**（PRIME 只 14 等位怎么全覆盖）→ Bash 核：prime_out 仅 14 目录（缺全部 C 等位 + B3503/B4001/B4402/B5501/B5701），但 C\*07:01 行却有 PRIME 分。
+
+**根因**：`scripts/wave3_bench/merge_wave3.py::merge_prime` 建 score_map 时同时存 `score_map[pep]=score`(肽级兜底) + `score_map[(pep,allele)]`。回贴时 `score_map.get((pep,allele), score_map.get(pep, NaN))`——某等位没跑→**回退用该肽在别等位的分错填**。原 wave3 全等位跑完不触发；等位不全才暴露 = 静默造数。**确认偏误差点放过**（数字"好看"=全覆盖）。
+
+**两修**：① parse 删肽级兜底（精确 肽+等位 匹配，缺等位→诚实 NaN）→ 派 coder 改 official parse（不动共享 merge_wave3 防破坏旧链，official 用修正版）。② PRIME 补完 26 等位（pandas KeyError:0 调通后重跑缺的 12）。
+
+**意义**：run-once「数字必核不信」红线实战救场——若信 parse 自报全覆盖，PRIME 12 等位假分进 paper 必翻盘。ImmuneApp 26/26 真完成但也要用修正 parse 重核（确认无兜底误填）。

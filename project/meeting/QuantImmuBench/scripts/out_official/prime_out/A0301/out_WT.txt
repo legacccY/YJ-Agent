@@ -1,0 +1,27 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: A0301
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/official_inputs/out_official/prime_input_A0301/peps_WT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_A0301	Score_A0301	%RankBinding_A0301
+EQNTTKSWT	20.009	0.002369	42.166	A0301	20.009	0.002369	42.166
+KSWTPSVQS	1.684	0.018754	1.876	A0301	1.684	0.018754	1.876
+NTTKSWTTP	14.937	0.003242	28.027	A0301	14.937	0.003242	28.027
+PKSWTPSVQ	19.837	0.002394	74.166	A0301	19.837	0.002394	74.166
+PSVQSEQNT	76.648	0.000382	73.456	A0301	76.648	0.000382	73.456
+QNTTKSWTT	21.550	0.002223	45.948	A0301	21.550	0.002223	45.948
+QSEQNTTKS	38.041	0.001199	24.333	A0301	38.041	0.001199	24.333
+SEQNTTKSW	31.907	0.001474	34.410	A0301	31.907	0.001474	34.410
+SVQSEQNTT	17.798	0.002718	9.851	A0301	17.798	0.002718	9.851
+SWTPSVQSE	34.164	0.001367	36.444	A0301	34.164	0.001367	36.444
+TPKSWTPSV	17.990	0.002686	52.853	A0301	17.990	0.002686	52.853
+TPSVQSEQN	66.129	0.000505	69.508	A0301	66.129	0.000505	69.508
+TTKSWTTPM	1.125	0.024863	4.473	A0301	1.125	0.024863	4.473
+VQSEQNTTK	0.705	0.033601	0.550	A0301	0.705	0.033601	0.550
+WTPSVQSEQ	42.618	0.001032	42.380	A0301	42.618	0.001032	42.380

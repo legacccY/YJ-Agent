@@ -30,8 +30,10 @@ def budget(eff_bs, e_eq=100, n=N_NIH):
     epochs == e_eq（官方 repo 按 epoch over NIH 迭代，1 epoch 见 N 图一次）。
     steps == 总优化步数 = round(e_eq × n / eff_bs)。"""
     images_seen = e_eq * n
-    steps = round(images_seen / eff_bs)
-    return dict(images_seen=images_seen, eff_bs=int(eff_bs), steps=int(steps),
+    # floor（= images_seen // eff_bs）对齐矩阵 §1 steps@100ep 表（MAE2737/DINO21898/MoCo2737/CheX5474）。
+    # ⚠️ 实际 drop_last=True 下 per-epoch=floor(n/eff_bs)、总步更少（丢每 epoch 余数）；见 steps_per_epoch()。
+    steps = images_seen // int(eff_bs)
+    return dict(images_seen=int(images_seen), eff_bs=int(eff_bs), steps=int(steps),
                 epochs=int(e_eq), e_eq=int(e_eq), n=int(n))
 
 
