@@ -8,7 +8,8 @@
 胸片上系统横评 5 种自监督范式（world-model SSL=CheXWorld/JEPA、MAE、DINO、MoCo-v3、监督），证「范式选择非单调最优、而是 regime 依赖（标注量×域×病理×probe/finetune）」，把横评定位的系统失败 regime 操作化成轻量 fix（CPF-Gate/ReStat）。
 
 ## 读档顺序
-00_README（本文）→ 立项提案 plan 文件 → 04_LOG 最新 entry
+00_README（本文）→ `01_STORY.md` → `02_ACCEPTANCE.md` → `DATA_INVENTORY.md` → 立项提案 plan 文件 → `04_LOG.md` 最新 entry。
+Phase1 动手档：`PLAN/PHASE1_A_PRIME_MATRIX.md`（A′ 实验矩阵）+ `reference/SSL_RECIPES.md`（官方配方真源）+ `INTERFACE.md`（implement 多块接口契约）。
 
 ## 核心 claim（零承重命门，BMVC 形状）
 - **承重**（结果朝哪落都成立）：C1 无单一最优(Friedman/CD) / C2 数据效率 gap 1% 最大 / C3 probe-finetune 解离(世界模型 linear 弱) / C4 跨域退化因范式而异。

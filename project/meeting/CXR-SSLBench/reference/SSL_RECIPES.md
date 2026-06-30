@@ -27,8 +27,34 @@
 - **112k 小语料风险：中-高**。MoCo-CXR 用 ResNet 非 ViT（arXiv 2010.05352）。建议必开 `--stop-grad-conv1`，lr 取 **1.0e-4** 而非 1.5e-4，batch 别盲目放大。
 - TODO：112k 级 CXR ViT-B MoCo-v3 具体复现配方无官方/高星直接来源 → 标 TODO。
 
-## 4. CheXWorld（world-model）
-- 权重+repo+官方 recipe(FINETUNE.md) 已在 `project/meeting/复现/CheXWorld/repo/` + HPC `/gpfs/.../chexworld/`。Phase0 pilot 已用。
+## 4. CheXWorld（world-model）— ✅ 官方 PRETRAIN 配方已核（本地 `repo/PRETRAIN.md`）
+权威源 = `project/meeting/复现/CheXWorld/repo/PRETRAIN.md` + `opts.py`（官方仓库自带 pretrain 配方，非仅 FINETUNE.md）。
+
+| 字段 | 值 | 出处 |
+|---|---|---|
+| ssl_type | `iwm_dual_easy`（image-world-model 完整配置） | PRETRAIN.md:8 |
+| backbone | vit_base，patch 16，input 224 | PRETRAIN.md:9-12 |
+| 官方数据 | mimic_nih_chex(~0.5M 三库)，`--norm_type default` | PRETRAIN.md:9 |
+| **eff_batch** | **2048** = 128/GPU × accum_iter 2 × 8 GPU | PRETRAIN.md:6,10 |
+| epochs / warmup | 300 / 40 | PRETRAIN.md:11 |
+| optimizer | AdamW，betas (0.9,0.999) | opts.py:44-45 |
+| **lr** | **2e-4 绝对值**（`--lr` 显式覆盖 blr），min_lr 1e-6，cosine | PRETRAIN.md:13 |
+| weight_decay | 0.05 恒定（不 schedule），clip_grad 1.0 | PRETRAIN.md:13 |
+| **EMA momentum** | **0.996 → 1.0**（ema 0.996，ema_end 1.0，ipe_scale 1.25 ramp） | PRETRAIN.md:13-14 / opts.py:172-177 |
+| loss / predictor | l2 / pred_emb_dim 384，pred_depth 6 | PRETRAIN.md:13-14 |
+| JEPA masking | `multi_multiblock`，enc_mask_scale 0.75-1.0，mask_merge on，extra_mean on，extra_global_scale 0.3-1.0 | PRETRAIN.md:14-15 |
+| 增强 | aug `jit`，crop rrc，scale_min 0.3，flip 0.5；jitter 0.8/blur 0.2/noise 0.0 | PRETRAIN.md:12 / opts.py:205-241 |
+| 硬件 | 8×RTX4090，300ep≈16h | PRETRAIN.md:3 / arXiv 2504.13820 |
+
+- **A′ 受控改法**：`--dataset mimic_nih_chex` → **`--dataset nih`**（单库；`data_utils/__init__.py:72-81` 解析逻辑：含 'nih' 不含 'chex'/'mimic' → ConcatDataset([NIH])）。
+- **HPC 单卡/4卡适配**：官方 eff_bs=2048 来自 8 卡 → 用 **accum_iter 凑回 eff_bs=2048**（保 lr=2e-4 绝对值，官方在 2048 下定的），别改 eff_bs 否则要按线性缩放调 lr。
+- A′ images-seen=11.21M（E_eq=100）下 CheXWorld 跑 11.21M/2048≈5474 步（非官方 300ep@0.5M=150M，受控降到统一预算）。
+- 关键超参零缺失，C3（WM linear 弱）claim 不受配方可复现性威胁。
+
+## 6. MoCo-v3 / DINO 小语料补充（TODO-B 调研，2026-06-30）
+- **MoCo-v3 112k 单库 CXR ViT-B：无公开先例**（MoCo-CXR 是 v2+ResNet，其 lr3e-5/bs16 是 finetune 非 pretrain，不可挪）。须烟测定 batch/lr，减 batch 时按线性缩放同步降 lr（lr=lr_base×bs/256）。arXiv 2010.05352 / 2208.12413。
+- **DINO 防 collapse 官方默认**：teacher_temp 0.04→0.07 over warmup 30ep（注：args.txt 是 50ep，main_dino.py 默认 30，**烟测用 50 更稳**）；freeze_last_layer 1（小语料拉到 2-3）；centering+sharpening 双机制。小语料(<200k) collapse 缓解候选（烟测塌时启用，官方缓解不私调架构）：拉长 temp warmup、终温≤0.07、freeze_last_layer 2-3ep、降 lr、备选 Sinkhorn/entropy-max（arXiv 2410.14060）。
+- ⚠️ TODO：DINO ≤200k 单库 CXR 防 collapse 确切成功参数组无公开先例 → 强依赖 SMK-DINO 烟测。
 
 ## 5. 监督参考 / scratch floor
 - imagenet_sup ViT-B/16 timm（pilot 已用）；scratch floor = 随机初始化 finetune。

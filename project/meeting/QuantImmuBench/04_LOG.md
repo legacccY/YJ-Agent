@@ -2251,3 +2251,24 @@ coder 交付 `scripts/prepare_inputs_official.py`（读 frozen 4 件套、不碰
 意义：管道验通 de-risk 后续 24 工具——同 pattern（克隆 _101102/_deploy runner 改输入路径 → 跑 → parse → join bb_idx）。IEDB_Calis 是 1/30（含已复用 87 肽的旧分，本工具补的是 43 肽缺口）。
 
 **待续**：逐工具适配剩余 24 个（本地可跑的 DeepImmuno/MHCflurry/MHCnuggets/Repitope/PredIG 优先本地；DTU5/NeoaPred/sif 容器类走 HPC）→ 全 parse 合并 merged_30_official → p0e/p0f 冻结 → 解锁 R1-R9。
+
+### 2026-06-30 续6：PRIME + ImmuneApp HPC 后台跑（+2 工具在途）+ 复用踩坑修复
+
+coder 写 `scripts/hpc_official/`（run_prime_official.sh / run_immuneapp_official.sh / parse_prime_immuneapp_official.py），上传 HPC `official_inputs/hpc_official/`。
+
+**HPC 踩坑修复（后续工具复用）**：
+1. **MixMHCpred 路径**：PRIME 依赖，实际在 `tools_repos/MixMHCpred/MixMHCpred`（非 coder 默认搜的 ext_tools/mixmhcpred_run）→ 修 find 路径。
+2. **conda not found**：paramiko 非交互 shell 无 conda → 脚本加 `module load miniconda3/22.11.1-gcc-8.5.0-l4fo6ta` + `source $(conda info --base)/etc/profile.d/conda.sh` 再 activate。
+3. **paramiko 后台启阻塞**：bg 进程继承 channel fd 致 exec_command 卡死 → 用 `setsid bash X </dev/null >log 2>&1 &` 真脱离。
+
+**状态**：PRIME 在跑（PRIME.x/perl 活跃，已产 14+ out_MT.txt，26 等位循环中）；ImmuneApp setsid 启动。两者 HPC 登录节点 CPU 后台跑（不占卡、不主线守）。跑完拉回跑 `parse_prime_immuneapp_official.py` → +PRIME/ImmuneApp 2 工具。
+
+**进度**：IEDB_Calis(本地✅) + PRIME/ImmuneApp(HPC 在途) = 3/25 工具补跑链路打通。剩余 ~22 个按同 pattern（conda module load + 工具 repo + official_inputs）逐个推。
+
+### 2026-06-30 续7：ImmuneApp 修通跑起 / PRIME 卡 pandas KeyError 待调
+
+**ImmuneApp ✅ 修通**：bug=没 cd 进 repo 根，`supporting_file/pseq_dict_blosum_matrix.npy` 相对路径找不到 → 脚本加 `cd "${IMMUNEAPP_DIR}"`（输入输出绝对路径，cd 安全）。重启后正常跑（TF/Keras 加载、产物递增 14→24 文件、26 等位循环中）。
+
+**PRIME ⚠️ 卡住待调**：跑到 14/26 等位停住不前，`envs/prime` 的 PRIME 2.0 内部 pandas `KeyError: 0`（PRIME bash 脚本本身无 python，错在工具内部某 allele 的 python 后处理）。卡死 3 进程已 kill -9 清（登录节点礼仪）。**继续点**：查 PRIME 2.0 哪步用 pandas + 哪个 allele 触发 KeyError:0（疑某等位 MixMHCpred 输出格式/空结果致索引 0 缺）；修后重跑剩 12 等位。
+
+**本轮净进度**：IEDB_Calis ✅done(本地) + ImmuneApp ✅跑通(HPC,待跑完拉回) + PRIME ⚠️待调 = 工具补跑链路三态全验（本地通/HPC-conda通/工具内部bug需调）。HPC 踩坑全文档化复用：MixMHCpred 路径=tools_repos/MixMHCpred、conda=module load miniconda3/22.11.1、setsid 脱离、相对路径工具要 cd repo。剩余 ~22 工具继续 grind（每个或有自身环境/路径/格式坑，类重部署）。

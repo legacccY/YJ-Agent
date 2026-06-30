@@ -3,7 +3,7 @@
   "project": "cxr-sslbench",
   "template": "experiment",
   "created": "2026-06-30T13:25:58+08:00",
-  "updated": "2026-06-30T13:26:09+08:00",
+  "updated": "2026-06-30T13:42:06+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -11,13 +11,13 @@
       "stage": "设计",
       "agent": "planner",
       "deps": [],
-      "status": "running",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "出实验矩阵，对齐判据",
-      "out": "",
+      "out": "A′矩阵定稿 PLAN/PHASE1_A_PRIME_MATRIX.md: images-seen对齐(E_eq=100,B=11.21M)+collapse烟测表+5范式run表+评估网格C1-C4+DAG(墙钟8-12天,~450-600GPU·h). 前置TODO-A(CheXWorld pretrain配方,关键路径)/TODO-B(MoCo112k)需researcher补",
       "owner": "",
-      "ts": "2026-06-30T13:26:09+08:00"
+      "ts": "2026-06-30T13:34:31+08:00"
     },
     {
       "id": "redteam",
@@ -26,13 +26,13 @@
       "deps": [
         "design"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "攻设计致命伤（0 致命即过）",
-      "out": "",
+      "out": "skeptic 0🔴致命,矩阵可推进.4条🟠增补已折进矩阵:①中间预算checkpoint+probe@10%(杀transient+预算轴敏感+上调判据)②C1排名3 PT-seed报spread③MAE+CheX加loss-sanity烟测gate④全三轴预算表+DINO敏感性probe.images-seen主控轴维持(裁决正确).CheXWorld配方核实可重训C3不塌",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-30T13:40:37+08:00"
     },
     {
       "id": "implement",
@@ -41,13 +41,13 @@
       "deps": [
         "redteam"
       ],
-      "status": "pending",
+      "status": "running",
       "gate": false,
       "group": "",
       "desc": "实现各 run 脚本/config，自测 pytest",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-06-30T13:42:06+08:00"
     },
     {
       "id": "integrate",
