@@ -47,6 +47,24 @@
 
 ---
 
+## 2026-06-30 — Conductor Phase1 全程跑通到 train 棒（design→redteam→implement→integrate→🛑train 放行）
+
+**DAG 进度（7 棒）**：design✅ redteam✅ implement✅ integrate✅ train▶（用户放行「跑」）。
+- **design(planner)**：A′ 矩阵定稿 `PLAN/PHASE1_A_PRIME_MATRIX.md`（images-seen 对齐 E_eq=100/B=11.21M + 5 范式 run 表 + 评估网格 + DAG，~450-600 GPU·h/墙钟 8-12 天）。
+- **redteam(skeptic)**：0🔴致命。4 条🟠增补已折进矩阵（①中间预算 ckpt+probe@10% 杀 transient+预算轴敏感 ②C1 排名 3 PT-seed 报 spread ③MAE+CheX 加 loss-sanity 烟测 gate ④全三轴预算表）。images-seen 主控轴裁决维持。
+- **researcher 补 TODO**：✅CheXWorld 官方 pretrain 配方在本地 `repo/PRETRAIN.md`（eff_bs2048/300ep/lr2e-4/ema0.996→1.0/mask multi_multiblock，零缺失，回填 SSL_RECIPES §4），C3 不塌；MoCo 112k 无先例须烟测，DINO collapse 缓解候选已落 §6。
+- **implement(2 coder 并行)**：块A `code/pretrain/`（4 范式薄包装官方 repo+smoke_monitor+submit，27 pytest）+ 块B（probes attentive/knn+vindr_loader 3rad 聚合+ckpt_probe_driver+eval_collect，24 pytest）。接口契约 `INTERFACE.md`。主线实跑 51 pytest 绿。
+- **integrate(主线)**：本地缝全过——VinDr 28 类 csv 真聚合 C=11 / A→B ckpt 契约往返(model_state_dict+meta+images_seen 对上) / 51 pytest。HPC 侧缝留 collapse 烟测首跑暴露。
+
+**train 棒放行后主线串行做（HPC，进行中）**：
+- ✅ 上传 19 文件到 HPC `code/`（deCRLF，`_scratch_cxr_upload_phase1.py`）。
+- ✅ DTN/login 预 clone 3 官方 repo 到 `vendor/`（mae 10/dino 12/moco 4 个 .py，`_scratch_cxr_clone_repos.py`）。
+- ✅ 核 NIH DATA 路径 `images-224/images-224/`（含 png）+ conda env yjcu124py310（torch 2.6.0+cu124/timm 1.0.15）。
+- ⏳ MONITOR-HOOK：派 coder 写 `apply_monitor_hook.py`（给 vendor/dino+moco loop 插 teacher 熵/feat_std/contrastive_baseline emit，幂等锚点匹配）。
+- ⏳ 待挂钩 → gpu_slot 申卡 → sbatch SMK-DINO‖SMK-MOCO 烟测（⚠️ gpu4090 队列长，会 PEND；MoCo bs4096 装不下 4090 → reduced-batch 烟测定）。
+
+---
+
 ## 2026-06-30（拍板）— Phase1 路线定 + skeptic 红队收口
 
 **skeptic 红队 Phase1 设计**：0 已锁致命，但「纯 A 强制同 batch/epoch」= 🔴 陷阱（batch 是 DINO/MoCo 构成要素，强行同 batch → C1 被判调参不公伪发现）。强推 A′ 混合受控。1 条 🟠 关键=C1 自我推翻风险（pilot 洗牌跑在异构公开权重上，受控抹平后可能趋同，按原 ACCEPTANCE「强制 rank flip」C1 会 FAIL，与 STORY「结果朝哪落都成立」自相矛盾）。
