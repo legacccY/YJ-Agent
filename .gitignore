@@ -130,12 +130,14 @@ project/meeting/复现/CheXWorld/assets/
 project/meeting/复现/CheXWorld/runs/
 project/meeting/复现/CheXWorld/*.pdf
 
-# QuantImmuBench：中间合表大 xlsx 不进 git（每个 ~15MB，regenerable；只留最新真源）
-project/meeting/QuantImmuBench/scripts/out/merged_all_tools_20tools.xlsx
-project/meeting/QuantImmuBench/scripts/out/merged_all_tools_21tools.xlsx
-project/meeting/QuantImmuBench/scripts/out/merged_all_tools_22tools.xlsx
-project/meeting/QuantImmuBench/scripts/out/merged_all_tools_23tools.xlsx
-project/meeting/QuantImmuBench/scripts/out/merged_all_tools_24tools.xlsx
+# QuantImmuBench：所有中间合表大 xlsx 不进 git（每个 ~17MB，regenerable from patch+scores）
+project/meeting/QuantImmuBench/scripts/out/merged_all_tools_*.xlsx
+# 大 raw 中间产物（regenerable，靠 kit 重跑）
+project/meeting/QuantImmuBench/HPC/deploy/**/*_raw.csv
+project/meeting/QuantImmuBench/HPC/deploy/**/*_input.csv
+project/meeting/QuantImmuBench/HPC/deploy/**/*_predict_in.txt
+project/meeting/QuantImmuBench/HPC/deploy/**/*_result.txt
+project/meeting/QuantImmuBench/HPC/deploy/mhcseqnet/PretrainedModels/
 # scratchpad 路径残渣（冒号被剥导致的乱码名文件）
 /C:Users*
 

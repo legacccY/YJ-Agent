@@ -4,6 +4,35 @@
 
 ---
 
+## Entry 30-COMPLETE — 2026-06-30【30/30 工具部署达成：补 MHCSeqNet + andy90 + DeepNetBim 三工具，一夜自动跑完】
+
+> 用户睡前全自主放行（「不用征求意见，给跑的权限」）。目标=凑满 30 工具不靠 blocker。真源 `merged_all_tools_29tools.xlsx`（34247×81，**30 distinct score 工具** = 呈递 10 + 免疫原 20）+ `metrics_ds2_29tools.csv`（30 distinct）+ `per_patient_spearman_29tools.csv`。文件名 "29tools" 因 MHCflurry 计 1 工具占 2 列，distinct=30。
+
+### 缺口与策略（27→30）
+- 起点 27/30（呈递 9 + 免疫原 18，含别窗已 merge 的 Neoag）。缺 3 槽原映射工具全外部阻塞：呈递 MAAP（身份未明）、免疫原 Seq2Neo（netCTLpan DTU）/DeepNeo（repo 删）/Inference（徐组源码）。
+- researcher×2 并行找干净本地工具替阻塞槽（硬要求：许可自由非 DTU + repo 权重可得 + 本地 CPU/GPU 可跑 + peptide+HLA + 不撞车）。
+- **呈递槽 = MHCSeqNet**（cmb-chula，**Apache-2.0** 干净）；**免疫原槽 = DeepNetBim**（Li-Lab-SJTU，**license=null** 用户拍板可用，同 T-SCAPE 待遇，发表前邮件索授权）+ **andy90**（HPC 在跑，MIT）。
+
+### 三工具部署（全本地/HPC 自动跑完）
+- **MHCSeqNet**（呈递 P10）：WSL2 qib_tf1 env（py3.7+TF1.15+keras2.2.4，清华镜像装）；官方 `MHCSeqNet.py -p sequence_model/ -m sequence -i paired`，sequence pan 模型（4868 allele），54/65 支持（11 罕见 allele 预过滤防整轮崩）；全量 52370 对 CPU 跑通→`MHCSeqNet_DS1DS2_scores.csv` 97.9% 覆盖；patch→27tools.xlsx；per-patient fisherz **-0.0357**[CI -0.35,0.29] n=4（呈递工具弱免疫原相关属预期，同 HLAthena/TransHLA）。坑修：-p 尾斜杠 / py3.7 括号 with / pandas1.0.5 line_terminator。
+- **andy90**（免疫原 I19）：HPC 全批跑完 26/65 allele（merge 步因 andy90_r env 路径错没出 raw）→ 抢救：spack python 跑 merge_raw.py 合 26 per-HLA→andy90_raw.csv 74591 行→拉回→parse 30.1% 覆盖→`patch_add_andy90.py`(新建)→28tools.xlsx；per-patient fisherz **-0.0058**[CI -0.24,0.23] n=8（低覆盖 26/65 allele）。amplitude 越高越免疫原不翻转，MIT 可发。
+- **DeepNetBim**（免疫原 I20）：repo clone 三次失败（90MB 权重网络断/国内镜像挂）→ ghfast.top wget tarball 成（87.8MB，权重 model_immuno.h5 在仓）；官方 `predict.py <TAB input>` 仅 9mer→9011 对 closest_pep_net 网络分析 CPU ~15min 跑通→bridge→parse 17.7% 覆盖→patch→29tools.xlsx；per-patient fisherz **-0.3051**[CI -0.81,0.47] **n=1**（仅 9mer 极低覆盖，1 患者过阈，n=1 不可靠诚实标）。**license=null caveat 须标**。
+
+### 验真（Bash 核 csv 不信 Read）
+- 最终 `merged_all_tools_29tools.xlsx` = 34247 行 × 81 列，MT_MHCSeqNet/MT_Andy90/MT_DeepNetBim 三列全在。
+- `metrics_ds2_29tools.csv` distinct 工具 = **30**（呈递 10 + 免疫原 20 全列出）。
+- 三新工具信号均弱（呈递工具 + 2 低覆盖免疫原），符合 benchmark 主旨（多数单工具弱、卖点在 rank-fusion 聚合提升），诚实进表不掩盖。
+
+### 复用资产 + 新建
+- 共享 env `~/miniconda3/envs/qib_tf1`（MHCSeqNet+DeepNetBim 共用 TF1 栈）；新 kit `HPC/deploy/{mhcseqnet,deepnetbim}/`；新 `scripts/patch_add_{mhcseqnet,andy90,deepnetbim}.py`；DeepNetBim 桥接 `result_to_raw.py`。
+- 坑记：kit 脚本跑 WSL pandas1.0.5（line_terminator）、patch/metrics 跑 Windows pandas2.2.2（去掉 line_terminator 参数兼容）；py3.7 不支持括号式多 with；MHCSeqNet 遇未在册 allele 整轮 raise→prep 必预过滤。
+
+### 待续（非 blocker，bonus）
+- MAAP（袁/徐给全称）/DeepNeo（作者邮件）/Inference（徐组源码）= 解了是 31+，不解 30 已满。
+- DeepNetBim 发表前邮件 Li-Lab-SJTU 索明确许可（license=null）；3 新工具入 DEPLOY_TRACKER/PROVENANCE/REFERENCES。
+
+---
+
 ## Entry MAIN-SHIP — 2026-06-29【收工：主窗工具补齐 19→26/30 + 攻坚换工具 + 多窗验收/集成 + push】
 
 > 主窗收工汇总（接 MAIN-DEPLOY）。用户全程拍板：开跑本地批/HPC授权/不降级/不凑数/「能解决就解决，解决不了就换更有参考价值的工具」。后台 andy90(tools2 HPC 重提 1502218)/researcher(找最后2工具)/poller 仍在跑，未杀。

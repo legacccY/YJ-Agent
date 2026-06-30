@@ -8,7 +8,12 @@
 ## 🎯 目标 vs 现状（30 工具进度，单一真源）
 
 > 袁老师 md（论文大纲 §2.2 / §1.4 卖点 3）要求系统评测 **30 种工具 = 10 种呈递预测（presentation/binding）+ 20 种免疫原性预测（immunogenicity）**。
-> **当前 26/30 接入 benchmark**（2026-06-29：19 基 + 主窗本地批 MHCnuggets/TransHLA/MUNIS/**neoag** + netMHCpan-EL/ImmugenX/**MixMHCpred** 窗产主窗merge）；真源 `merged_all_tools_26tools.xlsx`（34247×75，27 工具列含 MHCflurry 分2）。距 30 缺 ~3-4：andy90 + Seq2Neo（tools2 在跑/解 netCTLpan，poller 盯）+ 备份候选（TLImm 等）。**netMHCpan-Aff 弃**（冗余：netmhcpan_ba 已是 BA-score+netMHCpan_EL）；**NetMHCstabpan 弃换 MixMHCpred**（fakeroot 挡+弱值→PWM 方法更有参考价值）。NeoaPred🗄️搁置/MAAP/Inference/DeepNeo=团队邮件 bonus。
+> ✅ **30/30 接入 benchmark 达成（2026-06-30）**：呈递 10 + 免疫原 20 全满。真源 `merged_all_tools_29tools.xlsx`（34247×81，**30 distinct score 工具**；文件名 "29tools" 因 MHCflurry 计 1 工具占 2 列）+ `metrics_ds2_29tools.csv`（30 distinct）+ `per_patient_spearman_29tools.csv`。
+> **最后 3 槽（2026-06-30 一夜自动跑完，替外部阻塞的 MAAP/Seq2Neo/DeepNeo/Inference）**：
+>   - 呈递 P10 = **MHCSeqNet**（cmb-chula，Apache-2.0，sequence pan，54/65 allele，97.9% 覆盖，fisherz -0.0357 n=4，呈递工具弱属预期）替 MAAP。
+>   - 免疫原 I19 = **andy90 immunogenicity_predictor**（MIT，HPC 26/65 allele，30.1% 覆盖，fisherz -0.0058 n=8）。
+>   - 免疫原 I20 = **DeepNetBim**（Li-Lab-SJTU，**license=null** 用户拍板可用同 T-SCAPE 待遇，仅 9mer，16.7% 覆盖，fisherz -0.3051 **n=1** 极低覆盖诚实标；发表前邮件索授权）。
+> **历史决策（不回退）**：netMHCpan-Aff 弃（冗余）；NetMHCstabpan 弃换 MixMHCpred（fakeroot 挡）；NeoaPred🗄️搁置→neoag 替。**MAAP/Inference/DeepNeo = bonus（解了 31+，不解 30 已满）**。
 > ⚠️ **计数口径**：19 = apples 主榜（含 HLAthena proxy 单列另计）。呈递 5（4 apples + BigMHC_EL，HLAthena proxy 另列）+ 免疫原 14（含 ICERFIRE/NetTepi）。
 > **DTU 工具 `netmhcpan_ba` / `TSCAPE` / `netMHCstabpan` / `ICERFIRE` / `NetTepi` = pending DTU consent**（学术许可禁第三方再分发其软件上跑出的 benchmark 数字，投稿前需取书面同意）。
 > 状态图例：✅ 已进 benchmark｜⚠️ 降级/proxy 进 benchmark（标注层次不可 apples-to-apples）｜🔄 部署中/阻塞待跑｜❌ 缺（待补/归属）。下面两张分组表是 30 工具目标的**进度真源**；本文件后半的 10 工具规范表/Tier 分表 = 部署细节归档。

@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+patch_add_mhcseqnet.py — QuantImmuBench §工具部署（合 MHCSeqNet 一列进大表）
+==================================================================
+服务: quantimmu-bench / lever=补呈递组第 10 槽（替 MAAP），合 MHCSeqNet 列进大表
+
+设计哲学（仿 scripts/patch_add_mhcnuggets.py，HLA-aware 单列自然键 join，不重建不丢 HLA-FIX）:
+  - base = scripts/out/merged_all_tools_<NN>tools.xlsx 活真源（34247 行，已 HLA-FIX）。
+    本脚本只贴 MHCSeqNet 两列。
+  - score 源 = HPC/deploy/mhcseqnet/mhcseqnet_raw.csv（列 peptide, HLA_Allele, prob）。
+    HLA_Allele 为原始带星号 'HLA-A*02:01' 格式，与 base 表 HLA_Allele 同款 →
+    (MT_Subpeptide, HLA_Allele) / (WT_Subpeptide, HLA_Allele) 字符串自然键直接查表。
+
+================== ⚠️ TODO（主线跑前必核 BASE 的 NN）==================
+  当前最高 NN 随其它窗口推进会变动（andy90 / 其它新工具可能已抬高 NN）。
+  跑前先 `ls scripts/out/merged_all_tools_*tools.xlsx` 核**实际最高 NN**，
+  把 BASE 改成该 NN，OUT 改成 NN+1。本脚本默认假设最高=26 → 出 27tools，
+  ❗若实际不是 26 必须改下面 BASE_NN 常量。
+=======================================================================
+
+================== 方向说明（重要，勿删）==================
+  MHCSeqNet prob = binding probability ∈[0,1]，**越高越强（呈递/配体似然）**。
+  本脚本**不翻转**，直接用 prob → 越高越免疫原，与 benchmark 其他 MT_* 工具
+  「越大越免疫原」约定一致。（对照 MHCnuggets 是 IC50 越低越强需取负，本工具不取负。）
+
+================== HLA-FIX（同 mhcnuggets：自然键查 base 自身订正 HLA，不置 NaN）==================
+  base 表 P101/P102 行 HLA 已订正；mhcseqnet_raw 在同一 uniq_pep_hla 上跑，
+  含订正 (pep,hla) 键 → 按 base 订正 HLA 自然键查表天然命中，无须手动置 NaN。
+
+================== 许可 ==================
+  MHCSeqNet = github.com/cmb-chula/MHCSeqNet，**Apache-2.0**，学术可发表 ——
+  **非 DTU pending**，不写 PENDING_DTU sidecar。
+
+================== 输出 ==================
+  scripts/out/merged_all_tools_<NN+1>tools.xlsx （期望 34247 行）
+    新增列: MT_MHCSeqNet, WT_MHCSeqNet
+
+================== 跑法（主线串行）==================
+  1) 先核最高 NN，改 BASE_NN 常量
+  2) python scripts/patch_add_mhcseqnet.py  → merged_all_tools_<NN+1>tools.xlsx
+  3) python analysis/merge_metrics_NNtools.py → metrics_ds2_<NN+1>tools.csv 等（自动扫最高 NN）
+
+依赖: pandas, openpyxl
+"""
+
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+HERE = Path(__file__).resolve().parent          # scripts/
+ROOT = HERE.parent                               # QuantImmuBench/
+
+EXPECTED_ROWS = 34247
+
+# ⚠️ TODO(主线核实际最高 NN)：当前默认 26 → 出 27。改这一个常量即可。
+BASE_NN = 26
+
+BASE = ROOT / 'scripts' / 'out' / f'merged_all_tools_{BASE_NN}tools.xlsx'
+RAW = ROOT / 'HPC' / 'deploy' / 'mhcseqnet' / 'mhcseqnet_raw.csv'
+OUT = ROOT / 'scripts' / 'out' / f'merged_all_tools_{BASE_NN + 1}tools.xlsx'
+
+PROB_COL = 'prob'        # raw 中的分数列名（run_mhcseqnet.py 输出）
+
+
+def load_score_map(raw_path: Path) -> dict:
+    """读 mhcseqnet_raw.csv，建 score_map {(pep, hla): prob}（不翻转，越高越强）。"""
+    df = pd.read_csv(raw_path, encoding='utf-8')
+    df.columns = [c.strip() for c in df.columns]
+
+    for c in ('peptide', 'HLA_Allele', PROB_COL):
+        if c not in df.columns:
+            print(f'[ERR] {raw_path.name} 缺列 {c}（实有: {list(df.columns)}）',
+                  file=sys.stderr)
+            sys.exit(1)
+
+    df['peptide'] = df['peptide'].astype(str).str.strip()
+    df['HLA_Allele'] = df['HLA_Allele'].astype(str).str.strip()
+    df[PROB_COL] = pd.to_numeric(df[PROB_COL], errors='coerce')
+    df = df[(df['peptide'] != '') & (df['HLA_Allele'] != '') & df[PROB_COL].notna()]
+
+    # 不翻转 = 越高越免疫原；同键最后覆盖
+    score_map = dict(zip(zip(df['peptide'], df['HLA_Allele']),
+                         df[PROB_COL].astype(float)))
+    print(f'[INFO] score_map 读入: {len(score_map)} 条唯一 (pep,hla) 键'
+          f'（raw 数据行 {len(df)}，方向 prob 不翻转）', file=sys.stderr)
+    return score_map
+
+
+def lookup_col(m: pd.DataFrame, pep_col: str, score_map: dict,
+               new_col: str) -> pd.DataFrame:
+    """按 (m[pep_col], m['HLA_Allele']) 自然键查 score_map → 写 new_col。"""
+    if pep_col not in m.columns:
+        print(f'[ERR] base 缺 {pep_col} 列', file=sys.stderr)
+        sys.exit(1)
+    peps = m[pep_col].astype('string').fillna('').str.strip()
+    hlas = m['HLA_Allele'].astype('string').fillna('').str.strip()
+    keys = list(zip(peps.tolist(), hlas.tolist()))
+    vals = [score_map.get(k, np.nan) if (k[0] and k[1]) else np.nan for k in keys]
+    m[new_col] = pd.to_numeric(pd.Series(vals, index=m.index), errors='coerce')
+    fill = int(m[new_col].notna().sum())
+    pct = fill / len(m) * 100 if len(m) else 0.0
+    flag = '  [WARN<50%]' if pct < 50 else ''
+    print(f'[{new_col}] 填充率={fill}/{len(m)} ({pct:.1f}%){flag}', file=sys.stderr)
+    return m
+
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+
+    if not BASE.exists():
+        print(f'[ERR] base 不存在: {BASE}\n'
+              f'  ⚠️ 核实际最高 NN 并改脚本 BASE_NN 常量（当前={BASE_NN}）', file=sys.stderr)
+        sys.exit(1)
+    if not RAW.exists():
+        print(f'[ERR] raw 不存在: {RAW}', file=sys.stderr)
+        sys.exit(1)
+
+    m = pd.read_excel(BASE)
+    print(f'[INFO] base 读入: {len(m)} 行 × {len(m.columns)} 列  ({BASE.name})',
+          file=sys.stderr)
+    if len(m) != EXPECTED_ROWS:
+        print(f'[ERR] base 行数 {len(m)} ≠ 预期 {EXPECTED_ROWS}', file=sys.stderr)
+        sys.exit(1)
+    for req in ('HLA_Allele', 'MT_Subpeptide'):
+        if req not in m.columns:
+            print(f'[ERR] base 缺必要列 {req}', file=sys.stderr)
+            sys.exit(1)
+    for col in ('MT_MHCSeqNet', 'WT_MHCSeqNet'):
+        if col in m.columns:
+            print(f'[ERR] base 已含 {col}，疑重复 patch，中止', file=sys.stderr)
+            sys.exit(1)
+
+    score_map = load_score_map(RAW)
+
+    m = lookup_col(m, 'MT_Subpeptide', score_map, 'MT_MHCSeqNet')
+    if 'WT_Subpeptide' in m.columns:
+        m = lookup_col(m, 'WT_Subpeptide', score_map, 'WT_MHCSeqNet')
+    else:
+        print('[INFO] base 无 WT_Subpeptide → 跳过 WT_MHCSeqNet', file=sys.stderr)
+
+    if len(m) != EXPECTED_ROWS:
+        print(f'[ERR] 合并后行数 {len(m)} ≠ {EXPECTED_ROWS}！中止', file=sys.stderr)
+        sys.exit(1)
+
+    if 'Patient_ID' in m.columns:
+        pid = m['Patient_ID'].astype(str)
+        pp = pid.str.contains('101') | pid.str.contains('102')
+        n_pp = int(pp.sum())
+        mt_pp = int(m.loc[pp, 'MT_MHCSeqNet'].notna().sum())
+        wt_pp = (int(m.loc[pp, 'WT_MHCSeqNet'].notna().sum())
+                 if 'WT_MHCSeqNet' in m.columns else 0)
+        print(f'[HLA-FIX] P101/P102 行={n_pp}；MT 非空={mt_pp}，WT 非空={wt_pp}',
+              file=sys.stderr)
+
+    print('[LICENSE] MHCSeqNet = cmb-chula Apache-2.0，可发表；非 DTU pending → 不写 sidecar。',
+          file=sys.stderr)
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    m.to_excel(OUT, index=False, engine='openpyxl')
+    new_cols = [c for c in ('MT_MHCSeqNet', 'WT_MHCSeqNet') if c in m.columns]
+    print(f'\n[DONE] 输出: {OUT}\n[DONE] {len(m)} 行 × {len(m.columns)} 列（新增 {new_cols}）',
+          file=sys.stderr)
+
+
+if __name__ == '__main__':
+    main()
