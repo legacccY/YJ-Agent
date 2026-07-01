@@ -235,6 +235,18 @@
    "purpose": "FMReg 脑 MRI 可变形配准【正式 benchmark】; 中训 inter-subject 全量 + 35 标签算 Dice + neg_jac 折叠率。注: G5 killshot 实际用 BraTS2021 flair(非 OASIS, G6 卡/旧 Entry 措辞误写已订正)",
    "status": "todo"
   },
+  "oasis_imagesoasis_wavefid": {
+   "name": "OASIS-1 Alzheimer 2D slices (Kaggle imagesoasis)",
+   "n": "86437 张 2D JPEG 切片 / 347 subjects (Non 67222 / Very mild 13725 / Mild 5002 / Moderate 488; Moderate 仅 2 subject=OAS1_0308+OAS1_0351)",
+   "local": "曾下 data/oasis_kaggle/Data 后清; 免 DUA 可 kaggle CLI 重下",
+   "hpc": "/gpfs/work/bio/jiayu2403/wavefid/data/oasis_kaggle/Data (2026-07-01 登录节点 kaggle 直拉解压, patient split 已生成 binary/3class)",
+   "source": "kaggle.com/datasets/ninadaithal/imagesoasis (OASIS-1 衍生, 免 DUA, 文件名 OAS1_XXXX_MR1 保留 subject ID, 类文件夹=CDR); 官方 OASIS-1/2 DUA 是黄金退路",
+   "used_by": [
+    "wavefid"
+   ],
+   "purpose": "WaveFidBench Gate1+ 正式主集(AD 分类; 频带承载 L1 + XAI 忠实度 benchmark)。患者级 split 命门 subject_id_regex ^(OAS\\d+_\\d+); Moderate 仅 2 subject → 用户拍板任务=二分类(主)+3类合并Moderate→Mild(附录), 别做 4 类(泄漏红线)",
+   "status": "ready(HPC 已下载解压 2026-07-01; binary/3class patient split 已验每 split 全类齐)"
+  },
   "ixi": {
    "name": "IXI (brain MRI registration, junyuchen 预处理版)",
    "n": "576 (403 train / 58 val / 115 test)",

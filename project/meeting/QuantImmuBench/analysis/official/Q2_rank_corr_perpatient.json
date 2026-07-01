@@ -1,0 +1,752 @@
+{
+  "methods": [
+    "geomean",
+    "mean_rank",
+    "median",
+    "powmean",
+    "max",
+    "min",
+    "weighted_mean_rank",
+    "softmax_rank"
+  ],
+  "per_patient": {
+    "101": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.829787,
+        "median": 0.811393,
+        "powmean": 0.829787,
+        "max": 0.749905,
+        "min": 0.811357,
+        "weighted_mean_rank": 0.829787,
+        "softmax_rank": 0.77305
+      },
+      "mean_rank": {
+        "geomean": 0.829787,
+        "mean_rank": 1.0,
+        "median": 0.996448,
+        "powmean": 1.0,
+        "max": 0.96939,
+        "min": 0.461506,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.957447
+      },
+      "median": {
+        "geomean": 0.811393,
+        "mean_rank": 0.996448,
+        "median": 1.0,
+        "powmean": 0.996448,
+        "max": 0.969174,
+        "min": 0.451946,
+        "weighted_mean_rank": 0.996448,
+        "softmax_rank": 0.964419
+      },
+      "powmean": {
+        "geomean": 0.829787,
+        "mean_rank": 1.0,
+        "median": 0.996448,
+        "powmean": 1.0,
+        "max": 0.96939,
+        "min": 0.461506,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.957447
+      },
+      "max": {
+        "geomean": 0.749905,
+        "mean_rank": 0.96939,
+        "median": 0.969174,
+        "powmean": 0.96939,
+        "max": 1.0,
+        "min": 0.299469,
+        "weighted_mean_rank": 0.96939,
+        "softmax_rank": 0.96939
+      },
+      "min": {
+        "geomean": 0.811357,
+        "mean_rank": 0.461506,
+        "median": 0.451946,
+        "powmean": 0.461506,
+        "max": 0.299469,
+        "min": 1.0,
+        "weighted_mean_rank": 0.461506,
+        "softmax_rank": 0.383348
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.829787,
+        "mean_rank": 1.0,
+        "median": 0.996448,
+        "powmean": 1.0,
+        "max": 0.96939,
+        "min": 0.461506,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.957447
+      },
+      "softmax_rank": {
+        "geomean": 0.77305,
+        "mean_rank": 0.957447,
+        "median": 0.964419,
+        "powmean": 0.957447,
+        "max": 0.96939,
+        "min": 0.383348,
+        "weighted_mean_rank": 0.957447,
+        "softmax_rank": 1.0
+      }
+    },
+    "102": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.97619,
+        "median": 0.946125,
+        "powmean": 0.97619,
+        "max": 0.662699,
+        "min": 0.786387,
+        "weighted_mean_rank": 0.97619,
+        "softmax_rank": 0.714286
+      },
+      "mean_rank": {
+        "geomean": 0.97619,
+        "mean_rank": 1.0,
+        "median": 0.970077,
+        "powmean": 1.0,
+        "max": 0.686797,
+        "min": 0.761019,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.738095
+      },
+      "median": {
+        "geomean": 0.946125,
+        "mean_rank": 0.970077,
+        "median": 1.0,
+        "powmean": 0.970077,
+        "max": 0.600011,
+        "min": 0.650752,
+        "weighted_mean_rank": 0.970077,
+        "softmax_rank": 0.670671
+      },
+      "powmean": {
+        "geomean": 0.97619,
+        "mean_rank": 1.0,
+        "median": 0.970077,
+        "powmean": 1.0,
+        "max": 0.686797,
+        "min": 0.761019,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.738095
+      },
+      "max": {
+        "geomean": 0.662699,
+        "mean_rank": 0.686797,
+        "median": 0.600011,
+        "powmean": 0.686797,
+        "max": 1.0,
+        "min": 0.449309,
+        "weighted_mean_rank": 0.686797,
+        "softmax_rank": 0.988024
+      },
+      "min": {
+        "geomean": 0.786387,
+        "mean_rank": 0.761019,
+        "median": 0.650752,
+        "powmean": 0.761019,
+        "max": 0.449309,
+        "min": 1.0,
+        "weighted_mean_rank": 0.761019,
+        "softmax_rank": 0.456612
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.97619,
+        "mean_rank": 1.0,
+        "median": 0.970077,
+        "powmean": 1.0,
+        "max": 0.686797,
+        "min": 0.761019,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.738095
+      },
+      "softmax_rank": {
+        "geomean": 0.714286,
+        "mean_rank": 0.738095,
+        "median": 0.670671,
+        "powmean": 0.738095,
+        "max": 0.988024,
+        "min": 0.456612,
+        "weighted_mean_rank": 0.738095,
+        "softmax_rank": 1.0
+      }
+    },
+    "104": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.95279,
+        "median": 0.863475,
+        "powmean": 0.860294,
+        "max": 0.125557,
+        "min": 0.810464,
+        "weighted_mean_rank": 0.95279,
+        "softmax_rank": 0.026961
+      },
+      "mean_rank": {
+        "geomean": 0.95279,
+        "mean_rank": 1.0,
+        "median": 0.924312,
+        "powmean": 0.966279,
+        "max": 0.273657,
+        "min": 0.630469,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.164316
+      },
+      "median": {
+        "geomean": 0.863475,
+        "mean_rank": 0.924312,
+        "median": 1.0,
+        "powmean": 0.889305,
+        "max": 0.081103,
+        "min": 0.516742,
+        "weighted_mean_rank": 0.924312,
+        "softmax_rank": -0.038131
+      },
+      "powmean": {
+        "geomean": 0.860294,
+        "mean_rank": 0.966279,
+        "median": 0.889305,
+        "powmean": 1.0,
+        "max": 0.427638,
+        "min": 0.492291,
+        "weighted_mean_rank": 0.966279,
+        "softmax_rank": 0.318627
+      },
+      "max": {
+        "geomean": 0.125557,
+        "mean_rank": 0.273657,
+        "median": 0.081103,
+        "powmean": 0.427638,
+        "max": 1.0,
+        "min": -0.131516,
+        "weighted_mean_rank": 0.273657,
+        "softmax_rank": 0.985806
+      },
+      "min": {
+        "geomean": 0.810464,
+        "mean_rank": 0.630469,
+        "median": 0.516742,
+        "powmean": 0.492291,
+        "max": -0.131516,
+        "min": 1.0,
+        "weighted_mean_rank": 0.630469,
+        "softmax_rank": -0.186645
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.95279,
+        "mean_rank": 1.0,
+        "median": 0.924312,
+        "powmean": 0.966279,
+        "max": 0.273657,
+        "min": 0.630469,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.164316
+      },
+      "softmax_rank": {
+        "geomean": 0.026961,
+        "mean_rank": 0.164316,
+        "median": -0.038131,
+        "powmean": 0.318627,
+        "max": 0.985806,
+        "min": -0.186645,
+        "weighted_mean_rank": 0.164316,
+        "softmax_rank": 1.0
+      }
+    },
+    "105": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.957748,
+        "median": 0.889128,
+        "powmean": 0.915641,
+        "max": 0.714496,
+        "min": 0.77859,
+        "weighted_mean_rank": 0.957821,
+        "softmax_rank": 0.704745
+      },
+      "mean_rank": {
+        "geomean": 0.957748,
+        "mean_rank": 1.0,
+        "median": 0.930696,
+        "powmean": 0.978875,
+        "max": 0.782718,
+        "min": 0.684574,
+        "weighted_mean_rank": 0.998241,
+        "softmax_rank": 0.774649
+      },
+      "median": {
+        "geomean": 0.889128,
+        "mean_rank": 0.930696,
+        "median": 1.0,
+        "powmean": 0.951243,
+        "max": 0.827897,
+        "min": 0.484795,
+        "weighted_mean_rank": 0.931721,
+        "softmax_rank": 0.798618
+      },
+      "powmean": {
+        "geomean": 0.915641,
+        "mean_rank": 0.978875,
+        "median": 0.951243,
+        "powmean": 1.0,
+        "max": 0.842875,
+        "min": 0.604979,
+        "weighted_mean_rank": 0.973638,
+        "softmax_rank": 0.83304
+      },
+      "max": {
+        "geomean": 0.714496,
+        "mean_rank": 0.782718,
+        "median": 0.827897,
+        "powmean": 0.842875,
+        "max": 1.0,
+        "min": 0.408746,
+        "weighted_mean_rank": 0.773816,
+        "softmax_rank": 0.992503
+      },
+      "min": {
+        "geomean": 0.77859,
+        "mean_rank": 0.684574,
+        "median": 0.484795,
+        "powmean": 0.604979,
+        "max": 0.408746,
+        "min": 1.0,
+        "weighted_mean_rank": 0.674955,
+        "softmax_rank": 0.439341
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.957821,
+        "mean_rank": 0.998241,
+        "median": 0.931721,
+        "powmean": 0.973638,
+        "max": 0.773816,
+        "min": 0.674955,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.762742
+      },
+      "softmax_rank": {
+        "geomean": 0.704745,
+        "mean_rank": 0.774649,
+        "median": 0.798618,
+        "powmean": 0.83304,
+        "max": 0.992503,
+        "min": 0.439341,
+        "weighted_mean_rank": 0.762742,
+        "softmax_rank": 1.0
+      }
+    },
+    "106": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.932157,
+        "median": 0.941176,
+        "powmean": 0.838235,
+        "max": 0.446861,
+        "min": 0.780405,
+        "weighted_mean_rank": 0.928624,
+        "softmax_rank": 0.338235
+      },
+      "mean_rank": {
+        "geomean": 0.932157,
+        "mean_rank": 1.0,
+        "median": 0.87611,
+        "powmean": 0.961656,
+        "max": 0.676784,
+        "min": 0.711012,
+        "weighted_mean_rank": 0.997788,
+        "softmax_rank": 0.572274
+      },
+      "median": {
+        "geomean": 0.941176,
+        "mean_rank": 0.87611,
+        "median": 1.0,
+        "powmean": 0.794118,
+        "max": 0.401875,
+        "min": 0.609133,
+        "weighted_mean_rank": 0.885946,
+        "softmax_rank": 0.288235
+      },
+      "powmean": {
+        "geomean": 0.838235,
+        "mean_rank": 0.961656,
+        "median": 0.794118,
+        "powmean": 1.0,
+        "max": 0.799252,
+        "min": 0.598708,
+        "weighted_mean_rank": 0.959529,
+        "softmax_rank": 0.691176
+      },
+      "max": {
+        "geomean": 0.446861,
+        "mean_rank": 0.676784,
+        "median": 0.401875,
+        "powmean": 0.799252,
+        "max": 1.0,
+        "min": 0.336378,
+        "weighted_mean_rank": 0.676788,
+        "softmax_rank": 0.970199
+      },
+      "min": {
+        "geomean": 0.780405,
+        "mean_rank": 0.711012,
+        "median": 0.609133,
+        "powmean": 0.598708,
+        "max": 0.336378,
+        "min": 1.0,
+        "weighted_mean_rank": 0.704968,
+        "softmax_rank": 0.326162
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.928624,
+        "mean_rank": 0.997788,
+        "median": 0.885946,
+        "powmean": 0.959529,
+        "max": 0.676788,
+        "min": 0.704968,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.576895
+      },
+      "softmax_rank": {
+        "geomean": 0.338235,
+        "mean_rank": 0.572274,
+        "median": 0.288235,
+        "powmean": 0.691176,
+        "max": 0.970199,
+        "min": 0.326162,
+        "weighted_mean_rank": 0.576895,
+        "softmax_rank": 1.0
+      }
+    },
+    "107": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.970229,
+        "median": 0.928198,
+        "powmean": 0.965035,
+        "max": 0.895262,
+        "min": 0.77875,
+        "weighted_mean_rank": 0.965035,
+        "softmax_rank": 0.79021
+      },
+      "mean_rank": {
+        "geomean": 0.970229,
+        "mean_rank": 1.0,
+        "median": 0.97193,
+        "powmean": 0.99825,
+        "max": 0.929642,
+        "min": 0.690653,
+        "weighted_mean_rank": 0.99825,
+        "softmax_rank": 0.816113
+      },
+      "median": {
+        "geomean": 0.928198,
+        "mean_rank": 0.97193,
+        "median": 1.0,
+        "powmean": 0.966727,
+        "max": 0.885894,
+        "min": 0.581508,
+        "weighted_mean_rank": 0.966727,
+        "softmax_rank": 0.78459
+      },
+      "powmean": {
+        "geomean": 0.965035,
+        "mean_rank": 0.99825,
+        "median": 0.966727,
+        "powmean": 1.0,
+        "max": 0.931655,
+        "min": 0.689444,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.818182
+      },
+      "max": {
+        "geomean": 0.895262,
+        "mean_rank": 0.929642,
+        "median": 0.885894,
+        "powmean": 0.931655,
+        "max": 1.0,
+        "min": 0.65067,
+        "weighted_mean_rank": 0.931655,
+        "softmax_rank": 0.960769
+      },
+      "min": {
+        "geomean": 0.77875,
+        "mean_rank": 0.690653,
+        "median": 0.581508,
+        "powmean": 0.689444,
+        "max": 0.65067,
+        "min": 1.0,
+        "weighted_mean_rank": 0.689444,
+        "softmax_rank": 0.550126
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.965035,
+        "mean_rank": 0.99825,
+        "median": 0.966727,
+        "powmean": 1.0,
+        "max": 0.931655,
+        "min": 0.689444,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.818182
+      },
+      "softmax_rank": {
+        "geomean": 0.79021,
+        "mean_rank": 0.816113,
+        "median": 0.78459,
+        "powmean": 0.818182,
+        "max": 0.960769,
+        "min": 0.550126,
+        "weighted_mean_rank": 0.818182,
+        "softmax_rank": 1.0
+      }
+    },
+    "108": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.974955,
+        "median": 0.913161,
+        "powmean": 0.957066,
+        "max": 0.716903,
+        "min": 0.693688,
+        "weighted_mean_rank": 0.974955,
+        "softmax_rank": 0.610018
+      },
+      "mean_rank": {
+        "geomean": 0.974955,
+        "mean_rank": 1.0,
+        "median": 0.950761,
+        "powmean": 0.989267,
+        "max": 0.794506,
+        "min": 0.619497,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.68873
+      },
+      "median": {
+        "geomean": 0.913161,
+        "mean_rank": 0.950761,
+        "median": 1.0,
+        "powmean": 0.961504,
+        "max": 0.745285,
+        "min": 0.42234,
+        "weighted_mean_rank": 0.950761,
+        "softmax_rank": 0.648165
+      },
+      "powmean": {
+        "geomean": 0.957066,
+        "mean_rank": 0.989267,
+        "median": 0.961504,
+        "powmean": 1.0,
+        "max": 0.820373,
+        "min": 0.569417,
+        "weighted_mean_rank": 0.989267,
+        "softmax_rank": 0.72093
+      },
+      "max": {
+        "geomean": 0.716903,
+        "mean_rank": 0.794506,
+        "median": 0.745285,
+        "powmean": 0.820373,
+        "max": 1.0,
+        "min": 0.367819,
+        "weighted_mean_rank": 0.794506,
+        "softmax_rank": 0.968188
+      },
+      "min": {
+        "geomean": 0.693688,
+        "mean_rank": 0.619497,
+        "median": 0.42234,
+        "powmean": 0.569417,
+        "max": 0.367819,
+        "min": 1.0,
+        "weighted_mean_rank": 0.619497,
+        "softmax_rank": 0.235557
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.974955,
+        "mean_rank": 1.0,
+        "median": 0.950761,
+        "powmean": 0.989267,
+        "max": 0.794506,
+        "min": 0.619497,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.68873
+      },
+      "softmax_rank": {
+        "geomean": 0.610018,
+        "mean_rank": 0.68873,
+        "median": 0.648165,
+        "powmean": 0.72093,
+        "max": 0.968188,
+        "min": 0.235557,
+        "weighted_mean_rank": 0.68873,
+        "softmax_rank": 1.0
+      }
+    },
+    "109": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.988113,
+        "median": 0.952901,
+        "powmean": 0.979198,
+        "max": 0.787758,
+        "min": 0.916885,
+        "weighted_mean_rank": 0.988113,
+        "softmax_rank": 0.732541
+      },
+      "mean_rank": {
+        "geomean": 0.988113,
+        "mean_rank": 1.0,
+        "median": 0.964869,
+        "powmean": 0.997028,
+        "max": 0.822804,
+        "min": 0.886921,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.762259
+      },
+      "median": {
+        "geomean": 0.952901,
+        "mean_rank": 0.964869,
+        "median": 1.0,
+        "powmean": 0.97534,
+        "max": 0.738622,
+        "min": 0.862746,
+        "weighted_mean_rank": 0.964869,
+        "softmax_rank": 0.685131
+      },
+      "powmean": {
+        "geomean": 0.979198,
+        "mean_rank": 0.997028,
+        "median": 0.97534,
+        "powmean": 1.0,
+        "max": 0.831946,
+        "min": 0.868943,
+        "weighted_mean_rank": 0.997028,
+        "softmax_rank": 0.774146
+      },
+      "max": {
+        "geomean": 0.787758,
+        "mean_rank": 0.822804,
+        "median": 0.738622,
+        "powmean": 0.831946,
+        "max": 1.0,
+        "min": 0.663689,
+        "weighted_mean_rank": 0.822804,
+        "softmax_rank": 0.975175
+      },
+      "min": {
+        "geomean": 0.916885,
+        "mean_rank": 0.886921,
+        "median": 0.862746,
+        "powmean": 0.868943,
+        "max": 0.663689,
+        "min": 1.0,
+        "weighted_mean_rank": 0.886921,
+        "softmax_rank": 0.611257
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.988113,
+        "mean_rank": 1.0,
+        "median": 0.964869,
+        "powmean": 0.997028,
+        "max": 0.822804,
+        "min": 0.886921,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.762259
+      },
+      "softmax_rank": {
+        "geomean": 0.732541,
+        "mean_rank": 0.762259,
+        "median": 0.685131,
+        "powmean": 0.774146,
+        "max": 0.975175,
+        "min": 0.611257,
+        "weighted_mean_rank": 0.762259,
+        "softmax_rank": 1.0
+      }
+    },
+    "110": {
+      "geomean": {
+        "geomean": 1.0,
+        "mean_rank": 0.989267,
+        "median": 0.959645,
+        "powmean": 0.957066,
+        "max": 0.852362,
+        "min": 0.924951,
+        "weighted_mean_rank": 0.989267,
+        "softmax_rank": 0.785331
+      },
+      "mean_rank": {
+        "geomean": 0.989267,
+        "mean_rank": 1.0,
+        "median": 0.975788,
+        "powmean": 0.982111,
+        "max": 0.888865,
+        "min": 0.89599,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.831843
+      },
+      "median": {
+        "geomean": 0.959645,
+        "mean_rank": 0.975788,
+        "median": 1.0,
+        "powmean": 0.954264,
+        "max": 0.844592,
+        "min": 0.85666,
+        "weighted_mean_rank": 0.975788,
+        "softmax_rank": 0.796415
+      },
+      "powmean": {
+        "geomean": 0.957066,
+        "mean_rank": 0.982111,
+        "median": 0.954264,
+        "powmean": 1.0,
+        "max": 0.907117,
+        "min": 0.821776,
+        "weighted_mean_rank": 0.982111,
+        "softmax_rank": 0.853309
+      },
+      "max": {
+        "geomean": 0.852362,
+        "mean_rank": 0.888865,
+        "median": 0.844592,
+        "powmean": 0.907117,
+        "max": 1.0,
+        "min": 0.657456,
+        "weighted_mean_rank": 0.888865,
+        "softmax_rank": 0.980124
+      },
+      "min": {
+        "geomean": 0.924951,
+        "mean_rank": 0.89599,
+        "median": 0.85666,
+        "powmean": 0.821776,
+        "max": 0.657456,
+        "min": 1.0,
+        "weighted_mean_rank": 0.89599,
+        "softmax_rank": 0.573795
+      },
+      "weighted_mean_rank": {
+        "geomean": 0.989267,
+        "mean_rank": 1.0,
+        "median": 0.975788,
+        "powmean": 0.982111,
+        "max": 0.888865,
+        "min": 0.89599,
+        "weighted_mean_rank": 1.0,
+        "softmax_rank": 0.831843
+      },
+      "softmax_rank": {
+        "geomean": 0.785331,
+        "mean_rank": 0.831843,
+        "median": 0.796415,
+        "powmean": 0.853309,
+        "max": 0.980124,
+        "min": 0.573795,
+        "weighted_mean_rank": 0.831843,
+        "softmax_rank": 1.0
+      }
+    }
+  }
+}

@@ -30,10 +30,17 @@ GPUS="${4:-1}"
 ROOT=/gpfs/work/bio/jiayu2403/cxr-sslbench
 CODE=$ROOT/code
 VENDOR=$ROOT/vendor          # 官方 repo clone 落处
-DATA=/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/images-224/images-224  # TODO 主线核实子路径(paths.py 同)
+NIH_FLAT=/gpfs/work/bio/jiayu2403/nca-jepa/data/nih_cxr14/images-224/images-224  # NIH 扁平 112120 png
+# 官方 mae/dino/moco 用 ImageFolder 需类子目录 → 符号链接包装(_scratch_cxr_data_wrap.py 已建):
+#   dino: ImageFolder(data_path)      → data_ssl/flat   (含 all/ -> NIH)
+#   mae/moco: ImageFolder(data_path/train) → data_ssl/parent (含 train/all/ -> NIH)
+#   chexworld: 自家 loader 直读扁平 NIH
+DATA_FLAT=$ROOT/data_ssl/flat
+DATA_PARENT=$ROOT/data_ssl/parent
 RESULTS=$ROOT/results
 ENV=/gpfs/work/bio/jiayu2403/.conda/envs/yjcu124py310
 PY=$ENV/bin/python
+export PATH=$ENV/bin:$PATH   # compute 节点未 activate conda；令 eval 的裸 python/torch.distributed.run 解析到 env（修 job1502881/2 python not found）
 mkdir -p $ROOT/logs $VENDOR $RESULTS/pretrain
 cd $CODE
 
@@ -50,10 +57,10 @@ clone_repo () {  # $1=dir $2=giturl
   fi
 }
 case "$METHOD" in
-  mae)   clone_repo mae   https://github.com/facebookresearch/mae.git;       REPO=$VENDOR/mae ;;
-  dino)  clone_repo dino  https://github.com/facebookresearch/dino.git;      REPO=$VENDOR/dino ;;
-  moco)  clone_repo moco  https://github.com/facebookresearch/moco-v3.git;   REPO=$VENDOR/moco ;;
-  chexworld) REPO=/gpfs/work/bio/jiayu2403/chexworld/repo ;;   # 本地官方 repo，不 clone
+  mae)   clone_repo mae   https://github.com/facebookresearch/mae.git;       REPO=$VENDOR/mae;  DATA=$DATA_PARENT ;;
+  dino)  clone_repo dino  https://github.com/facebookresearch/dino.git;      REPO=$VENDOR/dino; DATA=$DATA_FLAT ;;
+  moco)  clone_repo moco  https://github.com/facebookresearch/moco-v3.git;   REPO=$VENDOR/moco; DATA=$DATA_PARENT ;;
+  chexworld) REPO=/gpfs/work/bio/jiayu2403/chexworld/repo; DATA=$NIH_FLAT ;;   # 本地官方 repo，自家 loader 扁平
   *) echo "未知 method $METHOD"; exit 1 ;;
 esac
 

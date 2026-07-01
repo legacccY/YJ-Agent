@@ -1,0 +1,148 @@
+{
+  "section": "§3.4 unified ranking + deployment recommendation (干净口径, 零选择 max)",
+  "input": "pooled_clean_9mer.csv",
+  "patients": [
+    101,
+    102,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110
+  ],
+  "dim_sets_decision": "已裁决: SURV6/dim7 成员=保持现状 (outline 抽象「6/7维」既有具体化, max 维)",
+  "netAffneg_available": true,
+  "dim_used": {
+    "SURV6": [
+      "PredIG_max",
+      "IMPROVE_max",
+      "pTuneos_max",
+      "PRIME_max",
+      "ImmuneApp_max",
+      "deepHLApan_max"
+    ],
+    "dim7": [
+      "PredIG_max",
+      "IMPROVE_max",
+      "pTuneos_max",
+      "PRIME_max",
+      "ImmuneApp_max",
+      "deepHLApan_max",
+      "netMHCpan_BA_max"
+    ]
+  },
+  "n_methods_ranked": 47,
+  "length_artifact_threshold": 0.15,
+  "length_artifact_tools": [],
+  "top5_by_rho": [
+    {
+      "rank": 1,
+      "method": "HLAthena_max",
+      "family": "single_tool",
+      "dim_set": "-",
+      "rho_bar": 0.627245,
+      "rho_bar_lenctrl": 0.250431,
+      "coverage_flag": "sparse",
+      "length_artifact_flag": "none",
+      "deploy_candidate": false
+    },
+    {
+      "rank": 2,
+      "method": "andy90_max",
+      "family": "single_tool",
+      "dim_set": "-",
+      "rho_bar": 0.585084,
+      "rho_bar_lenctrl": 0.188649,
+      "coverage_flag": "sparse",
+      "length_artifact_flag": "none",
+      "deploy_candidate": false
+    },
+    {
+      "rank": 3,
+      "method": "netMHCpan_BA_topk_k20_a0",
+      "family": "single_tool",
+      "dim_set": "affinity_default",
+      "rho_bar": 0.461452,
+      "rho_bar_lenctrl": 0.478613,
+      "coverage_flag": "full",
+      "length_artifact_flag": "none",
+      "deploy_candidate": true
+    },
+    {
+      "rank": 4,
+      "method": "Seq2Neo_max",
+      "family": "single_tool",
+      "dim_set": "-",
+      "rho_bar": 0.440557,
+      "rho_bar_lenctrl": 0.873461,
+      "coverage_flag": "sparse",
+      "length_artifact_flag": "none",
+      "deploy_candidate": false
+    },
+    {
+      "rank": 5,
+      "method": "netMHCpan_BA_max",
+      "family": "single_tool",
+      "dim_set": "-",
+      "rho_bar": 0.391691,
+      "rho_bar_lenctrl": 0.432223,
+      "coverage_flag": "full",
+      "length_artifact_flag": "none",
+      "deploy_candidate": true
+    }
+  ],
+  "deployment_scheme_A": {
+    "name": "务实默认 (outline 方案A: netAffneg = netMHCpan_BA 9mer topk k=20,α=0)",
+    "method": "netMHCpan_BA_topk_k20_a0",
+    "n_tools": 1,
+    "fisherz_rho": 0.461452,
+    "fisherz_rho_lenctrl": 0.478613,
+    "ci_lo": 0.277911,
+    "ci_hi": 0.612488,
+    "n_used": 9,
+    "overfit": "none (零学习, 单工具, 依赖最少)",
+    "pending_DTU": true,
+    "decision": "已按 outline §3.2/§3.4 裁决: netAffneg = 干净表内列 netMHCpan_BA_topk_k20_a0; 直接算 per-patient Fisher-z, 不再读外部派生 CSV",
+    "available": true
+  },
+  "deployment_scheme_B": {
+    "name": "按需备选 (multi-dim max + geomean, 无监督 leak-free)",
+    "dim7_geomean": {
+      "n_tools": 7,
+      "dims": [
+        "PredIG_max",
+        "IMPROVE_max",
+        "pTuneos_max",
+        "PRIME_max",
+        "ImmuneApp_max",
+        "deepHLApan_max",
+        "netMHCpan_BA_max"
+      ],
+      "fisherz_rho": 0.377951
+    },
+    "SURV6_geomean_ref": {
+      "n_tools": 6,
+      "dims": [
+        "PredIG_max",
+        "IMPROVE_max",
+        "pTuneos_max",
+        "PRIME_max",
+        "ImmuneApp_max",
+        "deepHLApan_max"
+      ],
+      "fisherz_rho": 0.362171
+    },
+    "overfit": "none (无监督 rank fusion, leak-free)",
+    "decision": "已裁决: 维度集成员 SURV6/dim7=保持现状 (outline 抽象「6/7维」既有具体化, max 维), 方案B 主推 dim7 geomean"
+  },
+  "deployment_note": "因 §3.3.5 整合 vs 最强单工具统计持平, 部署按 '零过拟合+依赖最少+鲁棒+可解释' 排序; 稀疏(虚高) 与 length_artifact(含肽长效应) 均不入部署候选; 两方案 ρ̄ 见上, 数字均为本脚本实测",
+  "deploy_instance_status": "TODO — T01/T04 无标签病人数据不在冻结表 (冻结表纯 DS2 9 患者), 需数据组提供后跑 rank_T01_deploy; 本脚本不造假数据",
+  "deploy_target_patients": [
+    "T01",
+    "T04"
+  ],
+  "learning_fusion_excluded": "ridge/gbdt/stacking/constrained 因 overfit_risk 不入部署候选 (证据见 R5 nested-LOPO)",
+  "seed": 42
+}

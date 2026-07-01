@@ -9,13 +9,15 @@ recipe 基类 —— 4 范式 launch 脚本共用骨架（薄包装官方 repo�
 recipe 自身**不实现 SSL 算法、不跑训练**。主线 clone 官方 repo 后经 submit 跑。
 """
 import argparse
+import sys
 
 from common import budget, INTERMEDIATE_EPS
 
 
 class Recipe:
     method = None            # 'mae'|'dino'|'moco'|'chexworld'
-    official_eff_bs = None   # 矩阵 §1 官方 eff_bs（recipe 强制不变，HPC 用 accum 凑）
+    official_eff_bs = None   # 矩阵 §1 官方 eff_bs（HPC 用 accum 凑满 = full；4×4090 装不下时走 reduced）
+    official_lr = None       # 官方 lr@official_eff_bs（eff==official 用它；eff<official 按 eff/official 线性缩放）
     entry = None             # 官方训练入口脚本名（repo 内相对）
     loader_hint = 'timm_vit_base'  # block B 建模型用：MAE/DINO/MoCo=timm_vit_base，CheXWorld=jepa_vit_base
     arch = 'vit_base_patch16_224'
@@ -31,13 +33,40 @@ class Recipe:
     def export_ckpt(self, src_ckpt, ep, seed, results_dir):
         raise NotImplementedError
 
-    # -- 共用：校验 eff_bs 凑对（HPC accum/多卡组合必须等于官方 eff_bs，否则 lr 语义被偷换）--
+    # -- 共用：lr 线性缩放（路 A：4×4090 装不下官方 eff_bs → reduced eff_bs + lr 按 bs 线性缩放）--
+    def scaled_lr(self, eff):
+        """eff_bs 线性缩放后的 lr。
+        eff == official → official_lr（不缩放）；eff < official → official_lr × eff/official（标准线性规则）。
+        official_lr 未设则返回 None（调用方按各自 lr 入参，不缩放）。"""
+        if self.official_lr is None:
+            return None
+        eff = int(eff)
+        if eff >= self.official_eff_bs:
+            return self.official_lr
+        return self.official_lr * eff / self.official_eff_bs
+
+    def check_eff_and_lr(self, eff):
+        """校验 eff_bs + 算缩放 lr（reduced 透明留痕，非静默）。
+        - eff == official → 用官方 lr（不缩放，full）
+        - eff <  official → reduced：lr 线性缩放 + stderr WARN 留痕
+        - eff >  official → assert 报错（超官方 eff_bs 偷换 lr 语义，不该发生）
+        返回缩放后 lr（official_lr 未设则 None）。"""
+        eff = int(eff)
+        assert eff <= self.official_eff_bs, (
+            f'[{self.method}] eff_bs={eff} > 官方 {self.official_eff_bs}：'
+            f'超官方 eff_bs 会偷换 lr 语义，不该发生。请减小 batch/accum/gpus。')
+        lr = self.scaled_lr(eff)
+        if eff < self.official_eff_bs and self.official_lr is not None:
+            sys.stderr.write(
+                f'[{self.method}][WARN] reduced eff_bs={eff}（官方 {self.official_eff_bs}），'
+                f'lr 线性缩放 official_lr {self.official_lr}→{lr}（×{eff}/{self.official_eff_bs}）。'
+                f'images-seen 不变（步数按 eff 放大）。须烟测定 + LOG 留痕。\n')
+        return lr
+
+    # -- 共用：算 eff_bs 并校验（reduced 软允许 + lr 缩放；eff>official 仍报错）--
     def assert_eff_bs(self, batch_size_per_gpu, accum_iter, world_size):
         eff = int(batch_size_per_gpu) * int(accum_iter) * int(world_size)
-        assert eff == self.official_eff_bs, (
-            f'[{self.method}] eff_bs={eff} != 官方 {self.official_eff_bs} '
-            f'(batch/gpu={batch_size_per_gpu} × accum={accum_iter} × gpus={world_size})。'
-            f'矩阵 §1 铁律：保官方 eff_bs，lr 不 rescale。请调 accum_iter/batch 凑回官方值。')
+        self.check_eff_and_lr(eff)   # eff>official 抛 / eff<official WARN+缩放
         return eff
 
     def ckpt_epochs(self):

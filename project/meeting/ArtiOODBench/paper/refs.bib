@@ -70,3 +70,212 @@
   pages   = {226--235},
   year    = {2014}
 }
+
+% ============================================================================
+% Datasets used to construct the seven cross-source normal-versus-normal pairs.
+% Each entry field-verified against the cited DOI / venue. Canonical dataset
+% papers plus their underlying source datasets (BraTS, Brain-Tumor-MRI) are
+% both listed so that provenance can be traced; see the Data and Code
+% Availability and Licenses sections.
+% ============================================================================
+
+% --- Chest X-ray -----------------------------------------------------------
+@inproceedings{wang2017chestxray8,
+  title     = {{ChestX-ray8}: Hospital-Scale Chest X-ray Database and Benchmarks
+               on Weakly-Supervised Classification and Localization of Common
+               Thorax Diseases},
+  author    = {Wang, Xiaosong and Peng, Yifan and Lu, Le and Lu, Zhiyong and
+               Bagheri, Mohammadhadi and Summers, Ronald M.},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern
+               Recognition (CVPR)},
+  pages     = {2097--2106},
+  year      = {2017},
+  doi       = {10.1109/CVPR.2017.369}
+}
+
+@misc{rsna2018pneumonia,
+  title        = {{RSNA} Pneumonia Detection Challenge},
+  author       = {{Radiological Society of North America}},
+  year         = {2018},
+  howpublished = {Kaggle competition},
+  note         = {\url{https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge}}
+}
+
+@article{shih2019augmenting,
+  title   = {Augmenting the National Institutes of Health Chest Radiograph
+             Dataset with Expert Annotations of Possible Pneumonia},
+  author  = {Shih, George and Wu, Carol C. and Halabi, Safwan S. and
+             Kohli, Marc D. and Prevedello, Luciano M. and Cook, Tessa S. and
+             Sharma, Arjun and Amorosa, Judith K. and Arteaga, Veronica and
+             Galperin-Aizenberg, Maya and Gill, Ritu R. and Godoy, Myrna C. B.
+             and Hobbs, Stephen and Jeudy, Jean and Laroia, Archana and
+             Shah, Palmi N. and Vummidi, Dharshan and Yaddanapudi, Kavita and
+             Stein, Anouk},
+  journal = {Radiology: Artificial Intelligence},
+  volume  = {1},
+  number  = {1},
+  pages   = {e180041},
+  year    = {2019},
+  doi     = {10.1148/ryai.2019180041}
+}
+
+@article{nguyen2022vindrcxr,
+  title   = {{VinDr-CXR}: An Open Dataset of Chest X-rays with Radiologist's
+             Annotations},
+  author  = {Nguyen, Ha Q. and Lam, Khanh and Le, Linh T. and Pham, Hieu H. and
+             Tran, Dat Q. and Nguyen, Dung B. and Le, Dung D. and Pham, Chi M.
+             and Tong, Hang T. T. and Dinh, Diep H. and Do, Cuong D. and
+             Doan, Luu T. and Nguyen, Cuong N. and Nguyen, Binh T. and
+             Nguyen, Que V. and Hoang, Au D. and Phan, Hien N. and
+             Nguyen, Anh T. and Ho, Phuong H. and Ngo, Dat T. and
+             Nguyen, Nghia T. and Nguyen, Nhan T. and Dao, Minh and
+             Vu, Van},
+  journal = {Scientific Data},
+  volume  = {9},
+  pages   = {429},
+  year    = {2022},
+  doi     = {10.1038/s41597-022-01498-w}
+}
+
+% --- Brain MRI -------------------------------------------------------------
+@article{baid2021brats,
+  title   = {The {RSNA-ASNR-MICCAI BraTS 2021} Benchmark on Brain Tumor
+             Segmentation and Radiogenomic Classification},
+  author  = {Baid, Ujjwal and Ghodasara, Satyam and Mohan, Suyash and
+             Bilello, Michel and Calabrese, Evan and Colak, Errol and
+             Farahani, Keyvan and Kalpathy-Cramer, Jayashree and
+             Kitamura, Felipe C. and Pati, Sarthak and others},
+  journal = {arXiv preprint arXiv:2107.02314},
+  year    = {2021}
+}
+
+@article{menze2015brats,
+  title   = {The Multimodal Brain Tumor Image Segmentation Benchmark ({BRATS})},
+  author  = {Menze, Bjoern H. and Jakab, Andras and Bauer, Stefan and
+             Kalpathy-Cramer, Jayashree and Farahani, Keyvan and Kirby, Justin
+             and Burren, Yuliya and Porz, Nicole and Slotboom, Johannes and
+             Wiest, Roland and others},
+  journal = {IEEE Transactions on Medical Imaging},
+  volume  = {34},
+  number  = {10},
+  pages   = {1993--2024},
+  year    = {2015},
+  doi     = {10.1109/TMI.2014.2377694}
+}
+
+@article{bakas2017advancing,
+  title   = {Advancing The Cancer Genome Atlas Glioma {MRI} Collections with
+             Expert Segmentation Labels and Radiomic Features},
+  author  = {Bakas, Spyridon and Akbari, Hamed and Sotiras, Aristeidis and
+             Bilello, Michel and Rozycki, Martin and Kirby, Justin S. and
+             Freymann, John B. and Farahani, Keyvan and Davatzikos, Christos},
+  journal = {Scientific Data},
+  volume  = {4},
+  pages   = {170117},
+  year    = {2017},
+  doi     = {10.1038/sdata.2017.117}
+}
+
+@misc{baid2021bratstcia,
+  title        = {{RSNA-ASNR-MICCAI-BraTS-2021}},
+  author       = {Baid, Ujjwal and Ghodasara, Satyam and Bilello, Michel and
+                  Mohan, Suyash and Calabrese, Evan and Colak, Errol and
+                  Farahani, Keyvan and others},
+  howpublished = {The Cancer Imaging Archive (TCIA)},
+  year         = {2021},
+  doi          = {10.7937/jc8x-9874}
+}
+
+@misc{nickparvar2021braintumormri,
+  title        = {Brain Tumor {MRI} Dataset},
+  author       = {Nickparvar, Masoud},
+  howpublished = {Kaggle},
+  year         = {2021},
+  doi          = {10.34740/kaggle/dsv/2645886},
+  note         = {Aggregated dataset (7023 images, 4 classes) merging figshare
+                  Cheng (2015), SARTAJ, and Br35H}
+}
+
+@misc{cheng2015braintumor,
+  title        = {Brain Tumor Dataset},
+  author       = {Cheng, Jun},
+  howpublished = {figshare},
+  year         = {2015},
+  doi          = {10.6084/m9.figshare.1512427}
+}
+
+% --- Dermoscopy / dermatology ----------------------------------------------
+@article{tschandl2018ham10000,
+  title   = {The {HAM10000} Dataset, a Large Collection of Multi-Source
+             Dermatoscopic Images of Common Pigmented Skin Lesions},
+  author  = {Tschandl, Philipp and Rosendahl, Cliff and Kittler, Harald},
+  journal = {Scientific Data},
+  volume  = {5},
+  pages   = {180161},
+  year    = {2018},
+  doi     = {10.1038/sdata.2018.161}
+}
+
+@article{rotemberg2021isic2020,
+  title   = {A Patient-Centric Dataset of Images and Metadata for Identifying
+             Melanomas Using Clinical Context},
+  author  = {Rotemberg, Veronica and Kurtansky, Nicholas and Betz-Stablein,
+             Brigid and Caffery, Liam and Chousakos, Emmanouil and
+             Codella, Noel and Combalia, Marc and Dusza, Stephen and
+             Guitera, Pascale and Gutman, David and Halpern, Allan and
+             Helba, Brian and Kittler, Harald and Kose, Kivanc and
+             Langer, Steve and Lioprys, Konstantinos and Malvehy, Josep and
+             Musthaq, Shenara and Nanda, Jabpani and Reiter, Ofer and
+             Shih, George and Stratigos, Alexander and Tschandl, Philipp and
+             Weber, Jochen and Soyer, H. Peter},
+  journal = {Scientific Data},
+  volume  = {8},
+  pages   = {34},
+  year    = {2021},
+  doi     = {10.1038/s41597-021-00815-z}
+}
+
+@article{pacheco2020padufes20,
+  title   = {{PAD-UFES-20}: A Skin Lesion Dataset Composed of Patient Data and
+             Clinical Images Collected from Smartphones},
+  author  = {Pacheco, Andre G. C. and Lima, Gustavo R. and Salomao, Amanda S.
+             and Krohling, Breno and Biral, Igor P. and de Angelo, Gabriel G.
+             and Alves Jr., Fabio C. R. and Esgario, Jose G. M. and
+             Simora, Alana C. and Castro, Pedro B. C. and Rodrigues, Felipe B.
+             and Frasson, Patricia H. L. and Krohling, Renato A. and
+             Knidel, Helder and Santos, Maria C. S. and do Espirito Santo,
+             Rachel B. and Macedo, Telma L. S. G. and Canuto, Tania R. P. and
+             de Barros, Luiz F. S.},
+  journal = {Data in Brief},
+  volume  = {32},
+  pages   = {106221},
+  year    = {2020},
+  doi     = {10.1016/j.dib.2020.106221}
+}
+
+@inproceedings{groh2021fitzpatrick17k,
+  title     = {Evaluating Deep Neural Networks Trained on Clinical Images in
+               Dermatology with the {Fitzpatrick 17k} Dataset},
+  author    = {Groh, Matthew and Harris, Caleb and Soenksen, Luis and
+               Lau, Felix and Han, Rachel and Kim, Aerin and Koochek, Arash and
+               Badri, Omar},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and
+               Pattern Recognition Workshops (CVPRW)},
+  pages     = {1820--1828},
+  year      = {2021},
+  doi       = {10.1109/CVPRW53098.2021.00201}
+}
+
+% --- Datasheet template (for the benchmark's own datasheet) -----------------
+@article{gebru2021datasheets,
+  title   = {Datasheets for Datasets},
+  author  = {Gebru, Timnit and Morgenstern, Jamie and Vecchione, Briana and
+             Vaughan, Jennifer Wortman and Wallach, Hanna and
+             Daum{\'e} III, Hal and Crawford, Kate},
+  journal = {Communications of the ACM},
+  volume  = {64},
+  number  = {12},
+  pages   = {86--92},
+  year    = {2021},
+  doi     = {10.1145/3458723}
+}

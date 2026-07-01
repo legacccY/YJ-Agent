@@ -136,6 +136,12 @@
             "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\results_ready.js\"",
             "timeout": 4,
             "statusMessage": "results-ready check..."
+          },
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"D:\\YJ-Agent\\.claude\\hooks\\custodian_sweep_reminder.js\"",
+            "timeout": 4,
+            "statusMessage": "artifact sprawl check..."
           }
         ]
       }

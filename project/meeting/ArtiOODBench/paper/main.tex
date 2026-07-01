@@ -31,6 +31,9 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 
+% Placeholder macro for values pending manual/verifier confirmation.
+\providecommand{\todo}[1]{\textcolor{red}{[\textbf{TODO:} #1]}}
+
 \title{ArtiOODBench: Auditing What Out-of-Distribution Detectors Actually
 Measure on Cross-Institution Medical-Imaging Benchmarks}
 
@@ -217,12 +220,28 @@ attributed to deeper, harder-to-match source representations.
 To localize the spurious signal to a concrete physical carrier, we extract a
 43-dimensional, content-blind feature vector per image. These features
 deliberately capture only low-level acquisition properties and never encode
-anatomical or pathological content: a 32-bin intensity histogram (\texttt{hist32})
-plus summary intensity statistics; GLCM Haralick texture descriptors (contrast,
-homogeneity, correlation, energy), capturing scanner/sensor texture signatures;
-an edge / vignetting ratio quantifying peripheral fall-off characteristic of
-specific acquisition optics; and an FFT high-to-low frequency energy ratio,
-capturing reconstruction- and compression-dependent spectral fingerprints.
+anatomical or pathological content. The 43 dimensions decompose as
+$32 + 2 + 4 + 4 + 1$: (i) a 32-bin intensity histogram (\texttt{hist32}); (ii)
+two edge / vignetting descriptors (a peripheral-darkness ratio and a global
+dark-pixel ratio) quantifying border fall-off characteristic of specific
+acquisition optics; (iii) four GLCM Haralick texture descriptors (contrast,
+energy, homogeneity, correlation, each averaged over four orientations),
+capturing scanner/sensor texture signatures; (iv) four summary intensity
+statistics (mean, variance, skewness, kurtosis); and (v) one FFT high-to-low
+frequency energy ratio, capturing reconstruction- and compression-dependent
+spectral fingerprints.
+
+To score how separable two sources are from these features alone, we train a
+plain logistic-regression classifier (scikit-learn, $C = 1.0$, \texttt{lbfgs}
+solver) on z-score-standardized features to discriminate the two sources. We
+draw $n = 300$ images per side ($600$ per pair, balanced), and report the mean
+AUROC together with its across-seed standard deviation over $5$-fold
+cross-validation repeated across $5$ seeds ($\{42, 1, 2, 3, 4\}$); the reported
+dispersion is therefore a multi-seed cross-validation standard deviation, not a
+bootstrap interval. This artifact-only classifier is deliberately simple and
+never fits any encoder representation, which is what makes it structurally
+independent of the projection-based scoring chain analyzed later
+(Section~\ref{sec:heldout}).
 
 Crucially, every image is \textbf{resized to $224\times224$ before feature
 extraction}. This step is mandatory: without resolution control, the native
@@ -246,9 +265,22 @@ $224^2$ resolution.
 
 For the post-hoc detectors we use a TorchXRayVision DenseNet121-res224 as a
 frozen encoder (no fine-tuning, no re-training). From each image we cache (a) the
-1024-dimensional penultimate-layer feature and (b) the 18 multi-label disease
-logits. All detectors operate on these cached representations except where a live
-forward pass is required (noted below).
+1024-dimensional penultimate-layer feature (the \texttt{features2} activation)
+and (b) the 18 multi-label disease logits. All detectors operate on these cached
+representations except where a live forward pass is required (noted below).
+
+We stress one consequence of using a single chest-X-ray-pretrained encoder
+across three modalities. On the non-chest-X-ray inputs (brain MRI and
+dermoscopy), only the \texttt{features2} transfer representation carries
+meaningful signal; the 18 disease logits have no pathological meaning outside
+chest radiography. Consequently, logit-dependent detectors (MSP, ODIN,
+Energy/EBO, GradNorm) are excluded on the non-chest-X-ray modalities \emph{by
+design}, in accordance with the pre-registered modality-admission gate (PR-F3),
+and we make no claim that these logit-based detectors are effective across
+modalities. This is a deliberate scope restriction, not a defect: the geometric,
+feature-based detectors (ViM, Residual, MDS, KNN) remain applicable because they
+operate on the transferable penultimate feature rather than on the modality-specific
+logits.
 
 We evaluate \textbf{13 post-hoc OOD detectors} from OpenOOD, each with its
 official hyperparameters. The reused set of seven is: MSP (no parameters); ODIN
@@ -396,8 +428,10 @@ feature battery (Figure~\ref{fig:a1}). On cross-institution pairs, the
 43-dimensional artifact-only features---which never read any pathological
 content---separate the two sources at AUROC in the range $0.82$--$0.9997$ on the
 load-bearing pairs, spanning all three modalities (chest X-ray, brain MRI,
-dermoscopy). The weakest pair, two same-country (US) chest X-ray sources (NIH vs
-RSNA), still reaches artifact-only AUROC $=0.64$---lower precisely because the
+dermoscopy). The weakest pair, two same-country (US) chest X-ray sources
+(NIH ChestX-ray14~\citep{wang2017chestxray8} vs the RSNA Pneumonia Detection
+dataset~\citep{rsna2018pneumonia,shih2019augmenting}), still reaches
+artifact-only AUROC $=0.64$---lower precisely because the
 two sources are physically closer---and we report it openly rather than dropping
 it. This satisfies the pre-registered acceptance criteria A-1 ($\ge 2$ of $\ge 3$
 pairs at AUROC $\ge 0.80$, with $\ge 1$ pair $>0.90$) and A-2 (each modality has
@@ -411,12 +445,26 @@ precise by the pure-covariate split and the source-distance analysis below.
 \subsection{The pure-covariate construction and the in-sample evaluation trap}
 
 Our evidence for source leakage comes from a physically clean construction:
-cross-source normal-versus-normal pairs. In each such pair, both sides contain
-only normal (non-pathological) images, so there is no semantic (pathology)
-difference whatsoever; the \emph{only} systematic difference between the two
-sides is the acquisition source. Any detector that separates such a pair is, by
-construction, detecting \emph{where the data came from}, not \emph{whether it is
-abnormal}.
+cross-source normal-versus-normal pairs. In each such pair, both sides are
+labeled normal (non-pathological), and the principal systematic difference
+between the two sides is the acquisition source, so a detector that separates
+such a pair is, by construction, detecting \emph{where the data came from} rather
+than \emph{whether the image is abnormal}.
+
+One qualification applies to the brain-MRI pair and we state it explicitly rather
+than overclaiming a perfectly zero-semantic split. On the chest-X-ray and
+dermoscopy pairs both sides are genuinely normal screening / benign images. On
+the BraTS-versus-Brain-Tumor-MRI pair, however, the ``normal'' BraTS side
+consists of $828$ tumor-free FLAIR slices drawn from glioma patients, not scans
+of healthy volunteers, while the Brain-Tumor-MRI side consists of the
+normal-labeled (``class 0'') images of the aggregated Nickparvar collection. We
+therefore characterize this MRI pair as a \emph{cross-institution heterogeneity}
+pair rather than a strictly zero-semantic one: its two sides may still differ in
+residual subclinical signal, so the source-separability it exhibits should be
+read as an upper estimate that mixes acquisition source with any residual
+pathology cue. We retain the pair because the A-1/A-2 artifact-only separation
+still holds---the content-blind hand-crafted battery reads essentially no
+pathological semantics---but we flag this caveat again in the Limitations.
 
 A pre-registered analysis (criterion A-5) had set out to test whether the
 projection-based detector ViM separates these pairs near-perfectly. Under the
@@ -477,6 +525,17 @@ projection-based detectors require held-out evaluation.
 
 \subsection{Source leakage under the corrected held-out protocol}
 
+The seven cross-source pairs are constructed from nine public datasets: for
+chest X-ray, NIH ChestX-ray14~\citep{wang2017chestxray8}, the RSNA Pneumonia
+Detection dataset~\citep{rsna2018pneumonia,shih2019augmenting}, and
+VinDr-CXR~\citep{nguyen2022vindrcxr}; for brain MRI, the BraTS~2021
+collection~\citep{baid2021brats,menze2015brats,bakas2017advancing,baid2021bratstcia}
+and the aggregated Brain-Tumor-MRI dataset~\citep{nickparvar2021braintumormri,cheng2015braintumor};
+and for dermoscopy, HAM10000~\citep{tschandl2018ham10000}, ISIC~2020~\citep{rotemberg2021isic2020},
+PAD-UFES-20~\citep{pacheco2020padufes20}, and Fitzpatrick~17k~\citep{groh2021fitzpatrick17k}.
+Full license and access details for each dataset are given in the Data and Code
+Availability section.
+
 Re-scored under the held-out protocol, the genuine source signal is \emph{real
 but moderate, and it is driven by how far apart the two sources are}. ViM's
 held-out AUROC across the seven pairs is reported in Table~\ref{tab:heldout}.
@@ -507,16 +566,18 @@ The mean held-out ViM AUROC is $0.777$. Every value sits above the same-source
 held-out chance level of $\approx 0.5$ except the deliberately reported negative
 case, so a real source signal does exist; but it is \emph{far from the perfect
 separation the in-sample number suggested}, and it clears the pre-registered
-strict A-5 bar (ViM $>0.95$ on $\ge 6/7$ pairs) on only $2/7$ pairs (BraTS and
-HAM-vs-fitzpatrick17k). We therefore record A-5 as a \emph{pre-registered FAIL}
+strict A-5 bar (ViM $>0.95$ on $\ge 6/7$ pairs) on only $1/7$ pairs (BraTS at
+$0.997$; the next-highest pair, HAM-vs-fitzpatrick17k, reaches only $0.938 <
+0.95$). We therefore record A-5 as a \emph{pre-registered FAIL}
 under the corrected protocol and, following the pre-specified fallback, move the
 load-bearing weight to A-1/A-2 (phenomenon), A-7 (mechanism), and A-6
 (prescription).
 
 \paragraph{Source distance is a major driver of the spread.} With the
 artifact-only reference completed for all seven pairs ($n=7$), the held-out ViM
-AUROC tracks artifact-only separability strongly: Spearman $\rho = 0.821$ and
-Pearson $r = 0.955$ (Figure~\ref{fig:vim-vs-artifact}). The more physically
+AUROC tracks artifact-only separability strongly: Spearman $\rho = 0.821$
+($p = 0.023$) and Pearson $r = 0.955$ ($p = 0.0008$, $95\%$ CI $[0.72, 0.99]$)
+(Figure~\ref{fig:vim-vs-artifact}). The more physically
 distinct the two sources, the more the detector can read; the more similar they
 are, the less. We characterize source distance as \emph{a major driver} rather
 than the sole factor: a perfectly monotone rank correspondence on only four
@@ -553,7 +614,14 @@ lowest of all 13 and the only gradient-dependent detector---under a frozen
 encoder it cannot capture the source covariate. The leakage is likewise not
 uniform across pairs: on the well-separated BraTS pair, 8 of 13 detectors exceed
 $0.75$, whereas on the acquisition-similar NIH-vs-RSNA pair, 8 of 13 fall below
-$0.55$.
+$0.55$. The weak tail should be read with the cross-modal encoder caveat introduced in
+the Method (frozen encoder and detector pool) in mind: on the brain-MRI and
+dermoscopy pairs, the
+chest-X-ray-pretrained logits carry no pathological meaning, so the low scores of
+the logit-dependent detectors (for example GradNorm) on these modalities reflect
+that scope restriction by design rather than a genuine failure to detect source;
+the feature-based detectors, which read the transferable penultimate feature, are
+the ones that remain interpretable across modalities.
 
 We report this spectrum \emph{descriptively only}, and we deliberately do
 \emph{not} attach any group-level claim (such as ``feature-based detectors
@@ -674,7 +742,7 @@ source difference at all) scored in-sample \emph{also} yields $1.0$, so the
 perfect separation came from the in-sample fit/evaluation overlap, not from
 source. Having been falsified twice, the number was corrected: we re-ran the
 entire matrix under the standard held-out protocol; the true ViM values are
-$0.406$--$0.997$ (mean $0.777$, $>0.95$ on only $2/7$ pairs), so the strict A-5
+$0.406$--$0.997$ (mean $0.777$, $>0.95$ on only $1/7$ pairs), so the strict A-5
 bar fails, and we say so. Following the pre-specified fallback, we moved the
 load-bearing weight to the three results that \emph{do} hold honestly:
 artifact-only localization (A-1/A-2, phenomenon, independent of the overturned
@@ -711,16 +779,37 @@ our protocol cannot claim to eliminate it. We report both faces. (We note that a
 earlier draft reported cleanC ViM $=1.0$; that figure was the same in-sample
 artifact corrected above, and the honest held-out value is $0.628$.)
 
+\subsection{The brain-MRI pair is a heterogeneity pair, not a healthy control}
+
+We reiterate, as a limitation, the qualification introduced with the
+pure-covariate construction. The ``normal'' side of the
+BraTS-versus-Brain-Tumor-MRI pair is not a set of scans from healthy volunteers:
+it is $828$ tumor-free FLAIR slices selected from glioma patients, paired against
+the normal-labeled images of the aggregated Brain-Tumor-MRI collection. The two
+sides therefore differ in acquisition institution and may additionally differ in
+residual, subclinical pathology signal, so this pair is best understood as a
+\emph{cross-institution heterogeneity} pair rather than a strictly zero-semantic
+one. We do not delete it, because the content-blind artifact-only battery
+(A-1/A-2) reads essentially no pathological semantics and its separation of this
+pair is driven by acquisition source; but its very high source-separability
+should be read as an upper estimate that could mix acquisition fingerprint with
+any residual pathology cue, and it is not evidence of pure zero-semantic source
+leakage. The strictly zero-semantic claim is carried by the chest-X-ray and
+dermoscopy normal-versus-normal pairs, whose two sides are genuine screening /
+benign images.
+
 \subsection{Matching balance, disclosed in full}
 
 The held-out source-leakage AUROCs are measured on the held-out \emph{raw}
 ID/OOD split and are structurally independent of the quality of any matched
 subset; only the \emph{decontaminated} (cleanC) and ranking-flip (A-4) readings
 depend on matching. This matters for the pairs with imperfect balance. We report
-SMDs in full: across the matched pairs $\text{SMD}_\text{max}$ exceeds the
-conventional $0.1$ target even where $\text{SMD}_\text{mean}$ stays below $0.1$,
-and one dermoscopy pair (HAM vs fitzpatrick17k, $n=39$) has
-$\text{SMD}_\text{max} = 0.675$, a genuinely poor balance. We disclose this
+SMDs in full: across the held-out matched pairs $\text{SMD}_\text{max}$ exceeds
+the conventional $0.1$ target for every pair, and $\text{SMD}_\text{mean}$ itself
+exceeds $0.1$ for the two least-balanced evaluable pairs (NIH-vs-RSNA at $0.101$
+and ISIC2020-vs-PAD-UFES at $0.125$); the held-out dermoscopy pair
+HAM-vs-fitzpatrick17k ($n=26$) has $\text{SMD}_\text{max} = 1.16$, a genuinely
+poor balance. We disclose this
 openly. It constrains the cleanC and A-4 readings for that pair, but it does
 \emph{not} touch the held-out raw source-leakage values, which never use that
 pair's matched subset.
@@ -801,6 +890,106 @@ cross-source normal-versus-normal sanity baseline, an artifact-only contaminatio
 upper bound, and explicit fit/evaluation split reporting for projection-based
 detectors. We hope these turn a cautionary tale into a reusable safeguard for the
 community.
+
+%==============================================================================
+\section{Data and Code Availability}
+%==============================================================================
+
+ArtiOODBench is a benchmark constructed entirely from nine existing public
+medical-imaging datasets; we contribute the cross-source pairing, the OOD split
+construction, the artifact-only feature battery, and the evaluation protocol, not
+any new imagery. Table~\ref{tab:datasets} lists each source dataset with its
+canonical citation, license, access modality, and whether this work
+redistributes the original images. \textbf{We do not redistribute the original
+image files of any dataset.} Instead, we release the split index files (image
+identifiers and pair assignments), the artifact-only feature-extraction code, and
+the OOD evaluation code, so that any user who has obtained the source datasets
+through their official channels can reproduce every number in this paper. The
+code repository and the frozen split files are available
+at~\todo{anonymized code/data repository URL to be released after review}.
+
+\begin{table}[t]
+  \centering
+  \caption{Source datasets, licenses, and access. ``Redistributed here'' refers
+  to whether this work redistributes the original image files; it is ``No'' for
+  every dataset (we release only split indices and code). Access modality:
+  \emph{public} = openly downloadable; \emph{credentialed} = requires a signed
+  data use agreement; \emph{gated} = held back by the data provider.}
+  \label{tab:datasets}
+  \footnotesize
+  \begin{tabular}{p{0.20\linewidth}p{0.16\linewidth}p{0.24\linewidth}p{0.14\linewidth}c}
+    \toprule
+    Dataset & Canonical citation & License & Access & Redist.\ here \\
+    \midrule
+    NIH ChestX-ray14 & \citep{wang2017chestxray8} & No usage restriction (NIH terms; attribution) & Public & No \\
+    RSNA Pneumonia Detection & \citep{rsna2018pneumonia,shih2019augmenting} & Kaggle competition terms (academic \& commercial; attribution) & Public (Kaggle) & No \\
+    VinDr-CXR & \citep{nguyen2022vindrcxr} & PhysioNet Credentialed Health Data License 1.5.0 & Credentialed (DUA) & No \\
+    BraTS 2021 & \citep{baid2021brats,menze2015brats,bakas2017advancing,baid2021bratstcia} & CC BY 4.0 (via TCIA) & Public (train); test set sequestered & No \\
+    Brain-Tumor-MRI (Nickparvar) & \citep{nickparvar2021braintumormri,cheng2015braintumor} & CC~BY~4.0 & Public (Kaggle) & No \\
+    HAM10000 & \citep{tschandl2018ham10000} & CC BY-NC 4.0 & Public & No \\
+    ISIC 2020 & \citep{rotemberg2021isic2020} & CC BY-NC 4.0 & Public & No \\
+    PAD-UFES-20 & \citep{pacheco2020padufes20} & CC BY 4.0 & Public & No \\
+    Fitzpatrick 17k & \citep{groh2021fitzpatrick17k} & CC BY-NC-SA 3.0 & Public & No \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Licenses and Datasheet}
+%==============================================================================
+
+\paragraph{License compatibility and permitted use.} Three of the nine source
+datasets carry a non-commercial (NC) license---HAM10000 (CC BY-NC 4.0),
+ISIC~2020 (CC BY-NC 4.0), and Fitzpatrick~17k (CC BY-NC-SA 3.0)---and the last of
+these additionally carries a share-alike (SA) obligation. Because a benchmark
+that aggregates these datasets is bound by the most restrictive terms among its
+constituents, \textbf{ArtiOODBench is released for non-commercial research use
+only}, consistent with the strictest constituent license. The share-alike clause
+of Fitzpatrick~17k (CC BY-NC-SA 3.0) further requires that any derivative of that
+dataset be distributed under the same license; we comply by keeping the
+Fitzpatrick-derived split indices under a compatible NC-SA term and by attaching
+per-dataset attribution to each split file. Users who require a
+commercial-use-compatible subset can reconstruct one by excluding the three NC
+datasets, at the cost of the dermoscopy modality; we document this option in the
+datasheet.
+
+\paragraph{Credentialed and gated data are never redistributed.} Two of the nine
+datasets are not openly downloadable in full. VinDr-CXR is distributed under the
+PhysioNet Credentialed Health Data License 1.5.0 and requires each user to
+complete credentialing and sign a data use agreement (DUA) before download; the
+BraTS~2021 test set is sequestered by the challenge organizers and is not
+publicly available. For both, we \textbf{do not redistribute any original file}.
+We provide only the split index (image identifiers) and a download script; each
+user must obtain the underlying data through the official channel---signing the
+PhysioNet DUA for VinDr-CXR, and using the publicly released BraTS~2021 training
+collection (never the sequestered test set) for the MRI pair.
+
+\paragraph{Provenance of the derived Brain-Tumor-MRI dataset.} The
+Brain-Tumor-MRI dataset of Nickparvar~\citep{nickparvar2021braintumormri} is an
+\emph{aggregated, derived} collection ($7023$ images across four classes) that
+merges the figshare brain-tumor dataset of Cheng~\citep{cheng2015braintumor}
+(CC~BY~4.0) with the SARTAJ and Br35H collections. We record this provenance
+explicitly to preempt any ``source unknown'' concern, and we cite the underlying
+figshare dataset alongside the aggregate. The license of the aggregate as
+redistributed on Kaggle is CC~BY~4.0 (confirmed via the Kaggle dataset metadata),
+consistent with the underlying figshare collection.
+
+\paragraph{Datasheet and reproducibility.} We accompany ArtiOODBench with a
+datasheet, following the ``Datasheets for Datasets'' template of
+Gebru~et~al.~\citep{gebru2021datasheets}, that documents motivation, composition
+(how the nine source datasets are combined and how the cross-source OOD splits
+are constructed), collection provenance, preprocessing (including the mandatory
+$224\times224$ resize), recommended uses, and the license constraints summarized
+above. For reproducibility we release: (i) the frozen split index files, each
+identified by a content hash so that any silent change is detectable; (ii) the
+artifact-only feature-extraction and OOD evaluation code, with fixed random seeds
+($\{42, 1, 2, 3, 4\}$); and (iii) the exact detector hyperparameters of
+Section~\ref{sec:results}. The code is released under a permissive software
+license (MIT/Apache-2.0), kept separate from the data licenses above: the
+software license governs our code, whereas the use of the underlying images
+remains governed by each dataset's own license and, for VinDr-CXR, its DUA. All
+repository links are provided at~\todo{anonymized code/data repository URL to be
+released after review}.
 
 %==============================================================================
 \bibliographystyle{plainnat}

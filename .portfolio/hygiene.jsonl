@@ -1,0 +1,7 @@
+{"ts":"2026-07-01T18:40:00+08:00","action":"archive","zone":"root","n":27,"to":"_archive/2026-07-01/root/","note":"无指针一次性HPC/烟测脚本"}
+{"ts":"2026-07-01T18:40:00+08:00","action":"archive","zone":"tools","n":174,"to":"_archive/2026-07-01/tools-scratch/","note":"无指针_scratch脚本;12个有指针KEEP"}
+{"ts":"2026-07-01T18:40:00+08:00","action":"archive","zone":"meeting-root","n":4,"to":"_archive/2026-07-01/meeting-root/","note":"NCA工作汇总md+pdf+mednca_zip+BMVC_walkthrough;NCA资产清单暂留(交叉引用)"}
+{"ts":"2026-07-01T18:40:00+08:00","action":"archive","zone":"root-junk","n":11,"to":"_archive/2026-07-01/root-junk/","note":"captcha/空文件/探针json/乱码名/stale锁;删候选待拍板"}
+{"ts":"2026-07-01T19:05:00+08:00","action":"archive","zone":"tools","n":15,"to":"_archive/2026-07-01/tools-scratch/","note":"无指针_hf_/_medad_孤儿;3个live(有指针)保留原位"}
+{"ts":"2026-07-01T19:05:00+08:00","action":"archive+relink","zone":"meeting-root","n":1,"to":"_archive/2026-07-01/meeting-root/","note":"NCA_资产清单;指针世界模型_资产清单.md:111已改指向新址"}
+{"ts":"2026-07-01T19:05:00+08:00","action":"archive","zone":"personal","n":2,"to":"_archive/2026-07-01/personal/","note":"course_resources.json+课程资料清单.md;无外部指针"}

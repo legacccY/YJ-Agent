@@ -32,6 +32,7 @@
 - **A′ 定义**：控住「数据(NIH 112k) + backbone(ViT-B/16) + 计算预算（按 GPU·h 或 images-seen 预登记，**不按 epoch**——batch 差异会偷换 images-seen）」；放开「batch/lr/temp/mask_ratio/稳定性开关 各按官方冻结」（DINO temp warmup+fp16 off、MoCo stop-grad-conv1+lr 1e-4、MAE mask 0.90）。预登记一句「batch 因方法而异是构成要素非疏漏」+ 每范式 images-seen 表。
 - **否决纯 A**（强制同 batch/epoch = 方法构成要素混杂，C1 被判调参不公，skeptic 🔴）。**否决 B 作 headline**（非受控、差异化反噬）。**C 仅作 collapse 压不住后备**。
 - **投全预算前必做**：DINO/MoCo 各跑 1 个小规模 collapse 烟测（监 KL/teacher entropy），确认能起再投。
+- **🆕 reduced-batch 预登记（2026-06-30 路A 拍板）**：4×4090 装不下 DINO/MoCo 官方 eff_bs(512/4096) → DINO/MoCo 用 reduced eff_bs（4090 可容 per-GPU batch）+ lr 线性缩放(lr×eff/official_eff_bs)，images-seen 不变；MAE/CheXWorld accum 凑满官方 eff_bs。诚实标 limitation，对齐 A′「eff_bs 是方法构成要素放开」。非复现偏离（学界有限算力横评标准做法 solo-learn/VISSL）。
 - PASS：5 范式在 NIH 112k 按 A′ 收敛（无 collapse），预算/seed/images-seen 记录在案。
 - FAIL 退路：某范式 collapse 压不住 → 退公开胸片权重并诚实标 mismatch；差异化改写「N/5 范式同语料受控重训 + 余者公开权重标 mismatch」，不绑死 5/5 全自训。
 

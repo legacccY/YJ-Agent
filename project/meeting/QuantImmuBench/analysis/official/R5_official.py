@@ -6,6 +6,14 @@ R5_official.py
 服务: QuantImmuBench 大纲 §3.3.3 (表8) —— Nested-LOPO 整合 vs 最强单工具 + shuffle null。
 对应大纲: paper/QuanImmu-Paper-Outline.md §3.3.3 "Nested-LOPO 无泄漏整合 (表8)"。
 
+★ 2026-07-01 Part D Phase 3 口径 (干净表 + 新评判标准, 见 04_LOG):
+  输入 = 干净表 pooled_clean_9mer.csv (含突变去噪 + 51 pooling 变体 + peplen 列)。
+  · [B5 零选择] 整合维度 SURV6 各工具用 <tool>_max (去 in-sample pooling selection);
+    最强单工具亦在全覆盖池里用 <tool>_max 挑 per-patient ρ̄ 最高者 (零 pooling 选择)。
+  · [B2] LOPO 整合分 + 最强单工具主指标各加控肽长版对照 (per_patient_partial_spearman,
+    ctrl='peplen'), 隔离「肽长搭便车」伪迹。
+  【旧 count-clean 注释已删】: 干净表不带 count_conf 列, 混杂改由 B2 偏相关在度量层控。
+
 做什么:
   双层留一病人 (nested-LOPO): 外层留一 DS2 病人当 test (完全隔离), 内层在其余病人上再
   LOPO 选超参 θ* (fixavg / ridge@dof grid), 用 θ* 训其余病人评测留出病人 = 无泄漏诚实估计。
@@ -15,8 +23,8 @@ R5_official.py
 
   ⚠️ 冻结表纯 DS2 9 患者 (无 DS1 训练池), 故内层池=其余 8 患者 (旧骨架含 DS1 增强, 此处无)。
 
-输入 (只读冻结表):
-  data/frozen/pooled_peptide_level_30tools.csv
+输入 (只读干净表):
+  data/frozen/pooled_clean_9mer.csv
 输出 (analysis/official/):
   R5_nested_lopo_official.csv          —— 每外层 DS2 fold 一行 + SUMMARY 行
   R5_nested_lopo_official.summary.json —— 机读汇总 (LOPO vs oracle + 最强单工具 + θ 空间)
@@ -25,7 +33,12 @@ R5_official.py
   · nested-LOPO 双层 + θ 空间 + oracle + 一致性 ← quantimmune/nested_lopo_ensemble.py 整套
   · spearman_np / fisherz / impute_fold / find_ridge_alpha → _official_common
 
-★ 整合维度成员 = selection (同 R3 SURV6), TODO 待袁/朱确认。
+★ selection 已裁决 (2026-07-01, 对齐 outline §2.2 9mer 主分析):
+  · DS2 口径 = 130 肽 / 9 患者 (官方数据红线, Entry31 已拍)。
+  · 整合维度 SURV6 成员 = 保持现状 (outline 抽象「6维」既有具体化, 朱同学传承, 同 R3)。
+  · 全覆盖池门槛 FULL_COV = 保持 (outline §3.1 领先单工具皆全覆盖)。
+  · 输入默认 = 9mer 主分析表 (FROZEN_POOLED 已指向 _9mer.csv); --input 可切全窗补充。
+  · 仅 DTU consent 保留为外部 pending (法律授权, 非写作阻塞)。
 
 跑法 (主线跑, 我不跑):
   python analysis/official/R5_official.py
@@ -43,12 +56,13 @@ from sklearn.linear_model import Ridge
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _official_common import (                              # noqa: E402
-    load_frozen, present_patients, per_patient_spearman, best_pooling_for_tool,
-    pool_col, spearman_np, fisherz_weighted_agg, impute_fold, find_ridge_alpha,
+    load_frozen, present_patients, per_patient_spearman,
+    per_patient_partial_spearman, pool_col, spearman_np, fisherz_weighted_agg,
+    impute_fold, find_ridge_alpha,
     TOOLS_30, MIN_PEP, LABEL_COL, FROZEN_POOLED, ensure_out_dir,
 )
 
-# ── 整合维度 (★ TODO 待袁/朱确认, 同 R3 SURV6; 各工具取 R2 最优 pooling 列) ──────
+# ── 整合维度 (★ TODO 待袁/朱确认成员, 同 R3 SURV6; [B5] 各工具用零选择 <tool>_max) ──
 SURV6 = ["PredIG", "IMPROVE", "pTuneos", "PRIME", "ImmuneApp", "deepHLApan"]
 DOF_GRID = [2.0, 2.5, 3.0]   # eff_DOF 目标网格 (旧 nested_lopo_ensemble.py 同口径)
 
@@ -127,6 +141,7 @@ def main():
                     help="打乱 Elispot (R0 防泄漏对照; 期望 LOPO≈oracle≈0)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--min_pep", type=int, default=MIN_PEP)
+    ap.add_argument("--ctrl", default="peplen", help="控制变量列 (B2 偏相关, 默认 peplen)")
     args = ap.parse_args()
 
     df = load_frozen(args.input)
@@ -137,16 +152,16 @@ def main():
         df = df.copy()
         df[LABEL_COL] = rng.permutation(df[LABEL_COL].values)
 
-    # 整合维度 = SURV6 各 R2 最优 pooling 列
+    # 整合维度 = SURV6 各工具零选择 <tool>_max (B5)
     feature_cols, used = [], []
     for t in SURV6:
-        bp, _r, _a = best_pooling_for_tool(df, t, patients=pats, min_pep=args.min_pep)
-        if bp is None:
-            print(f"[warn] {t}: 无有效 pooling, 剔除")
+        col = pool_col(t, "max")
+        if col not in df.columns or df[col].notna().sum() == 0:
+            print(f"[warn] {t}: 列 {col} 缺失或全空, 剔除")
             continue
-        feature_cols.append(pool_col(t, bp))
-        used.append(f"{t}_{bp}")
-    print(f"[info] DS2 患者({len(pats)})={pats}; 整合维度={used}")
+        feature_cols.append(col)
+        used.append(col)
+    print(f"[info] DS2 患者({len(pats)})={pats}; 整合维度(零选择 max)={used}")
 
     thetas = build_theta_space()
     theta_names = [t["name"] for t in thetas]
@@ -165,6 +180,7 @@ def main():
 
     # ── NESTED OUTER: 逐个留一 DS2 病人, 内层选 θ* ──────────────────────────────
     rows = []
+    lopo_pred = pd.Series(np.nan, index=df.index, dtype=float)  # [B2] 收集外层 test 预测供控肽长
     for p in pats:
         inner_pool = [q for q in pats if q != p]
         inner_agg = {}
@@ -185,6 +201,8 @@ def main():
             pred = fit_predict(train, test, theta_star, feature_cols, LABEL_COL)
             lopo_rho = (spearman_np(pred, test[LABEL_COL].values.astype(float))
                         if pred is not None else np.nan)
+            if pred is not None:
+                lopo_pred.loc[test.index] = np.asarray(pred, dtype=float)
         oracle_rho = oracle_pp.get(p, (np.nan, n))[0]
         rows.append(dict(patient_id=p, n_pep=n, theta_selected=theta_star_name,
                          lopo_test_rho=round(lopo_rho, 6) if not np.isnan(lopo_rho) else np.nan,
@@ -208,19 +226,31 @@ def main():
                                 - paired["oracle_rho"].values)))
            if len(paired) > 0 else np.nan)
 
-    # ── 最强单工具 (满数据 per-patient Fisher-z 最高单工具) ──────────────────────
+    # ── [B2] LOPO 整合分控肽长版对照 (对累积外层 test 预测算逐病人偏 Spearman(|peplen)) ──
+    lopo_len_bar, lopo_len_lo, lopo_len_hi, _lnu, _ = per_patient_partial_spearman(
+        df, lopo_pred.values, ctrl=args.ctrl, patients=pats, min_pep=args.min_pep)
+
+    # ── 最强单工具 [B5 零选择 <tool>_max, 满数据 per-patient Fisher-z 最高单工具] ─────
     # 防稀疏虚高: 限全覆盖(130肽)工具池。Seq2Neo/netMHCstabpan(43肽)/NeoaPred(14肽) 等
-    # 覆盖不全工具 per-patient 仅 2-3 肽算 spearman → 虚高假象(Seq2Neo_sum ρ̄=0.857 vs R1 max=-0.058)
+    # 覆盖不全工具 per-patient 仅 2-3 肽算 spearman → 虚高假象(Seq2Neo ρ̄ 虚高 vs R1 max=-0.058)
     # ★ TODO: 全覆盖池=数据质量默认门槛, 待袁老师/朱同学确认 outline 表8 最强单工具是否纳入稀疏覆盖工具
     FULL_COV = [t for t in TOOLS_30
                 if f"{t}_max" in df.columns and int(df[f"{t}_max"].notna().sum()) == len(df)]
-    best_tool, best_tool_rho, best_tool_pool = None, -np.inf, None
+    best_tool, best_tool_rho = None, -np.inf
     for t in FULL_COV:
-        bp, rho, _a = best_pooling_for_tool(df, t, patients=pats, min_pep=args.min_pep)
-        if bp is not None and not np.isnan(rho) and rho > best_tool_rho:
-            best_tool, best_tool_rho, best_tool_pool = t, rho, bp
-    print(f"[single] 最强单工具={best_tool}_{best_tool_pool} ρ̄={best_tool_rho:+.4f} "
-          f"(限全覆盖{len(FULL_COV)}工具池防虚高)")
+        col = pool_col(t, "max")                          # 零选择 max, 不 in-sample 挑 pooling
+        rho, *_ = per_patient_spearman(df, col, patients=pats, min_pep=args.min_pep)
+        if not np.isnan(rho) and rho > best_tool_rho:
+            best_tool, best_tool_rho = t, rho
+    best_tool_pool = "max"
+    # 最强单工具控肽长版对照
+    best_tool_rho_len = np.nan
+    if best_tool is not None:
+        best_tool_rho_len, *_ = per_patient_partial_spearman(
+            df, pool_col(best_tool, "max"), ctrl=args.ctrl, patients=pats, min_pep=args.min_pep)
+    print(f"[single] 最强单工具={best_tool}_max ρ̄={best_tool_rho:+.4f} "
+          f"(控肽长 ρ̄={best_tool_rho_len:+.4f}; 限全覆盖{len(FULL_COV)}工具池防虚高)")
+    print(f"[integration] LOPO 控肽长版 ρ̄={lopo_len_bar:+.4f}")
 
     summary_row = dict(patient_id="SUMMARY", n_pep=int(out_df["n_pep"].sum()),
                        theta_selected=f"oracle={theta_oracle}",
@@ -257,6 +287,8 @@ def main():
         "oracle_agg_by_theta": {k: _f(v) for k, v in oracle_agg.items()},
         "lopo_fisherz_rho": _f(lopo_bar), "lopo_ci_lo": _f(lopo_lo),
         "lopo_ci_hi": _f(lopo_hi), "lopo_n_used": lopo_n,
+        "lopo_fisherz_rho_lenctrl": _f(lopo_len_bar),   # [B2] 控肽长版整合分
+        "lenctrl_var": args.ctrl,
         "oracle_fisherz_rho": _f(orc_bar), "oracle_ci_lo": _f(orc_lo),
         "oracle_ci_hi": _f(orc_hi), "oracle_n_used": orc_n,
         "consistency_delta_lopo_minus_oracle": _f(diff),
@@ -264,6 +296,7 @@ def main():
         "consistency_mean_abs_dev": _f(mad),
         "strongest_single_tool": f"{best_tool}_{best_tool_pool}" if best_tool else None,
         "strongest_single_rho": _f(best_tool_rho if best_tool else np.nan),
+        "strongest_single_rho_lenctrl": _f(best_tool_rho_len if best_tool else np.nan),
         "integration_minus_single": _f(lopo_bar - best_tool_rho)
         if (best_tool and not np.isnan(lopo_bar)) else None,
         "theta_selected_per_fold": {str(r["patient_id"]): r["theta_selected"] for r in rows},

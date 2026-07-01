@@ -17,7 +17,7 @@
 > 4. **不改任何已 PASS 数字 + 不动 A-1~A-4/A-6 阈值 + 不动 PR-F1/F2/F3/匹配半径 7 规格 + 不动 K1-K4**。
 >
 > **v6 held-out 校正修订记录（2026-06-19，用户拍板「held-out 重算 + 把 in-sample 灌水升为新 benchmark-critique 主贡献」；详 04_LOG Entry 10/11；verifier 零 drift）**：v5 报的 A-5 ViM=1.0 满分**被证为 in-sample 评估伪迹**（l3 用 `feats_test=concat(feats_id,feats_ood)`、方法 fit 集含 test 的 ID 半 → 投影类残差打分对 in-sample ID≈0、完美分离任何 held-out，**与 source 无关**）。held-out 协议重算真值后 **A-5 v5 strict 门据实 FAIL**。**不删任何 v2/v3/v4/v5 块、A-1~A-6 判据原文、PR-F1/F2/F3、PR-匹配半径、PR-G1~G4、K1-K4**——本块为追加修订记录，三处实质变更：
-> 1. **A-5（source-leakage）据实 strict FAIL**：held-out ViM 仅 2/7 >0.95（需 ≥6/7）→ 触预登记 **FAIL 三档退路 #1**。**不改 A-5 阈值文字**，追加「held-out 实跑 FAIL + in-sample 伪迹剖析」修订记录（见 A-5 v6 修订记录）。
+> 1. **A-5（source-leakage）据实 strict FAIL**：held-out ViM 仅 1/7 >0.95（需 ≥6/7）→ 触预登记 **FAIL 三档退路 #1**。〔v6.1 校正：原 2/7，HAM/fitz 0.938<0.95 不达门，回落 1/7，见 A-5 v6 修订记录〕**不改 A-5 阈值文字**，追加「held-out 实跑 FAIL + in-sample 伪迹剖析」修订记录（见 A-5 v6 修订记录）。
 > 2. **新增承重判据 A-7（in-sample 评估灌水 finding，机制贡献）**：投影类 OOD 检测器（ViM/Residual）in-sample 评估系统性虚高，held-out 校正暴露真信号（见承重判据表 + A-7 定义）。
 > 3. **承重迁移**：reframe 后承重 = **A-1/A-2（PASS）+ A-6（处方）+ A-7（in-sample 灌水 finding/机制贡献）**。A-5 降为「held-out 真值描述性证据 + strict FAIL 留痕」，source 信号仍真实可检但中等、由 source 距离驱动、含诚实负例（NIH/RSNA held-out ViM 0.406≈chance）。
 > 4. **不改任何 v2~v5 已冻结阈值 / 已 PASS 的 A-1/A-2 数字 / PR 规格 / K1-K4**。held-out 是评估协议校正（恢复无偏估计），不是改阈值凑结果——校正方向不偏向 PASS，恰恰把 v5 的满分 PASS 据实拉回 FAIL。
@@ -36,7 +36,7 @@
 | A-2 | 现象普适性：≥3 模态（CXR / 脑 MRI / dermoscopy）均见污染 | 每模态 ≥1 对 all-43dim AUROC>0.75 | L1 | **承重 · PASS（不动数字）** |
 | A-3 | 去污染协议有效性：去污染后 artifact-only AUROC 显著下降 | artifact-only 掉到 <0.65 **且** 降幅 Δ>0.15 | L2 | 支撑 · L2 有效性（手工 artifact 部分） |
 | A-4（原命门 → **降级**） | 去污染后主流 OOD 方法排名改变 | **方案 C（artifact-matched 配对子集）为唯一裁决**：bootstrap Spearman(原,C) **CI 上界<0.7**（或 top1 掉出 top3）**AND** 口径2 翻转机制可解释（掉幅顺序符合 MDS>KNN/ViM>MSP 敏感度假设）。方案 A/B 仅附录 robustness | L3 | **negative result / limitation（in-sample 与 held-out 协议下均实跑 FAIL，见下修订记录；连同低功效剖析当 contribution）** |
-| A-5（v5 承重 → **v6 据实 strict FAIL · 降描述性证据**） | source-leakage：ViM AUROC 在 cross-source normal-vs-normal 对（纯 covariate、零 semantic）上接近完美分离 | **ViM AUROC 在 ≥(N-1)/N 个 cross-source normal-vs-normal 对上 >0.95**（v2/v5 阈值文字不改） | source-leakage | **held-out 重算 strict FAIL（仅 2/7 >0.95，mean 0.777）→ 触 FAIL 三档退路 #1。降为 held-out 真值描述性证据：source 信号真实（held-out 0.41–0.997 全 >> chance 中位）但中等、source 距离驱动、含诚实负例。见 A-5 v6 修订记录** |
+| A-5（v5 承重 → **v6 据实 strict FAIL · 降描述性证据**） | source-leakage：ViM AUROC 在 cross-source normal-vs-normal 对（纯 covariate、零 semantic）上接近完美分离 | **ViM AUROC 在 ≥(N-1)/N 个 cross-source normal-vs-normal 对上 >0.95**（v2/v5 阈值文字不改） | source-leakage | **held-out 重算 strict FAIL（仅 1/7 >0.95，mean 0.777；v6.1 校正原 2/7）→ 触 FAIL 三档退路 #1。降为 held-out 真值描述性证据：source 信号真实（held-out 0.41–0.997 全 >> chance 中位）但中等、source 距离驱动、含诚实负例。见 A-5 v6 修订记录** |
 | **A-6（承重，维持）** | 评测协议处方（L3' actionable so-what）：给出可操作评测规范 | ①cross-source normal-vs-normal 作 sanity baseline（方法在它上高 AUROC → benchmark 被源域污染、结果作废）②报 artifact-only AUROC 作污染上界 | L3'（补 L3 退场空缺） | **承重（held-out 校正后补 ③，skeptic 收窄：投影类检测器报告须显式声明 fit/eval 切分——其 in-sample 误用在 N_id<D 下确定性伪完美分离；不写「必须 held-out」常识，见 A-7 收窄）** |
 | **A-7（新承重 · v6 in-sample 评估灌水 finding / 机制贡献 · skeptic 致命-1 收窄）** | 量化一个**已知的** estimation/in-sample leakage 误用，在 N_id<D underdetermined 投影子空间 + 跨源 medical benchmark 下被放大到 Δ=+0.223 且精确伪装成完美 source-leakage 结论（ViM=1.0，骗过投稿前自审） | **Δ(in-sample − held-out) AUROC 在投影类（ViM/Residual）上 >0.2，且在非投影类（logit 类等其余 11 法）上 ≈0（\|Δ\|<0.012）**。已确证：ViM/Residual 各 +0.223（1.0→0.777），其余 11 法 \|Δ\|<0.012 | 机制贡献（已知 leakage 的 N_id<D 放大 + masquerade，cautionary） | **承重（确证 PASS；根因 = null-space 残差 in-sample ID≈0，N_id<D 致投影子空间不满秩。**不 claim 发现 held-out 协议**——held-out 是 ViM 原文/OpenOOD 既有标准；贡献 = 量化已知 leakage 在 N_id<D 投影子空间下放大到确定性 perfect separation，区别于 taxonomy arXiv:2604.04199 已知 N>>D 下 ΔAUC<0.005）** |
 
@@ -181,7 +181,7 @@ L3 重排用 **cross-source 跨机构对**（ID=本机构如 NIH，OOD=跨机构
 
   held-out ViM mean = **0.777**。
 
-- **判定：A-5 v5 strict 门据实 FAIL**。held-out ViM 仅 **2/7 >0.95**（BraTS 0.997 + HAM/fitz 0.938），需 ≥(N-1)/N = 6/7 → FAIL。**触预登记 FAIL 三档退路 #1**：承重退回 **A-1/A-2（已独立 PASS）+ A-6 处方 + 新增 A-7（in-sample 灌水 finding）**，仍是合格的 NeurIPS D&B 贡献。
+- **判定：A-5 v5 strict 门据实 FAIL**。held-out ViM 仅 **1/7 >0.95**（仅 BraTS 0.997；次高 HAM/fitz=0.938 < 0.95 不达门），需 ≥(N-1)/N = 6/7 → FAIL。**〔v6.1 校正 2026-07-01：原误记「2/7（BraTS+HAM/fitz）」，HAM/fitz held-out ViM=0.9381<0.95 实未清门 → 据实回落 1/7；结论 FAIL 不变（1/7 与 2/7 均 <6/7），方向上原计数略偏向 PASS，已纠。〕**触预登记 FAIL 三档退路 #1**：承重退回 **A-1/A-2（已独立 PASS）+ A-6 处方 + 新增 A-7（in-sample 灌水 finding）**，仍是合格的 NeurIPS D&B 贡献。
 - **source 信号仍真实（不抹杀，写诚实量级）**：held-out ViM 7 对全 >> C2 同源 held-out ≈0.5 的 chance 水平（最低 NIH/RSNA 0.406 即诚实负例，下文），**source 距离单因子驱动**——artifact-only 可分性 vs held-out ViM 的 Spearman ρ=1.0 / Pearson r=0.9995（p=0.0005，n=4 有 artifact 参考对）。NIH/RSNA 两美国源 artifact=0.64 → held-out ViM=0.406≈chance = **同模态内诚实负例**（证非 CXR 模态 ViM 天然差，是 source 距离驱动；非「普遍 source leakage」）。
 - **校正方向不偏向 PASS**：held-out 恢复无偏估计，恰把 v5 的满分 PASS（in-sample 1.0）据实拉回 strict FAIL，不是改阈值凑结果。
 
@@ -208,4 +208,4 @@ L3 重排用 **cross-source 跨机构对**（ID=本机构如 NIH，OOD=跨机构
 
 - A-5 strict FAIL **已据实触退路 #1**（见上）——承重 = **A-1/A-2（PASS）+ A-6（处方，补 ③）+ A-7（in-sample 灌水 finding / 机制贡献）**。三贡献框架：①现象 = artifact-only 白盒定位（A-1/A-2）②机制 = 投影类 in-sample 评估虚高（A-7）③处方 = held-out 协议 + sanity baseline + artifact 上界（A-6）。
 - **ViM cleanC held-out 0.628**（raw held-out 0.777，Δ−0.149）仍 > chance → 深层 source leakage 超 43 维手工特征匹配范围（PR-G4 disclose limitation 不藏）。
-- **A-4 held-out 仍全 FAIL**（held-out 配对更少、低功效更重，结构性低功效预判成立，当 contribution）。
+- **A-4 held-out = 4 FAIL + 1 PASS + 2 INSUFFICIENT**〔v6.1 校正 2026-07-01：原预判「仍全 FAIL」，held-out 实跑 5 可评估对中 HAM_NV_vs_ISIC2020 经 top1-drop（SHE 1→6 掉出 top3）触发 **A-4 PASS**，另 4 对 FAIL；BraTS(n=8)/HAM×fitz(n=26) 因 n_matched<30 判 INSUFFICIENT。结构性低功效预判基本成立（唯一 PASS 属低功效噪声、CI 极宽 [-0.239,0.945]），据实报出非藏、当 contribution。权威源 `results/a4_bootstrap_spearman_heldout.csv` + 决策表 `results/a4_rank_flip_heldout.csv`〕。

@@ -31,7 +31,8 @@ process.stdin.on('end', () => {
   const base = path.basename(rel);
   if (/(README|_LOG|PROJECT_LOG|04_LOG|registry|MEMORY|PORTFOLIO|SUBMITTED)/i.test(base)) process.exit(0);
   // 项目内规划/蓝图/规范文档（蓝图.md / reframe_*.md / 投稿规范.md / DRAFT_*.md / BUILD_MAP.md / _脱敏*.md 等）→ 项目内自洽，不要求被外部索引指向
-  if (/蓝图|reframe|规范|roadmap|DRAFT_|BUILD_MAP|_脱敏|_desens/i.test(base) && /\.md$/i.test(base)) process.exit(0);
+  // SCREAMING_SNAKE 工作文档（*_PLAN/_STATUS/_LEDGER/_SUMMARY/_PROPOSAL/_MATRIX/_TRACKER/INTERFACE）+ 给老师/沟通类中文 md → 项目内自洽状态/规划/沟通文档，README/LOG 自然覆盖，不要求外部索引指向（防迭代重写反复误报）
+  if (/蓝图|reframe|规范|roadmap|DRAFT_|BUILD_MAP|_脱敏|_desens|_PLAN|_STATUS|_LEDGER|_SUMMARY|_PROPOSAL|_MATRIX|_TRACKER|INTERFACE|给.*老师|方法学/i.test(base) && /\.md$/i.test(base)) process.exit(0);
   if (/\/(\_scratch|\_archive|archive|sentinels|node_modules)\//.test('/' + rel)) process.exit(0);
 
   // 深层代码/config 子树（src/ configs/ utils/ scripts/ code/ eval/ tools/ tests/ ideation/ 下的文件）→ 整个目录已被项目索引覆盖，单文件不逐一登

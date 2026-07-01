@@ -26,7 +26,7 @@ from baselines.third_party.creatis_postproc.image_utils import normalize_image
 #  Official model architecture (monai UNet) — must match pre-trained weights
 # --------------------------------------------------------------------------- #
 
-def _build_creatis_model(norm: str = "INSTANCE") -> "torch.nn.Module":
+def _build_creatis_model(norm: str = "batch") -> "torch.nn.Module":
     """
     Build the official creatis reconnecting model (monai UNet).
     Architecture is fixed by official repo — do NOT change.
@@ -38,8 +38,12 @@ def _build_creatis_model(norm: str = "INSTANCE") -> "torch.nn.Module":
         channels=(16, 32, 64, 128),
         strides=(2, 2, 2),
         num_res_units=2,
-        norm=norm
+        norm=norm      # official = 'batch' (config_training.json, researcher-verified)
     )
+
+    ⚠️ norm 默认 'batch'：官方 best_metric_model.pth 用 BatchNorm（含
+       running_mean/running_var buffer）。若建成 'INSTANCE'（无 running buffer），
+       load_state_dict(official_weights) 会因键失配直接崩。
     """
     try:
         import monai
@@ -188,7 +192,9 @@ def load_creatis_model(
     with open(config_path, "r") as f:
         cfg = json.load(f)
 
-    norm = cfg.get("norm", "INSTANCE")
+    # 官方 config_training.json norm 字段（researcher 核实 = 'batch'）。
+    # fallback 'batch' 与官方权重 BatchNorm 一致，避免 load_state_dict 失配。
+    norm = cfg.get("norm", "batch")
     model = _build_creatis_model(norm=norm)
     model.load_state_dict(
         torch.load(str(weights_path), map_location=device)

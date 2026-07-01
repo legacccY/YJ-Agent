@@ -1,0 +1,131 @@
+{
+  "lever": "count-clean pooling (排除 count 混杂 pooling, 隔离工具真 skill)",
+  "log_ref": "04_LOG Entry 38",
+  "input": "pooled_peptide_level_30tools_9mer.csv",
+  "patients": [
+    101,
+    102,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110
+  ],
+  "n_peptides": 130,
+  "min_pep": 3,
+  "categories": {
+    "presentation_requested": [
+      "netMHCpan_BA",
+      "netMHCpan_EL",
+      "MHCflurry",
+      "HLAthena",
+      "MixMHCpred",
+      "BigMHC_EL",
+      "TransHLA",
+      "MHCseqNet",
+      "MHCnuggets",
+      "netMHCstabpan"
+    ],
+    "presentation_present": [
+      "netMHCpan_BA",
+      "netMHCpan_EL",
+      "MHCflurry",
+      "HLAthena",
+      "TransHLA",
+      "MHCseqNet",
+      "MHCnuggets",
+      "netMHCstabpan"
+    ],
+    "presentation_missing_from_30tools": [
+      "MixMHCpred",
+      "BigMHC_EL"
+    ],
+    "n_presentation": 8,
+    "n_immunogenic": 22
+  },
+  "sec3_2_max_optimality": {
+    "overall": {
+      "n_tools": 30,
+      "dirty_max_is_best": 1,
+      "clean_max_is_best": 4,
+      "clean_max_approx_best": 7,
+      "dirty_median_gap": 0.188793,
+      "clean_median_gap": 0.105888,
+      "n_all_confounded": 0
+    },
+    "presentation": {
+      "n_tools": 8,
+      "dirty_max_is_best": 0,
+      "clean_max_is_best": 1,
+      "clean_max_approx_best": 1,
+      "dirty_median_gap": 0.225033,
+      "clean_median_gap": 0.171604,
+      "n_all_confounded": 0
+    },
+    "immunogenic": {
+      "n_tools": 22,
+      "dirty_max_is_best": 1,
+      "clean_max_is_best": 3,
+      "clean_max_approx_best": 6,
+      "dirty_median_gap": 0.155567,
+      "clean_median_gap": 0.068804,
+      "n_all_confounded": 0
+    },
+    "approx_tol": 0.02
+  },
+  "sec3_3_4_fusion_champion": {
+    "dirty": {
+      "dim_cols_used": [
+        "PredIG_sum",
+        "IMPROVE_sum",
+        "pTuneos_geomean",
+        "PRIME_sum",
+        "ImmuneApp_rankdecay",
+        "deepHLApan_sum",
+        "netMHCpan_BA_sum"
+      ],
+      "fusion_rho": {
+        "geomean": 0.487173,
+        "powmean": 0.52099,
+        "mean_rank": 0.506253,
+        "median": 0.491934
+      },
+      "champion": "powmean",
+      "champion_rho": 0.52099
+    },
+    "clean": {
+      "dim_cols_used": [
+        "PredIG_geomean",
+        "IMPROVE_max",
+        "pTuneos_geomean",
+        "PRIME_rankdecay",
+        "ImmuneApp_rankdecay",
+        "deepHLApan_top3mean",
+        "netMHCpan_BA_geomean"
+      ],
+      "fusion_rho": {
+        "geomean": 0.523037,
+        "powmean": 0.47925,
+        "mean_rank": 0.515523,
+        "median": 0.533349
+      },
+      "champion": "median",
+      "champion_rho": 0.533349
+    },
+    "methods": [
+      "geomean",
+      "powmean",
+      "mean_rank",
+      "median"
+    ],
+    "dim7_TODO": "DIM7=SURV6+netMHCpan_BA, selection 待袁/朱确认 (同 R6/R7)"
+  },
+  "n_subpep_confounding": {
+    "n_subpep_self_perpatient_rho": 0.359821,
+    "cleanbest_nsubpep_abs_rho_median": 0.212574,
+    "cleanbest_nsubpep_abs_rho_max": 0.555455,
+    "n_tools_still_confounded_gt0p5": 1
+  }
+}

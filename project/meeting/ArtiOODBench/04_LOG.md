@@ -2,6 +2,40 @@
 
 > **核心章节散文草稿指针**：`05_DRAFT_core.md`（writer 出，§Method/§Results/§Discussion-Limitations，paper-ready，venue 无关 md 待落 D&B LaTeX；数字全 verifier 核，2026-06-19）。⚠️ **Entry 10 后此草稿的 A-5「ViM=1.0 完美 source leakage」段落已失效待重写**（in-sample 伪迹，见 Entry 10）。
 
+## Entry 13 — 2026-07-01 投稿冲刺收尾大编队：a4 heldout csv 固化 + 承重数复核逮 1 真 drift（2/7→1/7）+ 稿件据实纠错
+
+大编队（coder + verifier + reviewer 并行 + 主线串行收口）清剩余投稿前 TODO，逮到 1 处系统性 drift 并据实纠正。
+
+**① a4 held-out 判决固化成可复现 csv（coder 扩脚本 + 主线跑）**：
+- `scripts/a4_rank_flip.py` 加 `--protocol {insample,heldout}`（默认 insample 行为不变，回归确认 in-sample csv 一字未动）+ 13 法支持。输入映射：heldout 分支读 `l3_*_ranking_heldout.csv`。
+- 主线跑 `python scripts/a4_rank_flip.py --protocol heldout` → 产 **`results/a4_rank_flip_heldout.csv`**（66 行 = 5 可评估对 × 13 法）。判决 = **4 FAIL + 1 PASS（HAM_NV_vs_ISIC2020，top1-drop SHE 1→6）**，2 INSUFFICIENT 对（BraTS n=8 / HAM×fitz n=26，cleanC 匹配不足）未进决策表——与权威源 `a4_bootstrap_spearman_heldout.csv` 一致。
+- 副产发现：旧 `results/a4_rank_flip.csv`（in-sample）是 v5 扩 7 对**前**的陈旧产物（仅 3 对），非本次任务范围，已 `git checkout` 恢复不动。
+
+**② 🔴 逮 1 真 drift：held-out ViM「>0.95 仅 2/7」→ 实为 1/7（verifier + reviewer 双独立命中）**：
+- 稿件 + STORY + ACCEPTANCE 均写「held-out ViM >0.95 仅 2/7（BraTS 0.997 + HAM/fitz 0.938）」。但 **HAM/fitz held-out ViM=0.9381 < 0.95 不达门**，真值 **仅 BraTS 0.997 清门 = 1/7**。方向上原计数略偏向 PASS（虽 A-5 结论 FAIL 不变，1/7 与 2/7 均 <6/7）。
+- 据实纠全处：`main.tex` L510/L678、`01_STORY.md`（3 处）、`02_ACCEPTANCE.md` L20/L39/L184，均改 1/7 并加〔v6.1 校正〕留痕注（不删原值痕）。
+
+**③ 其余据实纠错（verifier/reviewer 命中）**：
+- `main.tex` SMD 段：`n=39, SMD_max=0.675` 是 **in-sample** `a4_bootstrap_spearman.csv` 陈旧值混进 held-out 叙事 → 改 held-out 真值 **n=26, SMD_max=1.16**（更差、更诚实）；SMD_mean「stays below 0.1」据实改（held-out 有 NIH-RSNA 0.101 / ISIC-PAD 0.125 两对 mean>0.1，SMD_max 每对均>0.1）。
+- `02_ACCEPTANCE.md` L211：「A-4 held-out 仍全 FAIL」预判与实跑不符 → 同步 **4 FAIL + 1 PASS + 2 INSUFFICIENT** + 校正注（唯一 PASS 属低功效噪声、CI 极宽 [-0.239,0.945]）。
+- `main.tex` n=7 source-distance 相关补 p 值/CI（reviewer 标缺）：Spearman ρ=0.821 **p=0.023**、Pearson r=0.955 **p=0.0008 95%CI[0.72,0.99]**（主线 scipy 核算）。
+
+**④ 静态 lint（本地无 LaTeX 工具链）**：cite 键 8/8 全定义、0 undefined、0 unused；4/4 图路径存在；0 悬挂 \ref。⚠️ 7 label 定义但正文 0 处 \ref（图表未按编号交叉引用，写作弱点）。neurips_2024.sty 官方源 403 反爬 + 无干净 github 镜像 → 真编译走 Overleaf（内置 NeurIPS 2024 模板）。
+
+**⑤ verifier 三方对账**：核心承重数 registry↔STORY↔tex 全一致（0.777 / +0.223 / 0.406 / ρ0.821 / r0.955 / A-1 0.896/0.816/0.9997 / A-4 4FAIL+1PASS+2INSUFF）。唯一 drift = 上 ②，已清。
+
+**⑥ reviewer 结构性发现（超本次「清 TODO」范围，待用户拍板 —— 见下）**：🔴 D&B 硬门缺 9 数据集引用 + Data/Code Availability + license/datasheet（desk-reject 风险）；🟠 CXR 预训 encoder 跨模态抽 MRI/derm 特征未辩护、BraTS「normal-vs-normal」名不副实（全胶质瘤无健康脑）、artifact-only 分类器/split/CI 未写明；结构性 reject 轴 = reframe 后净新增正贡献偏薄（A-5/A-4 均 FAIL，承重仅 A-1/A-2 增量复现 + A-7 cautionary + A-6 处方）。roth2026 引文 Entry 12 已核实真存在（|ΔAUC|≤0.005 有原文支撑），无需重查。
+
+**⑦ Wave 3：补 D&B 准入硬门材料（用户拍板「补 D&B 准入材料」，无新实验）**：
+- **researcher 查 9 数据集权威引用 + license**：15 条 BibTeX（含底层 menze/bakas/tcia/cheng）入 `refs.bib`。license 核实值：NIH=无限制、RSNA=Kaggle条款、**VinDr=PhysioNet Credentialed DUA**、**BraTS=CC BY 4.0**(test sequestered)、**HAM10000/ISIC2020=CC BY-NC 4.0**、PAD-UFES=CC BY 4.0、**fitzpatrick17k=CC BY-NC-SA 3.0**(SA传染)、**BrainTumor(Nickparvar)=license 待人工核**(Kaggle sidebar 需登录,聚合派生集,留 \todo)。
+- **investigator 挖内部事实供据实澄清**：artifact 分类器 = LogReg(C=1.0,lbfgs)+z-score+5-fold×5seeds[42,1,2,3,4]+300/侧,auroc_std=多seed标准差非bootstrap；43维=hist32(32)+edge(2)+glcm(4)+stats(4)+fft(1)；**BraTS「normal」侧=胶质瘤患者无瘤 FLAIR slice(828张,非健康对照)**→ 该 MRI 对据实降 "zero-semantic" 改称机构间异质性；encoder=TorchXRayVision DenseNet121(CXR预训),MRI/derm 仅 features2 有意义、logit 无语义(logit类方法 PR-F3 门排除属 by design)。
+- **writer 整合**：main.tex 加 9 数据集首现处 \cite + 新增 `\section{Data and Code Availability}` + `\section{Licenses and Datasheet}`(9集表/license兼容声明3NC+SA→non-commercial only/credentialed数据不重分发/Nickparvar派生溯源/Gebru datasheet+repro) + 3 处据实澄清(C1 分类器spec/C2 BraTS异质性对+Limitation/C3 encoder跨模态)。preamble 加 `\todo` 宏。
+- **复验静态 lint**：cite 键 23/23 全定义、0 undefined/unused。承重数字零动。2 处真 \todo(Nickparvar license 待人工登录 Kaggle 核 + 匿名 repo URL 投稿阶段占位)。
+
+**产物**：`results/a4_rank_flip_heldout.csv`（新）+ `scripts/a4_rank_flip.py`（扩 protocol）+ `main.tex`（据实纠错+D&B准入材料+3澄清）+ `refs.bib`（+15键）+ `01_STORY.md`/`02_ACCEPTANCE.md`（据实纠错）。**未投稿**（投稿=拍板点）。**投稿前剩**：① ~~Nickparvar license~~ **已解**：Kaggle API `datasets metadata` 拉 `info.licenses`=「Attribution 4.0 International (CC BY 4.0)」→ 据实回填 main.tex 2 处 \todo（表格+prose）为 CC BY 4.0（权威源非臆造；附带确认聚合集 7200 图 v2、no-tumor 来自 Br35H）② repo URL 定稿回填（双盲阶段 \todo 占位，剩 2 处）③ Overleaf 上传真编译(本地无 latex,内置 neurips_2024.sty) ④（可选）结构性净新增贡献偏薄=已知 reject 轴,用户 70% D&B bet 接受。
+
+---
+
 ## Entry 12 — 2026-06-24 投稿冲刺：4 收尾 TODO 清 + held-out A-4 据实校正（逮到 1 真 PASS）+ D&B LaTeX 落地
 
 大编队推进 Entry 11 留的 4 个投稿前收尾 TODO，全部完成；过程逮到一个承重 bug 并据实校正。

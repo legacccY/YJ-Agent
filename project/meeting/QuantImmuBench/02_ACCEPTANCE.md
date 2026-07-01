@@ -1,3 +1,5 @@
+<!-- ⚠️ 2026-07-01：数据处理+评判标准已从零重建（LOG Entry 40-44）。本档旧数字/gate 状态部分过时，最新真源=RESULTS_CLEAN_SUMMARY.md + data/frozen/pooled_clean_9mer.csv。写 tex 数字以干净重建为准。 -->
+
 # 02_ACCEPTANCE — QuantImmu 投稿达标判据（BiB）
 
 > **本档目的**：把袁老师论文大纲（`paper/QuanImmu-Paper-Outline.md`，权威框架）附录 B「投稿前 to-do」+ 全文 §2.6 evaluation protocol / §7 Figures & Tables / §4.3 Limitations 的要求，逐条转成**可验收的达标判据（gate）**。每个 gate = 判据 + 当前状态 + 可验收门槛（文件/数字/表图级，拒绝「基本完成」） + 建议归属。

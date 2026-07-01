@@ -28,6 +28,7 @@ from common import save_unified_ckpt, make_meta, ckpt_out_path, strip_prefix
 class CheXWorldRecipe(Recipe):
     method = 'chexworld'
     official_eff_bs = 2048
+    official_lr = 2e-4          # 绝对 lr@eff_bs2048（官方在 2048 下定）。用 accum 凑满 official → 不触发 reduced 缩放。
     entry = 'train_jepa.py'
     loader_hint = 'jepa_vit_base'   # ⚠️ 与 MAE/DINO/MoCo 不同：CheXWorld 用 models.jepa_vit（无 cls）
 

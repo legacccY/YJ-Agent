@@ -1,0 +1,61 @@
+{
+  "section": "supplementary (Pearson contrast + per-patient distribution + ds1 gated)",
+  "input": "pooled_clean_9mer.csv",
+  "patients": [
+    101,
+    102,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110
+  ],
+  "pearson_vs_spearman": {
+    "cross_tool_rank_consistency_spearman": 0.8625,
+    "note": "跨 30 工具的 Pearson↔Spearman ρ̄ 排序一致性 (高=两指标结论一致)"
+  },
+  "perpatient_distribution": {
+    "strongest_single": "netMHCpan_BA_max",
+    "strongest_single_full_cov_pool": 15,
+    "single_rho_dist_raw": {
+      "min": -0.3571,
+      "max": 0.7929,
+      "median": 0.4663,
+      "n": 9
+    },
+    "single_rho_dist_lenctrl": {
+      "min": -0.38,
+      "max": 0.7928,
+      "median": 0.4717,
+      "n": 9
+    },
+    "surv6_geomean_dims": [
+      "PredIG_max",
+      "IMPROVE_max",
+      "pTuneos_max",
+      "PRIME_max",
+      "ImmuneApp_max",
+      "deepHLApan_max"
+    ],
+    "surv6_geomean_dims_TODO": "SURV6 成员=selection, 待袁/朱确认",
+    "fusion_rho_dist_raw": {
+      "min": -0.0979,
+      "max": 0.706,
+      "median": 0.374,
+      "n": 9
+    },
+    "fusion_rho_dist_lenctrl": {
+      "min": -0.0957,
+      "max": 0.6958,
+      "median": 0.24,
+      "n": 9
+    },
+    "outline_ref": "大纲称逐病人 Spearman 0.17–0.80 剧烈波动; 数字以本表实测为准"
+  },
+  "ds1_status": "GATED — ds1 (Elispot_Dataset1.xlsx) 未在官方 pooling 管线冻结, 需先跑 ds1 30 工具 pooling→冻结, 独立 gated, 本脚本不造数",
+  "note_30seed": "30 种子明细见 R6_robustness_official_results.csv (R6 已出)",
+  "note_paired": "配对检验完整统计见 R7_paired_significance_official.* (R7 已出)",
+  "seed": 42
+}

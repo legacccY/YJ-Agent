@@ -72,6 +72,11 @@ EVAL_SCRIPT      = f"{HPC_PROJECT_ROOT}/src/evaluate.py"
 # benchmark_cache 扁平目录（含 manifest.json + NPZ，precompute_benchmark.py 产出）
 BENCH_CACHE_DIR = f"{HPC_PROJECT_ROOT}/data/benchmark_cache"
 
+# creatis Stage-2 官方预训权重（download_creatis_weight.py 产出；不训练，全集共享）
+# evaluate.py 用 --ckpt 加载为 Stage-2 + 读其 parent 的 config_training.json 取 norm。
+# 注：download 脚本把权重落成文件名 2D_model_stare（非目录），config 在同 parent。
+CREATIS_STAGE2_CKPT = f"{HPC_PROJECT_ROOT}/models/creatis/2D_model_stare"
+
 # 数据根（per-dataset）
 DATA_ROOT_BASE = f"{HPC_PROJECT_ROOT}/data/vessel"
 DATASET_CONFIG: Dict[str, Dict] = {
@@ -124,7 +129,14 @@ LOSS_BASELINES: List[str] = [
 ALL_BASELINES: List[str] = ARCH_BASELINES + LOSS_BASELINES
 
 # 数据集（主线评测集）
-DATASETS: List[str] = ["drive", "chase"]
+# L4 dataset expansion (2026-07-01): STARE + FIVES 接入 leaderboard，默认矩阵扩为 4 集。
+#   - DATASET_CONFIG 已含 stare/fives 条目（HPC 路径 data/vessel/{STARE,FIVES}）。
+#   - epochs 沿用 _BASELINE_EPOCHS（per-baseline，非 per-dataset），不需新增。
+#   - DEP-P2: stare/fives 的 best.pth 需先训练产出（4 集 = 更大训练矩阵）。
+#   - DEP-P3: creatis_postproc 在 stare/fives 的 stage1_ckpt 未配置 → 见 CREATIS_STAGE1_CKPTS
+#            TODO；未配置时 dry-run 打 DEP-P3-MISSING（已优雅处理，不崩）。
+#   仍可用 --dataset drive 过滤只跑单集（choices 覆盖 4 集）。
+DATASETS: List[str] = ["drive", "chase", "stare", "fives"]
 
 # 种子（主线 3-seed 均值消除随机性）
 SEEDS: List[int] = [42, 1, 2]
@@ -149,6 +161,10 @@ CREATIS_STAGE1_CKPTS: Dict[tuple, str] = {
     # ("drive", 2): f"{CKPT_ROOT}/fr_unet_drive_s2/best.pth",
     # ("chase", 1): f"{CKPT_ROOT}/fr_unet_chase_s1/best.pth",
     # ("chase", 2): f"{CKPT_ROOT}/fr_unet_chase_s2/best.pth",
+    # L4 扩展 (2026-07-01): STARE / FIVES creatis stage1 ckpt = 对应集的 FR-UNet best.pth。
+    #   TODO: fr_unet 在 stare/fives 训练产出后回填（命名同 DRIVE_fr_unet_seed42 规范）：
+    # ("stare", 42): f"{HPC_PROJECT_ROOT}/outputs/p3/STARE_fr_unet_seed42/best.pth",
+    # ("fives", 42): f"{HPC_PROJECT_ROOT}/outputs/p3/FIVES_fr_unet_seed42/best.pth",
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -218,7 +234,8 @@ def make_eval_command(baseline: str, dataset: str, seed: int) -> str:
     out_dir = _output_dir(baseline, dataset, seed)
     csv_stem = _csv_stem(baseline, dataset, seed)
     ds_cfg = DATASET_CONFIG[dataset]
-    ckpt = _ckpt_path(baseline, dataset, seed)
+    ckpt = (CREATIS_STAGE2_CKPT if baseline == "creatis_postproc"
+            else _ckpt_path(baseline, dataset, seed))
 
     cmd_parts = [
         f"python {EVAL_SCRIPT}",
@@ -521,7 +538,8 @@ def build_run_matrix(
                 dep_flags: List[str] = []
 
                 # DEP-P2: ckpt 存在性标注（HPC 端，本地无法验证，仅标注）
-                ckpt = _ckpt_path(baseline, dataset, seed)
+                ckpt = (CREATIS_STAGE2_CKPT if baseline == "creatis_postproc"
+            else _ckpt_path(baseline, dataset, seed))
                 dep_flags.append(f"[DEP-P2] ckpt: {ckpt}")
 
                 # DEP-P3: creatis 需要 stage1_ckpt

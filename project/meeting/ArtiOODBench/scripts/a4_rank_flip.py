@@ -18,8 +18,11 @@ lever: L3 重排命门
   # smoke（合成 ranking）
   python a4_rank_flip.py --smoke
 
-  # 真实数据（l3_ood_rerank.py 跑完后）
+  # 真实数据（l3_ood_rerank.py 跑完后）— in-sample 默认口径
   python a4_rank_flip.py
+
+  # held-out 判决口径（读 *_heldout.csv → a4_rank_flip_heldout.csv, 13 法全支持）
+  python a4_rank_flip.py --protocol heldout
 """
 
 import argparse
@@ -40,15 +43,55 @@ if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf8"):
 # 路径常量
 # ============================================================
 OUT_DIR = Path(__file__).resolve().parent.parent / "results"
-OUT_L3_RAW = OUT_DIR / "l3_raw_ranking.csv"
-OUT_L3_CLEAN_C = OUT_DIR / "l3_cleanC_ranking.csv"
-OUT_BOOTSTRAP = OUT_DIR / "a4_bootstrap_spearman.csv"
-OUT_L3_CLEAN_A = OUT_DIR / "l3_cleanA_ranking.csv"  # 可选
-OUT_L3_CLEAN_B = OUT_DIR / "l3_cleanB_ranking.csv"  # 可选
 
-OUT_A4 = OUT_DIR / "a4_rank_flip.csv"
+# ------------------------------------------------------------
+# protocol 路径映射（--protocol insample|heldout）
+#   insample = 现有默认行为，读同名无后缀输入，写 a4_rank_flip.csv
+#   heldout  = held-out 判决口径，读 *_heldout.csv 输入，写 a4_rank_flip_heldout.csv
+# 判决逻辑完全不变，仅切换数据源（见 02_ACCEPTANCE.md A-4 held-out 口径）
+# ------------------------------------------------------------
+_PATH_TABLE = {
+    "insample": {
+        "raw": "l3_raw_ranking.csv",
+        "cleanC": "l3_cleanC_ranking.csv",
+        "bootstrap": "a4_bootstrap_spearman.csv",
+        "cleanA": "l3_cleanA_ranking.csv",   # 可选
+        "cleanB": "l3_cleanB_ranking.csv",   # 可选
+        "out": "a4_rank_flip.csv",
+    },
+    "heldout": {
+        "raw": "l3_raw_ranking_heldout.csv",
+        "cleanC": "l3_cleanC_ranking_heldout.csv",
+        "bootstrap": "a4_bootstrap_spearman_heldout.csv",
+        "cleanA": "l3_cleanA_ranking_heldout.csv",   # 可选
+        "cleanB": "l3_cleanB_ranking_heldout.csv",   # 可选
+        "out": "a4_rank_flip_heldout.csv",
+    },
+}
 
+
+def resolve_paths(protocol: str = "insample", smoke: bool = False) -> dict:
+    """按 protocol 映射输入/输出 CSV 绝对路径。smoke 时输出名加 _smoke 后缀，避免覆盖真实判决 CSV。"""
+    table = _PATH_TABLE.get(protocol, _PATH_TABLE["insample"])
+    paths = {k: OUT_DIR / v for k, v in table.items()}
+    if smoke:
+        out = paths["out"]
+        paths["out"] = out.with_name(out.stem + "_smoke" + out.suffix)
+    return paths
+
+
+# in-sample 命门覆盖的 7 法（保持现有默认输出不变）
 OOD_METHODS = ["MSP", "ODIN", "Energy", "MDS", "KNN", "ViM", "GradNorm"]
+# held-out 口径覆盖全部 13 法（held-out ranking CSV 内含方法全集）
+OOD_METHODS_HELDOUT = [
+    "MSP", "ODIN", "Energy", "MDS", "KNN", "ViM", "GradNorm",
+    "Residual", "NNGuide", "DICE", "ASH", "SHE", "fDBD",
+]
+
+
+def resolve_methods(protocol: str = "insample") -> list:
+    """protocol=heldout → 13 法全集；否则 in-sample 7 法（默认行为不变）。"""
+    return OOD_METHODS_HELDOUT if protocol == "heldout" else OOD_METHODS
 
 # 预登记机制假设（A-4 口径2，冻结）：
 # 去污染后 AUROC 掉幅：MDS 最大 > KNN/ViM 居中 > MSP 最小
@@ -119,16 +162,18 @@ def load_bootstrap_csv(path: Path) -> dict:
 # 机制可解释性检验
 # ============================================================
 def check_mechanism(
-    raw_aurocs: dict, clean_aurocs: dict, pair_name: str
+    raw_aurocs: dict, clean_aurocs: dict, pair_name: str,
+    methods: list = OOD_METHODS,
 ) -> dict:
     """
     口径2：检验实测 AUROC 掉幅顺序是否符合预登记假设。
     返回 {method -> delta, rank_in_drop, hypothesis_rank, match}。
+    methods: 参与掉幅统计的方法全集（insample 7 法 / heldout 13 法）。
     """
     hypothesis = MECHANISM_HYPOTHESIS["sensitivity_order"]
     # 计算掉幅（raw - clean，越大=受 artifact 影响越大）
     drops = {}
-    for method in OOD_METHODS:
+    for method in methods:
         raw = raw_aurocs.get(method, {}).get("auroc", float("nan"))
         clean = clean_aurocs.get(method, {}).get("auroc", float("nan"))
         if not (np.isnan(raw) or np.isnan(clean)):
@@ -174,26 +219,27 @@ def check_mechanism(
 # ============================================================
 # 主逻辑
 # ============================================================
-def main(smoke: bool = False):
+def main(smoke: bool = False, protocol: str = "insample"):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    paths = resolve_paths(protocol, smoke)
+    methods = resolve_methods(protocol)
 
     if smoke:
         # 合成 ranking（模拟 l3 输出已就位）
-        print("[A4] SMOKE: 合成 ranking 数据")
+        print(f"[A4] SMOKE: 合成 ranking 数据 (protocol={protocol})")
         rng = np.random.RandomState(42)
         raw_aurocs_mock = {
             "NIH_vs_VinDr": {
                 m: {"rank": i + 1,
                     "auroc": round(float(0.75 - 0.05 * i + rng.randn() * 0.02), 4)}
-                for i, m in enumerate(OOD_METHODS)
+                for i, m in enumerate(methods)
             }
         }
         clean_c_aurocs_mock = {
             "NIH_vs_VinDr": {
                 m: {"rank": i + 1,
                     "auroc": round(float(0.65 - 0.04 * i + rng.randn() * 0.03), 4)}
-                for i, m in enumerate(["MDS", "ViM", "KNN", "GradNorm",
-                                        "Energy", "ODIN", "MSP"])
+                for i, m in enumerate(list(reversed(methods)))
             }
         }
         boot_mock = {
@@ -209,31 +255,39 @@ def main(smoke: bool = False):
             }
         }
         _run_analysis(raw_aurocs_mock, clean_c_aurocs_mock, boot_mock,
-                      load_ranking_csv(OUT_L3_CLEAN_A), load_ranking_csv(OUT_L3_CLEAN_B))
+                      load_ranking_csv(paths["cleanA"]), load_ranking_csv(paths["cleanB"]),
+                      methods, paths["out"])
         return
 
     # 真实数据
-    raw_ranking = load_ranking_csv(OUT_L3_RAW)
-    clean_c_ranking = load_ranking_csv(OUT_L3_CLEAN_C)
-    bootstrap_data = load_bootstrap_csv(OUT_BOOTSTRAP)
-    clean_a_ranking = load_ranking_csv(OUT_L3_CLEAN_A)
-    clean_b_ranking = load_ranking_csv(OUT_L3_CLEAN_B)
+    print(f"[A4] protocol={protocol}")
+    raw_ranking = load_ranking_csv(paths["raw"])
+    clean_c_ranking = load_ranking_csv(paths["cleanC"])
+    bootstrap_data = load_bootstrap_csv(paths["bootstrap"])
+    clean_a_ranking = load_ranking_csv(paths["cleanA"])
+    clean_b_ranking = load_ranking_csv(paths["cleanB"])
 
     if not raw_ranking:
         print(
-            f"[ERROR] l3_raw_ranking.csv 未找到: {OUT_L3_RAW}\n"
+            f"[ERROR] {paths['raw'].name} 未找到: {paths['raw']}\n"
             "请先运行 l3_ood_rerank.py",
             file=sys.stderr,
         )
         sys.exit(1)
 
     _run_analysis(raw_ranking, clean_c_ranking, bootstrap_data,
-                  clean_a_ranking, clean_b_ranking)
+                  clean_a_ranking, clean_b_ranking, methods, paths["out"])
 
 
 def _run_analysis(raw_ranking, clean_c_ranking, bootstrap_data,
-                  clean_a_ranking, clean_b_ranking):
-    """对所有 pair 执行 A-4 两口径分析。"""
+                  clean_a_ranking, clean_b_ranking,
+                  methods=OOD_METHODS, out_path=None):
+    """对所有 pair 执行 A-4 两口径分析。
+    methods: 参与统计的方法集（insample 7 法 / heldout 13 法）。
+    out_path: 输出 CSV 路径；None → 回退 a4_rank_flip.csv（insample 默认）。
+    """
+    if out_path is None:
+        out_path = OUT_DIR / "a4_rank_flip.csv"
     all_rows = []
 
     for pair_name in raw_ranking:
@@ -263,7 +317,7 @@ def _run_analysis(raw_ranking, clean_c_ranking, bootstrap_data,
         # 口径2: 机制可解释性
         if clean_aurocs:
             mech_rows, mech_spearman, mech_match, actual_order = \
-                check_mechanism(raw_aurocs, clean_aurocs, pair_name)
+                check_mechanism(raw_aurocs, clean_aurocs, pair_name, methods)
 
             print(f"  [口径2] 机制假设: {MECHANISM_HYPOTHESIS['description']}")
             print(f"  [口径2] 实测掉幅顺序: {actual_order[:5]}")
@@ -326,11 +380,11 @@ def _run_analysis(raw_ranking, clean_c_ranking, bootstrap_data,
             if pair_name in ranking_dict:
                 aurocs_s = ranking_dict[pair_name]
                 raw_vals = [raw_aurocs.get(m, {}).get("auroc", float("nan"))
-                            for m in OOD_METHODS]
+                            for m in methods]
                 clean_vals = [aurocs_s.get(m, {}).get("auroc", float("nan"))
-                              for m in OOD_METHODS]
-                orig_ranks = [raw_aurocs.get(m, {}).get("rank", 99) for m in OOD_METHODS]
-                clean_ranks_s = [aurocs_s.get(m, {}).get("rank", 99) for m in OOD_METHODS]
+                              for m in methods]
+                orig_ranks = [raw_aurocs.get(m, {}).get("rank", 99) for m in methods]
+                clean_ranks_s = [aurocs_s.get(m, {}).get("rank", 99) for m in methods]
                 sp_s = spearman_numpy(np.array(orig_ranks, dtype=np.float64),
                                        np.array(clean_ranks_s, dtype=np.float64))
                 print(f"  [{scheme}] Spearman(原,{scheme})={sp_s:.4f} (附录 robustness)")
@@ -349,11 +403,11 @@ def _run_analysis(raw_ranking, clean_c_ranking, bootstrap_data,
         "ci2_mech_spearman", "ci2_mech_match_gte_0.5",
         "a4_verdict",
     ]
-    with open(OUT_A4, "w", newline="", encoding="utf-8") as f:
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         w.writeheader()
         w.writerows(all_rows)
-    print(f"\n[A4] -> {OUT_A4}")
+    print(f"\n[A4] -> {out_path}")
 
     # 最终判决摘要
     print("\n" + "=" * 60)
@@ -379,5 +433,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A-4 rank flip analysis (R8)")
     parser.add_argument("--smoke", action="store_true",
                         help="合成 ranking smoke 测试")
+    parser.add_argument("--protocol", choices=["insample", "heldout"],
+                        default="insample",
+                        help="insample=现有默认口径(a4_rank_flip.csv); "
+                             "heldout=held-out 判决口径(a4_rank_flip_heldout.csv)")
     args = parser.parse_args()
-    main(smoke=args.smoke)
+    main(smoke=args.smoke, protocol=args.protocol)

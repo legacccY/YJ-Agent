@@ -1,35 +1,37 @@
 # R2_best_per_tool.csv
-# QuantImmuBench §3.2: 每工具 max vs 最优 pooling 提升
-# gain_best_minus_max>0 = 该工具靠非 max 聚合受益 (验大纲: 亲和/结合类靠 topk)
-# gain≈0 = max 即峰 (验大纲: 免疫原类)
-Tool,pending_DTU,max_rho,best_pooling,best_rho,gain_best_minus_max
-Seq2Neo,True,-0.0577,sum,0.8573,0.9151
-netMHCstabpan,True,0.1565,rankdecay,0.7466,0.5901
-MUNIS,False,-0.0287,softmax,0.3634,0.3921
-DeepNetBim,False,-0.1903,sum,0.199,0.3894
-ImmuGenX,False,0.0117,geomean,0.387,0.3752
-MHCnuggets,False,0.0842,mean,0.452,0.3678
-NeoaPred,False,0.11,mean,0.4732,0.3631
-NeoTImmuML,False,-0.0389,geomean,0.2261,0.265
-NetTepi,True,0.0422,mean,0.2589,0.2166
-BigMHC_IM,False,0.0344,geomean,0.2328,0.1985
-MHCseqNet,False,-0.2421,geomean,-0.0447,0.1974
-PredIG,False,0.2143,geomean,0.4035,0.1892
-netMHCpan_BA,True,0.228,geomean,0.3856,0.1577
-TransHLA,False,0.0428,mean,0.1902,0.1473
-DeepImmuno,False,0.0311,sum,0.1656,0.1345
-ImmuneApp,False,0.0413,geomean,0.1547,0.1135
-netMHCpan_EL,True,0.1478,sum,0.2362,0.0884
-CNNeo,False,-0.0044,sum,0.0761,0.0806
-PRIME,False,0.3204,top3mean,0.3792,0.0588
-HLAthena,False,0.4166,rankdecay,0.4687,0.0521
-pTuneos,False,0.0645,sum,0.1157,0.0512
-Repitope,False,0.0748,sum,0.1041,0.0293
-IMPROVE,False,0.2496,rankdecay,0.2789,0.0293
-MHCflurry,False,0.255,topk_w,0.2776,0.0227
-deepHLApan,False,0.2357,top3mean,0.256,0.0204
-andy90,False,0.2439,sum,0.2607,0.0169
-NeoaG,False,0.061,sum,0.0678,0.0067
-TSCAPE,True,0.1261,max,0.1261,0.0
-IEDB_Calis,False,0.1231,max,0.1231,0.0
-ICERFIRE,True,0.3066,max,0.3066,0.0
+# QuantImmuBench §3.2: 每工具 零选择 max vs in-sample 最优 pooling 变体 (裸选 + 控肽长选两版)
+# ★ B5: max_rho/max_rho_lenctrl=零选择基线(headline 用, 裸/控肽长两口径)
+# best_raw/best_raw_rho=裸 rho 选的 in-sample 上界(会捡回肽长混杂, 仅对照); best_lenctrl/best_lenctrl_rho=控肽长偏相关选(★ §3.2 规律以此为准)
+# gain_raw_over_max=裸选 vs 裸 max; gain_lenctrl_over_maxlen=控肽长选 vs 控肽长 max(排序键)
+# 大 k topk≈mean → 裸 gain 大但多是肽长搭便车; 控肽长后 gain 才反映真 pooling 增益(验大纲: 亲和/结合类靠 topk, 免疫原类 max 即峰)
+Tool,pending_DTU,max_rho,max_rho_lenctrl,best_raw,best_raw_rho,best_lenctrl,best_lenctrl_rho,gain_raw_over_max,gain_lenctrl_over_maxlen,selection
+DeepNetBim,False,-0.1903,-0.3749,topk_k20_a0,0.2642,topk_k50_a0,0.123,0.4546,0.4979,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+netMHCstabpan,True,-0.1123,0.1549,topk_k10_a0,0.6285,topk_k2_a1,0.4422,0.7408,0.2873,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+NeoaPred,False,0.077,0.2243,topk_k10_a0,0.4237,topk_k3_a0,0.4876,0.3466,0.2633,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+ImmuGenX,False,-0.3696,0.1912,topk_k50_a0,0.7325,topk_k50_a0,0.414,1.1021,0.2228,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+CNNeo,False,0.0569,0.038,topk_k20_a0p5,0.3146,topk_k20_a1,0.1896,0.2577,0.1515,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+deepHLApan,False,0.074,-0.0075,softmax_T0p1,0.1431,topk_k3_a0p5,0.1247,0.0691,0.1322,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+TransHLA,False,0.1694,0.1413,topk_k50_a0,0.3189,topk_k50_a0,0.2665,0.1495,0.1251,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+pTuneos,False,0.1623,0.1479,topk_k20_a0,0.2583,topk_k20_a0,0.2626,0.096,0.1147,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+netMHCpan_EL,True,0.1789,0.2153,topk_k5_a0,0.2793,topk_k5_a0,0.3251,0.1004,0.1097,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+netMHCpan_BA,True,0.3917,0.4322,topk_k5_a0,0.4892,topk_k20_a0p5,0.5254,0.0975,0.0932,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+MHCseqNet,False,-0.2694,0.2808,topk_k20_a0,0.3446,topk_k50_a0p5,0.3639,0.614,0.0831,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+PredIG,False,0.2501,0.2279,topk_k10_a0,0.3315,topk_k10_a0,0.3041,0.0813,0.0761,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+PRIME,False,0.2945,0.2825,topk_k10_a0,0.334,topk_k50_a0,0.3578,0.0395,0.0754,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+BigMHC_IM,False,0.1794,0.1314,topk_k10_a0,0.299,topk_k10_a0,0.2046,0.1196,0.0732,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+MHCflurry,False,0.3079,0.3016,topk_k20_a0,0.3737,rankdecay_g2,0.3683,0.0658,0.0666,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+andy90,False,0.5851,0.1886,topk_k20_a1,0.599,topk_k20_a1,0.2413,0.014,0.0527,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+IEDB_Calis,False,0.2486,0.174,topk_k8_a0,0.2594,topk_k50_a0p5,0.2249,0.0107,0.0509,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+TSCAPE,True,0.1168,0.0152,topk_k20_a0,0.1805,topk_k8_a0,0.0652,0.0637,0.05,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+NeoaG,False,-0.07,-0.0165,topk_k20_a0,-0.0222,topk_k20_a0,0.024,0.0478,0.0405,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+NetTepi,True,-0.2751,0.2559,topk_k3_a0p5,0.2364,topk_k3_a0p5,0.2824,0.5115,0.0265,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+ImmuneApp,False,0.1788,0.1015,topk_k8_a2,0.2153,softmax_T0p1,0.1279,0.0365,0.0264,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+MUNIS,False,-0.265,0.2676,topk_k8_a0,0.6898,topk_k50_a0p5,0.2915,0.9548,0.0239,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+NeoTImmuML,False,0.1642,0.2324,topk_k20_a0p5,0.1804,topk_k20_a1,0.2516,0.0162,0.0192,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+Seq2Neo,True,0.4406,0.8735,topk_k10_a0,0.9801,softmax_T0p03,0.8908,0.5395,0.0174,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+Repitope,False,0.1216,0.1366,topk_k8_a2,0.1335,topk_k20_a2,0.1485,0.0119,0.0119,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+DeepImmuno,False,0.1575,0.1678,topk_k20_a0,0.2362,topk_k2_a1,0.1775,0.0787,0.0097,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+ICERFIRE,True,0.2676,0.2162,topk_k20_a0p5,0.2772,topk_k20_a0p5,0.2242,0.0095,0.008,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+MHCnuggets,False,-0.1075,0.4343,topk_k50_a1,0.7621,topk_k50_a1,0.4408,0.8696,0.0064,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+HLAthena,False,0.6272,0.2504,softmax_T0p03,0.6279,topk_k3_a0p5,0.2535,0.0006,0.003,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)
+IMPROVE,False,0.2852,0.2306,max,0.2852,max,0.2306,0.0,0.0,in-sample上界(raw+lenctrl两版; 规律以lenctrl为准)

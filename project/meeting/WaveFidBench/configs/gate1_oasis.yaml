@@ -50,6 +50,18 @@ aug_vflip: false
 pixelflip_features_in_step: 512   # 512×98=50176（整除）
 road_percentages: null            # null → range(1,100,2) 50 点
 
+# ---- 多 XAI 超参（faithfulness.py，researcher 核 captum 官方签名）----
+# IG：n_steps=50, method='gausslegendre'（captum 默认）；baseline 'zero'→None(captum 默认黑图)｜'black'=归一化黑图
+ig_n_steps: 50
+ig_baseline: zero                 # zero(→captum 默认黑图) | black(显式归一化黑图)
+# GradientShap（researcher 核：图像分类 attribution 官方 ImageNet 教程标准值 n_samples=50/stdevs=0.0001，非函数默认 5/0.0）
+gradshap_n_samples: 50            # 官方 Resnet_TorchVision_Interpret 教程值（非 API fallback 默认 5）
+gradshap_stdevs: 0.0001          # 官方教程值（非默认 0.0）
+gradshap_n_baseline: 5           # baseline 分布样本数（从 train.csv 随机取，须 >1）
+# 子带能量分布 wavelet（同 subband_zero.py，researcher T4）
+wavelet_wave: db1
+wavelet_mode: symmetric
+
 # ---- 输出 ----
 log_dir: log/hpc_oasis
 checkpoint_dir: log/hpc_oasis/checkpoints

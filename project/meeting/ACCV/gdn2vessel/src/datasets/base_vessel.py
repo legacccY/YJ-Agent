@@ -110,6 +110,7 @@ class BaseVesselDataset(Dataset):
         pad_multiple: int = PAD_MULTIPLE,
         skip_missing: bool = False,
         color_mode: str = 'green',
+        rescale_square: Optional[int] = None,
     ):
         """
         Args:
@@ -125,6 +126,15 @@ class BaseVesselDataset(Dataset):
                           'rgb'             — /255 only, no CLAHE → (3,H,W).
                           Only CS-Net uses 'rgb' (官方 ToTensor RGB, iMED-Lab/CS-Net).
                           All other 11 baselines keep 'green' (default, no behaviour change).
+            rescale_square: None (default) — 原有 patch_size / center_pad 几何管道，
+                          所有其它 baseline 行为不变。
+                          int (仅 CS-Net 用，如 512) — 官方 iMED-Lab/CS-Net rescale(512)
+                          协议：中心方裁 min(H,W) → resize 到 size×size（bilinear）。
+                          启用后完全绕过 patch_size / _random_crop / _center_pad，
+                          模型只见 size² 方图（官方 __getitem__ 里 rescale→RandomCrop(512)
+                          在已 512² 图上=空操作，故等价 rescale-512）。
+                          源：iMED-Lab/CS-Net dataloader/drive.py + utils/misc.py rescale()
+                          （方案 A 官方 rescale-512 全复现，用户 2026-07-01 拍板）。
         """
         if color_mode not in ('green', 'rgb'):
             raise ValueError(
@@ -139,6 +149,7 @@ class BaseVesselDataset(Dataset):
         self.pad_multiple = pad_multiple
         self.skip_missing = skip_missing
         self.color_mode = color_mode
+        self.rescale_square = rescale_square
 
         # Anti-leakage: validate split disjointness at class definition level
         self._check_split_disjoint()
@@ -311,6 +322,32 @@ class BaseVesselDataset(Dataset):
         mask_p, _ = pad_to_multiple(mask, self.pad_multiple)
         return img_p, gt_p, mask_p
 
+    def _rescale_square(self, img, gt, mask, size):
+        """官方 iMED-Lab/CS-Net rescale(size): 中心方裁 min(H,W) → resize 到 size×size。
+
+        与官方 rescale() 对齐（源：iMED-Lab/CS-Net utils/misc.py + dataloader/drive.py，
+        方案 A 全复现，用户 2026-07-01 拍板）：
+          1. 中心方裁到边长 s=min(H,W) 的正方形（丢掉长边两侧极小边条；
+             视网膜图近方形 DRIVE 584×565 / CHASE 960×999，边差 <5%，丢的极小）。
+          2. resize 到 size×size：img 用 bilinear（INTER_LINEAR），gt/fov 用 nearest
+             （INTER_NEAREST，保二值标签不被插值污染）。
+        对 (H,W) green 与 (H,W,3) RGB 输入均适用（cv2.resize 自动处理通道维）。
+        """
+        h, w = img.shape[:2]
+        s = min(h, w)
+        y0 = (h - s) // 2
+        x0 = (w - s) // 2
+        img_c = img[y0:y0 + s, x0:x0 + s]
+        gt_c = gt[y0:y0 + s, x0:x0 + s]
+        mask_c = mask[y0:y0 + s, x0:x0 + s]
+        # cv2.resize dsize=(width, height)；方图 (size, size) 无歧义。
+        img_r = cv2.resize(img_c, (size, size), interpolation=cv2.INTER_LINEAR)
+        gt_r = cv2.resize(gt_c.astype(np.uint8), (size, size),
+                          interpolation=cv2.INTER_NEAREST)
+        mask_r = cv2.resize(mask_c.astype(np.uint8), (size, size),
+                            interpolation=cv2.INTER_NEAREST)
+        return img_r, gt_r, mask_r
+
     # ---------------------------------------------------------------------- #
     #  __len__ / __getitem__ (dict contract identical to drive.py)
     # ---------------------------------------------------------------------- #
@@ -322,13 +359,24 @@ class BaseVesselDataset(Dataset):
         sid = self.ids[idx]
         img, gt, fov_mask = self._load_sample(sid)
 
-        if self.augment:
-            img, gt, fov_mask = self._augment(img, gt, fov_mask)
-
-        if self.patch_size is not None:
-            img, gt, fov_mask = self._random_crop(img, gt, fov_mask, self.patch_size)
+        if self.rescale_square is not None:
+            # 官方 CS-Net rescale(size) 协议（方案 A）：先中心方裁 min(H,W)→resize size²，
+            # 再做 flip/rot 增强（官方 RandomCrop(512) 作用在已 512² 图上=空操作，故省略）。
+            # 完全绕过 patch_size / _random_crop / _center_pad，模型只见 size² 方图。
+            img, gt, fov_mask = self._rescale_square(
+                img, gt, fov_mask, self.rescale_square
+            )
+            if self.augment:
+                img, gt, fov_mask = self._augment(img, gt, fov_mask)
         else:
-            img, gt, fov_mask = self._center_pad(img, gt, fov_mask)
+            # 原有几何管道（其它 11 个 baseline 行为不变）。
+            if self.augment:
+                img, gt, fov_mask = self._augment(img, gt, fov_mask)
+
+            if self.patch_size is not None:
+                img, gt, fov_mask = self._random_crop(img, gt, fov_mask, self.patch_size)
+            else:
+                img, gt, fov_mask = self._center_pad(img, gt, fov_mask)
 
         # → tensor
         if self.color_mode == 'rgb':

@@ -1,5 +1,16 @@
 # CXR-SSLBench LOG
 
+## 2026-07-01 — 烟测双 FAILED 根因=PATH bug（非 collapse）→ 修 → 重投
+
+**核查（Bash 核 HPC sacct/log，非 Read）**：首投烟测 job **1502881(DINO)/1502882(MoCo) 双 FAILED**，各跑 14s/1s 秒崩，无 `smoke_*.csv` 产出。
+**根因**（`logs/pt_1502881.out`）：`line 110: python: command not found`。**不是 collapse，是启动 bug**——DINO 训练命令拼好但 compute 节点裸 `python` 找不到就崩。
+**根因链**：`submit_pretrain.sh` 有 `PY=$ENV/bin/python`（line 49/93 用 `$PY` 跑通），但 line 93 recipe `print-cmd` 生成的训练串以**裸 `python -m torch.distributed.run`** 开头 → line 110 `eval "$CMD"` 执行裸 python，节点未 activate conda → not found。pilot job 1502033 不走该 eval 路径故没暴露。
+
+**修**（最小改动，不碰 51 pytest 已绿 codegen）：`submit_pretrain.sh` line 42 后加 `export PATH=$ENV/bin:$PATH`，令 eval 的裸 python/torch.distributed.run 解析到 env。已传 HPC + deCRLF + 验插入。
+**清账**：幽灵锁 `97c5fcfe`（首投死 job 未 release）已 release。
+**重投**：`gpu_slot request` GO `4fc01d4a`（hpc 2卡）→ sbatch **SMK-DINO=job 1504264 / SMK-MOCO=job 1504265**，均 PENDING（gpu4090 Priority 排队）。
+**下一步**：轮询 sacct + `smoke_{dino,moco}.csv` + smoke_monitor verdict。双 PASS → 放行全量 12 job（A′ Stage 1）；任一真 collapse → 停报走 ACCEPTANCE FAIL 退路；仍 infra 崩 → 停报别误判。完成必 `gpu_slot release 4fc01d4a`。
+
 ## 2026-06-30 — Gate1 PASS + 正式立项进全盘（拍板）
 
 **Gate1 判定：PASS**（用户拍板进全盘）。真源 `results/pilot_hpc.csv`（HPC job 1502033 COMPLETED，46min，今早 07:43）。
@@ -61,7 +72,14 @@
 - ✅ DTN/login 预 clone 3 官方 repo 到 `vendor/`（mae 10/dino 12/moco 4 个 .py，`_scratch_cxr_clone_repos.py`）。
 - ✅ 核 NIH DATA 路径 `images-224/images-224/`（含 png）+ conda env yjcu124py310（torch 2.6.0+cu124/timm 1.0.15）。
 - ⏳ MONITOR-HOOK：派 coder 写 `apply_monitor_hook.py`（给 vendor/dino+moco loop 插 teacher 熵/feat_std/contrastive_baseline emit，幂等锚点匹配）。
-- ⏳ 待挂钩 → gpu_slot 申卡 → sbatch SMK-DINO‖SMK-MOCO 烟测（⚠️ gpu4090 队列长，会 PEND；MoCo bs4096 装不下 4090 → reduced-batch 烟测定）。
+- ✅ MONITOR-HOOK 注入成功（apply_monitor_hook.py，DINO@metric_logger.update~354 / MoCo@losses.update~355，.cxrssl_orig 备份；patch-applier 2 测试 bug 修后 9 pytest 绿；submit env 接好）。
+- 🛑→✅ **dry-check 抓真缝 + 路A 拍板**：recipe_dino 硬 assert eff_bs==512、recipe_moco 无视 BPG 吐 4096 → 4×4090 装不下 DINO/MoCo 官方 eff_bs。**用户拍板路 A：reduced-batch + lr 线性缩放**（images-seen 不变，DINO/MoCo eff_bs 降+lr×eff/official；MAE/CheX accum 凑满官方）。已预登记进矩阵 §1 + ACCEPTANCE（防 HARKing，对齐 A′「eff_bs 放开」，标 limitation，solo-learn/VISSL 有限算力标准做法）。
+- ✅ coder 改 recipe（recipe_base.check_eff_and_lr 软允许 reduced+lr 线性缩放；dino/moco lr=official×eff/official_eff_bs；moco 修 batch bug 吐实际 eff_bs；mae/chex accum 凑满不缩放）。主线 41 pytest 绿。
+- ✅ re-dry-check 验生成命令：DINO lr=4.6875e-05(=0.00075×32/512)+全防 collapse 参数；MoCo lr=3.125e-06(=1e-4×128/4096)+`--batch-size 128`。
+- ✅ 又抓一缝：官方 mae/dino/moco 用 ImageFolder 要类子目录，NIH 扁平 → 建符号链接包装（`_scratch_cxr_data_wrap.py`：data_ssl/flat/all→NIH 给 dino、data_ssl/parent/train/all→NIH 给 mae/moco，各 112120 图单类；chexworld 自家 loader 直读扁平）。submit DATA 按范式指向包装根。
+- ✅ **gpu_slot GO 97c5fcfe（2 卡）→ sbatch 提交烟测**：**SMK-DINO=job 1502881 / SMK-MOCO=job 1502882**，PENDING（gpu4090 队列 Priority）。跑完读 `results/smoke_{dino,moco}.csv` → smoke_monitor evaluate_gate 判塌没塌。双 PASS → 投全量 12 job；任一塌 → 停报（reduced-batch 后 collapse 是真信号，按 FAIL 退路）。
+
+**⏳ 监控中（不主线干等）**：job 1502881/1502882 PENDING。完成后 `gpu_slot.py release 97c5fcfe`。结果出来判 gate + 回报用户。
 
 ---
 

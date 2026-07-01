@@ -6,6 +6,14 @@ R6_official.py
 服务: QuantImmuBench 大纲 §3.3.4 (图3 / 表9) —— fusion 子采样删突变鲁棒性。
 对应大纲: paper/QuanImmu-Paper-Outline.md §3.3.4 "鲁棒性 (图3 / 表9)"。
 
+★ 2026-07-01 Part D Phase 3 口径 (干净表 + 新评判标准, 见 04_LOG):
+  输入 = 干净表 pooled_clean_9mer.csv (含突变去噪 + 51 pooling 变体 + peplen 列)。
+  · [B5 零选择] 7 维各工具用 <tool>_max (去 in-sample pooling selection); 删10/20%×种子
+    鲁棒性 + win_top1 口径不变, 只是维度改零选择 max。
+  · [B2] 满数据(0%)fusion + 单工具主指标各加控肽长版对照 (per_patient_partial_spearman,
+    ctrl='peplen'); 子采样各 seed 仍走裸 Spearman (鲁棒性/win_top1 语义不变)。
+  【旧 count-clean 注释已删】: 干净表不带 count_conf 列, 混杂改由 B2 偏相关在度量层控。
+
 做什么:
   主分析集 DS2 上, 病人内随机删 10%/20% 突变 × 30 个固定种子 (0..29), 对每种 fusion
   (12 法) + 单工具对照重算 per-patient Spearman, 跨种子聚合 子采样均值/中位/胜率,
@@ -13,8 +21,8 @@ R6_official.py
   max 满数据虚高但子采样塌陷 (点估计陷阱)。如实输出实测, headline 成立与否=拍板点, 不凑数。
   主维度集 = 7 维 (SURV6 + 亲和代理), 各工具取 R2 最优 pooling 列。
 
-输入 (只读冻结表):
-  data/frozen/pooled_peptide_level_30tools.csv
+输入 (只读干净表):
+  data/frozen/pooled_clean_9mer.csv
 输出 (analysis/official/):
   R6_robustness_official_results.csv  —— 长表: method, kind, drop_frac, seed, fisherz_rho, n_pat
   R6_robustness_official_summary.csv  —— 每 (method,drop_frac): full_data_rho / mean / median /
@@ -40,13 +48,13 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _official_common import (                              # noqa: E402
-    load_frozen, present_patients, per_patient_spearman, apply_fusion,
-    best_pooling_for_tool, pool_col, METHOD_ORDER, MIN_PEP, FROZEN_POOLED,
-    ensure_out_dir,
+    load_frozen, present_patients, per_patient_spearman,
+    per_patient_partial_spearman, apply_fusion, pool_col, METHOD_ORDER,
+    MIN_PEP, FROZEN_POOLED, ensure_out_dir,
 )
 
-# ── 主维度集 7 维 (★ TODO 待袁/朱确认, 同 R3 DIM7) ─────────────────────────────
-AFFINITY_PROXY = "netMHCpan_BA"   # TODO: 旧 pool_netAffneg_top20 冻结表代理
+# ── 主维度集 7 维 (★ TODO 待袁/朱确认成员, 同 R3 DIM7; [B5] 各工具用零选择 <tool>_max) ──
+AFFINITY_PROXY = "netMHCpan_BA"   # 旧 pool_netAffneg_top20 对应工具 (此处零选择用 _max)
 SURV6 = ["PredIG", "IMPROVE", "pTuneos", "PRIME", "ImmuneApp", "deepHLApan"]
 DIM7_TOOLS = list(SURV6) + [AFFINITY_PROXY]
 
@@ -98,22 +106,23 @@ def main():
     ap.add_argument("--seeds", default="0-29", help="种子列表 (默认 0-29 共 30 个)")
     ap.add_argument("--drop", default="0.10,0.20", help="删除比例 (0% 对照自动加)")
     ap.add_argument("--min_pep", type=int, default=MIN_PEP)
+    ap.add_argument("--ctrl", default="peplen", help="控制变量列 (B2 偏相关, 默认 peplen)")
     ap.add_argument("--baseline_col", default=None,
                     help="指定 max baseline 单工具列; 默认=满数据 rho 最高单工具")
     args = ap.parse_args()
 
     df = load_frozen(args.input)
     pats = present_patients(df)
-    # 7 维各工具取 R2 最优 pooling 列
+    # 7 维各工具零选择 <tool>_max (B5)
     dim_cols, used = [], []
     for t in DIM7_TOOLS:
-        bp, _r, _a = best_pooling_for_tool(df, t, patients=pats, min_pep=args.min_pep)
-        if bp is None:
-            print(f"[warn] {t}: 无有效 pooling, 剔除")
+        col = pool_col(t, "max")
+        if col not in df.columns or df[col].notna().sum() == 0:
+            print(f"[warn] {t}: 列 {col} 缺失或全空, 剔除")
             continue
-        dim_cols.append(pool_col(t, bp))
-        used.append(f"{t}_{bp}")
-    print(f"[info] DS2 患者({len(pats)})={pats}; 7 维={used}")
+        dim_cols.append(col)
+        used.append(col)
+    print(f"[info] DS2 患者({len(pats)})={pats}; 7 维(零选择 max)={used}")
 
     seeds = _parse_seeds(args.seeds)
     drops = sorted({round(float(x), 4) for x in args.drop.split(",")})
@@ -135,17 +144,26 @@ def main():
         return rho, nu
 
     rows = []
-    # (a) 0% 满数据对照
+    # (a) 0% 满数据对照 (裸 + [B2] 控肽长版主指标)
     full_rho = {}
+    full_rho_len = {}     # [B2] method -> 控肽长偏相关 ρ̄ (仅 0% 满数据主指标)
     print("\n[0% 满数据对照]")
     for m in fusion_methods:
-        rho, n = _rho(m, "fusion", df, 42)
+        s = apply_fusion(df, dim_cols, m, patients=pats, seed=42)
+        s_arr = np.asarray(s.values, dtype=float)
+        rho, _, _, n, _ = per_patient_spearman(df, s_arr, patients=pats, min_pep=args.min_pep)
+        rho_len, *_ = per_patient_partial_spearman(
+            df, s_arr, ctrl=args.ctrl, patients=pats, min_pep=args.min_pep)
         full_rho[m] = rho
+        full_rho_len[m] = rho_len
         rows.append(dict(method=m, kind="fusion", drop_frac=0.0, seed=-1,
                          fisherz_rho=rho, n_pat=n))
     for c in single_cols:
         rho, n = _rho(c, "single", df, 42)
+        rho_len, *_ = per_patient_partial_spearman(
+            df, c, ctrl=args.ctrl, patients=pats, min_pep=args.min_pep)
         full_rho[c] = rho
+        full_rho_len[c] = rho_len
         rows.append(dict(method=c, kind="single", drop_frac=0.0, seed=-1,
                          fisherz_rho=rho, n_pat=n))
 
@@ -216,9 +234,11 @@ def main():
             else:
                 win_base = np.nan
             fr = full_rho.get(method, np.nan)
+            frl = full_rho_len.get(method, np.nan)
             sum_rows.append(dict(
                 method=method, kind=kind, drop_frac=drop_frac,
                 full_data_rho=round(float(fr), 6) if fr is not None and not np.isnan(fr) else np.nan,
+                full_data_rho_lenctrl=round(float(frl), 6) if frl is not None and not np.isnan(frl) else np.nan,
                 mean_rho=round(float(np.mean(vals)), 6) if len(vals) else np.nan,
                 median_rho=round(float(np.median(vals)), 6) if len(vals) else np.nan,
                 std_rho=round(float(np.std(vals, ddof=1)), 6) if len(vals) > 1 else np.nan,
@@ -234,7 +254,8 @@ def main():
         f.write("# R6_robustness_official_summary.csv\n")
         f.write("# QuantImmuBench §3.3.4 图3/表9: 子采样鲁棒性汇总 (每 method × drop_frac 一行)\n")
         f.write(f"# DS2; 7 维={used}; max baseline 单工具={baseline_col}\n")
-        f.write("# full_data_rho=满数据(0%)点估计; mean/median/std_rho=跨30种子子采样统计\n")
+        f.write(f"# full_data_rho=满数据(0%)裸点估计; full_data_rho_lenctrl=满数据控肽长偏相关(B2, ctrl={args.ctrl})\n")
+        f.write("# mean/median/std_rho=跨30种子子采样统计(裸)\n")
         f.write("# win_rate_top1=该 fusion 法在多少比例 seed 里为 12 法中第一(大纲 headline 口径)\n")
         f.write("# win_rate_vs_base=该法在多少比例 seed 里 rho>max baseline; rank=该 drop 内按 mean_rho 排名\n")
         sum_df.to_csv(f, index=False)

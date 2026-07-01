@@ -27,6 +27,8 @@ MAE_RRC_SCALE = (0.2, 1.0)
 class MAERecipe(Recipe):
     method = 'mae'
     official_eff_bs = 4096
+    official_lr = 2.4e-3        # = blr 1.5e-4 × 4096/256 @eff_bs4096。MAE 用 accum 凑满 official → 不触发 reduced 缩放；
+                               # 注入的是 --blr（MAE repo 内部按 eff/256 自动线性缩放），此字段仅元数据/留痕用。
     entry = 'main_pretrain.py'
     loader_hint = 'timm_vit_base'
 

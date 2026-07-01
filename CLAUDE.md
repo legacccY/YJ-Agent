@@ -99,6 +99,7 @@
 | `skeptic` | opus | **OFF** | 决策点红队 / devil's advocate：立项前提 / 实验设计 / claim 逻辑三闸口，执行前找致命伤（事前攻**将要做的事**，正交 reviewer）。severity-gated，**0 致命即放行不卡流程**，不为批判而批判 |
 | `theorist` | opus | **OFF** | 理论推导/半形式化证明：立项证可行性+预测回报(scaling/样本复杂度)、失败从理论侧三分流归因(假设错/实现错/数据不够)、推导自检反幻觉。逐步标假设+置信+来源、结论分档(定理/toy验/待跑)禁越级卖。**只推导不跑**，正交 skeptic(它攻你推的)。提「理论推导/证明/为什么该 work/可行性」即触发 `/theory-audit` |
 | `optimizer` | opus | ON | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
+| `custodian` | opus | ON | 产物清洁工/归档管家：扫散落 scratch/tmp/一次性脚本/游离产物/重复 tracker/git-ignore 漂移，每个候选先 pointer-check（是否在读档链里），产分类归档清单。**只读产清单不删不移**（删=拍板，移交主线 Filesystem MCP）。区别 optimizer（改流程规范，custodian 管产物文件本身）。提「整理产物/太乱了/归档旧文件/收工清扫」即触发 `/tidy` |
 | `gh-publisher` | opus | ON | GitHub 发布/拉取/维护：本地子项目规范化成可开源 repo（README/LICENSE/CI/.gitignore 全套对齐顶级开源骨架）+ 隐私泄露扫描列风险 + 拉 repo 许可证合规 + 按 issue/PR review 定位修 bug。**不执行对外 push/repo create**（主线拍板后串行做）。提 github/开源/推仓库即软触发（`/gh-flow`） |
 
 > 十角色覆盖科研全闭环：调研(researcher)→🧮理论推导(theorist)→设计(planner)→🩺红队设计(skeptic)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。theorist 横切在**理论地基**（立项可行性/失败归因/推导自检），skeptic 横切在**执行前闸口**（立项/设计/claim），与 reviewer 事后审成稿正交——theorist 产推导、skeptic 攻它、verifier 核它引的数（三层防线见 `/theory-audit`）。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析/理论四条腿**——派对应 agent。
@@ -194,6 +195,7 @@
 | 阶段切换 | `/phase-transition` |
 | 投稿前 | `/pre-submit-check`（数字三方对账 + 脱敏 + 图验证） |
 | 进度落档 | `/checkpoint <project>`（把本轮做的写进 LOG，防 context 断链；改文件多没写 LOG 时 hook 会提醒） |
+| 产物清扫/归档 | `/tidy [scan\|sweep\|gitignore] [zone]`（**产物清洁工**：派 custodian 扫散落物→pointer-aware 归档清单→主线串行 move 到 `_archive/`（可逆，删除押后拍板）。zone=`root`/`_scratch`/`tools`/`meeting-root`/`git-ignore`/`<project>`。命门=动文件前先 grep 读档链，被引用的不动。Stop hook 检测根目录散落超 8 个会提醒。产物文件层的整洁，正交 optimizer（流程规范层）） |
 | 大阶段验收 | `/stage-gate <project>`（**半天级大阶段收口必跑**：verifier 核数字 → opus reviewer 对 ACCEPTANCE 严判 PASS/FAIL，不存在「基本完成」，不达标不放行） |
 | GitHub 发布/拉取/维护 | `/gh-flow publish <路径>` 发新公开 repo / `pull <repo-url>` 拉好东西进来 / `maintain <owner/repo>` 按 review 修 bug（gh-publisher 跑隐私扫+开源骨架+许可证合规；对外 push 主线拍板；公开 repo 与 private 组合台隔离）。提 github/开源/推仓库自动软触发 |
 
@@ -217,8 +219,20 @@
 - `drift_guard.js`（UserPromptSubmit）：动手类指令注入「服务哪 §/lever + 四红线 + 数据集真源」；阶段收口提示 `/stage-gate`。
 - `new_file_pointer.js`（PostToolUse Write）：新建重要源文件没在任何索引文档登指针 → 提醒补（临时探针放 `_scratch/` 免登）。
 - `stage_progress.js`（Stop）：本轮改 ≥6 个项目文件却没写 LOG → 提醒 `/checkpoint`，大阶段提醒 `/stage-gate`。
+- `custodian_sweep_reminder.js`（Stop）：根目录散落文件（`_scratch_*.py`/`tmp_*.py`/captcha png/乱码名等）积到 ≥8 个 → 提醒跑 `/tidy scan root` 清扫（归档可逆，被读档链引用的不动）。
 - `delegate_code_gate.js`（PreToolUse Edit/Write）：改实验码时**只软提醒派 coder、不拦**（用户 2026-06-19 放开：改训练/实验文件不拍板）。
 - 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（**按卡调度**：见 starting 卡槽放行、未申请则提示先 request 配 `tools/gpu_slot.py`——防挤正在跑的，非拍板）、`writing_caveman_off`（写作关 caveman）。
+
+## 🧹 产物卫生规范（防散落，Custodian 守）
+一年多窗大编队攒下大量散落产物（根目录一次性脚本、`_scratch/` 数据、重复 tracker）。规范如下，`/tidy` + `custodian` agent 负责维护：
+
+- **临时物进 `_scratch/`**（各项目或根级，均已 gitignore）：一次性 HPC 提交/烟测/探针脚本、中间数据。**禁在根目录/tools 裸放 `_*.py`/`tmp_*.py`**——放 `_scratch/`（临时）或 `killshots/`（立项 kill-shot）。
+- **交付物进 `<project>/{figures,tables,results}/`** 带清晰命名；ICLR 图路径见 `/validate-figures` 约定。
+- **状态真源单一化**：每项目状态 = 单一 `04_LOG`/`PROJECT_LOG` + `registry.phase`。额外 tracker/status md 要么被读档链引用（`00_README`/`04_LOG`/`registry` 指向它），要么归档——否则就是散落。
+- **session 残渣永不 commit**：验证码截图、探针 json、乱码路径当文件名、`test_write.txt` 等（gitignore 已盖）。
+- **归档不删**：退役但留底的产物 → `_archive/<日期>/`（gitignore，可逆）。**删除是拍板点**（危险删除），归档先做、删除停下报。
+- **命门铁律**：动任何文件前先 **pointer-check**——grep 它是否被读档链（registry/CLAUDE.md/README/LOG/MEMORY）引用，**被引用的一律不动**（防断链，用户核心关切）。这与 `new_file_pointer.js`（抓新文件没指针）互补。
+- 触发：说「整理产物/太乱了/归档/收工清扫」→ `/tidy scan`；Stop hook 根目录散落 ≥8 会提醒。清扫账记 `.portfolio/hygiene.jsonl`。
 
 ## 技术解释风格
 - legacccy 非工程师专业，尽量白话 + 比喻，减少不必要技术术语

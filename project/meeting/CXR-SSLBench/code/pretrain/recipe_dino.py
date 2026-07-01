@@ -30,6 +30,7 @@ DINO_WARMUP_TEACHER_TEMP_EPOCHS = 13
 class DINORecipe(Recipe):
     method = 'dino'
     official_eff_bs = 512
+    official_lr = 0.00075       # @eff_bs512（官方 args.txt）；reduced 时 lr×eff/512（路 A 线性缩放）
     entry = 'main_dino.py'
     loader_hint = 'timm_vit_base'
 
@@ -61,7 +62,8 @@ class DINORecipe(Recipe):
     def build_cmd(self, *, seed, output_dir, data_path, batch_size_per_gpu,
                   accum_iter, world_size, repo_dir, num_workers=8, python='python',
                   saveckp_freq=25):
-        self.assert_eff_bs(batch_size_per_gpu, accum_iter, world_size)
+        eff = self.assert_eff_bs(batch_size_per_gpu, accum_iter, world_size)
+        lr = self.scaled_lr(eff)   # eff==512 → 0.00075；reduced → 0.00075×eff/512（步数由 budget 按 eff 放大）
         c = self.CONFIG
         cmd = [python, '-m', 'torch.distributed.run', '--nproc_per_node', str(world_size),
                f'{repo_dir}/{self.entry}',
@@ -76,7 +78,7 @@ class DINORecipe(Recipe):
                '--weight_decay', str(c['weight_decay']),
                '--weight_decay_end', str(c['weight_decay_end']),
                '--freeze_last_layer', str(c['freeze_last_layer']),
-               '--lr', str(c['lr']),
+               '--lr', str(lr),
                '--warmup_epochs', str(c['warmup_epochs']),
                '--min_lr', str(c['min_lr']),
                '--momentum_teacher', str(c['momentum_teacher']),

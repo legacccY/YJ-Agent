@@ -1,0 +1,12 @@
+# S2_regime_compare.csv — 每个数据处理修正对关键结论(per-patient ρ̄)的净效应
+# 5 rung 阶梯 (相邻差=1 具名修正); 列=各 rung ρ̄ + 4 Δ。
+#   d_dropsum=弃best-pooling选sum(count混杂) | d_mutfilter=突变过滤+换干净表
+#   d_equalweight=跨病人invvar->equal | d_ctrlpeplen=偏相关控肽长
+# 口径逐位复用 _official_common (同 R1-R9); 纯 numpy Spearman, 禁 scipy。
+# label=method(行), 各 rung/Δ 值=per-patient Fisher-z 聚合 ρ̄。
+method,legacy_bestpool_invvar,legacy_max_invvar,clean_max_invvar,clean_max_equal,clean_max_equal_ctrl,d_dropsum,d_mutfilter,d_equalweight,d_ctrlpeplen
+netMHCpan_BA,0.5391,0.3201,0.4467,0.3917,0.4322,-0.219,0.1266,-0.055,0.0405
+PRIME,0.4109,0.3504,0.3063,0.2945,0.2825,-0.0605,-0.0441,-0.0119,-0.012
+PredIG,0.4046,0.2702,0.2564,0.2501,0.2279,-0.1344,-0.0139,-0.0062,-0.0222
+HLAthena,0.5103,0.5075,0.4839,0.6272,0.2504,-0.0028,-0.0236,0.1433,-0.3768
+geomean_fusion,0.4862,0.3863,0.4063,0.3778,0.3518,-0.0999,0.02,-0.0285,-0.0261

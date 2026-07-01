@@ -4,6 +4,368 @@
 
 ---
 
+## Entry 45-Q2CLOSE+PPT — 2026-07-01【问题二统计检验收口 + 进度评价版 PPT（袁老师周五讨论用）】
+
+**触发**：袁老师回复两个方法学问题——问题二（geomean/mean_rank/median 数学近亲）给绿灯，要求「具体 test 差异多大/是否显著/拿足够数据证实」；问题一（肽长混杂）老师前提「每突变肽长相同→无影响」与数据打架，留周五讨论。用户拍板：问题二做下去 + 做进度评价版 PPT（进度为主+评价单列章，只讲问题一现象不下结论）。
+
+**Part 1 — 问题二四检验全跑 + verifier PASS**（口径 SURV6 六工具最强窗口维，**不是 dim7**，口述曾误记；数值与 R3 ndim=6 逐位一致）：
+- 脚本（复用现有引擎，新建）：`analysis/official/Q2_fusion_kinship_paired.py`（复用 R7 paired_patient_test）/ `Q2_peptide_auprc_kinship.py`（复用 S1 bootstrap）/ `Q2_rank_corr_matrix.py` / `analysis/theory/Q2_taylor_verification.py`。
+- 结果（数字 Bash 核 + verifier 独立重算逐位一致）：
+  - patient 配对 n=9：geomean vs mean_rank p=0.79(裸)/0.73(控肽长) 不显著；geomean vs median p=0.023(裸) 但 0.46(控肽长)。
+  - 肽级 AUPRC 130 肽（老师要的「足够数据」）：三对全不显著（geomean vs mean_rank Δ0.015 p=0.15；vs median Δ0.028 p=0.19）。
+  - 病人内排序相关：geomean-mean_rank 0.952（pooled 0.972）、geomean-median 0.912（pooled 0.949）→ 坐实备忘 0.97/0.90。
+  - 泰勒二阶：G≈A−s²/(2A) 残差中位 0.041 / 相对误差中位 12.5% → 机理成立。
+- **结论**：geomean 与 mean_rank 秩融合统计不可分辨（真数学近亲，三重佐证）；保留 geomean 作有理论依据的稳健默认，不宜称「唯一最优」。落 `RESULTS_CLEAN_SUMMARY.md §3.3.4b` + 给袁老师回信 `给袁老师_周五讨论_两问进展.md`。
+
+**Part 2 — 进度评价版 PPT**：`QuantImmuBench_progress_v4_2026-07-01.pptx`（15 页，生成脚本 `ppt/gen_ppt_progress_v4.js` 复用 v3 版式）。结构=进度总览/数据口径/三层核心结果（高级表格，干净官方 130 肽口径）/方法学评价专章（四陷阱：肽长混杂·count·geomean 近亲·n=9 功效墙）/局限下一步。6 张新图 `analysis/figures_ppt_v4/`（画图脚本 `analysis/plot_ppt_v4_eval.py`，修了 ρ̄/下标/✓✗/↔ 缺字豆腐块）+ DIAG_power_rescue。
+- QC（python-pptx + LibreOffice 渲染抽检 P5/P11/P13）：15 页 / 7 图全嵌 / 6 表 / 0 内部术语 / 0 豆腐块 / 数字与 csv 一致 / 去 AI 味整句 / **问题一守中性不越权** / 排版无溢出。
+
+**周五待袁老师拍**：① 问题一肽长控不控（数据显示 peplen vs Elispot rho=0.319 p<0.001，前提不成立）② 问题二 geomean 措辞最终确认。
+
+---
+
+## Entry 44-DECISIONS — 2026-07-01【用户拍板 2 个 Part E 点 + 给袁老师沟通档】
+
+> 讨论完 4 个 Part E 拍板点后用户拍板。
+
+### 用户已拍板（2 个，无需改动）
+- **拍板点 3 DS2 口径 = 130 肽 / 9 患者**（P101-P110 缺 P103）。官方红线，全程跑的就是这个。outline 旧 92 突变/8 患者口径作废（本地无过滤标准、不可复现）。
+- **拍板点 4 = 不扩展外部队列**（Müller/NCI 都不接）。这篇定位为**单队列 benchmark**，正文须诚实承认 n=9 功效有限（细粒度方法差异统计分不开是内在局限，不硬 claim）。
+
+### 转袁老师拍板（2 个，已写沟通档 `给袁老师_两个方法学问题.md`）
+- **拍板点 1 肽长混杂**：长肽上 max 随窗口数虚高（顺序统计量 E[max]=n/(n+1) 递增），弱工具蹭长度。控制后 HLAthena 塌 0.63→0.20、netMHCpan_BA 稳 0.39→0.42。问老师：主排名要不要控肽长。
+- **拍板点 2 geomean 定位**：geomean/mean-rank/median 在秩指标下数学近亲（泰勒展开 G≈A(1−s²/2A²)，排序相关 0.97），"唯一最优"难立。问老师：能否软化为"共识类里最稳+有理论依据当默认，小样本下与同类分不开"。
+
+### 现状
+从零重建全线完成 + 双复审 PASS（Entry 40-43）；4 拍板点里 2 个用户已定、2 个待袁老师。等袁老师回 1/2 → writer 按干净 csv 重写 tex §4+abstract（130 肽口径、诚实版 headline）。DTU 用户已明确不考虑。
+
+### R4 消融核查（干净口径，2 个版本裸+控肽长都在）
+- 维度留一(dim7)：**最承重=PRIME(Δ−0.031)/netMHCpan_BA(Δ−0.016)**；**deepHLApan 最拖后腿(去掉反升 Δ+0.080)**——⚠️ 与 outline「deephlapan_Imm 最承重」相反（deepHLApan 本身控肽长才 0.06 极弱）。第三个可给袁老师的分歧点。
+- 加权对比：uniform 0.386 ≈ learned_simplex 0.392(噪声内)，rho/inv_var 更低 → **复现 outline「加权不帮忙、等权最稳」✓**。
+- **关键：解决 2 个袁老师问题不需重跑**——每个 R 脚本已同时输出裸+控肽长两版，拍板只选哪版当主口径 + 措辞，纯写作层。仅"改融合维度集成员"(如踢 deepHLApan)才需小重跑。
+
+### 收尾（写作前，已完成）
+干净表冻结(sha256 af2b0f81 入 PROVENANCE)；`RESULTS_CLEAN_SUMMARY.md`(writer 单一数据源)；`给袁老师_两个方法学问题.md`+`.html`(MathJax 渲染版)；00_README/01_STORY/02_ACCEPTANCE 加防旧数横幅；registry status=active-rebuilt-await-advisor。R1-R9+S1+S2 全跑通。停在写 tex 前（用户指示）。
+
+### 🏁 收工 2026-07-01（通宵大轮：从零重建 QuantImmu 数据处理+评判标准）
+本窗核心成果：① 挖出并堵住 5 个方法学坑（全窗→9mer/sum count 混杂/肽长伪迹/大 k topk 捡回/count_conf denominator 错）② 按 outline 从零重建 pipeline(p0e2 干净表+_official_common 等权+控肽长多变量+bootstrap CI+肽级 AUPRC) ③ R1-R9+S1+S2 全重跑，verifier 全 PASS+skeptic 0 致命 ④ outline 核心复现(亲和靠聚合+geomean 鲁棒+整合持平)、伪迹清、每修正可量化(S2 分账) ⑤ 2 拍板点用户定(130肽/不扩队列)、2 转袁老师(沟通档+HTML 备好) ⑥ 停在写作前。
+
+---
+
+## Entry 43-PHASE6 — 2026-07-01【重建 Phase 6 收口：verifier 全数字 PASS + skeptic 0 致命可写作 + 挖出第5混杂 is_indel（headline 仍稳）】
+
+> 用户「跑完」。verifier 核全套 + skeptic 复红队，主线自核 O1/O2。**结论：干净 pipeline 统计有效、可推进写作；claim 需软化；tex 待 re-sync。**
+
+### verifier：全数字 PASS（独立引擎重算 ≤1e-4）
+- R1(HLAthena 0.627→0.250/andy90 0.585→0.189/netMHCpan_BA 0.392→0.432)、R6(geomean win0.4 rank1)、R7(整合0.362 vs 单0.392 Δ-0.030)、R8(方案A netAffneg 0.461/方案B 0.378)、S1(geomean-max ΔAUPRC p0.016/0.008)、S2(弃sum-0.103/控肽长-0.079/HLAthena-0.377) 全逐位对上。口径一致(130肽/9患者/等权/51变体)。
+- ⚠️ **length_artifact flag 措辞修正**：R8 `length_artifact_tools=[]` 空；HLAthena/andy90 实际靠 `coverage_flag=sparse`(121/125 of 130)排除、非 length_artifact flag(仅约束全覆盖工具)。writer 须写「稀疏排除 + 控肽长掉幅0.38/0.40 佐证肽长搭便车」，别写「被 length_artifact 标记」。
+- ❌ **tex §4 陈旧**：`paper/sections/4_results.tex` 带 HLA-FIX 旧代数字(8工具/|ρ|<0.33/AUC0.7525)，与干净重建矛盾 → writer 按新 csv 重写。
+
+### skeptic：0 致命，可写作；挖出第5混杂 + claim 软化
+- **0 致命**：前4坑(全窗/sum/肽长/大k topk)真堵住；netMHCpan_BA 榜首 + HLAthena/andy90 伪迹 对 peplen/n_subpep/is_indel 单控+联合控全稳健。无第5作废坑。
+- **O1 🟠 is_indel 是更深混杂（主线自核确证）**：29 indel n_subpep53.7/Elispot75.3 vs 错义32.6/41.8。控 is_indel HLAthena 0.627→0.140(比控肽长0.25更狠)。但 **netMHCpan_BA 联合控(peplen+n_subpep+is_indel)=0.424≈单控肽长0.425→榜首稳健**。→ headline 报「netMHCpan_BA 0.42(联合控)+敏感区间0.36-0.43」，is_indel 列为混杂，引擎补多变量残差控制。
+- **O2 🟠 geomean claim 必软化（主线自核确证）**：geomean-fusion 0.378 < netMHCpan_BA 单工具 0.392；win_top1 只0.40(众数非多数)；min-fusion 紧咬(统计不可分)。→ Claim(ii) 降为「geomean 是 fusion 家族子采样众数最优，与 min 不可分、不优于最强单工具」，与 Claim(iii)「整合≈最强单」自洽。**写强版=致命(headline 矛盾重演)**。
+- O3 子采样 rho 抬升=小n膨胀伪迹非 geomean 稳健(别当卖点)；O4 S1 引平衡标签 p0.016 非0.008 + 补 geomean-vs-单工具配对(大概率持平)；O5 9簇 bootstrap CI 标近似、关键对照用符号置换；G1 tool_versions TODO 待补。
+
+### 最终干净标准 headline（诚实版，措辞对齐 outline + 用户 2026-07-01 校正）
+> ⚠️ **用户校正（重要）**：「整合不胜最强单」框错了。**fusion 的价值不是赢最强单工具**（工具差异巨大），而是**事先不知哪个工具最好时，geomean 在平均方法里最优、给稳健近最优的临床/研究输出**。outline 原文正是「整合相对最强单**持平**——以**鲁棒性而非点估计为准**部署」。R7 干净证实持平（配对置换 **p=0.79**）。
+1. pooling 重排工具优劣：亲和类靠聚合(netMHCpan_BA max0.43→topk_k5 0.52)；伪迹工具(HLAthena/andy90)榜首是肽长/indel 搭便车。
+2. 真最强单工具 = netMHCpan_BA(亲和)，联合控混杂(peplen+n_subpep+is_indel)后 0.42[0.36-0.43]。
+3. **geomean = 平均/共识 fusion 里鲁棒性最优**（R6 删突变 win0.40 rank1）+ 先验依据(AND/抗离群)；n=9 下与其他共识法(weighted_mean_rank/min/mean_rank)统计打平、跨维一致判据干净表上 weighted_mean_rank 略胜（诚实局限）。**不 claim「唯一碾压」**。
+4. **整合 vs 最强单 = 统计持平**（p=0.79，非「输」）；价值=无需事先知最优工具、按鲁棒性部署给稳健近最优输出（自洽 §3.3.5「以鲁棒性为准」）。
+5. 肽级 AUPRC(功效版)：geomean 显著胜最弱 fusion(平衡标签 p0.016)；**geomean vs 最强单 netMHCpan_BA Δ+0.030 p0.46=持平**（O4 补完，肽级也自洽）。
+6. 部署：务实默认=单 affinity 聚合(netAffneg 0.461,零学习最稳)；按需=多维 geomean(不知最优工具时的稳健选择)。
+
+### 写作前小修完成（2026-07-01 收口）
+- **O1 引擎多变量残差控制**（`per_patient_partial_spearman_multi`+`attach_confounders`，is_indel 从 WT_NA_indel_list）：验证 netMHCpan_BA 裸0.392→联合控(peplen+n_subpep+is_indel)**0.420 稳健**；HLAthena 0.627→**0.200**、andy90 0.585→**0.092** 塌（伪迹铁证，联合控比单控更彻底）。
+- **O4 S1 补 geomean-vs-最强单配对**：Δ+0.030 **p=0.46 持平**（肽级功效版证实整合≈最强单）；S1 label role 改平衡标签(pval<0.05,76/54)为 primary、SFC>0 为 sensitivity。
+- **claim 措辞校正**（用户 2026-07-01）：「整合不胜最强单」→「**整合与最强单持平**（p0.79/0.46），价值=不知最优工具时 geomean 给稳健近最优输出，按鲁棒性部署」，忠于 outline「整合持平…以鲁棒性而非点估计为准」。
+- 剩余（写作阶段/researcher）：O3 子采样 rho 抬升=小n伪迹别当卖点、O5 9簇 bootstrap CI 标近似、length_artifact 措辞(稀疏排除非flag)、G1 tool_versions 补、tex §4 按干净 csv 重写(待老师 Part E)。
+
+**🎯 从零重建全线收口**：数据处理(含突变过滤+4pooling+去sum) + 评判标准(等权+控肽长多变量+bootstrap CI+肽级AUPRC) 全按 outline 重建；outline 核心 headline 幸存(亲和靠聚合+geomean鲁棒最优+整合持平)；伪迹全清(HLAthena/andy90肽长+indel、sum count)；每修正可量化(S2分账)；verifier全PASS+skeptic 0致命。**可交老师定 Part E + 写作。**
+
+### 剩余（写作前，非 pipeline bug）
+- 引擎补多变量残差控制(O1)；S1 补 geomean-vs-单工具配对(O4)；claim 软化(O2)落 tex；length_artifact 措辞(verifier)；tool_versions(G1)。
+- **tex §4+abstract writer 按干净 csv 重写**（需先老师 Part E 定 DS2 口径/肽长真伪措辞/geomean 定位）。
+
+---
+
+## Entry 42-REBUILDDONE — 2026-07-01【重建 Phase 3b-5 完成：R2 修+R4/R7/R8/R9 适配+肽级AUPRC+分账表，verifier/skeptic 复审中】
+
+> 用户「跑完」。两路 coder 并行（A:R2修+R4/R7/R8/R9；B:S1 AUPRC+S2分账；B 断连但已写完，主线修 S1 ROOT 路径 bug 跑通）。数字 Bash 核。
+
+### R2 控肽长选择（修 confound 捡回）
+- best-pooling 改控肽长偏相关选（弃裸选，避大 k topk 捡回肽长）。控肽长下：亲和类 max 非最优 0/8(靠聚合 gain+0.088)、免疫原类 max 非严格最优但 gain 小(+0.05 噪声内)。§3.2「亲和靠聚合」干净成立；「免疫原→max」软化为「聚合仅小幅、统计打平」。
+
+### R7/R8 干净口径
+- R7 整合(SURV6 geomean max维)0.362 vs 最强单 netMHCpan_BA 0.392 Δ=-0.030（整合不胜，诚实，驱动 P109）。
+- R8 **方案A netAffneg(netMHCpan_BA_topk_k20_a0)=0.461 > 方案B dim7 geomean 0.378** → 亲和聚合是最强部署选项；HLAthena/andy90 标 length_artifact(deploy_candidate=False)。
+
+### S1 肽级 AUPRC（B3 副指标，TESLA/IMPROVE 口径拿功效）
+- 标签=官方 Ttest_pvalue_InVitroStim<0.05（76阳/54阴平衡）+ SFC>0 敏感性版。
+- **geomean vs max-fusion ΔAUPRC=+0.069 [0.014,0.131] p=0.016**（pval标签）/ +0.041 [0.005,0.082] p=0.008（SFC）→ **肽级功效下 geomean 显著胜 max**（佐证鲁棒发现）。netMHCpan_BA vs PredIG Δ+0.089 p=0.098 边界。
+
+### S2 分账表（每修正净效应，供 writer/reviewer）
+- 弃 sum(count混杂) 平均Δ**-0.103**（netMHCpan_BA -0.219 最大）；控肽长 平均Δ**-0.079**（HLAthena -0.377）；含突变过滤 +0.013（netMHCpan_BA +0.127）；等权 +0.008（HLAthena +0.143）。
+- → **两大修正=弃 sum + 控肽长，精准砸中虚高工具**（sum 的 netMHCpan_BA、肽长的 HLAthena）。清晰量化，paper 可用。
+
+### 全套干净结果一句话
+R1-R9+S1+S2 干净标准重跑完。**outline 核心幸存**：亲和靠聚合(§3.2)+geomean 鲁棒 rank1(§3.3.4)+肽级 AUPRC geomean 显著胜 max。**诚实边界**：整合不胜最强单(§3.3.3)、点估计紧簇无冠军(§3.3.1)、免疫原→max 软化。伪迹全清（HLAthena/andy90 肽长、sum count）。
+
+### Phase 6 复审中
+verifier 核全套数字 + skeptic 复红队（确认坑堵住+找第 N 个坑）。回执后收口 + 更提案档 + 待老师 Part E。
+
+---
+
+## Entry 41-CLEANRESULT — 2026-07-01【干净标准下 R1/R2/R3/R5/R6 重跑：outline 核心 headline 复现，伪迹现形，剩 R2 选择需控肽长】
+
+> Phase 3 适配（派 coder，主线跑）。干净表(含突变+4pooling)+等权+控肽长+bootstrap CI。数字 Bash 核。
+
+### §3.1 单工具（R1，控肽长揭伪迹）
+- **裸榜首 HLAthena 0.627 + andy90 0.585 双双肽长伪迹**（控肽长各掉 0.38/0.40，塌中游）。
+- **控肽长真榜首 = netMHCpan_BA 0.432（亲和，反升）**，MHCflurry 0.302/PRIME 0.282/PredIG 0.228 幸存。合 TESLA「结合亲和是免疫原主因」。
+- bootstrap-over-patients CI 诚实变宽（n=9）。
+
+### §3.2 pooling 规律（R2，⚠️选择需控肽长）
+- 亲和类：netMHCpan_BA max 0.432→**topk_k5 0.524 控肽长后仍升** → **「亲和靠聚合」干净成立**。
+- ⚠️ **R2 用裸 rho 选 best → 挑到肽长混杂的大 k topk**（MUNIS topk_k8 裸0.69→控肽长0.23 掉0.46=肽长捡回）。**R2 best 选择须改控肽长**（Phase 3b）。免疫原→max 在控肽长+排大k混杂后待重判。
+- **headline fusion 用零选择 max 维，不碰此坑，结论安全。**
+
+### §3.3 fusion（R3/R5/R6，干净 max 维）
+- **§3.3.4 R6 鲁棒性：geomean win=0.400 rank1**（干净表夺回鲁棒冠军；median 崩 rank8、powmean rank7、max rank14）→ **outline「geomean 稳健」claim 干净成立**。
+- §3.3.1 R3 点估计：12 fusion 紧簇 0.33-0.39（max 维），无明确点冠军=统计打平。geomean 优势在**鲁棒非点估计**（正是 outline §3.3.4 原话）。
+- §3.3.3 R5 LOPO：整合 0.276 < 最强单 netMHCpan_BA 0.392（亲和赢，诚实，TESLA-like）。
+
+### 定论：重建成功，outline 主线幸存
+- 伪迹清除（HLAthena/andy90 肽长、sum count 混杂全去）。
+- **outline 核心 headline 幸存**：亲和靠聚合(§3.2)+geomean 鲁棒(§3.3.4)。
+- 诚实边界：整合不胜最强单(§3.3.3)；点估计无冠军(§3.3.1)；「唯一」仍不能 claim（紧簇）。
+- 措辞：geomean=「稳健顶级 fusion（鲁棒 rank1）」，不 claim 点估计唯一。
+
+### 待续
+- **Phase 3b**：R2 best 选择改控肽长 + 系统重判「免疫原→max」；R4/R7/R8/R9 适配干净表。
+- Phase 4 肽级 AUPRC 副指标；Phase 5 对照表（legacy vs 干净，量化每修正影响）；Phase 6 verifier+skeptic 复审。
+- E 待老师：肽长真伪迹措辞/唯一性/DS2 口径/外部队列/DTU。
+
+---
+
+## Entry 40-REBUILD — 2026-07-01【从零重建数据处理+评判标准（计划批准），Phase 1 干净冻结表产出，核心故事幸存】
+
+> 用户「推倒重来、以 outline 为准、查资料、不受旧记忆、每个细节想明白」→ plan mode 出完备计划（`~/.claude/plans/quirky-stirring-parrot.md`，Parts A 数据处理/B 评判/C 复用重写/D 执行/E 老师拍板）已批准。2 Explore(管线映射)+2 researcher(新抗原数据处理标准)+outline 精读地基。执行 Part D。
+
+### Phase 1 完成：p0e2 干净冻结表（派 coder 写，主线跑）
+- 新脚本 `analysis/phase0/p0e2_pool_clean.py`（保旧 p0e 作对照）。改动全对齐 outline：
+  - **A1 含突变窗过滤**（pVACseq 标准）：34703→23853 行，剔纯 WT 窗 31.3%（旧表混 33.9% WT 自肽）。
+  - **A6 pooling=outline §2.4 四算子**：max/topk_w(k∈9×α∈4)/softmax(T∈7)/rankdecay(γ∈7，**公式修为 1/log(r+γ)**，弃旧 d^r)。弃 sum/mean/geomean/top3mean（sum=count 混杂元凶、非 outline）。每工具 51 变体。
+  - **不归一化/不 count_conf**（数学证明 min-shift+RMS 病人内仿射→秩相关+rank-fusion 不变；旧 count_conf denominator 错弃）。
+  - 产 `data/frozen/pooled_clean_9mer.csv`(130×1536) + `pooled_clean_allwindow.csv`(补充)。G1/G2/G3 校验门全 PASS。
+- **朝向确认**：netMHCpan_BA_max=+0.45/EL=+0.24/PRIME=+0.31 全正 → 长表 MT_ 列已 merge 阶段定向(−Aff)，coder orientation caveat 解除。
+- 剔 WT 后 netMHCpan_BA_max 0.32→0.45（WT 窗本是 max 噪声，剔后更干净）。
+
+### 干净表 + 控肽长预览：核心故事幸存（数字 Bash 核）
+- 肽长自身 ρ=0.38（含突变过滤后仍在，长肽仍多窗）。
+- HLAthena_max 0.543→**0.250**（仍肽长伪迹，无论清不清）。
+- netMHCpan_BA_max 0.392→**0.432 反升**、PRIME 0.294→0.283、PredIG 0.250→0.228 全幸存。
+- **geomean-fusion(dim7,零选择 max 维) 0.378→0.328 控肽长幸存，仍胜 max-fusion 0.193**。这是无 sum 膨胀+无 selection 的诚实数（旧 0.52 有 sum 污染）。
+
+### 待续（Phase 2-6）
+- Phase 2：`_official_common` 评估引擎（B1 等权、B2 控肽长偏相关一等公民、B4 随机效应/bootstrap CI、FROZEN_POOLED 指干净表、pooling 命名适配 51 变体）。
+- Phase 3：R1-R9 适配新表重跑（headline 单工具用 max 零选择、grid 作 §3.2 描述、fusion 维用 max 或 nested-LOPO）。
+- Phase 4：肽级 AUPRC 副指标。Phase 5：对照表。Phase 6：verifier+skeptic 复审。
+- E 待老师：肽长真伪迹（决定 B2 措辞）/headline 唯一性/DS2 口径/外部队列/DTU。
+
+---
+
+## Entry 39-AUDIT — 2026-07-01【彻底审计：肽长混杂是统一根因，skeptic 抓到主线漏的 🔴 HLAthena 伪迹，主故事幸存但需控肽长重跑】
+
+> 用户质疑「是真找到问题还是糊弄 / 为什么这么多没发现 / 是不是还有潜在数据处理问题」→ 派 skeptic 独立红队全 pipeline + 主线并行数据审。**skeptic 抓到一个主线漏的 🔴，主线核实属实。诚实记：本项目防线此前只核数字不审方法学/混杂，是结构性缺口。**
+
+### 统一根因：肽长/子肽数混杂标签，pipeline 从没控过
+- **肽长自身 per-patient ρ vs Elispot = +0.38**（主线核）；肽长↔n_subpep ρ=0.755、↔HLA数 ρ=0.749（skeptic）。**Entry 38 的 count 混杂只是这个大混杂的一个侧面**；count-clean 是 pooling 算子层补丁，没碰「肽长→标签」主路。
+
+### 🔴 致命 2（skeptic 抓，主线漏，已核实）
+- **F1 HLAthena 榜首=肽长伪迹**：R1 HLAthena_max raw 0.565（当前 9mer 第1）→ **控肽长偏相关 0.221（掉 0.34，跌到中游）**（主线核；skeptic 用另一肽长源得 →−0.34 更狠，方向一致）。呈递代理类(HLAthena/deepHLApan/MHCflurry/netMHCpan_EL)信号大半是肽长。**若 R1 表5/图1 把 HLAthena 当榜首=报伪迹当第一。** Entry 36 只标 🟡，skeptic 升 🔴（反转非削弱）。
+- **F2 count-clean 修错变量**：count_conf 按 per-tool 子肽数算、非全局 n_subpep；deepHLApan_top3mean count_conf=False 但对全局 n_subpep ρ=0.555 漏进 clean dim7。阈值 0.5 太松，clean-best 残留 |ρ|>0.3 有 11 工具（含 headline 的 HLAthena 0.398/netMHCpan_BA 0.382/PredIG 0.360）。**「聚合打败 max」干净性尚未真正确证。**
+
+### 🟠 值得改 4
+- **M1 WT 子肽 33.9% 污染**：merged 9mer 子肽 33.9% 是 MT==WT（纯自肽，窗口没盖突变），全进 pooling → 免疫原分混三分之一自肽。Entry 37 抽查「只留含突变 max 仍非最优→结论幸存」，不翻案但每个报告幅度被污染。p0e 需加 mut-covered 过滤重 freeze。
+- **M2 加权口径 + 固定效应 CI 高估显著**：outline §2.6 要「等权平均」但用 (n−3) 逆方差（HLAthena Δ=−0.14）；per-patient ρ 从 −0.14(P107) 到 +0.73(P109) 极异质，固定效应 Fisher-z CI 忽略 between-patient 方差→偏窄→显著性高估。registry「唯二显著 PRIME/IMPROVE」CI 下界擦零，随机效应下大概率变不显著。→ 改等权 + 随机效应/bootstrap CI。
+- **M3 per-tool pooling 选择没进 CV**：best_pooling_for_tool 在评估集 argmax，selection 膨胀效应量。→ 进 nested-LOPO 或降为 in-sample 上界。
+- **M4 netMHCpan_EL 半数为 0**：median=0，pooling 后重 tie，Spearman 退化。核 0 是真无洗脱还是缺失填 0。
+
+### 🟡 轻 5：L1 DeepNetBim_max=−0.19 疑符号反（主线也抓到）；L2 provenance drift（R1 csv 头注写「全窗表」但值是 9mer；registry PRIME 0.2794 vs 当前 csv 0.3504，需 verifier 三方对账）；L3 核 SURV6/dim7 无稀疏工具混入；L4 netAffneg join 键完整性抽查；L5 n=9 边界（P102 仅 8 肽）。
+
+### ✅ 主故事幸存（核心 lever 未翻）
+控肽长偏相关：**netMHCpan_BA_geomean 0.42→0.48(+)、PRIME 0.35→0.31、PredIG 0.39→0.36、geomean-fusion 全扛住**（掉 ≤0.10 或反升）。→「共识/聚合 fusion 优于 max」核心大概率真，只是**HLAthena 榜首 + count-clean 干净性两个具体 claim 必须先修**。
+
+### 统一救法（skeptic 提，主线认同）
+- **一击同解 F1+F2**：主指标改**控肽长(+子肽数)的 per-patient 偏相关**，重跑 R1-R8 → 同时消 HLAthena 伪迹 + count_conf 阈值任意 + denominator 错。纯 CPU 重算。
+- **M1**：p0e 加 mut-covered 过滤重 freeze，出「仅突变窗」对照。
+- **M2**：改等权 + 随机效应/bootstrap CI。
+
+### 🛑 生物学岔口（超 agent 范围，待袁老师/朱同学拍板）
+**「肽长→免疫原性」是真生物信号（长肽更易含表位）还是伪迹？** 真→HLAthena 保留 + 诚实标「排名含肽长效应」，F1/F2 降级为声明；伪→必须控肽长，F1/F2 是致命须修。**这个生物学判断决定救法，是拍板级。**
+
+### 诚实边界
+「每深挖一层冒一个新问题」= pipeline 有系统性未审的数据处理选择。不敢称「已干净」。控肽长重跑 + verifier 三方对账 + M1-M4/L1-L5 逐项清后可大幅去风险，但 provably-clean 不可得——投稿前须把这些全处理+诚实披露。
+
+---
+
+## Entry 38-COUNTCONF — 2026-07-01【全30工具再审挖出 count 混杂：headline 塌部分是我们评价问题，非纯噪声（修正 Entry 37 诊断）】
+
+> 用户追问「30 工具跑出来的你就看这五个吗 / 其他指标是不是没看全 30 / 回头看什么问题重新分析」→ 逼看全 30 工具，挖出 **count 混杂**这个真·我方评价问题。数字 Bash 核 9mer 冻结表。**修正 Entry 37「headline 塌=纯 n=9 噪声」的不完整结论。**
+
+### 先做 DAI 审计（全 24 有 WT 列工具）→ 排除 DAI 是通用修复
+- DAI(MT−WT) 下 max 回最优只 **1/24**（PredIG）、DAI 比 raw 更好只 **4/24**（IEDB_Calis/NeoTImmuML/Repitope/deepHLApan）；20/24 中性或更差（PRIME 0.35→0.05）。→ DAI 非「忘做」的通用 bug，只对输出原始性质的工具有意义。
+
+### 全 30 工具 max 最优性（不是只看 5 个）→ 挖出 count 混杂
+- 全 30 工具 max 即最优只 **1/30**（ICERFIRE），29/30 best-pooling 几乎全是 **`sum`**。
+- **命门：`n_subpep`（子肽数）自己对 ELISpot per-patient Spearman = +0.36**——比多数工具真分还高！「候选 9mer 越多的突变 ELISpot 越高」= 巨大 count 混杂。
+- `sum`/`mean` pooling 在数数不是预测：**21/29 工具 sum 被 count_conf 标记**。`best_pooling_for_tool` 给几乎所有工具挑了 sum → **「聚合打败 max」大半是 count 混杂假象**。
+
+### 排除 count 混杂 pooling 后画面大变（干净口径）
+| 指标 | 含 sum（旧）| 排除 count 混杂 |
+|---|---|---|
+| 全工具 max 即最优 | 1/30 | **5/29** |
+| 免疫原类 max≈最优(gap≤0.1) | — | **13/22** |
+| 免疫原类中位 gap(best−max) | 大 | **+0.040**（噪声内）|
+- → 控住 count 混杂后 13/22 免疫原工具 max 就是/约是最优，中位差 0.04。**outline §3.2「免疫原→max」比 Entry 37 说的可辩护得多**。
+
+### 修正后的诊断（分两层，取代 Entry 37 单层「纯噪声」）
+1. **一部分是我方评价问题=count 混杂**（n_subpep ρ=0.36，sum 数数作弊）→ 排掉后 max 竞争力基本回来，§3.2 站得住。**可修。**
+2. **剩余**（9/22 免疫原 max 仍输 + fusion 微差）才是 n=9 噪声 + 稀疏工具。
+- ⚠️ **污染范围**：fusion 维度也用 best_pooling（大半 sum）→ R3/R5/R6/R7/R8 的 geomean/powmean 比较**也被 count 混杂污染**，需 count-clean 重跑才是真结果。
+
+### count-clean 口径已实现 + R1-R9 重跑（派 coder，主线串行跑，verifier 核中）
+- coder 在 `_official_common.py` 加 `COUNT_CLEAN=True` + `best_pooling_for_tool(count_clean)`（只在 `count_conf==False` pooling 里选最优，兜底全混杂退回全池标记）；R3/R5/R6/R7/R8 自动跟切。R2 不跟切（inline 选 best，注明）。对照脚本 `compare_countclean_vs_dirty.py`。
+- **§3.2 免疫原→max（count-clean）**：中位 gap(best−max) 脏 0.156→干净 **0.069**（落噪声内），max≈最优(tol0.1)约 13/22 → **outline「免疫原→max」基本站得住**（max 与最优统计打平）。
+- **§3.3.4 fusion 冠军翻转（count-clean）**：脏口径 powmean 第1(0.521)/geomean 垫底(0.487) → 干净口径 **geomean 从 R6 鲁棒 rank5→rank2**（win 0.167/0.333），**powmean 假冠军崩到 rank5**（win 0/0），median rank1（win 0.767/0.600）。**powmean「翻盘」被证实=sum count 混杂假象**。
+- **配对检验（count-clean dim7, n=9）**：**geomean vs max Δz̄=+0.35 p=0.002-0.008 显著**（geomean 真赢 max）；median vs geomean p=0.76 打平；geomean vs powmean p=0.14。→ **outline 主心骨「共识 fusion 显著优于 max」成立**。
+- **混杂已去**：clean-best pooling 与 n_subpep 中位 |ρ| 从 sum 机械 ~1.0 降 0.21，仅 1 工具 >0.5。
+
+### 「唯一性」检验（outline §3.3.4 真判据=跨 3/4/6/7 维一致 ≥ mean_rank）
+- count-clean 下唯一满足跨维一致的 fusion = **median**（4 维全 ≥ mean_rank + 鲁棒 rank1）；**geomean 不满足**（3 维掉 0.420 < mean_rank），虽与 median 统计打平(p=0.76)。
+- → **要 claim「geomean 唯一第一」只能 cherry-pick 口径/判据=踩红线，不做**。但「唯一稳健 fusion」结构成立，主角是 **median**（与 geomean 同属共识/中心类，概念一致）。
+
+### 最终诊断（三诊断迭代的终版，取代 Entry 37 + 本 entry 上半）
+1. ❌ 最早「headline 全塌=纯 n=9 噪声」→ **错，count 混杂掩盖真信号**。
+2. ✅ **是我方评价 bug=count 混杂**（n_subpep ρ=0.36，sum 数数）。修了：geomean **显著胜 max**(p=0.002)、回榜首梯队；outline 主线复现。
+3. ⚠️ 唯一细节：outline「geomean **唯一**第一」→ 干净口径 median 唯一（与 geomean 并列，n=9 分不出）。措辞软化「geomean 是稳健顶级 fusion、显著胜 max」即可，**几乎回原计划**。
+
+### 待拍板（呈袁老师/朱同学）
+- headline 二选一：**A** 换 median（诚实唯一冠军，同共识家族）｜**B** 保 geomean（先验抗离群/AND 语义 + 显著胜 max + 与顶并列，不 claim「唯一」）。
+- count-clean 是否定为 benchmark 标准口径（禁 count 混杂 pooling）——建议是，outline 自己警告过 sum。
+- R2_best_per_tool 是否也 count-clean 化（现仍脏，inline 选择）。
+- n_subpep 混杂部分真（多 HLA=真更免疫原）vs 伪（长肽数数），投稿前隔离工具真 skill 的方案。
+
+---
+
+## Entry 37-REFOUND — 2026-07-01【拍板裁决→9mer 主分析切换→headline 诊断→方法学重构提案（待老师拍板）】
+
+> 用户「拍板什么，先看老师计划以那个为准」→ 深挖 netAffneg 时挖出更深的口径命门 → 一路严谨归因到「评价功效」根因 + 研究出三部曲解法。全程数字 Bash 核 csv、不硬凑 outline、命门级停下报拍板。**这是改论文战略定位的提案，未实施，待袁老师/朱同学。**
+
+### ① 拍板点按老师计划裁决（3 个 Explore 查证，plan `~/.claude/plans/quirky-stirring-parrot.md`）
+- **DS2 口径**=130 肽/9 患者（官方数据红线，用户 Entry31 已拍；outline §2.1 旧「92 突变/8 患者」inference 子集本地无过滤标准、不可复现，新指令覆盖旧框架）。
+- **维度集 SURV6/dim7**=保持现状（outline 抽象「6/7维」，尾注虚引 `six_dim_model_report.md`**该档不存在**；SURV6 在 6+ 代码档一致=朱同学 fusion 传承的具体化）。
+- **netAffneg**=k=20,α=0（outline §3.2/§3.4 硬指定）。
+- **全覆盖池门槛 FULL_COV**=保持（outline §3.1 领先单工具皆全覆盖→隐含）。
+- **仅 DTU consent** 留真外部拍板（法律，非写作阻塞）。
+
+### ② netAffneg 对齐挖出口径命门 → 全面切 9mer 主分析（用户拍板）
+- netAffneg 全窗只 0.263 不复现 outline +0.3946 → 查因=outline「netAffneg_9」是 **9mer only**，我们冻结表/R1-R9 用全窗 8-14mer，**偏离 outline §2.2「全文主分析用 9AA」**。9mer 下 netAffneg topk(k=20,α=0)=**0.519** 强复现。
+- 数据实证支持切 9mer：**9mer 在 21/30 工具优于全窗，27/30 ≥**（坐实 §2.2）。用户拍板全面切 9mer、全窗降补充。
+- 派 coder 改 6 文件（p0e 加 `--ninemer`/compute_netAffneg 默认 9mer/`_official_common` FROZEN_POOLED 指 9mer 表 + FROZEN_POOLED_ALLWINDOW/R8 方案A 接 netAffneg/TODO→裁决）。主线串行跑：p0e 9mer 重 pool→p0f freeze（9mer 表 sha=502e966f、netAffneg=80846a8c，全窗降补充 b67d86fa）→compute_netAffneg(0.519)→R1-R9 全重跑。
+
+### ③ 9mer 下两个 outline headline 不复现（诚实核清，未硬凑）
+- **§3.2 免疫原→max**：6 工具 5 个 max 非数值最优（排 count 混杂 sum 后仍如此）。
+- **§3.3.4 geomean 唯一双第一**：偷看标签→powmean(R6 win 0.567/0.600 rank1)/原则规则→mean_rank/geomean 从不第一。
+- 两 headline 在旧数据(全窗/subset92)得，换官方 130 肽 9mer 塌。停下报用户。
+
+### ④ 根因诊断=评价功效，非 bug 非数据反转（配对检验铁证）
+- 免疫原 best-pooling vs max 配对检验全不显著（PRIME p0.27/PredIG p0.10/pTuneos p0.37/ImmuneApp p0.35）；fusion geomean vs powmean p0.22、geomean vs mean_rank p0.98。→ 统计打平，outline 细 headline=过度解读噪声。
+- 排除 pipeline bug：子肽展开含约 40% 非突变 WT 9mer（该清理瑕疵），但只留含突变 9mer 重算 max 仍非最优→WT 污染非主因。
+- 排除数据反转：差距不显著，谈不上反转。
+- **稳健存活**：亲和聚合(max0.32→0.54)、9mer>全窗(21/30)、整合≈最强单——大效应跨口径存活。
+
+### ⑤ 研究出三部曲解法（3 researcher 并行，带引用）
+- **TESLA(Wells 2020 Cell PMC7652061) 撞过同墙**：6 患者/608 肽，不 claim 谁最优、p 值来自 pooled 肽级 → 我们「n=9 分不出」是领域通例，解法=换肽级估计量。
+- **三部曲**：修①换估计量(per-patient Spearman + pooled 肽级 AUPRC，对齐 TESLA/IMPROVE，从 130 肽拿功效)；修②去偷看标签 selection bias(先验用 RRA/geomean，Kolde2012/Li2022)；修③扩 N 外部队列(Müller2023 Immunity 131 患者/Gartner2021 NatCancer 112 IFN-γ ELISpot)。
+- 少簇铁律(Cameron&Miller2015/Leyrat2018)：9 患者是硬墙，LMM 需 30-40 簇；救功效只有肽层一致时。
+
+### ⑥ analyst 决定性检验 VERDICT（数字 Bash 核 DIAG csv）
+- **患者内一致性**：BA best vs max 9/9、PredIG 7/9 一致（真肽层信号）；fusion geomean/powmean/mean_rank 互比 5/9 无方向（效应≈0）；PRIME 5/9 异质。
+- **肽级 AUPRC**：BA vs PredIG ΔAUPRC=+0.084 [+0.006,+0.161] 排除0（可测），同差 per-patient Wilcoxon p=0.359 测不出；fusion 微差紧 null [−0.016,+0.026]。标签=官方 `Ttest_pvalue<0.05`(76阳/54阴)。
+- **VERDICT：修①（肽级估计量）够救 pooling/fusion lever，不必强上修③**；fusion 微差改写等价性(TOST)。caveat：肽级换 estimand→双指标并列不悄悄替换。产出 `DIAG_within_patient_consistency.csv`/`DIAG_peptide_level_auprc.csv`/`figures/DIAG_power_rescue.png`。
+
+### 产物 + 待拍板
+- **提案档**：`reference/METHODOLOGY_REFOUNDATION_PROPOSAL.md`（诊断+TESLA先例+三部曲+analyst verdict+5 拍板点+引用）；00_README 已补指针。
+- **R1-R9 现锁 9mer 官方口径**（诚实状态，headline 未擅改）。
+- **待袁老师/朱同学拍板**（提案第七节）：①认不认诊断 ②确认 9mer 主分析 ③接不接受双主指标(Spearman+肽级AUPRC) ④headline 重定(先验聚合+诚实报 n=9 不可分辨) ⑤是否上外部队列扩 N。
+- **TODO 待核**（researcher 未证）：Müller 下载 URL、TESLA 608 肽是否含 IFN-γ、Gartner dbGaP accession、NatCancer2025 reproducibility crisis DOI。
+
+---
+
+## Entry 36-GATE — 2026-07-01【stage-gate 严审：官方 130 肽 R1-R9 实验生产阶段 = PASS（opus reviewer）】
+
+> 用户「跑 /stage-gate quantimmu-bench」。verifier 数字侧全 PASS（Entry 34 R1-R6 + Entry 35 R7-R9）后，派 opus reviewer 对 02_ACCEPTANCE 8 gate 二元严判 + 对抗审稿 + 跑偏审计。
+
+### 总判：**实验生产阶段 PASS**，真阻断本阶段项=无
+本阶段核心可交付（R1-R9 官方口径全跑通 + 复现 outline §3.1-3.4 全部核心结论 + verifier 三方核数 PASS + TODO 诚实）四项全达成。抽核 R2/R5/R7/R9 关键值与 04_LOG 逐位吻合，无 drift。
+
+| Gate | 数据生产子目标 | 判定 | 投稿级门槛（后续 gated，非本阶段死） |
+|---|---|---|---|
+| G1 工具30 | 官方30/30接入+R1基线 | **PASS** | 「30」措辞 vs 自训/proxy/sparse 诚实标注=写作+袁老师拍板 |
+| G2 数据集 | ds2 130肽三步范式+nested-LOPO | **ds2 部分PASS** | 鼠B16F10/CT26缺+ds1复现GATED+口径三选一=拍板 |
+| G3 三重检验 | nested-LOPO+ablation+robustness | **PASS** | — |
+| G4 fusion12法 | R3 12法×多维+geomean单列 | **PASS** | geomean「突出」措辞需谨慎(漏洞4) |
+| G5 Pearson补充 | R9 Pearson+逐病人分布+30seed | **核心PASS** | mw可变窗缺+ds1 GATED |
+| G6 显著性 | R7配对检验数字+持平结论 | **数字PASS** | 成文=写作阶段 |
+| G7 外部验证+HLA-II | 纯写作gate | **N/A** | Discussion成文 |
+| G8 许可/双盲 | 非数据生产 | **N/A** | DTU consent=投稿前拍板，影响headline |
+
+### 对抗审稿 top 5 漏洞（全=写作阶段前置警示，非生产阶段问题；writer 必读）
+1. 🔴 **整合卖点统计持平**：R7 整合0.446 vs 最强单0.404 Δ+0.043 p0.659 boot CI跨0，n=9。三层高潮对最强单持平=headline最弱承重点，已 pivot R8 部署双方案(按鲁棒性选)缓解。outline 本身承认，非造假。
+2. 🔴 **稀疏工具虚高占榜顶**：R8 表10 rank1 Seq2Neo_sum 0.857/rank2 netMHCstabpan 0.747 = 仅43肽per-patient虚高(Seq2Neo R1 max=-0.058反向)。守门到位(sparse+deploy_candidate=False)但物理占顶。**表10/图4 必须把sparse行灰显/划线**防审稿人截图指控cherry-pick。
+3. 🟠 **设计层selection bias未进CV**：SURV6/dim7成员+全覆盖池门槛+最强单口径都看全数据选、未进CV→整合数字系统偏乐观。§4.3已列此条，**不得删**。SURV6/dim7成员仍selection TODO未拍板=headline分母口径未定。
+4. 🟠 **geomean「突出/唯一」措辞过强**：R3点估计 geomean 非各维最优(dim3 min0.500>geomean0.461;dim7 mean_rank0.496>geomean0.490;仅dim4居首)。**geomean优势仅在R6鲁棒性(删突变胜率0.967/双删rank1)成立，非点估计**。writer从R3点估计写「突出」=越outline overclaim。
+5. 🟡 **HLAthena proxy肽长混杂**：R1榜首HLAthena 0.417=presentation proxy疑肽长count混杂(同deepHLApan警示)，进表5顶端无caveat脚注=误导，待count-safe核。
+
+### 跑偏审计：三卖点全守住，无越 outline 造 headline，无红线命中
+quantitative(全程Spearman主+Pearson补)✅ / mutation-level(pooling 8法→突变级,键Peptide_ID)✅ / 30-tool benchmark(真30/30,自训★/proxy/sparse诚实标注,outline明写「按实际接入填」)✅有条件。未越界证据：R7诚实报持平未灌水显著、R8未提sparse为部署候选、驱动病人P105=官方130肽诚实重算(非硬套outline旧101肽P101)、量级向声称值靠拢但用实测不引声称、ds1/部署/维度selection全显式GATED/TODO无静默假装。**唯一跑偏风险在写作阶段**(writer若照抄P101或从R3点估计写geomean突出)，R1-R9产出本身无此问题。
+
+### gate 结论 → 下一步
+- ✅ 实验生产阶段收口，进写作阶段可开：R1-R9 已 paper-ready 入 §3 表5-10/图1-4。
+- 🛑 写作前拍板（袁老师/朱同学）：DS2口径三选一(130肽/92突变/101肽)、维度集SURV6/dim7成员、方案A netAffneg k=20参数、DTU consent。
+- 后续 gated：鼠数据(数据组)、ds1冻结、部署实例T01/T04(无标签病人数据)、mw可变窗。
+
+---
+
+## Entry 35-R7R9 — 2026-07-01【官方 130 肽口径 R7-R9 补全：配对显著 + 统一排名/部署 + Pearson 补充，verifier 全 PASS】
+
+> 用户「接着推 R7-R9」。派 coder 写 `analysis/official/R{7,8,9}_official.py`（复用 `_official_common` + R5 骨架，读冻结表），主线串行跑，verifier 三方核数。数字 Bash 核 csv。
+
+### 结果（官方 130 肽 + 30 工具，per-patient Fisher-z，DS2 9 患者）
+- **R7 配对显著检验**（§3.3.5 诚实呈现）：整合(SURV6 geomean) ρ̄=**0.4461** [0.270,0.594] vs 最强单 PredIG_geomean ρ̄=**0.4035** [0.222,0.558]，**Δ=+0.0426 置换 p=0.659(n_perm2000)/配对 t p=0.635(df8)** → **复现 outline「整合 vs 最强单统计持平，排名≠显著差异」**。驱动病人=**P105**（LOO Δ 变化最大 0.059；outline 说 P101 是旧 101 肽口径，官方 130 肽变 P105）。boot Δ 95%CI=[-0.111,+0.199] 跨 0 → 不显著。`R7_paired_significance_official.csv`+summary.json。
+- **R8 统一排名+部署**（§3.4 表10/图4）：46 行全方法 LOPO 排名。**方案A 务实默认**=netMHCpan_BA_geomean ρ̄=**0.3856**(1 工具零学习零过拟合)；**方案B 按需**=geomean SURV6 0.4461 / dim7 **0.4901**(7 工具多管线)。稀疏虚高工具(Seq2Neo_sum0.857/netMHCstabpan0.747/NeoaPred n=1)置顶但标 `coverage_flag=sparse`+`deploy_candidate=False` 不入候选 → 全覆盖真榜首=dim7 geomean。**复现 outline「持平→按鲁棒/依赖最少/零过拟合选」双方案**。部署实例 rank_T01/T04=**TODO 无标签病人数据不在冻结表，不造数**。`R8_unified_ranking_official.csv`(46)+deployment.summary.json。
+- **R9 补充材料**：① Pearson 对照 30 工具 max-pool（`R9_single_maxpool_pearson_official.csv` 30×17，主指标 Spearman 换 Pearson 平行表，满足「Spearman 主/Pearson 补充」）② 逐病人分布：最强单 min−0.012/max**0.805**/median0.410、SURV6 geomean min0.095/max0.790/median0.385 → **复现 outline「per-patient 0.17–0.80 剧烈波动」**。ds1 复现=**GATED**（Elispot_Dataset1.xlsx 未在官方 pooling 管线冻结，需先跑 ds1 30 工具 pooling→冻结，独立 gated 不造数）。`R9_perpatient_distribution_official.csv`+supplementary.summary.json。
+
+### 🎯 一句话结账：官方 130 肽口径 **R1-R9 全跑通**，复现袁老师 outline §3.1-3.4 **全部核心结论**（含 R7 持平 + R8 双部署方案 + R9 Pearson/分布）。R7-R9 verifier 全 PASS。
+
+### ✅ verifier 三方核数全 PASS（独立从冻结表重算）
+- 13 个报告值 csv↔json↔主线 逐个 <1e-4 吻合（R7 Δ0.042646/p0.658671、R8 三方案 ρ̄、R9 分布 min/max/median）。
+- 溯源抽核：PredIG_geomean 9 病人 per-patient Spearman 独立 scipy 重算逐位吻合，官方聚合 0.403484 精确匹配；R9 PRIME Pearson 聚合 0.3024 精确匹配。
+- 无造数（rho∈[-1,1] 无越界/无常量整列）、稀疏虚高守门到位（R7 最强单未误选稀疏 Seq2Neo）、口径一致（SURV6 三处一致 min_pep3 Fisher-z）。
+- TODO/gated 诚实：部署实例/ds1/维度集 selection/方案A netAffneg 精确网格 全显式标注非静默假装。无 DRIFT 无口径存疑。
+
+### selection TODO（不擅断，待袁老师/朱同学确认 outline 口径，同 R1-R6）
+- R7/R8/R9 fusion 维度集(SURV6/dim7)成员 + R8 方案A netMHCpan_BA 是否用 outline 指定 netAffneg topk(k=20,α=0) 精确参数（冻结表未含该网格，用最优 pooling geomean 近似）+ 最强单工具全覆盖池门槛 = selection，全标 TODO。
+
+### 剩余活（R1-R9 外）
+- 部署实例 rank_T01/T04（数据组提供无标签病人后跑）+ ds1 复现（先冻结 ds1 pooling）+ 小鼠 B16F10/CT26 全框架（数据未到位，independent gated）。
+- 写 tex：R1-R9 已 paper-ready，可进 §3 表5-10/图1-4。
+
+---
+
 ## Entry 34-R1R9 — 2026-07-01【官方 130 肽口径 R1-R9 实验：复现 outline 全核心方向 + 修 R5 稀疏虚高 bug】
 
 > 通宵自主。Phase 0 冻结后跑 R1-R9（派 coder 写 `analysis/official/R{1..6}_official.py` 复用旧骨架读冻结表，主线串行跑）。严格对齐袁老师 outline §3.1-3.4。数字 Bash 核 csv。

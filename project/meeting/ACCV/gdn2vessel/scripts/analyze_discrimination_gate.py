@@ -38,6 +38,21 @@ analyze_discrimination_gate.py — 批2 区分度门（Disc-Gate）分析脚本�
      ② OLS 斜率分散度 max-min βm 只用 SR/reid_rate（禁 ε_β0）+ reid_rate 同号
   6. Kendall's W（闭式手算，报告+四象限联读，不单独定生死）
 
+═══════════════════════════════════════════════════════════════════════════════
+L4 4-集扩展预登记（NEW, 2026-07-01, 用户拍板；与旧 M=8 DRIVE+CHASE 冻结正交并存）:
+  - 旧口径冻结不动：默认 --datasets drive chase（M=8 批2/批3 已 PASS），
+    image-level bootstrap，本脚本默认调用路径与批2/批3 逐字节一致，禁改。
+  - 新口径（opt-in）：--datasets drive chase stare fives --cluster_by_dataset
+      • 每集单独 PSR on clDice（per-dataset breakdown）。
+      • 4 集 pooled PSR：数据集作 cluster 维度（两级 cluster bootstrap：先按数据集
+        重采样 clusters，再集内按 image_id 重采样）。
+      • 每集独立饱和 sanity：某集强 baseline(fr_unet) Medium clDice >0.90 或 <0.30
+        → 该集主判据 severity 自动切 Hard（跑前规则，非 HARKing）。FIVES test n=200
+        大集尤需（--no_subsample 生成的全集）。
+      • 预登记 M=9（含 creatis_postproc）此刻冻结：跑前定死方法池=9，禁事后加减凑 PSR。
+        4-集模式下若 M≠9 打印 WARNING（提示方法池漂移）。
+═══════════════════════════════════════════════════════════════════════════════
+
 铁律:
   - 全手算 numpy，禁 scipy.stats（OMP 红线）
   - cluster bootstrap 按 image_id（非像素）
@@ -65,6 +80,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+
+
+# 4-集扩展预登记方法池大小（含 creatis_postproc），跑前冻结。禁事后加减凑 PSR。
+PREREG_M_4SET = 9
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -134,9 +153,16 @@ def _build_pivot(
     rows: List[Dict],
     severity: str,
     datasets: Tuple[str, ...] = ("drive", "chase"),
+    severity_map: Optional[Dict[str, str]] = None,
 ) -> Dict:
     """
     过滤 severity + datasets，按 (img_id, baseline) pivot。
+
+    Args:
+      severity     : 单一 severity（当 severity_map=None 时全集统一用此值）。
+      severity_map : 可选 per-dataset severity 映射 {dataset_lower: severity}。
+                     提供时每集按其 active severity 过滤（4-集饱和 sanity 用，
+                     某集可切 Hard 而其余留 Medium）。默认 None = 旧口径逐字节不变。
 
     返回 dict:
       methods      : sorted list of baseline names (M 个)
@@ -147,17 +173,30 @@ def _build_pivot(
       reid_mat     : (n, M) float array
       img_dataset  : list[str] — 每个 img_id 对应 dataset（用于 cluster label）
     """
-    # 过滤目标 severity + dataset
-    filtered = [
-        r for r in rows
-        if r["severity"].strip().lower() == severity.strip().lower()
-        and r["dataset"].strip().lower() in {d.lower() for d in datasets}
-    ]
+    ds_set = {d.lower() for d in datasets}
+
+    if severity_map is None:
+        # 旧口径：全集统一 severity（默认路径，逐字节不变）。
+        filtered = [
+            r for r in rows
+            if r["severity"].strip().lower() == severity.strip().lower()
+            and r["dataset"].strip().lower() in ds_set
+        ]
+    else:
+        # 4-集口径：每集按其 active severity 过滤（per-dataset 饱和 sanity）。
+        sev_map_l = {k.lower(): v.strip().lower() for k, v in severity_map.items()}
+        filtered = [
+            r for r in rows
+            if r["dataset"].strip().lower() in ds_set
+            and r["dataset"].strip().lower() in sev_map_l
+            and r["severity"].strip().lower() == sev_map_l[r["dataset"].strip().lower()]
+        ]
 
     if not filtered:
         raise ValueError(
-            f"过滤后无数据。severity={severity!r}, datasets={datasets}。"
-            "请检查 CSV 中 severity 列值（大小写）与 --severity 参数是否匹配。"
+            f"过滤后无数据。severity={severity!r}, severity_map={severity_map}, "
+            f"datasets={datasets}。"
+            "请检查 CSV 中 severity 列值（大小写）与参数是否匹配。"
         )
 
     # 构建 (img_id, baseline) → row dict
@@ -257,6 +296,38 @@ def bh_fdr_threshold(p_values: np.ndarray, q: float = 0.05) -> np.ndarray:
 #  PSR 计算核心
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _cluster_bootstrap_mean(
+    d_valid: np.ndarray,
+    cluster_valid: np.ndarray,
+    B: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """两级 cluster bootstrap 的 mean(d) 分布（数据集作 cluster 维度）。
+
+    先按 cluster（数据集）有放回重采样 clusters，再集内按行有放回重采样，
+    拼接后取均值。捕捉集间异质性 → 比 image-level 更保守。
+
+    Args:
+        d_valid       : (nv,) 有效配对差
+        cluster_valid : (nv,) 每行的 cluster 标签（如 dataset 名）
+        B, rng        : bootstrap 次数 + 生成器
+    Returns:
+        (B,) bootstrap 均值分布
+    """
+    unique_cl = sorted(set(cluster_valid.tolist()))
+    cl_to_idx = {c: np.where(cluster_valid == c)[0] for c in unique_cl}
+    k = len(unique_cl)
+    boot_means = np.empty(B)
+    for bi in range(B):
+        chosen = [unique_cl[j] for j in rng.integers(0, k, size=k)]
+        parts = []
+        for c in chosen:
+            idxc = cl_to_idx[c]
+            parts.append(d_valid[idxc[rng.integers(0, len(idxc), size=len(idxc))]])
+        boot_means[bi] = np.concatenate(parts).mean()
+    return boot_means
+
+
 def compute_psr(
     metric_mat: np.ndarray,
     methods: List[str],
@@ -264,6 +335,7 @@ def compute_psr(
     B: int = 2000,
     q_fdr: float = 0.05,
     rng: Optional[np.random.Generator] = None,
+    cluster_labels: Optional[List[str]] = None,
 ) -> Dict:
     """
     成对可分离率 PSR（ACCEPTANCE_CRITERIA 主判据）。
@@ -280,6 +352,9 @@ def compute_psr(
         B          : bootstrap 重采样次数
         q_fdr      : FDR 水平
         rng        : numpy random generator
+        cluster_labels : 可选 (n,) cluster 标签（如每图的 dataset 名）。提供时用
+                     两级 cluster bootstrap（数据集作 cluster 维度，4-集口径）；
+                     None = image-level bootstrap（旧口径，逐字节不变）。
 
     Returns:
         dict with keys:
@@ -322,11 +397,15 @@ def compute_psr(
             p_values[pi] = 1.0
             continue
 
-        # cluster bootstrap：按 image_id 重采样（无 cluster 标签时按行）
-        boot_means = np.empty(B)
-        for bi in range(B):
-            samp_idx = rng.integers(0, nv, size=nv)
-            boot_means[bi] = d_valid[samp_idx].mean()
+        # bootstrap: image-level（默认，旧口径逐字节不变）或两级 cluster（数据集维度）
+        if cluster_labels is None:
+            boot_means = np.empty(B)
+            for bi in range(B):
+                samp_idx = rng.integers(0, nv, size=nv)
+                boot_means[bi] = d_valid[samp_idx].mean()
+        else:
+            cluster_valid = np.asarray(cluster_labels, dtype=object)[idx_valid]
+            boot_means = _cluster_bootstrap_mean(d_valid, cluster_valid, B, rng)
 
         ci_lo = float(np.percentile(boot_means, 2.5))
         ci_hi = float(np.percentile(boot_means, 97.5))
@@ -389,6 +468,7 @@ def compute_shuffle_null(
     B: int = 2000,
     q_fdr: float = 0.05,
     rng: Optional[np.random.Generator] = None,
+    cluster_labels: Optional[List[str]] = None,
 ) -> Dict:
     """
     Shuffle-null：将每张图的 baseline 列随机置换，重算 PSR，得到 null 分布。
@@ -425,6 +505,7 @@ def compute_shuffle_null(
             perm_mat, methods, img_ids,
             B=B_inner, q_fdr=q_fdr,
             rng=rng,
+            cluster_labels=cluster_labels,
         )
         null_psrs[pi] = psr_result["psr"]
 
@@ -662,6 +743,93 @@ def compute_kendall_w(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  L4 4-集：per-dataset 饱和 sanity + per-dataset PSR
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_per_dataset_saturation(
+    rows: List[Dict],
+    datasets: Tuple[str, ...],
+    strong_baseline: str,
+    base_severity: str,
+    saturation_hi: float,
+    saturation_lo: float,
+) -> Tuple[Dict[str, str], Dict[str, Dict]]:
+    """每集独立饱和 sanity（跑前规则）。
+
+    对每个数据集：强 baseline (fr_unet) Medium clDice 均值 >hi 或 <lo → 该集主判据
+    severity 切 Hard，否则用 base_severity。
+
+    Returns:
+        (sev_map, sat_info)
+        sev_map  : {dataset_lower: active_severity}
+        sat_info : {dataset_lower: {strong_medium_cldice_mean, switched, active_severity, n}}
+    """
+    sev_map: Dict[str, str] = {}
+    sat_info: Dict[str, Dict] = {}
+    for ds in datasets:
+        dsl = ds.lower()
+        vals = [
+            r["cldice"] for r in rows
+            if r["baseline"].strip().lower() == strong_baseline.lower()
+            and r["severity"].strip().lower() == "medium"
+            and r["dataset"].strip().lower() == dsl
+            and not np.isnan(r["cldice"])
+        ]
+        mean_v = float(np.mean(vals)) if vals else float("nan")
+        switched = False
+        active = base_severity
+        if not np.isnan(mean_v) and (mean_v > saturation_hi or mean_v < saturation_lo):
+            switched = True
+            active = "Hard"
+        sev_map[dsl] = active
+        sat_info[dsl] = {
+            "strong_medium_cldice_mean": round(mean_v, 6) if not np.isnan(mean_v) else None,
+            "switched": switched,
+            "active_severity": active,
+            "n": len(vals),
+        }
+    return sev_map, sat_info
+
+
+def compute_per_dataset_psr(
+    rows: List[Dict],
+    datasets: Tuple[str, ...],
+    sev_map: Dict[str, str],
+    n_bootstrap: int,
+    q_fdr: float,
+    seed: int,
+) -> Dict[str, Dict]:
+    """每集单独 PSR on clDice（image-level bootstrap，各集用其 active severity）。"""
+    out: Dict[str, Dict] = {}
+    for ds in datasets:
+        dsl = ds.lower()
+        active = sev_map.get(dsl, "Medium")
+        try:
+            piv = _build_pivot(rows, severity=active, datasets=(dsl,))
+        except ValueError as e:
+            out[dsl] = {"error": str(e), "active_severity": active}
+            continue
+        methods = piv["methods"]
+        if len(methods) < 2:
+            out[dsl] = {"error": f"M<2 (M={len(methods)})", "active_severity": active}
+            continue
+        res = compute_psr(
+            piv["cldice_mat"], methods, piv["img_ids"],
+            B=n_bootstrap, q_fdr=q_fdr,
+            rng=np.random.default_rng(seed + 100),
+        )
+        out[dsl] = {
+            "psr": round(res["psr"], 6),
+            "n_separable": res["n_separable"],
+            "n_pairs": res["n_pairs"],
+            "M": len(methods),
+            "n_images": len(piv["img_ids"]),
+            "active_severity": active,
+        }
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  主函数
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -678,9 +846,14 @@ def analyze_gate(
     strong_baseline: str = "fr_unet",
     saturation_hi: float = 0.90,
     saturation_lo: float = 0.30,
+    cluster_by_dataset: bool = False,
 ) -> Dict:
     """
     执行批2区分度门完整分析。
+
+    cluster_by_dataset: False（默认）= 旧 M=8 DRIVE+CHASE 口径（image-level bootstrap，
+        全集统一 severity），逐字节不变。True = L4 4-集口径（per-dataset 饱和 sanity
+        + per-dataset PSR + 数据集作 cluster 维度的两级 cluster bootstrap 池化 PSR）。
 
     Args:
         csv_paths           : per-image CSV 路径列表
@@ -710,45 +883,72 @@ def analyze_gate(
 
     active_severity = severity
 
+    # 4-集口径的额外产出（默认 None，仅 cluster_by_dataset=True 时填充）
+    severity_map: Optional[Dict[str, str]] = None
+    per_dataset_saturation: Optional[Dict[str, Dict]] = None
+    per_dataset_psr: Optional[Dict[str, Dict]] = None
+    m_prereg_warning = ""
+
     # ------------------------------------------------------------------ #
     #  Step 4: 饱和 sanity（跑前写死：FR-UNet Medium clDice >0.90 or <0.30 切 Hard）
     # ------------------------------------------------------------------ #
     saturation_switch = False
     fr_unet_medium_cldice = []
-    for r in rows:
-        if (
-            r["baseline"].strip().lower() == strong_baseline.lower()
-            and r["severity"].strip().lower() == "medium"
-            and r["dataset"].strip().lower() in {d.lower() for d in datasets}
-            and not np.isnan(r["cldice"])
-        ):
-            fr_unet_medium_cldice.append(r["cldice"])
 
-    fr_unet_medium_mean = float(np.mean(fr_unet_medium_cldice)) if fr_unet_medium_cldice else float("nan")
+    if not cluster_by_dataset:
+        # ---- 旧口径：pooled 单一 severity 饱和 sanity（DRIVE+CHASE M=8，逐字节不变）----
+        for r in rows:
+            if (
+                r["baseline"].strip().lower() == strong_baseline.lower()
+                and r["severity"].strip().lower() == "medium"
+                and r["dataset"].strip().lower() in {d.lower() for d in datasets}
+                and not np.isnan(r["cldice"])
+            ):
+                fr_unet_medium_cldice.append(r["cldice"])
 
-    if not np.isnan(fr_unet_medium_mean):
-        if fr_unet_medium_mean > saturation_hi or fr_unet_medium_mean < saturation_lo:
-            saturation_switch = True
-            active_severity = "Hard"
+        fr_unet_medium_mean = float(np.mean(fr_unet_medium_cldice)) if fr_unet_medium_cldice else float("nan")
+
+        if not np.isnan(fr_unet_medium_mean):
+            if fr_unet_medium_mean > saturation_hi or fr_unet_medium_mean < saturation_lo:
+                saturation_switch = True
+                active_severity = "Hard"
+                print(
+                    f"[gate] WARNING: 饱和 sanity 触发！"
+                    f"{strong_baseline!r} Medium clDice 均值={fr_unet_medium_mean:.4f} "
+                    f"（阈: lo={saturation_lo}, hi={saturation_hi}）。"
+                    f"主判据档自动切换为 Hard（预登记规则）。",
+                    file=sys.stderr,
+                )
+        else:
             print(
-                f"[gate] WARNING: 饱和 sanity 触发！"
-                f"{strong_baseline!r} Medium clDice 均值={fr_unet_medium_mean:.4f} "
-                f"（阈: lo={saturation_lo}, hi={saturation_hi}）。"
-                f"主判据档自动切换为 Hard（预登记规则）。",
+                f"[gate] WARNING: 未找到 {strong_baseline!r} 的 Medium severity 数据，"
+                "无法做饱和 sanity（将继续用原 severity）。",
                 file=sys.stderr,
             )
     else:
-        print(
-            f"[gate] WARNING: 未找到 {strong_baseline!r} 的 Medium severity 数据，"
-            "无法做饱和 sanity（将继续用原 severity）。",
-            file=sys.stderr,
+        # ---- 4-集口径：per-dataset 饱和 sanity（某集可切 Hard，其余留 base）----
+        severity_map, per_dataset_saturation = compute_per_dataset_saturation(
+            rows, datasets, strong_baseline, severity, saturation_hi, saturation_lo,
         )
+        saturation_switch = any(v["switched"] for v in per_dataset_saturation.values())
+        # pooled clDice mean（跨集，仅报告用；主判据走 per-dataset active severity）
+        fr_unet_medium_mean = float("nan")
+        print(f"[gate] 4-集 per-dataset 饱和 sanity → severity_map={severity_map}", file=sys.stderr)
+        for dsl, info in per_dataset_saturation.items():
+            if info["switched"]:
+                print(
+                    f"[gate] WARNING: {dsl.upper()} 饱和触发（{strong_baseline} Medium "
+                    f"clDice={info['strong_medium_cldice_mean']}）→ 该集主判据切 Hard。",
+                    file=sys.stderr,
+                )
 
     # ------------------------------------------------------------------ #
-    #  Step 1-2: 构建 pivot（主判据 severity）
+    #  Step 1-2: 构建 pivot（主判据 severity；4-集用 per-dataset severity_map）
     # ------------------------------------------------------------------ #
-    print(f"[gate] 构建 pivot，severity={active_severity!r}，datasets={datasets}...", file=sys.stderr)
-    pivot = _build_pivot(rows, severity=active_severity, datasets=datasets)
+    print(f"[gate] 构建 pivot，severity={active_severity!r}，severity_map={severity_map}，"
+          f"datasets={datasets}...", file=sys.stderr)
+    pivot = _build_pivot(rows, severity=active_severity, datasets=datasets,
+                         severity_map=severity_map)
     methods   = pivot["methods"]
     img_ids   = pivot["img_ids"]
     cldice_mat = pivot["cldice_mat"]
@@ -758,20 +958,41 @@ def analyze_gate(
 
     M = len(methods)
     n = len(img_ids)
-    print(f"[gate] M={M} 方法，n={n} 图像（pooled DRIVE+CHASE）", file=sys.stderr)
+    print(f"[gate] M={M} 方法，n={n} 图像（pooled {list(datasets)}）", file=sys.stderr)
     print(f"[gate] 方法: {methods}", file=sys.stderr)
 
     if M < 2:
         raise RuntimeError(f"至少需要 2 个方法，当前 M={M}。")
 
+    # cluster 标签：4-集口径用数据集作 cluster 维度；默认 None = image-level（旧口径）
+    cluster_labels = pivot["img_dataset"] if cluster_by_dataset else None
+
+    # 4-集：预登记 M=9 冻结校验（禁事后加减方法凑 PSR）+ per-dataset PSR
+    if cluster_by_dataset:
+        if M != PREREG_M_4SET:
+            m_prereg_warning = (
+                f"WARNING: 4-集预登记方法池 M={PREREG_M_4SET}（含 creatis），"
+                f"当前 M={M} 不符 → 方法池漂移，核对是否漏跑/多跑 baseline。"
+            )
+            print(f"[gate] {m_prereg_warning}", file=sys.stderr)
+        print(f"[gate] 4-集：计算 per-dataset PSR...", file=sys.stderr)
+        per_dataset_psr = compute_per_dataset_psr(
+            rows, datasets, severity_map or {},
+            n_bootstrap=n_bootstrap, q_fdr=q_fdr, seed=seed,
+        )
+        for dsl, r in per_dataset_psr.items():
+            print(f"[gate]   {dsl.upper()}: {r}", file=sys.stderr)
+
     # ------------------------------------------------------------------ #
-    #  Step 1: PSR on clDice
+    #  Step 1: PSR on clDice（4-集: 两级 cluster bootstrap 池化）
     # ------------------------------------------------------------------ #
-    print(f"[gate] 计算 PSR on clDice（B={n_bootstrap}）...", file=sys.stderr)
+    print(f"[gate] 计算 PSR on clDice（B={n_bootstrap}，"
+          f"cluster_by_dataset={cluster_by_dataset}）...", file=sys.stderr)
     psr_result = compute_psr(
         cldice_mat, methods, img_ids,
         B=n_bootstrap, q_fdr=q_fdr,
         rng=np.random.default_rng(seed + 10),
+        cluster_labels=cluster_labels,
     )
     psr_cldice   = psr_result["psr"]
     n_separable  = psr_result["n_separable"]
@@ -788,6 +1009,7 @@ def analyze_gate(
         n_perm=n_permutation, B=n_bootstrap,
         q_fdr=q_fdr,
         rng=np.random.default_rng(seed + 20),
+        cluster_labels=cluster_labels,
     )
     null_95pct = null_result["null_95pct"]
     print(f"[gate] null 95pct: {null_95pct:.4f}，real PSR: {psr_cldice:.4f}", file=sys.stderr)
@@ -932,6 +1154,13 @@ def analyze_gate(
         "n_bootstrap":           n_bootstrap,
         "n_permutation":         n_permutation,
         "datasets_pooled":       list(datasets),
+        # L4 4-集扩展字段（默认 None / False，仅 cluster_by_dataset=True 时填充）
+        "cluster_by_dataset":       cluster_by_dataset,
+        "severity_map":             severity_map,
+        "per_dataset_saturation":   per_dataset_saturation,
+        "per_dataset_psr":          per_dataset_psr,
+        "prereg_M_4set":            PREREG_M_4SET if cluster_by_dataset else None,
+        "m_prereg_warning":         m_prereg_warning,
         "timestamp":             datetime.datetime.utcnow().isoformat() + "Z",
         # 配对明细（用于主线 debug，不进 paper）
         "pair_details_cldice":   psr_result["pair_details"],
@@ -960,7 +1189,14 @@ def _parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--datasets", nargs="+", default=["drive", "chase"],
-        help="pool 的 dataset（小写，默认 drive chase）",
+        help="pool 的 dataset（小写，默认 drive chase = 旧 M=8 冻结口径）。"
+             "4-集扩展: --datasets drive chase stare fives",
+    )
+    p.add_argument(
+        "--cluster_by_dataset", action="store_true", default=False,
+        help="L4 4-集口径：数据集作 cluster 维度（两级 cluster bootstrap）+ "
+             "per-dataset 饱和 sanity + per-dataset PSR + M=9 冻结校验。"
+             "默认 OFF = 旧 DRIVE+CHASE M=8 image-level 口径，逐字节不变。",
     )
     p.add_argument(
         "--out_json", default=None,
@@ -1023,6 +1259,7 @@ def main():
         strong_baseline     = args.strong_baseline,
         saturation_hi       = args.saturation_hi,
         saturation_lo       = args.saturation_lo,
+        cluster_by_dataset  = args.cluster_by_dataset,
     )
 
     # 输出 JSON
@@ -1043,6 +1280,14 @@ def main():
     print(f"  交叉印证 ε_β0 consistent = {result['cross_check_eps_consistent']}")
     print(f"  SR 斜率分散度 = {result['slope_dispersion_sr']}")
     print(f"  M = {result['M']}  n_images_pooled = {result['n_images_pooled']}")
+    if result.get("cluster_by_dataset"):
+        print(f"  [4-集] cluster_by_dataset=True  severity_map = {result['severity_map']}")
+        if result.get("per_dataset_psr"):
+            for dsl, r in result["per_dataset_psr"].items():
+                print(f"    per-dataset PSR[{dsl}] = {r.get('psr')} "
+                      f"(sev={r.get('active_severity')}, n={r.get('n_images')}, M={r.get('M')})")
+        if result.get("m_prereg_warning"):
+            print(f"  {result['m_prereg_warning']}")
 
 
 if __name__ == "__main__":

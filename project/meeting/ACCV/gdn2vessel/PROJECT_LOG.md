@@ -1,5 +1,59 @@
 # gdn2vessel PROJECT_LOG
 
+## Entry 34 — 2026-07-01 大编队续推：核实纠 LOG 不实 + 三事实前置 + 三决策 + Wave1收尾/Wave2扩池启动
+
+承 Entry 33。本窗大编队读档续推 benchmark-only D&B。**用户拍板：不赶 ACCV 07-05 硬截稿（建到位冲下一 venue），扩方法池 M=9(加 creatis)+ 数据集 STARE/FIVES 全谱。**
+
+### ⚠️ HPC 核实纠 LOG 两处不实（教训=自报 smoke 过别信，[[feedback_pytest_green_not_runnable]]）
+Bash 精核 HPC `outputs/p3` 完成矩阵（不信 LOG）：
+- **fr_unet s1,2「补训完」是假的**：Entry33 收工称 fr_unet seed{1,2}×{DRIVE,CHASE} 补训完，实际 HPC 4 目录**全空**（ckpt=0 csv=0）。真相=b3 drip 硬编码跳过 fr_unet（不在 TRAIN_BASELINES），那次「补训」从没真跑成。→ **本轮真起补训 4 job**（1504268-71，gpu4090/40ep，`_scratch/submit_frunet_s12.py` 幂等 drip，保持 gpu4090 不降 gpu3090）。gpu4090 被外部 job 占满长 PENDING。
+- **精确矩阵 = 44/48 done**（非 LOG 说的缺 eval）：M=8×{DRIVE,CHASE}×3seed，缺的 4 = fr_unet s1,2（缺训练非缺 eval）。eval csv 命名 `p3_<ds>_<baseline>_s<seed>_<Sev>.csv` 4/cell 藏 cell 目录内。
+
+### ⚠️ cs_net eval bug 定论（md5 实锤非 stale）→ 用户拍板方案 B
+- 拉 176 csv 本地核：cs_net dice DRIVE 0.29-0.51 / CHASE 0.18（训练 val 0.804）。**md5 对比 HPC csnet.py==本地（含 resize-512），坏 csv 06-26 11:03 生成晚于代码 8h → 非 stale**。
+- coder 取证根因 = **训练/评测尺度失配**：官方 CS-Net train+test 都 rescale-512，但我们统一台训练用 native 随机裁 512、eval 却整图下采 512²（adapter 那个 resize-512「修复」反而制造失配）。其余 7 baseline 全程 native 一致故正常（backbone 0.71）。
+- **用户拍板方案 B**（eval 改 native）：coder 改 `csnet.py forward_adapt` = 去 resize-512 → native 整图前向 + pad-to-16（CSNet 4 层 MaxPool=16×下采样）→ crop 回。已部署 HPC（md5 `08b0464` match）+ 删 6 cs_net stale csv + 起 eval drip 重评（gpu3090）。预期 dice 回 ~0.78。
+
+### 三事实前置（researcher 核官方源，决定算力+协议）
+- **FIVES 输入 = resize 512²**（官方 arXiv 2406.14994「resampled to 512×512」+CLAHE clip2/grid8；实证 FIVES 最优 256-876px；比 native 2048² 省 16-21× 算力 → 块 A 从 345-500 下修 ~150-250 GPU·h）。fives.py L82-83 TODO 未定 → coder 定死 resize-512。
+- **STARE 协议**：官方金标准=LOO(20折)，但严格 LOO=480run 不可行；文献 SA-UNet/SA-UNetv2 固定 16/4 split 被接受惯例。**用户拍板固定 12/4/4 + paper 显式声明偏离**（test=4 与 SA-UNet 一致），datasets.json 同步改标注。
+- **creatis Stage2 权重**：官方 `creatis-myriad/plug-and-play-reco-regularization` 的 `modeles/2D_model_stare/best_metric_model.pth`（size=**1,657,821**，git blob sha1 `8d93daa3`，本地预取 sha256 `c39fd99e5730...`）。config：adam/lr0.001/1000ep/PDdice/**norm=batch**/patch96。官方 env=**monai==1.3.0**/torch2.2/numpy1.26.4。**⚠️ repo 无 LICENSE=保留所有权利 → 不 redist 权重，只给下载脚本+cite 两篇**（arXiv 2404.10506 + 2408.12943）。
+
+### 三决策（用户拍板，均选推荐）
+1. cs_net → **方案 B**（eval native，统一台公平，不 game）
+2. STARE → **固定 12/4/4 + 声明**（引 SA-UNet 惯例）
+3. Wave-2 节奏 → **廉价先验通链路**（先 STARE ~25h + creatis-DRIVE/CHASE-s42 验全链路，再铺贵的 FIVES）
+- 自主定（有据可否决）：FIVES resize-512；creatis 不 redist 只下载脚本+cite；creatis Stage1=fr_unet（2026-06-25 在册 wired）。
+
+### coder 编队产出（3 并行，文件互斥，只改不跑）
+- **cs_net B**（`csnet.py`）：native+pad16，py_compile OK，已部署重评中。
+- **creatis 接线**（`creatis_postproc.py`/`post_treatement.py`/`creatis.yaml`/`evaluate.py`/新 `scripts/download_creatis_weight.py`/.gitignore）：**修 norm INSTANCE→batch**（否则官方 BatchNorm 权重 load_state_dict 键失配崩）；evaluate.py 读官方 config_training.json 的 norm 兜底；下载脚本硬校验 size+sha1。py_compile 4 文件全过。**待主线：HPC 装 monai==1.3.0 + 下权重 + 跑 creatis s42 验通**。
+- **STARE+FIVES 使能**（`fives.py`/`stare.py`/`precompute_benchmark.py`/`launch_p3_baseline_sweep.py`/`analyze_discrimination_gate.py`）：进行中——FIVES resize-512、STARE 固定 split、precompute 加 STARE/FIVES 且 manifest 不覆盖(R3)、analyze 扩 4 集 pooled+每集 PSR+FIVES 饱和切 Hard+预登记 M=9 冻结。
+
+### Wave-2 cheap-first 部署完成（2026-07-01，用户放行对外）
+- **11 文件上传 HPC**（md5 全 match）+ **gdn2venv 装 monai==1.3.0**（官方 env 版本）+ **下 creatis 权重**（`models/creatis/2D_model_stare` 1657821B，sha256 `c39fd99e...`，config 同 parent）。
+- **HPC 真烟测全 PASS**：creatis load_state_dict missing=0/unexpected=0（norm=batch 修复正确）；FIVES loader test=200 img[1,512,512]（resize-512 生效）；STARE train=12/test=4（固定 split）。
+- **修集成缝**：make_eval_command 给 creatis 的 `--ckpt` 原指向不存在的训练 best.pth → 加 `CREATIS_STAGE2_CKPT` 常量，creatis eval `--ckpt`=Stage2 权重（<15 行小修，py_compile OK，重传）。
+- **precompute STARE cache**：16 entry（test n=4×4severity），manifest append 保住 drive/chase（R3 满足，datasets=[chase,drive,stare]）。
+- **FIVES 用全 200**（`--no_subsample`，用户放行，新 4 集 gate 独立预登记）。
+
+### ⚠️ cs_net 三招全败 → 用户拍板方案 A 官方 rescale-512 重训
+- 三种 eval 全试（均实测 HPC 重评、md5/mtime/log 核实非 stale）：resize-whole-512=0.51 / native-whole+pad16=0.49 / **512-tile 滑窗=0.48**（DRIVE s42），CHASE ~0.21。值几乎不动。
+- **根因非 bug**：cs_net 训练用 native 随机裁 512（val 0.804 是 crop 级）+ AffinityAttention 对输入范围敏感 → 统一 native 台上就是弱+不稳（seed 方差大 0.48 vs 0.29）。但 **SR=0.74/reID=0.77 高 = 过预测**（§3.3 指标解离活证）。
+- **用户拍板方案 A**：cs_net train+eval 都改官方 rescale-512（中心方裁 min 边+resize512，模型只见 512² 方图，发表 ~0.82），给 CS-Net 公平机会+防审稿人「搞残 CS-Net」。**coder 实现中**（改 train 分支+eval forward_adapt）→ 待重训 cs_net×{DRIVE,CHASE}×3seed=6run（1000ep）+重评 6 cell。
+
+### ⚠️ QOS 饥饿处置 + fr_unet 暂缓（非 gpu3090 移，合规）
+- QOS submit 上限=6（jiayu2403 全窗共享，fmreg/cxr/hyperfid 也吃）。**4 个 fr_unet 卡 jammed gpu4090（1.5hr 没动、dirs 空）白占 QOS 饿死 gpu3090 可跑的 cheap-first**。
+- **决策**：`scancel` 4 fr_unet + 停 fr_unet drip 释放 QOS（fr_unet 不在 cheap-first 关键路径，只挡最终 M=8 verdict）→ 待 gpu4090 清了再补（**未移 gpu3090，守 gpu4090-only policy**）。
+- **cheap-first drip 起**（`_scratch/submit_cheapfirst_drip.py`，gpu3090，幂等重试 QOS）：STARE 训练 24run + creatis DRIVE/CHASE s42 eval 验链路。cs_net 重评走 eval_3seed drip（现值待方案 A 重训覆盖）。
+
+### 待续（下次起点）
+1. **cs_net 方案 A**：coder 回 → 部署 → 重训 6run(1000ep)+重评 6 cell → 验 dice 回 ~0.78-0.82。
+2. **cheap-first 验通**：STARE 训练 24run + creatis s42 eval 落地 → analyst/verifier 核 STARE leaderboard + creatis 两段数字 sane → 通则铺 **FIVES**（precompute n=200 + 8 baseline×3seed 训练，块A ~150-250 GPU·h）。
+3. **fr_unet s1,2 补训**（gpu4090 清了/QOS 空了重起，`_scratch/submit_frunet_s12.py`）→ 凑齐 M=8 3seed。
+4. **全谱正式 verdict**：全 M=9×4集×3seed eval 齐 → `analyze_discrimination_gate.py --cluster_by_dataset --datasets drive chase stare fives`（每集 PSR+pooled n≈216+FIVES 饱和切 Hard+预登记 M=9 冻结）→ stage-gate → 写 §3。
+- gpu_slot：`dc04d265`(hpc,fr_unet 暂缓待补) + `a29eeee9`(hpc3090,cheap-first)。计划=`~/.claude/plans/vivid-weaving-barto.md`。**QOS=6 全窗共享 → 整 campaign 多小时 drain,drip 幂等自续,别主线守。**
+
 ## Entry 33 — 2026-06-25 大编队读档续推：批1 验 PASS + 批2 区分度门设计(skeptic 2🔴 待补冻) + creatis 两段式入口
 
 承 Entry 32 benchmark-only 重定位。本窗大编队读档续推，**核心成果=批1 出口 gate 确证 PASS + 批2「方法间区分度命门」预登记设计成型(但红队逮 2🔴 必补再冻)**。

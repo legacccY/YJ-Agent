@@ -36,7 +36,8 @@ baseline:
 
 model:
   # monai UNet architecture — DO NOT CHANGE (must match pre-trained weights)
-  norm: "INSTANCE"           # 官方 config_training.json norm 字段默认值
+  norm: "batch"              # 官方 config_training.json norm 字段（researcher 核实）
+                             # ⚠️ 官方权重 = BatchNorm；改 INSTANCE 会 load_state_dict 失配
   channels: [16, 32, 64, 128]   # 官方固定架构
   strides: [2, 2, 2]            # 官方固定
   num_res_units: 2               # 官方固定

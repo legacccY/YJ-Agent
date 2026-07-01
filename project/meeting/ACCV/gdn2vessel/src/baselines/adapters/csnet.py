@@ -446,6 +446,9 @@ class CSNetAdapter(BaselineAdapter):
             },
         }
 
+    # 官方 rescale-512 eval：中心方裁丢掉的边条填此背景 logit（sigmoid≈0 → pred=背景）。
+    _BG_LOGIT: float = -1e4
+
     def forward_adapt(
         self,
         model: nn.Module,
@@ -453,68 +456,79 @@ class CSNetAdapter(BaselineAdapter):
         device: torch.device,
     ) -> torch.Tensor:
         """
-        全图推理适配器（含官方推理尺寸对齐）。
+        官方 iMED-Lab/CS-Net rescale-512 eval 适配器（方案 A，用户 2026-07-01 拍板）。
 
-        官方 CS-Net test 协议（BASELINE_SPEC §1 + preprocess_cfg test_only.resize=512）：
-          整图 resize 到 512×512 推理，再 resize 回原尺寸。
-          来源：iMED-Lab/CS-Net dataloader/drive.py test_transform = Resize(512)+ToTensor()。
+        ⚠ 方案 A（官方 rescale-512 train+eval 全复现）：
+          官方 CS-Net train+test **都** 过 rescale(512)=中心方裁 min(H,W)→resize 512²
+          （bilinear），模型只见 512² 方图。为与训练协议零偏离，eval 也走同一 rescale：
+            1. 输入整图 (B,3,H,W) → 中心方裁到边长 s=min(H,W) 的正方形 (B,3,s,s)。
+            2. bilinear resize s² → 512² → CSNet forward → prob(B,1,512,512) in [0,1]。
+            3. prob→logit → bilinear resize 512² 回 s²（先回方形尺寸）。
+            4. pad s² 回 native (H,W) 矩形：中心方裁丢掉的长边两侧极小边条填背景
+               logit _BG_LOGIT（sigmoid≈0 → pred=背景 0）。
+          视网膜图近方形（DRIVE 584×565 / CHASE 960×999，min/max 边差 <5%），中心方裁
+          丢的边条极小（DRIVE 长短边差 ~19px→单侧 ~10px≈1.6% 维度；CHASE ~39px→单侧
+          ~20px≈2% 维度），落在 FOV 边缘几无血管，对 native GT 打分影响可忽略。
 
-        evaluate.py 接口约定：
-          - preprocess_benchmark_image 返回 pad_to_32 整图（H'×W'），orig_H/W = native。
-          - forward_adapt 返回 (B,1,H',W') logits，evaluate.py 再做 [:orig_H,:orig_W] 裁回。
+        历史（保留不删，三招在 native-crop 训练权重上全实测崩，训练 val 均 0.804=crop 级）：
+          - 方案 resize-整图-512（whole-resize）→ DRIVE dice ~0.51。
+          - 方案 native-整图前向（native-whole + pad-to-16）→ DRIVE dice ~0.49。
+          - 方案 512² tile 滑窗（512-tile + overlap-avg）→ DRIVE dice ~0.48。
+          三者训练 val 均 0.804 → 根因非 eval 口径，而是**训练用 native 随机裁 512 与官方
+          rescale-512 协议不符**。方案 A 把 train+eval 全改回官方 rescale-512（train 侧见
+          train_harness cs_net 分支 rescale_square=512）→ 期望 dice 回 ~0.78-0.82（官方发表级）。
 
-        所以此处做：
-          (B,3,H',W') → resize 到 512×512 → CSNet → resize 回 (B,1,H',W')
+        evaluate.py 接口约定（方案 A 下）：
+          - preprocess_benchmark_image 返回 **native 未 pad** RGB (H,W,3)，orig_H/W=native。
+          - forward_adapt 返回 (B,1,H,W) logits（= native 尺寸）；evaluate.py 的
+            [:orig_H,:orig_W] 裁回为恒等（H==orig_H, W==orig_W），指标在 native GT 上算。
 
-        训练时是 random_crop(512)，模型永远只见 512×512 patch。
-        eval 喂整图不 resize 会造成 ~30 点 Dice 下降（已实测复现）。
+        CS-Net 含 4 层 MaxPool2d(stride=2) → 需输入边被 16 整除；512%16==0，故 512² forward
+          天然合法，无需 per-tile pad。
 
         Args:
             model : CSNet 实例，eval 模式，已 .to(device)。
-            x     : (B, 3, H', W') RGB 输入，pad_to_32 尺寸，已在 device 上。
+            x     : (B, 3, H, W) RGB /255 native 整图输入，已在 device 上。
             device: 推理设备。
 
         Returns:
-            (B, 1, H', W') logits（与输入同尺寸，prob → logit，evaluate.py [:orig_H,:orig_W] 裁回）。
+            (B, 1, H, W) logits（native 尺寸；evaluate.py [:orig_H,:orig_W] 裁回=恒等）。
         """
         assert x.shape[1] == 3, (
             f"CSNetAdapter: 期望 3 通道 RGB 输入 (B,3,H,W), 实际 C={x.shape[1]}"
         )
 
-        _INFER_SIZE = 512  # 官方 test resize 目标（BASELINE_SPEC §1）
+        _RESCALE = 512  # 官方 rescale(512)
 
-        _, _, H_inp, W_inp = x.shape
+        B, _, H_inp, W_inp = x.shape
 
-        # ---- step 1: resize 到 512×512（官方 test_transform Resize(512)）----
-        if H_inp != _INFER_SIZE or W_inp != _INFER_SIZE:
-            x_512 = F.interpolate(
-                x,
-                size=(_INFER_SIZE, _INFER_SIZE),
-                mode='bilinear',
-                align_corners=False,
-            )
-        else:
-            x_512 = x
+        # ---- step 1: 中心方裁到 s=min(H,W)（丢长边两侧极小边条）----
+        s = min(H_inp, W_inp)
+        y0 = (H_inp - s) // 2
+        x0 = (W_inp - s) // 2
+        x_sq = x[:, :, y0:y0 + s, x0:x0 + s]                     # (B,3,s,s)
 
-        # ---- step 2: CSNet forward（512×512）----
+        # ---- step 2: bilinear resize s² → 512² → CSNet forward ----
+        x_512 = F.interpolate(
+            x_sq, size=(_RESCALE, _RESCALE), mode='bilinear', align_corners=False
+        )
         model.eval()
         with torch.no_grad():
-            prob_512 = model(x_512)  # (B, 1, 512, 512), values in [0,1]
+            prob_512 = model(x_512)                              # (B,1,512,512) in [0,1]
 
-        # ---- step 3: 概率 → logits（防 log(0) 溢出）----
+        # ---- step 3: prob→logit（防 log(0) 溢出）→ bilinear resize 512² 回 s² ----
         prob_clamp = prob_512.clamp(1e-6, 1.0 - 1e-6)
-        logits_512 = torch.log(prob_clamp / (1.0 - prob_clamp))
+        logit_512 = torch.log(prob_clamp / (1.0 - prob_clamp))   # (B,1,512,512)
+        logit_sq = F.interpolate(
+            logit_512, size=(s, s), mode='bilinear', align_corners=False
+        )                                                        # (B,1,s,s)
 
-        # ---- step 4: resize logits 回 (H_inp, W_inp)（配合 evaluate.py [:orig_H,:orig_W] 裁回）----
-        if H_inp != _INFER_SIZE or W_inp != _INFER_SIZE:
-            logits = F.interpolate(
-                logits_512,
-                size=(H_inp, W_inp),
-                mode='bilinear',
-                align_corners=False,
-            )
-        else:
-            logits = logits_512
+        # ---- step 4: pad s² 回 native (H,W)，中心方裁丢掉的边条填背景 logit ----
+        logits = torch.full(
+            (B, 1, H_inp, W_inp), self._BG_LOGIT,
+            dtype=logit_sq.dtype, device=logit_sq.device,
+        )
+        logits[:, :, y0:y0 + s, x0:x0 + s] = logit_sq
 
         assert logits.shape[1] == 1 and logits.ndim == 4, (
             f"CSNetAdapter.forward_adapt: expected (B,1,H,W), got {logits.shape}"
@@ -535,16 +549,20 @@ class CSNetAdapter(BaselineAdapter):
         benchmark NPZ 里存的是 green+CLAHE+norm 的 (H,W) float32，不能直接用。
         此处从原始图像磁盘重载，走官方 CS-Net 预处理管道（RGB /255）。
 
-        与训练/官方推理管道对齐：
-          train_harness → DRIVEDataset/CHASEDataset(color_mode='rgb')
+        与训练/官方推理管道对齐（方案 A 官方 rescale-512 全复现，用户 2026-07-01 拍板）：
+          train_harness → DRIVEDataset/CHASEDataset(color_mode='rgb', rescale_square=512)
           → _load_image → cv2.cvtColor BGR→RGB → /255 → (H,W,3) float32
-          → random_crop(512) → (512,512,3)  [模型永远只见 512×512 patch]
-          官方 test: resize 到 512×512（dataloader/drive.py test_transform = Resize(512)+ToTensor()）
-          benchmark eval: 此函数返回 BGR→RGB → /255 → pad_to_mult(32) 的整图（H'×W'）；
-          forward_adapt 内部负责 resize-to-512 推理 + resize-back-to-(H'×W')，
-          再由 evaluate.py 做 [:orig_H,:orig_W] 裁回 native 尺寸算指标。
-          ⚠️ 旧注释「无需 resize，CS-Net 全卷积」已更正：模型训练全为 512×512 patch，
-           整图不 resize 直接推理会导致 Dice 下降 ~30 点（2026-06-26 实测）。
+          → _rescale_square(512): 中心方裁 min(H,W)→resize 512² → (512,512,3)
+            [模型只见 512² 方图，官方 rescale(512)]
+          官方 test: 同 rescale(512)（dataloader/drive.py + utils/misc.py rescale()）。
+          benchmark eval: 此函数返回 BGR→RGB → /255 的 **native 未 pad** 整图 (H,W,3)，
+          orig_H/W=native；forward_adapt 内部做 中心方裁→resize512→forward→resize 回方形
+          →pad 回 native 矩形（边条填背景），返回 (B,1,H,W) logits，
+          evaluate.py 的 [:orig_H,:orig_W] 裁回为恒等，指标在 native GT 上算。
+          ⚠️ 旧注释「无需 resize，CS-Net 全卷积」已更正：模型训练全为 512² 方图，
+           整图不 resize 直接推理会导致 Dice 崩（native-whole ~0.49 实测）。
+          ⚠️ 历史：曾走 pad_to_mult(32)+512tile 滑窗（~0.48 崩），方案 A 改回官方
+           rescale-512（返回 native 不再 pad，rescale 全在 forward_adapt 内做）。
 
         路径约定（与各 dataset 的 _img_path 一致，保证不漂移）：
           DRIVE:      training/images/{id:02d}_training.tif
@@ -559,8 +577,8 @@ class CSNetAdapter(BaselineAdapter):
         到绿通道堆叠——那会让 dice 崩掉但无任何错误提示，难以排查）。
         主线跑 benchmark eval 时必须传真实 --data_root（对应数据集根目录）。
 
-        输出 shape: (H', W', 3) float32，evaluate.py 检测 ndim==3 后走
-          .permute(2,0,1).unsqueeze(0) → (1,3,H',W')
+        输出 shape: (orig_H, orig_W, 3) float32 native 未 pad，evaluate.py 检测 ndim==3
+          后走 .permute(2,0,1).unsqueeze(0) → (1,3,orig_H,orig_W)
 
         Args:
             npz_image:    (H, W) float32 from NPZ (green+CLAHE+norm).  本函数不用此值，
@@ -571,8 +589,9 @@ class CSNetAdapter(BaselineAdapter):
 
         Returns:
             (proc_image, (orig_H, orig_W)):
-              proc_image — (H', W', 3) float32 RGB /255, padded to 32-multiple.
-              (orig_H, orig_W) — original un-padded size.
+              proc_image — (orig_H, orig_W, 3) float32 RGB /255, **native 未 pad**
+                           （方案 A：rescale-512 全在 forward_adapt 内做，此处不 pad）。
+              (orig_H, orig_W) — native size（= proc_image H/W，evaluate.py 裁回恒等）。
 
         Raises:
             RuntimeError: data_root 为 None 或图像文件找不到。
@@ -580,16 +599,6 @@ class CSNetAdapter(BaselineAdapter):
         import cv2 as _cv2
         import numpy as _np
         import pathlib as _pl
-
-        PAD_MULT = 32
-
-        def _pad_to_mult(arr: _np.ndarray, mult: int) -> _np.ndarray:
-            h, w = arr.shape[:2]
-            ph = (mult - h % mult) % mult
-            pw = (mult - w % mult) % mult
-            if arr.ndim == 3:
-                return _np.pad(arr, ((0, ph), (0, pw), (0, 0)), mode='constant')
-            return _np.pad(arr, ((0, ph), (0, pw)), mode='constant')
 
         # ---- data_root 必须有效 ----
         if data_root is None:
@@ -672,7 +681,8 @@ class CSNetAdapter(BaselineAdapter):
 
         img_rgb = _cv2.cvtColor(img_bgr, _cv2.COLOR_BGR2RGB)
         orig_H, orig_W = img_rgb.shape[:2]
-        img_f = img_rgb.astype(_np.float32) / 255.0   # (H, W, 3) RGB /255
-        img_pad = _pad_to_mult(img_f, PAD_MULT)        # (H', W', 3) H'%32==0
+        img_f = img_rgb.astype(_np.float32) / 255.0   # (H, W, 3) RGB /255, native 未 pad
 
-        return img_pad, (orig_H, orig_W)
+        # 方案 A：返回 native 未 pad 整图，rescale-512 全在 forward_adapt 内做，
+        # evaluate.py 的 [:orig_H,:orig_W] 裁回为恒等。
+        return img_f, (orig_H, orig_W)

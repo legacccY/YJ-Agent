@@ -17,8 +17,17 @@ p0e_pool_to_peptide.py
   max / mean / geomean / sum / softmax / top3mean / topk_w / rankdecay
   (定义复用 analysis/pooling_sweep_17tools.py; 分数 round(8) 防浮点 tie)
 
+================== 主分析口径: 9mer (对齐 outline §2.2) ==================
+  袁老师 outline §2.2「全文主分析用 9AA-only, 可变窗 (8-14mer) 入补充」。
+  --ninemer 置位 -> 读长表后先过滤 MT_Subpeptide 字符串长度==9 的子肽行, 再 pooling。
+    · n_subpep / count_conf 也在 9mer 子集上算。
+    · 130 肽锚定不变 (9mer 下仍 130 肽全覆盖、无全空肽, 已核)。
+  不带 flag -> 全窗 8-14mer (保留可复现, 降为补充材料)。
+
 ================== 输出 ==================
-  data/frozen/pooled_peptide_level_30tools.csv  (130 行, 每肽一行)
+  data/frozen/pooled_peptide_level_30tools_9mer.csv   (--ninemer, 主分析)
+  data/frozen/pooled_peptide_level_30tools.csv        (不带 flag, 全窗补充)
+    (均 130 行, 每肽一行)
     列: mut_key, Patient_ID, Peptide_ID, Elispot, n_subpep,
         <tool>_<op>            (每 tool×op 一列 pooled 分数, round8)
         count_conf_<tool>_<op> (bool: |spearman(pooled, n_subpep_tool)|>0.5)
@@ -32,7 +41,8 @@ p0e_pool_to_peptide.py
           (工具列暂缺标 pending 不报错; 整肽行不能空)
 
 ================== 跑法 ==================
-  python analysis/phase0/p0e_pool_to_peptide.py
+  python analysis/phase0/p0e_pool_to_peptide.py                # 全窗 8-14mer (补充)
+  python analysis/phase0/p0e_pool_to_peptide.py --ninemer      # 9mer 主分析 (outline §2.2)
   python analysis/phase0/p0e_pool_to_peptide.py --input <长表路径>
 """
 
@@ -53,7 +63,10 @@ ROOT = Path(__file__).resolve().parents[2]
 FROZEN_DIR = ROOT / "data" / "frozen"
 GT_CSV = FROZEN_DIR / "ds2_official_groundtruth.csv"
 DEFAULT_INPUT = ROOT / "scripts" / "out" / "merged_all_tools_30_official.csv"
-OUT_CSV = FROZEN_DIR / "pooled_peptide_level_30tools.csv"
+OUT_CSV_ALLWINDOW = FROZEN_DIR / "pooled_peptide_level_30tools.csv"       # 全窗 8-14mer (补充)
+OUT_CSV_9MER = FROZEN_DIR / "pooled_peptide_level_30tools_9mer.csv"       # 9mer 主分析 (outline §2.2)
+
+SUBPEP_COL = "MT_Subpeptide"   # 子肽序列列; 9mer 过滤 = str 长度==9 (等价 Window_Size==9)
 
 COUNT_CONFOUND_THRESH = 0.5
 
@@ -185,7 +198,14 @@ def main():
     ap = argparse.ArgumentParser(description="子肽×HLA×工具 -> 肽级 8 pooling")
     ap.add_argument("--input", default=None,
                     help="子肽×HLA 长表 (默认 scripts/out/merged_all_tools_30_official.csv)")
+    ap.add_argument("--ninemer", action="store_true",
+                    help="仅保留 9mer 子肽 (MT_Subpeptide 长度==9) 做主分析, 对齐 outline §2.2; "
+                         "不置位=全窗 8-14mer 补充材料")
     args = ap.parse_args()
+
+    regime = "9mer" if args.ninemer else "全窗 8-14mer"
+    out_csv = OUT_CSV_9MER if args.ninemer else OUT_CSV_ALLWINDOW
+    print(f"[info] 主分析口径 = {regime} -> 输出 {out_csv.name}")
 
     in_path = Path(args.input) if args.input else DEFAULT_INPUT
     if not in_path.is_absolute():
@@ -213,6 +233,18 @@ def main():
     print(f"[info] 读长表: {in_path}")
     df = pd.read_csv(in_path)
     print(f"[info] 长表 shape={df.shape}")
+
+    # ── 9mer 过滤 (主分析口径, outline §2.2) ────────────────────────────────
+    # 先过滤再 groupby pooling, 使 n_subpep / count_conf 也在 9mer 子集上算。
+    if args.ninemer:
+        if SUBPEP_COL not in df.columns:
+            raise SystemExit(f"[ERR] --ninemer 需列 {SUBPEP_COL} 判子肽长度, 长表缺该列")
+        sub_len = df[SUBPEP_COL].astype(str).str.len()
+        before = len(df)
+        df = df[sub_len == 9].copy()
+        print(f"[info] 9mer 过滤: {before} -> {len(df)} 子肽行 (MT_Subpeptide 长度==9)")
+        if df.empty:
+            raise SystemExit("[ERR] 9mer 过滤后长表为空, 检查 MT_Subpeptide 列内容")
 
     # mut_key 构建 (若长表无该列, 用 Patient_ID|Peptide_ID)
     if "mut_key" not in df.columns:
@@ -307,8 +339,8 @@ def main():
 
     # ── 写出 ─────────────────────────────────────────────────────────────
     FROZEN_DIR.mkdir(parents=True, exist_ok=True)
-    out.to_csv(OUT_CSV, index=False, encoding="utf-8")
-    print(f"\n[saved] {OUT_CSV}  shape={out.shape}")
+    out.to_csv(out_csv, index=False, encoding="utf-8")
+    print(f"\n[saved] {out_csv}  shape={out.shape}  (口径={regime})")
     print(f"[info] {len(tools)} 工具 × {len(POOLINGS)} pooling = {len(pooled_cols)} pooled 列")
     print("[DONE] p0e_pool_to_peptide 完成")
 

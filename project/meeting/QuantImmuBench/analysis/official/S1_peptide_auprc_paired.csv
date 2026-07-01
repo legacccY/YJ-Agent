@@ -1,0 +1,12 @@
+# S1_peptide_auprc_paired.csv — 配对 ΔAUPRC (同 130 肽 bootstrap, seed=42)
+# delta = AUPRC(method_a) - AUPRC(method_b); p_cross0 = 双侧近似 (Δ* 跨 0 比例×2)。
+# role=primary(headline) 行引 headline p (平衡标签 pval<0.05); role=sensitivity (Elispot>0)
+#   仅敏感性旁证 (12 阴近天花板不可靠), 别当 headline。关键对照 = fusion_geomean vs
+#   netMHCpan_BA (整合 vs 最强单, 持平即支撑「整合≈最强单」)。
+method_a,method_b,label_kind,role,AUPRC_a,AUPRC_b,delta,ci_lo,ci_hi,p_cross0,n_used
+fusion_geomean,netMHCpan_BA,pval<0.05,primary(headline),0.7458,0.7155,0.0303,-0.0428,0.1031,0.456,130
+netMHCpan_BA,PredIG,pval<0.05,primary(headline),0.7155,0.627,0.0886,-0.0196,0.1904,0.098,130
+fusion_geomean,fusion_maxrank,pval<0.05,primary(headline),0.7458,0.6772,0.0687,0.0144,0.1314,0.016,130
+fusion_geomean,netMHCpan_BA,Elispot>0,sensitivity,0.961,0.9508,0.0103,-0.0176,0.0398,0.488,130
+netMHCpan_BA,PredIG,Elispot>0,sensitivity,0.9508,0.9231,0.0277,-0.0138,0.0714,0.21,130
+fusion_geomean,fusion_maxrank,Elispot>0,sensitivity,0.961,0.9204,0.0406,0.0048,0.0819,0.008,130

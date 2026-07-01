@@ -159,3 +159,35 @@ project/meeting/CXR-SSLBench/results/*.npz
 # W0 TRAP/T-SCAPE 克隆外部仓+下载日志(不进 git)
 project/meeting/QuantImmuBench/tools_local/
 project/meeting/QuantImmuBench/tools_local/*.log
+
+# gdn2vessel creatis Stage-2 官方权重+config(官方 repo 无 LICENSE,不再分发进 git;
+# 由 scripts/download_creatis_weight.py 从官方 raw 现下载。*.pth 已全局 ignore,
+# 这里连 config_training.json 一并排除)
+project/meeting/ACCV/gdn2vessel/models/creatis/
+
+# 个人升学工作区(套磁/推荐信/申请信息,不进公开 git)
+GradSchool-Prep/
+
+# ── 产物卫生（Custodian，2026-07-01）：散落临时/一次性/垃圾产物不进 git ──
+# 一次性 scratch/tmp 脚本（HPC 提交/烟测/探针），任意层级
+_scratch/
+**/_scratch/
+_scratch_*.py
+_scratch_*.sh
+tmp_*.py
+tmp_*.txt
+# 归档区（可逆归档产物，本地留底不进 git）
+_archive/
+# 废弃/回收区
+.trash_*
+# session 残渣（验证码截图、误建垃圾、乱码路径当文件名）
+*captcha*.png
+test_write.txt
+tmp_test.*
+nul
+=1.*
+*scratchpad*project_summary.txt
+
+# 临时 hook state（ephemeral）
+.portfolio/.hygiene_state.json
+.portfolio/.stage_state.json

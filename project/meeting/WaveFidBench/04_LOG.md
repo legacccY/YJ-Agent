@@ -1,5 +1,43 @@
 # WaveFidBench — LOG（时间倒序，单一日志真源）
 
+## Entry 7 — 2026-07-01 用户 GO → OASIS 拉数据 + 类数决策(两个都做) + 排队等卡
+
+**用户 GO 拉数据**（拍板点 #1 放行）。主线串行执行对外：
+- 传本地 `~/.kaggle/kaggle.json`→ HPC `~/.kaggle/`(chmod 600) + `yjcu124py310` env `pip install kaggle` + 登录节点测联网(kaggle.com HTTP 200✅ / imagesoasis 命中 1.3GB)。
+- 登录节点 `kaggle datasets download ninadaithal/imagesoasis --unzip`(setsid 后台,gpfs 解压 86437 图~13min)→ EXIT=0。类分布 Non 67222 / Very mild 13725 / Mild 5002 / **Moderate 488**。subject ID `OAS1_XXXX` 确认。
+- 同步更新 code(faithfulness 多 XAI + gate1_oasis.yaml 官方 gradshap 参) → HPC + py_compile OK。
+
+**🛑 拍板点 #2 命中 → 用户拍板「两个都做」**：
+- data_split patient(347 subject)核到 **Moderate 全库只 2 个 subject(OAS1_0308+OAS1_0351,488 切片)** → 患者级 split 下 test/val 必 0 Moderate,4 类评估不了该类(结构性限制非 bug)。
+- researcher 文献裁决:首选二分类(CDR=0 vs >0,~93.9% ResNet50 患者级背书[PMC8466762]),次选 3 类合并 Moderate→Mild,**别碰 4 类(泄漏红线)**。
+- 用户定 **两个都做**:二分类(主)+3 类合并(附录)。
+- coder 加 `apply_label_remap`(config 驱动) + 建 `gate1_oasis_binary.yaml`(num_classes=2,idx Demented=0/Non=1) + `gate1_oasis_3class.yaml`(Moderate→Mild,num_classes=3,idx Mild=0/Non=1/VeryMild=2)。下游三脚本 num_classes 全 config 驱动无硬编码 4。
+- **两 split 生成+验证(HPC CPU)**:binary 各 split 都含 Non+Demented(test 11346/2684)；3class 各 split 都含 3 类(test Non 11346/VeryMild 2196/Mild+ 488;Mild+ = 3294+488=3782 合并对)。每 split 全类齐 → MRIDataset assert 稳过(解 coder leftover 风险)。
+
+**GPU 排队**:`gpu_slot.py request wavefid hpc 1` → **QUEUED 62477102**(gpu4090 4/4 满:fmreg1+cxr-sslbench2+gdn2vessel1)。用户拍板只用 gpu4090 不回退 3090。绝不裸启,后台轮询卡槽,空即起。
+- **Job 1 已备**:`submit_oasis_binary.sh`(binary resnet50 seed42 全管道:data_split→train50ep→subband→faithfulness n=200)上传 HPC 待 sbatch。先出主任务信号(acc 判 66-93%/L1 判 LL drop≫HH),验后 Job2 扇出 ViT+seed+3class。
+
+**下一步**:卡空→sbatch Job1→轮询→verifier 核 acc(≥95%=泄漏不放行)+L1→analyst 出图→Job2 扇出。
+
+---
+
+## Entry 6 — 2026-07-01 复窗读档 + 大编队 prep + HPC 现状核查（卡对外拍板等 GO）
+
+**背景**：新窗口接手，读全档（00/01/02 + LOG）。用户拍板本轮节奏 = **稳做投 CBM/BSPC 滚动**（不赶 ACCV 07-05 硬截稿，质量优先减 HARKing）；OASIS 数据 route = **HPC 上 kaggle CLI 直拉**（免上传 1.3GB）。
+
+**大编队扇出（全完，非对外 prep 100% 就绪）**：
+- **researcher ×4 查全带引用**：① Gate1 acc 判据校准——患者级 split ResNet50/ViT-B 合理区间 **66–85% PASS，≥95% = 泄漏不放行**（OASIS slice 打乱标签仍 96% = 泄漏伪迹 [PMC8604922]；subject-wise 严防泄漏 80–85% [mdpi 2075-4418]）。② captum 官方签名：IG(baselines=None 黑图,n_steps=50,gausslegendre)、GradientShap(baseline 须分布 N>1,**图像标准 n_samples=50/stdevs=0.0001** 非函数默认 5/0.0，官方 Resnet_TorchVision_Interpret 教程)、DeepLift ResNet self.relu 复用坑 → **Gate3 三 XAI 定 GradCAM+IG+GradientShap 避坑**；attribution (N,3,H,W)→`.abs().sum(dim=1)` 归约 (N,H,W)；**ViT LayerGradCam 不适用，只跑 IG/GradientShap**。③ HPC kaggle 坑：计算节点常无外网，**登录节点下→共享盘→sbatch 读**（实测登录节点 kaggle.com HTTP 200 ✅）。
+- **coder 扩 `src/faithfulness.py`**：原单 GradCAM → 多 XAI 框架（GradCAM+IG+GradientShap，全按官方签名修）+ ViT 分支（GradCAM is_skipped 单行不 crash）+ 新 `compute_subband_energy`（热图 DWTForward(J=1,db1,symmetric) 算 LL/LH/HL/HH 能量占比，Gate2 B 用）+ `_sample_baseline_pool`（从 train.csv 取 baseline 分布不泄漏）+ `--smoke`。新 csv：`faithfulness_results.csv` 加 xai 列 + 新 `faithfulness_subband_energy.csv`(xai,subband,energy_ratio,...)。py_compile ✅（未跑）。
+- **config**：`gate1_oasis.yaml` 填官方超参 gradshap_n_samples=50/stdevs=0.0001（代码 `cfg.get` 读值生效，核过无硬编码）。
+
+**HPC 现状核查（只读 paramiko）**：wavefid 目录在（code/data/logs/submit.sh）；**OASIS 数据不在 HPC**（只有 alzheimer_kaggle sanity slice 集 11519 jpg）；kaggle CLI 未装 + 无 ~/.kaggle/kaggle.json；登录节点 kaggle.com HTTP 200 ✅；gpu4090 7 节点 mix 有空卡无我 job；本地 ~/.kaggle/kaggle.json 在（可传）。
+
+**🛑 卡点 = 拍板点 #1（对外传输，等用户 GO）**：传 kaggle.json → HPC pip install kaggle → 登录节点 `kaggle datasets download ninadaithal/imagesoasis --unzip` 到 `wavefid/data/oasis_kaggle/Data` → 核 4 类点数 + subject ID → gpu_slot 自主起正式 Gate1（患者级 split，18-run 矩阵）。GO 后不再停，跑完 analyst 出图 + verifier 核数，Gate FAIL/acc 异常才报。
+
+**下一步**：等用户「拉」→ 执行对外数据拉取 → 正式 Gate1。faithfulness 多 XAI 待 HPC 烟测（含 ViT 分支）再正式跑。
+
+---
+
 ## Entry 5 — 2026-06-24 OASIS 全自动源（免 DUA，解锁正式 Gate1）
 
 用户问 OASIS 有没有自动办法。researcher + kaggle 查证：**有，免 DUA 全程序化**。

@@ -14,7 +14,6 @@ MoCo-v3 launch recipe —— 薄包装 facebookresearch/moco-v3 官方 main_moco
    recipe 默认 total_batch=4096；override 走 reduced 路径会 loudly warn，actual eff_bs 记进 ckpt meta。
 """
 import argparse
-import sys
 
 from recipe_base import Recipe, add_common_args
 from common import save_unified_ckpt, make_meta, ckpt_out_path, strip_prefix, budget
@@ -23,6 +22,7 @@ from common import save_unified_ckpt, make_meta, ckpt_out_path, strip_prefix, bu
 class MoCoRecipe(Recipe):
     method = 'moco'
     official_eff_bs = 4096
+    official_lr = 1.0e-4        # @eff_bs4096（SSL_RECIPES §3 锚点，比 1.5e-4 稳）；reduced 时 lr×eff/4096
     entry = 'main_moco.py'
     loader_hint = 'timm_vit_base'
 
@@ -41,23 +41,24 @@ class MoCoRecipe(Recipe):
     def build_cmd(self, *, seed, output_dir, data_path, batch_size_per_gpu,
                   accum_iter, world_size, repo_dir, num_workers=8, python='python',
                   total_batch=None, dist_url='tcp://localhost:10001'):
-        # MoCo 无 accum；total_batch 默认官方 4096
+        # MoCo 无 accum；actual eff_bs = 全局 batch = batch/gpu × world_size（修「无视 batch_size_per_gpu」bug）。
         assert int(accum_iter) == 1, '[moco] MoCo-v3 无 gradient accumulation，accum_iter 必须=1'
-        total_batch = int(total_batch) if total_batch is not None else self.official_eff_bs
-        if total_batch != self.official_eff_bs:
-            sys.stderr.write(
-                f'[moco][WARN] total_batch={total_batch} != 官方 {self.official_eff_bs}。'
-                f'这是 TODO-B/矩阵§2 预登记的 reduced-batch fallback（moco 自动线性缩放 lr，'
-                f'images-seen 仍 11.21M）。须烟测定 + LOG 留痕，actual eff_bs 已记入 ckpt meta。\n')
+        if total_batch is not None:
+            eff = int(total_batch)                      # 显式 override（legacy / 直接指定全局 batch）
+        elif batch_size_per_gpu is not None:
+            eff = int(batch_size_per_gpu) * int(accum_iter) * int(world_size)
+        else:
+            eff = self.official_eff_bs                  # 都没给 → 官方 4096
+        lr = self.check_eff_and_lr(eff)   # eff>official 抛；eff<official → reduced：lr×eff/4096 + stderr WARN
         c = self.CONFIG
         cmd = [python, f'{repo_dir}/{self.entry}',
                '-a', c['arch'],
                '--optimizer', c['optimizer'],
-               '--lr', str(c['lr']),
+               '--lr', str(lr),
                '--weight-decay', str(c['weight_decay']),
                '--epochs', str(self.budget['epochs']),
                '--warmup-epochs', str(c['warmup_epochs']),
-               '--batch-size', str(total_batch),        # moco: 全局 batch（内部按卡均分 + lr 线性缩放）
+               '--batch-size', str(eff),                # moco: 全局 batch = 实际 eff_bs（非硬编码 4096）
                '--moco-t', str(c['moco_t']),
                '--moco-m-cos',
                '--stop-grad-conv1',

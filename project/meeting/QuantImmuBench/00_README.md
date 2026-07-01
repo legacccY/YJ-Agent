@@ -13,6 +13,12 @@
 > 🪖 **多窗大编队作战令**：`MULTIWIN_TOOL_FLEET_PLAN.md`（5 干活窗 + 1 主窗分 slice 补跑 30 工具的统一计划：铁律/验收/DoD/自由发挥/不堵塞不降级。开多窗先读这里认领 slice）。
 >
 > 📖 **新人/复盘**：`项目全解_从头到尾.md`（故事版全貌：这是什么、做了什么、踩了哪些坑、现状）。
+>
+> 📊 **干净结果总表（2026-07-01，writer 单一数据来源）**：`RESULTS_CLEAN_SUMMARY.md`——从零重建后所有锁定数字，按 outline § 组织 + 真源 csv + 诚实局限。写 tex 只用这份，别用重建前旧数（旧表已标 legacy）。
+>
+> 📨 **给袁老师沟通档（2026-07-01）**：`给袁老师_两个方法学问题.md`——两个重建中发现的方法学问题（① 肽长混杂/长肽上 max 随窗口数虚高，附顺序统计量公式 ② geomean/mean-rank/median 在秩指标下数学近亲，附泰勒展开证明）。待与老师讨论。
+>
+> 🧭 **方法学重构提案（2026-07-01，待袁老师/朱同学拍板）**：`reference/METHODOLOGY_REFOUNDATION_PROPOSAL.md`。官方 130 肽 9mer 口径下 outline 两个细粒度 headline（§3.2 免疫原→max、§3.3.4 geomean 唯一第一）不复现，根因=**评价功效（n=9 太小），非 bug 非数据反转**；配 TESLA/IMPROVE 先例 + 三部曲解法（换肽级估计量/去 selection bias/外部队列）+ analyst 决定性检验 verdict（修①肽级够救 pooling/fusion lever）。**改论文战略定位=老师拍板级，未实施。** 见 04_LOG Entry 37。
 
 ---
 
@@ -37,6 +43,8 @@
 ---
 
 ## 当前状态总表（2026-06-29，真源数字见 `_scratch/ALIGN_FACTS.md` / `analysis/*.csv`）
+
+> ⚠️ **本节数字已被 2026-07-01「从零重建」取代（LOG Entry 40-44）。最新真源 = `RESULTS_CLEAN_SUMMARY.md` + `data/frozen/pooled_clean_9mer.csv`。下表工具接入清单仍有效，但所有 pooling/fusion/单工具指标数字以干净重建为准，勿用本节旧数写 tex。**
 
 > ⚠️ 本节数字一律取本地已核值。袁 md 中本地无支撑的声称值（如 fusion 删 10% geomean +0.4643、单工具 max subset92 值）标注「袁 md 声称值，本地待核」，不混入本地真源。完整对账见 `paper/ALIGNMENT_TO_OUTLINE.md`。
 

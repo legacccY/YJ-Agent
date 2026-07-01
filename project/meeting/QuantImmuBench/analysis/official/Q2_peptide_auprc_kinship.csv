@@ -1,0 +1,12 @@
+# Q2_peptide_auprc_kinship.csv — §3.3.4 三近亲融合法肽级配对 ΔAUPRC (复用 S1 机制)
+# 口径: 官方 130 肽; fusion 输入 = S1 的 4 工具零选择 max 维; bootstrap 1000× seed=42。
+# delta = AUPRC(method_a) - AUPRC(method_b); p_cross0 = 双侧近似 (Δ* 跨 0 比例×2)。
+# estimand caveat: 肽级 AUPRC 混病人内/间信号, 忽略病人结构, 与 per-patient Spearman【并列不替换】。
+# role=primary(headline) 引平衡标签 pval<0.05; role=sensitivity(Elispot>0, 12阴不可靠) 仅旁证。
+method_a,method_b,label_kind,role,AUPRC_a,AUPRC_b,delta,ci_lo,ci_hi,p_cross0,n_used
+fusion_geomean,fusion_mean_rank,pval<0.05,primary(headline),0.7458,0.7308,0.015,-0.0059,0.0378,0.152,130
+fusion_geomean,fusion_median,pval<0.05,primary(headline),0.7458,0.7183,0.0276,-0.0127,0.0668,0.188,130
+fusion_mean_rank,fusion_median,pval<0.05,primary(headline),0.7308,0.7183,0.0125,-0.0128,0.0404,0.398,130
+fusion_geomean,fusion_mean_rank,Elispot>0,sensitivity,0.961,0.9516,0.0094,-0.0009,0.0257,0.12,130
+fusion_geomean,fusion_median,Elispot>0,sensitivity,0.961,0.9404,0.0206,-0.0004,0.0534,0.072,130
+fusion_mean_rank,fusion_median,Elispot>0,sensitivity,0.9516,0.9404,0.0112,-0.0012,0.0291,0.15,130

@@ -312,49 +312,62 @@ def _build_datasets(
     # ------------------------------------------------------------------ #
     if adapter_name == "cs_net":
         # CS-Net 官方用 RGB 3ch 输入（Image.open → ToTensor，/255，无 CLAHE）。
-        # dataset 输出 image: (3, H, W) float32 /255。
-        # 其余超参（patch_size / augment）与通用流程一致。
-        # 来源：iMED-Lab/CS-Net dataloader/drive.py（2026-06-25 核实）
-        cs_patch_size = int(cfg.get("patch_size") or 512)
+        # dataset 输出 image: (3, 512, 512) float32 /255。
+        # 【方案 A 官方 rescale-512 全复现（用户 2026-07-01 拍板）】：
+        #   train+val 都过官方 rescale(512)=中心方裁 min(H,W)→resize 512²（bilinear），
+        #   模型只见 512² 方图。官方 __getitem__ 里 rescale→RandomCrop(512) 在已 512²
+        #   图上=空操作，故 patch_size=None（绕过 _random_crop），rescale_square=512。
+        #   历史（native 随机裁 512 训练 + 三种 eval 全崩：resize0.51/native0.49/tile0.48）
+        #   已定位为「训练 native-crop 与官方 rescale-512 协议不符」，方案 A 全对齐修正。
+        #   来源：iMED-Lab/CS-Net dataloader/drive.py + utils/misc.py rescale()（researcher 核实）
+        cs_rescale = int(cfg.get("resize") or 512)  # 官方 rescale(512)
         if ds_upper == "DRIVE":
             from datasets.drive import DRIVEDataset
             train_ds = DRIVEDataset(
                 data_root=data_root, split="train",
-                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+                patch_size=None, augment=True, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
             val_ds = DRIVEDataset(
                 data_root=data_root, split="val",
-                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+                patch_size=None, augment=False, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
         elif ds_upper in ("CHASE", "CHASE_DB1"):
             from datasets.chase import CHASEDataset
             train_ds = CHASEDataset(
                 data_root=data_root, split="train",
-                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+                patch_size=None, augment=True, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
             val_ds = CHASEDataset(
                 data_root=data_root, split="val",
-                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+                patch_size=None, augment=False, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
         elif ds_upper == "STARE":
             from datasets.stare import STAREDataset
             train_ds = STAREDataset(
                 data_root=data_root, split="train",
-                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+                patch_size=None, augment=True, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
             val_ds = STAREDataset(
                 data_root=data_root, split="val",
-                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+                patch_size=None, augment=False, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
         elif ds_upper == "FIVES":
             from datasets.fives import FIVESDataset
             train_ds = FIVESDataset(
                 data_root=data_root, split="train",
-                patch_size=cs_patch_size, augment=True, color_mode='rgb',
+                patch_size=None, augment=True, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
             val_ds = FIVESDataset(
                 data_root=data_root, split="val",
-                patch_size=cs_patch_size, augment=False, color_mode='rgb',
+                patch_size=None, augment=False, color_mode='rgb',
+                rescale_square=cs_rescale,
             )
         else:
             raise ValueError(

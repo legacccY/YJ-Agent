@@ -1,0 +1,38 @@
+# DIAG_countclean_vs_dirty.csv
+# QuantImmuBench count-clean lever 对照: §3.2 每工具 max 最优性 (脏 vs 干净)
+# 输入=pooled_peptide_level_30tools_9mer.csv; DS2 患者=[101, 102, 104, 105, 106, 107, 108, 109, 110]; min_pep=3; 肽=130
+# 脏=全池 best_pooling; 干净=count-clean best (排除 count_conf==True pooling)
+# gap=best_rho-max_rho; max_is_best=best pooling 是否为 max; approx_tol=0.02
+# cleanbest_nsubpep_rho=clean-best pooling 列与 n_subpep 全肽 Spearman (确认去混杂)
+# [headline] max=best: overall 脏1→干净4; 免疫原 3/22(≈6); n_subpep 自身 ρ=0.3598
+tool,category,n_valid_max,max_rho,dirty_best_pl,dirty_best_rho,dirty_gap,dirty_max_is_best,clean_best_pl,clean_best_rho,clean_gap,clean_max_is_best,clean_max_approx_best,clean_all_confounded,cleanbest_nsubpep_rho
+BigMHC_IM,immunogenic,130,0.107604,sum,0.317714,0.21011,0,sum,0.317714,0.21011,0,0,0,0.449389
+CNNeo,immunogenic,130,0.013803,sum,0.31225,0.298448,0,mean,-0.019416,-0.033218,0,1,0,0.291772
+DeepImmuno,immunogenic,130,0.087905,sum,0.353932,0.266027,0,rankdecay,0.135071,0.047166,0,0,0,0.389355
+DeepNetBim,immunogenic,125,-0.190349,sum,0.199032,0.389381,0,geomean,0.03449,0.224838,0,0,0,0.059181
+HLAthena,presentation,121,0.507532,sum,0.510302,0.00277,0,max,0.507532,0.0,1,1,0,0.398104
+ICERFIRE,immunogenic,100,0.342115,max,0.342115,0.0,1,max,0.342115,0.0,1,1,0,0.2126
+IEDB_Calis,immunogenic,130,0.157592,top3mean,0.166792,0.009201,0,top3mean,0.166792,0.009201,0,1,0,0.248454
+IMPROVE,immunogenic,130,0.292231,sum,0.360066,0.067835,0,max,0.292231,0.0,1,1,0,0.193652
+ImmuGenX,immunogenic,125,0.024914,mean,0.529622,0.504708,0,mean,0.529622,0.504708,0,0,0,-0.243506
+ImmuneApp,immunogenic,130,0.158259,rankdecay,0.28068,0.122421,0,rankdecay,0.28068,0.122421,0,0,0,0.425058
+MHCflurry,presentation,130,0.262069,sum,0.427873,0.165804,0,rankdecay,0.345606,0.083538,0,0,0,0.457523
+MHCnuggets,presentation,125,0.212225,mean,0.460781,0.248557,0,mean,0.460781,0.248557,0,0,0,0.184995
+MHCseqNet,presentation,125,0.100331,sum,0.331357,0.231026,0,geomean,0.263645,0.163314,0,0,0,-0.102145
+MUNIS,immunogenic,125,0.065986,rankdecay,0.242757,0.176771,0,rankdecay,0.242757,0.176771,0,0,0,0.39745
+NeoTImmuML,immunogenic,130,0.159783,sum,0.23914,0.079357,0,sum,0.23914,0.079357,0,0,0,0.418946
+NeoaG,immunogenic,102,-0.021695,sum,0.036557,0.058252,0,sum,0.036557,0.058252,0,0,0,0.122291
+NeoaPred,immunogenic,14,0.110041,mean,0.473178,0.363137,0,mean,0.473178,0.363137,0,0,0,-0.015539
+NetTepi,immunogenic,125,0.040919,sum,0.333875,0.292956,0,mean,0.249174,0.208255,0,0,0,0.026756
+PRIME,immunogenic,130,0.350444,sum,0.410911,0.060467,0,rankdecay,0.378081,0.027637,0,0,0,0.321335
+PredIG,immunogenic,130,0.270241,sum,0.404603,0.134363,0,geomean,0.404073,0.133832,0,0,0,0.212548
+Repitope,immunogenic,130,0.083984,sum,0.325006,0.241021,0,rankdecay,0.109055,0.025071,0,0,0,0.06777
+Seq2Neo,immunogenic,43,-0.057722,sum,0.857344,0.915066,0,softmax,0.803575,0.861298,0,0,0,-0.15817
+TSCAPE,immunogenic,130,0.148364,sum,0.3399,0.191536,0,max,0.148364,0.0,1,1,0,0.32505
+TransHLA,presentation,130,0.092688,sum,0.39065,0.297962,0,mean,0.272582,0.179894,0,0,0,0.038044
+andy90,immunogenic,125,0.27469,topk_w,0.299536,0.024845,0,mean,0.272484,-0.002206,0,1,0,0.137629
+deepHLApan,immunogenic,101,0.065373,sum,0.171698,0.106325,0,top3mean,0.097222,0.031848,0,0,0,0.555455
+netMHCpan_BA,presentation,130,0.320089,sum,0.53913,0.219041,0,geomean,0.436839,0.11675,0,0,0,0.101936
+netMHCpan_EL,presentation,130,0.176986,sum,0.363036,0.18605,0,sum,0.363036,0.18605,0,0,0,0.480837
+netMHCstabpan,presentation,43,0.156456,rankdecay,0.746575,0.590119,0,geomean,0.649704,0.493248,0,0,0,0.158018
+pTuneos,immunogenic,102,0.159529,geomean,0.254555,0.095027,0,geomean,0.254555,0.095027,0,0,0,0.023196

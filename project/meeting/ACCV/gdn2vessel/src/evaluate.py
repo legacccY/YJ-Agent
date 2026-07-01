@@ -1644,6 +1644,33 @@ def _main():
         extra_cfg: Optional[Dict[str, Any]] = None
         if args.adapter == "creatis_postproc":
             extra_cfg = {}
+
+            # ---- Stage-2 norm 解析（官方权重 = BatchNorm，researcher 核实）----
+            # eval 路径: build_model(cfg) 建 Stage-2 monai UNet → load_state_dict(官方
+            # best_metric_model.pth)。norm 必须与官方权重一致，否则键失配崩。
+            # 优先读官方 config_training.json（download_creatis_weight.py 与权重同目录
+            # 一起下载），取 'norm' 字段；缺失则 fallback 'batch'（官方默认）。
+            import json as _json
+            _stage2_cfg_path = Path(args.ckpt).parent / "config_training.json"
+            _resolved_norm = "batch"  # 官方 config_training.json 默认（researcher 核实）
+            if _stage2_cfg_path.exists():
+                try:
+                    with open(_stage2_cfg_path, "r", encoding="utf-8") as _f:
+                        _s2cfg = _json.load(_f)
+                    if isinstance(_s2cfg, dict) and _s2cfg.get("norm") is not None:
+                        _resolved_norm = str(_s2cfg["norm"])
+                        print(
+                            f"[evaluate] creatis_postproc: 从官方 config_training.json "
+                            f"读得 norm={_resolved_norm!r} ({_stage2_cfg_path})"
+                        )
+                except Exception as _e:
+                    print(
+                        f"[evaluate] creatis_postproc: 读 config_training.json 失败 "
+                        f"({_e})，fallback norm='batch'",
+                        file=sys.stderr,
+                    )
+            extra_cfg["norm"] = _resolved_norm
+
             if getattr(args, "creatis_stage1_ckpt", None) is not None:
                 extra_cfg["stage1_ckpt"] = args.creatis_stage1_ckpt
                 extra_cfg["stage1_base_ch"] = getattr(

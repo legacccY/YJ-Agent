@@ -58,6 +58,24 @@ def collect_samples(data_root: Path) -> pd.DataFrame:
     return df
 
 
+def apply_label_remap(df: pd.DataFrame, remap: dict) -> pd.DataFrame:
+    """
+    在 collect_samples 后、split 前应用类重映射（config 驱动）。
+    remap: {原文件夹名 → 目标类名}。未列出的原类保持恒等（不改）。
+    OASIS Moderate 仅 2 subject，患者级 split 下 4 类评估不了 → 用此合并成 binary / 3class。
+    remap=None（缺省）→ 不映射，保持 4 类现状（向后兼容）。
+    """
+    if not remap:
+        return df
+    df = df.copy()
+    original = sorted(df["label"].unique())
+    df["label"] = df["label"].map(lambda c: remap.get(c, c))  # 未列出恒等
+    remapped = sorted(df["label"].unique())
+    logger.info(f"label_remap 生效：{remap}")
+    logger.info(f"  原类 {original} → 映射后类 {remapped}")
+    return df
+
+
 def extract_subject_id(filepath: str, regex: str) -> str:
     """提取 subject ID（OASIS 模式用）。
 
@@ -178,13 +196,14 @@ def compute_class_dist(df: pd.DataFrame, indices: np.ndarray) -> dict:
     return counts
 
 
-def warn_moderate_shortage(dist: dict, split_name: str, threshold: int = 10):
-    moderate_count = dist.get("ModerateDemented", 0)
-    if moderate_count < threshold:
-        logger.warning(
-            f"⚠️  {split_name} 集 ModerateDemented 仅 {moderate_count} 张（< {threshold}），"
-            f"极少数类，评估指标不可靠，请关注。"
-        )
+def warn_minority_class(dist: dict, split_name: str, threshold: int = 10):
+    """通用少数类告警：任一类样本数 < threshold 即警（泛化原 Moderate 专用告警，兼容 remap 后类名）。"""
+    for cls, cnt in dist.items():
+        if cnt < threshold:
+            logger.warning(
+                f"⚠️  {split_name} 集 「{cls}」仅 {cnt} 张（< {threshold}），"
+                f"少数类评估指标不可靠，请关注。"
+            )
 
 
 def save_split_csv(df: pd.DataFrame, indices: np.ndarray, out_path: Path):
@@ -221,6 +240,22 @@ def main():
     # 收集样本
     df = collect_samples(data_root)
 
+    # 类重映射（config 驱动，binary/3class 合并；collect 后、split 前应用）
+    df = apply_label_remap(df, cfg.get("label_remap"))
+
+    # label→index 映射表（下游 MRIDataset 用 sorted(unique) 决定 index，此处同口径打印可复现）
+    final_classes = sorted(df["label"].unique())
+    label_to_index = {c: i for i, c in enumerate(final_classes)}
+    logger.info(f"label→index 映射（sorted，下游一致）：{label_to_index}")
+
+    # num_classes 一致性 assert（config 声明 vs 实际映射后唯一类数）
+    cfg_num_classes = cfg.get("num_classes")
+    if cfg_num_classes is not None:
+        assert len(final_classes) == int(cfg_num_classes), (
+            f"config num_classes={cfg_num_classes} 与映射后实际类数 {len(final_classes)}"
+            f"（{final_classes}）不一致，请核 label_remap / num_classes。"
+        )
+
     # 可选：每类子采样（烟测用，正式跑设 null 不裁剪）
     max_per_class = cfg.get("max_samples_per_class")
     if max_per_class:
@@ -254,7 +289,7 @@ def main():
         dist = compute_class_dist(df, indices)
         dist_summary[split_name] = dist
         logger.info(f"  {split_name}: {len(indices)} 张，类分布 = {dist}")
-        warn_moderate_shortage(dist, split_name)
+        warn_minority_class(dist, split_name)
 
     # 总计核对
     total_assigned = sum(len(v) for v in splits.values())
@@ -275,6 +310,9 @@ def main():
             else "patient-level: 按 subject ID 分组，无泄漏"
         ),
         "total_samples": len(df),
+        "label_remap": cfg.get("label_remap"),
+        "label_to_index": label_to_index,
+        "num_classes": len(final_classes),
         "split_sizes": {k: int(len(v)) for k, v in splits.items()},
         "class_distribution": dist_summary,
         "split_csv_dir": str(split_csv_dir),

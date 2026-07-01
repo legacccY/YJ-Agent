@@ -1,0 +1,58 @@
+# R8_unified_ranking_official.csv
+# QuantImmuBench §3.4 表10: 全方法统一 per-patient Fisher-z ρ̄ 排名 (干净口径, 零选择 max)
+# 输入=pooled_clean_9mer.csv (9mer 主分析); DS2 患者=[101, 102, 104, 105, 106, 107, 108, 109, 110]
+# SURV6=['PredIG_max', 'IMPROVE_max', 'pTuneos_max', 'PRIME_max', 'ImmuneApp_max', 'deepHLApan_max']; dim7=['PredIG_max', 'IMPROVE_max', 'pTuneos_max', 'PRIME_max', 'ImmuneApp_max', 'deepHLApan_max', 'netMHCpan_BA_max'] (已裁决: 保持现状具体化, max 维)
+# 方案A(outline §3.2/§3.4)=netMHCpan_BA_topk_k20_a0 dim_set=affinity_default (表内列)
+# rho_bar=裸 per-patient Fisher-z; rho_bar_lenctrl=控肽长偏相关(B2, ctrl=peplen)
+# family=single_tool/fusion; coverage_flag=full/sparse(稀疏 per-patient 虚高,不入部署)
+# length_artifact_flag=length_artifact 表示控肽长后掉幅>0.15(排名含肽长效应, 预期 HLAthena/andy90, 全覆盖也不入部署)
+# overfit_flag=leak_free/none(本表只含无监督, 学习型因 overfit_risk 已排除部署候选)
+# deploy_candidate=True 才进部署方案; pending_DTU=DTU 受限工具(部署需同意)
+rank,method,family,dim_set,pooling,rho_bar,rho_bar_lenctrl,ci_lo,ci_hi,n_used,coverage_flag,length_artifact_flag,overfit_flag,pending_DTU,deploy_candidate
+1,HLAthena_max,single_tool,-,max,0.627245,0.250431,0.479894,0.740179,9,sparse,none,none,False,False
+2,andy90_max,single_tool,-,max,0.585084,0.188649,0.423028,0.710871,9,sparse,none,none,False,False
+3,netMHCpan_BA_topk_k20_a0,single_tool,affinity_default,topk_k20_a0,0.461452,0.478613,0.277911,0.612488,9,full,none,none,True,True
+4,Seq2Neo_max,single_tool,-,max,0.440557,0.873461,0.233698,0.609262,9,sparse,none,none,True,False
+5,netMHCpan_BA_max,single_tool,-,max,0.391691,0.432223,0.197348,0.556412,9,full,none,none,True,True
+6,min,fusion,dim7,rankfuse,0.389152,0.289655,0.197181,0.552383,9,full,none,leak_free,True,False
+7,min,fusion,SURV6,rankfuse,0.389079,0.304964,0.197069,0.552344,9,full,none,leak_free,False,False
+8,weighted_mean_rank,fusion,dim7,rankfuse,0.387592,0.362523,0.194748,0.551587,9,full,none,weighted_leak_free,True,False
+9,mean_rank,fusion,dim7,rankfuse,0.385924,0.360932,0.192821,0.550248,9,full,none,leak_free,True,False
+10,geomean,fusion,dim7,rankfuse,0.377951,0.328352,0.183796,0.543722,9,full,none,leak_free,True,True
+11,geomean,fusion,SURV6,rankfuse,0.362171,0.288428,0.166635,0.530299,9,full,none,leak_free,False,True
+12,weighted_mean_rank,fusion,SURV6,rankfuse,0.352737,0.312386,0.156421,0.522241,9,full,none,weighted_leak_free,False,False
+13,mean_rank,fusion,SURV6,rankfuse,0.352267,0.312957,0.155895,0.521853,9,full,none,leak_free,False,False
+14,powmean,fusion,SURV6,rankfuse,0.345944,0.315228,0.148877,0.516582,9,full,none,leak_free,False,False
+15,powmean,fusion,dim7,rankfuse,0.342027,0.327697,0.1446,0.513265,9,full,none,leak_free,True,False
+16,median,fusion,dim7,rankfuse,0.335473,0.30569,0.1382,0.507142,9,full,none,leak_free,True,False
+17,MHCflurry_max,single_tool,-,max,0.307889,0.30164,0.108318,0.483605,9,full,none,none,False,True
+18,PRIME_max,single_tool,-,max,0.294475,0.282453,0.093677,0.472252,9,full,none,none,False,True
+19,IMPROVE_max,single_tool,-,max,0.285233,0.230633,0.082751,0.465099,9,full,none,none,False,True
+20,ICERFIRE_max,single_tool,-,max,0.26764,0.216228,0.065188,0.44893,9,sparse,none,none,True,False
+21,median,fusion,SURV6,rankfuse,0.267484,0.238945,0.064562,0.449164,9,full,none,leak_free,False,False
+22,max,fusion,SURV6,rankfuse,0.266298,0.231637,0.062729,0.448594,9,full,none,leak_free,False,False
+23,PredIG_max,single_tool,-,max,0.250122,0.227936,0.04763,0.432867,9,full,none,none,False,True
+24,IEDB_Calis_max,single_tool,-,max,0.248645,0.17395,0.040715,0.435932,9,full,none,none,False,True
+25,softmax_rank,fusion,SURV6,rankfuse,0.236883,0.18186,0.032248,0.422457,9,full,none,weighted_leak_free,False,False
+26,max,fusion,dim7,rankfuse,0.231561,0.193014,0.023808,0.420142,9,full,none,leak_free,True,False
+27,softmax_rank,fusion,dim7,rankfuse,0.183949,0.139714,-0.024089,0.376717,9,full,none,weighted_leak_free,True,False
+28,BigMHC_IM_max,single_tool,-,max,0.179421,0.131443,-0.028139,0.372149,9,full,none,none,False,True
+29,netMHCpan_EL_max,single_tool,-,max,0.178944,0.21534,-0.029453,0.372434,9,full,none,none,True,True
+30,ImmuneApp_max,single_tool,-,max,0.178843,0.101529,-0.028191,0.371165,9,full,none,none,False,True
+31,TransHLA_max,single_tool,-,max,0.169356,0.14133,-0.039694,0.364202,9,full,none,none,False,True
+32,NeoTImmuML_max,single_tool,-,max,0.164198,0.232444,-0.043006,0.357859,9,full,none,none,False,True
+33,pTuneos_max,single_tool,-,max,0.162326,0.147856,-0.046521,0.357576,9,sparse,none,none,False,False
+34,DeepImmuno_max,single_tool,-,max,0.157533,0.167777,-0.050108,0.352119,9,full,none,none,False,True
+35,Repitope_max,single_tool,-,max,0.121643,0.136627,-0.083805,0.317172,9,full,none,none,False,True
+36,TSCAPE_max,single_tool,-,max,0.116795,0.015163,-0.091101,0.314934,9,full,none,none,True,True
+37,NeoaPred_max,single_tool,-,max,0.077029,0.224264,-0.419781,0.538322,1,sparse,none,none,False,False
+38,deepHLApan_max,single_tool,-,max,0.073952,-0.007468,-0.133229,0.27494,9,sparse,none,none,False,False
+39,CNNeo_max,single_tool,-,max,0.056858,0.038046,-0.147315,0.256382,9,full,none,none,False,True
+40,NeoaG_max,single_tool,-,max,-0.06997,-0.016455,-0.270761,0.136655,9,sparse,none,none,False,False
+41,MHCnuggets_max,single_tool,-,max,-0.107547,0.434343,-0.319755,0.114936,9,sparse,none,none,False,False
+42,netMHCstabpan_max,single_tool,-,max,-0.112262,0.154865,-0.333004,0.120146,9,sparse,none,none,True,False
+43,DeepNetBim_max,single_tool,-,max,-0.190349,-0.374854,-0.692073,0.435388,1,sparse,none,none,False,False
+44,MUNIS_max,single_tool,-,max,-0.264976,0.267604,-0.454695,-0.052256,9,sparse,none,none,False,False
+45,MHCseqNet_max,single_tool,-,max,-0.269384,0.280817,-0.459057,-0.056223,9,sparse,none,none,False,False
+46,NetTepi_max,single_tool,-,max,-0.27508,0.255889,-0.464171,-0.062009,9,sparse,none,none,True,False
+47,ImmuGenX_max,single_tool,-,max,-0.369559,0.191229,-0.542452,-0.166632,9,sparse,none,none,False,False

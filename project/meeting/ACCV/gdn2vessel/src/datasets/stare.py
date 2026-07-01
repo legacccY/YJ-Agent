@@ -23,15 +23,15 @@ Kaggle pack (umairinayat/retinal-vessel-segmentation-datasets) layout
   FOV: No official mask → circular estimate ~90% min(H,W)/2.
 
 Split convention (datasets.json: 'STARE 20 LOO'):
-  LOO (leave-one-out) is the strict official evaluation protocol: train on 19,
-  test on 1, repeat for all 20. We expose this via split='loo' + loo_index.
-  For training baselines (single split), we use a deterministic 16/4 split
-  (train=first 16 IDs, test=last 4) consistent with FR-UNet / SA-UNet.
-  Val = last 4 of TRAIN_IDS (training_13..16 ≈ ids[12:16]).
-
-  # TODO: Verify exact LOO vs fixed-split protocol used by FR-UNet / SA-UNet
-  #       on STARE. Numbers here follow the most common literature convention.
-  #       If researcher confirms LOO only, set split='loo' + loo_index in trainer.
+  DECIDED 2026-07-01 (用户拍板, L4 dataset expansion):
+    MAIN leaderboard uses a FIXED deterministic 12/4/4 split (train/val/test),
+    NOT leave-one-out (LOO). test=4 held-out images.
+    Rationale: SA-UNet / SA-UNetv2 use a fixed 16/4 split on STARE — a widely
+    accepted convention; our test=4 matches their test count. The paper will
+    EXPLICITLY declare this deviation from strict LOO.
+  LOO (leave-one-out, train on 19 / test on 1 × 20) remains available via
+    split='loo' + loo_index as an OPT-IN appendix protocol only — it is NOT wired
+    into the main trainer / leaderboard. Kept for completeness, do not remove.
 
 Reference:
   Hoover et al., "Locating Blood Vessels in Retinal Images by Piecewise Threshold
@@ -116,15 +116,18 @@ class STAREDataset(BaseVesselDataset):
     STARE retinal vessel dataset — ah (Hoover) annotation.
 
     Two split modes:
-      1. Deterministic 12/4/4 (default — for baseline training):
+      1. Deterministic 12/4/4 (DEFAULT — main leaderboard, 用户拍板 2026-07-01):
            TRAIN_IDS: first 12 of _STARE_ALL_IDS
            VAL_IDS:   next 4
            TEST_IDS:  last 4 (held-out benchmark)
+         This fixed split (NOT LOO) is the main-leaderboard protocol; paper
+         declares the deviation from strict LOO (SA-UNet convention, test=4).
 
-      2. Leave-One-Out (LOO) — for strict evaluation:
+      2. Leave-One-Out (LOO) — OPT-IN appendix protocol only (NOT wired to main
+         trainer / leaderboard):
            Pass split='loo' and loo_index=i (0..19) to __init__.
            TRAIN_IDS = all 20 except index i; TEST_IDS = [id_i].
-           # TODO: LOO trainer integration with loop runner (main-line task).
+           Kept for completeness — main leaderboard never uses this path.
 
     Image format: .ppm (plain PPM in Kaggle pack, 605×700).
     Fallback: .ppm.gz (for HPC packs that compress — gracefully handled).

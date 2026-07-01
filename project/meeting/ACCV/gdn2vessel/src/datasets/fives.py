@@ -17,16 +17,24 @@ Kaggle pack (umairinayat/retinal-vessel-segmentation-datasets) layout
   everything into images/ + masks/ and encodes split in the filename prefix
   (train_ vs test_). IDs are full stems (e.g. "train_1_A", "test_100_D").
 
-  Resolution: 2048×2048 per image.
+  Resolution: 2048×2048 per image (native on disk).
   FOV: No official mask → full-image all-ones.
 
-  FIVES evaluation strategy:
-    Full-image 2048×2048 is very large for direct inference.
-    Options (chose at adapter level or evaluate.py caller):
-      a) Sliding-window tiles: 512×512, stride 448 (overlap 64) via get_tiles()
-      b) Resize to 512×512 at adapter forward_adapt()
-    # TODO: confirm which strategy adapters use for FIVES 2048×2048 inference.
-    #       dataset returns tiles via get_tiles(); resize is adapter-side concern.
+  FIVES input strategy (DECIDED 2026-07-01, 用户拍板 — L4 dataset expansion):
+    Resize whole image to 512×512 at the DATASET layer (image + GT + FOV all
+    downsampled to 512²), NOT tiled and NOT random-cropped at native 2048².
+    Rationale:
+      - Official口径: FIVES paper (arXiv 2406.14994) "resampled to 512×512" +
+        CLAHE clip2/grid8×8; empirically FIVES optimal at 256–876px.
+      - Feeding native 2048² into base random_crop(512) would show the model
+        only 1/16 of the retina FOV per crop = severe field-of-view starvation.
+      - Resize-512 saves ~16–21× compute vs native 2048² and makes break gap_size
+        (pixels) comparable across DRIVE(565²)/CHASE(999²)/STARE(605×700)/FIVES.
+    Downsample interpolation:
+      - image: cv2.INTER_AREA (proper anti-aliased downsampling, 4× reduction).
+      - GT / FOV: cv2.INTER_NEAREST (keep labels strictly binary; standard for
+        segmentation masks). See note in _load_gt on connectivity caveat.
+    CLAHE clip_limit=2.0, tile 8×8 = base_vessel default = official FIVES口径.
 
 Reference:
   Jin et al., "FIVES: A Fundus Image Dataset for AI-based Vessel Segmentation"
@@ -46,7 +54,15 @@ from typing import List
 import cv2
 import numpy as np
 
-from datasets.base_vessel import BaseVesselDataset
+from datasets.base_vessel import (
+    BaseVesselDataset,
+    apply_clahe,
+    GREEN_MEAN,
+    GREEN_STD,
+)
+
+# FIVES input resolution — resize whole 2048² image to this (用户拍板 2026-07-01).
+FIVES_RESIZE = 512
 
 
 # --------------------------------------------------------------------------- #
@@ -79,8 +95,9 @@ class FIVESDataset(BaseVesselDataset):
     Discovered dynamically from disk — not hardcoded, since filenames vary.
     Anti-leakage: train_*/test_* are structurally disjoint by prefix.
 
-    High-res: 2048×2048. Use get_tiles(tile_size=512, overlap=64) for inference.
-    # TODO: confirm preferred inference strategy (tile vs resize) with main-line.
+    Native 2048² on disk → resized to resize_to² (default 512) at load time
+    (_load_image / _load_gt / _load_fov all return resize_to² arrays). See module
+    docstring "FIVES input strategy" (用户拍板 2026-07-01).
     """
 
     # Class-level defaults (empty); populated per-instance in __init__
@@ -88,7 +105,11 @@ class FIVESDataset(BaseVesselDataset):
     VAL_IDS:   List[str] = []
     TEST_IDS:  List[str] = []
 
-    def __init__(self, data_root: str, split: str = 'train', **kwargs):
+    def __init__(self, data_root: str, split: str = 'train',
+                 resize_to: int = FIVES_RESIZE, **kwargs):
+        # resize_to: whole-image resize target (default 512, official FIVES口径).
+        # Set before super().__init__ so overridden _load_* can read it.
+        self.resize_to = int(resize_to)
         root = Path(data_root)
         img_dir = root / 'images'
 
@@ -151,16 +172,59 @@ class FIVESDataset(BaseVesselDataset):
         # No official FOV mask
         return self.data_root / 'fov_masks' / f'{sid}.png'
 
+    # ---------------------------------------------------------------------- #
+    #  Load overrides — resize whole 2048² image to resize_to² (用户拍板 2026-07-01)
+    #  Order (matches official FIVES): resize raw → then CLAHE (green mode).
+    # ---------------------------------------------------------------------- #
+
+    def _load_image(self, sid: str) -> np.ndarray:
+        """Load FIVES image, resize to resize_to² (INTER_AREA), then base pipeline.
+
+        Respects color_mode (set by BaseVesselDataset.__init__):
+          'green' (default 11 baselines): green channel + CLAHE + normalize → (S,S)
+          'rgb'   (CS-Net only):          RGB /255, no CLAHE                 → (S,S,3)
+        """
+        img_bgr = cv2.imread(str(self._img_path(sid)))
+        assert img_bgr is not None, f'cv2 failed to read FIVES image {self._img_path(sid)}'
+        # Downsample whole image 2048² → resize_to² (anti-aliased area average).
+        img_bgr = cv2.resize(img_bgr, (self.resize_to, self.resize_to),
+                             interpolation=cv2.INTER_AREA)
+
+        if self.color_mode == 'rgb':
+            # CS-Net口径: RGB /255 only (resize done above; forward_adapt no-op resizes).
+            img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+            return img_rgb.astype(np.float32) / 255.0   # (S, S, 3)
+
+        # Default green + CLAHE(clip2/grid8) + normalize — mirrors base_vessel._load_image.
+        green = img_bgr[:, :, 1]
+        green_clahe = apply_clahe(green, clip_limit=self.clahe_clip)
+        img_f = green_clahe.astype(np.float32) / 255.0
+        img_f = (img_f - GREEN_MEAN) / GREEN_STD
+        return img_f  # (S, S)
+
+    def _load_gt(self, sid: str) -> np.ndarray:
+        """Load FIVES GT, resize to resize_to² (INTER_NEAREST, keep binary).
+
+        NOTE: 4× downsample of thin vessel labels can fragment 1-px vessels →
+        spurious pre-existing breaks. Standard nearest-label口径 chosen (no official
+        FIVES GT interpolation spec). If gap-count sanity looks off, flag to
+        researcher/analyst; do NOT silently switch interpolation (预登记 frozen).
+        """
+        gt_raw = cv2.imread(str(self._gt_path(sid)), cv2.IMREAD_GRAYSCALE)
+        assert gt_raw is not None, f'cv2 failed to read FIVES GT {self._gt_path(sid)}'
+        gt_r = cv2.resize(gt_raw, (self.resize_to, self.resize_to),
+                          interpolation=cv2.INTER_NEAREST)
+        return (gt_r > 127).astype(np.uint8)
+
     def _load_fov(self, sid: str) -> np.ndarray:
-        """FIVES: no official FOV mask → full-image (all ones)."""
+        """FIVES: no official FOV mask → full-image all-ones at resize_to²."""
         mask_path = self._mask_path(sid)
         if mask_path.exists():
             mask_raw = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
             if mask_raw is not None:
-                return (mask_raw > 127).astype(np.uint8)
+                mask_r = cv2.resize(mask_raw, (self.resize_to, self.resize_to),
+                                    interpolation=cv2.INTER_NEAREST)
+                return (mask_r > 127).astype(np.uint8)
 
-        # Fall back to full-image valid region
-        img_bgr = cv2.imread(str(self._img_path(sid)))
-        assert img_bgr is not None, f'cv2 failed to read FIVES image {self._img_path(sid)}'
-        h, w = img_bgr.shape[:2]
-        return np.ones((h, w), dtype=np.uint8)
+        # No FOV mask: full-image valid region at resized resolution.
+        return np.ones((self.resize_to, self.resize_to), dtype=np.uint8)

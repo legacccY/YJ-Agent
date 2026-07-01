@@ -122,6 +122,7 @@ def precompute_one(
     cache_dir: Path,
     base_seed: int = BASE_SEED,
     force_recompute: bool = False,
+    subsample: bool = True,
 ) -> List[Dict]:
     """
     Precompute break masks for all test-split images of one dataset at one severity.
@@ -168,7 +169,12 @@ def precompute_one(
 
     # 子采样到 Entry14 预登记 n（FIVES20 / HRF18），seed42 固定可复现。
     # 守预登记防 HARKing（用户 2026-06-20 授权 HRF18）。CHASE/STARE/DRIVE 不在表内不动。
-    _sub_n = SUBSAMPLE_N.get(dataset_name)
+    #
+    # L4 4-集扩展（2026-07-01）：新预登记 discrimination gate 需 FIVES 全 200 集（item5
+    #   饱和 sanity n=200）。主线为新 gate 生成 cache 时传 --no_subsample（subsample=False）
+    #   → 跳过子采样出全集。默认 subsample=True 保留 Entry14 冻结 n50 口径不动（不覆盖旧
+    #   cache，manifest merge-by-key append）。两套 cache 共存互不洗（R3）。
+    _sub_n = SUBSAMPLE_N.get(dataset_name) if subsample else None
     if _sub_n is not None and len(test_ids) > _sub_n:
         rng = np.random.RandomState(42)  # seed42, same source as BASE_SEED; deterministic
         idx = sorted(rng.choice(len(test_ids), _sub_n, replace=False))
@@ -313,6 +319,10 @@ def main():
     parser.add_argument('--base_seed', type=int, default=BASE_SEED)
     parser.add_argument('--force', action='store_true',
                         help='Recompute even if NPZ cache already exists')
+    parser.add_argument('--no_subsample', action='store_true',
+                        help='Disable Entry14 subsampling (FIVES20/HRF18) → generate '
+                             'FULL test sets. Use for L4 4-dataset discrimination gate '
+                             '(FIVES n=200). Default OFF preserves frozen Entry14 n50口径.')
     args = parser.parse_args()
 
     base_root  = Path(args.data_root_base)
@@ -338,6 +348,7 @@ def main():
                 cache_dir      = cache_dir,
                 base_seed      = args.base_seed,
                 force_recompute= args.force,
+                subsample      = not args.no_subsample,
             )
             new_entries.extend(entries)
 

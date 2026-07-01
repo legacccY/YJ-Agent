@@ -18,7 +18,15 @@
 | CheXWorld | **2048**(128×accum2×8gpu) | **2e-4 绝对**(min_lr 1e-6) | **5474**(11.21M/2048) | 40ep | ✅SSL_RECIPES §4, ssl_type iwm_dual_easy/ema 0.996→1.0/mask multi_multiblock; `--dataset nih` 单库; HPC accum_iter 凑 eff_bs=2048 |
 
 > 同 images-seen 11.21M 下 MAE/MoCo 跑 2737 步、DINO 跑 21898 步（步数差 8×=batch 差 8× 镜像），源图曝光相等，batch 不动官方值。
-> 次级透明项(只记录)：encoder view-instances(MAE~0.1× / MoCo~2× / DINO~3.8×)、实际 GPU·h(烟测标定)。lr 不 rescale(保官方 eff_bs)。
+> 次级透明项(只记录)：encoder view-instances(MAE~0.1× / MoCo~2× / DINO~3.8×)、实际 GPU·h(烟测标定)。
+
+### 🆕(2026-06-30 路A 拍板) reduced-batch + lr 线性缩放（硬件约束预登记，防 HARKing）
+4×4090（24GB）装不下 DINO/MoCo 官方 per-GPU batch：DINO 官方 eff_bs=512=16卡×32、MoCo=4096=64卡，单/4 卡达不到。**预登记走 reduced-batch + lr 线性缩放**（images-seen 不变，仅 eff_bs 降）：
+- **MAE/CheXWorld**：accum 凑满官方 eff_bs(4096/2048)，**lr 不缩放**。
+- **DINO/MoCo（reduced）**：用 4090 可容 per-GPU batch（DINO 官方 32/卡、MoCo 烟测标定~128/卡），eff_bs=BPG×GPUS（<官方）；**lr 按线性规则缩放 lr_scaled=official_lr×eff/official_eff_bs**（DINO 0.00075@512、MoCo 1e-4@4096 为锚），每次缩放 stderr 留痕。
+- 与 A′ 哲学自洽：eff_bs 本就是「方法构成要素、放开不强对齐」，images-seen 才是主控轴。
+- 诚实 limitation（写 tex）：「受 4×4090 限制，DINO/MoCo 用 reduced eff_bs + 标准线性 lr 缩放；MAE/CheXWorld accum 凑满官方」。这是 solo-learn/VISSL 有限算力横评标准做法，非疏漏。
+- 烟测顺便标定 4090 单卡可容 BPG（OOM 则降 BPG_CAP env）。
 
 ## 2. Collapse 烟测（投全预算前强制，ACCEPTANCE Phase1 前置）
 DINO/MoCo 必烟测(collapse)+标定 imgs/sec。**🆕(skeptic-3) MAE+CheX 也加廉价 loss-sanity 烟测 gate**（同量级、少 collapse 监控）——接住「官方高 lr(MAE 2.4e-3/CheX 2e-4 在大语料调) × 112k 小语料 × 8× 少步」未测 regime，预登记「loss 平台/无发散」PASS 再投全量，别让 130 GPU·h 裸跑。

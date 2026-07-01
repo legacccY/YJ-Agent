@@ -18,7 +18,8 @@ Kind: two_stage — 两段式 baseline:
 
 官方超参 (sources/source_2D/train.py, main branch 2026-06-20):
   - 模型架构 : monai.networks.nets.UNet(spatial_dims=2, in_ch=1, out_ch=1,
-                channels=(16,32,64,128), strides=(2,2,2), num_res_units=2)
+                channels=(16,32,64,128), strides=(2,2,2), num_res_units=2,
+                norm='batch')  # ← config_training.json，官方权重 = BatchNorm
   - optimizer : Adam, lr=1e-3
   - batch_size: 32
   - max_epochs: 1000
@@ -261,15 +262,20 @@ class CreatisPostprocAdapter(BaselineAdapter):
         """
         构建 creatis reconnecting model (monai UNet，Stage 2).
 
-        官方架构 (train.py):
+        官方架构 (train.py + modeles/2D_model_stare/config_training.json):
           monai.networks.nets.UNet(
             spatial_dims=2, in_channels=1, out_channels=1,
             channels=(16, 32, 64, 128), strides=(2, 2, 2),
-            num_res_units=2, norm='INSTANCE'
+            num_res_units=2, norm='batch'
           )
+          ⚠️ norm 必须 = 'batch'（researcher 已核官方 config_training.json）。
+             官方预训权重 best_metric_model.pth 用 BatchNorm（含 running_mean/
+             running_var buffer）；若误建成 INSTANCE norm，load_state_dict 会因
+             键失配直接崩（instance norm 无 running buffer）。
 
         cfg keys (from creatis.yaml):
-          norm           : str  (default: 'INSTANCE' — 官方 config_training.json)
+          norm           : str  (default: 'batch' — 官方 config_training.json，
+                                  researcher 核实；勿改否则失配官方权重)
           model_dir      : str | None  (预训练权重目录；None = 从头训练)
           stage1_ckpt    : str | None  (Stage-1 ckpt best.pth 路径；
                                         设置后 forward_adapt 走完整两段式流程)
@@ -293,7 +299,9 @@ class CreatisPostprocAdapter(BaselineAdapter):
             load_creatis_model,
         )
 
-        norm = str(cfg.get("norm", "INSTANCE"))
+        # norm 默认 'batch'（官方 config_training.json，researcher 核实）。
+        # 官方 best_metric_model.pth 用 BatchNorm；INSTANCE norm 会 load_state_dict 失配。
+        norm = str(cfg.get("norm", "batch"))
         model_dir = cfg.get("model_dir", None)
 
         # ------------------------------------------------------------------ #
