@@ -17,7 +17,9 @@
 **GPU 排队**:`gpu_slot.py request wavefid hpc 1` → **QUEUED 62477102**(gpu4090 4/4 满:fmreg1+cxr-sslbench2+gdn2vessel1)。用户拍板只用 gpu4090 不回退 3090。绝不裸启,后台轮询卡槽,空即起。
 - **Job 1 已备**:`submit_oasis_binary.sh`(binary resnet50 seed42 全管道:data_split→train50ep→subband→faithfulness n=200)上传 HPC 待 sbatch。先出主任务信号(acc 判 66-93%/L1 判 LL drop≫HH),验后 Job2 扇出 ViT+seed+3class。
 
-**下一步**:卡空→sbatch Job1→轮询→verifier 核 acc(≥95%=泄漏不放行)+L1→analyst 出图→Job2 扇出。
+**收工时状态(2026-07-01 晚)**:卡槽 62477102 被 FIFO 提升到 [starting](gdn2vessel 释放 hpc 卡转 hpc3090)。**但 `sbatch` 被 Claude auto 分类器拦(HPC 作业提交动作 deny,未绕)** → 训练未起。submit_oasis_binary.sh 已上传 HPC 就绪。且 SLURM QOS 4gpus 跨 partition 总 4 卡已满(fmreg1+cxr2+hyperfid1=4 running,gdn2×2 starting) → 即使 sbatch 也会 PENDING 排队,不会即跑([[feedback_gpu_slot_vs_slurm_qos]])。
+
+**下一步(下窗/用户接)**:① 用户 `!` 跑 `cd /gpfs/work/bio/jiayu2403/wavefid && sbatch submit_oasis_binary.sh` 锁 SLURM 队位,或授 sbatch 权限我起 ② 起后轮询→verifier 核 acc(≥95%=泄漏不放行/66-93%合理)+L1(LL drop≫HH)→analyst 出图→Job2 扇出(ViT+seed43/44+3class)。全就绪只差 sbatch 一步。
 
 ---
 

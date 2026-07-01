@@ -22,6 +22,12 @@
 
 **周五待袁老师拍**：① 问题一肽长控不控（数据显示 peplen vs Elispot rho=0.319 p<0.001，前提不成立）② 问题二 geomean 措辞最终确认。
 
+**PPT 扩充 + 图可读性修复（2026-07-01 续，用户反馈驱动）**：
+- 用户嫌初版太简单 → 扩到 **19 页**（终版 `QuantImmuBench_progress_v4_rev1_2026-07-01.pptx` + 同名 PDF 在项目根目录）：加 30 工具部署清单×2、图1 30工具 Spearman 主指标、工具相关性热图、pooling 洗牌、robustness、统一排名部署、AUPRC 副指标；删 n=9 功效墙页。新增 6 张官方 130 肽结果图脚本 `analysis/plot_ppt_v4_results.py`。
+- **部署清单口径修正**：初稿误用 DEPLOY_TRACKER 目标表 A/B（含 MixMHCpred/BigMHC-EL），Bash 核实这俩官方数据 0 行未进 benchmark → 改对齐实际 TOOLS_30。**官方口径实际 = 8 呈递 + 22 免疫原**（≠outline 10+20），用户拍板「如实标 8+22」，周五需向袁老师说明 MixMHCpred/BigMHC-EL 未进最终 benchmark。
+- **图可读性**：用户反馈图内字太小 → 收窄画布 + 加大字号（工具名 14-16、数值 13-14）+ PPT 给图更大展示区 + 实测宽高比精确回填。Spearman/相关性/pooling/AUPRC 四张已清晰。
+- ⚠️ **未完待修（下轮）**：① 6 张结果图底部脚注/图例与柱子/彼此重叠（fig1/fig_tool_corr/fig2/fig_auprc）② fig3 robustness 图例配色误导（drop10/20 两块都橙但柱多为蓝）③ fig4 排名 44 行太多（已定精简 fusion 为 SURV6 一套维度）+ 中间"部署方案"框压柱 + ImmuGenX −0.370 被行标签压。评价专章 6 张图全干净无需改。
+
 ---
 
 ## Entry 44-DECISIONS — 2026-07-01【用户拍板 2 个 Part E 点 + 给袁老师沟通档】
