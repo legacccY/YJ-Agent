@@ -403,5 +403,13 @@
   "labels": "✅图像级28类标签已下(Kaggle镜像tuktuai/vindr-cxr-physionet,绕PhysioNet账号). labels/image_labels_train.csv(45001行=15000图×3放射师,需按多数/并集聚合)+image_labels_test.csv(3001行已聚合). image_id=DICOM hash直接join本地train/*.png(已验精确对上). 28类含global(Pneumonia/TB/COPD/Lung tumor/Other diseases/No finding).",
   "nih_intersect": "NIH∩VinDr干净对齐~10-11类:Atelectasis/Cardiomegaly/Effusion↔Pleural effusion/Infiltration/Pneumothorax/Consolidation/Edema/Emphysema/Fibrosis↔Pulmonary fibrosis/Pleural_Thickening;Mass+Nodule需合并;Hernia剔除",
   "label_path": "D:/YJ-Agent/data/external/vindr_cxr/labels/image_labels_{train,test}.csv"
+ },
+ "wardagent_alarm": {
+  "project": "wardagent-bench (候选B)",
+  "subsets": "MIMIC-III/IV Waveform Matched(ICU波形ECG/PPG/ABP/RESP,承重,按Chromik法派生多阈值告警共触发) / PhysioNet2015 Challenge(1250段5类单告警/段,命门对照) / VTaC(NeurIPS D&B 2023,5037 VT告警1441真3596假,单告警参照)",
+  "local": "待获取(未下载)",
+  "source": "mimic3wdb OPEN https://physionet.org/content/mimic3wdb/1.0/ ; PhysioNet2015 https://physionet.org/content/challenge-2015/1.0.0/ ; matched(需CITI) https://physionet.org/content/mimic3wdb-matched/",
+  "status": "✅核心命门Q1可现跑(无需CITI): mimic3wdb/1.0波形库=OPEN(Open Database License,ECG/ABP/PPG/RESP最多8路同步) → 多告警共触发存在性+相关结构现跑. 🔴仅Q2完整真/假结局代理需matched子集(credentialed+CITI,用户线下). PhysioNet2015=开放(单告警金标baseline+Q3反证). VTaC=公开.",
+  "note": "命门(KS-3): 多告警'共触发+逐告警真/假'公开数据不带标注存在,须自派生(阈值规则+结局代理),稿中必声明标签派生(R8)。切窗防泄漏(同病人不跨train/test)。"
  }
 }

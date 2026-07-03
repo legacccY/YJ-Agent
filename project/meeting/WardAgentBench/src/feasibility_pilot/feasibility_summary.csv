@@ -1,0 +1,14 @@
+metric,condition,value,n
+escalate_accuracy,A,0.5073,274
+route_accuracy,A,0.562,274
+timing_accuracy,A,0.2883,274
+escalate_accuracy,B,0.5073,274
+route_accuracy,B,0.3029,274
+timing_accuracy,B,0.3029,274
+pair_class_count,both_correct,99,274
+pair_class_count,A_correct_B_wrong,40,274
+pair_class_count,A_wrong_B_correct,40,274
+pair_class_count,both_wrong,95,274
+b_failure_subtype_count,misroute,0,40
+b_failure_subtype_count,dropped_concern,8,40
+b_failure_subtype_count,integration,32,40

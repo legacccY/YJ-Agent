@@ -6,19 +6,32 @@
 
 ---
 
-## §3.1 单工具基线（表5/图1）— 真源 `R1_single_maxpool_official.csv`
-per-patient Spearman，**裸 / 控肽长** 两列并报：
+## §3.1 单工具基线（表5/图1）— 真源 `analysis/official/recompute_effN/R1_recomputed_effN8.csv`（2026-07-03 **覆盖修复 remerge 后重算**，Entry 49）
+> 🔴 **覆盖修复（Entry 48-49）**：8 工具（MHCnuggets/MHCseqNet/netMHCstabpan/andy90/MUNIS/ImmuGenX/DeepNetBim/Seq2Neo）全量重跑补满 130/130 覆盖 → patch 进 merged 副本 → p0e2 重池化 → effN8 重算。**后果：原缺 P102 的工具（MHCnuggets/MUNIS/MHCseqNet 等）从 8/9 升 9/9，主榜 15→22 个**。数字均 Bash 核 csv + verifier PASS（含填值符号逐格对、pre-covfix 0.4602 精确重现）。
+> 🔴 **口径（Entry 47 沿用）**：图1 = **effN≥8 门槛 + 9mer**。effN≥8 保全 9 患者且去 2-3 点撞 ±1 伪迹（effN≥5≡≥8 数值全同）；effN≥10 会结构性剔掉 P102（整患者仅 8 肽、最难）。
 
-| 工具 | 裸 | 控肽长 | 注 |
-|---|---|---|---|
-| HLAthena | +0.627 | **+0.250** | 呈递代理，榜首大半是肽长搭便车（控后塌）|
-| andy90 | +0.585 | **+0.189** | 同上，肽长伪迹 |
-| netMHCpan_BA | +0.392 | **+0.432** | 亲和，控肽长稳→真最强单工具 |
-| MHCflurry | +0.308 | +0.302 | 稳 |
-| PRIME | +0.294 | +0.282 | 稳 |
-| IMPROVE | +0.285 | +0.231 | 稳 |
-- ⚠️ Seq2Neo 控肽长 0.874 = 稀疏工具（仅 43 肽）虚高，**排除出主榜**（coverage sparse）。
-- 联合控 peplen+n_subpep+is_indel：netMHCpan_BA 0.42[稳]、HLAthena 0.20[塌]、andy90 0.09[塌]。
+per-patient Spearman(工具 max-pool 分, ELISpot)，跨患者 Fisher-z 等权聚合，effN≥8，**主榜 = 22 个 9/9 全覆盖工具**：
+
+| 工具 | rho(effN8) | 95% CI | 覆盖 | 注 |
+|---|---|---|---|---|
+| MHCnuggets | **+0.447** | [+0.33,+0.55] | 9/9 | 覆盖修复后升 9/9（含最难 P102），数值居首；呈递/结合类 |
+| netMHCpan_BA | +0.392 | [+0.14,+0.59] | 9/9 | 亲和 baseline 锚点（DTU 受限）；CI 宽，P102 上 rho=−0.36 |
+| MHCflurry | +0.308 | [+0.17,+0.46] | 9/9 | 稳 |
+| PRIME | +0.294 | [+0.12,+0.47] | 9/9 | 稳 |
+| IMPROVE | +0.285 | [+0.09,+0.48] | 9/9 | 稳 |
+| PredIG | +0.250 | — | 9/9 | 稳 |
+| IEDB_Calis | +0.249 | — | 9/9 | 稳 |
+| MHCseqNet | +0.246 | — | 9/9 | 覆盖修复后升 9/9（原 8/9 参考区）|
+| netMHCstabpan | +0.234 | — | 9/9 | 覆盖修复后满 130（原 43 肽）|
+| MUNIS | +0.207 | — | 9/9 | 覆盖修复后升 9/9（P102 补入 rho=−0.60 拉低，原 8/9=0.304）|
+| …（余 12 个 9/9 见 csv）| | | | BigMHC_IM 0.179 / netMHCpan_EL 0.179 / ImmuneApp 0.179 / …/ Seq2Neo 0.072 / andy90 0.033 |
+
+- **headline（top-cluster,不排单一王座）**：顶部工具 **0.39–0.45 无单一压倒者**（MHCnuggets 0.447 / netMHCpan_BA 0.392 / MHCflurry 0.308），CI 大幅重叠（MHCnuggets[0.33,0.55] vs netMHCpan_BA[0.14,0.59]）。全 ≤0.45 天花板、合文献 0.15–0.35。⚠️ **headline 措辞待袁老师定**：MHCnuggets 覆盖修复后客观数值第一但与 netMHCpan_BA 差 0.055 且 CI 重叠、P102 仅 8 点 rho=0.119——「单一最强」脆，故本表采 top-cluster 表述；netMHCpan_BA 仍作亲和 baseline / fusion 对照锚点。
+- **🔴 主榜工具数 15→22**（覆盖修复的直接后果）：原因 = MHCnuggets/MUNIS/MHCseqNet/netMHCstabpan/Seq2Neo/andy90/ImmuGenX 补满 P102 等缺口后升 9/9，可进公平同患者集主排序。
+- **⚠️ DeepNetBim 掉榜（coverage_fail, rho=nan）**：补满覆盖后 max-pool 饱和到全 130 肽 =1.0（工具本身 29% 对输出 1.0 天花板，每肽≥1 子肽命中→max 常数列）。**仅 max-pool 退化**，换 topk(k≥2)/softmax/rankdecay 任一算子方差恢复可算 rho（见 §3.2）→ 作 pooling 算子决定成败的正面案例，不入 §3.1 max-pool 主榜。
+- **8/9 覆盖工具（6 个,非满覆盖不入主榜同患者集可比）**：NetTepi 0.293(13 等位上限)/ICERFIRE 0.250/HLAthena 0.207/pTuneos 0.117/deepHLApan 0.101/NeoaG −0.045——均差分/异己性或等位/长度硬上限（Entry 48 砍，论文标诚实覆盖上限）。NeoaPred coverage_fail(n_full=1, 14/130 结构 9mer)。
+- ⚠️ **控肽长偏相关（袁老师问题一）本轮未在 effN8 重算**（拍板级：肽长控不控进排名未定），主图只报裸 rho。
+- 敏感性 5/8/10 三档：`R1_effN_sensitivity_5_8_10.csv`。总账 = **23/30 工具到 130 覆盖**（覆盖矩阵图 `Results/effN_coverage_matrix.png`）。
 
 ## §3.2 pooling 规律（表3/图2「洗牌」）— 真源 `R2_pooling_sweep_official.csv` + `R2_best_per_tool.csv`
 - 亲和类靠聚合（控肽长后仍成立）：netMHCpan_BA max 0.43 → topk_k5 **0.52**、topk_k20(netAffneg) 0.46。

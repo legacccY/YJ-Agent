@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "project": "quantimmu-coverage",
+  "template": "experiment",
+  "created": "2026-07-03T17:51:40+08:00",
+  "updated": "2026-07-03T21:58:48+08:00",
+  "from_phase": "",
+  "nodes": [
+    {
+      "id": "design",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "出实验矩阵，对齐判据",
+      "out": "重塑为覆盖修复战役, 换定制棒",
+      "owner": "",
+      "ts": "2026-07-03T17:52:33+08:00"
+    },
+    {
+      "id": "redteam",
+      "stage": "红队",
+      "agent": "skeptic",
+      "deps": [
+        "design"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "攻设计致命伤（0 致命即过）",
+      "out": "重塑为覆盖修复战役, 换定制棒",
+      "owner": "",
+      "ts": "2026-07-03T17:52:33+08:00"
+    },
+    {
+      "id": "implement",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "redteam"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "实现各 run 脚本/config，自测 pytest",
+      "out": "重塑为覆盖修复战役, 换定制棒",
+      "owner": "",
+      "ts": "2026-07-03T17:52:33+08:00"
+    },
+    {
+      "id": "integrate",
+      "stage": "集成烟测",
+      "agent": "主线",
+      "deps": [
+        "implement"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
+      "out": "重塑为覆盖修复战役, 换定制棒",
+      "owner": "",
+      "ts": "2026-07-03T17:52:33+08:00"
+    },
+    {
+      "id": "train",
+      "stage": "跑",
+      "agent": "主线",
+      "deps": [
+        "integrate"
+      ],
+      "status": "skipped",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
+      "out": "重塑为覆盖修复战役, 换定制棒",
+      "owner": "",
+      "ts": "2026-07-03T17:52:33+08:00"
+    },
+    {
+      "id": "analyze",
+      "stage": "分析",
+      "agent": "analyst",
+      "deps": [
+        "train"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "读结果出趋势/图/对判据",
+      "out": "重塑为覆盖修复战役, 换定制棒",
+      "owner": "",
+      "ts": "2026-07-03T17:52:33+08:00"
+    },
+    {
+      "id": "verify",
+      "stage": "核数",
+      "agent": "verifier",
+      "deps": [
+        "analyze"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "关键数字三方对账 + 写 LOG",
+      "out": "重塑为覆盖修复战役, 换定制棒",
+      "owner": "",
+      "ts": "2026-07-03T17:52:34+08:00"
+    },
+    {
+      "id": "probe",
+      "stage": "验证",
+      "agent": "主线",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "MHCnuggets 本地试跑1个失败肽(102-04的9mer子肽), 确认重跑真能出分=路通(是→铺开; 否→工具硬限制改策略)",
+      "out": "MHCnuggets全130重跑PASS:3283对100%出分,5缺肽27/3/24/27/21全补,125→130.路通证实",
+      "owner": "",
+      "ts": "2026-07-03T18:09:57+08:00"
+    },
+    {
+      "id": "local-rerun",
+      "stage": "本地重跑",
+      "agent": "coder",
+      "deps": [
+        "probe"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "本地可跑工具(MHCnuggets/MHCseqNet/MUNIS/ImmuGenX/DeepNetBim等)在缺肽(P102×5/P101×9)上重跑补分, 让全部子肽出分",
+      "out": "非本轮范围(本地WSL2工具待)",
+      "owner": "",
+      "ts": "2026-07-03T18:30:15+08:00"
+    },
+    {
+      "id": "hpc-upload",
+      "stage": "HPC上传",
+      "agent": "主线",
+      "deps": [],
+      "status": "done",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板: 上传缺肽输入+跑脚本到HPC(对外传输)",
+      "out": "用户2026-07-03常驻放行HPC直跑,不逐步停",
+      "owner": "",
+      "ts": "2026-07-03T17:59:12+08:00"
+    },
+    {
+      "id": "hpc-rerun",
+      "stage": "HPC重跑",
+      "agent": "主线",
+      "deps": [
+        "hpc-upload"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "HPC工具(andy90/NetTepi/Seq2Neo补87/NeoaPred补116)在缺肽上重跑",
+      "out": "8工具补满130(HPC4+本地4);HLAthena输入就绪待GCS wrapper;砍6硬上限;剩remerge",
+      "owner": "",
+      "ts": "2026-07-03T21:03:19+08:00"
+    },
+    {
+      "id": "datagroup-28wt",
+      "stage": "问数据组",
+      "agent": "主线",
+      "deps": [],
+      "status": "skipped",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板: 问数据组(王子源/谢孟翰)28个无WT肽=真无WT(indel/移码/novelORF)还是漏算. 真无→NeoaG/pTuneos/ICERFIRE硬上限诚实标; 漏算→补WT后可救",
+      "out": "用户拍板砍掉4差分工具(NeoaG/pTuneos/ICERFIRE/deepHLApan)+NetTepi+NeoaPred=硬上限,论文标诚实覆盖上限,不问数据组不硬补",
+      "owner": "",
+      "ts": "2026-07-03T18:51:16+08:00"
+    },
+    {
+      "id": "dtu-consent",
+      "stage": "DTU许可",
+      "agent": "主线",
+      "deps": [],
+      "status": "skipped",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板: netMHCstabpan补满需DTU书面consent",
+      "out": "许可仅发论文相关,不阻塞跑;二进制已在HPC,直接跑",
+      "owner": "",
+      "ts": "2026-07-03T18:26:31+08:00"
+    },
+    {
+      "id": "remerge",
+      "stage": "重合并池化",
+      "agent": "coder",
+      "deps": [
+        "local-rerun",
+        "hpc-rerun"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "重跑分并回merged_all_tools_30_official→p0e2重池化→新pooled_clean_9mer, 更新覆盖矩阵",
+      "out": "8工具patch进merged副本+p0e2重池化;8工具pooled全130/130;verifier PASS",
+      "owner": "",
+      "ts": "2026-07-03T21:58:48+08:00"
+    },
+    {
+      "id": "refig",
+      "stage": "重出图核验",
+      "agent": "主线",
+      "deps": [
+        "remerge"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "重出fig1(9mer+8-11mer)+覆盖矩阵, verifier核新覆盖数, 更新RESULTS_CLEAN_SUMMARY+LOG",
+      "out": "fig1 effN8重出png+pdf+覆盖矩阵+ppt rev4;headline翻盘核实非bug;主榜15到22;§3.1+04_LOG更新",
+      "owner": "",
+      "ts": "2026-07-03T21:58:48+08:00"
+    }
+  ]
+}

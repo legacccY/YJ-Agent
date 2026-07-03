@@ -1,0 +1,17 @@
+# feasibility_pilot 依赖（WardAgentBench reframe 可行性命门 kill-shot）
+# 数据/管道（build_scenarios / score / rank_flip_guard 用）
+wfdb>=4.1.0          # 读 mimic3wdb-matched numerics（复用 ks3_pilot 加载器）
+numpy>=1.24
+pandas>=2.0          # 02 沿用；本 pilot score.py 纯 csv 不强依赖，装上省事
+
+# LLM agent 后端（run_agent.py --backend medgemma 用；--backend mock 不需要）
+transformers>=4.44   # MedGemma-4b-it 加载；版本需支 medgemma chat template
+accelerate>=0.30     # device_map 自动分配
+bitsandbytes>=0.43   # 4-bit 量化省显存（本机 8GB / CPU-fallback 可 --load-4bit 0）
+torch>=2.1           # 按本机 CUDA 版装对应 wheel（cu121 等），此处不 pin CUDA 变体
+sentencepiece        # gemma tokenizer 依赖
+
+# ⚠️ 版本矩阵注意（换外部库先核版本矩阵，见 memory）：
+#   MedGemma 需较新 transformers；bitsandbytes 在 Windows 需对应 CUDA 的预编译 wheel，
+#   装前主线核 torch/CUDA/bitsandbytes 三者匹配，import 通≠版本兼容。
+#   TODO(主线): 首次跑 --backend medgemma 前先 `python run_agent.py --backend mock --smoke 1` 验管道。

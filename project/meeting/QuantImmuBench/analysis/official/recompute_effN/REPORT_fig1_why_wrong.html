@@ -1,0 +1,262 @@
+<title>图1「30 工具 Spearman 排序」核查报告</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#151a21; --ink-soft:#4a5560; --ink-faint:#7b8794;
+    --line:#e2e6eb; --line-soft:#eef1f4;
+    --bug:#c0182f; --bug-bg:#fbeaec; --bug-line:#e7b6bd;
+    --ok:#0f7a5a; --ok-bg:#e6f4ee; --ok-line:#a9d6c5;
+    --pres:#0072B2; --immu:#c77d0a; --warn:#8a6d00; --warn-bg:#faf3d8;
+    --accent:#0072B2;
+    --mono:"SFMono-Regular",ui-monospace,"Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+    --cjk:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Source Han Sans SC","Noto Sans CJK SC",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0e1216; --panel:#161b21; --ink:#e7ecf1; --ink-soft:#a9b4bf; --ink-faint:#727e8a;
+      --line:#262d35; --line-soft:#1d232a;
+      --bug:#ff6b7d; --bug-bg:#2a1519; --bug-line:#4d2229;
+      --ok:#4fd0a3; --ok-bg:#10241d; --ok-line:#1f4638;
+      --pres:#4aa8e0; --immu:#e0a44a; --warn:#e6c34d; --warn-bg:#2a2410;
+      --accent:#4aa8e0;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#151a21; --ink-soft:#4a5560; --ink-faint:#7b8794;
+    --line:#e2e6eb; --line-soft:#eef1f4;
+    --bug:#c0182f; --bug-bg:#fbeaec; --bug-line:#e7b6bd;
+    --ok:#0f7a5a; --ok-bg:#e6f4ee; --ok-line:#a9d6c5;
+    --pres:#0072B2; --immu:#c77d0a; --warn:#8a6d00; --warn-bg:#faf3d8; --accent:#0072B2;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1216; --panel:#161b21; --ink:#e7ecf1; --ink-soft:#a9b4bf; --ink-faint:#727e8a;
+    --line:#262d35; --line-soft:#1d232a;
+    --bug:#ff6b7d; --bug-bg:#2a1519; --bug-line:#4d2229;
+    --ok:#4fd0a3; --ok-bg:#10241d; --ok-line:#1f4638;
+    --pres:#4aa8e0; --immu:#e0a44a; --warn:#e6c34d; --warn-bg:#2a2410; --accent:#4aa8e0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--cjk);
+    line-height:1.7;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:56px 24px 96px}
+  .eyebrow{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);
+    font-weight:600;margin:0 0 14px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 18px;font-weight:750;text-wrap:balance;letter-spacing:-.01em}
+  h2{font-size:20px;margin:52px 0 16px;font-weight:700;letter-spacing:-.005em;
+    padding-bottom:9px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:26px 0 8px;font-weight:700;color:var(--ink)}
+  p{margin:0 0 14px;color:var(--ink-soft)}
+  strong{color:var(--ink);font-weight:650}
+  code{font-family:var(--mono);font-size:.85em;background:var(--line-soft);
+    padding:.12em .4em;border-radius:4px;color:var(--ink)}
+  .lede{font-size:17.5px;color:var(--ink-soft);border-left:3px solid var(--accent);
+    padding:2px 0 2px 18px;margin:0 0 8px}
+  .verdict{background:var(--bug-bg);border:1px solid var(--bug-line);border-radius:12px;
+    padding:18px 22px;margin:28px 0;font-size:17px}
+  .verdict strong{color:var(--bug)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--ink-faint);
+    margin:0 0 8px;font-family:var(--mono)}
+  /* tables */
+  .tbl{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:440px}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+  th{font-size:12px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-faint);
+    font-weight:600;background:var(--line-soft)}
+  tr:last-child td{border-bottom:none}
+  td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+  .down{color:var(--bug);font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .up{color:var(--ok);font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .flat{color:var(--ink-faint);font-family:var(--mono)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .d-pres{background:var(--pres)} .d-immu{background:var(--immu)}
+  /* causal chain */
+  .chain{list-style:none;padding:0;margin:22px 0;counter-reset:step}
+  .chain li{position:relative;padding:16px 18px 16px 62px;margin:0 0 12px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;counter-increment:step}
+  .chain li::before{content:counter(step);position:absolute;left:16px;top:16px;
+    width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;
+    font-family:var(--mono);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+  .chain li.bug{border-color:var(--bug-line);background:var(--bug-bg)}
+  .chain li.bug::before{background:var(--bug)}
+  .chain h3{margin:0 0 5px;font-size:15.5px}
+  .chain p{margin:0;font-size:14.5px}
+  .tag{display:inline-block;font-size:11px;font-family:var(--mono);font-weight:700;
+    padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .tag-bug{background:var(--bug);color:#fff}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:15px 17px;overflow-x:auto;margin:16px 0;font-family:var(--mono);font-size:13px;
+    line-height:1.55;color:var(--ink)}
+  pre .c{color:var(--ink-faint)}
+  pre .r{color:var(--bug)}
+  .analogy{background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);
+    border-radius:10px;padding:14px 18px;margin:16px 0;font-size:14.5px;color:var(--ink-soft)}
+  .analogy strong{color:var(--warn)}
+  .callout{background:var(--ok-bg);border:1px solid var(--ok-line);border-radius:12px;
+    padding:18px 22px;margin:24px 0}
+  .callout h3{margin:0 0 10px;color:var(--ok)}
+  .stable{font-family:var(--mono);font-size:13.5px;line-height:1.9;
+    font-variant-numeric:tabular-nums;color:var(--ink);white-space:pre;overflow-x:auto;display:block}
+  ol.plain,ul.plain{color:var(--ink-soft);padding-left:22px;margin:14px 0}
+  ol.plain li,ul.plain li{margin:0 0 9px}
+  .decide{border:1px dashed var(--bug-line);border-radius:12px;padding:18px 22px;margin:22px 0;background:transparent}
+  .decide strong{color:var(--bug)}
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--ink-faint);font-family:var(--mono);line-height:1.9}
+  hr.soft{border:none;border-top:1px solid var(--line-soft);margin:34px 0}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">QuantImmuBench · §3.1 图1 · 数据核查</p>
+  <h1>图1「30 工具 Spearman 排序能力」为什么出错</h1>
+  <div class="meta">
+    <span>2026-07-03</span><span>四方交叉核查</span>
+    <span>verifier · analyst · coder · 主线</span>
+  </div>
+  <p class="lede">图上的数字没算错，但排序被稀疏覆盖的伪相关污染 —— 榜首三名是假的。</p>
+
+  <div class="verdict">
+    原图把两个「随机猜级别」的工具（<strong>HLAthena</strong> 自己在 <code>00_README</code> 标 proxy AUC≈0.51）
+    抬上了冠亚军。根因是一处 <strong>「分母数错了」的代码缺陷</strong> —— 不是数据错、不是公式错，
+    是防小样本的门槛数错了对象。
+  </div>
+
+  <h2>结论速览</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>名次</th><th>原图（有 bug）</th><th>修正后（effN≥5，全覆盖口径）</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>HLAthena 0.627</td><td><strong>netMHCpan_BA 0.392</strong></td></tr>
+      <tr><td class="num">2</td><td>andy90 0.585</td><td>MHCflurry 0.308</td></tr>
+      <tr><td class="num">3</td><td>Seq2Neo 0.441</td><td>PRIME 0.294</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tbl"><table>
+    <thead><tr><th>工具</th><th>原图</th><th>修正后</th><th>变化</th></tr></thead>
+    <tbody>
+      <tr><td>HLAthena</td><td class="num">0.627 (#1)</td><td class="num">0.207 (#12)</td><td class="down">−0.42</td></tr>
+      <tr><td>andy90</td><td class="num">0.585 (#2)</td><td class="num">0.134 (#22)</td><td class="down">−0.45</td></tr>
+      <tr><td>Seq2Neo</td><td class="num">0.441 (#3)</td><td class="num">−0.234 (覆盖失败)</td><td class="down">−0.67</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>这张图是什么</h2>
+  <p>30 个工具按「突变级 per-patient Spearman」降序排的横条图（PPT <code>progress_v4_rev1</code> 第 7 页）。
+  对每个工具取 <code>&lt;Tool&gt;_max</code> 列，在 DS2 的 9 个患者里各自算「工具打分 vs Elispot 真值」的 Spearman，
+  再跨患者用 Fisher-z 等权聚合成一个数。</p>
+  <p class="meta" style="margin-top:0">
+    图 fig1_spearman_30tools.png ← R1_single_maxpool_official.csv[fisherz_rho_raw] ← per_patient_spearman ← pooled_clean_9mer.csv
+  </p>
+
+  <h2>双侧核查（本机 + HPC）</h2>
+  <p><strong>本机侧：</strong>用全新 scipy 代码独立重算 30 个工具的值，逐个对原 CSV，最大偏差
+  <code>|diff|=0.00005</code>。→ 图上数字本身可复现，<strong style="color:var(--ok)">PASS，没有算错</strong>。</p>
+  <p><strong>HPC 侧：</strong>探查 <code>/gpfs/…/quantimmu/</code>，只存逐 allele 的原始工具输出，
+  <strong>没有</strong> pooled/R1 的任何副本。→ 被质疑的「每患者聚合 + 覆盖」100% 是本机后处理，
+  HPC 不参与、也无法独立重算此图。问题不在原始工具打分，在本机聚合那段代码。</p>
+
+  <h2>到底为什么出错 · 四环因果链</h2>
+  <ol class="chain">
+    <li>
+      <h3>数据是「漏的」，不是满的</h3>
+      <p>每个患者有一批肽（行），但不是每个工具对每条肽都有分数 —— 肽长超范围 / HLA 不匹配就填 NaN。
+      HLAthena 在 P101 的 12 行里 <strong>只有 3 行真有分数</strong>。「12 行」≠「12 个分数」，这是坑的地基。</p>
+    </li>
+    <li>
+      <h3>3 个点算相关，必然凑出 ±1（数学必然）</h3>
+      <p>3 个点算秩相关，只要碰巧单调就是 ±1，约各 1/6 概率撞完美 ±1。稀疏覆盖的工具必然刷出假的 ±1。
+      实测：全部 13 个 rho=±1 的格子，无一例外落在有效点数 effN=2 或 3 的患者上（重灾 = P102）。</p>
+    </li>
+    <li class="bug">
+      <h3>门槛数错了分母 <span class="tag tag-bug">真 BUG</span></h3>
+      <p>代码本有防线 <code>FISHER_MIN_N=3</code>（点数 ≤3 就剔），本意正是挡这种伪相关。但门槛判定用的
+      <code>n=len(g)</code> 是<strong>患者总行数（8–19，全 &gt;3）</strong>，不是工具有效点数 effN。
+      于是 2-3 点凑的 ±1 顺利过门槛、满权进入聚合。</p>
+    </li>
+    <li>
+      <h3>clip + arctanh 把假分放大成「重炮」</h3>
+      <p>rho=1 会让 arctanh 爆掉，所以 clip 到 0.9999，但 <code>arctanh(0.9999)≈4.95</code> 是个巨值。
+      别人 z 都在 0.1–0.5，唯独这个假患者是 4.95，一个数就把等权平均拽到 z̄=0.74，tanh 回来 = 0.627。
+      <strong>一个 n=3 的伪满相关患者，几乎单枪匹马定了 HLAthena 的第一名。</strong></p>
+    </li>
+  </ol>
+
+  <pre><span class="c"># _official_common.py : per_patient_spearman（第 292–298 行）</span>
+g = work[work["Patient_ID"] == pat]
+<span class="r">n = len(g)</span>                                   <span class="c"># ← 拿的是「患者总行数」= 12</span>
+rho = spearman_np(x, y) if <span class="r">n</span> &gt;= min_pep else nan   <span class="c"># 门槛用 12，不是有效点数 3</span>
+ns.append(float(<span class="r">n</span>))                          <span class="c"># 传给聚合剔除的 n 也是 12</span></pre>
+
+  <div class="analogy">
+    <strong>打个比方：</strong>班里 40 人只交了 3 份卷子，碰巧全 100 分。规矩是「至少 5 份才算班级平均分」，
+    但你数的是「全班 40 人」而不是「实际交卷 3 人」，于是 40&gt;5 通过，虚高满分记进了年级排名。
+    防线没坏，是数错了分母。
+  </div>
+
+  <p style="color:var(--ink);font-weight:600;border-left:3px solid var(--bug);padding-left:16px">
+    四环里前两环（数据漏 + 数学必然）躲不掉，唯一出错也唯一能修的是第三环：门槛该数「工具实际打了几分（effN）」，
+    却去数了「患者一共几行（len g）」。
+  </p>
+
+  <h2>修正：门槛改用有效覆盖 effN</h2>
+  <p>把门槛从 <code>len(g)</code> 改成有效非 NaN 点数 effN，不足的患者剔出聚合。
+  <strong>门槛必须 ≥5</strong> —— effN≥3 修不干净（HLAthena 的 P101 effN 正好 =3 卡线逃过，
+  netMHCstabpan 甚至假分冲到 0.854）：</p>
+  <div class="tbl"><table>
+    <thead><tr><th>工具</th><th>门槛 effN≥3</th><th>门槛 effN≥5</th></tr></thead>
+    <tbody>
+      <tr><td>HLAthena</td><td class="num">0.627（没变，逃过）</td><td class="num">0.207</td></tr>
+      <tr><td>andy90</td><td class="num">0.585（没变）</td><td class="num">0.134</td></tr>
+      <tr><td>Seq2Neo</td><td class="num">0.543（仅剔 2 患者）</td><td class="num">−0.234（覆盖失败）</td></tr>
+      <tr><td>netMHCstabpan</td><td class="num" style="color:var(--bug)">0.854（反冲第一！）</td><td class="num">覆盖失败（剔 7/9）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>伪迹是双向的</h2>
+  <p>既把假货抬上榜首，也把真货错误压低 —— 下面这批原本被 P102 的 rho=−1 拖成负分：</p>
+  <div class="tbl"><table>
+    <thead><tr><th>类别</th><th>工具</th><th>原 rho（名次）</th><th>修正 rho（名次）</th><th>Δ</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot d-immu"></span>免疫原</td><td>MHCnuggets</td><td class="num">−0.108 (#24)</td><td class="num">0.460 (#1)</td><td class="up">+0.57</td></tr>
+      <tr><td><span class="dot d-immu"></span>免疫原</td><td>MUNIS</td><td class="num">−0.265 (#27)</td><td class="num">0.304 (#4)</td><td class="up">+0.57</td></tr>
+      <tr><td><span class="dot d-pres"></span>呈递</td><td>MHCseqNet</td><td class="num">−0.269 (#28)</td><td class="num">0.299 (#5)</td><td class="up">+0.57</td></tr>
+      <tr><td><span class="dot d-immu"></span>免疫原</td><td>NetTepi</td><td class="num">−0.275 (#29)</td><td class="num">0.293 (#7)</td><td class="up">+0.57</td></tr>
+    </tbody>
+  </table></div>
+  <p>而这批全 9 患者覆盖、无伪迹的工具 <strong>纹丝不动</strong>（Δ≈0.00005）—— 它们才是原图里唯一能信的部分：
+  netMHCpan_BA 0.392 · MHCflurry 0.308 · PRIME 0.294 · IMPROVE 0.285 · PredIG 0.250 · IEDB_Calis 0.249。</p>
+
+  <div class="callout">
+    <h3>最稳的 headline：只在全覆盖 9/9 里比</h3>
+    <p style="margin:0 0 12px;color:var(--ink-soft)">effN≥5 让部分工具降到 8/9 覆盖、n_full 跨工具不齐，MHCnuggets 靠剔单点冲第一并不稳。
+    真正站得住的排序，限定在 9 个患者全覆盖的工具里：</p>
+    <span class="stable">netMHCpan_BA  0.392  CI[0.140, 0.594]  9/9   ← 真·第一（DTU 受限）
+MHCflurry     0.308  CI[0.166, 0.457]  9/9
+PRIME         0.294  CI[0.123, 0.466]  9/9
+IMPROVE       0.285  CI[0.092, 0.482]  9/9
+PredIG        0.250  CI[0.131, 0.368]  9/9
+IEDB_Calis    0.249  CI[0.031, 0.466]  9/9
+Repitope      0.122  CI[0.007, 0.242]  9/9</span>
+    <p style="margin:12px 0 0;color:var(--ink-soft)"><strong>CI 宽度是最干净的判别器</strong> —— 稳榜工具全 &lt;0.46，
+    伪高工具 Seq2Neo / netMHCstabpan 全 &gt;1.8。图上并排画 CI，宽度自己就把伪高工具暴露。
+    （netMHCpan_BA 为 DTU 受限工具；若不用受限，第一名 = MHCflurry 0.308。）</p>
+  </div>
+
+  <hr class="soft">
+  <h2>修法建议（分档）</h2>
+  <ol class="plain">
+    <li><strong>止血（不动底层，可逆）：</strong>PPT 那张图换用修正版 <code>fig1_spearman_30tools_effN5.png</code>（已画好，带 CI + n_full + 覆盖失败工具灰掉），或加注「以全覆盖工具 netMHCpan_BA 为准」。<strong style="color:var(--ok)">✓ 已完成 —— rev2 第 7 页已换。</strong></li>
+    <li><strong>改口径（拍板点）：</strong>把 <code>n=len(g)</code> 改成有效非 NaN 计数、门槛提到 effN≥5。这会重排 R1 并连累下游 R2–R8 全部重跑，属偏离已冻结方法，需袁老师拍板。</li>
+    <li><strong>报覆盖：</strong>图/表都应报每工具的有效覆盖（n_full），不能只画光杆条形。</li>
+    <li><strong>覆盖失败单列：</strong>Seq2Neo、netMHCstabpan（9 患者只 2 个像样覆盖）标「coverage insufficient」，不进主排序。</li>
+  </ol>
+
+  <div class="decide">
+    <strong>🛑 一个拍板点：</strong>改底层口径（第 2 档）会重排 R1 并触发下游全部重跑 = 偏离已冻结方法。
+    本次未动任何 canonical <code>official/</code> / <code>data/</code> 文件，未投稿，未碰 HPC 在跑进程。等余嘉 / 袁老师定口径。
+  </div>
+
+  <footer>
+    产物（analysis/official/recompute_effN/，未覆盖 canonical）：<br>
+    recompute_R1_effN.py · plot_R1_effN.py · R1_recomputed_effN5.csv · R1_recomputed_effN3.csv<br>
+    R1_compare_orig_vs_effN.csv · fig1_spearman_30tools_effN5.png · REPORT_fig1_why_wrong.md<br>
+    PPT：QuantImmuBench_progress_v4_rev2_2026-07-03.pptx（rev1 原封保留）· 落档：04_LOG Entry 46
+  </footer>
+</div>

@@ -1,0 +1,31 @@
+{
+  "mimic3wdb": {
+    "url": "https://physionet.org/content/mimic3wdb/1.0/",
+    "http_status": 200,
+    "access_policy": "Anyone can access the files, as long as they conform to the terms of the specified license. License (for files): Open Data Commons Open Database License v1.0",
+    "license": "Open Data Commons Open Database License v1.0 Discovery DOI (version 1.0):",
+    "is_open_access": true,
+    "wfdb_probe": "skipped (no probe record configured)"
+  },
+  "mimic3wdb-matched": {
+    "url": "https://physionet.org/content/mimic3wdb-matched/1.0/",
+    "http_status": 200,
+    "access_policy": "Anyone can access the files, as long as they conform to the terms of the specified license. License (for files): Open Data Commons Open Database License v1.0",
+    "license": "Open Data Commons Open Database License v1.0 Discovery DOI (version 1.0):",
+    "is_open_access": true,
+    "wfdb_probe": "skipped (no probe record configured)"
+  },
+  "challenge-2015": {
+    "url": "https://physionet.org/content/challenge-2015/1.0.0/",
+    "http_status": 200,
+    "access_policy": "Anyone can access the files, as long as they conform to the terms of the specified license. License (for files): Open Data Commons Attribution License v1.0",
+    "license": "Open Data Commons Attribution License v1.0 Discovery DOI (version 1.0.0):",
+    "is_open_access": true,
+    "wfdb_probe": "ok (record=a103l, n_sig=3, fs=250, sigs=['II', 'V', 'PLETH'])"
+  },
+  "_verdict": {
+    "mimic3wdb_matched_open": true,
+    "q1_feasible_now": true,
+    "note": "matched 开放 -> Q1/Q2 现在即可在本地 CPU 跑，无需 CITI credentialing。"
+  }
+}

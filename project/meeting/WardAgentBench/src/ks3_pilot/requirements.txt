@@ -1,0 +1,6 @@
+# KS-3 命门 pilot 依赖（CPU 即可，无需 GPU/torch）
+wfdb>=4.1.0        # 读 PhysioNet 波形/numerics（.hea/.dat/.mat）+ 在线只读 pn_dir 拉取
+numpy>=1.24
+pandas>=2.0
+# scipy 非必需：相关系数已用纯 numpy 手写（避 OMP 冲突 & 遵 Windows 规范）。
+# 如需信号滤波等再按需加 scipy>=1.10（本 pilot 不用）。

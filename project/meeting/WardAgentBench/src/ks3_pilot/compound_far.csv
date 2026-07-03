@@ -1,0 +1,4 @@
+threshold_family,n_records,n_single_events,n_single_false,single_far,n_cotrigger_windows,n_compound_false_windows,compound_far,expected_compound_far_indep,observed_over_expected_ratio,weak_proxy_persist_s
+default,20,1332,812,0.60961,219760,870,0.003959,0.003956,1.0008,120
+conservative,20,544,286,0.525735,185192,204,0.001102,0.001411,0.7809,120
+liberal,20,4361,3599,0.825269,283598,6351,0.022394,0.014255,1.571,120

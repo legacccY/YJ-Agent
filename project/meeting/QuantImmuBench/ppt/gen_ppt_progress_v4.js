@@ -185,15 +185,15 @@ pageno(s);
 
 // ============================================================ 7 §3.1 单工具 Spearman 主指标（fig1 ratio=9/15=0.60 大图+窄侧栏）
 s = pres.addSlide();
-header(s, "核心结果一 · 单工具主指标", "三十个工具的 Spearman 排序能力");
-placeImg(s, `${FIG4}/fig1_spearman_30tools.png`, 0.6305, 0.5, 1.5, 7.6, 5.7);
-proseCard(s, 8.3, 1.5, 4.3, 5.7, "主指标要点（Spearman 秩相关）", [
-  "结合亲和力工具 netMHCpan-BA 在控制肽长之后依然稳居真正最强，相关从 0.392 升至 0.432。",
-  "抗原呈递代理类的 HLAthena 与 andy90 在裸口径下位居榜首，但控制肽长之后大幅回落，说明其高分很大程度来自肽长搭便车。",
-  "免疫原性工具 PRIME、IMPROVE、PredIG 稳定处于中游。",
-  "榜单底部若干工具与真实反应呈负相关。整体天花板相关不足 0.5，印证新抗原免疫原性预测仍是公认的难题。",
+header(s, "核心结果一 · 单工具主指标", "三十个工具的 Spearman 排序能力（覆盖修复后 effN≥8）");
+placeImg(s, `${FIG4}/fig1_spearman_30tools_effN8.png`, 0.991, 0.5, 1.5, 7.6, 5.7);
+proseCard(s, 8.3, 1.5, 4.3, 5.7, "主指标要点（Spearman 秩相关，effN≥8）", [
+  "覆盖修复后八个工具补满一百三十肽，主榜从十五个扩到二十二个全覆盖工具，同患者集公平可比。",
+  "顶部工具相关集中在零点三九到零点四五之间，没有单一压倒者：MHCnuggets 零点四四七、netMHCpan-BA 零点三九二、MHCflurry 零点三零八，且置信区间大幅重叠。",
+  "MHCnuggets 补齐最难的一名患者后数值居首，netMHCpan-BA 仍作为结合亲和力的基准锚点。",
+  "整体天花板相关不足零点四五，印证新抗原免疫原性预测仍是公认的难题。头条措辞待与袁老师确认。",
 ], C.teal);
-citeFoot(s, "R1_single_maxpool_official.csv · per-patient Spearman 裸口径与控肽长");
+citeFoot(s, "R1_recomputed_effN8.csv · per-patient Spearman（effN≥8，覆盖修复 remerge 后重算）");
 pageno(s);
 
 // ============================================================ 8 工具间相关性（fig_tool_corr_heatmap ratio=14/13.5=1.037 近方大图）
@@ -357,4 +357,4 @@ proseCard(s, 6.85, 1.7, 5.78, 5.25, "下一步计划", [
 citeFoot(s, "方法学评价专章 · 项目进度追踪（2026-07-01）");
 pageno(s);
 
-pres.writeFile({ fileName:"D:/YJ-Agent/project/meeting/QuantImmuBench/QuantImmuBench_progress_v4_rev1_2026-07-01.pptx" }).then(f=>console.log("WROTE", f, "pages", _PG));
+pres.writeFile({ fileName:"D:/YJ-Agent/project/meeting/QuantImmuBench/QuantImmuBench_progress_v4_rev4_2026-07-03.pptx" }).then(f=>console.log("WROTE", f, "pages", _PG));

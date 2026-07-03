@@ -307,3 +307,4 @@
 <li><strong>外部验证表态</strong>：Discussion 明确所有增量结论待独立队列验证。</li>
 <li><strong>HLA-II 仅作 Future work</strong>（除非投稿前真有结果，否则不进 Results）。</li>
 </ol>
+

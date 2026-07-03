@@ -4,6 +4,208 @@
 
 ---
 
+## Entry 50-COVFIX-REMERGE — 2026-07-03【覆盖修复战役收尾：8 工具 remerge→重池化→重出图 + headline 翻盘核实（不是 bug）+ §3.1/ppt 更新】
+
+**触发**：续跑 quantimmu-coverage DAG 最后两棒 remerge→refig。8 工具 FULL130 新分（`scripts/out_official/coverage_fix/<tool>_raw_FULL130.csv`）已备齐（HPC 4 + 本地 4），Bash 验证各到 130。
+
+**做完（机械交付，全 verifier PASS）**：
+- **patch**：`scripts/patch_covfix_8tools.py` 把 8 工具新分 patch 进 merged 副本 `scripts/out/merged_all_tools_30_official_covfix.csv`（canonical **未动**，只填 NaN 格；键=(MT_Subpeptide,HLA_Allele)）。符号：MHCnuggets=−ic50，其余直接；HLA 加星仅 DeepNetBim/Seq2Neo。8 工具 merged 肽级全 125/43→130/130。
+- **重池化**：`p0e2_pool_clean.py --input <covfix副本> --ninemer` → `data/frozen/pooled_clean_9mer.csv`（原 canonical 备份 `.pre_covfix_bak`）。8 工具 pooled `<tool>_max` 全 130/130。G1/G2/G3 PASS。
+- **重出图**：`recompute_R1_effN.py`（读新 pooled）+ `plot_R1_effN.py` → `fig1_spearman_30tools_9mer_effN8.png` + `paper/figures/fig1_spearman_30tools_9mer_effN8.pdf`。覆盖矩阵 `_scratch/gen_coverage_matrix.py` → `Results/effN_coverage_matrix.png`（23/30 到 130）。
+- **verifier 三方对账 PASS**：8 工具 pooled 130/130；主榜 22 工具 max|rho|=0.4466 无爆表；DeepNetBim 仅 max-pool 退化（其他算子 nunique>1）；headline 数字溯源。
+
+**🔴 核实结论：headline 翻盘是真实的、不是计算错误**（用户疑「中间计算出问题？」→ 逐环节独立复查）：
+- **MHCnuggets 本就 ~0.46**（Entry 47 起）。用官方 effN8 方法精确重现 pre-covfix=**0.4602 @ 8 患者**（P102 被剔，只 3 点 rho=−1.0 撞门槛），post-covfix=**0.4466 @ 9 患者**（P102 补满 8 点 rho=+0.119 过门槛）。**patch 没造高分，只把 P102 从「3 点伪迹被剔」变「8 点真值可入榜」**。
+- **填值符号端到端核**：P102 MHCnuggets 值 = raw FULL130 的 −ic50，逐格对（−5605.62/−20750.47/−2840.41 ...）。
+- **主榜 15→22**：MHCnuggets/MUNIS/MHCseqNet/netMHCstabpan/Seq2Neo/andy90/ImmuGenX 补满 P102 缺口后升 9/9。原 Entry 47「MHCnuggets 归参考区」唯一理由=缺 P102，现被真数据消除。
+
+**🔴 DeepNetBim 掉榜（真实,非填坏）**：raw FULL130 里 954/3283(29%) 格本身 =1.0（工具概率天花板），130 肽每肽≥1 子肽命中 1.0 → max-pool 全 130=1.0 常数列 → rho=nan → coverage_fail。canonical 原「有方差」纯因缺 1.0 子肽分。**仅 max-pool 退化**，topk(k≥2)/softmax/rankdecay 方差全恢复 → 归 §3.2 pooling 算子决定成败正面案例。
+
+**拍板方向（用户「写，更新所有图表和ppt」→ 采 top-cluster）**：§3.1 headline 改 **top-cluster「顶部 0.39–0.45 无单一压倒者」**（不宣 MHCnuggets 单一王座，因差 0.055+CI 重叠+P102 仅 8 点），netMHCpan_BA 留作亲和 baseline/fusion 对照锚点。**⚠️ headline 最终措辞标「待袁老师定」**（动了袁老师定稿框架）。
+
+**已更新**：`RESULTS_CLEAN_SUMMARY.md §3.1`（22 工具榜 + top-cluster + DeepNetBim 脚注 + 8/9 上限工具）+ 本 entry + **ppt rev4**（`QuantImmuBench_progress_v4_rev4_2026-07-03.pptx`，slide7 换 effN8 covfix 图 `figures_ppt_v4/fig1_spearman_30tools_effN8.png` + top-cluster 文字 + citeFoot 改 R1_recomputed_effN8）。DAG quantimmu-coverage **15/15 全完成**。
+
+**⚠️ 挂起（待用户/袁老师定，未擅自跑）**：§3.2 pooling + §3.3 fusion 的图/数字（ppt fig2/fig4/auprc + paper fig6-9）读各自 R2/R8 csv + legacy pooled `pooled_peptide_level_30tools_9mer.csv`，均 **pre-covfix 老数据**。全传导 covfix 需在新数据重跑 R2 pooling→R3/R5 fusion→R6→R8（nested-LOPO+bootstrap 大摊，**可能改 fusion 结论=拍板级**）。判断：headline 措辞未定前重跑 fusion 会白做，故本轮**只交 §3.1**，下游整批留待 headline 拍板后。fig7/fig9 = §3.3 fusion 评估图（fig6 auc/fig7 spearman/fig8 roc/fig9 perpatient），同属挂起批，非 §3.1 单工具榜。
+
+**散落记录（未动,custodian）**：发现嵌套重复树 `project/meeting/QuantImmuBench/project/meeting/QuantImmuBench/`（12K stray），删=拍板，留记不动。
+
+**真源**：`analysis/official/recompute_effN/R1_recomputed_effN8.csv`（post-covfix）；备份 `data/frozen/pooled_clean_9mer.csv.pre_covfix_bak`；patch 脚本 `scripts/patch_covfix_8tools.py`。
+
+---
+
+## Entry 49-COVFIX-8to11mer — 2026-07-03【覆盖修复 8-11mer 口径（可变窗补充口径，另窗，与 9mer 主窗并行）完工】
+
+**归属**：`quantimmu-coverage-8to11mer.claim`（另窗）。服务 §2.2「9mer 主分析 / 可变窗(8-11mer)补充口径」。把主窗（Entry 48）在 9mer 做的覆盖修复，在 8-11mer 口径重做一遍，产 8-11mer 版覆盖修复表 + 图。
+
+**成果（全 Bash 核 csv）**：
+- `data/frozen/pooled_clean_8to11mer.csv`（130 行，G1/G2/G3 全 PASS）
+- `analysis/official/recompute_effN/fig1_spearman_30tools_8to11mer_effN8.png` + `paper/figures/fig1_spearman_30tools_8to11mer_effN8.pdf`
+- **23/30 工具达 130/130**；剩 7 个诚实上限（非 bug）：HLAthena 121（P101 缺 9 肽，同 9mer 遗留）、ICERFIRE 100/NeoaG 102/deepHLApan 101/pTuneos 102（28 无 WT 差分工具）、NeoaPred 14（结构限）、NetTepi 125（13 等位限）。
+
+**关键判断：scope 收窄（省算力，不盲跑全 25 工具）**。先测出「8-11mer 肽级覆盖逐工具 == 9mer（全 +0）」——缺的肽两口径同一批。再按 canonical 表长度分布把工具分三类：
+- **B 类**（MHCnuggets/MHCseqNet/MUNIS/ImmuGenX/andy90）：canonical 已有原生 8-11 分覆盖 125 肽，只缺 5 肽。8-11 重跑仅补 5/130 肽的 8/10/11 子肽，pooled max 几乎不动 → **不值 3.7x 算力，coverage-only patch 已够**。
+- **D 类限长**（researcher 查实，带官方源）：DeepNetBim 硬 9mer（9×21 架构 + prep SUPPORTED_PEP_LEN=9）、DeepImmuno 9-10mer、NeoaPred 结构工具（砍掉）→ **诚实标 NaN，不硬造 8-11**。
+- **C 类（真正要严格重跑）**：netMHCstabpan + Seq2Neo——canonical 里 9mer-only 但工具支持 8-11（netMHC 家族 8-11；Seq2Neo CNN Input(11,20,1) pad maxlen=11）。不重跑则「8-11 口径」下暗藏只 9mer。
+
+**C 类严格重跑（真做，用户放行「跑」）**：
+- **netMHCstabpan**：HPC 二进制 job 1507646（cpudebug，35 等位/12298 对，35/35 success 0 fail）。踩两坑：① Windows `write_text` 默认 CRLF 污染 .pep 长度判定 ② netMHCstabpan `-p` 肽模式要求单次所有肽等长（mixed 8-11 报 `Peptide lenght must be equal`）→ 修：run 脚本内 `sed 's/\r$//'` strip CR + 按长度拆跑 `-l <len>`。另 cpudebug qos MaxWall=1h，原 `--time=02:00:00` 被 QOSMaxWallDurationPerJobLimit 卡 PENDING → 降 45min。
+- **Seq2Neo**：本地 WSL2（主线串行，不派 agent 碰本地重代码）。env 补全：netCTLpan-1.1（复用 pTuneos 捆的 `tools_repos/pTuneos/software/netchop/netctlpan_1_1_executable`）+ netMHCpan-4.1 上 PATH + seq2neo conda env。12298 对，0 NaN，100% 成功。
+- **重叠审计（合规核，不信自报）**：两 raw 的 9mer 子集 vs 9mer covfix raw **逐格 max|diff|=0.000000，100% 一致** → 确定性重跑合规。
+- **严格重跑非边际（证有意义）**：8-11 pooled max ≠ 9mer-only max 的肽数 = netMHCstabpan **71/130(55%)**、Seq2Neo **101/130(78%)**（均非 9mer 窗胜出）。若留 coverage-only(9mer)，这些肽在 8-11 口径下全是错分。
+
+**方法/口径**：输入建法复用主窗脚本，只 `L==9 → L.isin([8,9,10,11])`，输出 `_8to11` 后缀不 clobber 9mer。patch 存副本 `scripts/out/merged_all_tools_30_official_covfix_8to11.csv`（**不覆写 canonical**）；base 9mer patch + 8-11 overlay 只填 NaN（9mer 行保基础分，8/10/11 填重跑分）。
+
+**图/PPT 交付（§2.2 补充）**：
+- `analysis/official/recompute_effN/fig1_spearman_30tools_8to11mer_effN8.png` + `paper/figures/*.pdf`（30 工具 8-11mer per-patient Spearman）
+- `paper/figures/fig_9mer_vs_8to11mer_spearman.{png,pdf}`（**9mer vs 8-11mer 对比,§2.2 核心证据**：Top-5 工具 9mer 全胜 5/5、整体 24/29=83%、均值 rho 0.189 vs 0.122）
+- `paper/figures/fig_8to11mer_coverage.{png,pdf}`（覆盖概览 23/30 达 130）
+- 出图脚本 `analysis/official/recompute_effN/plot_9mer_vs_8to11mer.py`（coder 写主线跑，数字全 csv 现算）
+- **独立补充 deck** `QuantImmuBench_8to11mer_supplement_2026-07-03.pptx`（6 页，不动共享 progress ppt 避另窗冲突；QA 转图核过无溢出/占位符）
+- **关键结论**：8-11mer 可变窗口径**不推翻反而加固** §2.2「9AA 一致优于可变窗」——Top-5 全部 9mer 更高。MHCseqNet(0.246→−0.227)/Seq2Neo(0.072→−0.084) 可变窗大跌是真实结果非 bug。
+
+**产物**：`_scratch/build_full130_inputs_8to11.py`、`_scratch/patch_covfix_8to11.py`、`HPC/deploy/netmhcstabpan/{prep_stabpan_FULL130_8to11.py,run_netmhcstabpan_FULL130_8to11.sh}`、`HPC/deploy/seq2neo/seq2neo_inputs_full130_8to11/`、`scripts/out_official/coverage_fix/{netmhcstabpan,seq2neo}_raw_FULL130_8to11.csv`。
+
+**红线守**：数字全 Bash 核 csv；复现零偏离（官方跑法，DeepNetBim/DeepImmuno/NeoaPred 限长诚实标不硬造）；无 WT 差分工具 + 砍掉 6 工具照旧标覆盖上限不补零；HPC 上传主线串行（先报后传）。**待办**：HLAthena 121→130 需对齐 zichenli 完整 HLAthena 部署（同 9mer 遗留，非 8-11 口径问题）；8-11 vs 9mer 主分析的 aperture 对比（谁优）交 analyst/袁老师口径。**verifier 5/5 PASS**（重叠 max|diff|=0/1.5e-7、无爆表、23/30 逐一对上）。verifier flag（非本口径 bug，9mer/8-11 皆同）：DeepNetBim_max 恒=1.0 全饱和 max-pool 后无区分度（canonical immuno_probability 属性）→ 交主窗/袁老师确认该列判别力；ICERFIRE/NeoaG 非 [0,1] 属 %rank/score，tex 须标非概率。
+
+---
+
+## Entry 48-COVERAGE-TRIAGE — 2026-07-03【覆盖修复：15 工具缺肽三类根因诊断 + 分阶段重部署（用户放行 Phase 1）】
+
+**触发**：用户「重新部署，所有工具的问题都要解决」——要把每个工具推到满 130 覆盖。派 analyst 逐工具诊断缺肽根因（Bash+pandas 实算 `pooled_clean_9mer.csv` + `merged_all_tools_30_official.csv` + `patient_hla.csv`），主线读 `TOOL_RERUN_STATUS.md` 部署档。
+
+**现实结论：「全部到 130」部分做得到、部分物理不可**。三类根因（泾渭分明）：
+- **① 部署没跑全（可救）**：Seq2Neo 缺 87、netMHCstabpan 缺 87、NeoaPred 缺 116（唯一结构物理工具、慢、只跑 2 患者）+ **7 工具齐缺同一批 5 个 P102 肽**（MHCnuggets/ImmuGenX/MHCseqNet/MUNIS/NetTepi/andy90/DeepNetBim，均在 `scripts/out_official/immml_work/`）+ HLAthena 缺 P101 的 9 肽。**这批工具能算、只是 input-prep 把肽漏了**——原始 `<Tool>_official.csv` 里这些肽 MT 就 NaN（非 merge 丢）。
+- **② 工具固有救不了**：28 个「无 WT」肽（`WT_FullPeptide` 0/28），差分/异己性工具 NeoaG(28)/pTuneos(28)/ICERFIRE(28)/deepHLApan(28?) 需 MT-vs-WT 差分 → 打不出。但 PRIME/IMPROVE/netMHCpan_BA 对这 28 肽全能打分 → 非差分工具正常，只有差分工具卡。**真实覆盖上限，非 bug，强行补零=造数据踩红线**。
+- **③ 结构边界**：NeoaPred 只吃严格 9mer、pTuneos 需 WT 配对。
+
+**纠错**：之前猜「P102 罕见 HLA(B*35:03/B*38:01/无 C)打不出」是**错的**——诊断证明那 5 个 P102 肽连最常见 A*02:01 都全 0、别的工具都能打 → 是 input-prep 漏肽，非 HLA 限制。
+
+**三拍板/外部依赖**：① HPC 上传/重跑（对外传输拍板，每次上传前报）② 28 无 WT 肽须问**数据组（王子源/谢孟翰）**：真无 WT（indel/移码/novel-ORF）还是数据漏算——定②类是硬上限还是可补 ③ netMHCstabpan 补满需 **DTU consent**。
+
+**分阶段计划（用户放行 Phase 1）**：
+- **Phase 1（本地纯软，进行中）**：定位连带 7 工具漏 5 个 P102 肽 + HLAthena 漏 9 P101 肽的 input-prep bug（疑一个 bug 连带 immml_work 7 工具），本地重跑补回。
+- **Phase 2**：Seq2Neo/NeoaPred 补全（部分本地/部分 HPC）。
+- **Phase 3**：netMHCstabpan（等 DTU consent）+ 28 无 WT 肽（等数据组回话）。
+- HLAthena 9 缺肽全在 P101、非 HLA/长度/无 WT（同学 zichenli 覆盖 130/130）→ 对齐她的 HLAthena 部署即补满。
+
+诊断真源：analyst 报告（本 session）+ `TOOL_RERUN_STATUS.md`。
+
+**执行进度（2026-07-03，用户放行 HPC 直跑，建 conductor DAG `quantimmu-coverage`）**：
+- ✅ **方法验证 PASS（MHCnuggets 端到端）**：从旧表 `merged_all_tools_29tools.xlsx` 取全 9mer 含突变子肽×HLA（3283 对，含全部 P102 缺肽子肽）建 `mhcnuggets_input_FULL130.csv` → HPC `envs/mhcnuggets` python 跑 `run_mhcnuggets.py --raw-out` → **3283 对 100% 出分**（closest_allele 对每等位含罕见 C*12:03 都找到模型）→ 拉回 `scripts/out_official/coverage_fix/mhcnuggets_raw_FULL130.csv` → **5 个 P102 缺肽的 9mer 子肽全补上（27/3/24/27/21）→ MHCnuggets 125→130/130**。**根因坐实=原输入没喂全子肽（只喂 43 重跑子集+部分旧），重跑全量即补满，非工具/HLA 限制**。分约定 MT_MHCnuggets=-ic50（越高越强）。
+- ✅ coder 建好其余 7 工具 FULL130 输入（`<tool>_input_FULL130.csv`：MHCseqNet/MUNIS/ImmuGenX/DeepNetBim/andy90 各 3283 对、NetTepi 1283（13 等位筛）、HLAthena 3610 backbone）。⚠️ 口径：源表 DS2=旧 101 肽，覆盖缺口都在旧 101 集（29 新肽重跑已有分），故 173-universe 重跑正好补缺口，remerge 合 29 新肽=满 130。
+- ⚠️ **战役异构（关键发现）**：HPC 工具（MHCnuggets✅/HLAthena sif容器/andy90 envs/NetTepi DTU-13等位）+ **本地 WSL2 工具（MUNIS/ImmuGenX/DeepNetBim/MHCseqNet 用 ESM-2+权重，HPC 无 repo→须本地重跑）** + 外部（Seq2Neo补87/NeoaPred补116/netMHCstabpan DTU/28无WT问数据组）。非「简单」，多窗多日。
+- DAG 状态：probe✓ hpc-upload✓（用户放行）hpc-rerun▶（MHCnuggets done，余续）；datagroup-28wt🛑 dtu-consent🛑 等外部；remerge/refig 待所有重跑齐。
+- **续跑接力**：`python tools/pipeline.py status quantimmu-coverage`。HPC 工具续跑用各自 recipe（HLAthena `prep_hlathena_hpc.py`+sif、andy90 `prep_input.py`+xargs26HLA、NetTepi py27/perl）；本地工具用 WSL2+权重。全齐→patch merged→p0e2 重池化→重出 fig1+覆盖矩阵→verifier 核。
+
+**✅ 第 2 个工具跑通（MHCseqNet）+ 2 工具战果验证锁定（2026-07-03）**：
+- MHCseqNet 全 130 重跑（`envs/immuneapp` py3.7+tf1.15，run_mhcseqnet_official.py，3283 对 prob[0,1]）→ 拉回 `scripts/out_official/coverage_fix/mhcseqnet_raw_FULL130.csv` → 5 P102 缺肽全补 → **MHCseqNet 125→130**。
+- **patch 验证**：把 MHCnuggets(-ic50)+MHCseqNet(prob) 新分 patch 进 merged 副本 → 池化 → **两工具肽级覆盖均 130/130**（各补 190 子肽分）。re-merge→pool 管线验证通。
+- **✅ 已完成 2/15**：MHCnuggets、MHCseqNet（flat 输入→单跑，唯二简单工具）。
+- ⚠️ **剩 13 全是重活（逐个读 recipe 确认，非盲并行可起）**：andy90=硬编码 7 SLURM batch+编号 manifest（换输入须重建批次）；HLAthena=sif+缺 `hlathena/models`（会卡 GCS retry 须先放模型）；netMHCstabpan=apptainer net.sif+glibc 绕过+tcsh 路径重写+per-allele SLURM；NeoaPred=GPU sbatch 慢；NetTepi=py27/perl 13 等位（硬上限到不了 130）；MUNIS/ImmuGenX/DeepNetBim=本地 WSL2 ESM-2+权重（HPC 无 repo）；NeoaG/pTuneos/ICERFIRE/deepHLApan=28 无 WT 肽（问数据组定可救否）。**每个是 tracker 记录的部署战，需专门 window 逐个正经搭，别盲并行（会砸）。** 建议开新窗专驱 DAG（context 充裕）逐工具推。
+- 中间产物：2 工具新分 csv 在 `scripts/out_official/coverage_fix/`；DAG=quantimmu-coverage（probe✓/hpc-upload✓/hpc-rerun▶/dtu-consent⊘去除/remerge待）。
+
+**🔪 用户拍板砍掉硬上限工具（2026-07-03「一定做不了的直接去掉」）**：以下工具**重跑也到不了 130，是固有覆盖上限非 bug**，退出「推满 130」努力，论文里诚实标覆盖上限：
+- **NetTepi**：13 等位模型，队列 26 等位物理只覆盖部分（FULL130 输入命中 8/13 等位、734 肽）→ 砍，coder 停。
+- **NeoaPred**：只吃严格 9mer 结构（foreignness 物理模型），14/130 封顶 → 砍。
+- **NeoaG/pTuneos/ICERFIRE/deepHLApan**：差分/异己性工具，28 无 WT 肽（`WT_FullPeptide` 0/28）结构性打不出 → 砍（不问数据组、不硬补零=不造数据）。
+- datagroup-28wt + dtu-consent 两 gate ⊘skip（差分工具砍了问数据组无意义；许可仅发论文相关不阻塞跑）。
+- **修订后「推满 130」工具册（8 个）**：MHCnuggets✅ MHCseqNet✅ + andy90/netMHCstabpan（HPC，coder 重建 FULL130 跑法中，netMHCstabpan 优先二进制直跑绕容器）+ HLAthena/MUNIS/ImmuGenX/DeepNetBim/Seq2Neo（本地 WSL2，另处理）。
+
+**✅ 第 3 个工具跑通（netMHCstabpan，2026-07-03）**：coder 重建 `run_netmhcstabpan_FULL130.sh`（**二进制直跑绕开 net.sif 容器+tcsh 重写**）+ `prep_stabpan_FULL130.py`（本地建 35 等位 .pep）→ 上传 HPC → `ext_tools/netMHCstabpan-1.0/netMHCstabpan -a <allele> -p <pep>` 遍历 35 等位（**35/35 success，0 fail**，3283 行）→ 拉回 `scripts/out_official/coverage_fix/netmhcstabpan_raw_FULL130.csv`（列 peptide,HLA_Allele,pred,thalf,rank_stab）→ patch 进 merged_30 → **netMHCstabpan 43→130/130**（101 旧肽本轮补 + 29 新肽重跑集已有）。
+- **✅ 已完成 3/8 推满目标**：MHCnuggets、MHCseqNet、netMHCstabpan 全 130/130（新分 csv 在 `scripts/out_official/coverage_fix/`）。
+- **⏸ andy90 parked**：driver 重建打通（`andy90_driver_FULL130.sh`，动态分批，路径 env 覆盖 PY=envs/improve/RSCRIPT=envs/andy90_r），跑到最后卡 **R env 缺 ggplot2**（andy90_r + garnish_r 两 env 都无 tidyverse）→ 需 `install.packages` 或换 env，慢，暂搁。
+- **剩**：andy90（R 依赖）+ HLAthena/MUNIS/ImmuGenX/DeepNetBim/Seq2Neo（本地 WSL2，你本机跑）。3 工具新分待最终 remerge（全齐一起 patch→p0e2 重池化→refig+覆盖矩阵）。
+
+**✅ 第 4 个工具跑通（andy90，2026-07-03）**：conda force-reinstall r-ggplot2 修好 andy90_r env（tidyverse 缺 ggplot2 phantom）→ `andy90_driver_FULL130.sh`（动态分批，env 覆盖 PY=envs/improve/RSCRIPT=envs/andy90_r/REPO=tools_repos/immunogenicity_predictor/NETMHC=netMHCpan-4.1）**35/35 等位成功，0 fail，3283 行**→拉回 `scripts/out_official/coverage_fix/andy90_raw_FULL130.csv`（列 hla,peptide,amplitude,immunogenic；MT_andy90=amplitude）→patch 进 merged→**andy90 125→130/130**。
+- **✅ 已完成 4/8 推满目标（全 HPC）**：MHCnuggets、MHCseqNet、netMHCstabpan、andy90 全 130/130。
+- **剩 5 个本地 WSL2**（general agent 跑中）：HLAthena/MUNIS/ImmuGenX/DeepNetBim/Seq2Neo。
+- **8-11mer 口径**（用户问，另窗做）：覆盖修复的重跑是 9mer-only 输入。8-11mer 版若只求覆盖不缺→patch 9mer 修复分后直接 `p0e2 --w811` 重池化即可（max-pool 用 9mer 子肽覆盖上）；若求口径严格一致→另窗把输入长度筛选 `L==9` 改 `L∈{8,9,10,11}` 重跑同 pipeline（脚本全复用，andy90 env 已修）。另窗认领 `quantimmu-coverage-8to11mer.claim`。完整交接提示词见本 session 对话（可存 `reference/HANDOFF_8to11mer.md`）。
+
+**🏁 覆盖修复战役收工状态（2026-07-03，本 session 终）**：
+- **补满 130/130 = 8 工具**（本场新补）：HPC 4（MHCnuggets/MHCseqNet/netMHCstabpan/andy90）+ 本地 WSL2 4（MUNIS/ImmuGenX/DeepNetBim/Seq2Neo）。新分全在 `scripts/out_official/coverage_fix/<tool>_raw_FULL130.csv`，Bash 逐个验证到 130。
+- **合规审计**：本地 4 个由 general agent 跑（用户放行「本机派 agent」）。审计=重叠一致性：MUNIS/ImmuGenX/DeepNetBim 与原分**逐格 100% 吻合**（重叠 3007 格 \|差\|=0）→ 真跑官方工具零造假；Seq2Neo 无重叠对账不了（原只 43 肽）、分布真实，**投稿前本机复跑 1-2 肽二次确认（TODO）**。agent scope 干净（只产 raw csv）、下的是公开权重（非红线）。
+- **总账 = 23/30 到 130**（15 原满 + 8 本场补）。
+- **HLAthena（第 24 个）= 输入就绪但 sif 跑不起**：`prep_hlathena_ctx_FULL130.py` 建好正确 TSV 输入（pep/len/ctex_up/ctex_dn/TPM/log2TPM，130/130 覆盖含 29 indel 肽，侧翼从疫苗肽内部截+dash 补=诚实偏离标 `context=vaccine-peptide-internal`）。**卡点=sif 内置 predict 硬从 GCS 下模型**（`Copying gs://msmodels/...`，SINGULARITYENV_FETCH_MODELS=false 拦不住，本地模型挂了不认，只读挂载写不进）→ 关 GCS 的开关在缺失的 `predict_docker.bash` wrapper 里，需重建。HLAthena=提呈代理（不参与免疫原主排名），留 121/130 + 输入就绪待收尾。
+- **🔪 砍 6 个硬上限**（当前覆盖）：NetTepi 125（13 等位）/deepHLApan 101/NeoaG 102/pTuneos 102/ICERFIRE 100（28 无 WT 肽）/NeoaPred 14（9mer 结构）。论文标诚实覆盖上限，不硬补零。
+- **⏳ 未做 = 最终 remerge**（下场）：8 工具新分 patch 进 merged（存副本，符号约定 MHCnuggets/netMHCstabpan=-值 + 无星 HLA 加星 DeepNetBim/Seq2Neo）→ p0e2 重池化 → 重出 fig1(9mer effN8 9/9主榜)+覆盖矩阵 → verifier 核 → 更新 RESULTS_CLEAN_SUMMARY §3.1。DAG=quantimmu-coverage(hpc-rerun done→remerge▶→refig)。
+
+---
+
+## Entry 47-FIG1-EFFN8 — 2026-07-03【图1 定稿：门槛 effN≥8（非 ≥10）+ 9mer 口径，三重病根全消，新 headline netMHCpan_BA 0.392】
+
+**触发**：用户「30 工具 spearman 图有问题需重算，先上网查最合理算法，spearman **每患者单独算再平均是红线**，9mer 长度先做，避免上次不合理数字，不用旧错文件」。派 3 Explore + 1 researcher + 1 verifier + 1 coder 编队。
+
+**三重病根合流确认**（承 Entry 46，本轮联网调研 + Bash 全核）：① **effN 门槛 bug**（`_official_common.py:291-306` 用 `n=len(g)` 非有效点 effN，2-3 点撞 ±1，Fisher-z arctanh 爆拉）② **肽长/count 混杂**（整肽长 15-33 与 ELISpot ρ=0.319 显著，max-pool 顺序统计量 E[max]=n/(n+1) winner's curse）③ **Fisher-z 放大 ±1**。红线核实：现有实现已「per-patient→跨患者 Fisher-z 等权聚合」，红线本就满足，问题在门槛。
+
+**联网调研锁定方法学**（researcher 带引用）：per-patient rho 跨患者聚合 = Fisher-z 等权（outline §2.6 锁定，用户拍板）；最小样本门槛 n≥5 绝对下限/n≥10 才可靠（Spearman 临界值表 n=5 临界=1.000）；ELISpot ties 用 average-rank（`spearman_np` 的 `pd.Series.rank()` 默认平均秩，核过=对）；9mer-only 消 winner's curse 混杂（MHC-I ~44% 为 9mer，outline §2.2）。⚠️ 领域(TESLA/IMPROVE)实际用 rank-enrichment/AUC 非连续 spearman，但 outline 锁连续 spearman=袁老师拍板级，未擅改。
+
+**🔴 门槛 5→10→8 迭代（本轮关键发现，两次拍板）**：
+- 用户初选 effN≥10（researcher「n≥10 可靠」）。跑出后 Bash 核发现**反常**：netMHCpan_BA 0.392→**0.472**（超 0.4 天花板）、MHCflurry 0.308→0.343、IMPROVE 0.285→0.319 集体上抬。
+- 根因 Bash 坐实：**P102 整患者仅 8 肽**，全覆盖工具对它 effN=8。effN≥10 把 P102 **结构性整个剔除**；而 P102 对 netMHCpan_BA 的 per-patient rho=**−0.36**（最难患者）→ 去掉它 rho 虚高。即 **≥10 不是更干净，是把「小 n ±1 伪迹」换成「剔最难患者的覆盖选择偏差」，反把值推过天花板 = 重现「不合理」信号**。
+- 敏感性表证 **effN≥5 ≡ effN≥8 数值全同**（全覆盖患者本就 ≥8 点，门槛没咬到），只有 ≥10 才咬 P102。
+- **用户二次拍板 = effN≥8**（保全 9 患者含最难 P102、去 ±1 伪迹、不爆表）。
+
+**新锁定 headline（effN≥8, 9mer, Bash 核 `R1_recomputed_effN8.csv`）**：全覆盖 9/9 稳定工具 netMHCpan_BA **0.392**(DTU) / MHCflurry 0.308 / PRIME 0.294 / IMPROVE 0.285 / PredIG 0.250 / IEDB_Calis 0.249——全 ≤0.4 天花板、合文献 0.15-0.35。MHCnuggets 0.460(#1, 8/9) = 真信号非伪迹（8 良覆盖患者 effN 12-19、6 个 rho 0.42-0.64；P102 那个 effN=3 的 −1 已被 ≥8 剔），但覆盖口径 8/9 vs netMHCpan_BA 9/9 严格不完全可比。4 工具 coverage_fail（netMHCstabpan/NeoaPred/Seq2Neo/DeepNetBim, n_full=1）灰条底部标注。无任何 ±1，无爆表。
+
+**🔴 第三次收紧 = 主榜只排 9/9 全覆盖工具（用户三次拍板）**：追问「为何 MHCnuggets 0.46 仍高/为何 5 工具+同学没遇到」→ Bash 决定性检验：MHCnuggets 0.460 是**覆盖子集不可比**产物（它缺最难 P102 只评 8 易患者；把 netMHCpan_BA 也限到同 8 患者 = **0.472 反超**）。且核实余嘉核心 5 工具（PredIG/DeepImmuno/IMPROVE/NeoTImmuML 全 9/9 最小 effN=8、pTuneos 6）+ 同学 zichenli 5 工具（全 130/130 满覆盖）**零稀疏格 → bug 根本不触发**；bug 只在扩到 30 工具引入稀疏工具（MHCnuggets P102=3 点、Seq2Neo/netMHCstabpan 遍地稀疏）才激活。→ 图改**两区**：主榜 = 15 个 9/9 全覆盖工具（彩色，公平同患集可比，netMHCpan_BA 0.392 稳 #1）；参考区 = 15 个 <9/9（灰条，虚线分隔 +「仅供参考不参与主排序」，含 MHCnuggets 0.460/8/9）。
+
+**产物**：`recompute_R1_effN.py`（改：主门槛 10、加跑 8/5/3、`build_sensitivity`、clip 0.99）+ `plot_R1_effN.py`（改读 effN8、9mer 命名、**主榜/参考区按 n_full==9 切分**）→ `R1_recomputed_effN{10,8,5,3}.csv` + `R1_effN_sensitivity_5_8_10.csv` + `R1_compare_orig_vs_effN.csv` + **`fig1_spearman_30tools_9mer_effN8.png` + `paper/figures/fig1_spearman_30tools_9mer_effN8.pdf`**（图1 定稿：9/9 主榜 15 工具 + 参考区 15 工具）。
+
+**未做（拍板级 TODO）**：① 控肽长偏相关未在 effN8 重算（袁老师问题一「肽长控不控进排名」未定，主图只报裸 rho）② 全窗 8-14mer 附录版 ③ rank-enrichment/AUC 副指标（outline 主指标级）。§3.1 RESULTS_CLEAN_SUMMARY 已回填 effN8 值 + 旧 bug 值标 superseded。
+
+**追问收口：覆盖不全的三类根因（Bash 核 `pooled_clean_9mer.csv` + `merged_all_tools_30_official.csv` 逐长度/逐等位）——不是 8-11mer 长度问题**：
+- **反证**：netMHCpan_BA / MHCflurry 在**所有长度 8-14mer 都 100% 非 NaN** → 全 9/9；且当前已 9mer-only 口径长度早统一。DeepImmuno 只支持 9-10mer（8/11+mer 全 0%），但 9mer 口径下反拿满 9mer 覆盖=9/9 → **9mer-only 对挑长度的工具是帮忙不是添乱**（真跑全窗才掉覆盖）。
+- **① 模型出分稀疏型（MHCnuggets/MUNIS/MHCseqNet）**：MHCnuggets **连 9mer 都只 38% 出分**（非长度过滤，是工具输出固有稀疏）。偏偏 **P102 被坑**因其 **HLA 最薄**（仅 3 等位=全场最少、**无 HLA-C**、B\*35:03/B\*38:01 较少见）→ 兜底等位少 → 5/8 突变的所有 9mer×3 等位组合全 NaN → 整突变丢，P102 effN=3<8 被剔 → 8/9 覆盖。
+- **② 部署没跑全型（Seq2Neo/netMHCstabpan）**：遍地缺（只 P104 满），因 docker/DTU/环境阻塞只在 43 肽子集跑通 → 纯工程覆盖，与长度/HLA 无关。
+
+**同学 zichenli24 为何全 130/130 覆盖没踩坑（读 `小组数据/rerun_v2/06_analysis/per_patient_details.csv` + `build_merged_results.py` 还原）**：
+- **只跑 5 个「出分密」工具**（PRIME/DeepHLApan/ImmuneApp/HLAthena/MHLAPre）——每肽都出分，天然 130/130 满；P102 也满 8 肽（对比我们 MHCnuggets 3/8）。
+- **保留全患者不设最小门槛**：P102 n=8 照纳。她能这么做因**最小患者也有 8 肽 + 工具密 → 压根无 2-3 点稀疏格 → 撞不到 ±1**，不需 effN 门槛。
+- **聚合 Fisher-Z 按 (n−3) 逆方差加权**（weight 列 = n−3 坐实），非我们等权；并报 pooled 全局 rho + AUC 三档；backbone 8-11mer 窗（非 9mer-only）。
+- **定论**：她没踩坑 ≠ 方法更对，**纯因工具选择**（5 个全密工具）。我们扩到 30 工具引入稀疏工具才在 P102 撞出 ±1；她若跑 MHCnuggets/Seq2Neo 会踩同坑。交叉验证：她 HLAthena=0.20 ≈ 我们修正后 0.207，两独立管线在同密工具上对上 → 分歧在「跑哪些工具」非算法。
+
+**8-11mer 多长度对照口径（用户 2026-07-03 授权跑，p0e2 加 `--w811` + recompute/plot 加 `--input/--tag` 参数化）**：产 `pooled_clean_8to11mer.csv`（含突变过滤剔 31% WT 窗、8-11mer 保留 14517 子肽行、130 肽 G1/G2/G3 全 PASS）→ `R1_recomputed_8to11mer_effN{10,8,5,3}.csv` + `R1_effN_sensitivity_8to11mer_5_8_10.csv` + `fig1_spearman_30tools_8to11mer_effN8.png/.pdf`。**两大发现**：
+- **① 8-11mer 全面劣于 9mer（坐实 outline §2.2「9AA-only 主分析」）**：主榜 15 个 9/9 工具里 **13 个 rho 下降**（netMHCpan_BA 0.392→0.289 Δ−0.103、IMPROVE 0.285→0.185、ImmuneApp 0.179→0.071、TransHLA 0.169→0.077），仅 IEDB_Calis +0.016/netMHCpan_EL +0.007 微升。机制：max-pool 加进 8/10/11mer 窗（预测精度低于 9mer）后，噪声窗抢 max 打乱排序、稀释信号 → rho 掉。非 winner's-curse 抬绝对值（那不改秩），是加秩噪声。netMHCpan_BA 两口径均 #1。
+- **② 8-11mer 没救回覆盖（坐实覆盖缺口≠长度）**：9/9 主榜仍 15 个（与 9mer 同）、MHCnuggets 仍 8/9 缺 P102、稀疏工具照旧。加长度窗没给稀疏工具补上覆盖 → 再证 MHCnuggets 缺口是工具出分稀疏×P102 薄 HLA，非长度过滤。
+- **结论**：9mer-only 是对的（用户直觉正确）；8-11mer 归附录作 §2.2 佐证。
+
+---
+
+## Entry 46-FIG1-BUG — 2026-07-03【PPT 图1「30 工具 Spearman 排序」核查：发现稀疏覆盖伪迹 bug，榜首三名是假的】
+
+**触发**：用户「复查 PPT 30 工具 spearman 排序图数据，HPC+本机双查，单边对复查核算」。派大编队（verifier 本机独立重算 + analyst 方法学审计 + coder 修正脚本）+ 主线 HPC 探查 + 代码级根因核，四方交叉。
+
+**图 + 数据链**：`fig1_spearman_30tools.png`（progress_v4_rev1 PPT）← `analysis/official/R1_single_maxpool_official.csv` 列 `fisherz_rho_raw` ← `R1_official.py`/`_official_common.per_patient_spearman` ← `data/frozen/pooled_clean_9mer.csv`。
+
+**双侧核查**：① 本机 verifier 全新 scipy 独立重算 30 工具，worst |diff|=0.00005 → **图数字本身可复现 PASS，没算错**。② HPC `/gpfs/work/bio/jiayu2403/quantimmu/` 只存逐 allele 原始工具输出，无 pooled/R1 副本 → 聚合是纯本机后处理，HPC 无法独立重算此图，「单边对复查」=本机重算这条。
+
+**🔴 发现 bug（代码级坐实，`_official_common.py:292-298`）**：`per_patient_spearman` 里 `n=len(g)`=患者总行数（8-19），门槛 `MIN_PEP=3` 与聚合剔除 `keep=ns>FISHER_MIN_N=3`（`fisherz_weighted_agg:171`）都用这个 len(g)，**而非工具有效非 NaN 点数 effN**。`spearman_np` 内部去 NaN 后 rho 只用 2-3 有效点 → 极易撞 ±1 → clip 0.9999 后 arctanh≈4.95 强力拉高等权 Fisher-z。13 个 rho=±1 格子全落 effN=2-3（重灾 P102），`n_dropped` 全 0 = 门槛形同虚设。**这是叠加在已知「肽长混杂/n=9 功效」之上的第二个独立病根，此前项目未记录。**
+
+**修正重算（effN 门槛，未覆盖 canonical，产物 `analysis/official/recompute_effN/`）**：
+- 门槛必须 effN≥5（effN≥3 修不干净：HLAthena P101 effN=3 卡线逃过、netMHCstabpan 冲 0.854 假第一；analyst 实测 effN=4 仍偶发 ±1）。
+- 伪高剔除：HLAthena 0.627(#1)→0.207(#12)、andy90 0.585(#2)→0.134(#22)、Seq2Neo 0.441(#3)→−0.234(覆盖失败 n_full=2)、netMHCstabpan(9 剔 7)覆盖失败。
+- 双向污染：MHCnuggets −0.108(#24)→0.460、MUNIS/MHCseqNet/NetTepi 均从负翻正冲榜前（Δ≈+0.57，原被 P102 rho=−1 拖累）。
+- 纹丝不动（全 9 覆盖无伪迹）：netMHCpan_BA 0.392 / MHCflurry 0.308 / PRIME 0.294 / IMPROVE 0.285 / PredIG 0.250 / IEDB_Calis 0.249。
+- **最稳 headline = 只在全覆盖 9/9 里比 → netMHCpan_BA 0.392 CI[0.140,0.594] 真第一**（DTU 受限；不用受限则 MHCflurry 0.308）。effN5 让部分工具降 8/9、n_full 跨工具不齐，MHCnuggets 靠剔单点冲第一不稳。CI 宽度是最干净判别器（稳榜<0.46 vs 伪高>1.8）。
+
+**产物**：`recompute_R1_effN.py` / `plot_R1_effN.py` / `R1_recomputed_effN5.csv`+`effN3.csv` / `R1_compare_orig_vs_effN.csv` / `fig1_spearman_30tools_effN5.png`（含每条 rho 数值 + 覆盖 N/9 标注，2 轮修：coder 初版漏数值→主线自审补数值列+修图例脚注重叠）/ `REPORT_fig1_why_wrong.md`（四环因果链报告）+ `.html`（artifact 网页版）/ PPT `..._rev3_2026-07-03.pptx`（slide7 换修正图，rev1/rev2 保留）。
+
+**文献核查（数字合理性，2 researcher 联网多源交叉）**：修正后 ρ=0.1~0.4 量级**符合文献、偏保守**。① 直接对照：同类黑色素瘤 ELISpot 综述报 MHCflurry presentation vs ELISpot **ρ=0.47**（已发表同类最高）、NetMHCpan EL ρ≈0.31 [Exploration of Immunology 100391；Front Immunol 2026 1829509]——我们天花板<0.4、netMHCpan_BA 0.39 落此区间且略低=保守。② 量化换算：免疫原性专用工具原论文 AUC 仅 0.65~0.75（Calis 0.65 / BigMHC-IM 0.70 / DeepImmuno 独立集退化 / PRIME 低 0.7x），`r=2AUC−1` → 二分类 0.3~0.5 → 连续 SFC 衰减 → Spearman **0.15~0.35**，我们区间正中央自洽。**别拿 binding 的 AUC 0.9+ 对标（那是呈递 easy 任务，非 T 细胞反应）。** ③ binding 打败免疫原性专用工具 = TESLA（Wells 2020 Cell）明确现象（优先 binding+stability+abundance 的 pipeline 最好，foreignness 单用无益）。④ 反证修正对：原图 HLAthena 0.627 **超出全领域天花板**（无免疫原工具在独立 ELISpot 到过 0.6），本身即不合理信号，修正后拉回文献区间。**MHCnuggets 0.46 追查（纠上轮误判）**：逐患者拆解证明 0.46 **是真信号非伪迹**——P101-110 里唯一稀疏格 P102(effN=3/8,撞 −1)被 effN≥5 正确剔除，剩 8 患者全满覆盖(effN=12~19)、其中 6 个 rho 稳定 0.42~0.64，Fisher-z 平均=0.46。canonical −0.108→0.46 的翻正是修 bug 的正确结果（原 P102 假 −1 错误拉负），非新伪迹。MHCnuggets=binding/presentation 类，登顶符合「binding 最强因子」领域规律。**唯一真 caveat=覆盖口径**：MHCnuggets 8/9(P102 仅 3 肽无法评) vs netMHCpan_BA 9/9 全评，两者严格不完全可比——纯 rho 第一=MHCnuggets 0.46(基于 8 患者，真实)，要求 9/9 全覆盖第一=netMHCpan_BA 0.39。（上轮误判「MHCnuggets 疑残余小样本波动」已更正：它恰是覆盖最扎实的之一。）n=9 CI 宽 0.3~0.5、工具间不可区分仍是通用 caveat（小样本虚高无领域专文，引通用统计，TODO）。
+
+**对比 zichenli24 rerun_v2（`小组数据/rerun_v2/06_analysis/outputs/metrics_three_tier.csv`）**：她独立跑 5 工具（肽级 + Fisher-Z 加权 + 130 全覆盖），4 个与我们重合。她 FisherZ_rho vs 我们 effN5：ImmuneApp 0.1715 vs 0.1788（差 0.007）、**HLAthena 0.2001 vs 0.207（差 0.007）**、DeepHLApan 0.0092 vs 0.074（差 0.065）、PRIME 0.2033 vs 0.2945（差 0.091 最大）。**关键：她独立算 HLAthena=0.20 ≈ 我们修正后 0.207，而非 canonical bug 值 0.627（差 0.427）→ 第三方交叉验证坐实 bug 修正正确**；她 caveat「HLAthena presentation proxy, do NOT rank against immunogenicity」与我们 00_README 一致。PRIME 差 0.09 = 口径累积（她加权+肽级 vs 我们等权+突变级 max-pool + MixMHCpred 实现差）。
+
+**三方深查复盘（2026-07-03，verifier+analyst+skeptic 独立并行，用户「再彻查一遍」）——len(g) bug 修净但排序仍不可信，三档定论**：
+- ✅ **已彻底解决**：verifier 核 len(g) 门槛 bug 类 ±1 伪迹——effN∈[5,8] 且 |rho|≥0.7 = **0**、clip 触发 = **0**、门槛 5→8 榜单纹丝不动（≥10 仅 top2 内 netMHCpan_BA 0.47 反超 MHCnuggets）、effN5 csv 复现 diff=1.1e-16。唯一残余 = 4 个 coverage_fail 工具（netMHCstabpan/NeoaPred/DeepNetBim/Seq2Neo，已剔出主排序）。
+- ⚠️ **effN 门槛的副作用（致命-1，覆盖不对称）**：门槛逐工具各剔各的患者 → 30 工具在不同患者子集排名。skeptic 拉到**共同患者集**（7 患者 104-110 全覆盖交集）重排：**netMHCpan_BA 0.523 反超 MHCnuggets 0.510**——MHCnuggets 的 #1 是「恰好丢掉自己最差患者 P102(max-pool raw rho=-1)」的产物。整体 Kendall 仅 0.674（~1/3 次序翻转）。P102 稀疏根因（analyst）：仅 8 肽（全场最少）+ HLA 仅 3 等位无 HLA-C + 冷门等位 → 等位受限工具 effN 骤降到 3；且 P102 低响应压缩量程（Elispot 中位 4.17 含负值）。
+- ❌ **独立于 bug 的两根本问题**：① 图1 用 **raw** Spearman 未控肽长（outline §2.6 定 lenctrl 为核心）——raw vs lenctrl 排序几乎无关（Spearman 0.285），MHCnuggets 控肽长掉 21 名；max-pool 被 peplen(~Elispot 0.319)+n_subpep(~max 0.312 > ~真值 0.179)双重顶高。② **n=9 功效不足**——top~15 CI 全重叠（#1 下界 0.318 < #10 上界 0.368），只能粗分档撑不起精细排序。
+- 查证**非问题**（skeptic）：arctanh 放大已缓解（Fisher-z vs 裸均值 Kendall 0.93）、等权 vs 逆方差稳健（Kendall 0.89，zichenli24 加权口径不改结论）。
+- **修法（skeptic，均现成 csv 列/小工程，不重跑工具）**：① 排序固定共同患者集 ② 用 lenctrl 控肽长（或 raw+lenctrl 双栏，补 n_subpep 协变量）③ 措辞「30 工具排序」→「工具分档（顶/中/底簇）+ 个体名次 n=9 不可分辨」。**降 claim = 改论文定位 = 袁老师拍板级（outline §2.6 定稿），未实施。**
+- **下一步（待拍板）**：先派 coder 出「共同患者集 + 控肽长」公平口径对照图 + 数据（不覆盖 canonical），供余嘉/袁老师看真实排序后定 claim 措辞。verifier 深查脚本 `_scratch/verify_effN_residual.py`、数据层 `_scratch/diag_datalayer.py`+`results/effN_coverage_matrix.png`。
+
+**🛑 拍板点（未动 canonical）**：改 `n=len(g)`→effN + 门槛≥5 会重排 R1 并连累下游 R2-R8 全部重跑 = 偏离已冻结方法，待余嘉/袁老师拍板。止血选项：PPT 图换用修正版 `fig1_spearman_30tools_effN5.png` 或加「以 netMHCpan_BA 为准」注。**未投稿、未改底层口径、未碰 HPC 在跑进程。**
+
+---
+
 ## Entry 45-Q2CLOSE+PPT — 2026-07-01【问题二统计检验收口 + 进度评价版 PPT（袁老师周五讨论用）】
 
 **触发**：袁老师回复两个方法学问题——问题二（geomean/mean_rank/median 数学近亲）给绿灯，要求「具体 test 差异多大/是否显著/拿足够数据证实」；问题一（肽长混杂）老师前提「每突变肽长相同→无影响」与数据打架，留周五讨论。用户拍板：问题二做下去 + 做进度评价版 PPT（进度为主+评价单列章，只讲问题一现象不下结论）。
@@ -2894,3 +3096,43 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 **当前**：30-roster = 28 验收齐 + TRAP（装中，手工）+ Seq2Neo（卡 netCTLpan DTU 许可）。两者落地后 merge --strict 收口 → p0e → smoke → p0f 冻结 → 解锁 R1-R9。
 
 **harness 摩擦记录**：W0 paramiko 连 HPC 被 auto-mode 分类器拦（andy90 同款）；后台 bash 下载~10min 被 kill；PowerShell-via-Bash deny；git schannel SSL 对 TRAP repo 失败（openssl 后端绕过）。→ TRAP/Seq2Neo 重型部署改用户手工跑。
+
+---
+
+### 2026-07-03（geomean 追查 → 融合结论全面重估：从"数据天花板"到"融合窄化成投票、特征学习融合待验"）
+
+**缘起**：用户问 geomean 到底发生了什么、原计划可行否、我们研究 fusion 是否出错了；并要求"别先入为主看本地文件"。全程 Bash 核 `analysis/official/*.csv` + 3× researcher（集成理论/领域先例/特征定义）+ planner×2 + skeptic。
+
+**追查链（数字均实核）**：
+1. **geomean ≈ mean_rank ≈ median 是数学近亲，非算错**：官方数据配对 geomean vs mean_rank Δz̄=+0.011 p=0.79；排序相关 0.95–0.97（Q2_rank_corr_matrix）。geomean=mean_rank 减"肽内工具分歧度"修正项，n=9 翻不动排序。旧 outline"geomean 唯一双检验第一"= 过度解读噪声。
+2. **"融合超不过单工具"高度依赖融合池怎么选**：headline 用的 SURV6（恰好排除最强 netMHCpan_BA + 含弱工具 pTuneos/deepHLApan）=0.362 输；含 anchor 的 3dim[netBA+PRIME+deepHLApan] wmr=0.4185 / 4dim median=0.4176 点估计超；7dim 掺弱稀释回 0.386（Zhou「many could be better than all」）。
+3. **集成理论（researcher）**：等权融合只保证超"成员平均"非超"最强单成员"（Krogh-Vedelsby）；IMPROVE 铁证=融合赢靠正交特征(+0.09 AUC)、相似模型平均 0 增益；结合亲和是否最强取决于数据 binder-prefilter regime（Immunity2023 vs ITSNdb 分野，命门待核）。
+
+**skeptic 三致命（救我于确认偏误）**：① R3 全表 132 格 **0 个 CI 排除 anchor**，CI 宽是效应 13 倍 → n=9 在 per-patient Spearman 上"beat anchor"物理不可判定，TOST 必 inconclusive；② garden-of-forking-paths：挑"最优池+最优算子"= null 下噪声上偏；③"含 anchor"=含 outcome 排名最高 = 偷看标签选池，leak-free 声明不成立。**诊断：我把"n=9 分不开"错读成"池设计能救"，与旧 pipeline 错读成"天花板宿命"是同一个病（把功效不足当确定结论）——三犯。**
+
+**配对置换检验实测**（`_scratch/probe_fusion_ceiling_paired.py`，唯一合法指标 per-patient Fisher-z Spearman）：所有池 vs anchor netMHCpan_BA_max —— 事后最优上界 3dim wmr Δz̄=+0.032 **p=0.63**；控肽长后**全线转负**；leak-free 先验池（机制类正交去冗余）p 全 >0.5。**无监督融合无论怎么设计都够不到 p<0.05。** SURV6 对照行 −0.0344/0.7930 精确复现官方 R7 → 引擎调用正确、数可信。
+
+**关键转折（用户点破，本场最大收获）**：之前所有"融合"= 无监督秩聚合投票；学习型（stacking/ridge/gbdt 崩到负）**只喂了工具分数、没有任何免疫学特征** = 闭眼投票。核出 `data/frozen/ds2_official_groundtruth.csv` **有全套真特征从没用过**：`TPM_PurifiedTumorRNA`(表达)/`CCF`+`Clonal`(克隆性)/`WT_FullPeptide`+`mut_pos`+`wt/mt_aa`(DAI/agretopicity 原料)/`Variant_Type`/`hla_allele_std`/序列——frozen 的 pooled_clean_9mer 把它们全 drop 了。**这是 IMPROVE(27 特征 RF)赢、我们(纯工具分数)输的根本，也是袁老师"集成不能简单平均"的真意。fusion 被我窄化成了 rank aggregation，漏掉特征工程这一层。**
+
+**当前在跑**：researcher（查 IMPROVE/TESLA/DAI/foreignness/理化特征精确可算清单）+ planner（设计 leak-free 特征学习融合实验矩阵：特征分层消融 + 强正则小模型 + LOPO leak-free + 双指标 + MDE/power）。
+
+**命门（诚实，不预设成败）**：① 130 肽/9 患者小样本，加特征增维过拟合风险；② IEDB pseudo-leakage 极重（datasets.json 警告 ITSNdb 92%/PRIME 60% 现于 IEDB，工具本身训练泄漏）；③ estimand 分野（肽级 AUPRC vs per-patient Spearman）；④ regime（130 肽是否 binder-prefilter，决定 anchor 真伪）待核 Braun2025。
+
+**与 ACCEPTANCE 的关系**：§4.3 早写"仅 8 有效病人 → ±0.03–0.05 难言显著"；G6 已软化为"诚实呈现持平 vs 显著"。本场给这些补了直接数字证据，并把 C2 从"投票"升级到"特征学习融合"再验一次。**是否显著、最终定位 = 袁老师拍板点，未定论。**
+
+**产物**：`_scratch/probe_fusion_ceiling_paired.py`（探针，免登指针）。**待办**：researcher+planner 回 → 设计定稿 → coder 实现特征计算(理化/DAI/foreignness)+leak-free 学习融合+评测 → 主线跑 → analyst/verifier → 呈袁老师三问（含新增"特征学习融合能否出显著"）。
+
+**续（同日，设计定稿 → 派 coder 造）**：
+- **researcher 回填特征清单**：第一梯队(纯序列/现有列零外部) HydroCore/PropHydroAro/SelfSim = **IMPROVE 头号信号**，peptides.py+Biopython 或手写可算；表达 TPM/克隆 CCF 现成；DAI 需 WT 打分；foreignness 需 antigen.garnish+IEDB **暂缓**；CYT/MCPmean 需全 RNA-seq 矩阵**算不了**。TESLA 洞察=affinity+表达+stability 核心，foreignness/agretopicity 单押无益。
+- **planner 出 L0-L4 分层设计**：L0 纯工具分(复现崩溃基线)→L1+表达/克隆/突变→L2+DAI→L3+理化→L4+工具分歧元特征；+covariate-only 臂；强正则小模型(logistic-L2/浅RF)；leak-free LOPO 9-fold；双指标(per-patient Spearman 主 + 肽级 AUPRC 副 cluster-correct)；三分流。
+- **skeptic 红队 0 致命放行**，但 Bash 核出关键冷事实：当前融合 vs 最强单 = **3/9 患者 favor**(要 p<0.05 需 ~8/9，鸿沟)；**干净免疫学特征本身几乎零 per-patient 信号(TPM ρ=0.030、CCF ρ=−0.101 强负)**；L0→L4 增量大概率全平。**定性="用最便宜实验把 Claim iii 天花板钉死，封 Claim 非救 Claim"**。
+- **用户拍板：跑判决性负检验**。采纳 skeptic 3 条预登记精炼(冻结防 HARKing)：① confirmatory = **R-L1-lg**(非 L4，n=9 选最小信息层 a-priori)② 归因闸 confirmatory"赢"须 **full > max(单工具, covariate-only)**(否则只是学到 driver/indel 粗规律非整合工具)③ 预期 NULL、肽级 AUPRC 只作 exploratory 附注绝不当 headline。
+- **派 coder 造** `R10_feature_builder.py` + `R10_leak_free_lopo.py` + `R10_eval_dual.py` + `PREREG_R10_featfusion.md`。**性质=封棺钉不是翻盘；预期负结果本身高价值**(堵死审稿"你试过喂特征吗"逃生口 + L0→L4 曲线=G4 方法贡献材料)。
+- **认知总结**：这场从 geomean 一路追到底——真病根不是融合方法/池设计，是 **n=9 患者 + 弱任务的功效天花板 + 融合从没被喂过真特征**。三次把"功效不足"误读成确定结论(旧=天花板宿命/我=池设计能救/我=肽级伪重复能救)，用户三次拦下。最终诚实落点：用判决性负检验把"喂特征也救不了"钉死，C2 最终定位(收窄 vs 扩外部队列)= 袁老师拍板。
+- **待**：coder 交付 → 主线跑(纯 CPU 无卡槽) → analyst 解读逐层曲线 + verifier 核 shuffle/p 值/有效 K → 呈袁老师。
+
+**续2（coder 交付，用户拍板暂停未跑，先收工）**：coder 交付 3 脚本 `analysis/official/R10_feature_builder.py` / `R10_leak_free_lopo.py` / `R10_eval_dual.py` + `analysis/official/PREREG_R10_featfusion.md`（冻结判据），py_compile 全过**未执行**。
+- **🔴 关键数据缺口（TODO#2）**：GT + pooled 表**无任何 WT 序列 / WT netMHCpan 分数**（Bash 核 `含 WT 的列: []`）→ **DAI 两形式算不了 → L2 层全 NaN ≡ L1，无真增量**。DAI/agretopicity 是 TESLA/IMPROVE 的突变特异核心特征，缺席 = 判决性负检验少一条最可能有信号的腿；激活需**数据组用 netMHCpan 对 WT 序列重打分**。审稿逃生口"你试过 agretopicity 吗"暂时堵不死。
+- 其余边核：理化(HydroCore/PropHydroAro/SelfSim BLOSUM62)= 论文语义近似，需 `gh clone SRHgroup/IMPROVE_tool` 逐行实核；`Inst` 需 Biopython 否则 NaN；`_foreignness`=NotImplementedError(需 IEDB)；L4 工具分组/元特征口径 coder 近似待袁/朱确认。
+- **状态：代码就绪待跑，三选一待定**——① 就这样跑(L2 空，DAI 写 caveat) / ② 先补 WT 打分再跑(检验完整但等数据组) / ③ 先跟袁老师谈整条调查 + WT 缺口再定。
+- **R10 指针**：三脚本 + PREREG 已在本 entry 登记（DEPLOY_TRACKER 未另登，待跑通后补）。

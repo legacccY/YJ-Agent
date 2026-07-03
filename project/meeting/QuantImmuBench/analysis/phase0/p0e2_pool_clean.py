@@ -59,6 +59,7 @@ lever: 产一张「干净的肽级 pooling 冻结表」, 堵住 3 个污染源 =
 ================== 跑法 (我不跑, 主线串行跑) ==================
   python analysis/phase0/p0e2_pool_clean.py              # 默认 9mer 主分析
   python analysis/phase0/p0e2_pool_clean.py --allwindow  # 8-14mer 全窗补充
+  python analysis/phase0/p0e2_pool_clean.py --w811       # 8-11mer 多长度补充 (对齐 zichenli 窗)
 """
 
 import sys
@@ -77,6 +78,7 @@ GT_CSV = FROZEN_DIR / "ds2_official_groundtruth.csv"
 DEFAULT_INPUT = ROOT / "scripts" / "out" / "merged_all_tools_30_official.csv"
 OUT_CSV_9MER = FROZEN_DIR / "pooled_clean_9mer.csv"
 OUT_CSV_ALLWINDOW = FROZEN_DIR / "pooled_clean_allwindow.csv"
+OUT_CSV_W811 = FROZEN_DIR / "pooled_clean_8to11mer.csv"
 
 SUBPEP_MT = "MT_Subpeptide"   # 子肽序列 (MT); 9mer 过滤 = str 长度==9
 SUBPEP_WT = "WT_Subpeptide"   # 对应 WT 子肽序列; 含突变窗判定 MT!=WT
@@ -211,11 +213,25 @@ def main():
                     help="显式声明 9mer 主分析口径 (默认即 9mer, 无需置位; 与 --allwindow 互斥)")
     ap.add_argument("--allwindow", action="store_true",
                     help="8-14mer 全窗补充口径 (不置位=9mer 主分析, outline §2.2)")
+    ap.add_argument("--w811", action="store_true",
+                    help="8-11mer 多长度补充口径 (只留子肽长度∈{8,9,10,11}); 与 --allwindow/--ninemer 互斥")
     args = ap.parse_args()
 
-    ninemer = not args.allwindow          # 默认 9mer; --allwindow 走全窗
-    regime = "9mer" if ninemer else "全窗 8-14mer"
-    out_csv = OUT_CSV_9MER if ninemer else OUT_CSV_ALLWINDOW
+    # ── 口径三分支 (互斥) ──────────────────────────────────────────────────
+    if args.w811 and args.allwindow:
+        raise SystemExit("[ERR] --w811 与 --allwindow 互斥, 只能择一 (口径不同)")
+    if args.w811:
+        ninemer, w811 = False, True
+        regime = "8-11mer"
+        out_csv = OUT_CSV_W811
+    elif args.allwindow:
+        ninemer, w811 = False, False
+        regime = "全窗 8-14mer"
+        out_csv = OUT_CSV_ALLWINDOW
+    else:
+        ninemer, w811 = True, False
+        regime = "9mer"
+        out_csv = OUT_CSV_9MER
     print(f"[info] 口径 = {regime} -> 输出 {out_csv.name}")
 
     in_path = Path(args.input) if args.input else DEFAULT_INPUT
@@ -258,7 +274,7 @@ def main():
     if df.empty:
         raise SystemExit("[ERR] 含突变过滤后长表为空, 检查 MT/WT_Subpeptide 列")
 
-    # ── A2 9mer 过滤 (outline §2.2 主分析口径) ────────────────────────────
+    # ── A2 长度过滤 (outline §2.2 主分析口径 9mer; §2.2 补充口径 8-11mer) ─────
     if ninemer:
         before = len(df)
         sub_len = df[SUBPEP_MT].astype(str).str.len()
@@ -266,6 +282,13 @@ def main():
         print(f"[A2] 9mer 过滤: {before} -> {len(df)} 行 (MT_Subpeptide 长度==9)")
         if df.empty:
             raise SystemExit("[ERR] 9mer 过滤后长表为空")
+    elif w811:
+        before = len(df)
+        sub_len = df[SUBPEP_MT].astype(str).str.len()
+        df = df[sub_len.isin([8, 9, 10, 11])].copy()
+        print(f"[A2] 8-11mer 过滤: {before} -> {len(df)} 行 (MT_Subpeptide 长度∈8-11)")
+        if df.empty:
+            raise SystemExit("[ERR] 8-11mer 过滤后长表为空")
     else:
         print(f"[A2] 全窗口径: 保留 8-14mer 全部 {len(df)} 行 (不做长度过滤)")
 

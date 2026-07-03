@@ -1,0 +1,130 @@
+D:\Anaconda\Lib\site-packages\pandas\core\arrays\masked.py:56: UserWarning: Pandas requires version '1.4.2' or newer of 'bottleneck' (version '1.3.7' currently installed).
+  from pandas.core import (
+[info] 输入 (只读): D:\YJ-Agent\project\meeting\QuantImmuBench\data\frozen\pooled_clean_9mer.csv
+[info] 输出目录: D:\YJ-Agent\project\meeting\QuantImmuBench\analysis\official\recompute_effN
+[info] 冻结表 130 行; 患者=[101, 102, 104, 105, 106, 107, 108, 109, 110]
+
+==============================================================================
+[EFFN_MIN=5] 重算 30 工具 per-patient Spearman (effN 门槛)
+==============================================================================
+
+[EFFN_MIN=5] 每工具 n_full (通过 effN>= 5 门槛的患者数):
+   MHCnuggets       n_full=8/9  rho_effN=+0.4602  n_dropped_effN=1
+   netMHCpan_BA     n_full=9/9  rho_effN=+0.3917  n_dropped_effN=0
+   MHCflurry        n_full=9/9  rho_effN=+0.3079  n_dropped_effN=0
+   MUNIS            n_full=8/9  rho_effN=+0.3037  n_dropped_effN=1
+   MHCseqNet        n_full=8/9  rho_effN=+0.2988  n_dropped_effN=1
+   PRIME            n_full=9/9  rho_effN=+0.2945  n_dropped_effN=0
+   NetTepi          n_full=8/9  rho_effN=+0.2925  n_dropped_effN=1
+   IMPROVE          n_full=9/9  rho_effN=+0.2852  n_dropped_effN=0
+   ICERFIRE         n_full=8/9  rho_effN=+0.2502  n_dropped_effN=1
+   PredIG           n_full=9/9  rho_effN=+0.2501  n_dropped_effN=0
+   IEDB_Calis       n_full=9/9  rho_effN=+0.2486  n_dropped_effN=0
+   HLAthena         n_full=8/9  rho_effN=+0.2070  n_dropped_effN=1
+   ImmuGenX         n_full=8/9  rho_effN=+0.1806  n_dropped_effN=1
+   BigMHC_IM        n_full=9/9  rho_effN=+0.1794  n_dropped_effN=0
+   netMHCpan_EL     n_full=9/9  rho_effN=+0.1789  n_dropped_effN=0
+   ImmuneApp        n_full=9/9  rho_effN=+0.1788  n_dropped_effN=0
+   TransHLA         n_full=9/9  rho_effN=+0.1694  n_dropped_effN=0
+   NeoTImmuML       n_full=9/9  rho_effN=+0.1642  n_dropped_effN=0
+   pTuneos          n_full=9/9  rho_effN=+0.1623  n_dropped_effN=0
+   DeepImmuno       n_full=9/9  rho_effN=+0.1575  n_dropped_effN=0
+   andy90           n_full=8/9  rho_effN=+0.1341  n_dropped_effN=1
+   Repitope         n_full=9/9  rho_effN=+0.1216  n_dropped_effN=0
+   TSCAPE           n_full=9/9  rho_effN=+0.1168  n_dropped_effN=0
+   deepHLApan       n_full=9/9  rho_effN=+0.0740  n_dropped_effN=0
+   CNNeo            n_full=9/9  rho_effN=+0.0569  n_dropped_effN=0
+   NeoaG            n_full=9/9  rho_effN=-0.0700  n_dropped_effN=0
+   netMHCstabpan    n_full=2/9  rho_effN=+0.1636  n_dropped_effN=7  <coverage_fail>
+   NeoaPred         n_full=1/9  rho_effN=+0.0770  n_dropped_effN=0  <coverage_fail>
+   DeepNetBim       n_full=1/9  rho_effN=-0.1903  n_dropped_effN=1  <coverage_fail>
+   Seq2Neo          n_full=2/9  rho_effN=-0.2341  n_dropped_effN=7  <coverage_fail>
+
+[EFFN_MIN=5] 因 effN 不足被剔的 (工具, 患者, effN) —— 这些是 rho=±1 伪迹来源:
+   剔: MHCnuggets       patient=102  effN=3  (< 5)
+   剔: MUNIS            patient=102  effN=3  (< 5)
+   剔: MHCseqNet        patient=102  effN=3  (< 5)
+   剔: NetTepi          patient=102  effN=3  (< 5)
+   剔: ICERFIRE         patient=102  effN=4  (< 5)
+   剔: HLAthena         patient=101  effN=3  (< 5)
+   剔: ImmuGenX         patient=102  effN=3  (< 5)
+   剔: andy90           patient=102  effN=3  (< 5)
+   剔: netMHCstabpan    patient=101  effN=3  (< 5)
+   剔: netMHCstabpan    patient=102  effN=2  (< 5)
+   剔: netMHCstabpan    patient=105  effN=3  (< 5)
+   剔: netMHCstabpan    patient=106  effN=3  (< 5)
+   剔: netMHCstabpan    patient=107  effN=4  (< 5)
+   剔: netMHCstabpan    patient=108  effN=3  (< 5)
+   剔: netMHCstabpan    patient=110  effN=2  (< 5)
+   剔: DeepNetBim       patient=102  effN=3  (< 5)
+   剔: Seq2Neo          patient=101  effN=3  (< 5)
+   剔: Seq2Neo          patient=102  effN=2  (< 5)
+   剔: Seq2Neo          patient=105  effN=3  (< 5)
+   剔: Seq2Neo          patient=106  effN=3  (< 5)
+   剔: Seq2Neo          patient=107  effN=4  (< 5)
+   剔: Seq2Neo          patient=108  effN=3  (< 5)
+   剔: Seq2Neo          patient=110  effN=2  (< 5)
+
+[saved] D:\YJ-Agent\project\meeting\QuantImmuBench\analysis\official\recompute_effN\R1_recomputed_effN5.csv  (30 工具)
+
+==============================================================================
+[EFFN_MIN=3] 重算 30 工具 per-patient Spearman (effN 门槛)
+==============================================================================
+
+[EFFN_MIN=3] 每工具 n_full (通过 effN>= 3 门槛的患者数):
+   netMHCstabpan    n_full=7/9  rho_effN=+0.8538  n_dropped_effN=2
+   HLAthena         n_full=9/9  rho_effN=+0.6272  n_dropped_effN=0
+   andy90           n_full=9/9  rho_effN=+0.5851  n_dropped_effN=0
+   Seq2Neo          n_full=7/9  rho_effN=+0.5427  n_dropped_effN=2
+   netMHCpan_BA     n_full=9/9  rho_effN=+0.3917  n_dropped_effN=0
+   MHCflurry        n_full=9/9  rho_effN=+0.3079  n_dropped_effN=0
+   PRIME            n_full=9/9  rho_effN=+0.2945  n_dropped_effN=0
+   IMPROVE          n_full=9/9  rho_effN=+0.2852  n_dropped_effN=0
+   ICERFIRE         n_full=9/9  rho_effN=+0.2676  n_dropped_effN=0
+   PredIG           n_full=9/9  rho_effN=+0.2501  n_dropped_effN=0
+   IEDB_Calis       n_full=9/9  rho_effN=+0.2486  n_dropped_effN=0
+   BigMHC_IM        n_full=9/9  rho_effN=+0.1794  n_dropped_effN=0
+   netMHCpan_EL     n_full=9/9  rho_effN=+0.1789  n_dropped_effN=0
+   ImmuneApp        n_full=9/9  rho_effN=+0.1788  n_dropped_effN=0
+   TransHLA         n_full=9/9  rho_effN=+0.1694  n_dropped_effN=0
+   NeoTImmuML       n_full=9/9  rho_effN=+0.1642  n_dropped_effN=0
+   pTuneos          n_full=9/9  rho_effN=+0.1623  n_dropped_effN=0
+   DeepImmuno       n_full=9/9  rho_effN=+0.1575  n_dropped_effN=0
+   Repitope         n_full=9/9  rho_effN=+0.1216  n_dropped_effN=0
+   TSCAPE           n_full=9/9  rho_effN=+0.1168  n_dropped_effN=0
+   deepHLApan       n_full=9/9  rho_effN=+0.0740  n_dropped_effN=0
+   CNNeo            n_full=9/9  rho_effN=+0.0569  n_dropped_effN=0
+   NeoaG            n_full=9/9  rho_effN=-0.0700  n_dropped_effN=0
+   MHCnuggets       n_full=9/9  rho_effN=-0.1075  n_dropped_effN=0
+   MUNIS            n_full=9/9  rho_effN=-0.2650  n_dropped_effN=0
+   MHCseqNet        n_full=9/9  rho_effN=-0.2694  n_dropped_effN=0
+   NetTepi          n_full=9/9  rho_effN=-0.2751  n_dropped_effN=0
+   ImmuGenX         n_full=9/9  rho_effN=-0.3696  n_dropped_effN=0
+   NeoaPred         n_full=1/9  rho_effN=+0.0770  n_dropped_effN=0  <coverage_fail>
+   DeepNetBim       n_full=1/9  rho_effN=-0.1903  n_dropped_effN=0  <coverage_fail>
+
+[EFFN_MIN=3] 因 effN 不足被剔的 (工具, 患者, effN) —— 这些是 rho=±1 伪迹来源:
+   剔: netMHCstabpan    patient=102  effN=2  (< 3)
+   剔: netMHCstabpan    patient=110  effN=2  (< 3)
+   剔: Seq2Neo          patient=102  effN=2  (< 3)
+   剔: Seq2Neo          patient=110  effN=2  (< 3)
+
+[saved] D:\YJ-Agent\project\meeting\QuantImmuBench\analysis\official\recompute_effN\R1_recomputed_effN3.csv  (30 工具)
+[saved] D:\YJ-Agent\project\meeting\QuantImmuBench\analysis\official\recompute_effN\R1_compare_orig_vs_effN.csv
+
+==============================================================================
+新旧 top10 对照 (原 fisherz_rho_raw vs 新 fisherz_rho_effN)
+==============================================================================
+rank 原-工具                   原rho   | 新-工具                   新rho   fail
+1    HLAthena            +0.6272   | MHCnuggets          +0.4602       
+2    andy90              +0.5851   | netMHCpan_BA        +0.3917       
+3    Seq2Neo             +0.4406   | MHCflurry           +0.3079       
+4    netMHCpan_BA        +0.3917   | MUNIS               +0.3037       
+5    MHCflurry           +0.3079   | MHCseqNet           +0.2988       
+6    PRIME               +0.2945   | PRIME               +0.2945       
+7    IMPROVE             +0.2852   | NetTepi             +0.2925       
+8    ICERFIRE            +0.2676   | IMPROVE             +0.2852       
+9    PredIG              +0.2501   | ICERFIRE            +0.2502       
+10   IEDB_Calis          +0.2486   | PredIG              +0.2501       
+
+[DONE] recompute_R1_effN 完成 (effN5 主 + effN3 对照 + 对照表)
