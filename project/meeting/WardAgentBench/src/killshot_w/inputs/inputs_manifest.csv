@@ -1,0 +1,3 @@
+record_id,alarm_type,expert_label,leads_used,text_path,image_path,fs_native,hz_text,hz_image,window_seconds
+a604s,Asystole,TRUE,II|PLETH,D:\YJ-Agent\project\meeting\WardAgentBench\src\killshot_w\inputs\a604s_text.txt,D:\YJ-Agent\project\meeting\WardAgentBench\src\killshot_w\inputs\a604s.png,250,50,125,16
+a142s,Asystole,TRUE,II|ABP,D:\YJ-Agent\project\meeting\WardAgentBench\src\killshot_w\inputs\a142s_text.txt,D:\YJ-Agent\project\meeting\WardAgentBench\src\killshot_w\inputs\a142s.png,250,50,125,16

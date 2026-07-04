@@ -16,6 +16,7 @@
 >
 > 📊 **干净结果总表（2026-07-01，writer 单一数据来源）**：`RESULTS_CLEAN_SUMMARY.md`——从零重建后所有锁定数字，按 outline § 组织 + 真源 csv + 诚实局限。写 tex 只用这份，别用重建前旧数（旧表已标 legacy）。
 > 🔗 **单一真源 + 溯源（2026-07-04，Entry 54）**：管道一键重建 = `scripts/rebuild_canonical.py --verify`（证新旧 canonical 0 差异）→ `analysis/official/run_downstream.py --run`（下游全刷新）。每个 headline 数字 ← 脚本 ← csv 真源见 `PROVENANCE_TABLE.md`（Tier 0-4 溯源）。canonical=`data/frozen/pooled_clean_9mer.csv`（sha 见 `data/frozen/PROVENANCE.json`）。
+> 📚 **headline 文献支撑（2026-07-04）**：「结合/呈递工具 ≥ 免疫原性专用工具」是学界已知（TESLA Cell2020/Buckley BiB2022 同期刊/综述），非数据错——先例+现成 Discussion 句子+引用+分类稳健性见 `reference/LIT_binding_vs_immunogenicity_2026-07-04.md`。卖点=系统化确认+新数据(Braun2025)+定量 Spearman，非新机制。工具分类拍板见决策档问题⑥。
 >
 > 📨 **给袁老师沟通档（2026-07-01）**：`给袁老师_两个方法学问题.md`——两个重建中发现的方法学问题（① 肽长混杂/长肽上 max 随窗口数虚高，附顺序统计量公式 ② geomean/mean-rank/median 在秩指标下数学近亲，附泰勒展开证明）。待与老师讨论。
 >

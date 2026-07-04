@@ -1,0 +1,18 @@
+# 路 W' $5 kill-shot 依赖（CPU 即可，无需 GPU/torch）
+# 数据 + 输入构建 + 打分
+wfdb>=4.1.0          # 读 PhysioNet challenge-2015 波形(.hea/.mat) + 在线只读 pn_dir 拉取
+numpy>=1.24
+matplotlib>=3.7      # 图像表征渲染(Agg) + 对照图
+
+# LLM provider SDK（按你**有 key** 的 provider 装即可，缺的会自动跳过）
+openai>=1.40         # OpenAI GPT-4o / GPT-5（读图+文）
+google-generativeai>=0.7   # Google Gemini（读图+文）
+anthropic>=0.34      # Anthropic Claude（读图+文）
+
+# ⚠️ 版本矩阵注意（换外部库先核版本矩阵，见 memory）：
+#   - GPT-5 等推理模型参数名（max_completion_tokens / 无 temperature）随 SDK 版本变，
+#     首跑 --dry-run 后先单模型小样验，import 通≠API 参数对。
+#   - google-generativeai 与新 google-genai 是两套 SDK，本 harness 用前者；若你装的是
+#     新版 SDK，run_models.call_google 需按新接口改（TODO 已标）。
+#   - 各 model_id 快照名（config.MODELS）首跑前核对官方最新可用名，别用臆想快照。
+# scipy 不装：下采样用纯 numpy box-average（避 OMP 冲突，遵 Windows 规范）。
