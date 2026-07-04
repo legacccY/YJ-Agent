@@ -191,3 +191,7 @@ nul
 # 临时 hook state（ephemeral）
 .portfolio/.hygiene_state.json
 .portfolio/.stage_state.json
+
+# WardAgentBench 路 W' kill-shot 派生物（可从公开数据 + build_inputs.py 确定性重生，不进 git）
+project/meeting/WardAgentBench/src/killshot_w/inputs/
+project/meeting/WardAgentBench/src/killshot_w/results/raw_calls.jsonl

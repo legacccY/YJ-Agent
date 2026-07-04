@@ -1,5 +1,21 @@
 # WardAgentBench — LOG
 
+## 2026-07-04 · 🧭 路 W' probe（制胜模板 LENS-01 适配评估 → $5 kill-shot 就绪待 key）
+
+**触发**：用户问「慧脉守护适不适配制胜模板 LENS-01，灵活举一反三」。派 Explore 挖全档 + researcher×2（三候选角落撞车 + 终核）。评估档 `~/.claude/plans/inherited-hopping-boot.md`。
+
+**结论（三层）**：①完整模板**不适配**——慧脉 07-04 pivot 明确「不 claim 方法新、卖真实落地」正是模板反极；缺 S4（唯一模型实验弱 Qwen-3B 对称 null 40=40）、缺 S5（无打爆 SOTA 支架）。②模板反而是慧脉 5 次难产的**最佳诊断透镜**：反复踩 S3（承重贡献总需不存在/无效金标）。③**举一反三唯一活口=路 W'**：保域+公开数据，换到「前沿 MLLM 读原始生理波形判 ICU 警报真假」——PhysioNet2015/VTaC 有专家 true/false 金标（客观、连标注都省），项目从没拿前沿 MLLM 读过波形（只跑弱 Qwen-3B）。
+
+**researcher 三角落判定**：角落1（波形判警报真假）🟢benchmark 槽空（终核 16 组检索+5 PDF，覆盖 2026H1，无抢跑）；角落2（LLM 数值时序推理）🔴HEARTS 2026-06 已填；角落3（ECG QA+符号支架）🔴ECG-QA/PULSE/HeartLLM 饱和。**头条必改**：经典 SOTA 已 0.96 挡死「SOTA 暴涨」→改「安全攸关任务前沿 MLLM 灾难失败 + 廉价信号符号支架补差距」；**方法不 claim novelty**（VitalAgent/HeartLLM 已有支架形状，与本项目铁律一致），价值全在 benchmark/empirical 应用交集。
+
+**用户拍板路线 A**：不推翻 07-04 pivot，先跑 $5 kill-shot 验路 W' 是活是死，再定旗舰（路 P 稳 / 路 W' 搏 / 并行）。
+
+**本轮做（管道全就绪，实测非 mock）**：建 harness `src/killshot_w/`（config/download_data/build_inputs/run_models/score）→ 下 30 条 challenge-2015（5 类 × TRUE/FALSE 各 3，全含 ECG II+脉动波，17MB，免 CITI，`data/challenge2015_killshot/`）→ 建 30 文本+30 波形 PNG（金标零泄漏，实测 grep=0）→ dry-run 240 调用（30×2 表征×4 模型，cost 顶 300，缺失 0）。修一 bug（`dl_database` 版本号拼重 404→改直连 physionet.org/files 下载）。
+
+**🔴 卡点**：等用户放前沿 API key 进 `.env`（OPENAI/GEMINI/ANTHROPIC，≥1 即可）。到位后：装 SDK + 核模型快照名（config TODO4）→ run_models + score → 准确率 vs naive/0.8139/0.96。判据：显著低于 naive 或 <0.65 且缝无抢跑=路 W' 活；接近经典=路 W' 死。**N=30 是筛子非 benchmark，别当定论**。
+
+---
+
 ## 2026-07-04 · 🔀 PIVOT（用户拍板）：弃方法 novelty 路 → benchmark + 真实医院 deployment/usability 双线
 
 **触发**：用户提出转向——不纠结「多角色分布承不承重」（已 5 次证死），改把**本科生 × 真实医院落地沟通**当独特资产，问领域相似项目怎么发文章。派 6 编队并行调研（项目资产 / AgentClinic 家族文献 / venue 形状 / 三人物 / 苏大附二院 / 孟佳+院长），出 pivot 决策，用户 ExitPlanMode 批准（plan=`~/.claude/plans/enchanted-sparking-lampson.md`）。**全景报告=`reference/REPORT_2026-07-04_pivot_strategy.md`**。
