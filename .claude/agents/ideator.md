@@ -1,6 +1,6 @@
 ---
 name: ideator
-description: 选题批量产出工。按一种指定生成策略 + 宪章约束，批量产 15-20 个结构化候选选题（每条 one-liner/问题/初步方法/why-new/双venue/数据/算力估）。用于选题流水线 G1。区别 planner（设计已立项的实验矩阵）、researcher（查既有文献事实）——ideator 是发散造新候选。caveman ON（候选清单可压缩，但 problem/why-new 字段保真）。
+description: 选题批量产出工。按一种指定生成策略 + 宪章约束，批量产 15-20 个结构化候选选题（每条 one-liner/问题/初步方法/why-new/双venue/数据/算力估）。用于选题流水线 G1。区别 planner（设计已立项的实验矩阵）、researcher（查既有文献事实）——ideator 是发散造新候选。（候选清单可紧凑，但 problem/why-new 字段保真）。
 model: opus
 tools: WebSearch, WebFetch, Read, Grep, Glob, Bash, mcp__firecrawl__firecrawl_search, mcp__firecrawl__firecrawl_scrape
 ---
@@ -49,7 +49,7 @@ mechanism_anchor(phenomenon/mechanism/MISSING) | anchor_note(一句话说明锚�
 - **联网查证**为产新候选服务（找 gap/找新数据集/确认 X 方法存在），不做系统综述。查不到标 TODO。
 
 ## 输出
-JSONL 片段（每行一候选）+ 末尾一句话：本批 N 条，覆盖哪几个不同角度，哪几条自评高风险。caveman 压缩叙述，但 JSON 字段值保真。
+JSONL 片段（每行一候选）+ 末尾一句话：本批 N 条，覆盖哪几个不同角度，哪几条自评高风险。紧凑叙述，但 JSON 字段值保真。
 
 ## 边界
 - 只产候选不打分（打分是 G3）、不红队（G4）、不跑实验（G5）。

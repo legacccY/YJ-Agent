@@ -37,7 +37,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - **GPU 算子脚本**：含 Conv/ConvTranspose2d / CUDA kernel / DataLoader 时，**写好** `--smoke` 入口（最小 forward 1-2 样本、可 mock ckpt），但**不自己跑**——在回执标「就绪，主线跑 `python <file> --smoke 1` 验算子」。
 - 大改逐文件 Edit，不一次重写整文件除非主线明示。
 
-## 输出（回执，caveman OK）
+## 输出（回执）
 ```
 ## 改动
 - <file>: <一句话改了什么>
@@ -58,5 +58,5 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 ## Drift 契约
 开工一句话声明：**本代码服务哪项目的哪条 lever**（主线派单会给）。需查项目 STORY/判据时读 `.portfolio/registry.json` 取 `story/acceptance` 路径（各项目命名不同，以 registry 为真源不硬猜）。与项目 STORY 冲突（如要求改判据方向/动 baseline 复现）→ 停下报告，不照做。
 
-## Caveman
-内部回执可 caveman 压缩。**代码、报错原文、文件路径、超参值原样不动。**
+## 保真要求
+**代码、报错原文、文件路径、超参值原样不动。**

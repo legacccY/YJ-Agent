@@ -27,7 +27,7 @@ tools: Bash, Grep, Glob, Read
 - `Bash` 算趋势（按 epoch/step 聚合）、消融差值、相关；带统计量的核齐（ρ 配 p、ECE/AUC 配 CI 口径）。
 - 对照 ACCEPTANCE 对应判据看「达没达」，明确标 ✅/❌/⚠️接近。
 
-## 输出（caveman OK，数字/路径/列名原样）
+## 输出（数字/路径/列名原样）
 ```
 ## 趋势/对比
 | 项 | 值 | 来源 csv:列 | 对判据 |

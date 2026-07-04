@@ -92,7 +92,7 @@ const toc = [
   ["01","进度与工具部署","三十个工具的部署到位情况与整体完成度"],
   ["02","数据与评测口径","主分析集 主副指标 与聚合方式"],
   ["03","三层核心结果","单工具基线 子肽聚合规律 多工具融合"],
-  ["04","方法学评价专章","如何看待这批数据 及四个评价要点"],
+  ["04","方法学评价专章","如何看待这批数据 及三个评价要点"],
   ["05","局限与下一步","当前限制 与周五要讨论的问题"],
 ];
 toc.forEach((it,i)=>{
@@ -260,18 +260,7 @@ proseCard(s, 8.3, 1.5, 4.3, 5.7, "部署方案", [
 citeFoot(s, "R8 部署评估 · R1 单工具基线");
 pageno(s);
 
-// ============================================================ 13 副指标·肽级 AUPRC（fig_auprc_30tools ratio=9/14=0.643 大图+窄侧栏）
-s = pres.addSlide();
-header(s, "副指标 · 肽级 AUPRC", "一百三十条肽功效下的二分判别排序", C.teal);
-placeImg(s, `${FIG4}/fig_auprc_30tools.png`, 0.6399, 0.5, 1.5, 7.6, 5.7);
-proseCard(s, 8.3, 1.5, 4.3, 5.7, "副指标要点（肽级 AUPRC）", [
-  "在一百三十条肽的更高功效下，按 AUPRC 排序，netMHCstabpan 为 0.783、Seq2Neo 为 0.716、netMHCpan-BA 为 0.704。",
-  "多数工具高于随机基线的 0.585。",
-  "需要说明，AUPRC 的估计量与逐患者的 Spearman 并不相同，它同时混合了患者内与患者间的信号，因此两者并列呈现、相互补充而不相互替换。",
-  "标注 DTU 学术许可的 netMHCstabpan 数字，对外公布前需先取得书面同意。",
-], C.teal);
-citeFoot(s, "S1_peptide_auprc.csv · 肽级 AUPRC 一百三十肽功效");
-pageno(s);
+// ============================================================ 13 副指标·肽级 AUPRC —— 已移除（肽级 AUPRC 池化 130 肽忽略患者结构=pseudo-replication，PREREG_R10 定为 exploratory 不入 headline，2026-07-04 用户拍板删）
 
 // ============================================================ 14 评价专章封面页（深底分隔）
 s = pres.addSlide();
@@ -282,18 +271,17 @@ s.addShape(pres.shapes.OVAL, { x:W-2.6, y:-1.4, w:3.4, h:3.4, fill:{color:C.sea,
 s.addText("方法学评价专章", { x:0.9, y:2.35, w:11, h:0.5, fontFace:FB, fontSize:16, color:C.mint, bold:true, charSpacing:3, margin:0 });
 s.addText("如何评价跑出来的数据", { x:0.9, y:2.95, w:11.5, h:1.0, fontFace:FH, fontSize:40, bold:true, color:"FFFFFF", margin:0 });
 s.addShape(pres.shapes.LINE, { x:0.95, y:4.15, w:3.2, h:0, line:{color:C.mint, width:2} });
-s.addText("数据本身没有错，但要读得对。这一章系统说明四个评价要点：肽长混杂、计数混杂、融合方法数学近亲，以及单队列样本量有限，并给出各自的处理方式与当前状态。", { x:0.95, y:4.45, w:10.8, h:1.0, fontFace:FB, fontSize:14, color:"E6F2F2", valign:"top", lineSpacingMultiple:1.25, margin:0 });
+s.addText("数据本身没有错，但要读得对。这一章系统说明三个评价要点：肽长混杂、计数混杂、融合方法数学近亲，并给出各自的处理方式与当前状态。", { x:0.95, y:4.45, w:10.8, h:1.0, fontFace:FB, fontSize:14, color:"E6F2F2", valign:"top", lineSpacingMultiple:1.25, margin:0 });
 
 // ============================================================ 15 评价陷阱总览（高级表格 四行）
 s = pres.addSlide();
-header(s, "方法学评价", "四个评价要点及其处理", C.sea);
+header(s, "方法学评价", "三个评价要点及其处理", C.sea);
 tbl(s, ["评价要点","具体表现","处理方式","当前状态"], [
   [{text:"肽长混杂",bold:true,align:"left"}, {text:"长肽会切出更多窗口，最强窗口容易随机偏高",align:"left"}, {text:"裸口径与控肽长两列并排报告",align:"left"}, {text:"待周五讨论",color:C.warn,bold:true}],
   [{text:"计数混杂",bold:true,align:"left"}, {text:"一条肽切出的子肽数量本身就与反应弱相关",align:"left"}, {text:"排除计数型的池化方式",align:"left"}, {text:"已修正",color:C.ok,bold:true}],
   [{text:"融合方法数学近亲",bold:true,align:"left"}, {text:"在秩指标下，几何均值与算术秩均值几乎等价",align:"left"}, {text:"用三重检验刻画其差异",align:"left"}, {text:"已有定论",color:C.ok,bold:true}],
-  [{text:"单队列样本量有限",bold:true,align:"left"}, {text:"仅九名患者，细粒度的方法差异在统计上分不开",align:"left"}, {text:"补充一百三十条肽的肽级功效指标",align:"left"}, {text:"已有定论",color:C.ok,bold:true}],
 ], [2.6, 4.0, 3.1, 2.2], 0.7, 1.95, { rh:0.92, hh:0.52, bfs:11.5 });
-s.addText("四个要点里三个已经处理定论，只剩肽长是否应作为混杂加以控制这一处，留到周五与老师当面讨论。", { x:0.7, y:6.0, w:11.9, h:0.7, fontFace:FB, fontSize:12, color:C.muted, valign:"top", lineSpacingMultiple:1.15, margin:0 });
+s.addText("三个要点里两个已经处理定论，只剩肽长是否应作为混杂加以控制这一处，留到周五与老师当面讨论。", { x:0.7, y:6.0, w:11.9, h:0.7, fontFace:FB, fontSize:12, color:C.muted, valign:"top", lineSpacingMultiple:1.15, margin:0 });
 citeFoot(s, "方法学评价工具 · S2_regime_compare.csv");
 pageno(s);
 
@@ -311,20 +299,7 @@ s.addText([
 citeFoot(s, "R3_fusion_12methods_official.csv · 融合方法排序相关与点估计");
 pageno(s);
 
-// ============================================================ 17 评价·问题二 第二页（auprc 1.219 + taylor 1.166）
-s = pres.addSlide();
-header(s, "方法学评价 · 融合方法数学近亲", "更高功效下仍不可分辨，且可由二阶近似解释", C.sea);
-placeImg(s, `${FIG4}/q2_auprc_kinship.png`, 1.219, 0.7, 1.65, 5.9, 3.55);
-placeImg(s, `${FIG4}/q2_taylor_scatter.png`, 1.166, 6.85, 1.65, 5.78, 3.55);
-s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:5.35, w:11.93, h:1.6, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
-s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:5.35, w:0.09, h:1.6, fill:{color:C.sea} });
-s.addText([
-  { text:"即便换到一百三十条肽的更高功效下，三种融合方法两两之间的差异仍然不显著，p 值均大于 0.15。", options:{ breakLine:true, paraSpaceAfter:5 } },
-  { text:"几何均值可以由算术均值减去肽内分歧度修正这一二阶近似来解释，残差的中位数仅为 0.041。", options:{ breakLine:true, paraSpaceAfter:5 } },
-  { text:"结论是，几何均值与算术均值秩融合在统计上不可分辨，属于数学近亲；几何均值有其乘性语义与抗离群的理论依据，可以作为稳健默认，但不宜声称是唯一最优。", options:{ breakLine:true, bold:true, color:C.sea } },
-], { x:0.98, y:5.48, w:11.5, h:1.4, fontFace:FB, fontSize:11.5, color:C.ink, valign:"top", lineSpacingMultiple:1.15, margin:0 });
-citeFoot(s, "S1_peptide_auprc.csv · 泰勒二阶近似验证");
-pageno(s);
+// ============================================================ 17 评价·问题二 第二页 —— 已移除（q2_auprc_kinship + q2_taylor_scatter 均肽级 AUPRC 副指标，同 pseudo-replication 问题；geomean≈mean_rank 结论 slide 16 已用 Spearman 版给出，2026-07-04 用户拍板删）
 
 // ============================================================ 18 评价·问题一（只讲现象不下结论，len 1.381）
 s = pres.addSlide();
@@ -357,4 +332,4 @@ proseCard(s, 6.85, 1.7, 5.78, 5.25, "下一步计划", [
 citeFoot(s, "方法学评价专章 · 项目进度追踪（2026-07-01）");
 pageno(s);
 
-pres.writeFile({ fileName:"D:/YJ-Agent/project/meeting/QuantImmuBench/QuantImmuBench_progress_v4_rev4_2026-07-03.pptx" }).then(f=>console.log("WROTE", f, "pages", _PG));
+pres.writeFile({ fileName:"D:/YJ-Agent/project/meeting/QuantImmuBench/QuantImmuBench_progress_v4_rev5_2026-07-04.pptx" }).then(f=>console.log("WROTE", f, "pages", _PG));

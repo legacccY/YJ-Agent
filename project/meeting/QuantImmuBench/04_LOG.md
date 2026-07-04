@@ -4,6 +4,114 @@
 
 ---
 
+## Entry 53-8to11-AUDIT — 2026-07-04【8-11mer 口径隐藏问题排查：deepHLApan 补跑(同 9mer)+ 第三类新发现(3 工具口径过度声称)+ 补充 deck 重建 rev1】
+
+**触发**：用户「8-11 另一窗昨天做了，把隐藏问题都找出来解决，然后更新 ppt」。8-11mer 覆盖修复=另窗 Entry 49（2026-07-03），但昨天不知道 deepHLApan 是 context-free（今天才发现）→ 8-11mer 沿用旧归类同样漏了 deepHLApan indel。
+
+**发现的隐藏问题（verifier 审计 + 主线核，全 Bash）**：
+1. **deepHLApan 8-11mer 仍 101（同 9mer 病因）**：昨窗把它当差分工具 park。**已修**：patch 同一批 9mer indel(1503)+SNV110(90) 分进 `merged_...covfix_8to11.csv`（indel/SNV110 这些肽本就只有 9mer 子肽，8-11 池化=9mer，一致）→ p0e2 --w811 重池化 → **deepHLApan 101→130**。R1 8to11mer effN8 重算：n_full 8→9 入主榜，rho **0.101→−0.050**（弱负，全覆盖真值），主榜 22→23，满 130 覆盖 23→**24/30**。其他 29 工具 _max 0 变化。
+2. **🆕 第三类：3 工具「8-11mer」名不副实（口径过度声称，诚实边界非 bug）**：长表 Window_Size 逐工具核——**DeepNetBim 仅 9mer 子肽、NeoaPred 仅 9mer、DeepImmuno 仅 9-10mer**（无 8/11）。它们的「8-11」池化列并非真 8-11，是原生架构限长（DeepNetBim 固定 9mer CNN / NeoaPred 结构 9mer / DeepImmuno 官方 9-10）。**§2.2 须加脚注标真实窗长**，否则统称 30 工具「8-11mer 口径」过度声称。9mer 口径无此问题。
+3. **indel-9mer-only（已知，全工具共有）**：merged 里 indel 肽只有 9mer 子肽（SNV 才 8-14），源头没生成 indel 的 8/10/11mer 子肽 → 8-11 口径下 indel 实为 9mer 池化，30 工具一致，诚实标注。
+
+**审计全 PASS 项（无第四类）**：8-11 vs 9mer _max 差异合理（23 工具真变，仅 DeepNetBim/NeoaPred 0 变=原生 9mer）；唯一退化列 DeepNetBim（同 9mer）；覆盖逐一对上 Entry 49 声称；effN≥8 门槛在 8-11 也挡住小 n（NetTepi/ICERFIRE/NeoaG 的 effN<8 患者正确剔）；无重复列(|r|全<0.95)；netMHCstabpan/Seq2Neo 8-11 raw 的 9mer 子集 vs 9mer covfix raw max|diff|=0/1.5e-7（重跑合规无造数）。
+
+**图/数字更新（deepHLApan 修复后重出）**：`fig1_spearman_30tools_8to11mer_effN8.{png,pdf}`（deepHLApan 入主榜）+ `fig_9mer_vs_8to11mer_spearman.{png,pdf}`（对比图，deepHLApan 9mer 0.052/8-11 −0.050 两侧都修，解决审计 flag 的「一边修一边没修」快照不一致）+ `fig_8to11mer_coverage.{png,pdf}`（24/30）。**对比结论稳**：均值 9mer 0.191 vs 8-11 0.122、24/28=86%、Top-5 全 9mer 更高——deepHLApan 非 Top-5，不动结论，加固 §2.2。
+
+**补充 deck 重建**：原 `QuantImmuBench_8to11mer_supplement_2026-07-03.pptx` 生成脚本丢失 + 内容过时（slide5 把 deepHLApan 列进差分工具=**错**、数字旧、缺 3 工具口径脚注）。**新写生成器** `ppt/gen_ppt_8to11mer_supplement.js`（复用 v4 helper）→ 产 **`QuantImmuBench_8to11mer_supplement_rev1_2026-07-04.pptx`**（6 页）：更正 deepHLApan 101→130 入主榜、24/30、均值 0.191/0.122、新增 3 工具「8-11 名不副实」口径脚注。LibreOffice 转 PDF+PyMuPDF 渲染 QA slide3/4/5 无溢出/遮挡。旧 deck 保留。
+
+**产物**：`ppt/gen_ppt_8to11mer_supplement.js`；`QuantImmuBench_8to11mer_supplement_rev1_2026-07-04.pptx`；重出 3 张 8-11mer 图；备份 `merged_...covfix_8to11.pre_deephlapan.bak`+`pooled_clean_8to11mer.pre_deephlapan.bak`。**待办（袁老师/tex）**：§2.2 加 3 工具真实窗长脚注 + indel-9mer-only 口径说明；HLAthena 121→130 对齐 zichenli。
+
+## Entry 52-DEEPHLA-INDEL — 2026-07-04【deepHLApan indel 补跑 101→130（context-free 单肽被误滤纠正）+ 全 30 工具隐藏问题审计（无第二例）】
+
+**触发**：李紫晨 8-11mer 对照 → 用户问「为什么不能全覆盖」→ 追根发现 deepHLApan 被错误归入「28 无 WT 差分工具」组 park 掉。**实为 context-free 单肽免疫原打分**（parse_deephlapan_official.py 原话「deepHLApan 是 context-free，分数只取决于 (peptide,HLA)」），indel 缺口是**共用 MT-WT 配对输入机器的副作用**（配对 prep 只对 SNV 成立，indel 无对齐 WT → 子肽从没被喂），非工具本身要 WT。用户拍板补跑 + 要求确保全工具无隐藏问题。
+
+**根因链（Bash 坐实）**：pooled_clean_8to11mer/9mer deepHLApan 缺 29 肽 = 23 DEL + 5 INS + 1 SNV（`16097-110-18`，23-AA 长肽，其子肽也因缺 WT 被配对 prep 跳过）。`subpep_hla_expansion.csv`（9mer 真源）含全 28 indel 子肽×HLA，只是没喂 deepHLApan。
+
+**补跑（复现零偏离，官方 docker）**：
+1. 从 `subpep_hla_expansion.csv` filter 28 indel → `deephlapan_input_INDEL.csv`（1204 uniq 子肽×HLA，去星格式）+ SNV110 → `deephlapan_input_SNV110.csv`（90 行）。
+2. `biopharm/deephlapan:v1.1` docker context-free 打分（`deephlapan -F <in> -O <out>`，MT-only immunogenic score）。**docker 坑**：Docker Desktop 对 `/mnt/d/...` 参数做 Windows 路径转换塌成 basename → 改挂 `/data` 简单容器路径 + 写 .sh 用 `wsl bash <file>` 执行绕开（`run_deephlapan_indel.sh`/`run_snv110.sh`）。
+3. `patch_deephlapan_indel.py`（复用 covfix add_star，键=(MT_Subpeptide,HLA 带星)，只填 NaN）patch immuno 分进 merged 副本 → indel 填 1503 格 + SNV110 填 90 格 → **deepHLApan 101→130**。
+4. `p0e2_pool_clean.py --input <covfix副本> --ninemer` 重池化 → `pooled_clean_9mer.csv`。备份 `.pre_deephlapan_indel.bak`。
+
+**核验 PASS**：deepHLApan_max 130/130（nunique=99 非退化）；**其他 29 工具 _max 0 变化**（确定性复现，无殃及）；反造数抽核 2 indel 肽 deepHLApan_max = 子肽 immuno max **MATCH**。R1 effN8 重算：deepHLApan n_full 8→9 **入主榜**（rho 0.101→**0.052**，排 22/23）；主榜 22→**23**；满 130 覆盖 23→**24/30**。rho 降属「8/9 缺最难患者易子集偏高→补满回真值」，非变差（同「防覆盖子集虚高」逻辑）。
+
+**全 30 工具隐藏问题审计（verifier + analyst 双队，读脚本核语义非签名）**：
+- **无第二例**。「28 无 WT 差分组」另 3 个逐一核官方脚本 = **真需 WT**：ICERFIRE 的 RF 直接吃 `wild_type` 列；pTuneos model_pro 内含 Self_similarity/WT_Binding_EL（MT-vs-WT）；NeoaG 官方 GBM 7 特征里 feature4=WT 参考残基 + feature5=MT−WT 差分，prep 只收 `len(mt)==len(wt)` 单残基替换。**indel 真硬限，补 germline 也打不出，「问数据组」这条对这 3 个可关闭**。
+- **其余 flag（非 bug 或诚实边界）**：DeepNetBim_max nunique=1 恒 1.0（已 coverage_fail 剔）；HLAthena 缺 P101 9 SNV = **部署缺口可补**（对齐 zichenli 130/130 部署，补 B4001/B5701/A6601 等位模型）；NetTepi 缺 P102 5 SNV = **13 等位硬限**（P102 等位在 13 外）；ICERFIRE 2 额外 SNV = HLA 白名单外；NeoaG max=201 未归一 + nunique=22 大量 ties（Spearman/rank-fusion 不受影响，注意值域）。
+- **effN≥8 门槛已正确挡小 n Fisher-z 爆炸**（李紫晨抓的 HLAthena P101 n=3→rho=1.0 已被 drop，无任一保留患者 |rho|≥0.999）；无重复列（最高异工具对 CNNeo-Seq2Neo 0.824 合理）；符号朝向全对；**ImmuneApp 在我们 9mer 不饱和**（7.7%@max，与李那边「饱和」不符）。
+
+**产物**：`scripts/patch_deephlapan_indel.py`、`scripts/out_official/coverage_fix/{deephlapan_input_INDEL.csv,deephlapan_input_SNV110.csv,run_deephlapan_indel.sh,run_snv110.sh,deephlapan_out_INDEL/,deephlapan_out_SNV110/}`、重出 `fig1_spearman_30tools_9mer_effN8.{png,pdf}` + ppt copy + rev5 重生成、`Results/effN_coverage_matrix.png`、`RESULTS_CLEAN_SUMMARY.md §3.1`（22→23 主榜/23→24 覆盖/8-9 组去 deepHLApan/补跑说明）。备份 `merged_...covfix.pre_deephlapan_indel.bak` + `pooled_clean_9mer.pre_deephlapan_indel.bak`。**只做 9mer 主口径（用户指示）；8-11mer 的 deepHLApan 仍 101，需另跑 8/10/11mer indel 子肽补**。
+**待办**：HLAthena P101 对齐 zichenli 部署补满（可补，未做）；表 2 脚注建议把 deepHLApan 单列「context-free 单肽·输入误滤已修」区别于 3 个真差分工具（袁老师/措辞拍板）。
+
+---
+
+## Entry 51-COVFIX-AUDIT — 2026-07-04【130 重跑图1 数值核验(verifier 三方对账 PASS)+ 联网合理性(researcher PASS)+ DeepNetBim 标签修复(覆盖失败→max-pool 退化)+ MHCnuggets CI 文字瑕疵修】
+
+**触发**：用户查覆盖修复后 130 肽重跑数值真假 + 图1 有无缺标/遮挡 + 联网核 rho 合不合理。**只管 9mer 口径**（用户明示）。
+
+**1. 数值三方对账（verifier，禁 Read 只 Bash 核 csv）全 PASS**：真源 `analysis/official/recompute_effN/R1_recomputed_effN8.csv`。
+- 30 工具 fisherz_rho_effN 逐条 vs 图1 OCR round-3 位 **0 mismatch**；headline max|rho|=0.4466（MHCnuggets csv=0.44660809…）溯源 ✅。
+- 计数：`n_full==9`=**22**（主榜）；`n_full==8`=6（NetTepi/ICERFIRE/HLAthena/pTuneos/deepHLApan/NeoaG 参考区）；`coverage_fail==True`=2（NeoaPred n_full=1 + DeepNetBim NaN）；total=30 ✅。
+- `pooled_clean_9mer.csv`=130 行；30 `<tool>_max` 列齐；满 130/130=**23 工具**（坐实覆盖矩阵「23/30」），covfix 8 工具全在满覆盖列；未满 7 工具=6 个 8/9 参考 + NeoaPred 14，一一对上 ✅。
+- **DeepNetBim_max nunique=1 全=1.0 且 0 NaN**（我 + verifier 双核）→ 坐实「max-pool 饱和退化，非覆盖失败」；topk(k≥2)/softmax/rankdecay 方差全恢复。
+
+**2. 联网合理性（researcher，多源交叉）= 量级合理可信**：best tool rho 0.30–0.45=弱-中等相关落文献上沿；主体 0.05–0.25 与文献独立验证集 AUC 0.52–0.60（Frontiers 2023 ITSNdb 全工具 / Beyond MHC binding review 独立 melanoma 集 max AUC 0.6）换算带（2·AUC−1=0.04–0.20）高度吻合；**结合工具(MHCnuggets/netMHCpan)反超免疫原性专用工具有权威先例**（Beyond MHC binding：MHCflurry/NetMHCpan 独立集排名最前，dedicated 工具 underperform）。无「best 只到 0.1–0.2」或「应达 0.6+」警示。引用见本场 researcher 回汇。
+
+**3. 图修复（只 9mer）**：
+- **DeepNetBim 标签矛盾修**：fig1 原标「(覆盖失败)」但覆盖矩阵显示它 100% 全覆盖 → 读者会误读。真因=max-pool 饱和常数列。改 `plot_R1_effN.py` 加 `DEGENERATE_MAXPOOL={"DeepNetBim"}` → 标「(max-pool 退化)」，与真覆盖失败 NeoaPred（保留「覆盖失败」）区分。重出 `fig1_spearman_30tools_9mer_effN8.png` + `paper/figures/…9mer_effN8.pdf` + 同步 ppt 版 `analysis/figures_ppt_v4/fig1_spearman_30tools_effN8.png`（md5 一致）。
+- **缺标/遮挡核**：每条均有 rho 值+（N/9）标注，无未标数据；图例仅压条左端≈0.04 data 单位可忽略——**无实质遮挡**。
+- **MHCnuggets CI 文字瑕疵修**：§3.1 表行 + headline bullet 写 `[+0.33,+0.55]`，csv ci_lo=0.3248 应为 **+0.32**（RESULTS_CLEAN_SUMMARY.md line17+line29 已改）。
+
+**产物**：`plot_R1_effN.py`（+DEGENERATE_MAXPOOL 标签逻辑）；重出 fig1 9mer png/pdf + ppt copy；`RESULTS_CLEAN_SUMMARY.md`（CI 两处修）。**结论：130 重跑数值真实可信、图无缺标遮挡、rho 量级合文献。** 未动 8to11mer（用户指示）。
+
+**续（ppt 同步）**：换源 PNG 不更新已生成 pptx（图嵌在文件内）→ 重跑 `ppt/gen_ppt_progress_v4.js`（输出名改 rev5，`NODE_PATH=…/npm/node_modules`）产 **`QuantImmuBench_progress_v4_rev5_2026-07-04.pptx`**（18 页），slide7 内嵌图 md5=1fe9615…匹配新图（`ppt/media/image-7-1.png`）→ DeepNetBim「max-pool 退化」标签已进 ppt。rev4 保留不动。
+
+**续2（ppt 删肽级 AUPRC 图，用户拍板）**：肽级 AUPRC=130 肽当一池忽略患者结构（pseudo-replication，PREREG_R10 定为 exploratory 不入 headline）→ 用户拍板从 ppt 删 3 张 AUPRC 图。改 `gen_ppt_progress_v4.js` 删两页（slide13 独立肽级 AUPRC 榜 `fig_auprc_30tools`；slide17 融合数学近亲第二页 `q2_auprc_kinship`+`q2_taylor_scatter`——geomean≈mean_rank 结论 slide16 已用 Spearman 版给出，AUPRC 加强页可整删）。**连带一致性修**：slide15 方法学陷阱表第 4 行「单队列样本量有限→补充肽级功效指标→已有定论」引用的正是被删的 AUPRC → 整行删（用户拍板），四要点→三要点（更新封面文字 line95/274、header 副标 line278、summary line285「三个要点里两个已处理」）。fig1 顺带按 figsize 加宽（9→11.5，图例移右上不再压条）重出+同步。重生成 rev5：**18→16 页**，pptx 内嵌 media 13→10（3 张 AUPRC 全移出，zipfile md5 核 OUT），fig1 新版 IN。rev4 仍保留。
+
+---
+
+## Entry 51-VERIFY-8to11mer — 2026-07-04【8-11mer 补充口径复核：数字三方对账 PASS + 联网核合理性 + 覆盖图 DeepNetBim 退化列消歧修图】
+
+**触发**：用户「本窗只看 8-11mer，核 130 重跑数字真假可信 + 图有无缺标/遮挡 + 联网核合理性」。服务 §2.2 可变窗补充口径。
+
+**① 数字全真实可信（Bash 现算 csv，非信 Read）**：
+- `R1_recomputed_8to11mer_effN8.csv` 顶部 MHCnuggets 0.373 / netMHCpan_BA 0.289 / MHCflurry 0.286 / PRIME 0.270，逐个对上 Entry 47/49 声称。
+- 独立 merge 两 R1 csv 复算核心对比：**Top-5 9mer 全胜 5/5、整体 24/29=83%、均值 rho 0.189(9mer) vs 0.122(8-11mer)**，与 Entry 49 逐位一致。
+- effN 敏感性：effN5≡effN8 完全同，effN10 顶部三名不变 → 排名稳非门槛人造。无爆表（≤0.373<0.4 天花板）、无 ±1。
+
+**② 联网核合理性（researcher 多源，带引用）**：
+- rho 0.1-0.45 **落文献区间偏保守**：几乎同构先例（黑色素瘤 neoantigen vs IFNγ ELISPOT，MHCflurry presentation ρ=0.47、netMHCpan EL ρ=−0.31，Exploration of Immunology 2024 Art.100391）。我们顶部 0.447 略低=同量级。
+- 「binding/presentation 压过 immunogenicity 专用工具」= 已知现象（TESLA Wells 2020 Cell + ITSNdb Front Immunol 2023 PMC10411733），我方 MHCnuggets/netMHCpan_BA 压过 DeepImmuno/PRIME 可辩护。
+- 9mer 主分析可辩护：9mer 是 MHC-I 单一最丰富长度（DeepImmuno 限 9-10mer 有先例）。
+- 🔴 **两条 TODO（影响 tex 措辞，未擅动 outline）**：(a) 9mer≈44% 精确四分位值是二手检索合成（相加略>100），需人工核 Trolle 2016 J Immunol 原表/IEDB 直查再写死，当前只「9mer 单一最多」是硬证；(b) 「9mer-only 排序优于 8-11 可变窗」两轮检索**无直接先例也无反例** → 我方 24/29 是该口径首个系统经验证据，tex 须诚实标「据我们所知无直接先例」，**禁 claim 有文献支撑**（对 BiB 是加分贡献点，非塌缩）。
+
+**③ 图检 + 修一处（覆盖图 DeepNetBim 退化列消歧）**：
+- fig1 / fig_9mer_vs_8to11mer / 覆盖图 / supplement.pptx（6 页）全查：无遮挡、无溢出、无空占位符、值对上 csv。
+- **唯一矛盾修复**：覆盖图 DeepNetBim 原显示 130 全绿（非空计数），但 fig1 是 n/a(0/9 覆盖失败)——因它 max-pool 后 130 格恒=1.0（nunique=1 常数列，rho=nan）。Bash 核实（nonnull=130 nunique=1 coverage_fail=True）。改 `plot_9mer_vs_8to11mer.py` make_fig_b：退化列（覆盖≥130 且 nunique≤1 或 coverage_fail）用**灰色 + 标签/数值加 `*` + 图例第 3 项 + 英文脚注**（详解常数列 rho=n/a 见图1）。重出 `paper/figures/fig_8to11mer_coverage.{png,pdf}`。现 22 真绿+1 灰(DeepNetBim)+7 橙=30，与 fig1 一致。
+- 踩坑记录：初版脚注用中文 → DejaVu Sans 缺 CJK glyph 渲染成豆腐块 → 改全英文脚注解决（该脚本无 CJK 字体配置，图A/B 原本纯英文才没暴露）。
+
+**④ supplement pptx slide 6 补写作 TODO（用户放行）**：`QuantImmuBench_8to11mer_supplement_2026-07-03.pptx` slide 6 交接待办框上移（T 5.35→3.55，占用原 checkmark 下方空白）+ 加「📝 写作待核（投稿前 tex 措辞，勿臆想）」子标题 + 上述两条 TODO。LibreOffice→PDF→PyMuPDF 转图核实：初版溢出页底（框没上移）→ 移框重出，现全内容落框内无切断无遮挡。
+
+**⑤ 用户复看提三点 → 二轮图修（2026-07-04）**：
+- **9mer 是否旧数据？→ 核实是新数据**：对比图 9mer 读 `R1_recomputed_effN8.csv` = Entry 50 covfix 后（MHCnuggets rho=0.4466 n_full=9 effN_p102=8=P102 补满；mtime 07-03 21:17 在 covfix pooled 之后；有独立 `.pre_covfix_bak`）。两口径均 covfix 后，可比。
+- **fig1 图例压柱 → 移出坐标区**：`plot_R1_effN.py` 图例原 `loc="upper left"` 落负值带但框宽右缘溢过 x=0 压顶部长条根部 → 改 `bbox_to_anchor=(1.005,1.0)` 移坐标区外右上 + figsize 9→11.5 加宽。重出 fig1 8-11mer png/pdf。
+- **对比图缺数据标 + 加宽**：`plot_9mer_vs` make_fig_a：figsize 8.5→13 加宽 + 每条符号感知标 rho 值（深蓝粗体 9mer/浅蓝 8-11mer）+ 图例移坐标区外右上 + set_xlim 留标签空间。重出 fig_9mer_vs png/pdf。
+- **pptx 三图刷新**：supplement slide 3(fig1)/4(对比)/5(覆盖) 内嵌旧版图 → 按比例 fit 原框居中替换新图（slide3 长宽比匹配填满；slide4/5 新图近方形，居中不变形不压右侧 callout）。LibreOffice→PDF 渲染 4 页核实无变形/无压文字。
+
+**⑥ 对比图只留「两口径都真适用」工具（用户要求）+ MHCseqNet 负值机制查清（2026-07-04）**：
+- **MHCseqNet 8-11mer=−0.227 机制（Bash 实查 pooled csv，非手挥）**：130 肽里 **96(74%) 的 8-11max ≠ 9max 且全部是非 9mer 窗抢走 max**；全局 spearman 翻号 9mer +0.109→8-11 −0.141；逐患者 P105 +0.576→−0.239、P108 +0.565→−0.308、P109 +0.621→−0.698 = **符号翻转非稀释**。根因=MHCseqNet 非 9mer 打分与免疫原性反相关，max-pool 把虚高分顶上打反排序。**真实非 bug、非符号错、非 covfix 补丁造**——是 §2.2「9mer 优于可变窗」最强单点证据（极端案例：纳入非 9mer 窗不只稀释而是打反）。
+- **对比图剔 9mer-only 工具**：数据核逐工具 8-11max vs 9max 差异肽占比 → 只有 **NeoaPred(0/14) + DeepNetBim(0/130) 完全相同**（硬 9mer/结构 9mer，可变窗无意义）→ `plot_9mer_vs` make_fig_a 加 `EXCLUDE_9MER_ONLY={NeoaPred,DeepNetBim}` 显式剔（DeepNetBim 本就 NaN dropna 剔，实际减 NeoaPred 的假双等长条）。其余 26 均真响应口径（含 DeepImmuno 9-10mer diff=50/130）。对比图 29→28 工具。
+- **headline stat 随口径重算（保持一致）**：剔 9mer-only 后 **9mer>8-11 = 24/28=86%**（原含全部 24/29=83%）、均值 9mer **0.193** vs 8-11 **0.124**（原 0.189/0.122）。Top-5 全胜 5/5 不变。slide 4 同步更新（83%→86%、24/29→24/28、均值、注补机制+剔除说明、换 28 工具图）。
+
+**⑦ 用户质疑「MHCseqNet −0.227 是不可用工具该删」→ 核官方长度=不能删（🛑决策悬置）**：
+- **官方证据（researcher 三源）**：MHCSeqNet 官方 README 明写支持 **8–15mer**（GRU 架构专为可变长度设计），非 9mer-only；喂 8/10/11mer 正常预测不报错。本地印证：8-11 merged 表 MHCseqNet 各长度正常出分（8mer 5636/6005、9mer 7181/7333、10mer 4824/5139、11mer 4418/4706）。
+- **定论**：MHCseqNet −0.227 是**真实负结果**（官方支持 8-11、有效预测、但免疫原性排序表现崩），非「9mer-only 被硬喂垃圾」。与已剔的 NeoaPred/DeepNetBim（硬 9mer、8-11≡9mer 假对比）本质不同。**删它=挑好数据踩诚实红线 + 藏 §2.2 最强证据（可变窗把信号打反的极端案例）+ 结论靠删最不利案例撑起反不可信**。
+- **🛑 悬置未动**：向用户说明后给三选项（保留+加标注 / 保留不动 / 坚持删需拍板认「剔表现差工具」并记审稿风险）。用户回「先收工」未定 → **对比图当前保留 MHCseqNet（28 工具含它）**，措辞/是否加标注待下窗用户拍板。未擅删。
+
+**产物**：改 `plot_9mer_vs_8to11mer.py`（COLOR_DEGEN+退化检测+灰条星标+对比图加宽/数据标/图例外移+EXCLUDE_9MER_ONLY 剔硬 9mer+脚注）、`plot_R1_effN.py`（figsize 加宽+图例外移）；重出 `paper/figures/{fig_8to11mer_coverage,fig_9mer_vs_8to11mer_spearman,fig1_spearman_30tools_8to11mer_effN8}.{png,pdf}` + `recompute_effN/fig1_...8to11mer_effN8.png`；改 `QuantImmuBench_8to11mer_supplement_2026-07-03.pptx`（slide6 +写作 TODO；slide3/4/5 换新图）。**未动任何 csv/canonical，纯图层 + pptx 刷新 + 复核。** 数字/结论真源不变。
+
+---
+
 ## Entry 50-COVFIX-REMERGE — 2026-07-03【覆盖修复战役收尾：8 工具 remerge→重池化→重出图 + headline 翻盘核实（不是 bug）+ §3.1/ppt 更新】
 
 **触发**：续跑 quantimmu-coverage DAG 最后两棒 remerge→refig。8 工具 FULL130 新分（`scripts/out_official/coverage_fix/<tool>_raw_FULL130.csv`）已备齐（HPC 4 + 本地 4），Bash 验证各到 130。

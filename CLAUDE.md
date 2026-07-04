@@ -88,20 +88,20 @@
 
 固定角色（`.claude/agents/`，含 model frontmatter + drift 契约 + effort budget）：
 
-| Agent | model | caveman | 何时派 |
-|---|---|---|---|
-| `researcher` | opus | ON | 查文献 / 官方源码 / 超参（返回带引用；查不到标 TODO 绝不臆想） |
-| `planner` | opus | **OFF** | 设计实验矩阵/消融/baseline，拆模糊目标为可跑 run（先读 STORY+ACCEPTANCE，判据对齐验收，只设计不写码不跑） |
-| `coder` | opus | ON | 写改实验代码/训练脚本/预处理/画图/修 bug/pytest（Windows 规范内嵌；**不启训练**，写完交主线跑） |
-| `writer` | opus | **OFF** | 写改 tex 章节（先读 STORY+ACCEPTANCE，数字先过 verifier） |
-| `analyst` | opus | ON | 跑后解读 csv/state.json，算趋势出图找 pattern + 建议下一步（区别 verifier 只核单点对不对） |
-| `verifier` | opus | ON | 核数字：Bash/Grep 核 csv，**禁 Read 看数据**，三方对账 |
-| `reviewer` | opus | **OFF** | 对抗审稿 L19 十角色 + 反跑偏审计（事后审**成稿**） |
-| `skeptic` | opus | **OFF** | 决策点红队 / devil's advocate：立项前提 / 实验设计 / claim 逻辑三闸口，执行前找致命伤（事前攻**将要做的事**，正交 reviewer）。severity-gated，**0 致命即放行不卡流程**，不为批判而批判 |
-| `theorist` | opus | **OFF** | 理论推导/半形式化证明：立项证可行性+预测回报(scaling/样本复杂度)、失败从理论侧三分流归因(假设错/实现错/数据不够)、推导自检反幻觉。逐步标假设+置信+来源、结论分档(定理/toy验/待跑)禁越级卖。**只推导不跑**，正交 skeptic(它攻你推的)。提「理论推导/证明/为什么该 work/可行性」即触发 `/theory-audit` |
-| `optimizer` | opus | ON | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
-| `custodian` | opus | ON | 产物清洁工/归档管家：扫散落 scratch/tmp/一次性脚本/游离产物/重复 tracker/git-ignore 漂移，每个候选先 pointer-check（是否在读档链里），产分类归档清单。**只读产清单不删不移**（删=拍板，移交主线 Filesystem MCP）。区别 optimizer（改流程规范，custodian 管产物文件本身）。提「整理产物/太乱了/归档旧文件/收工清扫」即触发 `/tidy` |
-| `gh-publisher` | opus | ON | GitHub 发布/拉取/维护：本地子项目规范化成可开源 repo（README/LICENSE/CI/.gitignore 全套对齐顶级开源骨架）+ 隐私泄露扫描列风险 + 拉 repo 许可证合规 + 按 issue/PR review 定位修 bug。**不执行对外 push/repo create**（主线拍板后串行做）。提 github/开源/推仓库即软触发（`/gh-flow`） |
+| Agent | model | 何时派 |
+|---|---|---|
+| `researcher` | opus | 查文献 / 官方源码 / 超参（返回带引用；查不到标 TODO 绝不臆想） |
+| `planner` | opus | 设计实验矩阵/消融/baseline，拆模糊目标为可跑 run（先读 STORY+ACCEPTANCE，判据对齐验收，只设计不写码不跑） |
+| `coder` | opus | 写改实验代码/训练脚本/预处理/画图/修 bug/pytest（Windows 规范内嵌；**不启训练**，写完交主线跑） |
+| `writer` | opus | 写改 tex 章节（先读 STORY+ACCEPTANCE，数字先过 verifier） |
+| `analyst` | opus | 跑后解读 csv/state.json，算趋势出图找 pattern + 建议下一步（区别 verifier 只核单点对不对） |
+| `verifier` | opus | 核数字：Bash/Grep 核 csv，**禁 Read 看数据**，三方对账 |
+| `reviewer` | opus | 对抗审稿 L19 十角色 + 反跑偏审计（事后审**成稿**） |
+| `skeptic` | opus | 决策点红队 / devil's advocate：立项前提 / 实验设计 / claim 逻辑三闸口，执行前找致命伤（事前攻**将要做的事**，正交 reviewer）。severity-gated，**0 致命即放行不卡流程**，不为批判而批判 |
+| `theorist` | opus | 理论推导/半形式化证明：立项证可行性+预测回报(scaling/样本复杂度)、失败从理论侧三分流归因(假设错/实现错/数据不够)、推导自检反幻觉。逐步标假设+置信+来源、结论分档(定理/toy验/待跑)禁越级卖。**只推导不跑**，正交 skeptic(它攻你推的)。提「理论推导/证明/为什么该 work/可行性」即触发 `/theory-audit` |
+| `optimizer` | opus | 自优化协作系统：读 `.portfolio/friction.jsonl` + git log 聚类反复摩擦，小修直接改、大的报拍板。只动流程/规范不碰内容（`/optimize` / 收工自检触发） |
+| `custodian` | opus | 产物清洁工/归档管家：扫散落 scratch/tmp/一次性脚本/游离产物/重复 tracker/git-ignore 漂移，每个候选先 pointer-check（是否在读档链里），产分类归档清单。**只读产清单不删不移**（删=拍板，移交主线 Filesystem MCP）。区别 optimizer（改流程规范，custodian 管产物文件本身）。提「整理产物/太乱了/归档旧文件/收工清扫」即触发 `/tidy` |
+| `gh-publisher` | opus | GitHub 发布/拉取/维护：本地子项目规范化成可开源 repo（README/LICENSE/CI/.gitignore 全套对齐顶级开源骨架）+ 隐私泄露扫描列风险 + 拉 repo 许可证合规 + 按 issue/PR review 定位修 bug。**不执行对外 push/repo create**（主线拍板后串行做）。提 github/开源/推仓库即软触发（`/gh-flow`） |
 
 > 十角色覆盖科研全闭环：调研(researcher)→🧮理论推导(theorist)→设计(planner)→🩺红队设计(skeptic)→写码(coder)→🛑跑(主线)→分析(analyst)→核数(verifier)→写(writer)→审(reviewer)，optimizer 横切。theorist 横切在**理论地基**（立项可行性/失败归因/推导自检），skeptic 横切在**执行前闸口**（立项/设计/claim），与 reviewer 事后审成稿正交——theorist 产推导、skeptic 攻它、verifier 核它引的数（三层防线见 `/theory-audit`）。完整流水线+交接点见 `project/PROJECT_LIFECYCLE.md`。**别主线串行硬扛设计/工程/分析/理论四条腿**——派对应 agent。
 
@@ -131,7 +131,7 @@
 
 **硬件**：本机（Windows，Start-Process，1 卡 RTX4070 8GB）+ XJTLU HPC（`gpu4090`，4 卡 qos）。Agent/team 跑**纯软活**（读写/检索/核算/写作）；**训练启停/HPC 提交/上传/危险删除主线亲自串行**，team 不碰（经卡槽调度器 `gpu_slot.py` 申请，绝不挤正在跑的）。
 
-**节流**：team 大但不浪费 —— 每 agent 给紧凑冷启上下文 + 明确输出格式（caveman 压缩回汇）+ effort budget；读重活外包给 agent，省主线 context。
+**节流**：team 大但不浪费 —— 每 agent 给紧凑冷启上下文 + 明确输出格式 + effort budget；读重活外包给 agent，省主线 context。
 
 ---
 
@@ -148,15 +148,6 @@
 1. **开窗即认领**：写某项目前认领 `.portfolio/locks/<project>.claim`；他窗已认领则提示，避免并写同项目 / 并写 PORTFOLIO.md。
 2. **训练按卡调度（非全局互斥）**：任何本地 `Start-Process` 训练 / HPC `sbatch` 前，先 `python tools/gpu_slot.py request <project> <host> <gpus>` 申请卡槽（真源 `.portfolio/locks/training.lock` schema v2；容量 local=1 / hpc=4 卡）。`GO`→启（`training_lock.js` hook 见 starting 条目自动翻 running 放行）；`QUEUED`→卡满已排队别裸启。多任务同 host 不同卡可共存，**绝不挤正在跑的**。完成 `gpu_slot.py release <id>` 清账，自动取出排队任务。详见 `tools/gpu_slot.py` 头注 + `.portfolio/README.md`。
 3. **写作隔离**：各项目写自己的 `04_LOG`/`PROJECT_LOG`/`registry.json`，互不撞。
-
----
-
-## ✍️ Caveman 策略
-
-- **ON 仅限**：内部沟通 / 与用户对话（省 token）。
-- **一律 OFF**：任何写作 / 文字保真任务（tex、正文、rebuttal、bib、references、论文 md）。倾向关。
-- 写论文类文件时 `writing_caveman_off.js` hook 会自动提醒；Writer/Reviewer/Planner agent spec 已内置 OFF（planner 计划是决策依据，需清晰）。
-- coder/analyst = ON（代码/分析报告可压缩回执，但**代码、报错、数字、csv 路径、列名原样不动**）。
 
 ---
 
@@ -222,7 +213,7 @@
 - `stage_progress.js`（Stop）：本轮改 ≥6 个项目文件却没写 LOG → 提醒 `/checkpoint`，大阶段提醒 `/stage-gate`。
 - `custodian_sweep_reminder.js`（Stop）：根目录散落文件（`_scratch_*.py`/`tmp_*.py`/captcha png/乱码名等）积到 ≥8 个 → 提醒跑 `/tidy scan root` 清扫（归档可逆，被读档链引用的不动）。
 - `delegate_code_gate.js`（PreToolUse Edit/Write）：改实验码时**只软提醒派 coder、不拦**（用户 2026-06-19 放开：改训练/实验文件不拍板）。
-- 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（**按卡调度**：见 starting 卡槽放行、未申请则提示先 request 配 `tools/gpu_slot.py`——防挤正在跑的，非拍板）、`writing_caveman_off`（写作关 caveman）。
+- 既有：`iclr_post_edit`（R1-R10 红线）、`training_lock`（**按卡调度**：见 starting 卡槽放行、未申请则提示先 request 配 `tools/gpu_slot.py`——防挤正在跑的，非拍板）。
 
 ## 🧹 产物卫生规范（防散落，Custodian 守）
 一年多窗大编队攒下大量散落产物（根目录一次性脚本、`_scratch/` 数据、重复 tracker）。规范如下，`/tidy` + `custodian` agent 负责维护：

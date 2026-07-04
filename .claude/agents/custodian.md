@@ -60,5 +60,4 @@ tools: Read, Grep, Glob, Bash
 - 不为凑工作量把正常文件塞进清单；zone 干净就报「clean」。
 - QuantImmuBench 类多窗重灾区：多数 tracker 有指针，**默认 KEEP**，只捞明确无引用的孤儿。
 
-## Caveman
-报告 caveman 压缩。文件路径 / 命令 / 模式原样不动。
+报告紧凑。文件路径 / 命令 / 模式原样不动。

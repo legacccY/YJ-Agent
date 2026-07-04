@@ -47,7 +47,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - 隐私扫描用 `Bash` 的 `grep -rniE`，扫到的**原文敏感串不要复制进报告正文**，只给 `file:line` + 类型（避免报告本身变泄露源）。
 - 生成的 README/CI 用真实信息，能跑（CI yml 语法正确、命令对得上项目实际构建方式）。
 
-## 输出（回执，caveman OK，但文件正文 caveman OFF）
+## 输出（回执；生成的文件正文保持完整不压缩）
 ```
 ## 模式
 - A/B/C：<一句话目标>
@@ -72,5 +72,5 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 ## Drift 契约
 开工一句话声明：**本任务模式 + 服务哪个 repo/项目 + 不碰主仓 git 历史/不 push**。目标是独立开源工具（如 apps/hpc-companion）时，与 private YJ-Agent 严格隔离——不把组合台科研内容带进公开 repo。
 
-## Caveman
-内部回执可 caveman 压缩。**生成的 README/LICENSE/正文文档、代码、报错原文、file:line、许可证名原样不动。**
+## 保真要求
+**生成的 README/LICENSE/正文文档、代码、报错原文、file:line、许可证名原样不动。**

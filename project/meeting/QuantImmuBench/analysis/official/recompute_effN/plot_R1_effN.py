@@ -134,17 +134,25 @@ def fig1_effN():
     colors = [C_GREY if rf else cat_color(t, r, False)
               for t, r, rf in zip(tools, rho, refflag)]
 
-    # y 轴标签: DTU 后缀 + 参考区标覆盖不全 (8/9 标"部分覆盖", <3 标"覆盖失败")
+    # max-pool 退化工具: 覆盖满 130/130 但 max-pool 饱和成常数列 → per-patient rho=nan,
+    #   非真「覆盖失败」(易与覆盖矩阵 100% 打架致误读)。证据: pooled_clean_9mer 里
+    #   DeepNetBim_max nunique==1 全=1.0 且 0 NaN; topk(k>=2)/softmax/rankdecay 方差恢复 (见 §3.2)。
+    DEGENERATE_MAXPOOL = {"DeepNetBim"}
+
+    # y 轴标签: DTU 后缀 + 参考区标覆盖不全 (8/9 标"部分覆盖"; 真缺肽<3 患者标"覆盖失败";
+    #   满覆盖但 max-pool 退化的另标"max-pool 退化", 与真覆盖失败区分)
     ylabels = []
     for t, nf, cf in zip(tools, n_full, cfail):
         lab = dtu_label(t)
-        if cf:
+        if t in DEGENERATE_MAXPOOL:
+            lab = f"{lab} (max-pool 退化)"
+        elif cf:
             lab = f"{lab} (覆盖失败)"
         elif nf < 9:
             lab = f"{lab} (部分覆盖)"
         ylabels.append(lab)
 
-    fig, ax = plt.subplots(figsize=(9, 15))
+    fig, ax = plt.subplots(figsize=(11.5, 15))
     # 误差棒: 相对条端的非对称长度 (rho/lo/hi 皆 NaN 时 nan_to_num 成 0, 不画错棒)
     xerr = np.vstack([np.clip(np.nan_to_num(rho - lo, nan=0.0), 0, None),
                       np.clip(np.nan_to_num(hi - rho, nan=0.0), 0, None)])
@@ -186,10 +194,12 @@ def fig1_effN():
     xmin = min(-0.25, (np.nanmin(finite_lo) - 0.05) if len(finite_lo) else -0.25)
     ax.set_xlim(xmin, rho_x + 0.42)     # 右侧留够放 "+0.460   (8/9)"
 
-    # 图例放左上负值空白区 (上方工具条全在正侧, 左半平面无条 -> 不遮任何数值)
+    # 图例放坐标区外右上 (bbox_to_anchor>1 = 轴外), 绝不压任何工具条/数值 (旧 upper-left 图例框宽
+    #   过负值带右缘溢过 x=0 压住顶部长条根部, 故外移)
     _legend(ax, [("呈递/结合类 (主榜)", C_PRESENT), ("免疫原类 (主榜)", C_IMMUNO),
                  ("部分覆盖 <9/9 (参考区)", C_GREY)],
-            loc="upper left", fontsize=11, title="工具类别", framealpha=0.95)
+            loc="upper left", bbox_to_anchor=(1.005, 1.0),
+            fontsize=11, title="工具类别", framealpha=0.95)
     # 脚注移到坐标区外底部 (fig.text, 不与图例/数值重叠)
     fig.text(0.5, 0.012,
              "rho = per-patient Spearman(工具打分, Elispot), 跨患者 Fisher-z 等权聚合, 门槛 effN>=8;  "

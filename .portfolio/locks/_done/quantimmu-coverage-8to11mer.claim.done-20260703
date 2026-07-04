@@ -1,0 +1,6 @@
+project: quantimmu-coverage-8to11mer
+window: 8-11mer coverage-fix (parallel to 9mer main window)
+claimed: 2026-07-03 20:44 CST
+task: redo coverage-fix in 8-11mer aperture (L in {8,9,10,11}), reuse 9mer main-window pipeline
+scope: build 8-11mer inputs -> rerun ~25 tools -> patch _covfix_8to11 copy -> pool --w811 -> refig
+redlines: numbers via Bash on csv; zero-deviation repro; DeepImmuno/NeoaPred stay 9mer-only (honest); HPC upload main-thread serial
