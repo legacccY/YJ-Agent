@@ -208,18 +208,18 @@
   },
   "wardagent-bench": {
    "name": "WardAgentBench",
-   "venue": "HYPSM直博一作视角(非中科院分区): 主力双投 CHIL 2027(~2月)+MLHC 2027(~4月)[PMLR归档/收无新方法公开数据benchmark/本科一作无障碍] | 冲刺 npj Digital Medicine(需临床通讯)/NeurIPS E&D(stretch) | 保底 ML4H Findings",
-   "deadline": "无(探路阶段)",
-   "status": "parked-sop",
+   "venue": "本科一作HYPSM直博视角(推荐信>论文名气,落地叙事对clinical AI方向价值高): 主力 CHIL 2027 Applications&Practice track(免费/PMLR/明收benchmark且新方法非必需) | 腿2 usability JMIR Human Factors($1985/审~12周) | 兜底 AMIA 2027 Student Paper(本科符合)+Systems Demo | 保底 JMIR Formative($2500)。够不到npj DM/NatureMed级真实部署RCT(需资深临床PI+大样本)。",
+   "deadline": "无(planning,腿1现可开工;CHIL2027约2月/AMIA2027约3月待CFP)",
+   "status": "planning",
    "priority": 3,
-   "phase": "一区扛旗 arc 终结+reframe(多角色病房模拟benchmark)可行性命门实证 NO-GO: 真Qwen-3B 274场景 A/B escalate 0.507=0.507、A对B错40=A错B对40对称=四角色分布不承重(加噪非信号),坐实theorist预测→天花板workshop/D&B非一区. 管道(真实数据+指南D*+A/B+rank-flip)跑通=硬资产. 待用户拍板:接受workshop换一区载体/过采样家属轴再救/消化.",
+   "phase": "2026-07-04 PIVOT(用户拍板): 弃方法novelty路(5次收敛workshop天花板,四角色分布不承重实证)→转benchmark+真实医院deployment/usability双线. 三腿=腿1病房多角色(护士/家属/告警)覆盖度+告警→角色路由benchmark[纯公共数据保底,复用feasibility_pilot管道]/腿2苏大附二院医护usability[B级最现实需科室PI]/腿3系统部署经验[QI框架]. 资源链=AI4Health实验室(院长Moraros主任)+苏大附二院(王水花对接三甲)+王水花孟佳方法通讯背书(已合作)+本科一作先例(Liu Yiheng). 报告=reference/REPORT_2026-07-04_pivot_strategy.md. 命门:腿1切割点B已核CLEAN(2026-07-04读PSEBench 2606.05463+2509.26351全文,两篇只判什么不派给谁,告警→角色路由无人做=创新点成立)+腿2需导师对接落到具体科室PI(用户线下). 临床通道:苏大附二院(王水花对接)先走,瑞金(慧湖药学院主导非理学院,方向新药非病房)仅背书生态背景不claim.",
    "home": "project/meeting/WardAgentBench/",
    "story": "project/meeting/WardAgentBench/01_STORY.md",
    "acceptance": "project/meeting/WardAgentBench/02_ACCEPTANCE.md",
    "log": "project/meeting/WardAgentBench/04_LOG.md",
-   "updated": "2026-07-02",
-   "last_update": "2026-07-02",
-   "note": "低优先当SOP素材+冲一区双目标。导师王水花(同FetalSSBench)。铁律:禁用MedQA69/EHRQA90开源模型文献值当自证;多告警共触发标签派生须显式声明(R8);venue据实JBHI不写NeurIPS主track(R9);方法明标已知机器换场景不claim novelty(R10)。"
+   "updated": "2026-07-04",
+   "last_update": "2026-07-04",
+   "note": "本科一作冲HYPSM直博,导师王水花+孟佳(生科系,已合作)+院长Moraros(AI4Health主任). 铁律:禁用MedQA69/EHRQA90开源模型文献值当自证(R2);不夸大两院意向函/不声称已真实部署(R5);隐私清洗学生证证件照(R7);孟佳企业合作证据薄弱不当数据源写死;usability走最小风险IRB+QI框架不导出病人数据;headline不claim首个护士角色(Agent Hospital已有,落护士+家属+告警组合路由). 全景=reference/REPORT_2026-07-04_pivot_strategy.md."
   }
  },
  "training_lock": {

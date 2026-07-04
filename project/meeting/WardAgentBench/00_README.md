@@ -1,6 +1,15 @@
-# WardAgentBench — 慧脉守护病房多角色 LLM-agent 科研转化（候选 B 立项，冲 SCI 一区）
+# WardAgentBench — 慧脉守护病房多角色 LLM-agent 科研转化
 
-> **一句话**：把创业项目「慧脉守护」（病房四端 LLM-agent + 服务机器人，脉枢 HuimaiMed）转化为可发表科研成果。**当前 = demo 原型零真实临床数据** → 纯公开数据路。2026-07-02 大编队（5 researcher + skeptic）侦察定方向 = **候选 B：医疗「多告警器复合误报」联合校准 benchmark + 依赖稳健校准配方**，冲 **SCI 一区（IEEE JBHI 现实 / npj DM 冲刺）**。
+> ## 🔀 2026-07-04 PIVOT（用户拍板，当前方向以此为准）
+> **弃方法 novelty 路**（候选 B 多告警 e-value 校准等 5 次收敛 workshop 天花板，四角色分布不承重实证）→ **转 benchmark + 真实医院 deployment/usability 双线**。核心=把「本科生 × 真实医院落地」当独特资产，走「真实世界系统+落地证据+可复现 benchmark」贡献类型（不 claim 方法新）。
+> **三腿**：腿1 病房多角色（护士/家属/告警）覆盖度 + 告警→角色路由 benchmark（纯公共数据保底）｜腿2 苏大附二院医护 usability（B 级）｜腿3 系统部署经验（QI）。**venue**：CHIL App track / JMIR Human Factors / AMIA Student Paper。
+> **资源链**：AI4Health 苏州市重点实验室（院长 Moraros 主任）+ 苏大附二院（王水花对接三甲）+ 王水花/孟佳方法通讯背书（已合作）+ 本科一作先例。
+> **🔴 命门**：切割点 B 存疑（动笔前读 PSEBench 2606.05463 + Emergency Triage 2509.26351 全文）+ 腿2 需导师对接落到具体科室 PI（用户线下）。
+> **权威全景 = `reference/REPORT_2026-07-04_pivot_strategy.md`**（六编队调研 + 资源链 + 三腿 + venue + 命门 + 路线图）。下方候选 B 内容为 pivot 前历史，读方向以本 banner + 报告为准。
+>
+> ---
+>
+> **一句话（pivot 前历史，2026-07-02）**：把创业项目「慧脉守护」（病房四端 LLM-agent + 服务机器人，脉枢 HuimaiMed）转化为可发表科研成果。2026-07-02 大编队侦察定 = **候选 B：医疗「多告警器复合误报」联合校准 benchmark**（已 pivot 弃用，见上）。
 >
 > **诚实定性**：产品侧成熟但科研从零起步（无数据/IRB/自证实验）。候选 B 卖点 = 开源 benchmark + 经验刻画 + e-value 依赖稳健校准（**不 claim 方法 novelty**，B 族）。顶会 NeurIPS E&D 主 track = 低概率不押，天花板诚实定一区期刊。
 >

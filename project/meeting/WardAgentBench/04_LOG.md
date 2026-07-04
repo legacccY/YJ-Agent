@@ -1,5 +1,30 @@
 # WardAgentBench — LOG
 
+## 2026-07-04 · 🔀 PIVOT（用户拍板）：弃方法 novelty 路 → benchmark + 真实医院 deployment/usability 双线
+
+**触发**：用户提出转向——不纠结「多角色分布承不承重」（已 5 次证死），改把**本科生 × 真实医院落地沟通**当独特资产，问领域相似项目怎么发文章。派 6 编队并行调研（项目资产 / AgentClinic 家族文献 / venue 形状 / 三人物 / 苏大附二院 / 孟佳+院长），出 pivot 决策，用户 ExitPlanMode 批准（plan=`~/.claude/plans/enchanted-sparking-lampson.md`）。**全景报告=`reference/REPORT_2026-07-04_pivot_strategy.md`**。
+
+**核心转向**：换贡献类型——不卖方法新，卖「真实世界系统 + 落地证据 + 可复现 benchmark」（审稿人不要求方法新）。文献坐实 AgentClinic/AI Hospital/MedAgentBench 家族创新点全是 benchmark 本身，本科可复制；且全是 doctor/patient 组合，**护士/家属/告警联动=全空白**。
+
+**资源链（本轮最大发现，不是散资源是一条已打通的链）**：
+- **AI4Health 苏州市重点实验室**（院长 **John Moraros** 任主任）= 论文完美挂靠平台，scope 字面含病房 agent+告警。
+- **苏大附二院**（王水花对接，苏州本地三甲 2600 床，ICU/心内/呼吸/神外全重点专科，2024 公开征集智能监护 AI，伦理委成熟）= 真实病房场景，B 级最现实。
+- 王水花（影像 ML 高被引背书）+ 孟佳（统计/生信/系主任，已合作）= 方法+通讯背书；同校本科一作先例 Liu Yiheng。
+- ⚠️ 诚实：王水花无 LLM-agent 经验/无真实医院 IRB 队列历史（agent+部署活学生扛）；孟佳企业合作证据薄弱不当数据源；两院仅意向函。
+
+**三腿骨架**：腿1 病房多角色（护士/家属/告警）覆盖度 + 告警→角色路由 benchmark（纯公共数据保底，复用 `feasibility_pilot` 管道，claim 重定为覆盖度+路由**非**「四角色揭示新失败」，家属轴过采样专测）｜腿2 苏大附二院医护 usability（B 级，最小风险 IRB+QI）｜腿3 系统部署经验（QI 框架）。venue：CHIL App track（主）/ JMIR Human Factors / AMIA Student Paper。
+
+**🔴 命门（headline 定稿前必清）**：切割点 B 存疑——**动笔前读 PSEBench(2606.05463)+Emergency Triage(2509.26351) 全文**确认未触及「告警→角色路由」；切割点 A 收窄（不 claim 首个护士角色，Agent Hospital 已有护士 agent 职能=分诊）。腿2 命门=导师对接须落到苏大附二院具体科室愿挂名 PI（**用户线下确认**）。
+
+**下一步**：用户线下确认科室 PI + AI4Health 挂靠 + 署名分工；我方软活（腿1 现可开工）改 README/STORY/ACCEPTANCE pivot → planner 出 benchmark 矩阵 → coder 改 feasibility_pilot 加家属轴过采样 → writer 起草 usability 设计+IRB 模板。registry 已改 status=planning。
+
+**同日补（命门清 + 瑞金通道盘点）**：
+- ✅ **切割 B 命门 = CLEAN**：读 PSEBench(2606.05463)+2509.26351 全文，两篇都只做「判什么」（判上报义务/判恶化风险）**不做「派给谁」**——「告警→角色响应分派」评测协议无人做，**腿1 创新点成立**（首个 response dispatch/role routing 评测 + 护士/家属覆盖）。收窄措辞用「响应分派/角色路由」轴切开「事件上报分诊」「恶化预测」。（前序 researcher 误标 2509.26351 为"uncertainty-aware escalation"，读全文证伪该词不存在，不影响判定。）
+- **瑞金通道裁决**：XJTLU×瑞金（瑞浦智慧医疗研究院 2025-12）由**慧湖药学院傅磊主导、方向新药/慢病/医疗技术、与王水花/理学院无关联**，瑞金 AI 合作方全是华为/商汤大厂本科课题权重低 → **腿2 先走苏大附二院**（王水花对接+重症急诊场景+可达性三齐全），瑞金仅当「XJTLU 战略级智慧医疗合作生态」背书背景提及，**不 claim 已获瑞金资源**（未落实写了失实）。
+- **产出级别/工作量定档**：腿1 CHIL/ML4H 中等偏上 2–3 人月（骨架已有）｜腿2 JMIR HF 3–5 人月（卡 IRB）｜腿3 AMIA/CHIL App 1–2 人月。组合 2–3 篇中等 venue 本科一作，升学靠「benchmark 硬核+真实落地稀缺证据+跨机构执行力」组合叙事+推荐信（非单篇顶会名气）。
+
+---
+
 ## 2026-07-02 · 🔬 reframe（多角色病房模拟 benchmark）可行性命门实证 = 方向性 NO-GO（四角色不承重）
 
 用户认可 reframe（保留慧脉多角色思路，做 simulation benchmark，对标 AgentClinic）后，skeptic+theorist 砸命门给「有条件 GO」+ 一个 <1GPU·h 定生死实验（四角色分布 B 是否暴露医生中心 A 测不出、指南可打分的失败）。用户「先证明可行性」→ 派 coder 搭原型（`src/feasibility_pilot/`）→ 主线真跑。
