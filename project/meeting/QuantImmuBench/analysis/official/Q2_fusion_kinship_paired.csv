@@ -4,6 +4,6 @@
 # rho_bar_a/b=各法 per-patient Fisher-z ρ̄; ci_lo_raw/ci_hi_raw=裸 Δz̄ 的 cluster-bootstrap-over-patients 95%CI;
 # K=配对病人数; driver_patient=|该病人两法 Fisher-z 差| 最大的病人。
 method_a,method_b,rho_bar_a,rho_bar_b,dz_raw,p_raw,dz_lenctrl,p_lenctrl,K,ci_lo_raw,ci_hi_raw,driver_patient
-geomean,mean_rank,0.362171,0.352267,0.011352,0.792969,-0.026969,0.730469,9,-0.064614,0.075023,106
-geomean,median,0.362171,0.267484,0.10523,0.023438,0.053195,0.457031,9,0.039102,0.177942,108
-mean_rank,median,0.352267,0.267484,0.093878,0.03125,0.080165,0.054688,9,0.030174,0.150925,108
+geomean,mean_rank,0.365746,0.347786,0.020581,0.539062,-0.016163,0.75,9,-0.043233,0.073807,106
+geomean,median,0.365746,0.251831,0.126137,0.007812,0.072165,0.277344,9,0.061662,0.201651,105
+mean_rank,median,0.347786,0.251831,0.105556,0.007812,0.088328,0.011719,9,0.055483,0.157147,105

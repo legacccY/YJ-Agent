@@ -11,3 +11,18 @@ scripts/out/immuneapp_WT/
 scripts/out/prime_out.tar.gz
 scripts/out/immuneapp_out.tar.gz
 scripts/out/prime_out_8tools_unused
+
+# 散落产物治理（Entry 54, 2026-07-04）—— 误 dump / 一次性探针 / 中间备份
+/X_file
+/pred_df
+/check_v3.txt
+/_scratch_*.py
+/_scratch_*.log
+*.bak
+*.pre_*_bak
+# 归档区（可逆归档，不进 git）
+_archive/
+# 管道 staging 中间物（rebuild_canonical --verify/--promote 产物，可重生成）
+scripts/out/rebuild/
+# 下游重跑备份（run_downstream --backup 产物，可重生成）
+analysis/official/_pre_covfix_backup_*/

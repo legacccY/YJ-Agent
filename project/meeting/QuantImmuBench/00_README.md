@@ -15,6 +15,7 @@
 > 📖 **新人/复盘**：`项目全解_从头到尾.md`（故事版全貌：这是什么、做了什么、踩了哪些坑、现状）。
 >
 > 📊 **干净结果总表（2026-07-01，writer 单一数据来源）**：`RESULTS_CLEAN_SUMMARY.md`——从零重建后所有锁定数字，按 outline § 组织 + 真源 csv + 诚实局限。写 tex 只用这份，别用重建前旧数（旧表已标 legacy）。
+> 🔗 **单一真源 + 溯源（2026-07-04，Entry 54）**：管道一键重建 = `scripts/rebuild_canonical.py --verify`（证新旧 canonical 0 差异）→ `analysis/official/run_downstream.py --run`（下游全刷新）。每个 headline 数字 ← 脚本 ← csv 真源见 `PROVENANCE_TABLE.md`（Tier 0-4 溯源）。canonical=`data/frozen/pooled_clean_9mer.csv`（sha 见 `data/frozen/PROVENANCE.json`）。
 >
 > 📨 **给袁老师沟通档（2026-07-01）**：`给袁老师_两个方法学问题.md`——两个重建中发现的方法学问题（① 肽长混杂/长肽上 max 随窗口数虚高，附顺序统计量公式 ② geomean/mean-rank/median 在秩指标下数学近亲，附泰勒展开证明）。待与老师讨论。
 >

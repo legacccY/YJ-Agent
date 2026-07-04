@@ -1,0 +1,41 @@
+{
+  "design": "permutation null for nested-LOPO integration (multi-shuffle upgrade of R5 single --shuffle)",
+  "input": "pooled_clean_9mer.csv",
+  "integration_dims": [
+    "PredIG_max",
+    "IMPROVE_max",
+    "pTuneos_max",
+    "PRIME_max",
+    "ImmuneApp_max",
+    "deepHLApan_max"
+  ],
+  "theta_space": [
+    "fixavg",
+    "ridge@dof2",
+    "ridge@dof2.5",
+    "ridge@dof3"
+  ],
+  "min_pep": 3,
+  "n_perm": 1000,
+  "seed0": 0,
+  "seed_range": [
+    0,
+    999
+  ],
+  "n_valid": 1000,
+  "n_nan": 0,
+  "null_mean": -3.8e-05,
+  "null_std": 0.137594,
+  "null_median": 0.014564,
+  "null_q2.5": -0.276983,
+  "null_q97.5": 0.240089,
+  "null_min": -0.472534,
+  "null_max": 0.34357,
+  "real_lopo_rho": 0.274922,
+  "real_lopo_rho_source": "R5_nested_lopo_official.summary.json lopo_fisherz_rho",
+  "n_null_ge_real": 12,
+  "empirical_p_onesided": 0.012987,
+  "empirical_p_formula": "(#{null >= real} + 1) / (n_perm + 1)  [one-sided upper tail, +1 corrected]",
+  "real_percentile_in_null": 0.988,
+  "consistency_note": "置换机制 + nested-LOPO 均复用 R5_official (compute_lopo_rho 抽自 main line 182-220, 计算未改); seed=S 的一次 == R5_official.py --shuffle --seed S, 逐位一致。"
+}

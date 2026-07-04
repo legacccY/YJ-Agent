@@ -1,16 +1,16 @@
 # R5_nested_lopo_official.csv
 # QuantImmuBench §3.3.3 表8: nested-LOPO 整合 vs oracle vs 最强单工具
-# 输入=pooled_peptide_level_30tools_9mer.csv; DS2 9 患者(无 DS1 训练池); 整合维度=['PredIG_rankdecay', 'IMPROVE_topk_w', 'pTuneos_geomean', 'PRIME_rankdecay', 'ImmuneApp_sum', 'deepHLApan_geomean']
+# 输入=pooled_clean_9mer.csv; DS2 9 患者(无 DS1 训练池); 整合维度=['PredIG_max', 'IMPROVE_max', 'pTuneos_max', 'PRIME_max', 'ImmuneApp_max', 'deepHLApan_max']
 # 外层留一 DS2 病人, 内层 LOPO 选 θ*(fixavg/ridge@dof); oracle=全数据选 θ 作弊上界
 # LOPO ρ̄≈oracle ρ̄ ⇒ 超参选择零过拟合(无泄漏证据); ★整合维度=TODO 待袁/朱确认
 patient_id,n_pep,theta_selected,lopo_test_rho,oracle_rho
-101,12,ridge@dof2,-0.300699,-0.181818
-102,8,ridge@dof2,0.443122,0.275454
-104,17,ridge@dof2.5,0.203431,0.186275
-105,19,ridge@dof2,-0.050877,-0.07193
-106,16,ridge@dof2,0.047059,0.111765
-107,12,ridge@dof3,0.20979,0.20979
-108,15,ridge@dof2,0.289286,0.275
-109,16,ridge@dof2,0.370588,0.408824
-110,15,ridge@dof3,0.146559,0.146559
-SUMMARY,130,oracle=ridge@dof3,0.137975,0.145446
+101,12,ridge@dof2.5,0.169018,0.218315
+102,8,ridge@dof3,0.550908,0.550908
+104,17,ridge@dof2,0.509804,0.551471
+105,19,ridge@dof3,0.170325,0.170325
+106,16,ridge@dof2,-0.164706,-0.182353
+107,12,ridge@dof2,0.65035,0.65035
+108,15,ridge@dof2,0.005362,-0.005362
+109,16,ridge@dof3,0.211385,0.211385
+110,15,ridge@dof2.5,0.218247,0.223614
+SUMMARY,130,oracle=ridge@dof3,0.278684,0.287471

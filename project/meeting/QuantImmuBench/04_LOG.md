@@ -4,6 +4,57 @@
 
 ---
 
+## Entry 54-CLEANUP-CANONICAL — 2026-07-04【管道收敛单一真源(rebuild_canonical --verify 0 差异)+ §3.2-§3.4 干净重跑 + 8-11mer 口径取证更正(旧声称不精确) + 给袁老师合并决策档】
+
+**背景**：项目管道补丁摞补丁（covfix→covfix_8to11→deepHLApan-indel 散在 scripts/+_scratch/+原地覆写），无单一入口，PROVENANCE 过期；§3.2-§3.4 下游还挂在 pre-covfix 老数据。本轮收口整顿（plan=`~/.claude/plans/quantimmubench-briefings-in-nested-snowglobe.md`）。北极星=余嘉职责「干净 benchmark + 干净部署 + 干净评测」，不追 outline 每个声称。
+
+**Phase A — 管道收敛成单一真源（编排不重构，复现零偏离）**：
+- 新建 `scripts/rebuild_canonical.py` 单一入口驱动（`--dry-run`/`--verify`/`--promote`），按序编排现有 validated 脚本到独立 staging，**不重写任何计算**。
+- **`--verify` PASS：新链重建的 9mer + 8to11mer 与现 canonical 逐列逐行 `new.equals(canon)=True`，0 差异** → 编排=现状坐实。
+- 消灭 `patch_deephlapan_indel.py` 原地覆写（参数化 `--in/--out`，计算 21-40 行未动）；`_scratch/patch_covfix_8to11.py` 提升进 `scripts/`。
+- **挖出并固化「SNV110 丢失步骤」**：长 SNV 肽 `16097-110-18` 的 deepHLApan 补丁（101→130 的 +1）从未写进任何脚本（手工步），现固化进驱动 S3/S7。
+- **PROVENANCE 拆弹**：`pooled_clean_9mer.csv` sha `af2b0f81`(过期,pre-covfix)→`debadd108`(对上现文件)；补登 `pooled_clean_8to11mer.csv` sha=`843ead08`；`allwindow` 标废（orphan 未随 covfix 重建）。改 `p0f_freeze_provenance.py` OPTIONAL_FROZEN 加 8to11mer。旧 canonical 备份 `*.pre_rebuild_REBUILD.bak`。
+
+**Phase B — §3.2-§3.4 在干净 canonical 重跑（纯 CPU）**：
+- 新建 `analysis/official/run_downstream.py` 驱动（`--backup`/`--run`/`--dry-run`）。查明 R1-R9/S1/S2/Q2 彼此独立（都直读 canonical，无 R↔R 依赖）；R10（从未跑=生成新结果，opt-in 未跑）、fig1（已 07-04 新，opt-in）。
+- 排除两坑：`compare_countclean_vs_dirty.py`（干净 canonical 无 count_conf 列会崩，已退役范式）、`compute_netAffneg_topk20eq.py`（读 Tier1 base 非 canonical 下游）。
+- 备份 pre-covfix stale 45 文件 → `analysis/official/_pre_covfix_backup_REBUILD/`（幂等）；**CORE 15 步全 returncode=0**，R2-R9 从 07-01 stale 刷新到干净 canonical。analyst 老 vs 新 diff + verifier 承重数字核**进行中**。
+
+**8-11mer 口径取证更正（主线 Bash 核，纠正 Entry 52/53 不精确声称）**：
+- 旧声称「merged 里 indel 全 9mer、源头没生成 indel 8/10/11 子肽、全 30 工具一致」**不精确**。逐 indel 肽核：29 个 indel_list 肽里 **28 仅 9mer，1 例外 `16097-104-24` 有完整 8-14mer 展开**——而该例外本质 `AMACR|p.Y41N` 错义点突变（Variant_Type=NaN，只因 WT=NA 落进 indel_list），非真 indel。
+- **真相=preprocessing 子肽展开口径不对称**：取代型(SNV/错义)肽全展开 8-14mer（SNV 100/101）；真 indel(DEL 23+INS 5=28)只 9mer 窗。非工具打分缺失（工具对已生成非 9mer 子肽 21 个 100% 打分）。
+- 承重数字（官方源 In Vitro `Variant_Type`）：**130=101 SNV+29 非SNV(DEL23/INS5/None1)**；**路B 真实工具数=28**（30 打分列减架构级 9mer-only 的 DeepNetBim/NeoaPred）。
+
+**Phase E — 给袁老师合并决策档**：`给袁老师_方法学决策档_DRAFT_2026-07-04.md`（5 问：①8-11mer 三选项+§2.2 英文三版措辞 ②DS2-only scope ③肽长控制 ④geomean 近亲 ⑤肽数对账 130/9 vs 92/8 vs 101）。**推荐路B**（8-11 立意=多长度敏感性，只有 SNV 有一致全展开，限定 SNV=apples-to-apples，零重跑）。**scope 新发现**：权威 raw 有第二 sheet `Ex Vivo`(36 行池级逐周,从未用,同批人非鼠)；鼠 B16F10/CT26 文件名零命中=实缺；DS1(6 患者/82 肽)与 DS2(9 患者/130 肽)患者 ID 不重叠=独立人类队列。
+
+**产物**：`scripts/rebuild_canonical.py`、`analysis/official/run_downstream.py`（新驱动）；改 `patch_deephlapan_indel.py`/`patch_covfix_8tools.py`/`p0e2_pool_clean.py`(+`--output`)/`p0f_freeze_provenance.py`；新 `scripts/patch_covfix_8to11.py`(迁移)；`给袁老师_方法学决策档_DRAFT_2026-07-04.md`；PROVENANCE.json 重冻；R2-R9/S/Q 刷新。
+
+**续（同日收尾，全部完成）**：
+- **analyst+verifier 裁决**：§3.2-§3.4 迁干净 canonical 后**三大 claim 全部幸存**（亲和靠聚合✅/geomean 鲁棒最优✅并强化 win_rate 0.40→0.57-0.60/整合 vs 最强单持平✅ p=0.46）。covfix 作用=砸掉 8 工具稀疏覆盖伪迹（andy90 0.585→0.033、Seq2Neo lenctrl 0.87 消失、MHCnuggets −0.108→+0.447），承重工具逐位不变。**唯一实质变化**：§3.3.5 最强单 netMHCpan_BA(0.392)→MHCnuggets(0.447)，已同步 RESULTS_CLEAN_SUMMARY + ppt。
+- **§3.3.3 命门 null 砸实**：发现旧 shuffle-null 是单次置换（0.279≈real 不可靠）→ 抽 `R5_official.compute_lopo_rho`（回归证字节一致 lopo=0.274922）+ 新 `R5_permutation_null.py` 跑 **1000 次置换**：null mean=−0.00、real 0.275 落 **98.8 分位**（12/1000 ≥ real）、**经验 p=0.013 < 0.05 → 信号显著非泄漏**。
+- **Phase C 溯源表**：`PROVENANCE_TABLE.md`（Tier 0-4 + headline 数字←脚本←csv，6 表）+ 00_README 指针。
+- **Phase D 归档**：A 组 7 + C1 历史 22 + rev5 → `_archive/2026-07-04/`（可逆），git 漂移 6 文件脱跟踪 + `.gitignore` 补漂移规则，根目录 pptx/pdf/docx **25→2 现役**。
+- **outline 4 核心图**：新 `plot_fig2_pooling.py`/`plot_fig3_robustness.py`/`plot_fig4_ranking.py` → fig2(§3.2)/fig3(§3.3.4)/fig4(§3.4)（verifier 核关键值 PASS）+ fig1(§3.1) 齐；`figures/` + `paper/figures/` PNG+PDF。
+- **ppt rev6**：`gen_ppt_progress_v4.js` 嵌新 fig1-4 + 同步 §3.3.5/§3.3.1 文字 → `QuantImmuBench_progress_v4_rev6_2026-07-04.pptx`（16 页）。**未刷**：次要图（工具相关热图/Q2/肽长混杂图）仍 07-01；§3.3.3 null 未入 ppt（无专门 slide）。
+- **投稿仍待袁老师拍板**（决策档 5 问）+ tex 正文未写 + scope 缺口（鼠数据实缺/DS1/Ex Vivo/R10/§3.4 部署脚本）。
+
+**🚦 STAGE-GATE 判定（verifier 核 + opus reviewer 严判，2026-07-04）= CONDITIONAL（实验/数字层 PASS，成文层 FAIL）**：
+- **PASS（数据层）**：G1（30 工具打分列）/ G3（三重检验全齐：nested-LOPO + **1000 次置换 null p=0.013** + ablation 47 行 + robustness drop10/20×30seed）/ G4（12 fusion 含 geomean）/ G5（Spearman 主 + Pearson R9 + mw 8-11 + 敏感性）。老 ACCEPTANCE「当前状态」标注已 STALE。
+- **🔴 成文层 FAIL（头号缺口）**：`paper/sections/4_results.tex`+`5_discussion.tex` 停在 **covfix 前旧口径**（deepHLApan 当最强单、101 肽、`投稿前必改`TODO 未清）→ 与干净 canonical 数字打架，原样投=数字红线。需 writer 按 RESULTS_CLEAN_SUMMARY 整轮重写。
+- **拍板点**：G2 四数据集（鼠缺，需袁老师定 DS2-only + 鼠/DS1 future work）；G8 DTU consent（netMHCpan_BA 三重承重却许可受限，「用户已定不考虑」与期刊 G8 冲突）。
+- **reviewer 真漏洞（存 tex 时须处理）**：①**SURV6 六维=看全数据选、未进 CV** → nested-LOPO 只嵌 θ 不嵌维度选择，「零过拟合 gap 0.018」+ 置换 null p=0.013 均只覆盖 θ、对维度选择偏乐观（限制#2 已标注但未落 discussion tex，措辞须防 over-claim）；②置换 null 测「整合信号>0」非「整合>最强单」（后者 p=0.46 持平），且 null 里 SURV6 固定不重选 → p 偏乐观；③6 维(R5/R7) vs 7 维(R6 robustness) 特征集不一致，须统一/交代；④n=9 病人级功效，整合 vs 最强单不显著。
+- **跑偏审计：无 over-claim 漂移**（多处诚实回退：geomean「唯一」→「稳健默认」）。
+- **同步修**：reviewer 抓到 RESULTS_CLEAN_SUMMARY §3.3.4 表 stale（geomean win 0.400→**0.567**、min 0.333→0.300、median rank 8→7），已按 R6 真值刷新（§3.3.3/§3.3.4/§3.3.5 现全同步 covfix）。
+
+**续2（presentation 层收口，同日）**：
+- **outline 4 核心图重出 + 修**：`plot_fig2_pooling.py`(§3.2 哑铃)/`plot_fig3_robustness.py`(§3.3.4 双面板)/`plot_fig4_ranking.py`(§3.4 排名)，逐张主线看图修 bug——fig2 图例遮 Δ 文字→移底部；fig3 下面板补柱值 + ρ 豆腐块→mathtext `$\bar{\rho}$` + 图例移图外；fig4 去部署路线（纯排名）+ ρ̄ mathtext。
+- **ppt rev6**：`gen_ppt_progress_v4.js` 嵌新 fig1-4 + 同步 §3.3.5 文字（整合 0.366 vs 最强单 **MHCnuggets 0.447** / p 0.46，修 §3.1↔§3.3.5 矛盾）→ `QuantImmuBench_progress_v4_rev6_2026-07-04.pptx`（16 页）；rev5 归档。
+- **合并 benchmark 结果 deck（袁老师要「结果全合并一 ppt」）**：新 `gen_ppt_benchmark_results.js` → `QuantImmuBench_benchmark_results_2026-07-04.pptx`，**12 页**：封面/§3.1 9mer/§3.1 8-11mer/§2.2 对比上半/§2.2 对比下半/§3.2/§3.3.4/§3.3 严格检验/4 张工具相关结构图（树/corrplot/网络/MDS）。去掉综合排名页（用户要求）。
+- **工具相关结构图 4 种（袁老师要非热图）**：researcher 查生信惯例（网络/树/corrplot/MDS，引用见 task）→ 新 `_toolcorr_common.py`(共享底座) + `plot_toolcorr_{network,dendrogram,corrplot,mds}.py`，从 pooled 30 `_max` 列算 Spearman 相关(29 工具,剔 DeepNetBim)。network 塌团→k 调大 + adjustText 标签避让修好。**4 种全出，待袁老师选**（推荐树状图/corrplot）。
+- **9mer vs 8-11mer 对比图（带数据标注，分两张）**：`plot_fig_lencompare.py` 哑铃图上半15/下半14，两值标注 + crossover 异色 + 统计框；均值 **9mer 0.187 vs 8-11mer 0.121、25/29 工具 9mer≥8-11**（脚本现算=图=caption 三方一致）。
+- **🔑 0.447 可信度验证（用户怕重蹈 0.627 被袁老师看穿）**：Bash 核 raw vs 控肽长——HLAthena **0.627→控肽长 0.250**（掉 0.377=长度伪迹，已降级）；MHCnuggets **0.447→控肽长 0.413**（几乎不动=真信号，逐患者 9 值全正）；netMHCpan_BA 0.392→0.432 同稳。**结论：0.447 可辩护，汇报建议双报「0.447 裸/0.413 控肽长」主动示控长度。**
+- **产物**：`analysis/official/plot_fig{2,3,4}_*.py`(改)/`plot_toolcorr_*.py`+`_toolcorr_common.py`(新)/`plot_fig_lencompare.py`(新)/`gen_ppt_benchmark_results.js`(新)；figures/ 下 fig2/3/4 + fig_toolcorr_{4}+fig_lencompare_{1,2} PNG+PDF；`QuantImmuBench_benchmark_results_2026-07-04.pptx`(12页) + `progress_v4_rev6`(16页)。**待办**：袁老师选相关结构图型 + 拍板 5 决策 + tex 正文重写(gate 头号缺口)。
+
 ## Entry 53-8to11-AUDIT — 2026-07-04【8-11mer 口径隐藏问题排查：deepHLApan 补跑(同 9mer)+ 第三类新发现(3 工具口径过度声称)+ 补充 deck 重建 rev1】
 
 **触发**：用户「8-11 另一窗昨天做了，把隐藏问题都找出来解决，然后更新 ppt」。8-11mer 覆盖修复=另窗 Entry 49（2026-07-03），但昨天不知道 deepHLApan 是 context-free（今天才发现）→ 8-11mer 沿用旧归类同样漏了 deepHLApan indel。

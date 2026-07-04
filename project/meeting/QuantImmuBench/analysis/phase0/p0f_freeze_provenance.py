@@ -58,7 +58,8 @@ REQUIRED_FROZEN = [
 OPTIONAL_FROZEN = [
     # ★ 2026-07-01 从零重建后的干净主分析表 (含突变过滤+4 outline pooling+肽长列) —— 当前主分析真源
     "pooled_clean_9mer.csv",                   # ★主分析 (含突变窗+9mer+4 pooling 网格)
-    "pooled_clean_allwindow.csv",              # 干净全窗 (补充)
+    "pooled_clean_8to11mer.csv",               # ★8-11mer 长度敏感性补充口径 (§2.2 supplement)
+    "pooled_clean_allwindow.csv",              # [旧/孤儿] 全窗, 未随 covfix 补丁重建, 仅历史对照非现役
     # 以下为重建前的旧表, 保留仅作对照/复现, 已不是主分析真源:
     "pooled_peptide_level_30tools_9mer.csv",   # [旧/legacy] 含 sum+WT 污染, 降对照
     "pooled_peptide_level_30tools.csv",        # [旧/legacy] 全窗

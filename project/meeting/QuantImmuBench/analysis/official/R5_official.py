@@ -133,6 +133,63 @@ def agg(perpat):
     return rb
 
 
+def compute_lopo_rho(df, feature_cols, thetas, pats, oracle_pp, min_pep, label_col,
+                     *, verbose=True):
+    """★ NESTED OUTER 主计算 (抽自旧 main() 内联版 line 182-220, 计算逻辑一字未改)。
+
+    外层逐个留一 DS2 病人当 test (完全隔离), 内层在其余病人上 LOPO 选超参 θ*, 用 θ* 训其余
+    病人评测留出病人 = 无泄漏诚实 lopo_test_rho; 各外层 fold 的 lopo_test_rho 先 round(6) 再
+    跨病人 Fisher-z 等权聚合 = lopo_fisherz_rho。
+
+    oracle_pp : {pat: (rho, n)} 全数据选 θ 的作弊上界 per-patient (main 传 ORACLE 块结果)。
+      ★ 仅写入 out_df 的 oracle_rho 列供 CSV/一致性, **不参与 lopo_bar 计算**。置换 null harness
+      不需要 oracle, 传空 dict {} → oracle_rho 列全 NaN, lopo_bar 与传真 oracle 时逐位相同。
+    verbose : True 时逐 fold 打印 (main 行为); harness 循环内传 False 静默。
+
+    返回 (lopo_bar, lopo_lo, lopo_hi, lopo_n, out_df, lopo_pred, rows)。
+    lopo_bar 即 R5 summary.json 的 lopo_fisherz_rho。
+    """
+    theta_names = [t["name"] for t in thetas]
+    rows = []
+    lopo_pred = pd.Series(np.nan, index=df.index, dtype=float)  # [B2] 收集外层 test 预测供控肽长
+    for p in pats:
+        inner_pool = [q for q in pats if q != p]
+        inner_agg = {}
+        for t in thetas:
+            pp = lopo_perpatient(df, inner_pool, t, feature_cols, label_col, min_pep)
+            inner_agg[t["name"]] = agg(pp)
+        theta_star_name = max(theta_names,
+                              key=lambda nm: (inner_agg[nm] if not np.isnan(inner_agg[nm])
+                                              else -np.inf))
+        theta_star = next(t for t in thetas if t["name"] == theta_star_name)
+
+        test = df[df["Patient_ID"] == p]
+        train = df[df["Patient_ID"].isin(inner_pool)]
+        n = len(test)
+        if n < min_pep:
+            lopo_rho = np.nan
+        else:
+            pred = fit_predict(train, test, theta_star, feature_cols, label_col)
+            lopo_rho = (spearman_np(pred, test[label_col].values.astype(float))
+                        if pred is not None else np.nan)
+            if pred is not None:
+                lopo_pred.loc[test.index] = np.asarray(pred, dtype=float)
+        oracle_rho = oracle_pp.get(p, (np.nan, n))[0]
+        rows.append(dict(patient_id=p, n_pep=n, theta_selected=theta_star_name,
+                         lopo_test_rho=round(lopo_rho, 6) if not np.isnan(lopo_rho) else np.nan,
+                         oracle_rho=round(oracle_rho, 6) if not np.isnan(oracle_rho) else np.nan))
+        if verbose:
+            lr = f"{lopo_rho:+.4f}" if not np.isnan(lopo_rho) else "NaN"
+            orr = f"{oracle_rho:+.4f}" if not np.isnan(oracle_rho) else "NaN"
+            print(f"  p{p} n={n} θ*={theta_star_name:>12} lopo={lr:>8} oracle={orr:>8}")
+
+    out_df = pd.DataFrame(rows)
+    lopo_pairs = out_df[["lopo_test_rho", "n_pep"]].dropna()
+    lopo_bar, lopo_lo, lopo_hi, lopo_n, _ = fisherz_weighted_agg(
+        lopo_pairs["lopo_test_rho"].tolist(), lopo_pairs["n_pep"].tolist())
+    return lopo_bar, lopo_lo, lopo_hi, lopo_n, out_df, lopo_pred, rows
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="R5 官方: Nested-LOPO 整合 vs 最强单工具 + shuffle null (§3.3.3 表8)")
@@ -178,44 +235,10 @@ def main():
     oracle_pp = oracle_pp_by_theta[theta_oracle]
     print(f"[ORACLE] θ_oracle={theta_oracle} (ρ̄={oracle_agg[theta_oracle]:+.4f})")
 
-    # ── NESTED OUTER: 逐个留一 DS2 病人, 内层选 θ* ──────────────────────────────
-    rows = []
-    lopo_pred = pd.Series(np.nan, index=df.index, dtype=float)  # [B2] 收集外层 test 预测供控肽长
-    for p in pats:
-        inner_pool = [q for q in pats if q != p]
-        inner_agg = {}
-        for t in thetas:
-            pp = lopo_perpatient(df, inner_pool, t, feature_cols, LABEL_COL, args.min_pep)
-            inner_agg[t["name"]] = agg(pp)
-        theta_star_name = max(theta_names,
-                              key=lambda nm: (inner_agg[nm] if not np.isnan(inner_agg[nm])
-                                              else -np.inf))
-        theta_star = next(t for t in thetas if t["name"] == theta_star_name)
-
-        test = df[df["Patient_ID"] == p]
-        train = df[df["Patient_ID"].isin(inner_pool)]
-        n = len(test)
-        if n < args.min_pep:
-            lopo_rho = np.nan
-        else:
-            pred = fit_predict(train, test, theta_star, feature_cols, LABEL_COL)
-            lopo_rho = (spearman_np(pred, test[LABEL_COL].values.astype(float))
-                        if pred is not None else np.nan)
-            if pred is not None:
-                lopo_pred.loc[test.index] = np.asarray(pred, dtype=float)
-        oracle_rho = oracle_pp.get(p, (np.nan, n))[0]
-        rows.append(dict(patient_id=p, n_pep=n, theta_selected=theta_star_name,
-                         lopo_test_rho=round(lopo_rho, 6) if not np.isnan(lopo_rho) else np.nan,
-                         oracle_rho=round(oracle_rho, 6) if not np.isnan(oracle_rho) else np.nan))
-        lr = f"{lopo_rho:+.4f}" if not np.isnan(lopo_rho) else "NaN"
-        orr = f"{oracle_rho:+.4f}" if not np.isnan(oracle_rho) else "NaN"
-        print(f"  p{p} n={n} θ*={theta_star_name:>12} lopo={lr:>8} oracle={orr:>8}")
-
-    out_df = pd.DataFrame(rows)
-    lopo_pairs = out_df[["lopo_test_rho", "n_pep"]].dropna()
+    # ── NESTED OUTER: 逐个留一 DS2 病人, 内层选 θ* (★ 抽成 compute_lopo_rho, 计算不变) ──
+    lopo_bar, lopo_lo, lopo_hi, lopo_n, out_df, lopo_pred, rows = compute_lopo_rho(
+        df, feature_cols, thetas, pats, oracle_pp, args.min_pep, LABEL_COL)
     orc_pairs = out_df[["oracle_rho", "n_pep"]].dropna()
-    lopo_bar, lopo_lo, lopo_hi, lopo_n, _ = fisherz_weighted_agg(
-        lopo_pairs["lopo_test_rho"].tolist(), lopo_pairs["n_pep"].tolist())
     orc_bar, orc_lo, orc_hi, orc_n, _ = fisherz_weighted_agg(
         orc_pairs["oracle_rho"].tolist(), orc_pairs["n_pep"].tolist())
     diff = (lopo_bar - orc_bar) if not (np.isnan(lopo_bar) or np.isnan(orc_bar)) else np.nan

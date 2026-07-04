@@ -42,21 +42,24 @@ per-patient Spearman(工具 max-pool 分, ELISpot)，跨患者 Fisher-z 等权�
 - dim7 max 维：geomean/mean_rank/median/min/weighted 紧簇 0.33–0.39，**统计打平无点冠军**。
 
 ## §3.3.3 nested-LOPO（表8）+ §3.3.5 显著性 — 真源 `R5_*` / `R7_*`
-- 整合(SURV6 geomean, max 维) = **0.362** vs 最强单 netMHCpan_BA = **0.392**。
-- 配对置换 **p=0.79（裸）/ 0.24（控肽长）→ 统计持平**（非"输"）。价值=不知最优工具时给稳健近最优输出（按鲁棒性部署）。
+> §3.3.3/§3.3.5 数字 2026-07-04 同步至 covfix 后 canonical（Entry 54）；§3.3.3 已补 1000 次置换 null（经验 p=0.013，信号显著非泄漏）。
+- nested-LOPO（表8）：LOPO ρ=**0.275**（控肽长 0.257）vs oracle ρ=**0.297**，gap **0.018** → 内层选超参近零过拟合。
+- shuffle-null（1000 次置换，`R5_permutation_null.py`）：null 分布居中于 0（mean=−0.00，std 0.14，[q2.5,q97.5]=[−0.28,+0.24]），真 LOPO ρ=0.275 落 **98.8 分位**（1000 次里仅 12 次 ≥ real），**经验 p=0.013 < 0.05 → nested-LOPO 信号显著、非泄漏**（单次置换旧值 0.279 系高方差伪影，已被 1000 次分布证伪）。
+- §3.3.5 整合 vs 最强单：整合(SURV6 geomean, max 维) = **0.366** vs 最强单 MHCnuggets = **0.447**（covfix 补满 9/9 覆盖、零选择池 15→24 工具后 MHCnuggets 居首）。
+- 配对置换 **p=0.46（裸）/ 0.22（控肽长）→ 整合与最强单统计上持平**（p>0.05）；但点估上整合略逊于 covfix 后的最强单 MHCnuggets（Δ=**−0.081**，gap 较 covfix 前 −0.030 扩大，bootstrap CI 上界从 +0.210 收窄到 **+0.079** 贴近 0）。价值=不知最优工具时给稳健近最优输出（按鲁棒性部署）。
 
-## §3.3.4 删突变鲁棒性（表9/图3）— 真源 `R6_robustness_official_summary.csv`
-win_top1（drop10%）：
+## §3.3.4 删突变鲁棒性（表9/图3）— 真源 `R6_robustness_official_summary.csv`（2026-07-04 同步 covfix canonical）
+win_top1（drop10%，30 seed）：
 
 | fusion | win_top1 | rank |
 |---|---|---|
-| **geomean** | **0.400** | **1** |
-| min | 0.333 | 2 |
-| weighted_mean_rank | 0.133 | 5 |
+| **geomean** | **0.567** | **1** |
+| min | 0.300 | 2 |
+| weighted_mean_rank | 0.100 | 5 |
 | mean_rank | 0.000 | 4 |
-| median | 0.000 | 8 |
+| median | 0.000 | 7 |
 | max | 0.000 | 14 |
-- geomean 是删突变鲁棒性众数第一，但 min 紧咬；跨维一致判据 weighted_mean_rank 略胜（诚实局限）。
+- geomean 删 10% win_top1=**0.567**、删 20%=**0.600**，两档均 rank1（鲁棒众数第一）；但 min 紧咬（0.30/0.13）、跨维一致判据 weighted_mean_rank 略胜（诚实局限）。
 - ⚠️ **数学近亲**：geomean/mean_rank/median 排序相关 0.90-0.97（秩指标下本应如此，见给袁老师档），"唯一"难 claim。
 
 ### §3.3.4b geomean 数学近亲的正式检验（回答袁老师问题二，2026-07-01 补，verifier PASS）

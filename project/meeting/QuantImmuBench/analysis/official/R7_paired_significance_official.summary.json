@@ -24,49 +24,49 @@
       "deepHLApan_max"
     ],
     "dims_TODO": "SURV6 成员=selection, 待袁/朱确认 outline",
-    "fisherz_rho": 0.362171,
-    "fisherz_rho_allpat": 0.362171,
-    "ci_lo": 0.166635,
-    "ci_hi": 0.530299
+    "fisherz_rho": 0.365746,
+    "fisherz_rho_allpat": 0.365746,
+    "ci_lo": 0.170857,
+    "ci_hi": 0.533094
   },
   "strongest_single": {
-    "tool_pooling": "netMHCpan_BA_max",
-    "full_cov_pool_size": 15,
+    "tool_pooling": "MHCnuggets_max",
+    "full_cov_pool_size": 24,
     "selection": "全覆盖(130肽)池零选择 <tool>_max 里 per-patient Fisher-z 最高, 防稀疏虚高",
-    "fisherz_rho": 0.391691,
-    "fisherz_rho_allpat": 0.391691,
-    "ci_lo": 0.197348,
-    "ci_hi": 0.556412
+    "fisherz_rho": 0.446608,
+    "fisherz_rho_allpat": 0.446608,
+    "ci_lo": 0.261162,
+    "ci_hi": 0.600261
   },
   "paired_test_raw": {
-    "delta_zbar": -0.0344,
-    "p_permutation": 0.792969,
+    "delta_zbar": -0.097,
+    "p_permutation": 0.460938,
     "K_paired": 9,
     "note": "每病人 arctanh(fusion)-arctanh(single) 均值; 双侧符号置换(K<=20 精确枚举 2^K)"
   },
   "paired_test_lenctrl": {
-    "delta_zbar": -0.1658,
-    "p_permutation": 0.242188,
+    "delta_zbar": -0.1355,
+    "p_permutation": 0.222656,
     "K_paired": 9,
     "ctrl": "peplen",
     "note": "两法均用控肽长偏相关(ctrl=peplen), 隔离肽长混杂后重算 Δz̄/p"
   },
-  "delta_integration_minus_single_rho": -0.02952,
-  "driver_patient": 109,
-  "driver_abs_delta_change": 0.07113,
+  "delta_integration_minus_single_rho": -0.080862,
+  "driver_patient": 107,
+  "driver_abs_delta_change": 0.074918,
   "delta_leave_one_out": {
-    "101": -0.079048,
-    "102": -0.089417,
-    "104": -0.027027,
-    "105": -0.029325,
-    "106": 0.009239,
-    "107": 0.003208,
-    "108": -0.019979,
-    "109": 0.041609,
-    "110": -0.070736
+    "101": -0.107448,
+    "102": -0.095771,
+    "104": -0.072397,
+    "105": -0.091756,
+    "106": -0.072012,
+    "107": -0.005944,
+    "108": -0.077581,
+    "109": -0.066841,
+    "110": -0.138972
   },
-  "bootstrap_ci_lo": -0.234941,
-  "bootstrap_ci_hi": 0.209618,
+  "bootstrap_ci_lo": -0.268899,
+  "bootstrap_ci_hi": 0.078526,
   "n_boot": 2000,
   "seed": 42,
   "interpretation": "排名次序 != 显著差异; p 大 & CI 跨 0 ⇒ 统计持平 (诚实呈现, 数字以实测为准)"

@@ -13,22 +13,22 @@
     110
   ],
   "pearson_vs_spearman": {
-    "cross_tool_rank_consistency_spearman": 0.8625,
+    "cross_tool_rank_consistency_spearman": 0.8251,
     "note": "跨 30 工具的 Pearson↔Spearman ρ̄ 排序一致性 (高=两指标结论一致)"
   },
   "perpatient_distribution": {
-    "strongest_single": "netMHCpan_BA_max",
-    "strongest_single_full_cov_pool": 15,
+    "strongest_single": "MHCnuggets_max",
+    "strongest_single_full_cov_pool": 24,
     "single_rho_dist_raw": {
-      "min": -0.3571,
-      "max": 0.7929,
-      "median": 0.4663,
+      "min": 0.119,
+      "max": 0.6364,
+      "median": 0.4618,
       "n": 9
     },
     "single_rho_dist_lenctrl": {
-      "min": -0.38,
-      "max": 0.7928,
-      "median": 0.4717,
+      "min": -0.0138,
+      "max": 0.618,
+      "median": 0.4861,
       "n": 9
     },
     "surv6_geomean_dims": [
@@ -41,15 +41,15 @@
     ],
     "surv6_geomean_dims_TODO": "SURV6 成员=selection, 待袁/朱确认",
     "fusion_rho_dist_raw": {
-      "min": -0.0979,
+      "min": -0.0629,
       "max": 0.706,
-      "median": 0.374,
+      "median": 0.3503,
       "n": 9
     },
     "fusion_rho_dist_lenctrl": {
-      "min": -0.0957,
+      "min": -0.0824,
       "max": 0.6958,
-      "median": 0.24,
+      "median": 0.2654,
       "n": 9
     },
     "outline_ref": "大纲称逐病人 Spearman 0.17–0.80 剧烈波动; 数字以本表实测为准"

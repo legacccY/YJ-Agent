@@ -9,16 +9,25 @@ QuantImmuBench 覆盖修复战役 — 最终 remerge patch（Entry 48 收尾）�
 符号约定：MHCnuggets = -ic50（越大越强）；其余直接用工具原分。
 HLA 加星：DeepNetBim/Seq2Neo 输出无星（HLA-A24:02）→ re.sub 补星；其余已带星。
 
-用法：python scripts/patch_covfix_8tools.py
+用法：
+  python scripts/patch_covfix_8tools.py                       # 默认: base -> _covfix.csv
+  python scripts/patch_covfix_8tools.py --in base.csv --out staging.csv   # rebuild 驱动用它写 staging
+
+参数化 I/O（2026-07-04, 纯路径参数, 计算逻辑一字未动）：--in/--out 覆盖默认输入输出。
+路径改 ROOT-relative, 从任意 CWD 跑均正确 (原为相对 CWD)。
 """
 import re
 import sys
+import argparse
+from pathlib import Path
+
 import pandas as pd
 
-HERE = "/d/YJ-Agent/project/meeting/QuantImmuBench"  # 仅注释参考，路径用相对
-MERGED_IN = "scripts/out/merged_all_tools_30_official.csv"
-MERGED_OUT = "scripts/out/merged_all_tools_30_official_covfix.csv"
-COVDIR = "scripts/out_official/coverage_fix"
+ROOT = Path(__file__).resolve().parents[1]   # QuantImmuBench/
+HERE = "/d/YJ-Agent/project/meeting/QuantImmuBench"  # 仅注释参考
+DEFAULT_IN = ROOT / "scripts" / "out" / "merged_all_tools_30_official.csv"
+DEFAULT_OUT = ROOT / "scripts" / "out" / "merged_all_tools_30_official_covfix.csv"
+COVDIR = ROOT / "scripts" / "out_official" / "coverage_fix"
 
 # tool -> (merged 列名, raw 文件前缀, raw pep 列, raw HLA 列, raw 值列, 负号?)
 SPEC = {
@@ -37,6 +46,16 @@ def add_star(h):
     return STAR_RE.sub(r"\1*\2", str(h))
 
 def main():
+    ap = argparse.ArgumentParser(
+        description="8 工具 FULL130 新分 patch 进 merged 副本 (只填 NaN, canonical 不动)")
+    ap.add_argument("--in", dest="in_path", default=str(DEFAULT_IN),
+                    help="输入 base merged csv")
+    ap.add_argument("--out", dest="out_path", default=str(DEFAULT_OUT),
+                    help="输出 _covfix 副本 csv")
+    args = ap.parse_args()
+    MERGED_IN = args.in_path
+    MERGED_OUT = args.out_path
+
     m = pd.read_csv(MERGED_IN, low_memory=False)
     print(f"merged in: {len(m)} rows, {m['MT_FullPeptide'].nunique()} peptides")
     mkey = list(zip(m["MT_Subpeptide"].astype(str), m["HLA_Allele"].astype(str)))

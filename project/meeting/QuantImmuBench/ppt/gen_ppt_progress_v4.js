@@ -236,13 +236,13 @@ pageno(s);
 s = pres.addSlide();
 header(s, "核心结果三 · 无泄漏对比", "整合方案与最强单工具在留一交叉验证下持平", C.teal);
 tbl(s, ["对比项","排序能力","配对检验"], [
-  [{text:"整合（六工具几何均值）",bold:true,align:"left"}, {text:"0.362",bold:true,fs:13}, {text:"裸口径 p 值为 0.79，控肽长后为 0.24，两者持平",align:"left"}],
-  [{text:"最强单工具 netMHCpan-BA",bold:true,align:"left"}, {text:"0.392",bold:true,fs:13}, {text:"作为对照的单工具上限",align:"left"}],
+  [{text:"整合（六工具几何均值）",bold:true,align:"left"}, {text:"0.366",bold:true,fs:13}, {text:"裸口径 p 值为 0.46，控肽长后为 0.22，两者持平",align:"left"}],
+  [{text:"最强单工具 MHCnuggets",bold:true,align:"left"}, {text:"0.447",bold:true,fs:13}, {text:"覆盖修复后升至全覆盖，成为最强单工具",align:"left"}],
 ], [4.3, 2.3, 5.3], 0.7, 2.0, { rh:1.05, hh:0.52, bfs:12.5 });
 s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:4.55, w:11.93, h:2.0, fill:{color:C.card}, line:{color:C.line,width:1}, shadow:sh() });
 s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:4.55, w:0.09, h:2.0, fill:{color:C.teal} });
 s.addText([
-  { text:"在无信息泄漏的留一患者交叉验证下，六工具几何均值的整合方案与最强单工具 netMHCpan-BA 之间，配对检验结果为持平，并未真正超越。", options:{ breakLine:true, paraSpaceAfter:6 } },
+  { text:"在无信息泄漏的留一患者交叉验证下，六工具几何均值的整合方案与最强单工具 MHCnuggets 之间，配对检验结果为持平（裸口径 p 值为 0.46），点估计上整合略逊于覆盖修复后的最强单工具。", options:{ breakLine:true, paraSpaceAfter:6 } },
   { text:"整合方案的价值不在于跑赢最强单工具，而在于当事先并不知道哪个工具最优时，它能给出稳健的、接近最优的输出。", options:{ breakLine:true, bold:true, color:C.teal } },
 ], { x:0.98, y:4.72, w:11.5, h:1.7, fontFace:FB, fontSize:12.5, color:C.ink, valign:"top", lineSpacingMultiple:1.22, margin:0 });
 citeFoot(s, "R5 nested-LOPO · R7 显著性配对置换");
@@ -254,7 +254,7 @@ header(s, "核心结果三 · 统一排名与部署", "综合排名与两条务�
 placeImg(s, `${FIG4}/fig4_unified_ranking.png`, 0.5015, 0.5, 1.5, 7.6, 5.7);
 proseCard(s, 8.3, 1.5, 4.3, 5.7, "部署方案", [
   "务实默认方案是单一亲和力工具 netMHCpan-BA，采用取前二十个最强窗口的聚合，排序能力达到 0.461。它只依赖一个工具，最为稳定；该工具属于 DTU 学术许可。",
-  "按需备选方案是多维度几何均值融合，排序能力为 0.362，适用于不确定哪个工具最优时的稳健选择。",
+  "按需备选方案是多维度几何均值融合，排序能力为 0.366，适用于不确定哪个工具最优时的稳健选择。",
   "抗原呈递代理类工具因为覆盖稀疏、又存在肽长搭便车，不纳入部署候选。",
 ], C.sea);
 citeFoot(s, "R8 部署评估 · R1 单工具基线");
@@ -294,7 +294,7 @@ s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:5.55, w:11.93, h:1.4, fill:{color:C
 s.addShape(pres.shapes.RECTANGLE, { x:0.7, y:5.55, w:0.09, h:1.4, fill:{color:C.sea} });
 s.addText([
   { text:"左图把几种融合方法在同一批肽上的排序两两求相关，几何均值与算术均值秩融合的排序相关高达 0.95（患者内）与 0.97（合并），几乎完全一致。", options:{ breakLine:true, paraSpaceAfter:5 } },
-  { text:"右图显示三种融合方法的点估计紧紧聚成一簇，分别为 0.362、0.352 与 0.267，患者层的配对检验 p 值为 0.79，差异并不显著。", options:{ breakLine:true } },
+  { text:"右图显示三种融合方法的点估计紧紧聚成一簇，几何均值、算术均值秩、中位数分别为 0.366、0.348 与 0.252，患者层的配对检验 p 值为 0.54，差异并不显著。", options:{ breakLine:true } },
 ], { x:0.98, y:5.68, w:11.5, h:1.2, fontFace:FB, fontSize:12, color:C.ink, valign:"top", lineSpacingMultiple:1.18, margin:0 });
 citeFoot(s, "R3_fusion_12methods_official.csv · 融合方法排序相关与点估计");
 pageno(s);
@@ -332,4 +332,4 @@ proseCard(s, 6.85, 1.7, 5.78, 5.25, "下一步计划", [
 citeFoot(s, "方法学评价专章 · 项目进度追踪（2026-07-01）");
 pageno(s);
 
-pres.writeFile({ fileName:"D:/YJ-Agent/project/meeting/QuantImmuBench/QuantImmuBench_progress_v4_rev5_2026-07-04.pptx" }).then(f=>console.log("WROTE", f, "pages", _PG));
+pres.writeFile({ fileName:"D:/YJ-Agent/project/meeting/QuantImmuBench/QuantImmuBench_progress_v4_rev6_2026-07-04.pptx" }).then(f=>console.log("WROTE", f, "pages", _PG));

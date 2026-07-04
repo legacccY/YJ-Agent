@@ -50,17 +50,6 @@
     },
     {
       "rank": 2,
-      "method": "andy90_max",
-      "family": "single_tool",
-      "dim_set": "-",
-      "rho_bar": 0.585084,
-      "rho_bar_lenctrl": 0.188649,
-      "coverage_flag": "sparse",
-      "length_artifact_flag": "none",
-      "deploy_candidate": false
-    },
-    {
-      "rank": 3,
       "method": "netMHCpan_BA_topk_k20_a0",
       "family": "single_tool",
       "dim_set": "affinity_default",
@@ -71,18 +60,18 @@
       "deploy_candidate": true
     },
     {
-      "rank": 4,
-      "method": "Seq2Neo_max",
+      "rank": 3,
+      "method": "MHCnuggets_max",
       "family": "single_tool",
       "dim_set": "-",
-      "rho_bar": 0.440557,
-      "rho_bar_lenctrl": 0.873461,
-      "coverage_flag": "sparse",
+      "rho_bar": 0.446608,
+      "rho_bar_lenctrl": 0.412725,
+      "coverage_flag": "full",
       "length_artifact_flag": "none",
-      "deploy_candidate": false
+      "deploy_candidate": true
     },
     {
-      "rank": 5,
+      "rank": 4,
       "method": "netMHCpan_BA_max",
       "family": "single_tool",
       "dim_set": "-",
@@ -91,6 +80,17 @@
       "coverage_flag": "full",
       "length_artifact_flag": "none",
       "deploy_candidate": true
+    },
+    {
+      "rank": 5,
+      "method": "min",
+      "family": "fusion",
+      "dim_set": "dim7",
+      "rho_bar": 0.387812,
+      "rho_bar_lenctrl": 0.290251,
+      "coverage_flag": "full",
+      "length_artifact_flag": "none",
+      "deploy_candidate": false
     }
   ],
   "deployment_scheme_A": {
@@ -120,7 +120,7 @@
         "deepHLApan_max",
         "netMHCpan_BA_max"
       ],
-      "fisherz_rho": 0.377951
+      "fisherz_rho": 0.378004
     },
     "SURV6_geomean_ref": {
       "n_tools": 6,
@@ -132,7 +132,7 @@
         "ImmuneApp_max",
         "deepHLApan_max"
       ],
-      "fisherz_rho": 0.362171
+      "fisherz_rho": 0.365746
     },
     "overfit": "none (无监督 rank fusion, leak-free)",
     "decision": "已裁决: 维度集成员 SURV6/dim7=保持现状 (outline 抽象「6/7维」既有具体化, max 维), 方案B 主推 dim7 geomean"

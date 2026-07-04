@@ -215,6 +215,9 @@ def main():
                     help="8-14mer 全窗补充口径 (不置位=9mer 主分析, outline §2.2)")
     ap.add_argument("--w811", action="store_true",
                     help="8-11mer 多长度补充口径 (只留子肽长度∈{8,9,10,11}); 与 --allwindow/--ninemer 互斥")
+    ap.add_argument("--output", default=None,
+                    help="显式输出路径覆盖 (默认写 data/frozen/pooled_clean_<regime>.csv; "
+                         "rebuild_canonical.py 用它把产物写进 staging 而不动 canonical)")
     args = ap.parse_args()
 
     # ── 口径三分支 (互斥) ──────────────────────────────────────────────────
@@ -232,6 +235,8 @@ def main():
         ninemer, w811 = True, False
         regime = "9mer"
         out_csv = OUT_CSV_9MER
+    if args.output:                       # 显式覆盖 (rebuild 驱动写 staging, 不动 canonical)
+        out_csv = Path(args.output)
     print(f"[info] 口径 = {regime} -> 输出 {out_csv.name}")
 
     in_path = Path(args.input) if args.input else DEFAULT_INPUT
