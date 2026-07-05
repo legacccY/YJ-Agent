@@ -1,0 +1,6 @@
+Tool,is_immunogenicity_tool,n_peptides_total,n_peptides_covered,FisherZ_rho,FisherZ_95CI,FisherZ_n_patients,FisherZ_n_peptides,FisherZ_significant,Global_rho,Global_p,Global_n,Global_significant,AUC,AUC_n_pos,AUC_n_neg,DOI,Caveat
+MHLAPre,True,130,130,0.2235,"[0.034, 0.397]",9,130,True,0.2642,0.002384,130,True,0.9968,118,12,"N/A (community model, no official weights)","*** Self-trained replica: official weights unavailable. Interpret with extreme caution."
+PRIME,True,130,130,0.2033,"[0.013, 0.379]",9,130,True,0.2264,0.009591,130,True,0.5855,118,12,10.1016/j.cels.2022.12.002,Depends on MixMHCpred; no DTU license
+ImmuneApp,True,130,130,0.1715,"[-0.020, 0.351]",9,130,False,0.0364,0.681332,130,False,0.5787,118,12,10.1038/s41467-024-53296-0,TF 1.15 legacy env; MIT license
+DeepHLApan,True,130,130,0.0092,"[-0.182, 0.200]",9,130,False,-0.1289,0.143976,130,False,0.404,118,12,10.3389/fimmu.2019.02559,Training data may overlap IEDB ELISpot positives; ⚠️ potential data leakage
+HLAthena,False,130,130,0.2001,"[0.010, 0.377]",9,130,True,0.1368,0.120583,130,False,0.4375,118,12,10.1038/s41587-019-0322-9,PRESENTATION proxy only — not designed for immunogenicity prediction. Included for reference; do NOT rank against immunogenicity tools.

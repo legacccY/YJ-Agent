@@ -1,0 +1,20 @@
+# Part1 肽长×ELISpot 存在性硬化; 输入 pooled_clean_9mer.csv + pooled_clean_8to11mer.csv + ds2_official_groundtruth.csv(混杂 merge on mut_key)
+# DS1 注记: DS1 All_Peptides n=82, Peptide Length 取值=[9] (零长度方差→肽长效应 DS1 无法测); DS2 为 15-33mer SLP, 混杂 SLP 特异
+test_name,caliber,n,k_patients,rho_or_rhobar,ci_lo,ci_hi,pval
+global_spearman,9mer,130.0,,0.319388,,,0.0004
+global_pearson,9mer,130.0,,0.325743,,,
+perpatient_rhobar,9mer,130.0,9.0,0.380173,0.185369,0.546226,0.007812
+bootstrap_perpatient,9mer,130.0,9.0,0.380173,0.196094,0.557845,
+bootstrap_perpatient,8to11mer,130.0,9.0,0.380173,0.196094,0.557845,
+partial_ctrl_TPM_CCF,9mer,,8.0,0.299055,0.078036,0.492055,
+partial_ctrl_TPM_PurifiedTumorRNA,9mer,,8.0,0.29576,0.082487,0.48313,
+partial_ctrl_CCF,9mer,,9.0,0.336965,0.129508,0.51616,
+partial_ctrl_n_subpep,9mer,,9.0,0.314127,0.112899,0.490603,
+strata_variant_SNV,9mer,101.0,,0.308455,,,
+strata_variant_SNV_perpat,9mer,101.0,9.0,0.297032,0.048306,0.511071,
+strata_variant_indel,9mer,28.0,,0.449094,,,
+strata_variant_indel_perpat,9mer,28.0,2.0,0.293436,-0.718128,0.906657,
+strata_mutation_Driver,9mer,17.0,,0.707989,,,
+strata_mutation_Passenger,9mer,112.0,,0.250707,,,
+strata_mutation_Passenger_perpat,9mer,112.0,9.0,0.244743,0.001517,0.460629,
+DS1_note,DS1,,,,,,

@@ -1,0 +1,11 @@
+# 每患者 peplen-Elispot Spearman rho (per-patient 主口径)
+caliber,Patient_ID,n_pep,rho
+9mer,101,12,0.802165
+9mer,102,8,0.0
+9mer,104,17,0.109118
+9mer,105,19,0.492265
+9mer,106,16,0.248525
+9mer,107,12,0.453433
+9mer,108,15,0.532143
+9mer,109,16,0.040992
+9mer,110,15,0.439899

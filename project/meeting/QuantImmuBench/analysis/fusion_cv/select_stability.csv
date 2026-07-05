@@ -1,0 +1,37 @@
+# ★诚实边界: n=9 无「唯一最优」确定性证明; 交付=无泄漏 CV 程序 + 选出的(成员×k×算子) + 稳定性/不可分带 + 每选择的受控证明。措辞禁 proven optimal/the best/SOTA; null 写「无可检测的整合净优势」不写「证伪整合优势」。
+# 口径: 外层 LOPO 9 折; 内层 8 患者选; pooling=_max; 池=cover_pool(≥8)=24 工具; CV 评估全走 guarded_perpat_metric (退化守卫); seed=42; 纯 numpy 禁 scipy.stats。
+# A4: 外层9折×每折内层8患者 cluster bootstrap B=200 跑 forward_greedy(geomean) 记成员; select_freq_boot=选中/(9×B); 共识阈 π∈{0.5,0.6主,0.8}。
+# 末尾 __op_churn__:<op> 行块 = 联合选每折选中算子占比 (select_freq_9fold)。
+tool,category,is_dtu,select_freq_boot,select_freq_9fold,in_consensus_0p5,in_consensus_0p6,in_consensus_0p8,mean_single_rho_inner
+MHCnuggets,presentation,False,0.795,1.0,True,True,False,0.446353
+netMHCpan_BA,presentation,True,0.411111,0.666667,False,False,False,0.390804
+IEDB_Calis,immunogenicity,False,0.372222,0.777778,False,False,False,0.248177
+DeepImmuno,immunogenicity,False,0.279444,0.444444,False,False,False,0.157237
+IMPROVE,immunogenicity,False,0.256111,0.222222,False,False,False,0.28482
+PRIME,immunogenicity,False,0.223889,0.111111,False,False,False,0.294131
+PredIG,immunogenicity,False,0.145556,0.111111,False,False,False,0.249989
+BigMHC_IM,immunogenicity,False,0.111111,0.0,False,False,False,0.179191
+Seq2Neo,immunogenicity,True,0.11,0.0,False,False,False,0.072052
+ImmuGenX,immunogenicity,False,0.068333,0.0,False,False,False,0.131462
+MHCseqNet,presentation,False,0.059444,0.0,False,False,False,0.245145
+netMHCstabpan,presentation,True,0.050556,0.0,False,False,False,0.233222
+Repitope,immunogenicity,False,0.047778,0.0,False,False,False,0.121582
+TransHLA,presentation,False,0.035,0.0,False,False,False,0.169131
+CNNeo,immunogenicity,False,0.033889,0.0,False,False,False,0.05683
+MHCflurry,presentation,False,0.024444,0.0,False,False,False,0.307627
+NeoTImmuML,immunogenicity,False,0.021111,0.0,False,False,False,0.163964
+TSCAPE,immunogenicity,True,0.015556,0.0,False,False,False,0.116641
+deepHLApan,immunogenicity,False,0.015556,0.0,False,False,False,0.051594
+MUNIS,immunogenicity,False,0.009444,0.0,False,False,False,0.206244
+ImmuneApp,immunogenicity,False,0.007222,0.0,False,False,False,0.178573
+andy90,immunogenicity,False,0.000556,0.0,False,False,False,0.033394
+DeepNetBim,immunogenicity,False,0.0,0.0,False,False,False,
+netMHCpan_EL,presentation,True,0.0,0.0,False,False,False,0.178603
+__op_churn__:mean_rank,operator,False,,0.0,,,,
+__op_churn__:geomean,operator,False,,0.777778,,,,
+__op_churn__:median,operator,False,,0.111111,,,,
+__op_churn__:powmean,operator,False,,0.0,,,,
+__op_churn__:max,operator,False,,0.0,,,,
+__op_churn__:min,operator,False,,0.0,,,,
+__op_churn__:weighted_mean_rank,operator,False,,0.111111,,,,
+__op_churn__:softmax_rank,operator,False,,0.0,,,,

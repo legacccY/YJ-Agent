@@ -1,0 +1,23 @@
+# ★诚实边界: n=9 无「唯一最优」确定性证明; 交付=无泄漏 CV 程序 + 选出的(成员×k×算子) + 稳定性/不可分带 + 每选择的受控证明。措辞禁 proven optimal/the best/SOTA; null 写「无可检测的整合净优势」不写「证伪整合优势」。
+# 口径: 外层 LOPO 9 折; 内层 8 患者选; pooling=_max; 池=cover_pool(≥8)=24 工具; CV 评估全走 guarded_perpat_metric (退化守卫); seed=42; 纯 numpy 禁 scipy.stats。
+# A1: greedy_to_k(关eps跑满k=1..8) + exhaustive_topk(k≤3,内层top-10穷举C(10,k)); inflation(k)=oracle−cv; oracle 臂全9 in-sample, top-10 预筛在内层8。
+k,caliber,select_mode,cv_rho,cv_ci_lo,cv_ci_hi,oracle_rho,inflation,n_folds_used,paired_p_vs_best_single,modal_members,member_stability_frac,note
+1,raw,greedy_to_k,0.446608,0.324777,0.548135,0.446608,0.0,9,1.0,MHCnuggets,1.0,
+2,raw,greedy_to_k,0.317387,0.146603,0.46178,0.467247,0.14986,9,0.046875,MHCnuggets;netMHCpan_BA,0.6667,
+3,raw,greedy_to_k,0.397194,0.299665,0.497703,0.525242,0.128048,9,0.46875,IEDB_Calis;MHCnuggets;netMHCpan_BA,0.5556,
+4,raw,greedy_to_k,0.381892,0.271596,0.48133,0.532023,0.150131,9,0.3125,DeepImmuno;IEDB_Calis;MHCnuggets;netMHCpan_BA,0.3333,
+5,raw,greedy_to_k,0.387859,0.278712,0.497076,0.53824,0.150381,9,0.335938,DeepImmuno;IEDB_Calis;MHCnuggets;PredIG;netMHCpan_BA,0.3333,
+6,raw,greedy_to_k,0.420233,0.292248,0.529982,0.54183,0.121597,9,0.730469,DeepImmuno;IEDB_Calis;MHCnuggets;PredIG;netMHCpan_BA;netMHCstabpan,0.2222,
+7,raw,greedy_to_k,0.449491,0.326008,0.53826,0.543498,0.094007,9,0.964844,DeepImmuno;DeepNetBim;IEDB_Calis;IMPROVE;MHCnuggets;Seq2Neo;netMHCpan_BA,0.3333,
+8,raw,greedy_to_k,0.43707,0.30959,0.535318,0.543498,0.106428,9,0.90625,CNNeo;DeepImmuno;DeepNetBim;IEDB_Calis;MHCnuggets;PredIG;netMHCpan_BA;netMHCstabpan,0.3333,
+1,lenctrl,greedy_to_k,0.357714,0.123586,0.520641,0.432223,0.074508,9,1.0,netMHCpan_BA,0.7778,lenctrl敏感性(不联合选)
+2,lenctrl,greedy_to_k,0.473358,0.284574,0.616526,0.473358,0.0,9,0.019531,MHCnuggets;netMHCpan_BA,1.0,lenctrl敏感性(不联合选)
+3,lenctrl,greedy_to_k,0.399107,0.225901,0.543204,0.494305,0.095198,9,0.496094,MHCnuggets;PRIME;netMHCpan_BA,0.5556,lenctrl敏感性(不联合选)
+4,lenctrl,greedy_to_k,0.37843,0.203176,0.521909,0.494305,0.115875,9,0.777344,DeepNetBim;MHCnuggets;PRIME;netMHCpan_BA,0.4444,lenctrl敏感性(不联合选)
+5,lenctrl,greedy_to_k,0.401849,0.207689,0.554549,0.488719,0.08687,9,0.410156,DeepNetBim;MHCnuggets;PRIME;deepHLApan;netMHCpan_BA,0.2222,lenctrl敏感性(不联合选)
+6,lenctrl,greedy_to_k,0.400146,0.218887,0.551304,0.491956,0.09181,9,0.5,DeepNetBim;IEDB_Calis;MHCnuggets;PRIME;Repitope;netMHCpan_BA,0.3333,lenctrl敏感性(不联合选)
+7,lenctrl,greedy_to_k,0.356818,0.201661,0.490752,0.484939,0.128121,9,0.980469,DeepImmuno;DeepNetBim;MHCnuggets;PRIME;PredIG;deepHLApan;netMHCpan_BA,0.2222,lenctrl敏感性(不联合选)
+8,lenctrl,greedy_to_k,0.324914,0.14734,0.496007,0.469424,0.14451,9,0.6875,CNNeo;DeepImmuno;DeepNetBim;IEDB_Calis;MHCnuggets;PredIG;netMHCpan_BA;netMHCstabpan,0.2222,lenctrl敏感性(不联合选)
+1,raw,exhaustive_topk,0.446608,0.324777,0.548135,0.446608,0.0,9,1.0,MHCnuggets,1.0,
+2,raw,exhaustive_topk,0.317387,0.146603,0.46178,0.467247,0.14986,9,0.046875,MHCnuggets;netMHCpan_BA,0.6667,
+3,raw,exhaustive_topk,0.398868,0.265991,0.514948,0.525242,0.126374,9,0.476562,IEDB_Calis;MHCnuggets;netMHCpan_BA,0.6667,

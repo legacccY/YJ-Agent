@@ -1,0 +1,35 @@
+# WS2 pooling 重选 summary: 裸 rho 选 (best_raw) vs 控肽长偏相关选 (best_lenctrl)
+# 源=analysis/official/R2_best_per_tool.csv (每工具已算好 max/裸选/控长选三口径)
+# switched=两口径选到不同 pooling; best_*_rho=各口径下所选变体的 per-patient Fisher-z ρ̄
+# gain_raw_over_max=裸选 vs 裸 max; gain_lenctrl_over_maxlen=控长选 vs 控长 max (排序键)
+tool,best_raw,best_lenctrl,switched,best_raw_rho,best_lenctrl_rho,gain_raw_over_max,gain_lenctrl_over_maxlen
+NeoaPred,topk_k10_a0,topk_k3_a0,True,0.4237,0.4876,0.3466,0.2633
+ImmuGenX,topk_k50_a0,topk_k50_a0,False,0.3943,0.3977,0.2626,0.2583
+CNNeo,topk_k20_a0p5,topk_k20_a1,True,0.3146,0.1896,0.2577,0.1515
+TransHLA,topk_k50_a0,topk_k50_a0,False,0.3189,0.2665,0.1495,0.1251
+pTuneos,topk_k20_a0,topk_k20_a0,False,0.2583,0.2626,0.096,0.1147
+netMHCpan_EL,topk_k5_a0,topk_k5_a0,False,0.2793,0.3251,0.1004,0.1097
+netMHCstabpan,topk_k20_a0,topk_k20_a0,False,0.3287,0.3084,0.0949,0.1047
+netMHCpan_BA,topk_k5_a0,topk_k20_a0p5,True,0.4892,0.5254,0.0975,0.0932
+deepHLApan,topk_k20_a0,topk_k3_a0,True,0.1567,0.0938,0.1051,0.0888
+MUNIS,topk_k5_a0,topk_k5_a0,False,0.3218,0.2541,0.1151,0.0822
+MHCseqNet,topk_k50_a1,topk_k50_a1,False,0.3846,0.2829,0.1386,0.0763
+PredIG,topk_k10_a0,topk_k10_a0,False,0.3315,0.3041,0.0813,0.0761
+PRIME,topk_k10_a0,topk_k50_a0,True,0.334,0.3578,0.0395,0.0754
+BigMHC_IM,topk_k10_a0,topk_k10_a0,False,0.299,0.2046,0.1196,0.0732
+MHCflurry,topk_k20_a0,rankdecay_g2,True,0.3737,0.3683,0.0658,0.0666
+andy90,topk_k10_a0,topk_k10_a0,False,0.059,0.151,0.0256,0.0512
+IEDB_Calis,topk_k8_a0,topk_k50_a0p5,True,0.2594,0.2249,0.0107,0.0509
+TSCAPE,topk_k20_a0,topk_k8_a0,True,0.1805,0.0652,0.0637,0.05
+Seq2Neo,topk_k20_a0,topk_k20_a0,False,0.1731,0.0513,0.101,0.0497
+NeoaG,topk_k20_a0,topk_k20_a0,False,-0.0222,0.024,0.0478,0.0405
+MHCnuggets,topk_k50_a1,topk_k50_a1,False,0.5005,0.4508,0.0539,0.038
+NetTepi,topk_k3_a0p5,topk_k3_a0p5,False,0.2364,0.2824,0.5115,0.0265
+ImmuneApp,topk_k8_a2,softmax_T0p1,True,0.2153,0.1279,0.0365,0.0264
+NeoTImmuML,topk_k20_a0p5,topk_k20_a1,True,0.1804,0.2516,0.0162,0.0192
+Repitope,topk_k8_a2,topk_k20_a2,True,0.1335,0.1485,0.0119,0.0119
+DeepImmuno,topk_k20_a0,topk_k2_a1,True,0.2362,0.1775,0.0787,0.0097
+ICERFIRE,topk_k20_a0p5,topk_k20_a0p5,False,0.2772,0.2242,0.0095,0.008
+HLAthena,softmax_T0p03,topk_k3_a0p5,True,0.6279,0.2535,0.0006,0.003
+IMPROVE,max,max,False,0.2852,0.2306,0.0,0.0
+DeepNetBim,topk_k2_a0,topk_k2_a0,False,0.3191,0.3247,,

@@ -1,0 +1,17 @@
+# fusion_nested_cv.csv  —— QuantImmuBench WS1: fusion 交叉验证 (成员选择膨胀 Δ)
+# 数据源=pooled_clean_9mer.csv; DS2 9 患者 (纯 DS2, 无 DS1 训练池)
+# 融合算子钉死=geomean (内层只前向贪心选成员, 不选算子/pooling); 候选=每工具 <tool>_max (零 pooling 选择)
+# ★候选池限每患者≥8肽全覆盖工具 (剔 NeoaPred/HLAthena/NetTepi/ICERFIRE 等稀疏工具防小 n 虚高, 修 shuffle null 不塌 0); pool=fullcov/fullcov_no_dtu
+# 前向贪心: 接受阈 EPS=0.01 (内层 ρ̄ 提升须 >EPS), 成员封顶 MAXDIM=6, baseline=0.0 (null ρ̄=0)
+# ★退化守卫 (选择/评估/bootstrap/paired 全走): 患者内 score×Elispot 非空交集 n_eff<4 剔该患者 + 丢弃 |ρ_p|>0.999 (修 HLAthena 小样本虚假完美相关)
+# oracle_* = 全 9 患者 in-sample 选成员/单工具 = 作弊上界; cv_* = nested-LOPO 诚实估计
+# ★首要交付量=膨胀 Δ: inflation_*=oracle_*-cv_* (量化成员选择使表观优势虚高多少)
+# integration_minus_single_cv/paired_p = 佐证 (预登记: null 不写「证伪整合优势」)
+# fixed_surv6 = 固定 SURV6 geomean, selection-informed 非中性 baseline (🟡⑦)
+# scope (🟡⑨): 候选限 pooling=max, 只量化固定 pooling=max 下的成员选择偏差
+# DTU 工具 (netMHCpan_BA/EL,netMHCstabpan,TSCAPE,ICERFIRE,NetTepi,Seq2Neo) 结果照常算, pending_DTU_consent; fullcov_no_dtu 版剔之
+pool,caliber,cv_integration,cv_single,oracle_integration,oracle_single,fixed_surv6,inflation_integration,inflation_single,integration_minus_single_cv,paired_p,ci_lo,ci_hi,n_folds_used,lenctrl_underpowered,consent_critical,interpretation
+fullcov,raw,0.144906,0.273325,0.390574,0.273325,0.111743,0.245668,0.0,-0.128419,0.011719,0.013373,0.267262,9,False,False,"在9有效患者下无可检测的整合净优势 (Δ=-0.1284, p=0.0117)"
+fullcov,lenctrl,0.190535,0.025083,0.362893,0.25084,0.110383,0.172358,0.225757,0.165452,0.15625,-0.001089,0.389439,9,False,False,"在9有效患者下无可检测的整合净优势 (Δ=+0.1655, p=0.1562)"
+fullcov_no_dtu,raw,0.144906,0.273325,0.390574,0.273325,0.111743,0.245668,0.0,-0.128419,0.011719,0.013373,0.267262,9,False,False,"在9有效患者下无可检测的整合净优势 (Δ=-0.1284, p=0.0117)"
+fullcov_no_dtu,lenctrl,0.182658,0.025083,0.345734,0.25084,0.110383,0.163076,0.225757,0.157575,0.15625,-0.001089,0.36895,9,False,False,"在9有效患者下无可检测的整合净优势 (Δ=+0.1576, p=0.1562)"

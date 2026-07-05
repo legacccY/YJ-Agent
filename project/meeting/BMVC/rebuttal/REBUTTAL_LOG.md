@@ -57,3 +57,28 @@ real-LQ 集**投出稿内部就打架**，rebuttal **绝不选边、不提构成
 - ✅ **完整 `rebuttal.tex` 本地生成 + 编译成 `rebuttal.pdf`**（TeX Live 2025 在 E:\texlive；用官方 bmvc2k.cls review 去标题模式，单栏）。**1 页、0 error、0 overfull**（修了 ResNet/ViT/ConvNeXt/Swin 长串戳边距）。cls+sty 已拷入 rebuttal/ 自成一体。
 - ⏳ **仅剩用户**：① `rebuttal.tex` 里 `\bmvcreviewcopy{??}` 填 BMVC 投稿号（顺带堵 XHFa「缺 submission ID」）② 手动 OpenReview 上传 `rebuttal.pdf`（拍板点，窗口 07-10 AoE 前）
 - 编译命令：`cd rebuttal && /e/texlive/2025/bin/windows/pdflatex.exe -interaction=nonstopmode rebuttal.tex`
+
+---
+
+## 2026-07-05 🚨 上传前二次核验逮出 3 处数字问题 + 修复（verifier 三方对账）
+
+**背景**：用户要「核验 rebuttal + 如何把中稿率拉到 60%」。verifier 三方对账 + 主线重跑，逮出成稿有 3 处数字上传前必修（幸好核了，否则把无源数字写进公开 rebuttal，踩红线①）：
+
+| # | 问题 | 真源 | 处理 |
+|---|---|---|---|
+| ❌1 | **ECE-LQ CV 3.0/4.2/7.9/12.1%**（回应 isv7 稳定性的招牌新数）**查无计算源** | `qcts_stability.py` 全程不算 ECE，csv/json 只有 α-CV(36–133%)/T0-CV | coder 补 ECE-LQ 计算（复用论文 `run_qcts_backbone.py:binary_ece` 15 bins、LQ 阈值 qbar<0.45 有真源、fit 变 eval 固定 n_lq=2667）→ 主线重跑 |
+| ❌2 | **ViT ρ −0.138→−0.209** 人工「精修」漂移 | 所有论文表=**−0.139→−0.210** | 改回真值 |
+| ⚠️3 | **AUC-HQ 0.92–0.94**(ViT/ConvNeXt/Swin) 无源（Table3 只报 ρ/QCDI 不报 AUC） | 全树仅 EffNet-B3 AUC-HQ=0.938 | 删区间，改「strong, quality-aware backbones (Table 3)」 |
+
+**❌1 重跑真值（`qcts_stability.py` 主线跑，csv/json 已落）**：ECE-LQ CV **不是** 声称的一律 3–12% 紧，真实 = ResNet **2.0** / ConvNeXt **3.9** / ViT **19.2** / Swin **30.6%**——Swin/ViT 下游 CV 也松，**声称的「都紧」是假的**。
+→ **改用绝对水平框架（诚实且更硬）**：500 次 bootstrap 重拟合，四 backbone 交付 ECE-LQ 95% CI = ResNet[0.050,0.053]/ConvNeXt[0.039,0.047]/ViT[0.023,0.044]/Swin[0.018,0.058]，**最坏一次也不超 0.058**（均值 0.037–0.051）。用最坏情况上界钉死 isv7「松 α 会不会毁交付校准」，比原 CV 句更有说服力，每数有 csv 真源。
+- 其余全部 ✅：ρ_a −0.163/ρ_b +0.241、真实 LQ 174/0.073/0.146、ImageNet-C 18/18+Wilcoxon 3.8e-6、Table3 三处 sign-flip、taxonomy。真实 LQ 内部矛盾（§A7 174全ISIC vs §A22 106+68）rebuttal 处理对了（只写 174 不选边）。
+
+**修复后**：rebuttal.tex 三处已改，重编译 `pass_v2.log` = 1 页 0 error 0 overfull。数字层面**现可安全上传**。
+
+**策略情报（researcher 查 BMVC 官方 + 翻盘文献）**：5/4/3/3=3.75 是偏正活稿（BMVC25 录取 31.9%，有 champion+审稿分裂给 AC 裁量）；有 rebuttal 后讨论期 7/10–7/17。金律：①BMVC 明令不得要求大量新实验/不得因缺实验扣分→主打指回原文+纠错②confidence 逆风=压分 XHFa(conf4)>抬分 8hpP(conf3)，但 XHFa 反对多为事实误读=最好驳、高 conf 改口对 AC 说服力最大→**建议 rebuttal 重心从 isv7 挪向 XHFa**（尤其重跑后 isv7 稳定性答案变诚实但不再是压倒性）。
+- ✅ **策略重排完成（writer）**：XHFa(conf4)从末尾一句提为开篇第一段主攻（正面拆「no core contribution」→ 明列 QAC/QCDI 协议+taxonomy §3.2+Prop 1 三贡献 + 纠「跨两 backbone」误读 + submission id/§A10 阈值）；isv7 稳定性压到 2 行；结尾埋 champion 讨论期金句（18/18 ImageNet-C + external scalar，不依赖弱 backbone/IQA 模块）。首轮超到 2 页 → 外科压缩（合并 honest-boundary+金句、致谢句缩、IQA/开篇削字）→ **回 1 页 0 error（pass_v4.log）**。数字零改动零新增。
+- ⏳ **仅剩用户拍板**：手动 OpenReview 上传 `rebuttal/rebuttal.pdf`（1 页 / 数字已核 / submission #893，窗口 07-10 AoE 前）。
+
+### 中稿率策略总账（供上传前定心）
+底盘 ~40–45%（5/4/3/3=3.75 偏正 borderline + champion + AC 裁量）。本轮三个杠杆把它往 60% 推：①**数字诚信**（修掉 1 处编造招牌数 + 2 处漂移/无源 → 不给 XHFa「no contribution」递刀）②**confidence 聚火**（重心从 isv7 挪向权重最大的 conf4 XHFa，其反对全是可驳事实误读）③**武装 champion**（结尾金句让 5/4 分审稿人在 7/10–7/17 讨论期直接引用）。诚实上限 ~55–65%，非稳进；真软肋 Std VIB 近随机是 scope 非 soundness（批最狠的 8hpP 反给最高 5 分佐证）。

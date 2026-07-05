@@ -1,0 +1,24 @@
+# ★诚实边界: n=9 无「唯一最优」确定性证明; 交付=无泄漏 CV 程序 + 选出的(成员×k×算子) + 稳定性/不可分带 + 每选择的受控证明。措辞禁 proven optimal/the best/SOTA; null 写「无可检测的整合净优势」不写「证伪整合优势」。
+# 口径: 外层 LOPO 9 折; 内层 8 患者选; pooling=_max; 池=cover_pool(≥8)=24 工具; CV 评估全走 guarded_perpat_metric (退化守卫); seed=42; 纯 numpy 禁 scipy.stats。
+# A2(joint_all8/consensus3/fixed_geomean/op_*_subsetsel) + A3(forward/backward/exhaustive/topk/decorr×λ[0.05, 0.1, 0.2]主0.1); op 固定 geomean(除A2)。
+# indistinguishable_set_size=38 (全局: A1∪A2∪A3∪best_single 中与 CV-最优 paired-p>0.05 或 bootstrap-CI 重叠者); CV-最优=A1:greedy_to_k:k2:lenctrl; 连 best_single 都不可分=True。
+# lambda 仅 decorr_greedy 有值 (固定先验扫, 绝不用外层ρ̄挑λ); 其余 NaN。
+procedure,arm,op_set,lambda,caliber,k_selected,members_selected,cv_rho,cv_ci_lo,cv_ci_hi,oracle_rho,inflation,paired_p_vs_best_single,delta_vs_best_single,indistinguishable_set_size,interpretation
+joint_select,joint_all8,all8,,raw,3,MHCnuggets;netMHCpan_BA;IEDB_Calis,0.358331,0.24768,0.462627,0.525242,0.166911,0.160156,-0.088277,38,"无可检测的整合净优势 (Δvs单=-0.0883, p=0.1602); 在CV最优不可分带内"
+joint_select,joint_consensus3,consensus3,,raw,3,MHCnuggets;netMHCpan_BA;IEDB_Calis,0.359325,0.24825,0.464007,0.525242,0.165917,0.167969,-0.087283,38,"无可检测的整合净优势 (Δvs单=-0.0873, p=0.1680); 在CV最优不可分带内"
+fixed_geomean,fixed_geomean,geomean,,raw,3,MHCnuggets;netMHCpan_BA;IEDB_Calis,0.352467,0.24998,0.450517,0.525242,0.172775,0.117188,-0.094141,38,"无可检测的整合净优势 (Δvs单=-0.0941, p=0.1172); 在CV最优不可分带内"
+op_subsetsel,op_mean_rank_subsetsel,mean_rank,,raw,3,MHCnuggets;netMHCpan_BA;PRIME,0.321975,0.166043,0.46423,0.508477,0.186502,0.097656,-0.124633,38,"无可检测的整合净优势 (Δvs单=-0.1246, p=0.0977); 在CV最优不可分带内"
+op_subsetsel,op_geomean_subsetsel,geomean,,raw,3,MHCnuggets;netMHCpan_BA;IEDB_Calis,0.352467,0.24998,0.450517,0.525242,0.172775,0.117188,-0.094141,38,"无可检测的整合净优势 (Δvs单=-0.0941, p=0.1172); 在CV最优不可分带内"
+op_subsetsel,op_median_subsetsel,median,,raw,3,MHCnuggets;netMHCpan_BA;PRIME,0.251249,0.05194,0.421675,0.511032,0.259783,0.011719,-0.195359,38,"无可检测的整合净优势 (Δvs单=-0.1954, p=0.0117); 在CV最优不可分带内"
+op_subsetsel,op_powmean_subsetsel,powmean,,raw,1,MHCnuggets,0.343542,0.128438,0.490947,0.446608,0.103066,0.109375,-0.103066,38,"无可检测的整合净优势 (Δvs单=-0.1031, p=0.1094); 在CV最优不可分带内"
+op_subsetsel,op_max_subsetsel,max,,raw,1,MHCnuggets,0.285692,0.012927,0.495213,0.446608,0.160916,0.5,-0.160916,38,"无可检测的整合净优势 (Δvs单=-0.1609, p=0.5000); 在CV最优不可分带内"
+op_subsetsel,op_min_subsetsel,min,,raw,2,MHCnuggets;DeepNetBim,0.349431,0.202277,0.480524,0.471426,0.121994,0.070312,-0.097177,38,"无可检测的整合净优势 (Δvs单=-0.0972, p=0.0703); 在CV最优不可分带内"
+op_subsetsel,op_weighted_mean_rank_subsetsel,weighted_mean_rank,,raw,3,MHCnuggets;netMHCpan_BA;PRIME,0.346218,0.178064,0.493024,0.506266,0.160048,0.253906,-0.10039,38,"无可检测的整合净优势 (Δvs单=-0.1004, p=0.2539); 在CV最优不可分带内"
+op_subsetsel,op_softmax_rank_subsetsel,softmax_rank,,raw,1,MHCnuggets,0.358091,0.17622,0.499108,0.446608,0.088517,0.5,-0.088517,38,"无可检测的整合净优势 (Δvs单=-0.0885, p=0.5000); 在CV最优不可分带内"
+forward_greedy,forward_greedy,geomean,,raw,3,MHCnuggets;netMHCpan_BA;IEDB_Calis,0.352467,0.24998,0.450517,0.525242,0.172775,0.117188,-0.094141,38,"无可检测的整合净优势 (Δvs单=-0.0941, p=0.1172); 在CV最优不可分带内"
+backward_elim,backward_elim,geomean,,raw,3,MHCnuggets;netMHCpan_BA;IEDB_Calis,0.353662,0.208869,0.499164,0.525242,0.17158,0.3125,-0.092946,38,"无可检测的整合净优势 (Δvs单=-0.0929, p=0.3125); 在CV最优不可分带内"
+exhaustive_k,exhaustive_k,geomean,,raw,3,MHCnuggets;netMHCpan_BA;IEDB_Calis,0.398868,0.265991,0.514948,0.525242,0.126374,0.476562,-0.04774,38,"无可检测的整合净优势 (Δvs单=-0.0477, p=0.4766); 在CV最优不可分带内"
+topk_single,topk_single,geomean,,raw,2,MHCnuggets;netMHCpan_BA,0.399602,0.254891,0.526839,0.467247,0.067645,0.363281,-0.047006,38,"无可检测的整合净优势 (Δvs单=-0.0470, p=0.3633); 在CV最优不可分带内"
+decorr_greedy,decorr_greedy_lam0.05,geomean,0.05,raw,1,MHCnuggets,0.291912,0.16765,0.415528,0.446608,0.154696,0.015625,-0.154696,38,"无可检测的整合净优势 (Δvs单=-0.1547, p=0.0156); 在CV最优不可分带内"
+decorr_greedy,decorr_greedy_lam0.1_main,geomean,0.1,raw,1,MHCnuggets,0.32735,0.195153,0.452575,0.446608,0.119258,0.125,-0.119258,38,"无可检测的整合净优势 (Δvs单=-0.1193, p=0.1250); 在CV最优不可分带内"
+decorr_greedy,decorr_greedy_lam0.2,geomean,0.2,raw,1,MHCnuggets,0.336956,0.197702,0.46463,0.446608,0.109652,0.25,-0.109652,38,"无可检测的整合净优势 (Δvs单=-0.1097, p=0.2500); 在CV最优不可分带内"

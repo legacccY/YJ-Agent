@@ -1,0 +1,53 @@
+# WS2 统一排名 裸 ρ̄ vs 控肽长 ρ̄ 名次漂移
+# 源=analysis/official/R8_unified_ranking_official.csv
+# rank_raw=按 rho_bar 降序名次; rank_lenctrl=按 rho_bar_lenctrl 降序名次
+# rank_shift=rank_raw-rank_lenctrl (正=控长后上升, 负=控长后下跌)
+# NaN ρ̄ (如 DeepNetBim_max) 名次留空, 不入 top-8 分析
+method,rho_bar,rho_bar_lenctrl,rank_raw,rank_lenctrl,rank_shift,length_artifact_flag
+HLAthena_max,0.627245,0.250431,1.0,18.0,-17.0,none
+netMHCpan_BA_topk_k20_a0,0.461452,0.478613,2.0,1.0,1.0,none
+MHCnuggets_max,0.446608,0.412725,3.0,3.0,0.0,none
+netMHCpan_BA_max,0.391691,0.432223,4.0,2.0,2.0,none
+min,0.387812,0.290251,5.0,15.0,-10.0,none
+min,0.386475,0.30342,6.0,12.0,-6.0,none
+mean_rank,0.384769,0.362183,7.0,4.0,3.0,none
+weighted_mean_rank,0.381694,0.360412,8.0,5.0,3.0,none
+geomean,0.378004,0.344572,9.0,6.0,3.0,none
+geomean,0.365746,0.29445,10.0,14.0,-4.0,none
+powmean,0.349951,0.32983,11.0,7.0,4.0,none
+mean_rank,0.347786,0.309141,12.0,10.0,2.0,none
+weighted_mean_rank,0.346727,0.307874,13.0,11.0,2.0,none
+powmean,0.345199,0.314679,14.0,8.0,6.0,none
+median,0.34136,0.311677,15.0,9.0,6.0,none
+MHCflurry_max,0.307889,0.30164,16.0,13.0,3.0,none
+PRIME_max,0.294475,0.282453,17.0,16.0,1.0,none
+IMPROVE_max,0.285233,0.230633,18.0,21.0,-3.0,none
+ICERFIRE_max,0.26764,0.216228,19.0,25.0,-6.0,none
+median,0.251831,0.22723,20.0,23.0,-3.0,none
+PredIG_max,0.250122,0.227936,21.0,22.0,-1.0,none
+IEDB_Calis_max,0.248645,0.17395,22.0,30.0,-8.0,none
+MHCseqNet_max,0.245929,0.206637,23.0,28.0,-5.0,none
+max,0.238051,0.232739,24.0,19.0,5.0,none
+netMHCstabpan_max,0.233745,0.203705,25.0,29.0,-4.0,none
+max,0.216869,0.214241,26.0,27.0,-1.0,none
+MUNIS_max,0.206732,0.171907,27.0,31.0,-4.0,none
+BigMHC_IM_max,0.179421,0.131443,28.0,39.0,-11.0,none
+netMHCpan_EL_max,0.178944,0.21534,29.0,26.0,3.0,none
+ImmuneApp_max,0.178843,0.101529,30.0,40.0,-10.0,none
+softmax_rank,0.176685,0.15469,31.0,33.0,-2.0,none
+TransHLA_max,0.169356,0.14133,32.0,35.0,-3.0,none
+NeoTImmuML_max,0.164198,0.232444,33.0,20.0,13.0,none
+pTuneos_max,0.162326,0.147856,34.0,34.0,0.0,none
+DeepImmuno_max,0.157533,0.167777,35.0,32.0,3.0,none
+softmax_rank,0.14341,0.131664,36.0,38.0,-2.0,none
+ImmuGenX_max,0.131715,0.139383,37.0,36.0,1.0,none
+Repitope_max,0.121643,0.136627,38.0,37.0,1.0,none
+TSCAPE_max,0.116795,0.015163,39.0,43.0,-4.0,none
+NeoaPred_max,0.077029,0.224264,40.0,24.0,16.0,none
+Seq2Neo_max,0.072076,0.001655,41.0,45.0,-4.0,none
+CNNeo_max,0.056858,0.038046,42.0,42.0,0.0,none
+deepHLApan_max,0.051648,0.005064,43.0,44.0,-1.0,none
+andy90_max,0.033412,0.0998,44.0,41.0,3.0,none
+NeoaG_max,-0.06997,-0.016455,45.0,46.0,-1.0,none
+NetTepi_max,-0.27508,0.255889,46.0,17.0,29.0,none
+DeepNetBim_max,,,,,,none

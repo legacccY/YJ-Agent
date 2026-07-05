@@ -4,6 +4,22 @@
 
 ---
 
+## Entry 55-FUSION-CV-ENGINE — 2026-07-05【原则化 CV 融合选择引擎 + 13 条方法学 rationale ledger 落档（§5 + 决策档拍板点3 补充）】
+
+**背景**：§3c 已给「整合优势主要是成员选择偏差」骨架；本轮把选择引擎的完整证据、SURV6 定位、13 条受控 rationale 摊开写成稿级小节。数字全部来自 `analysis/fusion_cv/*.csv`，写作零自创。
+
+**流程（本轮做的）**：引擎自检零偏离 PASS → 正式跑 6 csv（k_curve / select_engine / select_stability / select_null / rationale_ledger / fusion_nested_cv）→ verifier 六命门 PASS → #4/#5 修 design gap（患者集不一致 + 守卫/池过滤重叠防线）重核 → analyst 出 4 图 → 本轮 writer 落 §5 + 决策档。
+
+**核心结论（一句）**：honest CV 下**无可检测的整合净优势**——CV-最优是小 k、单工具 **MHCnuggets ρ̄=0.4466 已足**（k=1 时 CV≡oracle 无膨胀）；五种选择程序 delta_vs_best_single 全负、paired-p 全 >0.05、38 个候选统计不可分、稳定入选仅 MHCnuggets 过 0.6 阈；null perm_p=0.01 = 真信号非泄漏；SURV6(0.3657) 精确复现 R3、几乎不虚高、与 CV 互证（0.17 是「按数据重选成员」的过拟合上界 oracle 0.525−CV 0.352，非现有 headline 被夸大）；13 条 ledger 每个方法学决策均有受控实证理由（守卫 #4 +0.181 / 池过滤 #5 +0.317 / 钉 geomean #13 / consent-robust #11）。
+
+**措辞纪律守住**：null 只写「无可检测整合净优势 / n=9 功效不足未能检出」，禁「证伪整合优势」；禁 proven optimal/best/SOTA，用「CV-最优 + 38 不可分候选 + 入选频率」；SURV6 = selection-informed 先验、与 CV 互证，**非否定朱同学工作**。
+
+**对齐验收**：G3 ⚠️（oracle vs CV 一致性已量化 inflation 0.09~0.15、单层≡in-sample 恒等、null 真信号，但仅 DS2 单集、跨集 DS1/鼠复现未做 → 全套仍缺）；G4/G6 ✅（integration vs best single 诚实报点估已不胜、未达显著）。
+
+**产物**：`analysis/PEPTIDE_LENGTH_CONFOUNDER.md` 新增 §5「原则化 CV 融合选择引擎 + 13 条 rationale ledger」（原 §五局限顺延为 §六）；`给袁老师_肽长矫正决策档.md` 拍板点3 补「CV 选择引擎完整证据 + SURV6 定位」子小节；插 4 图 `figures/fig_fusioncv_{kcurve,procedures,toolfreq,ledger}.png`。
+
+**🛑 拍板点（未擅改 canonical/headline）**：SURV6 六工具 geomean 是否改标为「selection-informed 先验、CV 正交互证、CV-最优实为小 k/单工具」= **归袁老师 + 朱同学**；G4/G6 headline 降温措辞 = 归袁老师；DTU consent（#11 主结论不依赖 DTU，但 no-DTU 臂 consent-critical）= 归袁老师。
+
 ## Entry 54-CLEANUP-CANONICAL — 2026-07-04【管道收敛单一真源(rebuild_canonical --verify 0 差异)+ §3.2-§3.4 干净重跑 + 8-11mer 口径取证更正(旧声称不精确) + 给袁老师合并决策档】
 
 **背景**：项目管道补丁摞补丁（covfix→covfix_8to11→deepHLApan-indel 散在 scripts/+_scratch/+原地覆写），无单一入口，PROVENANCE 过期；§3.2-§3.4 下游还挂在 pre-covfix 老数据。本轮收口整顿（plan=`~/.claude/plans/quantimmubench-briefings-in-nested-snowglobe.md`）。北极星=余嘉职责「干净 benchmark + 干净部署 + 干净评测」，不追 outline 每个声称。
@@ -3316,3 +3332,75 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 - **机制反直觉**（用户补：ELISpot 按摩尔配平，等摩尔下长肽经加工呈递的表位反更少、按理该更低，实测偏高）→ 指向真实 SLP 生物学（DC 交叉呈递+CD4 辅助）或搭 TPM/CCF 便车，值得单独讨论。
 
 **未决 TODO（用户拍板）**：① 核 Braun 2025 原文配肽协议（确认摩尔配平，勿替作者假设）② 控 TPM/CCF 再看肽长效应是否仍在（排因果混杂，数据有此两列）③ 是否给 P6 图注补口径说明。发现暂只出图+跑数，未进 paper。
+
+## Entry 2026-07-05b · 肽长×ELISpot 混杂深度研究（存在性硬化 + 四路矫正并比 + 小n bug）
+
+**背景**：接上条新发现，用户要求深度研究「长肽 ELISpot 更高」是否真存在 + 提矫正法。派编队：researcher(机制)/coder×2(脚本)/skeptic(红队)/主线跑核/reviewer(审稿)。产物 `analysis/peptide_length_confounder/`（脚本 `_scratch/peplen_confounder_hardening.py`+`correction_compare.py`；详版 `analysis/PEPTIDE_LENGTH_CONFOUNDER.md`；机制 `.../MECHANISM_NOTES.md`；决策档 `给袁老师_肽长矫正决策档.md`）。数字全 Bash 独立复算（含从零不 import 引擎的交叉验证）。
+
+**存在性=成立且稳健（DS2, 130肽/9患者, 肽=15-33mer SLP）**：
+- per-patient ρ̄=**+0.380**，cluster-bootstrap 95%CI**[+0.196,+0.558]**，8/9 患者正（三方复算一致）。
+- **控 TPM+CCF 后 +0.299**（CI[+0.078,+0.492]）、**控 n_subpep 后 +0.314**（CI[+0.113,+0.491]）——均存活不过 0 → 非搭表达/克隆性/子肽计数便车。闭上条 TODO②。
+- 分层 SNV+0.309/indel+0.449、Driver+0.708(n=17)/Passenger+0.251。
+- **DS1 全 82 肽皆 9mer（零长度方差）→ 跨队列复现不可得**，鼠数据缺 → 存在性单队列，标待外部验证。
+
+**机制=真 SLP 生物学，非剂量伪迹**（闭上条 TODO①，researcher 查证）：Braun=NeoVax SLP pipeline，ELISpot 用 15-33mer 长肽本身刺激+10-14天体外扩增，配肽**按质量(µg/mL)** 非等摩尔（Ott 2017 独立佐证 `2µg/ml`/`0.3mg` 每肽）。**等质量→长肽摩尔更少本该更低+ELISpot 技术偏倚偏向短肽，两条都反向→排除剂量伪迹**。正相关是真 SLP 生物学（CD4帮助+加工/交叉呈递），保留口径=assay 扩增放大、≠纯in vivo。⚠️修正用户原设想（用户以为等摩尔，实为等质量）；µg/mL 原句待人工核 Supplementary(TODO)。
+
+**矫正=温和差异性，建议双口径并报不换主口径**：
+- 四路 A(评估侧偏相关)/B(残差化ELISpot标签=用户原提案)/C(多控)/D(分箱)。**A 与 B 结论几乎一致**（收敛），C 更激进。
+- **核实暴露陷阱→改「匹配患者集」公平口径**：raw 与矫正须同患者集+丢退化点。全30工具仅2个小n退化：**HLAthena(P101,n_eff=3,ρ=1.0)→raw 从真实0.207虚高到0.627**、NetTepi(P102,n_eff=3,ρ=−1.0)。
+- 匹配集纯长度效应 Δρ：均值+0.016、std0.045、max TSCAPE+0.102、被压低 netMHCpan_BA/NeoTImmuML。raw↔控长 Kendall τ≈0.55（温和重排，强工具稳前列）。**关键区分**：ρ̄(肽长,ELISpot)=0.38 是肽长自身与标签相关（强）≠ 工具排名被强搅动（工具得自己也跟长度走，多数没有）。
+- **招牌例子被证伪**：之前「HLAthena 掉0.377=最大长度伪迹」大半是小n bug 非长度（丢P101后 raw0.207≈控长0.250）。
+
+**🆕 独立 bug（与肽长无关，建议优先修）**：生产 per-patient Fisher-z 按满员n门控+clip ρ=±1，覆盖有缺口工具遇小 n_eff 虚高。修法=按有效n门控+剔退化ρ=±1。影响主 benchmark 的 HLAthena 排名。
+
+**skeptic 裁决**：0 致命放行；两条🟠（nuisance-vs-causal、控TPM/CCF前置检验）已在脚本显式回应。估计量论证=长度是疫苗构造属性非突变属性，突变级预测器不该靠构造级长度拿分→矫正正当（非「抹假信号」）。
+
+**拍板点（给袁老师，未擅动 canonical）**：①控肽长不换主口径、raw+控长双口径并报？②先修 Fisher-z 小n虚高(HLAthena/NetTepi)？③两发现是否写 benchmark 完整性小节？
+
+**未做**：D 分箱仅列、fusion(geomean)控长下 headline 存活未验（只到单工具层）→ 下轮。
+
+### Entry 2026-07-05b 追加 · fusion 控长验证 + 矫正法菜单/novelty + PPT
+- **fusion geomean 控长 headline 存活**（源 `R3_fusion_12methods_official.csv` 的 `rho_lenctrl` 列，已存在）：best-dim 配置(3/6/7维)控长后 geomean 仍无监督 rank-fusion #1/8（6维 0.402→0.330、7维 0.449→0.407）；但对最强单工具(netMHCpan_BA 控长≈0.432)从领先软化为**大致持平**（合 G6 tied/significant 诚实报）。学习型(ridge/stacking)部分配置反超但有 selection bias caveat 不作 headline。
+- **novelty 定位**（researcher 查证，`CORRECTION_METHODS_AND_NOVELTY.md`）：肽长作免疫原性「特征」不 novel（早进模型）；但「把肽长当评测混杂、偏相关/残差化统计扣除防工具排名虚高」在疫苗 ELISpot 幅度评测**检索未见先例**（领域只控 MHC binding + 长度分布匹配）——可作 novelty 主张。TODO：审稿要穷尽则再查 IEDB benchmark 官方/Nielsen 组。
+- **矫正法菜单**（6 族对照，本场景 n≈9 秩相关共线）：①偏 Spearman(主) ②残差化 ELISpot(稳健对照) 推荐；③分层/⑤IPW-matching/⑥秩内归一 因小样本+连续暴露失效。源 Liu 2018 Biometrics(PSR) 等。
+- **PPT 已出**：`ppt/gen_ppt_peplen_confounder.js` → `QuantImmuBench_肽长混杂_2026-07-05.pptx`（10 页，仿 benchmark deck 格式，含森林图/散点/delta 三图，数字逐字核值，每页带来源超链）。node 跑通、zip 验 10 页 3 图关键数在位。
+- 新增产物：`analysis/peptide_length_confounder/CORRECTION_METHODS_AND_NOVELTY.md`、上述 ppt 脚本+pptx。
+
+### Entry 2026-07-05b 再追加 · 点一存在性稳健性补强 + 公式化 + PPT 扩版（应用户"细到公式+足够实验+验算"）
+- **独立验算**（脚本 `_scratch/peplen_existence_robustness.py`，从零不 import 引擎）：主口径 ρ̄=0.3802 逐位复现引擎值=交叉验证通过。
+- **补 7 道稳健性检验**：①LOPO 逐患者留一 ρ̄∈[0.302,0.422] 全>0（去最强 P101 仍 0.302，非单患者驱动）②患者内置换检验 B=5000 → p=0.0004（尊重患者聚类的干净零分布）③符号检验 8/9 正双尾 p=0.039 ④per-patient Pearson(原值)=0.435 比秩更强（非秩伪迹）⑤8-11mer 口径=0.380 一致 ⑥单/双控(TPM/CCF/子肽数)CI 均不过 0 ⑦**四混杂同控(TPM+CCF+子肽数+indel)=0.215 但 CI[−0.057,0.466] 跨 0**（k=8 功效不足，诚实标注非效应消失）。
+- **方法公式化**：`analysis/peptide_length_confounder/METHODS_AND_FORMULAS.md` 落 每组处理定义(§三 森林图逐条) + 控肽长三式(偏相关闭式 ρ(X,Y|Z)=(ρXY−ρXZρYZ)/√((1−ρXZ²)(1−ρYZ²)) / 残差化 / 多控秩残差) + Fisher-z + bootstrap + 患者内置换。
+- **图**：重画 `fig_peplen_existence_forest.png`(双面板：分组森林图 8 组含四混杂空心点标功效不足 + 9 患者条形) + 新 `fig_peplen_robustness_bars.png`(七检验)。
+- **PPT 扩 10→12 页**：P3 换双面板森林图，新增 P4「控肽长的处理与公式」(Consolas 公式框) + P5「稳健性七道检验」。生成器 `ppt/gen_ppt_peplen_confounder.js` → 同名 pptx，node 跑通 zip 验 12 页 3 图公式/稳健关键词在位。
+
+### Entry 2026-07-05b 三追加 · 控长为什么温和的两层机制（用户追问原理）
+- **层一 工具级**：控长改动 delta ≈ 0.411·ρ_XZ − 0.081·ρ_XY（偏相关一阶展开），主导项 ρ_XZ=工具分↔肽长。ρ_YZ(肽长↔ELISpot)=0.38 对所有工具是常数，被拉与否看工具自己 ρ_XZ。实测：corr(ρ_XZ,delta_A) Pearson=0.72/Spearman=0.70；22/28(79%)工具 |ρ_XZ|<0.2、平均|delta|=0.035。→ 「0.38 强 ≠ 排名被搅动」有了公式+数据根。
+- **层二 pooling 级**：长度经「窗口数(子肽数≈肽长 ρ=0.755)」传导，敏感度由算子对袋大小的抬升程度定。跨27工具平均|ρ_XZ|：sum=0.614(灾难,机械正比窗口数,项目弃用它正因此) > top-20/8/3均值 0.19–0.24(选择增益,中段最糟,非单调) > max/mean/geomean/softmax/rankdecay/top-100 0.10–0.16(低)。本质=MIL max/top-k 对可变袋大小的顺序统计量偏倚,分数越饱和/校准越免疫(netMHCpan_BA 太饱和→控长后反升)。
+- **行动结论**：控长按 pooling 定——sum 必控、中段 top-k 值得控、max/mean/geomean 基本免疫；根本减混杂=让工具输出校准连续分。项目主分析(免疫原性工具 max、不用 sum)恰是长度最稳档。
+- 产物：`_scratch/peplen_mechanism.py` + `mechanism_toollevel.csv`/`mechanism_pooling.csv` + 图 `fig_peplen_mech_toollevel.png`(散点,r0.72)/`fig_peplen_mech_pooling.png`(pooling条形) + `PEPTIDE_LENGTH_CONFOUNDER.md §3a` + PPT 加两页机制。
+
+### Entry 2026-07-05c · 深挖阶段 WS1-5（fusion 交叉验证 + 控长下游收口）
+用户要求把"数据在手高价值项全做 + 7 工具聚合缺交叉验证也挖"。3 路 Explore 定位现状，skeptic 红队 WS1 设计（0 致命，5 条🟠落实）。
+
+- **WS1 fusion 交叉验证（核心）**：无监督 geomean 本身无泄漏，缺口=**SURV6 六工具成员选择从没进 CV**（§4.3 自承 selection bias）。写 `analysis/fusion_cv/fusion_nested_cv.py`：nested-LOPO 外层留患者+内层前向贪心选融合成员，geomean 钉死，退化守卫+候选池限每患者≥8肽全覆盖工具(剔 HLAthena/NeoaPred/NetTepi/ICERFIRE 等 6 稀疏工具，防小n虚高)，裸+控长+shuffle null。**跑两轮修污染**：①初版单工具臂选到 HLAthena 虚高0.627(小n伪迹) ②加退化守卫 ③加全覆盖池过滤才干净。**结论（公平臂 fullcov 全工具）**：honest CV 下 geomean 整合 vs 最强单工具 MHCnuggets 0.447 **统计持平**（裸 Δ=−0.094 p=0.117 / 控长 Δ=+0.037 p=0.547）；**选择膨胀 oracle−CV≈0.17**（oracle 0.525→CV 0.352）=整合表观优势主要是未 CV 的成员选择过拟合。校验 fixed_surv6=0.366 精确复现 R3。诚实 caveat：n=9 单工具选择 CV 有固有虚高 null(shuffle 单工具臂≈0.27>整合≈0.15)，只信配对差+膨胀量不信绝对值。→ **拍板点3**：G4/G6「整合胜单工具」headline 降温为「持平，优势主要来自成员选择偏差」，进 §4.3，改不改表述袁老师定。
+- **WS2**：12/30 工具裸 vs 控长选不同 pooling（裸搭长度便车）；控长重排榜 HLAthena rank1→18，geomean/powmean 进 top-8。
+- **WS3**：长度对二分类 AUPRC 影响(Kendall 0.63)大于对连续排序(0.76)；标签=官方 xlsx 平衡76/54，校验 netMHCpan_BA AUPRC=0.7155 对齐 S1。
+- **WS4 饱和度假说**：4 度量 2 对 2 反，**弱支持非干净确认**（诚实标）；DeepNetBim 定性符合。
+- **WS5**：退化审计扩全 51 变体，退化三元组 2→95，小 k topk/softmax 占 44%；控长重选基本避开退化。
+- 产物：`analysis/fusion_cv/`(3 csv) + `analysis/peptide_length_confounder/{pooling_reselect_summary,ranking_lenctrl_vs_raw,auprc_lenctrl,saturation_vs_lengthsens,degenerate_audit_allpooling}.csv` + `_scratch/` 五脚本；`PEPTIDE_LENGTH_CONFOUNDER.md §3c/3d` + 决策档拍板点3。数字全 Bash 核。
+
+
+## Entry 2026-07-05d · 5 工具可复现交付包（DeepHLApan/PRIME/ImmuneApp/HLAthena/MHLApre）
+用户要求把这 5 工具做成「数据集处理→工具输出→出 PPT 三层横评表」一套能一键跑通的包 + README + zip。用户拍板可跑边界=**从已存工具输出一键复现评估表**（工具本身推理需 HPC 老环境，作附录），结果范围=**只那张三层横评表**。
+
+- **产物 = `5tools_benchmark_pack/`（+ `5tools_benchmark_pack_2026-07-05.zip` 8.2MB/40 文件）**。结构：`run.py`(一键入口:复现+自动核对) / `evaluate_three_tier.py`(评估核心) / `data/`(130肽ELISpot真值+HLA映射) / `tool_outputs/`(4 merged xlsx + PRIME raw txt,因PRIME merged是2KB坏文件) / `expected_results/`(原HPC产出作核对基准) / `dataset_scripts/`+`tool_run_scripts/`+`docs/`(附录) / `README.md`。
+- **评估口径逆推并 diff=0 复现**（金标准=`小组数据/rerun_v2/06_analysis/outputs/{metrics_three_tier,per_patient_details}.csv`）：max-pool(子肽×HLA→肽级) + 各工具分列(DeepHLApan=immunogenic_score/PRIME=Score_bestAllele/ImmuneApp/MHLAPre各自Score/HLAthena=presentation) + Tier1 患者内 Fisher-Z 偏差校正 `z=arctanh(clip(r,±.999))−r/(2(n−1))` 权重 n−3 → tanh，CI=tanh(z̄±1.96/√Σw) + Tier2 全局 Spearman + Tier3 AUC(Elispot>0)。5 工具×(FisherZ/Global/AUC/95CI) 全逐值对上。
+- 结果表：MHLAPre FisherZ .2235(★泄露 AUC.997,诚实 GroupKFold≈.53)/PRIME .2033(已发表免疫原最优)/HLAthena .2001(⚠️提呈proxy单列)/ImmuneApp .1715/DeepHLApan .0092(分聚集.97无区分力)。
+- 源 = 李紫晨/余嘉那批 `小组数据/rerun_v2/`（已有 inputs/outputs/merged/docs，缺本地评估脚本→本包补上）。注意与 `scripts/build_5tools_delivery.py`(余嘉 PredIG/DeepImmuno/pTuneos/IMPROVE/NeoTImmuML 另一批)不是同一套。
+- **指针**：`5tools_benchmark_pack/{run.py,evaluate_three_tier.py,README.md}` 登记于此 entry。
+
+### Entry 2026-07-05d 收工 · PPT 整理成型 + 指标说明 + 全说人话
+- **PPT 从散到整（16→20 页）**：加①目录(四章导览)②核心发现总览(一页看懂)③**看懂指标说明页**(Spearman ρ̄/ρ_XZ/oracle-CV/挑工具虚高/Kendall/AUPRC/TPM-CCF/子肽数/pooling 全大白话定义)④正在接续跑(末页)。四章重排：一存在性 二矫正 三融合交叉验证 四其他+结论。
+- **全说人话**：正文 58 处自创词→白话(控长→去掉肽长影响后、构造级→疫苗人为定的长度、ρ_XZ→打分跟不跟肽长走、选择膨胀→挑工具的虚高、成员选择偏差/审慎边界/收口 全清);三张扎眼图(fig_fusion_cv/mech_toollevel/mech_pooling)标题图例轴标换白话、像素尺寸不变防错位。
+- **质量核**：数字集合前后 diff=空(verifier 另核 40+ 数对 csv 全一致零 drift);溢出修好(slide 矫正方案主张不压页脚);口径/诚实零残留;LibreOffice→PDF→PyMuPDF 逐页渲染肉眼验。生成器 ppt/gen_ppt_peplen_confounder.js → QuantImmuBench_肽长混杂_2026-07-05.pptx。
+- **并行**：新窗口(quantimmu-fusion-select)跑 CV 选择引擎已出结果、写入 §5+决策档拍板点3补充(CV 选出仅 MHCnuggets 过 0.6 共识阈、k=1~3 最优、大融合无正当性、SURV6 与 CV 互证)。

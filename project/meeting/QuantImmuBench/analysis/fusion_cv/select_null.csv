@@ -1,0 +1,12 @@
+# ★诚实边界: n=9 无「唯一最优」确定性证明; 交付=无泄漏 CV 程序 + 选出的(成员×k×算子) + 稳定性/不可分带 + 每选择的受控证明。措辞禁 proven optimal/the best/SOTA; null 写「无可检测的整合净优势」不写「证伪整合优势」。
+# 口径: 外层 LOPO 9 折; 内层 8 患者选; pooling=_max; 池=cover_pool(≥8)=24 工具; CV 评估全走 guarded_perpat_metric (退化守卫); seed=42; 纯 numpy 禁 scipy.stats。
+# A5①random_ksubset: 每k从cover池随机抽R子集 in-sample geomean ρ̄ null (控『从多子集挑』天花板); observed=oracle贪心k的in-sample ρ̄; perm_p=P(null≥observed)。
+# A5②patient_perm: 患者内打乱Elispot重跑CHOSEN=forward_greedy(geomean)整条选择, S次; observed_cv_rho=真CV; perm_p=P(null≥observed) (控选择泄漏vs信号)。
+null_type,k,R_or_S,null_mean,null_p95,null_max,observed_cv_rho,perm_p,caliber
+random_ksubset,1.0,945,0.189423,0.391691,0.446608,0.446608,0.028571,raw
+random_ksubset,2.0,1000,0.245302,0.404752,0.467247,0.467247,0.003,raw
+random_ksubset,3.0,1000,0.277841,0.412469,0.525242,0.525242,0.001,raw
+random_ksubset,4.0,1000,0.300607,0.413265,0.504011,0.532023,0.0,raw
+random_ksubset,5.0,1000,0.317836,0.426558,0.494027,0.53824,0.0,raw
+random_ksubset,6.0,1000,0.3254,0.418876,0.493897,0.54183,0.0,raw
+patient_perm,,200,0.003642,0.206098,0.4234,0.352467,0.01,raw
