@@ -16,7 +16,7 @@
 
 **对齐验收**：G3 ⚠️（oracle vs CV 一致性已量化 inflation 0.09~0.15、单层≡in-sample 恒等、null 真信号，但仅 DS2 单集、跨集 DS1/鼠复现未做 → 全套仍缺）；G4/G6 ✅（integration vs best single 诚实报点估已不胜、未达显著）。
 
-**产物**：`analysis/PEPTIDE_LENGTH_CONFOUNDER.md` 新增 §5「原则化 CV 融合选择引擎 + 13 条 rationale ledger」（原 §五局限顺延为 §六）；`给袁老师_肽长矫正决策档.md` 拍板点3 补「CV 选择引擎完整证据 + SURV6 定位」子小节；插 4 图 `figures/fig_fusioncv_{kcurve,procedures,toolfreq,ledger}.png`。
+**产物**：`analysis/PEPTIDE_LENGTH_CONFOUNDER.md` 新增 §5「原则化 CV 融合选择引擎 + 13 条 rationale ledger」（原 §五局限顺延为 §六）；`给袁老师_肽长矫正决策档.md` 拍板点3 补「CV 选择引擎完整证据 + SURV6 定位」子小节；插 4 图 `figures/fig_fusioncv_{kcurve,procedures,toolfreq,ledger}.png`；PPT 生成器 `ppt/gen_ppt_fusion_cv.js` → `QuantImmuBench_融合CV选择_2026-07-05.pptx`（9 页，封面/一页看懂/方法/k曲线/五程序横比/工具入选频率/SURV6定位/13条ledger/结论拍板点，zip 核 9 页 4 图 + 9 关键值在位）。引擎脚本 `analysis/fusion_cv/{select_engine,rationale_ablations}.py` + 6 csv（#4/#5 经 verifier 定性 design gap→coder 修真单变量受控→重核）。
 
 **🛑 拍板点（未擅改 canonical/headline）**：SURV6 六工具 geomean 是否改标为「selection-informed 先验、CV 正交互证、CV-最优实为小 k/单工具」= **归袁老师 + 朱同学**；G4/G6 headline 降温措辞 = 归袁老师；DTU consent（#11 主结论不依赖 DTU，但 no-DTU 臂 consent-critical）= 归袁老师。
 
