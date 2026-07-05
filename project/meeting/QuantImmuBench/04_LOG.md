@@ -3295,3 +3295,24 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 - 其余边核：理化(HydroCore/PropHydroAro/SelfSim BLOSUM62)= 论文语义近似，需 `gh clone SRHgroup/IMPROVE_tool` 逐行实核；`Inst` 需 Biopython 否则 NaN；`_foreignness`=NotImplementedError(需 IEDB)；L4 工具分组/元特征口径 coder 近似待袁/朱确认。
 - **状态：代码就绪待跑，三选一待定**——① 就这样跑(L2 空，DAI 写 caveat) / ② 先补 WT 打分再跑(检验完整但等数据组) / ③ 先跟袁老师谈整条调查 + WT 缺口再定。
 - **R10 指针**：三脚本 + PREREG 已在本 entry 登记（DEPLOY_TRACKER 未另登，待跑通后补）。
+
+---
+
+## Entry 2026-07-05 · PPT 答疑（袁老师会前）+ 新发现：肽长显著预测 ELISpot
+
+**背景**：用户就 `QuantImmuBench_benchmark_results_2026-07-04.pptx` 逐页答疑（第 2/6/7 页），层层深挖到「控肽长」口径，衍生出一个可写进论文的实证发现。
+
+**答疑要点（已核 csv）**：
+- **P2 单工具榜** = max-pool 肽级分 + 裸口径 per-patient Spearman；「部分覆盖」= <9/9 患者（多缺最难 P102，因等位硬限 NetTepi 13 等位/HLAthena 缺 P101，或需 MT-WT 配对 pTuneos/ICERFIRE/NeoaG），放灰区不进主排。
+- **P6 pooling 洗牌图** = 9mer 窗口口径、**控肽长偏相关**（图注/横轴写明 ctrl=peplen）。MHCnuggets **0.413（控肽长，R2_best_per_tool.csv=0.4127）vs P2 的 0.447（裸口径=0.4466）** 不是矛盾，是两页口径不同。⚠️ **建议 P6 图注补一句「本页控肽长，裸口径见 P2」**防会上被当 bug。
+- **控肽长方法** = 一阶偏相关（维基 Partial correlation 标准闭式 `r_xy·z=(r_xy−r_xz·r_yz)/√((1−r_xz²)(1−r_yz²))`，Spearman 秩代入），单控走闭式 `_partial_spearman_one`，多控走 lstsq 残差 `_rank_residual`（附表用）。第 6 页只有 9mer，**8-11mer 的 pooling 分析没做=缺口**。
+- **P7 融合** = SURV6 六工具（PredIG/IMPROVE/pTuneos/PRIME/ImmuneApp/deepHLApan）+ 鲁棒性图加 netMHCpan_BA=7 维，非全 30；⚠️ SURV6 看全数据选、未进 CV → selection bias 偏乐观，成员待袁/朱拍板，对外说「初步集」。
+
+**🆕 新发现（可写论文）——肽长本身显著预测 ELISpot**（脚本 `_scratch/peplen_vs_elispot.py` + `_scratch/plot_peplen_elispot.py`；图 `figures/fig_peplen_vs_elispot_confounder.png`）：
+- 全局 Spearman(peplen, Elispot) n=130 **ρ=+0.319，置换 p=0.0004**；Pearson r=+0.326。
+- 分层：SNV 内 ρ=+0.308（n=101）/ indel 内 ρ=+0.445（n=29）——**两层皆正**，非 indel 单独驱动。
+- 逐患者 Fisher-z 等权 **ρ̄=+0.380**，患者级 t=3.46（df=8，p≈0.009），**9 患者 8 正**（仅 P102=0，n=8 太少）。
+- **量级 ρ̄≈0.38 逼近最强单工具 MHCnuggets 0.45** → 肽长是货真价实的混杂，佐证 P6 控肽长必要。
+- **机制反直觉**（用户补：ELISpot 按摩尔配平，等摩尔下长肽经加工呈递的表位反更少、按理该更低，实测偏高）→ 指向真实 SLP 生物学（DC 交叉呈递+CD4 辅助）或搭 TPM/CCF 便车，值得单独讨论。
+
+**未决 TODO（用户拍板）**：① 核 Braun 2025 原文配肽协议（确认摩尔配平，勿替作者假设）② 控 TPM/CCF 再看肽长效应是否仍在（排因果混杂，数据有此两列）③ 是否给 P6 图注补口径说明。发现暂只出图+跑数，未进 paper。

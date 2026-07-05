@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// PreToolUse hook: block edits to sealed BMVC dir.
-// exit 2 + stderr = block. Silent on pass.
+// PreToolUse hook: BMVC unsealed 2026-07-04 (rebuttal/decision phase).
+// No longer blocks. Soft reminder that the submitted manuscript matches OpenReview.
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -20,10 +20,10 @@ process.stdin.on('end', () => {
       process.exit(0);
     }
     process.stderr.write(
-      `BMVC SEALED 2026-05-24. Edit blocked: ${path}. ` +
-      `Use meeting/ICLR2027/ for new work; meeting/BMVC/rebuttal/ for rebuttal.\n`
+      `BMVC unsealed (rebuttal/decision phase). Note: ${path} is the OpenReview-submitted version; ` +
+      `edit only for camera-ready or a deliberate reason. New work → meeting/BMVC/rebuttal/ or camera_ready/.\n`
     );
-    process.exit(2);
+    process.exit(0);
   }
 
   process.exit(0);

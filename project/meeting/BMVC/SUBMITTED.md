@@ -1,4 +1,13 @@
-# 🔒 BMVC 2026 — SUBMITTED & SEALED
+# 🔓 BMVC 2026 — UNSEALED（rebuttal/decision 阶段）
+
+> **解封 2026-07-04**：收到 4 审稿 5/4/3/3（均分 3.75，卡录取线）。项目重新 active，进 rebuttal/decision 阶段。
+> - Rebuttal 成稿：`rebuttal/rebuttal.pdf`（1 页 / 0 error / 匿名 / submission #893），内容过 skeptic+verifier+reviewer 三轮质检。**待用户手动 OpenReview 上传**（窗口 07-10 AoE 前）。全过程记录 `rebuttal/REBUTTAL_LOG.md`。
+> - **已投稿 manuscript（itb_paper.tex/itb_supp.tex/table*.tex/*.pdf）仍与 OpenReview 冻结版一致，非 camera-ready 别改**（pre_edit hook 现为软提醒不再硬拦）。新工作走 `rebuttal/` 或 `camera_ready/`。
+> - 若 accept → 建 `camera_ready/` 子目录改；若 reject → 带资产转 ICLR/MICCAI 分支。
+
+---
+
+## 历史封印记录（2026-05-24 ~ 2026-07-04，已解封）
 
 **封印日期**：2026-05-24
 **投稿日期**：2026-05-29（BMVC P2 deadline）

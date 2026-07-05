@@ -34,12 +34,12 @@
    "name": "QCTS",
    "venue": "BMVC 2026",
    "deadline": "2026-05-24 (已投)",
-   "status": "sealed",
-   "priority": 9,
-   "phase": "封印，仅 rebuttal",
+   "status": "active",
+   "priority": 6,
+   "phase": "解封 2026-07-04：rebuttal 就绪待投 (rebuttal/rebuttal.pdf, 1页0error)，窗口 07-10 AoE，等 decision",
    "home": "project/meeting/BMVC/",
    "story": "project/meeting/BMVC/STORY_FRAMEWORK.md",
-   "log": "project/meeting/BMVC/SUBMITTED.md"
+   "log": "project/meeting/BMVC/rebuttal/REBUTTAL_LOG.md"
   },
   "nca-jepa": {
    "name": "NCA-JEPA",

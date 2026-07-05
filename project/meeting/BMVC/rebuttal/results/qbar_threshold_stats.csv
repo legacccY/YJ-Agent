@@ -1,0 +1,11 @@
+row_type,subset,n,qbar_mean,qbar_median,qbar_std,qbar_min,qbar_max,note
+subset_stats,ITB-LQ,300,0.36965939999999997,0.39204,0.07442302057570654,0.05398,0.44996,
+subset_stats,ITB-HQ,360,0.6088786111111111,0.60025,0.06301596487276505,0.50015,0.814375,
+subset_stats,ITB-Edge,660,0.48857896969696973,0.48894000000000004,0.0357305341445807,0.4004399999999999,0.5496,
+subset_stats,ITB-Diverse,1500,0.5427768666666667,0.5521400000000001,0.1080537381516002,0.06408,0.8668800000000001,
+key_ratio,ITB-LQ,300,1.0,,,,,fraction of ITB-LQ with qbar<0.45
+key_ratio,ITB-HQ,360,1.0,,,,,fraction of ITB-HQ with qbar>0.5
+band_ratio,ITB-LQ,300,0.0,,,,,"fraction of ITB-LQ within [0.45,0.5]"
+band_ratio,ITB-HQ,360,0.0,,,,,"fraction of ITB-HQ within [0.45,0.5]"
+band_ratio,ITB-Edge,660,0.4075757575757576,,,,,"fraction of ITB-Edge within [0.45,0.5]"
+band_ratio,ITB-Diverse,1500,0.14466666666666667,,,,,"fraction of ITB-Diverse within [0.45,0.5]"

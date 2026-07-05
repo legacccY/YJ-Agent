@@ -22,7 +22,7 @@ process.stdin.on('end', () => {
   // 1) 动手类指令 → drift 契约 + 红线提醒
   const actiony = /(写|改|跑|做|实现|加|删|重构|训练|实验|生成|核|审|复现|补|扩|落地|实施|搞)/.test(prompt);
   if (actiony && prompt.length > 4) {
-    out += '[防跑偏] 动手前先答：本任务服务哪项目的哪个 § / lever？与该项目 STORY/ACCEPTANCE 冲突 → 停下澄清，不照描述硬干。红线：①数字一律 Bash/Grep 核 csv，不信 Read ②超参/架构查官方源，查不到标 TODO 绝不臆想 ③复现零偏离（禁私加裁剪/降 lr/改步数凑收敛）④BMVC 已封印。\n';
+    out += '[防跑偏] 动手前先答：本任务服务哪项目的哪个 § / lever？与该项目 STORY/ACCEPTANCE 冲突 → 停下澄清，不照描述硬干。红线：①数字一律 Bash/Grep 核 csv，不信 Read ②超参/架构查官方源，查不到标 TODO 绝不臆想 ③复现零偏离（禁私加裁剪/降 lr/改步数凑收敛）④已投稿稿冻结（BMVC manuscript 与 OpenReview 一致，非 camera-ready 别改；rebuttal/camera_ready 自由改）。\n';
   }
 
   // 2) 数据集相关 → 指向共享真源

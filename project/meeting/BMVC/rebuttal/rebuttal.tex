@@ -1,0 +1,38 @@
+%% BMVC 2026 Author Rebuttal
+%% Compile with the official BMVC class (bmvc2k.cls, in this folder).
+%% Fill in your BMVC submission number in \bmvcreviewcopy{...} below
+%% (this also renders the paper id in the header -- addresses R-XHFa's
+%%  "submission ID missing" point). Title/authors omitted per the
+%%  rebuttal template (anonymity preserved via review mode).
+%% Hard limit: ONE page including references.
+
+\documentclass{bmvc2k}
+
+\bmvcreviewcopy{893}   %% BMVC submission number
+
+% Standard BMVA convenience macros
+\def\eg{\emph{e.g}\bmvaOneDot}
+\def\Eg{\emph{E.g}\bmvaOneDot}
+\def\etal{\emph{et al}\bmvaOneDot}
+
+\begin{document}
+
+We thank all reviewers. Most concerns are anticipated in the paper's objection section (A1--A6); below we point to those pre-emptive answers and add only the new evidence requested.
+
+\noindent\textbf{$T_0/\alpha$ stability (R-isv7).} A whole range of $\alpha$ yields near-identical NLL ($\S$A18: three seeds $\alpha\in\{0.34,0.96,0.37\}$ within $\Delta\mathrm{NLL}<0.002$) \emph{and} near-identical LQ calibration: in a new bootstrap over four backbones the ECE-LQ coefficient of variation is only $3$--$12\%$ (ResNet $3.0$, Swin $4.2$, ViT $7.9$, ConvNeXt $12.1\%$). The delivered calibration is thus insensitive to the exact slope---consistent with Prop~1, under which any nonzero slope suffices---so the loose identifiability of $\alpha$ reflects a flat objective, not a fragile calibrator.
+
+\noindent\textbf{Real low-quality data (R-isv7, R-8hpP).} QCTS is not evaluated only on synthetic degradation. As pre-empted in A1, we ran EfficientNet-B3 on 174 real-world low-quality dermoscopy images and recovered ECE $0.073$ $[0.038,0.125]$ vs.\ ITB-LQ's $0.146$ (supp real-LQ table). We are transparent that directly applying QCTS to a real \emph{paired} malignant cohort is future work---no such cohort is publicly available---so the mechanism, not the synthetic pipeline, is the claim.
+
+\noindent\textbf{``Only the weak Std VIB'' / structural gain (R-isv7, R-8hpP).} Three lines answer this. (i) Std VIB is \emph{by design} the Quality-Fragile repairable prototype ($0<\mathrm{QCDI}\le0.10$) of our taxonomy ($\S$3.2); we deliberately pick a repairable-tier representative to demonstrate the fix, whereas an already quality-aware backbone (ResNet-50) needs no repair (A4, Table 3). Its low AUC is the defining property of the sample, not a flaw. (ii) The mechanism is not confined to Std VIB: using an \emph{external} corruption-severity scalar as $\bar q$ (not our IQA module), on both ResNet-50 and ViT-Tiny QCTS makes $\rho$ more negative on 18/18 corruptions, while scalar TS is inert ($|\Delta\rho|<10^{-4}$, 18/18)---a monotone-invariant clean control. A Wilcoxon signed-rank test over these 18 corruptions confirms significance ($p=3.8\times10^{-6}$). Where there is headroom the gain is sizeable (ViT-Tiny $\rho$ $-0.138\!\to\!-0.209$). (iii) On strong backbones (Table 3; ViT-Tiny/ConvNeXt/Swin, AUC-HQ $0.92$--$0.94$) TS induces the QCDI sign-flip ($+0.023/+0.136/+0.020 \to -0.029/-0.022/-0.021$) and QCTS pulls QCDI back \emph{toward zero}.
+
+\noindent\textbf{Re-marginalisation baseline (R-8hpP).} It is present: the deployment-time re-marginalised baseline is $\S$5.2 Eq.(5), $\rho_a$ (MC-marginalised, $N_{\mathrm{MC}}{=}20$) $=-0.163$ vs $\rho_b$ (deterministic-$\mu$) $=+0.241$, a $100\%$ flip; the full table is $\S$A20.
+
+\noindent\textbf{IQA module (R-isv7, R-XHFa).} The 5-head module is validated in supp $\S$A2 (mean SRCC $0.895$ on held-out synthetic degradations) and the mean-of-5 scalar is justified there as noise suppression; expert-rated validation is a stated limitation. Crucially the reversal-fix also holds under a purely \emph{external} scalar (ImageNet-C severity, above), so QCTS does not hinge on the module.
+
+\noindent\textbf{R-XHFa (factual).} QCTS is a two-parameter post-hoc fit on a \emph{single} frozen backbone ($\S$4, L-BFGS for $T_0,\alpha$), not ``calibration across two backbones''---the $\S$5.3 ``re-fit'' on ResNet, ViT, ConvNeXt and Swin is independent per-backbone refitting to show universality, not a combination. The contribution is conceptual: the QAC/QCDI protocol, the taxonomy, and Prop~1 (scalar TS provably cannot undo a rank reversal, so a continuous slope is the minimal sufficient repair). Reversal holds across $\tau\in[0.40,0.50]$ ($\S$A10).
+
+\noindent\textbf{R-8hpP (5) / R-6xgi (4).} We thank both; the Std VIB scope point is answered via A4 and Table 3, and is a scope---not a soundness---concern.
+
+\noindent Honest boundary: the headline magnitude ($73\%$ QCDI reduction, halved LQ ECE) is Std-VIB-specific, while the reversal-mechanism \emph{direction} holds across five backbones and 18 corruptions and QCTS never degrades quality-awareness (Table 3).
+
+\end{document}

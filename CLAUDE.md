@@ -28,7 +28,7 @@
 - **gdn2vessel / ACCV 2026**（cwd 含 `meeting/ACCV/gdn2vessel/` 或任务含 GDN/血管/vessel/续连/reconnection）：`project/meeting/ACCV/gdn2vessel/00_README.md`（**自带完整读档顺序**：00_README → `PLAN/MASTER_PLAN.md` → `STORY_FRAMEWORK.md` → `ACCEPTANCE_CRITERIA.md` → `DATA_INVENTORY.md` → `PROJECT_LOG.md` 最新 entry → 动手阶段对应 `PLAN/PHASE_x_*.md`）。**铁律：遇计划外问题先问用户，不盲跑。**
 - **ICLR 2027**（cwd 含 `project/` 或任务含 ICLR）：`project/README.md` → `STORY_FRAMEWORK.md` → `ACCEPTANCE_CRITERIA.md` → `DATA_INVENTORY.md` → `PROJECT_LOG.md` 最新 entry
 - **NCA-JEPA**：`project/meeting/Med-NCA/NCA-JEPA/README.md` → `01_创新计划` + `02_理论框架` → `03_pilot` → `registry.json`
-- **BMVC**：🔒 已封印，`meeting/BMVC/SUBMITTED.md`（不再改，pre_edit hook 会拦）
+- **BMVC / QCTS**：🔓 已解封（2026-07-04，rebuttal/decision 阶段）。入口 `meeting/BMVC/SUBMITTED.md`（顶部解封说明）→ `rebuttal/REBUTTAL_LOG.md`（rebuttal 全记录，成稿 `rebuttal/rebuttal.pdf` 待投）。**已投稿 manuscript 仍与 OpenReview 冻结版一致，非 camera-ready 别改**；新工作走 `rebuttal/` 或 `camera_ready/`（pre_edit hook 现为软提醒不硬拦）
 - **medad-failmap / MedAD-FailMap**（任务含 MedAD/FailMap/失败可预测/外推判据；status=retreat-MICCAI）：`project/meeting/MedAD-FailMap/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
 - **fmreg / FMReg**（任务含 FMReg/形变配准/flow matching/registration；status=planning Gate1）：`project/meeting/FMReg/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
 - **selinf / SelInfBench**（任务含 SelInf/selective inference/winner's curse/报告值高估；status=active BIBE）：`project/meeting/SelInfBench/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `04_LOG.md` 最新 entry
@@ -204,7 +204,7 @@
 - **复现零偏离**：完全按官方，禁私加裁剪/降 lr/改步数/换实现凑收敛
 - **超参禁臆想**：backbone/lr/增强/架构联网查官方源，查不到标 TODO，绝不照搬别库
 - **评估集不可泄漏**：OOD/分类实验 `feats_test` 禁止拼入 ID 样本（`concat(feats_id, feats_ood)` = in-sample 伪迹，导致 ID 在自身集评估分数虚高）；汇报数字前确认是 held-out 集而非训练/拟合集（2026-06-19 ArtiOODBench A-5 ViM=1.0 实证踩坑）
-- **BMVC 已封印**：`meeting/BMVC/` 不再改（pre_edit hook 守）；违反走 ICLR 分支
+- **BMVC 已解封**（2026-07-04 rebuttal 阶段）：`meeting/BMVC/rebuttal/`+`camera_ready/` 自由改；已投稿 manuscript 仍与 OpenReview 冻结版一致，非 camera-ready 别动（hook 软提醒）
 - 信心低 / 有更好方案 → 上网研究后直接提，无须护主；可主动提问
 
 **自动防护 hook（已挂 `.claude/settings.json`，会自己提醒，别忽略其 stderr）**：
