@@ -112,6 +112,41 @@ def call_openai(model_cfg, prompt, image_b64):
     return resp.choices[0].message.content or ""
 
 
+def call_openrouter(model_cfg, prompt, image_b64):
+    """OpenRouter（OpenAI 兼容接口，复用 openai SDK）。
+    - 文本表征：普通 user message。
+    - 图像表征：OpenAI 兼容 vision 格式（image_url = data:image/png;base64,<b64>）。
+      ⚠️ image_b64 仅当模型 supports_image=True 时由 main 传入（纯文本模型的图像
+         表征已在 main 循环跳过），故这里不会给纯文本模型发图。
+    - 走 chat.completions.create，标准 max_tokens/temperature（不区分 is_reasoning）。
+    缺 openai SDK -> 抛带清晰提示的异常，交上层重试/记录。"""
+    try:
+        from openai import OpenAI  # noqa: WPS433
+    except ImportError as e:
+        raise RuntimeError(
+            "缺 openai Python SDK：请先 `pip install openai`"
+            "（OpenRouter 走 OpenAI 兼容接口，复用同一 SDK）"
+        ) from e
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    # base_url 优先取 .env 的 OPENROUTER_BASE_URL，缺省兜底官方地址（防漏设 base_url
+    # 时 SDK 误连 openai.com）。
+    base_url = os.getenv("OPENROUTER_BASE_URL") or "https://openrouter.ai/api/v1"
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    content = [{"type": "text", "text": prompt}]
+    if image_b64 is not None:
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+        })
+    resp = client.chat.completions.create(
+        model=model_cfg["model_id"],
+        messages=[{"role": "user", "content": content}],
+        max_tokens=C.MAX_OUTPUT_TOKENS,
+        temperature=0,
+    )
+    return resp.choices[0].message.content or ""
+
+
 def call_google(model_cfg, prompt, image_b64):
     import google.generativeai as genai  # noqa: WPS433
     genai.configure(api_key=os.environ[model_cfg["env_key"]])
@@ -150,6 +185,7 @@ def call_anthropic(model_cfg, prompt, image_b64):
 
 PROVIDER_DISPATCH = {
     "openai": call_openai,
+    "openrouter": call_openrouter,
     "google": call_google,
     "anthropic": call_anthropic,
 }
@@ -197,6 +233,25 @@ def load_done(jsonl_path):
     return done
 
 
+def load_env_file(path=None):
+    """轻量加载 killshot_w/.env（不引入 python-dotenv 依赖）。
+    - 只补**未设**的环境变量：shell 里已 export 的优先，.env 不覆盖它。
+    - 行格式 KEY=VALUE，跳过空行与 # 注释；去掉值两侧引号。
+    这样主线无需手动 export 即可让 OPENROUTER_API_KEY / *_API_KEY 生效。"""
+    p = Path(path) if path else (C.PKG_DIR / ".env")
+    if not p.exists():
+        return
+    for ln in p.read_text(encoding="utf-8").splitlines():
+        ln = ln.strip()
+        if not ln or ln.startswith("#") or "=" not in ln:
+            continue
+        key, _, val = ln.partition("=")
+        key = key.strip()
+        val = val.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = val
+
+
 def available_models():
     """按环境变量 key 过滤可用 provider，打印跳过了谁。"""
     avail, skipped = [], []
@@ -210,8 +265,9 @@ def available_models():
             print(f"[skip] {m['name']}（provider={m['provider']}）: 环境变量 "
                   f"{m['env_key']} 未设 -> 跳过")
     if not avail:
-        print("[ERR] 没有任何 provider 的 API key，无可跑模型。"
-              "设 OPENAI_API_KEY / GEMINI_API_KEY / ANTHROPIC_API_KEY 之一再跑。")
+        print("[ERR] 没有任何 provider 的 API key，无可跑模型。设 OPENROUTER_API_KEY "
+              "/ OPENAI_API_KEY / GEMINI_API_KEY / ANTHROPIC_API_KEY 之一再跑"
+              "（OPENROUTER_API_KEY 走一批 :free 免费模型，见 config.MODELS）。")
     return avail
 
 
@@ -223,6 +279,7 @@ def main():
     args = ap.parse_args()
 
     C.ensure_dirs()
+    load_env_file()  # 从 killshot_w/.env 补齐未 export 的 *_API_KEY / OPENROUTER_BASE_URL
     in_manifest = C.INPUTS_DIR / C.INPUTS_MANIFEST_CSV
     if not in_manifest.exists():
         print(f"[ERR] 找不到 {in_manifest}，先跑 build_inputs.py。")

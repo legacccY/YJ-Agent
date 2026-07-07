@@ -93,7 +93,11 @@ PULSATILE_LEAD_PRIORITY = ["ABP", "PLETH", "RESP"]
 
 # ---------------------------------------------------------------------------
 # 模型列表（多 provider）。key 缺的 provider 由 run_models 自动跳过并打印。
-# supports_image=能读图（表征 B）；所有 provider 都能读文本（表征 A）。
+# supports_image=能读图（表征 B）；文本表征 A 所有模型都跑。
+#   supports_image=False 的纯文本模型：run_models 自动**跳过图像表征那一路**，
+#   只跑文本（避免给纯文本模型发 PNG 报错）——逻辑已在 run_models.main 循环内。
+# provider="openrouter"：走 OpenAI 兼容接口（openai SDK + OPENROUTER_BASE_URL），
+#   一批 `:free` 免费模型共用 env_key=OPENROUTER_API_KEY；缺 key 则整批跳过。
 # ⚠️ model_id 的确切快照名可能随 provider 更新，首跑前主线核对官方最新可用名。
 #    别臆想不存在的快照；查不到就用 provider 文档给的 latest alias。
 # ---------------------------------------------------------------------------
@@ -127,6 +131,64 @@ MODELS = [
         "provider": "anthropic",
         "model_id": "claude-opus-4-20250514",  # TODO(主线): 核实可用快照名
         "env_key": "ANTHROPIC_API_KEY",
+        "supports_image": True,
+        "is_reasoning": False,
+    },
+    # --- OpenRouter 免费模型（OpenAI 兼容接口）。model_id 已含 `:free` 后缀 --------
+    # 全部共用 env_key=OPENROUTER_API_KEY + base_url=OPENROUTER_BASE_URL（.env）。
+    # ⚠️ model_id 由派单方核实（OpenRouter 上存在、`:free`）；首跑前主线在
+    #    https://openrouter.ai/models?max_price=0 核对仍可用（免费模型下架/改名较频）。
+    # ⚠️ OpenRouter free tier 有严格速率/日额限制（常见 20 req/min、每日上限），
+    #    首跑关注 429/额度报错；必要时主线调大 config.REQUEST_SLEEP_S。
+    # 纯文本强模型（supports_image=False -> 只跑文本表征 A）：
+    {
+        "name": "or-gpt-oss-120b",
+        "provider": "openrouter",
+        "model_id": "openai/gpt-oss-120b:free",
+        "env_key": "OPENROUTER_API_KEY",
+        "supports_image": False,
+        # gpt-oss 系为推理模型：MAX_OUTPUT_TOKENS(400) 可能被 reasoning 吃掉致 content 空。
+        # TODO(主线首跑): 看 raw_response 是否为空/被截，必要时上调 MAX_OUTPUT_TOKENS。
+        "is_reasoning": False,     # OpenRouter 分支统一走标准 chat 参数（不区分此字段）
+    },
+    {
+        "name": "or-qwen3-next-80b",
+        "provider": "openrouter",
+        "model_id": "qwen/qwen3-next-80b-a3b-instruct:free",
+        "env_key": "OPENROUTER_API_KEY",
+        "supports_image": False,
+        "is_reasoning": False,
+    },
+    {
+        "name": "or-llama-3.3-70b",
+        "provider": "openrouter",
+        "model_id": "meta-llama/llama-3.3-70b-instruct:free",
+        "env_key": "OPENROUTER_API_KEY",
+        "supports_image": False,
+        "is_reasoning": False,
+    },
+    {
+        "name": "or-nemotron-3-super-120b",
+        "provider": "openrouter",
+        "model_id": "nvidia/nemotron-3-super-120b-a12b:free",
+        "env_key": "OPENROUTER_API_KEY",
+        "supports_image": False,
+        "is_reasoning": False,
+    },
+    # 多模态（supports_image=True -> 文本 A + 图像 B 都跑，能读波形 PNG）：
+    {
+        "name": "or-gemma-4-31b",
+        "provider": "openrouter",
+        "model_id": "google/gemma-4-31b-it:free",
+        "env_key": "OPENROUTER_API_KEY",
+        "supports_image": True,
+        "is_reasoning": False,
+    },
+    {
+        "name": "or-nemotron-nano-12b-vl",
+        "provider": "openrouter",
+        "model_id": "nvidia/nemotron-nano-12b-v2-vl:free",
+        "env_key": "OPENROUTER_API_KEY",
         "supports_image": True,
         "is_reasoning": False,
     },
@@ -176,13 +238,16 @@ IMAGE_PAYLOAD_PLACEHOLDER = (
 # 文献参照线（score 画图用）—— 均为**文献值/引用**，非本 harness 自测（R2）。
 #   naive       : 全判多数类基线（由本样本金标现算，不是常数）
 #   0.8139      : PhysioNet/CinC 2015 Challenge 冠军参照（引用值）
-#   0.96        : VTaC CNN 参照（引用值）
+#   VTaC CNN    : 官方 split AUC **0.949**（VTaC, NeurIPS 2023 D&B）。
+#                 0.96 是**松 split**（arXiv 2503.14621）报的值，非官方 split —— 口径更宽松。
 # ⚠️ 冠军 0.8139 是 Challenge 官方**加权评分**口径（惩罚漏真>误留假），与本 harness
 #    的朴素准确率口径不同尺；画线仅作量级参照，图注须显式标「引用值·口径不同」。
+# ⚠️ 下方 REF_LINES 当前画的仍是 0.96（松 split 值）。是否改用官方 split 0.949 涉及
+#    图/summary 输出（属逻辑），留主线/planner 拍板；此处仅订正注释、不擅改字典值。
 # ---------------------------------------------------------------------------
 REF_LINES = {
     "PhysioNet2015 champion (0.8139, weighted score, cited)": 0.8139,
-    "VTaC CNN (0.96, cited)": 0.96,
+    "VTaC CNN (0.96, cited)": 0.96,   # 0.96=松 split；官方 split AUC=0.949（见上注）
 }
 
 # 中间/输出文件名（单一常量，防各脚本拼错）

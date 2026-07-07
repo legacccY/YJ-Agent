@@ -1,5 +1,50 @@
 # WardAgentBench — LOG
 
+## 2026-07-07 · 🧭 新方向探索 WardRouteGov「双轨路由守门员」→ 🚦killshot 揭「记忆点半」数据封死，建议退步重估
+
+**触发**：用户对旧候选 B + 07-07 菜单不满，要「非常重要、后人复用、没人做过、让审稿人记住」的方向；灵感=Claude Code 高级编排 / 真实病房痛点。全景决策档 `~/.claude/plans/project-claudecode-agent-woolly-shore.md`。
+
+**过程（3 轮研究编队 + 用户 4 次纠偏）**：
+- v1 drift 被否（WardEscalate/WardHandoffDecay 把多 agent 平台压扁成单任务 eval）；v2 平台中心（R1 坐实「评临床 agent **编排层本身**=基本空地」，最近邻 MedCTA 单 agent/HAO·TAO 系统非 bench）；v3 架完整方向。
+- 用户拍定交付物形状：①**agent 平台不能丢**（多 agent 编排当研究对象）②**不做 benchmark，能力/机制当主角**（applied-systems，组装已知技术，不 claim 新算法）③**公开数据主承重 + 医院验证层**④**4B+守门框架打赢最先进大模型 + MedGemma-27B，且大模型须单体强过 4B**（隔离框架贡献，制胜模板 LENS-01 形状）。
+- 收敛方向 **WardRouteGov**：给慧脉双轨告警调度器镶「路由安全 governor」（acuity-aware re-routing + admission control，用 conformal/risk-coverage/NEWS2 趋势），破「固定阈值下压假必漏真」死局。
+
+**硬证据（复现编队 3 簇真跑）**：
+- **过升级/告警疲劳半=铁证**：Drew 2014 心律失常告警 88.8% 假、室速/室颤最假；agent 218 条 CinC-2015 真复现「压假必漏真」trade-off（零漏真只能压 10% 假 / 压 74% 假必静音 24% 致命真报警）。数据全开放（CinC-2015/VTaC CC BY-SA/mimic3wdb ODbL）。
+- **SOTA 靶=VTaC 官方 split AUC 0.949**；「便宜/小模型赢 LLM」已被 **OpenTSLM(2510.02410)** 做过 → novelty 不能押它，须押「路由/升级决策」面。
+- **工具就绪**：killshot_w 接 OpenRouter 通（Nemotron-120B/Gemma-4-31B 免费模型响应，Llama/GPT-OSS/Qwen 免费版被上游 429）；MedGemma HF token 验通、门禁已过可下。
+
+**🚦 killshot（命门先证伪，主线亲跑）**：
+- v1 静态 NEWS2 探针**测错轴**（测瞬时多参数轻度异常，非趋势；用户拦下）→ 重建**趋势+时间解耦结局+置换检验**版。
+- **揭深层真障=人群错配**：安静高危/欠升级半在 mimic3wdb 上，ICU 病人全 loud（85% 窗口 loud，连安静平稳者未来危急率也 0.815）——ICU 里根本没有病房那种「安静恶化」。「安静上升」组 0 窗。
+- 查证到底：**开放病房（非 ICU）恶化数据集不存在；连 MIMIC-IV（要 CITI）都无 ward 频繁体征**（官方明说 frequent vitals 仅 ICU，hosp 模块 ward 无系统体征）；结构性数据荒（病房 4-8h 人工间歇抄表）。Ward2ICU(1910.00752) 是合成。
+
+**结论（诚实，未消费立项，STORY/ACCEPTANCE 未改）**：
+- 「记忆点半」（安静病房恶化/afferent limb failure）现象文献为真（60% 恶化前 4h 有异常），但**可得数据封死、CITI 都救不了 → 发不成 paper**。
+- 能做的：过升级/告警疲劳半（ICU 数据可做但中等老赛道）；beat-LLM（已被 OpenTSLM 做）。「让审稿人记住」bar 在此盘子+可得数据上够不到。
+- **建议 ③：退步把慧脉跟其他项目（QuantImmu 等）重估**；或清醒收「告警疲劳守门员」中等版（JMIR/JBHI）。降采样 ICU→病房代理=创意但站不稳（人群不迁移），不敢押。
+- **留底资产**：killshot_w OpenRouter 接线 + 复现的告警疲劳硬证据 + 趋势 killshot 方法论（scratchpad/news2_trend_probe.py）+ 决策全景 plan。
+- **⚠️ 安全**：用户 OpenRouter/HF key 存 `src/killshot_w/.env`（gitignored），提醒用完 rotate。
+
+**过程价值**：几小时（非几个月）证伪了方向的承重前提=「命门先证伪」纪律生效，未让用户为拿不到数据的方向砸整学期。
+
+---
+
+## 2026-07-06 · 🔍 面谈前尽调（导师画像 × 本科先例 × 资源链）→ `reference/RECON_2026-07-06_advisor_precedent_dueDiligence.md`
+
+**触发**：用户明天与王水花面谈慧脉科研转化，要求联网核实「王水花有没有类似文章 + XJTLU 有没有本科先例 + AI4Health/孟佳/Moraros/附二院链成色」，做成详细分析 md。派 3 researcher 并行核实（全带 URL）。
+
+**三大发现**：
+1. **王水花 = 跨域挂名背书非对口内行**：静态医学影像 CNN 分类/分割 + 信息融合的连续高被引（h≈85-96），与慧脉四支柱（LLM-agent/生理波形告警/部署 usability/benchmark 构建）**基本零交集**。她能给通讯声望 + 通用 ML 把关 + 实验室席位 + 医院人情，**给不了核心方法内审**。
+2. **本科先例仅 1 例且不背书这条路 + 重要更正**：Liu Yiheng（2025 CSBJ Q2，DOI 10.1016/j.csbj.2025.05.051）是**方法+应用**型、通讯是**黄夏 Xia Huang**、**王水花/孟佳/Moraros 均非作者**（Moraros 仅背书露面）。→ 之前 pivot 报告「Moraros 背书的先例」说法名不副实，已在新报告更正。走 benchmark/deployment 路的本科先例**零命中**。
+3. **资源链平台真、对口薄**：AI4Health 实验室真实（2024、Moraros 主任），**王水花在 Theme Leaders 名单 = 最强正面支点**；但 Moraros/孟佳只提供平台+背书+行政力（不做 AI/agent）；孟佳不在实验室名单；**附二院公开 AI 需求不含病房监测、XJTLU×附二院既有合作查无实据**。
+
+**对明天的含义**：会的本质=「用她的实验室席位+通讯声望+医院人情，把我一个人做得出的 benchmark 升级成有真实落地背书的东西」，非「让内行审方向」。必问三红：①医院能否落到具体科室具体人 ②署名锁本科一作+要不要走 SURF ③AI4Health 挂靠。措辞红线：别说已真实部署、别把两院意向说成已获资源、别把 Liu Yiheng 说成王水花/Moraros 成果。
+
+**7 条 TODO 待人工复核**（王水花部署论文/第二本科先例/SURF 细则页 404/孟佳本科一作/XJTLU×附二院合作/附二院病房监测需求/伦理委是否受理 AI）。
+
+---
+
 ## 2026-07-04 · 🧭 路 W' probe（制胜模板 LENS-01 适配评估 → $5 kill-shot 就绪待 key）
 
 **触发**：用户问「慧脉守护适不适配制胜模板 LENS-01，灵活举一反三」。派 Explore 挖全档 + researcher×2（三候选角落撞车 + 终核）。评估档 `~/.claude/plans/inherited-hopping-boot.md`。
