@@ -9,7 +9,8 @@ reconstruct_wt_official.py
   本脚本从突变记法回推 WT 全长肽(仅 SNV), 验证方法对不对(对旧 xlsx 金标准),
   再把 WT 全长滑窗成 WT 子肽×HLA (与 MT 同口径) 供工具补跑 WT 侧分数。
 
-  indel(DEL/INS) 及 Variant_Type 缺失行: WT 本无定义 -> 标 N/A, 不产 WT 子肽。
+  indel(DEL/INS): WT 本无定义 -> 标 N/A, 不产 WT 子肽。
+  (Variant_Type 缺失但 p.XnY 记法可解析的行, 如 AMACR 16097-104-24, 视为 SNV; 见 is_snv。)
 
 ================== 输入 (只读 frozen + 官方) ==================
   data/frozen/ds2_official_groundtruth.csv   (130 肽; 列 Vaccine_Peptide=MT 全长,
@@ -31,7 +32,7 @@ reconstruct_wt_official.py
          歧义: mt_aa 多次出现 -> 用 Short_Epitope(含突变残基)在长肽中的 span 缩小,
                 只保留落在表位 span 内的 mt_aa 位; 唯一即定位, 否则标 ambiguous(不臆造)
        WT 全长 = MT 把该位 mt_aa 换回 wt_aa。
-  3. indel(DEL/INS)/Variant_Type 缺 -> indel_NA (WT 无定义, 不变)。
+  3. indel(DEL/INS) 或记法非干净替换 -> indel_NA (WT 无定义, 不变)。
 
   注: derived 回推法仍对旧金标准独立交叉验证 (见 [WT-g2], 凡有 gold 的 SNV
       都跑回推并比对, 证明回推法正确; gold_reuse 输出天然=旧值无需比)。
@@ -50,9 +51,9 @@ reconstruct_wt_official.py
         Gene_and_Protein_Change, status
 
 ================== 校验门 ==================
-  [WT-g1] SNV 数 == 101  且 gold_reuse_SNV + derived + ambiguous == SNV 数
+  [WT-g1] SNV 数 == 102  且 gold_reuse_SNV + derived + ambiguous == SNV 数
   [WT-g2] derived 回推法 vs 旧 xlsx 金标准 match 率打印; <100% 打印失配清单(不 silent)
-  [WT-g3] indel/无 WT 数 == 29
+  [WT-g3] indel/无 WT 数 == 28
   [WT-g4] gold_reuse / derived / ambiguous(理想 0) / indel_NA 各数打印
 
 ================== 跑法 (不在本脚本内跑; 交主线) ==================
@@ -217,7 +218,9 @@ def main():
         gene_change = r.Gene_and_Protein_Change
         parsed = parse_protein_change(gene_change)
 
-        is_snv = (vtype == "SNV")
+        # AMACR fix: Variant_Type 可能为空但记法可解析 (如 AMACR|p.Y41N, 16097-104-24),
+        # 别只信 Variant_Type 列把它误挡进 indel; 记法能被 p.XnY 解析即视为 SNV。
+        is_snv = (vtype == "SNV") or (parsed is not None)
         if not is_snv or parsed is None:
             # 非 SNV (DEL/INS/Variant_Type 缺) 或记法非干净替换 -> WT 无定义
             na_rows.append({
@@ -275,10 +278,10 @@ def main():
     full_df = pd.DataFrame(full_rows)
     na_df = pd.DataFrame(na_rows)
 
-    print(f"\n[WT-g1] SNV 数(实际): {n_snv}  (期望 101)  "
+    print(f"\n[WT-g1] SNV 数(实际): {n_snv}  (期望 102)  "
           f"gold_reuse={n_gold} derived={n_derived} ambiguous={n_amb}  "
           f"(和={n_gold + n_derived + n_amb})")
-    print(f"[WT-g3] 无 WT(indel/Variant_Type 缺) 数(实际): {len(na_df)}  (期望 29)")
+    print(f"[WT-g3] 无 WT(indel) 数(实际): {len(na_df)}  (期望 28)")
     print(f"[WT-g4] gold_reuse={n_gold}  derived={n_derived}  "
           f"ambiguous={n_amb}(理想 0)  indel_NA={len(na_df)}")
     if n_amb:
@@ -375,13 +378,13 @@ def main():
     # ── 最终校验门汇总 ───────────────────────────────────────────────────
     sum_snv = n_gold + n_derived + n_amb
     print("\n========== 校验门汇总 ==========")
-    print(f"[WT-g1] SNV 数 = {n_snv} (期望 101) {'PASS' if n_snv == 101 else 'CHECK'}; "
+    print(f"[WT-g1] SNV 数 = {n_snv} (期望 102) {'PASS' if n_snv == 102 else 'CHECK'}; "
           f"gold_reuse+derived+ambiguous = {sum_snv} "
           f"{'PASS' if sum_snv == n_snv else 'CHECK'}")
     print(f"[WT-g4] gold_reuse={n_gold}  derived={n_derived}  "
           f"ambiguous={n_amb}{' PASS(=0)' if n_amb == 0 else ' CHECK(>0, 见上清单)'}  "
           f"indel_NA={len(na_df)}")
-    print(f"[WT-g3] 无 WT 数 = {len(na_df)} (期望 29) {'PASS' if len(na_df) == 29 else 'CHECK'}")
+    print(f"[WT-g3] 无 WT 数 = {len(na_df)} (期望 28) {'PASS' if len(na_df) == 28 else 'CHECK'}")
     print("[DONE] reconstruct_wt_official 完成 (回推法 match 率见上 [WT-g2])")
 
 

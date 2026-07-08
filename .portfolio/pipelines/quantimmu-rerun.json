@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "project": "quantimmu-rerun",
+  "template": "experiment",
+  "created": "2026-07-07T17:55:26+08:00",
+  "updated": "2026-07-07T19:17:18+08:00",
+  "from_phase": "",
+  "nodes": [
+    {
+      "id": "design",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "出实验矩阵，对齐判据",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-07T17:55:26+08:00"
+    },
+    {
+      "id": "redteam",
+      "stage": "红队",
+      "agent": "skeptic",
+      "deps": [
+        "design"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "攻设计致命伤（0 致命即过）",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-07T17:55:26+08:00"
+    },
+    {
+      "id": "implement",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "redteam"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "实现各 run 脚本/config，自测 pytest",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-07T17:55:26+08:00"
+    },
+    {
+      "id": "integrate",
+      "stage": "集成烟测",
+      "agent": "主线",
+      "deps": [
+        "implement"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-07T17:55:26+08:00"
+    },
+    {
+      "id": "train",
+      "stage": "跑",
+      "agent": "主线",
+      "deps": [
+        "integrate"
+      ],
+      "status": "skipped",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-07T17:55:26+08:00"
+    },
+    {
+      "id": "analyze",
+      "stage": "分析",
+      "agent": "analyst",
+      "deps": [
+        "train"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "读结果出趋势/图/对判据",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-07T17:55:26+08:00"
+    },
+    {
+      "id": "verify",
+      "stage": "核数",
+      "agent": "verifier",
+      "deps": [
+        "analyze"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "关键数字三方对账 + 写 LOG",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-07T17:55:26+08:00"
+    },
+    {
+      "id": "prep",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "本地输入包 out_rerun/ 已备(本窗完成:914窗MT+WT全30工具输入+manifest)",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-07T17:55:27+08:00"
+    },
+    {
+      "id": "slice_local_a",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "running",
+      "gate": false,
+      "group": "本地",
+      "desc": "本地CPU/torch(WSL2):IEDB_Calis(py)/DeepImmuno(TF2.3)/BigMHC_IM/CNNeo/MHCnuggets/ImmuGenX/MUNIS/DeepNetBim(tf1) 8工具-无需上传HPC",
+      "out": "",
+      "owner": "immml",
+      "ts": "2026-07-07T19:17:18+08:00"
+    },
+    {
+      "id": "slice_local_b",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "本地",
+      "desc": "本地R/docker/GPU:Seq2Neo(pip+本地netMHCpan)/NeoaG(R)/Repitope(R)/pTuneos(docker)/deepHLApan(docker)/TransHLA(RTX4070)/TSCAPE(RTX4070) 7工具-无需上传HPC",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "slice_hpc_dtu",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "HPC",
+      "desc": "HPC DTU二进制:netMHCpan_BA/netMHCpan_EL/netMHCstabpan/andy90(需netMHCpan)/NetTepi/ICERFIRE 6工具-需上传+DTU;consent=发表闸非算力闸",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "slice_hpc_env",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "HPC",
+      "desc": "HPC conda/sif:ImmuneApp/PRIME/PredIG(sif)/IMPROVE/MHCflurry/MHCseqNet/HLAthena(sif)/NeoTImmuML/NeoaPred(结构慢) 9工具-需上传",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "merge",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "slice_local_a",
+        "slice_local_b",
+        "slice_hpc_dtu",
+        "slice_hpc_env"
+      ],
+      "status": "pending",
+      "gate": true,
+      "group": "",
+      "desc": "merge_official_30 --strict-roster 完整性硬闸(缺任一工具报错)+回收本地/HPC各切片产出",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "coverage",
+      "stage": "自定义",
+      "agent": "verifier",
+      "deps": [
+        "merge"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "不能漏:逐(窗×HLA×side×工具)覆盖矩阵,空缺逐条列原因(工具不支持HLA/长度vs真漏)",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "pool",
+      "stage": "自定义",
+      "agent": "coder",
+      "deps": [
+        "coverage"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "p0e2 max pooling on 改动②窗+per-patient Spearman→最终max排名",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "dai",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "pool"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "改动③ R10 --wt_scores DAI(MT/WT配对已备)别预焊胜利",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "recheck",
+      "stage": "自定义",
+      "agent": "verifier",
+      "deps": [
+        "dai"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "verifier核数对claim i/ii/iii+csv三方对账",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    }
+  ]
+}

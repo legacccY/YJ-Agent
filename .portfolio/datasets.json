@@ -351,6 +351,18 @@
    "caveat": "⚠️P0缺口:袁md三步范式要求四数据集(人ds1/ds2+鼠B16F10/CT26)同口径跑通,鼠数据缺失阻塞跨物种章节+小鼠框架camp.py。详见 reference/GAP_ROADMAP_vs_outline.md",
    "status": "missing (待数据组提供)"
   },
+  "quantimmu_mane_reference": {
+   "name": "MANE Select 参考蛋白 (改动②切肽溢出补全)",
+   "n": "v1.5 (2025-12-04): 19437 基因 summary + 19367 RefSeq 蛋白序列",
+   "local": "project/meeting/QuantImmuBench/data/external/MANE/{MANE.GRCh38.v1.5.summary.txt.gz, MANE.GRCh38.v1.5.refseq_protein.faa.gz} (2026-07-07下,gzip校验通过)",
+   "hpc": "N/A(本地CPU切肽用)",
+   "source": "NCBI 官方 https://ftp.ncbi.nlm.nih.gov/refseq/MANE/MANE_human/current/ ; summary列#NCBI_GeneID/HGNC_ID/symbol/RefSeq_prot/MANE_status; 按HGNC_ID/GeneID匹配根治gene-name别名碰撞(DLC1≠DYNLL1)",
+   "used_by": [
+    "quantimmu-bench"
+   ],
+   "purpose": "改动②从原始蛋白定点切肽:83.4%窗从SLP切(零风险),16.6%溢出窗用MANE补(核区SLP-align锚定+逐残基一致性闸门);GENCODE v19 calling≠UniProt canonical故不用袁UniProt自动下载",
+   "status": "downloaded (2026-07-07)"
+  },
   "lidc_idri": {
    "name": "LIDC-IDRI",
    "n": "1018 CT (4-annotator 结节标注)",
@@ -389,6 +401,21 @@
    "source": "preprocessed-connectomes-project.org 免登录 (nilearn datasets.fetch_abide_pcp pipeline=cpac, band_pass_filtering=True, global_signal_regression=True, derivatives=rois_cc200); S3 备选 s3.amazonaws.com/fcp-indi/data/Projects/ABIDE_Initiative/Outputs/cpac/",
    "used_by": "hyperfid (BrainGB 泳道, Gate1)",
    "status": "ready (本地)"
+  },
+  "kits23": {
+   "name": "KiTS23 (2023 Kidney Tumor Segmentation Challenge)",
+   "n": "489 train (case_00000-00299 + 00400-00588) + 110 test(不公开)",
+   "local": "data/kits23_repo/dataset/case_XXXXX/ (官方 repo clone; 每 case = imaging.nii.gz[HF下载中] + segmentation.nii.gz + instances/多标注者亚区; imaging 逐例下 489 约 12GB, 标注随 git 9.5GB)",
+   "hpc": "✅已上传验通 /gpfs/work/bio/jiayu2403/kits23/dataset/case_XXXXX/{imaging,segmentation}.nii.gz (2026-07-08, 489例imaging+489seg, 本地↔HPC逐例大小完全一致, 40GiB; 上传器 data/kits23_repo/kits_upload_hpc.py SFTP断点续传). instances多标注者亚区暂未传(8GB多小文件,训练用不上,需要再补). 训练可直接读此路径",
+   "source": "官方 github.com/neheller/kits23 (pip install -e . 后跑 kits23_download_data; imaging 从 HF datasets neheller/KiTS-Challenge-Imaging 逐例 urllib 拉, 自带断点续跑跳过已下). Windows 直跑 download.py 只需 tqdm+nibabel, 免装 surface-distance/batchgenerators 重依赖",
+   "format": "腹部 CT .nii.gz 各向异性; label: 1=kidney 2=tumor 3=cyst; instances/ 子目录含多标注者 kidney/tumor/cyst 实例分标 (annotation-1/2/3)",
+   "license": "CC BY-NC-SA (非商业+署名+相同方式共享); 商用需联系 helle246@umn.edu; 学术研究可用, 发表须引用 + 注明许可",
+   "extract_size_warn": "【实测2026-07-07】imaging ~32GB (489例 平均66MB/例 .nii.gz压缩, 大例如case_00000压缩后225MB; 原写'~12GB'系低估已纠) + segmentation 1.4GB + instances多标注者8GB = repo全量约42GB(核心imaging+seg≈34GB); D盘剩110G充足",
+   "used_by": [
+    "nca-kits (博士生项目, 方向待定, venue=MICCAI/MedIA)"
+   ],
+   "purpose": "NCA 模型医学分割新项目主数据集 (方向待定, 博士生项目); 官方 metrics 脚本 kits23_compute_metrics 可复用",
+   "status": "✅DONE both(2026-07-08). local: kits_dl_local.py 8路并行下完489/489 imaging=42GB 0缺失0截断gzip全验通. hpc: kits_upload_hpc.py SFTP断点续传全传完, 489imaging+489seg逐例大小本地↔HPC完全一致, 训练可直接读 /gpfs/work/bio/jiayu2403/kits23/dataset/. 【踩坑记录】HPC登录节点直连HF仅13KB/s(cdn-lfs校内不通)+hf-mirror不可达→只能本地下再传;本机HF~3.5MB/s国际线路封顶(加并行无用);之前'HPC 389/489'系paramiko+GitBash工具串扰假象HPC从无kits23;Kaggle无逐字节一致完整镜像(全2D/解压.nii/样本/缺part2). 下一步=定NCA×KiTS23研究方向后建项目档(立项拍板点)"
   }
  },
  "fetal_us_seg": {

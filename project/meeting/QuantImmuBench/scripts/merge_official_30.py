@@ -72,7 +72,7 @@ ROSTER = {
     "IMPROVE":        {"improve", "improve_mean_prediction_rf"},
     "pTuneos":        {"ptuneos"},
     "NeoTImmuML":     {"neotimmuml"},
-    "deepHLApan":     {"deephlapan"},
+    "deepHLApan":     {"deephlapan", "deephlapan_immuno"},   # immuno头=免疫原性(benchmark语义);bind头入AUX不计(2026-07-08自主拍板,待复核)
     "BigMHC_IM":      {"bigmhc_im", "bigmhc"},       # 旧 MT_BigMHC = IM 头
     "CNNeo":          {"cnneo"},
     "Repitope":       {"repitope"},
@@ -83,7 +83,9 @@ ROSTER = {
     "andy90":         {"andy90"},
     "ImmuGenX":       {"immugenx"},
     "DeepNetBim":     {"deepnetbim"},
-    "NeoaPred":       {"neoapred"},
+    # "NeoaPred":     {"neoapred"},  # ⛔ 用户 2026-07-07 拍板从工具集去掉(结构物理最慢/旧仅244有效值)
+    #                                #    → rerun 不再产 NeoaPred_official.csv；roster 30→29 工具。
+    #                                #    收口 strict-roster 按 29 过。见 04_LOG Entry 2026-07-07c。
     "netMHCpan_BA":   {"netmhcpan_ba"},
     "netMHCpan_EL":   {"netmhcpan_el"},
     "netMHCstabpan":  {"netmhcstabpan", "stabpan"},
@@ -132,16 +134,19 @@ def canon_of(raw_col):
     return prefix, None   # 未识别工具列
 
 
-def build_new_long():
-    """43 补跑肽: backbone + 各 <Tool>_official.csv join bb_idx -> 长表 (canonical 列)。"""
-    if not BACKBONE.exists():
-        raise SystemExit(f"[ERR] backbone 不存在: {BACKBONE}")
-    bb = pd.read_csv(BACKBONE)
+def build_new_long(in_dir=None):
+    """补跑肽: backbone + 各 <Tool>_official.csv join bb_idx -> 长表 (canonical 列)。
+    in_dir 默认 OUT_OFFICIAL; rerun 传 scripts/out_rerun_official (backbone 同目录)。"""
+    in_dir = in_dir or OUT_OFFICIAL
+    backbone_path = in_dir / "master_backbone_official.csv"
+    if not backbone_path.exists():
+        raise SystemExit(f"[ERR] backbone 不存在: {backbone_path}")
+    bb = pd.read_csv(backbone_path)
     assert "bb_idx" in bb.columns and "mut_key" in bb.columns
     print(f"[new] backbone {bb.shape}, distinct mut_key={bb['mut_key'].nunique()}")
 
     found, pending_files = [], []
-    for f in sorted(glob.glob(str(OUT_OFFICIAL / "*_official.csv"))):
+    for f in sorted(glob.glob(str(in_dir / "*_official.csv"))):
         name = Path(f).name
         if name == "master_backbone_official.csv" or name.endswith("_input.csv") \
            or "_input_" in name or name.endswith("_map.csv"):
@@ -221,54 +226,76 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--strict-roster", action="store_true",
                     help="缺任一 roster 工具 (整列空) 即报错 (收口终检)")
+    ap.add_argument("--in-dir", default=None,
+                    help="official csv + backbone 目录 (默认 scripts/out_official; rerun 传 scripts/out_rerun_official)")
+    ap.add_argument("--out", default=None,
+                    help="输出长表路径/文件名 (默认 merged_all_tools_30_official.csv; rerun 传 merged_all_tools_30_rerun.csv)")
+    ap.add_argument("--pure-new", action="store_true",
+                    help="纯新窗模式 (改动② 全量重跑用): 全取 new_long, 跳过旧 xlsx reuse 段 "
+                         "(旧滑窗与新 mut-spanning 窗混窗=错表); M1 断言按实际 SNV 肽数不硬锚 130")
     args = ap.parse_args()
 
-    for p in (OLD_MERGED, REUSE_DEC, PATIENT_HLA):
-        if not p.exists():
-            raise SystemExit(f"[ERR] 依赖缺失: {p}")
+    in_dir = Path(args.in_dir).resolve() if args.in_dir else OUT_OFFICIAL
+    if args.out:
+        out_csv = Path(args.out)
+        if not out_csv.is_absolute():
+            out_csv = OUT_CSV.parent / args.out   # 裸文件名 -> 落 scripts/out/
+    else:
+        out_csv = OUT_CSV
+    if in_dir != OUT_OFFICIAL and not args.pure_new:
+        # rerun 路径且非纯新模式: 提醒 reuse 段仍从旧 xlsx 取【旧窗】分, 会与新 mut-spanning 窗混合
+        print(f"[WARN] rerun 模式 in_dir={in_dir} 未开 --pure-new: reuse 段(87肽)仍取旧 xlsx"
+              f"【旧滑窗】分, 与 backbone【新 mut-spanning 窗】混合(错表)。改动② 全量重跑请加 --pure-new。")
 
-    dec = pd.read_csv(REUSE_DEC)
-    reuse_keys = set(dec[dec.status == "reuse"]["mut_key"])
-    full_keys = set(dec[dec.status == "rerun_full"]["mut_key"])
-    partial_keys = set(dec[dec.status == "rerun_partial"]["mut_key"])
-    print(f"[dec] reuse={len(reuse_keys)} full={len(full_keys)} partial={len(partial_keys)}")
-    assert len(reuse_keys) + len(full_keys) + len(partial_keys) == 130
+    # 纯新模式只需 backbone (build_new_long 查); 否则需旧 xlsx + reuse 决策 + patient_hla
+    if not args.pure_new:
+        for p in (OLD_MERGED, REUSE_DEC, PATIENT_HLA):
+            if not p.exists():
+                raise SystemExit(f"[ERR] 依赖缺失: {p}")
+        dec = pd.read_csv(REUSE_DEC)
+        reuse_keys = set(dec[dec.status == "reuse"]["mut_key"])
+        full_keys = set(dec[dec.status == "rerun_full"]["mut_key"])
+        partial_keys = set(dec[dec.status == "rerun_partial"]["mut_key"])
+        print(f"[dec] reuse={len(reuse_keys)} full={len(full_keys)} partial={len(partial_keys)}")
+        assert len(reuse_keys) + len(full_keys) + len(partial_keys) == 130
+        ph = pd.read_csv(PATIENT_HLA)   # 新 HLA 集 (per patient) 真源
+        valid_hla = {pid: set(g["hla_allele_std"]) for pid, g in ph.groupby("Patient_ID")}
 
-    # 新 HLA 集 (per patient) 真源
-    ph = pd.read_csv(PATIENT_HLA)
-    valid_hla = {pid: set(g["hla_allele_std"])
-                 for pid, g in ph.groupby("Patient_ID")}
-
-    # ── 新长表 (43 补跑肽) ─────────────────────────────────────────────
-    new_long, found_new = build_new_long()
+    # ── 新长表 (补跑肽 / 纯新全窗集) ────────────────────────────────────
+    new_long, found_new = build_new_long(in_dir)
     new_long["Patient_ID"] = new_long["Patient_ID"].astype(int)
 
-    # ── 旧长表 canonical ───────────────────────────────────────────────
-    print(f"[old] 读 {OLD_MERGED.name} ...")
-    old = pd.read_excel(OLD_MERGED)
-    old_c, aux_cols = canonicalize_old(old)
-    old_c["Patient_ID"] = old_c["Patient_ID"].astype(int)
-    print(f"[old] canonical 后 {old_c.shape}")
+    if args.pure_new:
+        # 纯新窗: 全取 new_long (out_rerun_official 全窗新分), 不掺旧 xlsx
+        merged = new_long.copy()
+        aux_cols = []
+        expected_pep = new_long["mut_key"].nunique()   # 实际 SNV 肽数 (从 backbone 推, 非硬编码)
+        rerun_keys = set(new_long["mut_key"])          # 全部都是新窗肽
+        print(f"[pure-new] 全取 new_long: {len(merged)} 行, {expected_pep} SNV 肽 (跳过旧 xlsx reuse)")
+    else:
+        # ── 旧长表 canonical ───────────────────────────────────────────
+        print(f"[old] 读 {OLD_MERGED.name} ...")
+        old = pd.read_excel(OLD_MERGED)
+        old_c, aux_cols = canonicalize_old(old)
+        old_c["Patient_ID"] = old_c["Patient_ID"].astype(int)
+        print(f"[old] canonical 后 {old_c.shape}")
 
-    # ── 三段切分 ───────────────────────────────────────────────────────
-    # reuse: 全取旧
-    seg_reuse = old_c[old_c["mut_key"].isin(reuse_keys)].copy()
-    # full: 全取新
-    seg_full = new_long[new_long["mut_key"].isin(full_keys)].copy()
-    # partial: 旧不变等位 (HLA ∈ 新集) + 新等位行
-    old_partial = old_c[old_c["mut_key"].isin(partial_keys)].copy()
-    keep_mask = old_partial.apply(
-        lambda r: r["HLA_Allele"] in valid_hla.get(int(r["Patient_ID"]), set()),
-        axis=1)
-    seg_partial_old = old_partial[keep_mask].copy()
-    seg_partial_new = new_long[new_long["mut_key"].isin(partial_keys)].copy()
-
-    print(f"[seg] reuse 行={len(seg_reuse)} | full 行={len(seg_full)} | "
-          f"partial 旧保留={len(seg_partial_old)} (丢弃 {len(old_partial)-len(seg_partial_old)}) "
-          f"| partial 新={len(seg_partial_new)}")
-
-    merged = pd.concat([seg_reuse, seg_full, seg_partial_old, seg_partial_new],
-                       ignore_index=True, sort=False)
+        # ── 三段切分 ───────────────────────────────────────────────────
+        seg_reuse = old_c[old_c["mut_key"].isin(reuse_keys)].copy()          # reuse: 全取旧
+        seg_full = new_long[new_long["mut_key"].isin(full_keys)].copy()      # full: 全取新
+        old_partial = old_c[old_c["mut_key"].isin(partial_keys)].copy()      # partial: 旧不变等位+新
+        keep_mask = old_partial.apply(
+            lambda r: r["HLA_Allele"] in valid_hla.get(int(r["Patient_ID"]), set()),
+            axis=1)
+        seg_partial_old = old_partial[keep_mask].copy()
+        seg_partial_new = new_long[new_long["mut_key"].isin(partial_keys)].copy()
+        print(f"[seg] reuse 行={len(seg_reuse)} | full 行={len(seg_full)} | "
+              f"partial 旧保留={len(seg_partial_old)} (丢弃 {len(old_partial)-len(seg_partial_old)}) "
+              f"| partial 新={len(seg_partial_new)}")
+        merged = pd.concat([seg_reuse, seg_full, seg_partial_old, seg_partial_new],
+                           ignore_index=True, sort=False)
+        expected_pep = 130
+        rerun_keys = full_keys | partial_keys
 
     # canonical 工具列排序 (MT_ 在前 WT_ 紧随)
     tool_cols = [c for c in merged.columns
@@ -280,8 +307,9 @@ def main():
 
     # ── 校验门 ─────────────────────────────────────────────────────────
     nk = merged["mut_key"].nunique()
-    assert nk == 130, f"[M1] FAIL: distinct mut_key={nk} != 130"
-    print(f"[M1] PASS: distinct mut_key == 130")
+    assert nk == expected_pep, f"[M1] FAIL: distinct mut_key={nk} != {expected_pep}"
+    print(f"[M1] PASS: distinct mut_key == {expected_pep}"
+          f"{' (纯新 SNV)' if args.pure_new else ''}")
 
     mt_cols = [c for c in tool_cols if c.startswith("MT_")]
     per_pep_any = merged.groupby("mut_key")[mt_cols].apply(
@@ -291,22 +319,25 @@ def main():
         raise SystemExit(f"[M2] FAIL: {len(empty_peps)} 肽全工具 MT 皆空: {empty_peps}")
     print(f"[M2] PASS: 每肽至少 1 工具有 MT 分")
 
-    # M3 partial 等位
-    pm = merged[merged["mut_key"].isin(partial_keys)]
-    if P104_DROPPED_ALLELE in set(pm["HLA_Allele"]):
-        raise SystemExit(f"[M3] FAIL: partial 肽仍含换出等位 {P104_DROPPED_ALLELE}")
-    if P104_NEW_ALLELE not in set(pm["HLA_Allele"]):
-        raise SystemExit(f"[M3] FAIL: partial 肽缺新等位 {P104_NEW_ALLELE}")
-    print(f"[M3] PASS: partial 肽无 {P104_DROPPED_ALLELE}, 含 {P104_NEW_ALLELE}")
+    # M3 partial 等位 (仅非纯新模式; 纯新窗无旧 xlsx partial 段, 不适用)
+    if not args.pure_new:
+        pm = merged[merged["mut_key"].isin(partial_keys)]
+        if P104_DROPPED_ALLELE in set(pm["HLA_Allele"]):
+            raise SystemExit(f"[M3] FAIL: partial 肽仍含换出等位 {P104_DROPPED_ALLELE}")
+        if P104_NEW_ALLELE not in set(pm["HLA_Allele"]):
+            raise SystemExit(f"[M3] FAIL: partial 肽缺新等位 {P104_NEW_ALLELE}")
+        print(f"[M3] PASS: partial 肽无 {P104_DROPPED_ALLELE}, 含 {P104_NEW_ALLELE}")
+    else:
+        print("[M3] SKIP: 纯新模式无旧 xlsx partial 段, 不适用")
 
     # M4 无重复 canonical
     dup = [c for c in tool_cols if tool_cols.count(c) > 1]
     assert not dup, f"[M4] FAIL: 重复 canonical 列 {set(dup)}"
     print(f"[M4] PASS: 无重复 canonical 工具列")
 
-    # ── M5 覆盖报告 ────────────────────────────────────────────────────
-    rerun_keys = full_keys | partial_keys   # 43
-    print(f"\n[M5] === canonical 工具覆盖报告 (130 肽 / {len(rerun_keys)} 补跑肽) ===")
+    # ── M5 覆盖报告 (130 肽或纯新 expected_pep; rerun_keys 已在上分支设定) ──
+    print(f"\n[M5] === canonical 工具覆盖报告 ({expected_pep} 肽 / {len(rerun_keys)} "
+          f"{'新窗' if args.pure_new else '补跑'}肽) ===")
     pending, partial_cov, full_cov = [], [], []
     for canon in ROSTER:
         mc = f"MT_{canon}"
@@ -319,15 +350,15 @@ def main():
         peps_cov = s[s[mc].notna()]["mut_key"].nunique()
         rerun_cov = s[s[mc].notna() & s["mut_key"].isin(rerun_keys)]["mut_key"].nunique()
         n_allele = s[s[mc].notna()]["HLA_Allele"].nunique()
-        tag = "✅" if peps_cov == 130 else ("🟡" if peps_cov > 0 else "⬜")
+        tag = "✅" if peps_cov == expected_pep else ("🟡" if peps_cov > 0 else "⬜")
         if peps_cov == 0:
             pending.append(canon)
-        elif peps_cov < 130 or rerun_cov < len(rerun_keys):
+        elif peps_cov < expected_pep or rerun_cov < len(rerun_keys):
             partial_cov.append(canon)
         else:
             full_cov.append(canon)
-        print(f"   {canon:16s} : {tag} {peps_cov:3d}/130 肽 | {rerun_cov:2d}/{len(rerun_keys)} 补跑 | {n_allele} 等位")
-    print(f"\n[M5] 全覆盖(130) {len(full_cov)} | 部分 {len(partial_cov)} | PENDING {len(pending)}")
+        print(f"   {canon:16s} : {tag} {peps_cov:3d}/{expected_pep} 肽 | {rerun_cov:2d}/{len(rerun_keys)} {'新窗' if args.pure_new else '补跑'} | {n_allele} 等位")
+    print(f"\n[M5] 全覆盖({expected_pep}) {len(full_cov)} | 部分 {len(partial_cov)} | PENDING {len(pending)}")
     if partial_cov:
         print(f"     🟡 部分覆盖 (补跑未齐): {partial_cov}")
     if pending:
@@ -342,9 +373,9 @@ def main():
         print(f"[strict] PASS: 30-roster 工具全 130 覆盖")
 
     # ── 写出 ───────────────────────────────────────────────────────────
-    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
-    merged.to_csv(OUT_CSV, index=False, encoding="utf-8")
-    print(f"\n[saved] {OUT_CSV}  shape={merged.shape}")
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(out_csv, index=False, encoding="utf-8")
+    print(f"\n[saved] {out_csv}  shape={merged.shape}")
     print(f"[info] 工具列 {len(tool_cols)} (canonical) + AUX {len(aux_out)}")
     print("[DONE] merge_official_30 完成")
 

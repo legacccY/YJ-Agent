@@ -132,7 +132,7 @@ BACKBONE_COLS = [
 ]
 
 
-def _build_wt_lookup() -> dict:
+def _build_wt_lookup(wt_path: Path = None) -> dict:
     """
     读 data/frozen/subpep_hla_expansion_WT.csv，构建 WT 子肽查表，供 MT backbone 逐格配对。
       key  = (mut_key, subpep_pos:int, hla_std)   ← 与 MT 行同键（mut_key+位置+HLA）
@@ -142,7 +142,7 @@ def _build_wt_lookup() -> dict:
     仅 14 肽/244 子肽×HLA 有 WT（SNV，等长可逐格配对）；indel/无 WT 肽不在此表 → WT 侧留空。
     HLA 用 normalize_hla 归一，与 MT 侧同口径，保证键可对上。
     """
-    wt_path = FROZEN / 'subpep_hla_expansion_WT.csv'
+    wt_path = wt_path or (FROZEN / 'subpep_hla_expansion_WT.csv')
     if not wt_path.exists():
         print(f'[WARN] WT 文件缺失，WT 侧将全空: {wt_path}', file=sys.stderr)
         return {}
@@ -163,16 +163,17 @@ def _build_wt_lookup() -> dict:
     return lut
 
 
-def build_backbone(out_dir: Path) -> pd.DataFrame:
+def build_backbone(out_dir: Path, mt_csv: Path = None, wt_csv: Path = None) -> pd.DataFrame:
     """
-    从 frozen subpep_hla_expansion.csv 构建 canonical master_backbone。
-    - HLA 一律用 frozen hla_allele_std（已 HLA-FIX），仅过 normalize_hla 做格式校验，
+    从 MT 子肽×HLA 表构建 canonical master_backbone。
+    - 默认读 frozen subpep_hla_expansion.csv (MT) + subpep_hla_expansion_WT.csv (WT);
+      传 mt_csv/wt_csv 可换成改动② 的 for_tools 表 (build_rerun_inputs 用)。
+    - HLA 一律用输入的 hla_allele_std（已 HLA-FIX），仅过 normalize_hla 做格式校验，
       **不从旧数据取 HLA**。
     - Elispot 按 mut_key 左连接 ds2_official_groundtruth。
-    - WT_*：从 subpep_hla_expansion_WT.csv 按 (mut_key, subpep_pos, HLA) 逐格配对填入；
-      indel/无 WT 肽（29 肽）WT 侧留空（正确，DAI 不适用）。
+    - WT_*：从 WT 表按 (mut_key, subpep_pos, HLA) 逐格配对填入；无 WT 肽 WT 侧留空。
     """
-    sub_path = FROZEN / 'subpep_hla_expansion.csv'
+    sub_path = mt_csv or (FROZEN / 'subpep_hla_expansion.csv')
     gt_path = FROZEN / 'ds2_official_groundtruth.csv'
     for p in (sub_path, gt_path):
         if not p.exists():
@@ -181,7 +182,7 @@ def build_backbone(out_dir: Path) -> pd.DataFrame:
 
     sub = pd.read_csv(sub_path, encoding='utf-8')
     gt = pd.read_csv(gt_path, encoding='utf-8')
-    wt_lut = _build_wt_lookup()                  # WT 子肽逐格查表
+    wt_lut = _build_wt_lookup(wt_csv)            # WT 子肽逐格查表
     print(f'[frozen] subpep_hla_expansion: {len(sub)} 行，{sub["Peptide_ID"].nunique()} 肽',
           file=sys.stderr)
     print(f'[frozen] ds2_official_groundtruth: {len(gt)} 行', file=sys.stderr)
@@ -354,9 +355,15 @@ def export_ptuneos(backbone: pd.DataFrame, out_dir: Path):
 # 覆盖校验：43 肽全覆盖
 # ---------------------------------------------------------------------------
 def assert_coverage(backbone: pd.DataFrame, expected_peptides: int = 43):
-    """断言 backbone 覆盖全 43 肽，且每肽 ≥1 行进 9mer-able（全 9mer）工具。"""
+    """
+    断言 backbone 每肽 ≥1 行进 9/10mer 工具 + 有效 HLA。
+    expected_peptides=None -> 跳过严格肽数计数 (改动② 肽数随 SNV/CCDC130 变, 软报);
+    否则断言肽数 == expected_peptides。
+    """
     n_pep = backbone['Peptide_ID'].nunique()
-    if n_pep != expected_peptides:
+    if expected_peptides is None:
+        print(f'[COVERAGE] 肽数(实际)={n_pep}（未设期望, 软报, 不作硬断言）', file=sys.stderr)
+    elif n_pep != expected_peptides:
         print(f'[ERR][COVERAGE] backbone 肽数 {n_pep} ≠ 预期 {expected_peptides}',
               file=sys.stderr)
         sys.exit(1)
@@ -394,6 +401,12 @@ def parse_args():
                    help='输出目录（默认 scripts/out_official/，不覆盖旧 out/）')
     p.add_argument('--window', type=int, default=9,
                    help='子肽窗口大小（frozen 全 9mer；仅作记录/校验，默认 9）')
+    p.add_argument('--mt-csv', default=None,
+                   help='MT 子肽×HLA 输入表（默认 frozen subpep_hla_expansion.csv；改动② 传 for_tools 表）')
+    p.add_argument('--wt-csv', default=None,
+                   help='WT 子肽×HLA 输入表（默认 frozen subpep_hla_expansion_WT.csv）')
+    p.add_argument('--expected-peptides', type=int, default=43,
+                   help='coverage 断言期望肽数（默认 43）；传 -1 跳过严格计数（改动② 肽数动态）')
     return p.parse_args()
 
 
@@ -409,10 +422,13 @@ def main():
     print(f'[INFO] window  = {args.window}（frozen 全 9mer）', file=sys.stderr)
 
     # 1. 构建 canonical backbone（含写 master_backbone_official.csv）
-    backbone = build_backbone(out_dir)
+    mt_csv = Path(args.mt_csv).resolve() if args.mt_csv else None
+    wt_csv = Path(args.wt_csv).resolve() if args.wt_csv else None
+    backbone = build_backbone(out_dir, mt_csv=mt_csv, wt_csv=wt_csv)
 
-    # 2. 覆盖校验
-    assert_coverage(backbone, expected_peptides=43)
+    # 2. 覆盖校验（--expected-peptides -1 -> 软报不硬断言）
+    exp = None if args.expected_peptides < 0 else args.expected_peptides
+    assert_coverage(backbone, expected_peptides=exp)
 
     # 3. 既有 export 函数复用（格式契约 100% 沿用）
     #    —— DeepImmuno / PredIG / IMPROVE（prepare_inputs.py）

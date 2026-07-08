@@ -52,7 +52,7 @@ lever: 产一张「干净的肽级 pooling 冻结表」, 堵住 3 个污染源 =
     注: topk k=20,α=0 即 outline 的 netAffneg 等权 top-20 口径。
 
 ================== 校验门 (fail-loud) ==================
-  [G1] 行数 == 130 (按 GT mut_key 顺序锚定)
+  [G1] 行数 == --expect-peptides (默认 130; 锚定 = GT 顺序里长表实际有的肽; rerun 纯新窗传 102=仅 SNV)
   [G2] 每肽 ≥1 工具有值 (整肽行不能全 NaN)
   [G3] 含突变过滤后每肽仍 ≥1 含突变子肽 (9mer 口径下即 ≥1 含突变 9mer, 无空肽)
 
@@ -218,6 +218,9 @@ def main():
     ap.add_argument("--output", default=None,
                     help="显式输出路径覆盖 (默认写 data/frozen/pooled_clean_<regime>.csv; "
                          "rebuild_canonical.py 用它把产物写进 staging 而不动 canonical)")
+    ap.add_argument("--expect-peptides", type=int, default=130,
+                    help="锚定期望肽数 (默认 130=官方全集, 零改动; 改动② 纯新窗重跑传 102=仅 SNV, "
+                         "28 indel 无 mut-spanning 窗被排除, 不触发空肽 FAIL)")
     args = ap.parse_args()
 
     # ── 口径三分支 (互斥) ──────────────────────────────────────────────────
@@ -253,7 +256,7 @@ def main():
     gt["Peptide_ID"] = gt["Peptide_ID"].astype(str)
     gt_keys = gt["mut_key"].tolist()
     assert len(gt_keys) == 130, f"[ERR] GT 锚定肽数={len(gt_keys)} != 130"
-    idx = pd.Index(gt_keys, name="mut_key")
+    # idx (锚定集) 在读长表后按【长表实际有的肽】定 (rerun 纯新窗只 102 SNV / official 130), 见下。
 
     # ── 读长表 ──────────────────────────────────────────────────────────
     print(f"[info] 读长表: {in_path}")
@@ -263,6 +266,17 @@ def main():
     for req in (SUBPEP_MT, SUBPEP_WT, FULLPEP_MT, "mut_key"):
         if req not in df.columns:
             raise SystemExit(f"[ERR] 长表缺列: {req}")
+
+    # ── 锚定集 = GT 顺序里【长表实际有的肽】(rerun 只 102 SNV -> 锚 102; official 130 -> 锚 130) ──
+    input_keys = set(df["mut_key"].astype(str))
+    anchor_keys = [k for k in gt_keys if str(k) in input_keys]
+    if not anchor_keys:                       # 与 GT 完全不交(格式漂移?) -> 退回全 GT (旧行为)
+        print("[warn] 长表 mut_key 与 GT 无交集, 退回全 130 GT 锚定")
+        anchor_keys = gt_keys
+    idx = pd.Index(anchor_keys, name="mut_key")
+    expect = args.expect_peptides
+    print(f"[info] 锚定肽数={len(idx)} (长表实际有; --expect-peptides={expect}); "
+          f"GT 全集 130, 缺席={130 - len(idx)} (改动② 纯新窗预期 28 indel 缺席)")
 
     # peplen 映射 (B2): 每 mut_key 的 MT_FullPeptide 长度, 从【过滤前】全表取, 保证覆盖。
     peplen_map = (df.groupby("mut_key")[FULLPEP_MT]
@@ -344,9 +358,11 @@ def main():
     out = pd.concat([out, pooled_df], axis=1).reset_index()
 
     # ── 校验门 (fail-loud) ────────────────────────────────────────────────
-    # [G1] 行数 == 130
-    assert len(out) == 130, f"[G1] FAIL: 行数={len(out)} != 130"
-    print(f"[G1] PASS: 行数 == 130")
+    # [G1] 行数 == expect (默认 130; rerun 纯新窗传 102=仅 SNV)
+    assert len(out) == expect, (
+        f"[G1] FAIL: 行数={len(out)} != {expect} "
+        f"(锚定={len(idx)}; rerun 纯新窗须 --expect-peptides 102)")
+    print(f"[G1] PASS: 行数 == {expect}")
 
     # [G3] 含突变过滤后每肽仍 ≥1 含突变子肽 (无空肽)
     empty_pep = out.loc[out["n_subpep"] == 0, "mut_key"].tolist()
