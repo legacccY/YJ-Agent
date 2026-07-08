@@ -16,9 +16,18 @@ build_official_from_raw.py — 通用：把某工具 raw 输出 join 回官方 b
   python build_official_from_raw.py \
      --tool MUNIS --raw HPC/deploy/munis/munis_raw_official.csv \
      --pep-col peptide --hla-col HLA_Allele --score-col score \
-     [--flip] [--key hla|pep|pair] [--mt-col mt_peptide --wt-col wt_peptide]
+     [--flip] [--key hla|pep|pair] [--mt-col mt_peptide --wt-col wt_peptide] \
+     [--backbone scripts/out_official/master_backbone_official.csv] \
+     [--outdir scripts/out_official]
 
-输出: scripts/out_official/<Tool>_official.csv
+  # rerun（新 backbone → out_rerun_official）:
+  python scripts/build_official_from_raw.py --tool Neoag \
+     --raw HPC/deploy/neoag/rerun/neoag_raw.csv --key pair \
+     --mt-col mt_peptide --wt-col wt_peptide --score-col score \
+     --backbone scripts/out_rerun/master_backbone_official.csv \
+     --outdir scripts/out_rerun_official
+
+输出: <outdir>/<Tool>_official.csv（默认 scripts/out_official/）
 """
 import argparse
 import sys
@@ -55,12 +64,22 @@ def main():
     ap.add_argument("--mt-col", default="mt_peptide")
     ap.add_argument("--wt-col", default="wt_peptide")
     ap.add_argument("--flip", action="store_true", help="score 取负(越低越免疫原→翻向)")
+    ap.add_argument("--backbone", default=str(BACKBONE),
+                    help="backbone csv 路径(相对 ROOT 或绝对); 默认 out_official 旧 backbone")
+    ap.add_argument("--outdir", default=str(OUTDIR),
+                    help="输出目录(相对 ROOT 或绝对); 默认 scripts/out_official")
     args = ap.parse_args()
 
     raw_path = Path(args.raw)
     if not raw_path.is_absolute():
         raw_path = ROOT / raw_path
-    bb = pd.read_csv(BACKBONE)
+    backbone_path = Path(args.backbone)
+    if not backbone_path.is_absolute():
+        backbone_path = ROOT / backbone_path
+    outdir = Path(args.outdir)
+    if not outdir.is_absolute():
+        outdir = ROOT / outdir
+    bb = pd.read_csv(backbone_path)
     raw = pd.read_csv(raw_path)
     n_bb = len(bb)
 
@@ -114,7 +133,7 @@ def main():
                            if pd.notna(p) else np.nan
                            for p, h in zip(bb["WT_Subpeptide"], bb["HLA_Allele"])]
 
-    out_path = OUTDIR / f"{tool}_official.csv"
+    out_path = outdir / f"{tool}_official.csv"
     out.to_csv(out_path, index=False)
     mt_nonnull = out[mt_col_out].notna().sum()
     wt_nonnull = out[wt_col_out].notna().sum()

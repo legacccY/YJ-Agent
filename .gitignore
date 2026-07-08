@@ -111,6 +111,9 @@ project/meeting/QuantImmuBench/HPC/deploy/**/_repo_partial_del/
 project/meeting/QuantImmuBench/data/external/ITSNdb/
 project/meeting/QuantImmuBench/HPC/deploy/bigmhc_im/repo/
 project/meeting/QuantImmuBench/HPC/deploy/bigmhc_im/repo2/
+project/meeting/QuantImmuBench/HPC/deploy/transhla/TransHLA_I_local/
+project/meeting/QuantImmuBench/HPC/deploy/mhcnuggets/gh_repo/
+project/meeting/QuantImmuBench/TransHLA_I/
 project/meeting/QuantImmuBench/HPC/deploy/cnneo/repo/
 project/meeting/QuantImmuBench/tools_repos/DeepImmuno/
 # 大文件/模型权重/数据产物（GitHub 100MB 限 + git_hygiene 不进 git）

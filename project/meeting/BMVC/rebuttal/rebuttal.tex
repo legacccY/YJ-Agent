@@ -1,36 +1,54 @@
 %% BMVC 2026 Author Rebuttal
-%% Compile with the official BMVC class (bmvc2k.cls, in this folder).
-%% Fill in your BMVC submission number in \bmvcreviewcopy{...} below
-%% (this also renders the paper id in the header -- addresses R-XHFa's
-%%  "submission ID missing" point). Title/authors omitted per the
-%%  rebuttal template (anonymity preserved via review mode).
-%% Hard limit: ONE page including references.
+%% Uses the official BMVC 2026 rebuttal template (CVPR-derived, two-column,
+%% [rebuttal] mode of cvpr.sty -> automatic line numbers, one-page limit).
+%% Paper ID 893 set below (also addresses R-XHFa "submission ID missing").
+%% Hard limit: ONE page including references. No external links. Anonymous.
 
-\documentclass{bmvc2k}
+\documentclass[10pt,twocolumn,letterpaper]{article}
 
-\bmvcreviewcopy{893}   %% BMVC submission number
+% ---------------------------------------------------------------
+% CVPR-derived package in rebuttal mode (adds line numbers, formatting)
+\usepackage[rebuttal]{cvpr}
 
-% Standard BMVA convenience macros
-\def\eg{\emph{e.g}\bmvaOneDot}
-\def\Eg{\emph{E.g}\bmvaOneDot}
-\def\etal{\emph{et al}\bmvaOneDot}
+% Commonly used abbreviations (\eg, \ie, \etc, \cf, \etal, etc.)
+\usepackage{bmvcabbrv}
+
+\usepackage{graphicx}
+
+% Improves PDF readability for those with disabilities.
+\usepackage[accsupp]{axessibility}
+
+\definecolor{bmvcblue}{rgb}{0.12,0.49,0.85}
+\usepackage[pagebackref,breaklinks,colorlinks,citecolor=bmvcblue]{hyperref}
+
+% ---------------------------------------------------------------
+\def\paperID{893} % BMVC submission number
+\def\confName{BMVC}
+\def\confYear{2026}
 
 \begin{document}
 
+\thispagestyle{empty}
+\appendix
+
 We thank all reviewers. Most concerns are pre-empted in the paper's objection section (A1--A6); below we point there and add only the new evidence requested.
 
-\noindent\textbf{Core contribution (R-XHFa).} The ``no core contribution'' concern rests on a factual misreading. The paper makes three concrete contributions: (i) the \emph{QAC/QCDI evaluation protocol} for quality-conditioned calibration, our main object of study; (ii) the \emph{quality taxonomy} ($\S$3.2) that sorts backbones into repairable tiers (Std VIB $=$ Quality-Fragile, $0<\mathrm{QCDI}\le0.10$); and (iii) \emph{Prop~1} ($\S$4), which proves a \emph{scalar} TS cannot undo a rank reversal, so a continuous slope is the minimal sufficient repair. ``Calibration across two backbones'' is a misreading: the $\S$5.3 ``re-fit'' on ResNet, ViT, ConvNeXt and Swin is \emph{independent per-backbone} refitting to demonstrate universality---not a combination across two backbones. The submission id is now shown in the header. Finally, the $0.45/0.50$ thresholds are not arbitrary: reversal holds across $\tau\in[0.40,0.50]$ ($\S$A10).
+\section{Core contribution and factual points (R-XHFa)}
+Two of these points are factual and now corrected; the rest we address on their merits. The submission id is shown in the header, and ``calibration across two backbones'' misreads $\S$5.3: the ``re-fit'' on ResNet, ViT, ConvNeXt and Swin is \emph{independent per-backbone} refitting to demonstrate universality, not a combination across two. On \emph{core contribution}, the paper offers (i) the \emph{QAC/QCDI evaluation protocol} for quality-conditioned calibration, our main object of study; (ii) the \emph{quality taxonomy} ($\S$3.2) sorting backbones into repairable tiers (Std VIB $=$ Quality-Fragile, $0<\mathrm{QCDI}\le0.10$); and (iii) \emph{Prop~1} ($\S$4), an impossibility result showing a \emph{scalar} TS cannot undo a rank reversal, so a continuous slope is the minimal sufficient repair. The $0.45/0.50$ thresholds are not load-bearing: reversal holds across $\tau\in[0.40,0.50]$ ($\S$A10). Finally, ITB deliberately spans multiple degradations (blur, colour-temperature, brightness, contrast, completeness) so that QCDI probes calibration under heterogeneous quality shift, not a single artifact.
 
-\noindent\textbf{$T_0/\alpha$ stability (R-isv7).} $\alpha$ sits in a flat NLL basin ($\S$A18: $\alpha\in\{0.34,0.96,0.37\}$ within $\Delta\mathrm{NLL}<0.002$), yet the delivered calibration stays low: across $500$ bootstrap refits per backbone the ECE-LQ never exceeds $0.058$ (means $0.037$--$0.051$; worst-case $95\%$ upper bound $0.058$ on Swin-Tiny)---consistent with Prop~1, under which any nonzero slope suffices. The loose identifiability of $\alpha$ thus reflects a flat objective, not a fragile calibrator.
+\section{The mechanism is not specific to the weak Std VIB (R-isv7, R-8hpP)}
+Three points answer this. (i) Std VIB is \emph{by design} the Quality-Fragile repairable prototype ($0<\mathrm{QCDI}\le0.10$) of our taxonomy ($\S$3.2); we deliberately pick a repairable-tier representative to demonstrate the fix, whereas an already quality-aware backbone (ResNet-50) needs no repair (A4, Table 3). Its low AUC is the defining property of the sample, not a flaw. (ii) The mechanism is not confined to Std VIB: using an \emph{external} corruption-severity scalar as $\bar q$ (not our IQA module), on both ResNet-50 and ViT-Tiny QCTS makes $\rho$ more negative on 18/18 corruptions (a mechanism probe: the fix engages from an external signal without harming these already-calibrated backbones), while scalar TS is inert ($|\Delta\rho|<10^{-4}$, 18/18), a monotone-invariant clean control. A Wilcoxon signed-rank test over these 18 corruptions confirms significance ($p=3.8\times10^{-6}$). Where there is headroom the gain is sizeable (ViT-Tiny $\rho$ from $-0.139$ to $-0.210$). (iii) On strong, quality-aware backbones (Table 3; ViT-Tiny/ConvNeXt/Swin) TS induces the QCDI sign-flip ($+0.023/+0.136/+0.020$ to $-0.029/-0.022/-0.021$) and QCTS pulls QCDI back \emph{toward zero}. For the headline Std VIB case this is achieved by \emph{improving} the low-quality stratum, not degrading the high-quality one: ECE-LQ falls $0.146\to0.079$ while ECE-HQ also improves $0.129\to0.075$ (Table 1).
 
-\noindent\textbf{Real low-quality data (R-isv7, R-8hpP).} QCTS is not evaluated only on synthetic degradation. As pre-empted in A1, we ran EfficientNet-B3 on 174 real-world low-quality dermoscopy images and recovered ECE $0.073$ $[0.038,0.125]$ vs.\ ITB-LQ's $0.146$ (supp real-LQ table). Directly applying QCTS to a real \emph{paired} malignant cohort is future work---no such cohort is publicly available---so the mechanism, not the synthetic pipeline, is the claim.
-
-\noindent\textbf{``Only the weak Std VIB'' / structural gain (R-isv7, R-8hpP).} Three lines answer this. (i) Std VIB is \emph{by design} the Quality-Fragile repairable prototype ($0<\mathrm{QCDI}\le0.10$) of our taxonomy ($\S$3.2); we deliberately pick a repairable-tier representative to demonstrate the fix, whereas an already quality-aware backbone (ResNet-50) needs no repair (A4, Table 3). Its low AUC is the defining property of the sample, not a flaw. (ii) The mechanism is not confined to Std VIB: using an \emph{external} corruption-severity scalar as $\bar q$ (not our IQA module), on both ResNet-50 and ViT-Tiny QCTS makes $\rho$ more negative on 18/18 corruptions, while scalar TS is inert ($|\Delta\rho|<10^{-4}$, 18/18)---a monotone-invariant clean control. A Wilcoxon signed-rank test over these 18 corruptions confirms significance ($p=3.8\times10^{-6}$). Where there is headroom the gain is sizeable (ViT-Tiny $\rho$ $-0.139\!\to\!-0.210$). (iii) On strong, quality-aware backbones (Table 3; ViT-Tiny/ConvNeXt/Swin) TS induces the QCDI sign-flip ($+0.023/+0.136/+0.020 \to -0.029/-0.022/-0.021$) and QCTS pulls QCDI back \emph{toward zero}.
+\section{Stability, baselines, and real data}
+\noindent\textbf{$T_0/\alpha$ stability (R-isv7).} $\alpha$ sits in a flat NLL basin ($\S$A18: $\alpha\in\{0.34,0.96,0.37\}$ within $\Delta\mathrm{NLL}<0.002$), yet the delivered calibration stays low: across $500$ bootstrap refits per backbone (ResNet/ConvNeXt/ViT/Swin) the ECE-LQ never exceeds $0.058$ (means $0.037$--$0.051$; worst-case $95\%$ upper bound $0.058$ on Swin-Tiny), consistent with Prop~1, under which any nonzero slope suffices. The loose identifiability of $\alpha$ thus reflects a flat objective, not a fragile calibrator.
 
 \noindent\textbf{Re-marginalisation baseline (R-8hpP).} It is present: the deployment-time re-marginalised baseline is $\S$5.2 Eq.(5), $\rho_a$ (MC-marginalised, $N_{\mathrm{MC}}{=}20$) $=-0.163$ vs $\rho_b$ (deterministic-$\mu$) $=+0.241$, a $100\%$ flip; the full table is $\S$A20.
 
-\noindent\textbf{IQA module (R-isv7, R-XHFa).} The 5-head module is validated in supp $\S$A2 (mean SRCC $0.895$); the mean-of-5 scalar suppresses noise, and expert-rated validation is a stated limitation. We thank R-8hpP(5) and R-6xgi(4); the Std~VIB point is scope, not soundness (A4, Table 3).
+\noindent\textbf{Real low-quality data (R-isv7, R-8hpP).} QCTS is not evaluated only on synthetic degradation. As pre-empted in A1, we ran EfficientNet-B3 on 174 real-world low-quality dermoscopy images and recovered ECE $0.073$ $[0.038,0.125]$ vs.\ ITB-LQ's $0.146$ (supp real-LQ table). Directly applying QCTS to a real \emph{paired} malignant cohort is future work, since no such cohort is publicly available, so the mechanism, not the synthetic pipeline, is the claim.
 
-\noindent On scope: the headline \emph{magnitude} ($73\%$ QCDI reduction, halved LQ ECE) is Std-VIB-specific, whereas the reversal-mechanism \emph{direction} holds across all five backbones and 18 ImageNet-C corruptions (above); the contribution does not hinge on the weak backbone.
+\noindent\textbf{IQA module (R-isv7, R-XHFa).} The 5-head module is validated in supp $\S$A2 (mean SRCC $0.895$); the mean-of-5 scalar suppresses noise, and expert-rated validation is a stated limitation.
+
+\section{Scope (R-8hpP, R-6xgi)}
+We thank R-8hpP(5) and R-6xgi(4); the Std~VIB point is scope, not soundness (A4, Table 3). The headline \emph{magnitude} ($73\%$ QCDI reduction, halved LQ ECE) is Std-VIB-specific, whereas the reversal-mechanism \emph{direction} holds across all five backbones and 18 ImageNet-C corruptions (above); the contribution does not hinge on the weak backbone. In the camera-ready we will state this magnitude explicitly as a Quality-Fragile-prototype illustration and lead with the direction-level result across five backbones and 18 corruptions.
 
 \end{document}

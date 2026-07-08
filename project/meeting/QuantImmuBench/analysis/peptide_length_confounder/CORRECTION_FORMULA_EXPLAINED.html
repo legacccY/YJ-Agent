@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>肽长矫正公式详解 — QuantImmuBench P7</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    line-height: 1.75; color: #24292f; max-width: 880px; margin: 40px auto; padding: 0 26px; background: #fff; }
+  h1 { font-size: 1.95em; border-bottom: 2px solid #d0d7de; padding-bottom: .3em; }
+  h2 { font-size: 1.4em; margin-top: 2em; border-bottom: 1px solid #d8dee4; padding-bottom: .2em; }
+  h3 { font-size: 1.15em; margin-top: 1.5em; color: #24475f; }
+  p { margin: 1em 0; }
+  strong { color: #111; }
+  code { background: #f0f2f4; padding: .15em .4em; border-radius: 4px;
+    font-family: "SF Mono", Consolas, monospace; font-size: .88em; color: #b5310a; }
+  table { border-collapse: collapse; margin: 1.2em 0; width: 100%; font-size: .95em; display: block; overflow-x: auto; }
+  th, td { border: 1px solid #d0d7de; padding: .5em .8em; text-align: left; vertical-align: top; }
+  th { background: #f6f8fa; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  blockquote { background: #f0f7ff; border-left: 4px solid #4a90d9;
+    padding: .1em 1.1em; margin: 1.2em 0; border-radius: 0 6px 6px 0; color: #33475b; }
+  hr { border: none; border-top: 1px solid #e0e0e0; margin: 2.5em 0; }
+  mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; margin: 1.1em 0; }
+</style>
+</head>
+<body>
+<h1 id="_1">肽长矫正：全部方法与公式详解</h1>
+<blockquote>
+<p>每一条方法、每一个公式都列出，并逐项讲物理意义、逻辑、以及问题与局限。若本地 Markdown 渲染器不显示数学，请打开同目录网页版 <code>CORRECTION_FORMULA_EXPLAINED.html</code>（MathJax 渲染）。</p>
+</blockquote>
+<hr />
+<h2 id="0">0. 一句话</h2>
+<p>我们发现「疫苗肽越长，ELISpot 反应越强」（患者内 Spearman $\bar\rho = 0.380$，显著）。肽长是<strong>做疫苗时人为定的构造属性</strong>、不是突变本身的性质；如果某个工具的打分恰好也随肽长走，它的排序能力就会被「肽长搭便车」系统性抬高，横评就不公平。</p>
+<p><strong>矫正 $=$ 用统计手段把「肽长」这个混杂从「工具分 $\leftrightarrow$ ELISpot」的相关里扣掉</strong>，只留下工具对突变本身免疫原性的真实排序能力。</p>
+<hr />
+<h2 id="1">1. 逻辑顺序：先证「存在」，再谈「矫正」</h2>
+<p>一个混杂要值得矫正，得先满足两个前提，缺一不可：</p>
+<ol>
+<li><strong>它和结局（ELISpot）真的相关</strong> —— 否则扣不扣都一样；</li>
+<li><strong>它对不同工具的影响不一样</strong> —— 否则它只是对所有工具一致的「噪音」，横比时会自动抵消，不用矫正。</li>
+</ol>
+<h3 id="11-1-elispot">1.1 前提①：肽长和 ELISpot 确实强相关（已确证，是整条论证的地基）</h3>
+<p>这一步必须先站住，否则后面的矫正都是空中楼阁。当前证据（<code>existence_summary.csv</code>，队列 $=$ DS2 官方 130 肽 / 9 患者）：</p>
+<table>
+<thead>
+<tr>
+<th>检验</th>
+<th>结果</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>患者内 $\bar\rho$（主口径）</td>
+<td>$\mathbf{+0.380}$，95%CI $[+0.185,\,+0.546]$，患者内置换 $p=0.0078$</td>
+<td>肽越长 ELISpot 越高，显著</td>
+</tr>
+<tr>
+<td>患者 cluster bootstrap CI</td>
+<td>$+0.380$，CI $[+0.196,\,+0.558]$</td>
+<td>换一种更诚实的 CI 仍不过 0</td>
+</tr>
+<tr>
+<td>全局置换检验</td>
+<td>$p=0.0004$</td>
+<td>尊重患者聚类的零分布下高度显著</td>
+</tr>
+<tr>
+<td>符号一致性</td>
+<td>9 位患者里 8 位为正（双尾二项 $p=0.039$）</td>
+<td>不是被单个患者带偏</td>
+</tr>
+<tr>
+<td>LOPO 逐患者留一</td>
+<td>去掉任一患者，$\bar\rho$ 仍在 $[+0.302,\,+0.422]$</td>
+<td>非单患者驱动</td>
+</tr>
+<tr>
+<td>用原值 Pearson</td>
+<td>$+0.435$</td>
+<td>比秩相关还强 $\to$ 不是秩化伪迹</td>
+</tr>
+<tr>
+<td>换 8–11mer 窗口口径</td>
+<td>$+0.380$（一致）</td>
+<td>口径无关（肽长按突变恒定）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一个直观的量级感</strong>：这个 $0.38$ 差不多等于目前<strong>最强的单个预测器</strong>的性能。也就是说，「肽长」这一个跟突变无关的构造属性，单拎出来预测 ELISpot，能力就顶得上一个顶尖工具——它作为混杂的分量非常重，不能不管。</p>
+<blockquote>
+<p>这一步已由多重检验（独立复算、置换、bootstrap、LOPO、符号检验、原值 Pearson、换口径）交叉确证，属于<strong>已确证的地基，不需再补跑</strong>。后面所有矫正都建立在它之上。</p>
+</blockquote>
+<h3 id="12-2">1.2 前提②：它对各工具的影响<strong>不均匀</strong>（已确证）</h3>
+<p>如果肽长对每个工具打分的抬升都一样，那横比时它就是背景噪音、可以忽略。但实测不是：</p>
+<ul>
+<li>「肽长 $\leftrightarrow$ ELISpot」很强（$0.38$），可<strong>「工具分 $\leftrightarrow$ 肽长」大多数工具很弱</strong>——一个工具要被污染，得它自己的打分也跟着肽长走，而多数工具并非如此。</li>
+<li>所以矫正对多数工具只改动几个百分点，但<strong>方向和幅度因工具而异</strong>（第 8 节有机制推导）。</li>
+</ul>
+<hr />
+<h2 id="2">2. 符号约定（后面公式都用这套）</h2>
+<table>
+<thead>
+<tr>
+<th>记号</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$X$</td>
+<td>要评估的量：<strong>工具打分</strong>（矫正工具时），或<strong>肽长本身</strong>（证存在性时）</td>
+</tr>
+<tr>
+<td>$Y$</td>
+<td><strong>ELISpot</strong>（连续的 SFC 斑点数，我们的真值）</td>
+</tr>
+<tr>
+<td>$Z$</td>
+<td><strong>混杂</strong>：主角是<strong>肽长</strong>；扩展版还包括子肽数 <code>n_subpep</code>、插入缺失标记 <code>is_indel</code>、肿瘤表达 <code>TPM</code>、克隆性 <code>CCF</code></td>
+</tr>
+<tr>
+<td>$R(\cdot)$</td>
+<td>取秩（rank）。所有相关都先把数值换成名次再算，对异常值稳健、只关心「单调关系」</td>
+</tr>
+<tr>
+<td>$p$ / $k$</td>
+<td>患者编号 / 患者数（这里 $k=9$）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-spearman-fisher-z">3. 主口径公式：患者内 Spearman + Fisher-z 等权聚合</h2>
+<p>矫正之前，先说清楚<strong>基础的相关怎么算</strong>——矫正就是在这个基础上加一层「扣混杂」。</p>
+<h3 id="1-spearman">式①　患者内 Spearman（先秩化再相关）</h3>
+<p>$$\rho_p = \mathrm{corr}\big(R(X_p),\,R(Y_p)\big)$$</p>
+<p>即「在这位患者体内，肽越长 ELISpot 是否越高」的单调关联强度。</p>
+<p><strong>为什么在患者体内单独算？</strong> 不同患者 ELISpot 绝对水平差很多（免疫背景不同）。混在一起算会把「患者间差异」和「患者内肽与肽差异」搅在一起，产生假相关。患者内比较把每个患者当天然对照单元。</p>
+<h3 id="2-fisher-z">式②　跨患者 Fisher-z 等权聚合</h3>
+<p>$$z_p = \operatorname{arctanh}(\rho_p) = \tfrac{1}{2}\ln\!\frac{1+\rho_p}{1-\rho_p}$$</p>
+<p>$$\bar z = \frac{1}{k}\sum_{p=1}^{k} z_p, \qquad \bar\rho = \tanh(\bar z) = 0.380$$</p>
+<ul>
+<li><strong>为什么先 Fisher-z 变换？</strong> $\rho$ 被卡在 $[-1,1]$ 里，越靠近 $\pm 1$ 越「挤」，直接平均会低估强相关。$\operatorname{arctanh}$ 把它拉直成方差近似恒定的尺度，平均才公平；平均完再 $\tanh$ 变回来。</li>
+<li><strong>为什么等权、每患者一票？</strong> 有的患者肽多有的肽少。按肽数加权 $\to$ 肽多的患者主导结论。等权 $=$ 每个患者证据分量相同。</li>
+</ul>
+<blockquote>
+<p>到这里都还只是「怎么算相关」。<strong>下面才是矫正——在这个相关里把肽长扣掉。</strong></p>
+</blockquote>
+<hr />
+<h2 id="4-a-spearman-math46">4. ★核心矫正公式 A：一阶偏 Spearman（闭式，两侧都扣 $Z$）</h2>
+<p>这是<strong>主分析</strong>用的矫正法：</p>
+<p>$$\boxed{\;\rho_{XY\cdot Z} = \frac{\rho_{XY} - \rho_{XZ}\,\rho_{YZ}}{\sqrt{\left(1-\rho_{XZ}^2\right)\left(1-\rho_{YZ}^2\right)}}\;}$$</p>
+<p>（所有 $\rho$ 都是秩相关；这就是标准「Partial correlation」的一阶偏相关闭式，只是把 Pearson 换成先秩化的 Spearman。每患者算一个 $\rho_{XY\cdot Z,\,p}$，再用式②的 Fisher-z 等权聚合。）</p>
+<h3 id="_2">逐项拆解物理意义</h3>
+<table>
+<thead>
+<tr>
+<th>记号</th>
+<th>白话</th>
+<th>直觉</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\rho_{XY}$</td>
+<td>工具分和 ELISpot 的<strong>裸相关</strong></td>
+<td>没扣混杂前，工具「看起来」多准</td>
+</tr>
+<tr>
+<td>$\rho_{XZ}$</td>
+<td>工具分和<strong>肽长</strong>的相关</td>
+<td>「这个工具打分跟不跟着肽长走」——有没有偷用肽长信息</td>
+</tr>
+<tr>
+<td>$\rho_{YZ}$</td>
+<td>ELISpot 和<strong>肽长</strong>的相关</td>
+<td>就是那个 $0.38$——肽长本身对 ELISpot 的影响</td>
+</tr>
+<tr>
+<td>$\rho_{XZ}\,\rho_{YZ}$</td>
+<td>能被肽长解释掉的那部分相关</td>
+<td>「工具跟着肽长走」$\times$「肽长又抬高 ELISpot」$=$ 工具靠肽长白捡的分</td>
+</tr>
+<tr>
+<td>分子</td>
+<td>裸相关 $-$ 白捡的分</td>
+<td>把搭便车的部分减掉</td>
+</tr>
+<tr>
+<td>分母</td>
+<td>归一化因子</td>
+<td>扣掉肽长后 $X$、$Y$ 各自「还剩多少自由变化」，把结果缩回 $[-1,1]$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话比喻</strong>：两个人考试成绩都很好（$\rho_{XY}$ 高），但会不会是因为他俩都提前看了同一份泄露的答案（$Z=$ 肽长）？偏相关就是「<strong>假设两人都没看过那份答案</strong>，还剩多少真实的成绩相关」。靠泄露答案撑着的，扣掉后就塌；真本事，扣掉后基本不动。</p>
+<p><strong>自由度</strong>：多扣一个混杂多花掉 1 个自由度，患者体内至少要 $\ge 4$ 个完整点才算得动（裸相关只要 $\ge 3$）。点太稀的工具这一步退化，需门控剔除。</p>
+<hr />
+<h2 id="5-b-c">5. 矫正公式 B / C：残差化（等价的另一种做法）</h2>
+<p><strong>残差法和第 4 节的闭式偏相关，本质是同一件事的两种写法</strong>（Frisch–Waugh–Lovell 定理保证），结果几乎一致，互为验证。做法是「<strong>先把肽长的影响从两边各自擦干净，再看剩下的还相不相关</strong>」。</p>
+<h3 id="b-math64-math65b_residlabel">式B　只从标签 $Y$ 一侧扣 $Z$（<code>B_residlabel</code>，稳健性对照）</h3>
+<p>$$e_Y = R(Y) - \widehat{R(Y)}, \qquad \widehat{R(Y)} = \text{用 } [1,\,R(Z)] \text{ 对 } R(Y) \text{ 最小二乘拟合的预测值}$$</p>
+<p>$$\rho_p = \mathrm{corr}\big(R(X),\,e_Y\big) \qquad\text{（只把肽长从 ELISpot 里剥掉，不动工具分 }X\text{）}$$</p>
+<p>适合「认为肽长只污染了标签、没污染工具分」时的对照口径。</p>
+<h3 id="c-math66c_multi">式C　一次扣掉多个混杂 $Z_1,\dots,Z_m$（<code>C_multi</code>，多变量联控）</h3>
+<p>$$e_X = R(X) - \widehat{R(X)}, \quad e_Y = R(Y) - \widehat{R(Y)}, \qquad \widehat{(\cdot)} = \text{用 } [1,\,R(Z_1),\dots,R(Z_m)] \text{ 最小二乘拟合}$$</p>
+<p>$$\rho_p = \mathrm{corr}(e_X,\,e_Y)$$</p>
+<p>本文取 $Z = \{$肽长, 子肽数, indel 标记$\}$（robustness）或 $\{$TPM, CCF, 子肽数, indel$\}$（最强联控）。</p>
+<ul>
+<li>$e_X$ $=$ 工具打分里「跟肽长无关」的那部分；$e_Y$ $=$ ELISpot 里「跟肽长无关」的那部分。</li>
+<li><strong>为什么「取残差」$=$ 排除肽长影响？</strong> 最小二乘拟合 $R(X)\sim R(Z)$ 得到「$X$ 中能被肽长预测的部分」；<strong>残差</strong>就是「预测不了、剩下的那部分」，即<strong>跟肽长无关的 $X$</strong>。对 $X$、$Y$ 都做一遍，两边都只剩下与肽长正交的信号，再相关，就是「排除肽长后的净相关」。</li>
+<li><strong>为什么和闭式 A 等价（FWL 定理）</strong>：「先把两个变量各自对同一组控制变量回归取残差、再看残差间关系」，和「在一个大回归里同时放入控制变量、看目标变量的偏系数」，结果完全相同。所以式 A 和式 B/C 不是两个方法，而是<strong>同一个估计量的两种算法</strong>——一个给数值、一个给几何直觉，跑出来一致就互相印证了实现没写错。</li>
+</ul>
+<p><strong>主分析（闭式 A）和残差法（B/C）结果一致 $\to$ 结论加固</strong>，不是靠某一种算法凑出来的。</p>
+<hr />
+<h2 id="6">6. 矫正方案菜单：所有方法族全列（该用哪种、不该用哪种）</h2>
+<p>矫正混杂在统计上有一整族标准方法。这里把<strong>每一种都列出来 + 各自公式/原理</strong>，并说明在<strong>本场景</strong>（逐患者秩相关、患者约 9、混杂与信号高度共线）下能不能用。</p>
+<table>
+<thead>
+<tr>
+<th>方法族</th>
+<th>原理 / 公式</th>
+<th>本场景可用性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>① 偏 Spearman（主分析）</strong></td>
+<td>式 A / B/C：对评分与 ELISpot 各自扣除肽长后再算相关</td>
+<td>✅ <strong>最贴合</strong>，两边都扣肽长、小样本下方向可信</td>
+</tr>
+<tr>
+<td><strong>② 只从 $Y$ 扣肽长（稳健性对照）</strong></td>
+<td>式 B：只从 ELISpot 标签扣肽长再与评分相关</td>
+<td>✅ 适合对照，与主分析一致即加固</td>
+</tr>
+<tr>
+<td>③ 分层 / 分箱内比较</td>
+<td>把肽长切成若干层 $b$，层内各算 $\rho_p^{(b)}$ 再按层大小加权合并：$\ \bar\rho=\sum_b w_b\,\rho_p^{(b)}$</td>
+<td>⚠️ <strong>弱</strong>，连续肽长分箱后每层样本过少</td>
+</tr>
+<tr>
+<td>④ 回归调整（协变量入回归）</td>
+<td>把肽长作协变量同入一个回归：$\ R(Y)=\beta_0+\beta_1 R(X)+\beta_2 R(Z)+\varepsilon$，看 $\beta_1$</td>
+<td>◻️ 可补充，能同控多因素但小样本系数不稳</td>
+</tr>
+<tr>
+<td>⑤ 逆概率加权 / 匹配（IPW / PSM）</td>
+<td>按肽长的倾向得分 $e(Z)$ 加权 $w=1/e(Z)$ 或匹配，平衡分布后再比</td>
+<td>❌ <strong>不推荐</strong>，为离散处理设计；肽长是连续暴露、$n\approx 9$ 权重不稳</td>
+</tr>
+<tr>
+<td>⑥ 秩内归一</td>
+<td>肽长层内先做秩归一再合并</td>
+<td>◻️ 仅附注，同受小样本分层拖累</td>
+</tr>
+</tbody>
+</table>
+<p><strong>主张</strong>：本场景样本太少（约 9 位患者），分层（③）、加权/匹配（⑤）都不好用；所以<strong>主用①偏 Spearman（扣掉肽长再算相关），另配②只从 ELISpot 扣肽长做对照</strong>，两个结果一致就更可信。选①②不是没试别的，是别的在这个样本量下不成立。</p>
+<hr />
+<h2 id="7">7. 显著性怎么定（两件套）</h2>
+<p>有了矫正后的 $\bar\rho$，还要回答「这会不会是碰巧」。用两个<strong>尊重「患者才是抽样单元」</strong>的办法（而非天真地把每条肽当独立样本，那会高估显著性）：</p>
+<h3 id="cluster-bootstrap">患者 cluster bootstrap（定置信区间）</h3>
+<p>有放回地<strong>重抽 9 位患者</strong> 2000 次，每次重算 $\bar\rho$，取 2.5% / 97.5% 分位当 95%CI：</p>
+<p>$$\text{95\%CI} = \big[\,Q_{2.5\%}(\bar\rho^{*}),\ Q_{97.5\%}(\bar\rho^{*})\,\big]$$</p>
+<p>关键是「重抽的是患者、不是肽」——同一患者的肽不独立，把患者当整块重抽才诚实。</p>
+<h3 id="math93">患者内置换检验（定 $p$ 值）</h3>
+<p>在<strong>每位患者体内</strong>把 ELISpot 和肽长的配对打乱 5000 次，重算 $\bar\rho$ 得零分布：</p>
+<p>$$p = \frac{\#\big\{\,|\bar\rho^{*}| \ge |\bar\rho_{\text{实测}}|\,\big\}}{\#\text{打乱次数}}$$</p>
+<p>只在患者体内打乱（不跨患者），保留了患者聚类结构，比全局打乱更严格。</p>
+<hr />
+<h2 id="8">8. 机制公式：为什么多数工具几乎不受肽长影响</h2>
+<p>这解释了第 1.2 节「影响不均匀」的<strong>数学根源</strong>。</p>
+<p><strong>记矫正改动量</strong> $\Delta = \rho_{XY} - \rho_{XY\cdot Z}$（矫正前 $-$ 矫正后 $=$ 纯肽长效应）。对闭式 A 在 $\rho_{XZ}$ 较小处做一阶泰勒展开，并代入实测 $\rho_{YZ}=0.38$：</p>
+<p>$$\Delta \;\approx\; \frac{\rho_{YZ}}{\sqrt{1-\rho_{YZ}^2}}\,\rho_{XZ} \;-\; \Big(\tfrac{1}{\sqrt{1-\rho_{YZ}^2}}-1\Big)\rho_{XY} \;\approx\; 0.41\,\rho_{XZ} - 0.08\,\rho_{XY}$$</p>
+<p><strong>物理意义</strong>：肽长自身与 ELISpot 的相关 $\rho_{YZ}=0.38$ 对<strong>所有工具都一样</strong>；但肽长要<strong>经过工具</strong>才能污染它的评分，真正决定某个工具会不会被拉动的，是 $\rho_{XZ}$——<strong>这个工具的打分跟不跟着肽长一起变</strong>。改动量主要由 $\rho_{XZ}$ 撑起（系数 $0.41$），原始相关 $\rho_{XY}$ 只做小幅修正（系数 $-0.08$）。</p>
+<p><strong>数据验证</strong>（<code>mechanism_toollevel.csv</code>，28 工具）：</p>
+<ul>
+<li>$\rho_{XZ}$ 与 $\Delta$ 的相关达 <strong>0.72</strong>（证实改动量主要由「工具随肽长变的程度」决定）；</li>
+<li><strong>79%</strong> 的工具 $|\rho_{XZ}|<0.2$，它们平均只被矫正改动 $|\Delta|\approx 0.035$（几乎不动）。</li>
+</ul>
+<p><strong>所以「肽长自身相关很强」与「多数工具没被搅动」并不矛盾</strong>：强的是肽长跟 ELISpot 的关系（$\rho_{YZ}$），而工具被不被拉要看它自己的打分跟不跟肽长走（$\rho_{XZ}$），多数工具几乎不跟。</p>
+<blockquote>
+<p><strong>另注</strong>：<strong>pooling 环节受肽长影响远比单工具打分显著</strong>（子肽越多、pooled 分越容易虚高）——这条在 pooling 分析里单独处理，不在本文（本文只讲「工具分 $\leftrightarrow$ ELISpot」这一层）。</p>
+</blockquote>
+<hr />
+<h2 id="9">9. 实测结果与怎么读</h2>
+<p>在 30 个工具上跑完矫正（<code>correction_matrix_9mer_matched.csv</code>，主口径 A $=$ 闭式偏相关）：</p>
+<ul>
+<li><strong>矫正影响整体温和</strong>：跨工具<strong>平均 $\Delta_A$ 只有 $+0.016$</strong>。</li>
+<li><strong>但因工具而异、不均匀</strong>：</li>
+<li>被肽长<strong>抬高</strong>（矫正后掉下来）最多的是 <strong>TSCAPE $+0.102$</strong>，其次 ImmuneApp（$+0.077$）、IEDB_Calis（$+0.075$）；</li>
+<li>反而被肽长<strong>压低</strong>（矫正后升上来）的有 <strong>netMHCpan-BA $-0.041$、NeoTImmuML $-0.068$</strong>（打分和肽长负相关，扣掉后相关更强）。</li>
+<li><strong>排名格局基本稳</strong>：矫正前后工具排名的 Kendall 一致性 $\approx \mathbf{0.76}$（raw vs A，<code>correction_diagnostics_matched.csv</code>）——该矫正，但不会天翻地覆地重排。</li>
+<li><strong>实操建议</strong>：<strong>未校正与校正结果并列报告</strong>，既诚实呈现原始横评，又给出扣掉肽长后的净排序。</li>
+</ul>
+<p>一句话读法：肽长这个混杂<strong>对 ELISpot 本身影响很大（$0.38$），但传导到工具排名上被稀释了（多数工具不随肽长走）</strong>；矫正主要修正少数几个「偷用了肽长信息」的工具，是<strong>精修而非推倒重来</strong>。</p>
+<hr />
+<h2 id="10">10. 问题与局限（重点，诚实列全）</h2>
+<ol>
+<li>
+<p><strong>小样本功效不足是最大软肋</strong>。只有 9 位患者。单控或双控（肽长 / TPM / CCF / 子肽数任一或两两）后 CI 都还不过 0；但<strong>四个混杂同时控</strong>时，点估计仍为正 $+0.215$，<strong>CI 却跨 0</strong> $[-0.057,\,+0.466]$（$k=8$）。这是「8 个患者硬扛 4 个协变量」的功效代价，<strong>不代表效应消失</strong>，但也<strong>不能宣称四控后仍显著</strong>——必须诚实标注为边界情形。</p>
+</li>
+<li>
+<p><strong>混杂和信号高度共线</strong>，导致第 6 节菜单里别的标准矫正法在本场景失效：分层/分箱（连续肽长 $+$ 每层就几个点）、IPW/倾向得分匹配（为离散 treatment 设计，肽长是连续暴露、$n\approx 9$ 权重不稳）都不适用。所以只选<strong>偏 Spearman（主）$+$ 残差化（对照）</strong>。</p>
+</li>
+<li>
+<p><strong>一阶偏相关的模型假设</strong>：它默认「肽长的影响是可<strong>线性可加</strong>地从秩空间扣掉的」，且假设<strong>混杂 $Z$ 测得准、无误差</strong>。真实机制若是非线性/有阈值，秩空间偏相关只是一阶近似——够用来说明方向和量级，但不是精确的因果扣除。第 8 节的 delta 分解也是一阶近似（$\rho_{XZ}$ 大时会有高阶偏差）。</p>
+</li>
+<li>
+<p><strong>单队列局限</strong>。结论目前只在 DS2（Braun 2025）这一个队列里成立。另一队列 DS1 的肽<strong>全是 9mer 短肽、没有长度变异</strong>（零方差，测不了肽长效应），小鼠数据又缺失。所以「肽长效应 $+$ 矫正」目前是<strong>单队列发现，待外部验证</strong>。</p>
+</li>
+<li>
+<p><strong>措辞红线：矫正 $\ne$ 抹掉一个假信号</strong>。肽长效应<strong>是真实的生物学</strong>（长肽确实更免疫原，见机制页），不是伪迹。正确的说法是<strong>估计量（estimand）之争</strong>：我们要估的是「<strong>突变本身</strong>的免疫原性」，而肽长是「<strong>疫苗构造</strong>的选择」（把 SLP 合成成多长），不是突变的属性。一个 mutation-level 预测器若靠追踪 construct-level 的长度拿分，就是<strong>把构造级信号记到突变级账上</strong>，所以要剥离。写作里别写成「去掉一个 fake artifact」，要写成「从真实但属构造级的长度效应里，分离出突变的贡献」——这个措辞既准确，也正面回应「肽长到底是 nuisance 还是 driver」的审稿攻击。</p>
+</li>
+</ol>
+<hr />
+<h2 id="11-novelty">11. Novelty 一句</h2>
+<p>「肽长是免疫原性特征」不新（多工具 SHAP 早把肽长 / 分子量列为 top 特征）。<strong>新的是把肽长当成「会让工具横评排名虚高、需要用偏相关 / 残差化统计扣除的评测混杂」</strong>——领域标准动作是控 MHC binding 混杂或做肽长分布匹配，<strong>没有针对 SLP 疫苗 per-patient ELISpot 幅度的肽长混杂秩相关矫正</strong>先例。方法学出处 $=$ Liu 2018 Biometrics（partial Spearman / PSR）。</p>
+<hr />
+<h2 id="12">12. 复核指针（怎么自己验）</h2>
+<ul>
+<li><strong>实现引擎</strong>：<code>analysis/official/_official_common.py</code> —— <code>_partial_spearman_one</code>（闭式偏 Spearman）、<code>fisherz_weighted_agg</code>（Fisher-z 等权聚合）、<code>per_patient_partial_spearman_multi</code>（多控秩残差）。</li>
+<li><strong>主结果表</strong>：<code>correction_matrix_9mer_matched.csv</code>（列：raw / A_partpeplen / B_residlabel / C_multi / delta_A/B/C）。</li>
+<li><strong>存在性 $+$ 稳健性</strong>：<code>existence_summary.csv</code>（$\bar\rho=0.380$、各分层、置换 $p$）；<code>METHODS_AND_FORMULAS.md</code>（七道稳健性检验 + 四混杂联控 $+0.215$ 边界情形）。</li>
+<li><strong>机制分解</strong>：<code>mechanism_toollevel.csv</code>（$\rho_{XZ}$ vs $\Delta$ 相关 $=0.72$、79% 工具 $|\rho_{XZ}|<0.2$）。</li>
+<li><strong>排名一致性</strong>：<code>correction_diagnostics_matched.csv</code>（<code>rank_kendall_rawmatched_vs_A = 0.756</code>）。</li>
+<li><strong>方案菜单出处</strong>：<code>CORRECTION_METHODS_AND_NOVELTY.md</code> · Liu 2018 Biometrics（DOI 10.1111/biom.12812）。</li>
+<li><strong>数字纪律</strong>：本文所有数值均从上述 csv 核过（$\bar\rho=0.380$ / $\Delta_A$ 均值 $+0.016$ / TSCAPE $+0.102$ / Kendall $0.76$ / delta 分解 $0.41\rho_{XZ}-0.08\rho_{XY}$ 系数由 $\rho_{YZ}=0.38$ 代入闭式泰勒展开重推）；如更新数据重跑，请以 csv 为准、勿信本文缓存值。</li>
+</ul>
+</body>
+</html>

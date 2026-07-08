@@ -29,6 +29,25 @@ if (Sys.getenv("AG_DATA_DIR") == "") {
   message("[warn] AG_DATA_DIR 未设, antigen.garnish 将自查默认目录; 建议显式 export AG_DATA_DIR")
 }
 
+# --- 兼容补丁 (2026-07-07 rerun): Biostrings>=2.77.1 把 pairwiseAlignment 迁到 pwalign
+#     并使旧 shim (.call_fun_in_pwalign) 形式化 defunct → 直接报错不自动委托。
+#     antigen.garnish 内部 make_sw_alignment 仍经该 shim, 已装 pwalign 但不自动接管
+#     → 运行时把 Biostrings 内部 .call_fun_in_pwalign 改为直接调 pwalign 导出函数,
+#       语义完全等价 (同一 pairwiseAlignment 实现), 不改任何算法参数/逻辑 = 复现零偏离。
+if (requireNamespace("pwalign", quietly = TRUE)) {
+  patched <- FALSE
+  try({
+    assignInNamespace(
+      ".call_fun_in_pwalign",
+      function(FUN, ...) do.call(getExportedValue("pwalign", FUN), list(...)),
+      ns = "Biostrings"
+    )
+    patched <- TRUE
+  }, silent = TRUE)
+  message(sprintf("[patch] Biostrings::.call_fun_in_pwalign -> pwalign 委托: %s",
+                  if (patched) "OK" else "未打上(可能 Biostrings 版本无此内部函数)"))
+}
+
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 2) stop("用法: Rscript run_foreignness.R <input.tsv> <out.csv>")
 infile <- args[1]; outfile <- args[2]

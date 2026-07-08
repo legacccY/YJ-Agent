@@ -3,6 +3,7 @@
 > 服务 QuantImmuBench。2026-07-05。数字均已 Bash 独立复算（禁 Read 看数据）。
 > 数据 = DS2 官方口径 `data/frozen/pooled_clean_9mer.csv`（130 肽 / 9 患者，肽=15–33mer 疫苗 SLP，Elispot=连续 SFC）。
 > 脚本 = `_scratch/peplen_confounder_hardening.py`（存在性）+ `_scratch/correction_compare.py`（矫正）。机制见 `peptide_length_confounder/MECHANISM_NOTES.md`。
+> 📖 矫正公式详解（PPT P7 展开版，物理意义+逻辑+局限+paper-ready methods 段）见 `peptide_length_confounder/CORRECTION_FORMULA_EXPLAINED.md`。
 
 ---
 

@@ -77,7 +77,9 @@ process.stdin.on('end', () => {
   const CAP = lock.capacity || { local: 1, hpc: 4 };
   const usedOn = h => lock.active
     .filter(j => j.host === h && (j.status === 'running' || j.status === 'starting'))
-    .reduce((s, j) => s + (parseInt(j.gpus, 10) || 1), 0);
+    // gpus=0（CPU/工具推理批跑）占 0 卡，须与 gpu_slot.py 的 int(gpus) 一致：
+    // 只有键缺失/非数才回退 1，显式 0 保留为 0（否则 0 卡活被误记 1，free 数吓退后续申请）。
+    .reduce((s, j) => { const g = parseInt(j.gpus, 10); return s + (Number.isFinite(g) ? g : 1); }, 0);
 
   // 找 starting 条目（主线刚 request 出来的）。sbatch 无法从命令区分 gpu4090(hpc)/gpu3090(hpc3090)，
   // 故接受任一 HPC host 的 starting（gpu_slot request 已记正确 host；local 仍只认 local）。
@@ -102,6 +104,8 @@ process.stdin.on('end', () => {
     `🔒 未申请卡槽就启训（${host} 当前空闲 ${f}/${CAP[host] || '?'} 卡）。\n` +
     `按卡调度协议：先 \`python tools/gpu_slot.py request <project> ${host} <gpus> [note]\`\n` +
     `  够卡 -> 打印 GO，再启动（本 hook 自动放行）；卡满 -> 打印 QUEUED（已排队，别裸启，等 release 自动取出）。\n` +
+    `  ▸ 纯 CPU / 工具打分推理批跑（不占 GPU，如免疫原性工具 Rscript/predict、分析/probe 脚本）→ <gpus> 填 0：\n` +
+    `    \`python tools/gpu_slot.py request <project> ${host} 0 [note]\` 恒 GO（占 0 卡、绝不挤正在跑的、不记 friction），跑完照常 release。别改名绕过。\n` +
     `绝不挤正在跑的任务。\n`
   );
   process.exit(2);

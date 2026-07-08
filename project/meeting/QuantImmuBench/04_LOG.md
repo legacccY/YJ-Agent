@@ -4,6 +4,53 @@
 
 ---
 
+## Entry 57-RERUN-VERIFY+9MER-RANK-PPT — 2026-07-08【昨天改动②③重跑 29 工具独立核验(数据层全 PASS) + 复刻上一版口径出 9mer 新切单工具排名(可提交脚本替换不可溯源榜) + 可比性核验 + deepHLApan 头 provenance 坐实 + 新 PPT 5 页】
+
+**背景**：用户要①严谨核验昨天(2026-07-07/08)改动②③「原始蛋白定点切含突变窗 + WT + raw 不矫正」全量重跑 29 工具(NeoaPred 已剔,30→29)是否完整/无漏跑/无陈旧数据复用/数字对；②用昨天的 9mer 新切数复刻上一版对比 PPT 的单工具 max-pooling **病人等权 Spearman** 排序；③新建一个 PPT。全程数字 Bash 核 csv,不信 md/Read。
+
+**一、昨天重跑独立核验（数据层全 PASS，无漏跑无陈旧复用）**：
+- **29 工具齐**：`scripts/out_rerun_official/<Tool>_official.csv` 29 个全在,各 4053 行、bb_idx 0-4052 连续对齐;NeoaPred 正确缺席(已剔)。
+- **真新数据非旧 1761**：backbone 4053 行(旧 1761)、**102 SNV 肽、914 窗全 Window_Size=9**、26 HLA;MT vs WT 824 去重对全部 hamming=1(恰差突变位1残基)、0 纯 WT 窗。
+- **非陈旧复用铁证**：新 backbone 有 **727 个旧数据不存在的新子肽**(溢出窗/新切),抽 6 个满覆盖工具对这些新肽 MT 覆盖全 100% → 真打新肽。
+- **覆盖缺口全对账**(coverage_gaps.NEW.csv 30501)：mt_only_tool 20265(5 工具 WT 侧)+ NeoaG WT 结构无定义 4053 + hla_unsupported 6178(NetTepi 5584/ICERFIRE 378/HLAthena 216)+ **真缺口仅 unknown=5**(NeoTImmuML AAALGFAFY×患者106×5HLA,微影响)。WT 真跑(WT-capable 工具 MT≠WT 95-100%)。改动②不变量 ρ(窗数,SLP长)=+0.463→**-0.097** 构造消除。
+- **唯一 QA 缺陷**：`data/frozen/rerun_maxpool_ranking.csv`(headline netMHCpan_BA 0.3808 那张)**无生成脚本、不可从 pooled 复现**——根因=它用无 effN 门槛 + clip 全 9 病人(正是 recompute 脚本要修的膨胀老 bug)。本轮用可提交脚本重出替换(见二)。
+
+**二、复刻上一版口径出 9mer 新切排名（可提交脚本,替换不可溯源榜）**：
+- **零新计算代码**：复用已验证参数化脚本 `analysis/official/recompute_effN/recompute_R1_effN.py --input data/frozen/pooled_clean_rerun_9mer.csv --tag rerun_9mer` → 产 `R1_recomputed_rerun_9mer_effN8.csv`(权威档)+effN10/5/3+敏感性。口径=上一版 PPT 原样：per-patient Spearman → **effN≥8 门槛** → clip±0.99 → **Fisher-Z 病人等权均值** → tanh + cluster-bootstrap CI。
+- **回归对照证脚本忠实**：脚本默认旧 9mer 跑,逐值 **diff=0.0** 复现 git 提交版(MHCnuggets 0.4466/netMHCpan_BA 0.3917/均值 0.191)。
+- **9mer 新切 effN8 排名**：netMHCpan_BA **0.372** > MHCnuggets 0.319 > PredIG 0.290 > ICERFIRE 0.234 > MHCseqNet 0.228 > MHCflurry 0.214 …(尾 TSCAPE -0.099);**28 有效工具均值 ρ̄=0.113**;DeepNetBim(max 饱和=常数,退化)+NeoaPred(已剔)不入排序。结合/呈递类居前印证 claim i。**整体低于旧 SLP 0.191 = 去肽长混杂 + 只 SNV 的诚实结果,非 bug**。
+- **新 vs 旧 SLP 9mer 哑铃**：26/28 工具下降、仅 2 上升(PredIG/deepHLApan);降幅最大者(当初最吃肽长混杂)=MHCnuggets 0.447→0.319/netMHCstabpan 0.234→-0.033/NetTepi 0.293→0.093。
+
+**三、跨工具可比性核验（用户追问,数据层全 PASS）**：
+- **同一批病人**：29 工具 ρ̄ 全平均在同一 8 病人{101,104,105,106,107,108,109,110};102(仅6肽,effN<8)对所有工具一致剔除。
+- **每病人同一批肽**：**肽级覆盖全 29 工具 102/102=100%**(连 NetTepi 6等位/ICERFIRE/HLAthena 每肽经≥1支持等位打到分)→ 排同一批 102 肽 → **无覆盖子集虚高**(这类横评最经典的可比性杀手不存在)。
+- **定向统一**：各 _max 越大越免疫原,结合类正相关符预期;弱工具近零非定向 bug。DeepNetBim max 饱和成常数(唯一值=1)→无法排序,正确剔出。
+
+**四、deepHLApan 头 provenance 坐实（顺带解决昨天待复核遗留）**：deepHLApan 出 bind+immuno 双头。Bash 重构 max 池化逐值比对：**新 pooled=immuno 头(100%精确,diff=0)**;**旧 SLP pooled 也=immuno 头**(67%精确+中位差0,vs bind 差 0.717 决定性;33%不精确=covfix/indel 补丁改值非换头)。→ **新旧头一致(都 immuno),昨天自主拍板用 immuno 头符原意、不用改**;哑铃 deepHLApan 0.052→0.174 是真切法效果非换头伪影。
+
+**五、掉分归因分解（旧 0.191→新 0.113 掉 0.078，用户追问「为什么掉这么多」）**：`_scratch/decompose.py` 三情景同 effN8 Fisher-Z 口径逐值核——A 旧SLP-130肽=0.191 → B 旧SLP-仅102SNV(只砍28 indel,切法不变)=0.147 → C 新切-102SNV(只换切法)=0.113。**加性分解：肽集效应(砍28高应答indel肽,A→B)=−0.044(56%,大头) + 切法效应(去肽长混杂,B→C)=−0.034(44%)**。纠正此前「掉分=去肽长混杂」不精确——**一多半其实是只做SNV砍掉高应答indel肽(那28条ELISpot中位更高/VHL移码=392)+附带病人102(SNV仅6肽<effN8)掉出聚合**,不到一半才是改动②去肽长虚高。反直觉:非全掉,netMHCpan_BA砍indel反升0.392→0.454、deepHLApan两步都升0.052→0.174(本被噪声压低)。两原因皆诚实非bug,0.113是更干净更难benchmark(仅SNV+无肽长虚高)的真实水平。
+
+**六、新 PPT（6 页,复用 gen_ppt_progress_v4 风格 Okabe-Ito/YaHei/LAYOUT_WIDE）**：`ppt/gen_ppt_rerun_9mer.js` → `QuantImmuBench_9mer新切排名_2026-07-08.pptx`。封面/一页看懂(改动②③+复刻口径+勿直比旧版)/主排名图/新vs旧哑铃/**掉分归因分解表(三情景+两桶归因)**/结论+诚实边界。LibreOffice→PDF→PyMuPDF 逐页渲染 QA 无溢出乱码;修 P3「n=9」→「8/9 病人进聚合」+ 加可比性核验要点。
+
+**产物**：`analysis/official/recompute_effN/{R1_recomputed_rerun_9mer_effN8.csv(+effN10/5/3+敏感性), plot_rerun_9mer.py}` + `figures/fig_rerun_9mer_{maxpool_ranking,newcut_vs_oldSLP_dumbbell}.{png,pdf}`(+paper/figures/ 副本) + `ppt/gen_ppt_rerun_9mer.js` + `QuantImmuBench_9mer新切排名_2026-07-08.pptx`。核验/分解脚本 `_scratch/{verify_rerun,verify_numbers,reconcile,comparability,decompose}.py`。
+
+**权威真源更新**：9mer 新切单工具排名真源 = `R1_recomputed_rerun_9mer_effN8.csv`(可提交脚本产出)**替换** `data/frozen/rerun_maxpool_ranking.csv`(不可溯源,建议弃用)。
+
+**七、DAI 版排名（用户要求「用上新数据的 WT」→ 做 DAI = MT vs WT 差异排名，近-null 诚实发现）**：
+- **口径**(袁老师 outline §2.3 Step 1 相减型)：`DAI_row = max(MT_<tool> − WT_<tool>, 0)`(floored 净增强)→ 按 mut_key max-pool → 复用 `recompute_R1_effN.py --input pooled_dai_rerun_9mer.csv --tag rerun_9mer_dai`(effN8 Fisher-Z 病人等权,口径同 MT 版)。DAI 池化脚本 `build_dai_pool.py`(coder,零硬编码,DAI 抽核 2 突变手算=pooled MATCH)。
+- **补跑 Seq2Neo+TSCAPE 的 WT（用户「不漏数据」要求）**：初版 DAI 只 23 工具,因 5 个「仅 MT」工具无 WT 列。核实后=ICERFIRE/IMPROVE/pTuneos(差异已内化,输出单分,产不出独立 WT)+NeoaG(WT 结构 NaN)**真产不出**；但 **Seq2Neo/TSCAPE 是免疫原打分器,能喂 WT 肽出 WT 分**,昨天只跑了 MT=可补 gap。→ 本地 WSL2 补跑二者 WT(复用昨 MT env/脚本,复现零偏离;`_build_seq2neo_tscape_wt.py` prep/merge,`_run_tscape_wt_local.sh`)。**WT 输入=merged 全 3684 (WT肽×HLA) 唯一对 0 漏；跑出 WT_Seq2Neo/WT_TSCAPE 各 4053/4053=100% 覆盖对齐 MT;广播 4053 行无丢**。并入 merged 副本 `merged_all_tools_30_rerun.WITH_WT2.csv`(原表未动)。**踩坑**：`wsl bash /mnt/...` 被 Git Bash 路径转换 mangle 成 `D:/Git/mnt/...`→`MSYS_NO_PATHCONV=1` 修。
+- **DAI 工具 23→25**(build_dai_pool 加 `--merged/--out/--force` 指向 WITH_WT2,工具自动侦测 24→26 减 NeoaG 全 NaN=**25 能算**)；**4 个 N/A**：ICERFIRE/IMPROVE/pTuneos/NeoaG(真产不出 WT)。新增 Seq2Neo ρ̄=0.022 / TSCAPE 0.093。**DeepNetBim 在 DAI 里非退化回归**(MT 版 max 饱和被剔,DAI=MT−WT 非常数,−0.032 入榜)。
+- **核心结果=近-null（补 2 工具后纹丝不动,更坐实）**：**均值 ρ̄=0.0071**(vs MT 版 0.113)。榜首 PredIG 0.344 > IEDB_Calis 0.330(⚠️57/102 肽 DAI=0 平局,偏乐观不稳)> Repitope 0.325;**结合类全塌**(netMHCpan_BA MT 0.372→DAI 0.022、MHCnuggets 0.319→−0.017、netMHCstabpan −0.139);尾 CNNeo −0.316。→ **MT-vs-WT 差异对绝大多数工具不预测免疫原性**。
+- **机理坐实**(`_scratch/comparability.py`+主线核)：①只 3/25 工具 CI 排除 0(PredIG/Repitope 正、NeoTImmuML 负),其余 22 CI 全跨 0=噪声散布正负是抽样运气(非真反预测)②MT 与 WT 分**相关 0.81-0.95、|MT−WT| 仅占量程 0.1-5%**=单点突变几乎不改分,MT−WT 俩近等数相减剩噪声。
+- **文献验证「图合理」(researcher×2 联网,带引用)**：**强支持**——IMPROVE 2024(Front Immunol,DAI **p=0.96** 近随机)+TESLA 2020(Cell,「只 agretopicity 不顾 presentation 更差」)+ITSNdb 2023(DAI **p=0.25**,AUC 天花板 0.52-0.60)+Buckley 2022(同 BiB 期刊,无模型超 presentation)。**天花板 ρ̄~0.4 符合甚至偏高**(领域单特征 AUC 0.52-0.60)。**须诚实并列反例**：Duan 2014(JEM,DAI 原论文 claim 反,但锚位大改型)、Richman 2019(dissimilarity AUC 0.85 但自选 cohort)、Ghorani 2018(DAI 生存相关但无普适阈值)。**写稿措辞收窄=「DAI 作为单独逐肽分类特征近随机」+挂三 caveat**(强的是 presentation 非纯亲和力/DAI 聚合层有价值/n=9 hypothesis-generating)。全引用见本 entry。
+- **DAI 专项自审全过**(`_scratch/dai_audit.py`)：25 工具同一 8 病人集、肽级 DAI 覆盖全 102/102(无覆盖子集虚高)、WT 与 MT 同定向(相减有意义)、无退化(仅 NeoaG 剔)、仅 IEDB_Calis 56% 平局需 caveat。
+- **产物**：`analysis/official/recompute_effN/{build_dai_pool.py(+参数化), plot_rerun_9mer_dai.py, R1_recomputed_rerun_9mer_dai_effN8.csv}` + `data/frozen/pooled_dai_rerun_9mer.csv`(25工具) + `scripts/{_build_seq2neo_tscape_wt.py, out/merged_all_tools_30_rerun.WITH_WT2.csv, out_rerun/_run_tscape_wt_local.sh}` + WT 输入/输出 + `figures/fig_rerun_9mer_dai_ranking.{png,pdf}`(+paper/figures/) + `_scratch/{dai_audit,comparability}.py`。**并列新增,不替换 MT 版**。DAI 关键文献引用：IMPROVE PMC11021644 / TESLA PMC7652061 / ITSNdb fimmu.2023.1094236 / Buckley bbac141 / Duan PMC4203949 / Richman PMC6813910 / Ghorani PMC5834109。
+- **给导师看的 7 页 deck（用户要求：讲清方法+范围、说人话不用自创词/行话/车轱辘话）**：`ppt/gen_ppt_dai_deck.js` → `QuantImmuBench_单工具评测_DAI_2026-07-08.pptx`。7 页=封面/数据切肽方式评测指标(口径一次讲清)/主排名图(方法+范围+netMHCpan_BA 领先)/DAI 是什么(突变肽 vs 野生型差,为何用 WT)/DAI 排名图(最大0.344 最小−0.316 平均0.007 各说明什么)/为何本版0.113低于旧0.191(砍28高应答indel −0.04+去肽长切法 −0.03)/结论与局限(含文献一致)。LibreOffice→PDF→PyMuPDF 逐页渲染 QA:文字清楚无溢出、图 contain 不变形、数字照抄。**DAI 定位澄清(重要)**：用户指出我先前误把 DAI 当独立 25 工具排名图,实为 outline §2.3「DAI 是 Spearman 分析里的一个因素/维度」;deck 里 DAI 图作为「用上 WT 的因素排名」呈现,与 MT 主排名并列。
+- **PPT 数字全核**：deck 每个数据数字逐个对 csv 核过全一致(102/9/28、netMHCpan_BA 0.372、MT 均值 0.113、DAI 25 工具均值 0.007、最高 PredIG 0.344、最低 CNNeo −0.316、3/25 CI 排除0、4 N/A、旧 0.191→新 0.113、砍 indel −0.044+切法 −0.034);文献数字(IMPROVE p=0.96 等)有原论文出处。
+- **8-11mer 新窗启动指南**：`RERUN_8to11_LAUNCH.md`(新建,自包含)——8-11 可变窗扩跑的读档链+每步命令+三大堵点(cut覆盖9mer需备份/diff_scored硬编码/plot硬编码)+完整性铁律+本地15/HPC14分工+MSYS_NO_PATHCONV坑+WT决策。新窗口直接读它开工。
+
+**遗留(小,待复核)**：①NeoTImmuML 漏 5 格(1肽×5HLA,需其自身 HPC 重跑,微影响患者106一条肽);②DeepNetBim max 退化(可看 mean 等 pooling);③改动③ DAI(R10)WT 就绪未跑(别预焊胜利);④8-11mer 新切口径未做(昨天只 9mer),要「两种长度都用昨天数」须补跑新切 8-11。
+
 ## Entry 56-PEPLEN-P7DOC-P9CALIBER — 2026-07-06【P7 矫正公式详解 markdown 交付 + P9 配肽口径三源核查(定案=等质量) + P9 幻灯片按用户拍板冻结】
 
 **背景**：肽长×ELISpot 混杂 deck（`QuantImmuBench_肽长混杂_2026-07-05.pptx`）两处用户反馈——① P7（方法/公式页）矫正公式很好但 PPT 装不下复杂表述，要 markdown 详解版；② P9（机制页）「配肽按等质量投放」被用户质疑为等摩尔、理由也不对，主张改用雨恒的侧翼加工解释 + 用户自认不靠谱的安慰剂猜测。plan=`~/.claude/plans/quantimmubench-p9-negative-control-sunny-truffle.md`。
@@ -3582,3 +3629,17 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 **自主拍板(待用户复核)**: ①deepHLApan用immuno头(免疫原语义,bind入AUX). ②Repitope java heap env化(REPITOPE_XMX_G默认60保HPC,本机16G)+旧tmp缓存bug用全新tmp修.
 **遗留(小,待复核)**: ①NeoTImmuML漏5格(HLA-agnostic 1肽AAALGFAFY,需其自身HPC重跑,影响微:患者106 mut106-06 pooled 8/9窗). ②DeepNetBim max退化(可看mean等其他pooling). ③改动③DAI: WT已全打分(MT/WT配对QA过),R10 --wt_scores可算(未跑,别预焊胜利). ④deepHLApan头选择.
 **QA脚本**: _scratch/{qa_invariants.py,qa_tool_outputs.py}. 产物: data/frozen/{merged_all_tools_30_rerun.csv,pooled_clean_rerun_9mer.csv,rerun_maxpool_ranking.csv,coverage_{matrix,gaps}.NEW.csv}.
+
+## 2026-07-08 11:30 — slice_immbox 6 工具全量重跑 ✅ 6/6 完成（含 Repitope 深坑攻克 + 方法学修正）
+**最终交付**：`out_rerun_official/` 6 工具全 4053 行，覆盖矩阵：
+- deepHLApan 4053/4053(bind+immuno×MT/WT) ｜ PredIG MT+WT 4053/4053 ｜ pTuneos MT 4053/4053 ｜ NeoTImmuML MT 4048/WT 4053(AAALGFAFY R特征drop,旧一致) ｜ IMPROVE MT 4053/4053(真Foreignness) ｜ **Repitope MT+WT 4053/4053**。
+**Repitope 攻坚全记录**（环境被清空，一路修）：
+1. 数据重下(DTN连不上AWS S3→本地下1.4GB FeatureDF+FragmentLibrary传HPC)。
+2. rJava 缺 libjvm.so → `LD_LIBRARY_PATH=$ENV/jre/lib/amd64/server`。
+3. 编译器=env自带 x86_64-conda-linux-gnu-c++ 但需激活env上PATH(误用 dependencies=TRUE 源码升级删了ggplot2,已恢复)。
+4. 缺依赖 car/ggpubr/msa/survminer 系统级编译障(nloptr/ClustalOmega)→**从DESCRIPTION+NAMESPACE移除**(只用于聚类/画图,非打分路径,算法零改动)→Repitope 3.1.7装成。
+5. **JVM OOM根因**：rJava堆必须 `options(java.parameters="-XmxNG")` 设,JAVA_TOOL_OPTIONS的-Xmx被rJava默认-Xmx512m覆盖→一直512MB→TrainModels必OOM(试32G/60G/170G全崩都是这原因,与节点内存无关)。
+6. **方法学修正**：旧run_repitope.R用`Immunogenicity_Score`只返回训练集肽CV分,rerun新突变肽只1/1648(仅训练重叠肽)。正确API=`Immunogenicity_TrainModels`+`Immunogenicity_Predict`(外推给外部新肽,Repitope官方文档用法)→**1648/1648全覆盖**(范围0.0848-0.5778)。旧run的551肽是旧输入多与训练集重叠才"看起来能用",本质用错函数,rerun暴露。
+**⚠️ pipeline 被别窗重构**(slice_immbox→slice_local_a/b+hpc_dtu/env按环境分组),我6工具现属 slice_local_b(Repitope/pTuneos/deepHLApan)+slice_hpc_env(PredIG/IMPROVE/NeoTImmuML)但混着别工具,故未`done`节点——**这6工具产物已在out_rerun_official/,接手窗跳过勿重跑**。
+**产物**：`out_rerun_official/{6工具}_official.csv` + `_scratch/{resume_repitope_score.R(TrainModels+Predict修正版),install_repitope*.sh,patch_install_repitope.sh,dl_*.sh}` + Repitope_src的DESCRIPTION/NAMESPACE已打补丁(有.orig备份)。
+**遗留**：cpudebug job 1513495(8h超1h限,PENDING跑不了,可`! scancel 1513495`清)。
