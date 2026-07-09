@@ -13,6 +13,7 @@
 | `scripts/ptuneos/ptuneos_pre_recneo.py` | 抠出 pTuneos Pre&RecNeo 子模型批处理 wrapper（**复刻官方 `VCFprocessor.py::InVivoModelAndScore()` 的 5 特征 RF**，对账官方 example r=1.0） |
 | `scripts/ptuneos/prep_input.py`、`merge_5tools.py` | pTuneos 输入准备 + 5 工具汇总 |
 | `analysis/*.py`、`plot_benchmark_v3.R`、`build_report_docx.py`、`export_plot_data.py` | benchmark 指标计算、出图、报告生成 |
+| `report/build_report.py`、`report/build_s89_html.py` | 报告装配脚本：v3 单工具排名 HTML / §8 四问回复稿 md→自包含 HTML（base64 内嵌图，复用 v3 CSS） |
 | `HPC/deploy/*.sh`、`HPC/elispot_run/*.sh` | HPC 部署 / SLURM 提交脚本 |
 | `HPC/deploy/neoapred/` | NeoaPred prep / merge / runner 脚本（我方写，调官方 Docker `panda1103/neoapred:1.0.0`；Apache-2.0 可发数字）|
 | `TOOLS/*.md`、`*.md` 文档 | 部署测试记录与报告 |

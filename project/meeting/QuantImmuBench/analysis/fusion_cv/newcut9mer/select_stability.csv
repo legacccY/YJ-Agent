@@ -1,0 +1,42 @@
+# ★诚实边界: n=9 无「唯一最优」确定性证明; 交付=无泄漏 CV 程序 + 选出的(成员×k×算子) + 稳定性/不可分带 + 每选择的受控证明。措辞禁 proven optimal/the best/SOTA; null 写「无可检测的整合净优势」不写「证伪整合优势」。
+# 口径: 外层 LOPO 9 折; 内层 8 患者选; pooling=_max; 池=cover_pool(≥8)=24 工具; CV 评估全走 guarded_perpat_metric (退化守卫); seed=42; 纯 numpy 禁 scipy.stats。
+# A4: 外层9折×每折内层8患者 cluster bootstrap B=200 跑 forward_greedy(geomean) 记成员; select_freq_boot=选中/(9×B); 共识阈 π∈{0.5,0.6主,0.8}。
+# 末尾 __op_churn__:<op> 行块 = 联合选每折选中算子占比 (select_freq_9fold)。
+tool,category,is_dtu,select_freq_boot,select_freq_9fold,in_consensus_0p5,in_consensus_0p6,in_consensus_0p8,mean_single_rho_inner
+netMHCpan_BA,presentation,True,0.650625,1.0,True,True,False,0.371715
+PredIG,immunogenicity,False,0.303125,0.375,False,False,False,0.289214
+deepHLApan,immunogenicity,False,0.27375,0.25,False,False,False,0.173673
+DeepImmuno,immunogenicity,False,0.254375,0.5,False,False,False,0.097764
+BigMHC_IM,immunogenicity,False,0.250625,0.625,False,False,False,0.177506
+MHCnuggets,presentation,False,0.203125,0.125,False,False,False,0.318654
+PRIME,immunogenicity,False,0.19,0.125,False,False,False,0.180476
+IEDB_Calis,immunogenicity,False,0.189375,0.125,False,False,False,0.100612
+MHCseqNet,presentation,False,0.165,0.25,False,False,False,0.228237
+ImmuGenX,immunogenicity,False,0.073125,0.0,False,False,False,0.103683
+Seq2Neo,immunogenicity,True,0.07125,0.0,False,False,False,-0.074386
+NeoTImmuML,immunogenicity,False,0.066875,0.0,False,False,False,0.147047
+pTuneos,immunogenicity,False,0.05875,0.0,False,False,False,0.007747
+IMPROVE,immunogenicity,False,0.054375,0.0,False,False,False,0.145691
+MUNIS,immunogenicity,False,0.03375,0.0,False,False,False,0.180298
+CNNeo,immunogenicity,False,0.03,0.0,False,False,False,-0.058113
+Repitope,immunogenicity,False,0.0275,0.0,False,False,False,0.051769
+NeoaG,immunogenicity,False,0.015625,0.0,False,False,False,-0.047981
+netMHCpan_EL,presentation,True,0.015625,0.0,False,False,False,0.168634
+HLAthena,presentation,False,0.011875,0.0,False,False,False,0.109467
+DeepNetBim,immunogenicity,False,0.00875,0.0,False,False,False,
+MHCflurry,presentation,False,0.006875,0.0,False,False,False,0.214116
+ICERFIRE,immunogenicity,True,0.005625,0.0,False,False,False,0.23418
+TransHLA,presentation,False,0.004375,0.0,False,False,False,0.112994
+NetTepi,immunogenicity,True,0.00375,0.0,False,False,False,0.092763
+ImmuneApp,immunogenicity,False,0.003125,0.0,False,False,False,-0.043748
+netMHCstabpan,presentation,True,0.001875,0.0,False,False,False,-0.032799
+TSCAPE,immunogenicity,True,0.000625,0.0,False,False,False,-0.098558
+andy90,immunogenicity,False,0.0,0.0,False,False,False,-0.000605
+__op_churn__:mean_rank,operator,False,,0.0,,,,
+__op_churn__:geomean,operator,False,,0.0,,,,
+__op_churn__:median,operator,False,,0.0,,,,
+__op_churn__:powmean,operator,False,,0.0,,,,
+__op_churn__:max,operator,False,,0.0,,,,
+__op_churn__:min,operator,False,,0.5,,,,
+__op_churn__:weighted_mean_rank,operator,False,,0.0,,,,
+__op_churn__:softmax_rank,operator,False,,0.5,,,,

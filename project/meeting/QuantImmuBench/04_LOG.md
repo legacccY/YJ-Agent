@@ -4,6 +4,38 @@
 
 ---
 
+## Entry 61-8TO11-RECOMPUTE-收口 — 2026-07-09【改动②③ 8-11mer 全量重跑：merge 后 recompute 链收口 + 溯源审计，DAG quantimmu-rerun8to11 17/17 全完成】
+
+**背景**：接手 Conductor 图 `quantimmu-rerun8to11`（13/17，merge 已过🛑）从 recompute 续跑，推完最后 4 棒 coverage→pool→dai→recheck。新全量重跑宽表 `scripts/out/merged_all_tools_30_rerun_8to11.csv`（Jul 9 09:58，17088 行对齐 bb_idx，29 工具 MT+部分 WT）。旧 `R1_recomputed_8to11mer_*`（Jul 4）是 covfix 版，本轮在**新全量 merged 上重算**产 `*_rerun_8to11mer_*`（新命名，不覆盖旧的）。命令序列取自 `RERUN_8to11_LAUNCH.md`（`--w811 --expect-peptides 102`、`--tag rerun_8to11mer`）。
+
+**① coverage 核漏（verifier）— PASS**：`build_coverage_matrix --scored-dir out_rerun_official_8to11` 逐格核，🔴unknown 真漏 = **0**。脚本机械标的 7026 unknown 全来自 HLAthena 部署天花板（8mer44%/10mer12%/11mer36% 缺神经权重 .h5，documented「工具不支持」，逐长比例与 Entry 60-env 记录逐位吻合）。各窗 04_LOG 自报覆盖 vs 实测 merged 无偏差；13 个 (bb_idx,值) 抽核逐点 MATCH raw，merge 无串行错位。
+
+**② 溯源审计（用户中途要求「核验数字是否昨天真跑、几个工具、可溯源可信」）— 全 PASS，数据真实可信**：
+- **时间戳**：29 工具 official.csv **全 2026-07-08(昨天)** 落盘，17:21→23:39 铺开 6 小时（andy90 23:39 对上「23:40 完成」）——真·多窗/HPC 并行跑，非一次性拷贝伪造。
+- **工具数**：**29 工具**真实产出（30 文件含 1 backbone），非虚报。
+- **8/10/11 真新跑**：按子肽窗长核，**27/29 工具**四窗长(8→3606/9→4053/10→4494/11→4935)都有成比例真值；DeepNetBim(仅9mer)/DeepImmuno(仅9-10mer)=文档限长诚实 NaN；HLAthena/ICERFIRE/NetTepi 部分=文档天花板/HLA 白名单。
+- **值分布健康**：两低基数工具查证非退化——NeoaG(30 值,每 HLA 内中位 18 个不同值,真随 HLA×肽变)、pTuneos(10 值=离散化到 0.0/0.1/…/0.9 的识别概率,工具固有格式)。
+- **复现零偏离**：8-11 的 9mer 子集 vs 独立 rerun_9mer official——netMHCpan_BA/PRIME **max|diff|=0.00e+00 bit 一致**、MHCflurry 3.09e-7 浮点。证真复现同设置、8/10/11 是真新推理非拷贝。
+
+**③ pool→recompute（主线跑，脚本零改动）**：
+- `p0e2_pool_clean --w811 --input merged_rerun_8to11 --expect-peptides 102 --output pooled_clean_rerun_8to11mer.csv`：102 SNV 肽 × 51 pooling × 29 工具（G1/G2/G3 PASS，A1 剔 0 纯 WT 窗）。
+- `recompute_R1_effN --tag rerun_8to11mer`：产 `R1_recomputed_rerun_8to11mer_effN{3,5,8,10}` + 敏感性表。**effN8 权威 top：MHCnuggets +0.329 / netMHCpan_BA +0.213 / PredIG +0.179 / IEDB_Calis +0.177 / ICERFIRE +0.176**。
+- **DAI 版**：`build_dai_pool --merged merged_rerun_8to11 --out pooled_dai_rerun_8to11mer.csv`（DAI=max(MT−WT,0) floored → mut_key max-pool，102 行）+ `recompute --tag rerun_8to11mer_dai`。**effN8 top：IEDB_Calis +0.329 / PredIG +0.328 / Repitope +0.294**。⚠️ build_dai_pool 的 `--out` 相对路径会拼 `data/frozen/` 前缀，传全路径致双嵌套（已修：传纯文件名；误产物移入 `_scratch/`）。
+
+**④ 出图（coder 写 + 主线跑）**：新 `plot_newcut_9mer_vs_8to11mer.py` → `fig_newcut_9mer_vs_8to11mer_spearman`（图 A）+ `fig_newcut_8to11mer_coverage`（图 B），落 `figures/` + `paper/figures/`。**核心 story（图 A）**：转 8-11mer 后 netMHCpan_BA(0.372→0.213)、PredIG(0.290→0.179) 明显掉分，MHCnuggets(0.319→0.329) 稳住——非 9mer 窗对长度敏感工具的稀释效应。
+
+**⑤ recheck 三方对账（verifier）— PASS-with-fix**：口径链/图 A(3工具×2值逐点)/DAI(手算 `IEDB_Calis_max=0.00031` MATCH)/敏感性 4 项全 PASS。**🔴 图 B 覆盖图打回改图**：原用 pooled `<Tool>_max` 非空计数（mut_key 层 max-pool，任一窗有分即非空 → 29 工具全画成 102/102，连仅 9mer 的 DeepNetBim 也 102，抹平真实覆盖差异）→ 派 coder 改用**子肽层 `coverage_matrix.NEW.csv` MT 侧 scored-frac（分母 17088 子肽×HLA 位点）**。改后 24 工具 100% + 5 部分（ICERFIRE 90.7%/HLAthena 76.8%/DeepImmuno 50.0%/NetTepi 31.1%/DeepNetBim 23.7%），逐值对上 verifier 独立核算。Fig A 一行未动。
+
+**⚠️ effN 敏感性提示（LOG 留痕）**：top-1 MHCnuggets 跨 effN5/8/10 rank 铁稳(1/1/1)；但中段对门槛敏感——IEDB_Calis rho 0.283→0.177→0.0005(rank **2→4→22**)、TransHLA 8→15→16；effN10 仅 n_full=6 患者更抖。属预期门槛-样本权衡，非翻转过头，引用中段排名须注明门槛。
+
+**产物**：`data/frozen/{pooled_clean_rerun_8to11mer.csv, pooled_dai_rerun_8to11mer.csv}`、`analysis/official/recompute_effN/{R1_recomputed_rerun_8to11mer_effN*, *_dai_effN*, R1_effN_sensitivity_rerun_8to11mer*, plot_newcut_9mer_vs_8to11mer.py}`、`{figures,paper/figures}/fig_newcut_{9mer_vs_8to11mer_spearman,8to11mer_coverage}.{png,pdf}`。**DAG `quantimmu-rerun8to11` 17/17 全部完成。**
+
+**⑥ PPT（coder 写脚本 + 主线跑，含一轮返工重做）**：新 deck `QuantImmuBench_8to11mer新切重跑_2026-07-09.pptx`（6 页 widescreen，取代旧 covfix 版 `_8to11mer_supplement_rev1_2026-07-04.pptx`）。新切重跑核心数字（与旧 covfix 叙事不同，已诚实更新）：**均值 rho 9mer 0.1127 vs 8-11mer 0.0541、9mer>8-11 = 22/28(79%)** → 9mer 主口径整体仍优、加固 §2.2；**唯 MHCnuggets 0.319→0.329 反升为例外**（诚实标）；MHCseqNet/ImmuGenX 翻负=真实信号；覆盖子肽层 24/29 满 + 5 documented 上限。
+- **返工原因（用户反馈「做得非常一般，图太长、颜色数据不好看」）**：初版 deck 用 grouped bar（28 工具双柱=太长）+ 通用版式。**重做**：① 图重做——复用项目金标准脚本 `plot_rerun_9mer.py` 的 Okabe-Ito 风格，新写 `analysis/official/recompute_effN/plot_8to11_rerun_figs.py` 产 3 图：`fig_8to11_ranking`（水平条形+cluster-bootstrap CI+均值线，蓝正橙负）、`fig_8to11_vs_9mer_dumbbell`（**哑铃图 1×2 拆上/下半各 14 工具**治「太长」，升绿降橙两端标值）、`fig_8to11_coverage`（子肽层绿满/橙上限）。② deck 重建——`analysis/plot_ppt_8to11_rerun.py` 精确复刻参考 deck `QuantImmuBench_9mer新切排名_2026-07-08.pptx` 的设计系统（封面深底 `#0B3C49`+蓝绿装饰椭圆、内容页左全高色条+卡片两栏「左图右文」、Okabe-Ito 配色、9pt 蓝脚注+页码）。
+- **核验**：3 图逐张眼验（配色/分栏/无豆腐块）+ 自检 print 全对 csv；deck 生成脚本 print 自检 9 项全对；LibreOffice 转 PDF→PNG 逐页眼验封面/s3两栏/s4全宽哑铃/s6三卡结论，版式专业无溢出。
+
+---
+
 ## Entry 60-8TO11-SLICE-LOCAL-B — 2026-07-08【改动②③ 8-11mer 全量重跑：slice_local_b 窗 7 工具 MT+WT 落 _8to11 全完成（抽核+覆盖全 PASS）】
 
 **背景**：Conductor 图 `quantimmu-rerun8to11` 节点 slice_local_b（本窗，win-localB 认领）。7 工具在各自已部署环境重跑 8/9/10/11 四窗长（复现零偏离），落 `scripts/out_rerun_official_8to11/<Tool>_official.csv`（17088 行对齐 backbone bb_idx）。发现上个 session 已把所有输入重生成到 8-11（build_rerun_inputs.py，backbone 17088 行），但**我这 7 工具全没在 8-11 上重跑**（现有输出都是旧 3684 行 9mer）→ 全部重跑。
@@ -3770,3 +3802,26 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 **覆盖核漏(build_coverage_matrix --scored-dir _8to11)**: 我 8 工具全 documented——6 工具 100%(34176/34176)，DeepImmuno 50.02%(8/11=len_filter)、DeepNetBim 23.72%(8/10/11=len_filter)；**零 🔴unknown**(那 8280 unknown 全归 HLAthena=别窗 slice_hpc_env)。
 **长度受限处理(plan 许可复用 9mer 分)**: DeepNetBim 只 9mer/DeepImmuno 只 9/10，不支持长度=诚实 NaN，非真漏。
 **产物**: `scripts/out_rerun_official_8to11/{IEDB_Calis,CNNeo,BigMHC,ImmugenX,MHCnuggets,DeepImmuno,DeepNetBim,MUNIS}_official.csv`(8×17088) + 各工具 `HPC/deploy/<tool>/rerun/` 8-11 输入·raw + `_scratch/{verify_slice_local_a_8to11.py,munis_8to11.*}` + WSL `/root/quantimmu/di_8to11/`(DeepImmuno result)。`pipeline.py done slice_local_a ✓`。
+
+---
+
+## Entry 2026-07-09 · 新切 9mer 下游全量重跑，客观回答老师 §8 前 4 问「结果在哪里？」
+
+**触发**：老师看完 v3 单工具排名报告（`report/QuantImmuBench_单工具排名报告_v3_2026-07-08.html`），对 §8「待讨论」前 4 条**全回「结果在哪里？」**。核查确认这 4 条下游结论（①融合无净优势 ②两细粒度 headline 未复现 ③robustness median 略优 geomean ④max 非最优）**此前都基于第一代旧切(130 肽)、从未在新切(定点切窗)9mer 上重跑**——即用户指出的「基于旧数据的偏向结论」。用户拍板「就 9mer」+ 要求「客观、不带偏向、大编队」。
+
+**方法/口径**：在新切 9mer canonical `data/frozen/pooled_clean_rerun_9mer.csv` + `--min_pep 8`（effN≥8 = **8 病人**，剔病人 102[n=6]；29 工具，NeoaPred 2026-07-07 拍板移除、见 `TOOL_RERUN_STATUS.md:40`）上重跑下游全套。**输出隔离**：coder 给 `_official_common.ensure_out_dir()` 加 `QIB_OUTDIR` 环境变量 + fusion_cv 两脚本加 `--outdir`（只碰 I/O、零计算逻辑改动，git diff 已复核），全部落 `analysis/official/newcut9mer/` + `analysis/fusion_cv/newcut9mer/`，不覆盖旧切。**去偏向机制**：跑前冻结判据档 `reference/NEWCUT9MER_F1_LEDGER.md`（每问「若…则…」先定死）；措辞黑名单；verifier 只核数、analyst 只解读，独立双核；每条结论挂 CI/p + n=8 caveat。
+
+**数据地基验通**：max-pool 闭环 gate PASS（子肽级 groupby.max == 突变级 `_max`，3 工具 max|Δ|=0）。
+
+**踩坑+修复（口径 bug）**：fusion_cv `fusion_nested_cv.py`/`select_engine.py` 的候选池硬门槛 `COVER_MIN=8`（每病人≥8肽）在新切被病人 102（仅 6 突变）拖垮→全工具 min=6<8 刷光→n_folds=0 退化；其 `--min_pep` 是「已被 N_EFF_MIN=4 取代」空壳、不真过滤病人（与 R2-R7 经 per_patient_spearman NaN 机制的 8 病人口径不一致）。coder task#5 修=load 后加 `df.groupby("Patient_ID").filter(len>=min_pep)`（只碰装载口径、零统计改动），`--min_pep 8` 后 4 臂正常。**已 Bash 核 R5 summary `lopo_n_used=8`、fusion_cv `n_folds=8`、R6/R3 `n_pat=8`——官方脚本本就正确用 8 病人（102 rho=NaN 排除），只有 fusion_cv 候选池机制需显式剔。**
+
+**4 问结论（verifier 独立核数 + analyst F1 解读，双核一致；据实报，证实/推翻同等呈现）**：
+- **① fusion 无净优势 = 不可检测净优势（证实旧断言）**。fusion_nested_cv 4 臂 Δ=integration−single 全负（−0.20/−0.12/−0.09/−0.07），paired_p 全>0.05（0.22~0.52）。三源收敛：k_curve CV 最优=**k=1 单工具 netMHCpan_BA**（cv_rho 0.372/0.401，稳定度 1.0），k≥2 全更低且 paired_p>0.05 →直接回答老师「CV 选出最优往往落单工具」；18 个选择器全 Δ<0 p>0.05；R5 nested-LOPO integration−single=−0.178。in-sample geomean-3=0.446>单工具 0.372 但 CV 转负=成员选择膨胀(inflation 0.19~0.49)。caveat：n=8 功效极低，「不可检测」≠「证明无用」。
+- **②a geomean「唯一最优」= 未复现**。R6 两 drop rank1 均单工具 netMHCpan_BA_max（0.379/0.365）；geomean rank2，领先次优 ridge 仅 +0.003(<<std 0.035/0.065)，win_rate ridge 反赢。
+- **②b 免疫原类 max 最优 = 未复现**。13 免疫原工具 best_lenctrl==max 仅 1/13（DeepImmuno）。
+- **③ median 略优 geomean = 推翻 §8③**。R6 同 seed 配对：geomean 远优 median，Δ(median−geomean)=−0.113/−0.107，30/30 & 29/30 seed，p=1.9e-9/5.8e-8。**§8③ 转述与现 R6 + 旧切 R6 方向都相反，来源存疑，待 writer 回溯**。
+- **④ max 非最优/topk 优 = 方向弱支持 / 严判未复现**。点估 20/23 有信号工具(87%)最优≠max（netMHCpan_BA 0.401→0.476 rankdecay 等），但严判（裸 CI_lo>0）仅 3 强信号工具、提升(+0.06~0.075)落 n=8 噪声内。TODO：补 lenctrl cluster-bootstrap CI 严判。
+
+**overarching**：新切 9mer 下，报告 §8 悲观判断（①②a②b④）被实际结果**大体证实**，唯 §8③「median 略优」被**推翻**（实为 geomean 优）——全部有真实图表背书。**另**：⑤小鼠=老师指示人源流程定稿后再做（本步只记指针）；⑥书面同意=researcher 查实为 DTU benchmark 条款(DeWitt 类)、投稿前发邮件即可、非怪规定（`reference/TOOL_LICENSE_CONSENT_FACTS_2026-07-09.md`，TSCAPE 归属存疑+DTU 全文快照 TODO）。
+
+**产物**：`analysis/official/newcut9mer/{R2_pooling_sweep,R2_best_per_tool,R3_fusion_12methods,R4_ablation,R5_nested_lopo(+summary.json,+shuffle),R6_robustness(results+summary),R7_paired_significance(+json)}` + `analysis/fusion_cv/newcut9mer/{fusion_nested_cv(+shuffle,+members),k_curve,select_engine,select_stability,tool_tool_corr}` + `reference/{NEWCUT9MER_F1_LEDGER,TOOL_LICENSE_CONSENT_FACTS_2026-07-09}.md`。R5 置换 null 完成(①补充,1000置换)：整合 LOPO ρ=0.195 经验 p=**0.106**(分位89.5%)——**整合自身在 LOPO 下都未显著异于随机**，从另一侧印证 n=8 功效不足、支持①「检不出净优势」，已补进回复稿 §①(d)。**收口完成**：3 图 `figures/{figA_newcut_fusion_no_net_gain,figB_newcut_robustness,figC_newcut_max_vs_bestpooling}`（coder `plot_newcut_s89.py` 出，只写 newcut9mer/figures 零碰 paper/figures，主线视觉核过 + ρ̄缺字已修）；writer 终稿 `report/给老师_§8四问新切结果_2026-07-09.md`（① 表补具体臂名，图标已落盘）。**reviewer 去偏审 = PASS**：9 组关键数字全核 csv 一致、措辞黑名单零命中、「无差异」写「不可检测」非「证明无效」、证实/推翻对称、②a/③ 触承重 Claim(ii) headline 回退正确交袁老师拍板不自决；1 处 🟡 已补（③ 的 p=1e-9 来自 30seed 同一批 8 病人子采样=伪重复，加了「方向稳健非总体显著」对称 caveat 防推翻读过强）。gpu_slot d6c7aa98 已 release。**下一步（🛑待袁老师拍板）**：②a(geomean非唯一最优)/③(推翻§8③) 触 Claim(ii) headline 回退 + 确认 §8③ 数字出处；④补 lenctrl cluster-bootstrap CI 定严判；⑤小鼠 B16F10/CT26（人源定稿后启）；⑥ DTU consent 投稿前发邮件（health-software@dtu.dk）+ 厘清 TSCAPE 许可归属。

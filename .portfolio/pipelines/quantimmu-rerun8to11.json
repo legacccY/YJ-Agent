@@ -3,7 +3,7 @@
   "project": "quantimmu-rerun8to11",
   "template": "experiment",
   "created": "2026-07-08T17:12:15+08:00",
-  "updated": "2026-07-08T23:42:57+08:00",
+  "updated": "2026-07-09T10:56:00+08:00",
   "from_phase": "",
   "nodes": [
     {
@@ -192,13 +192,13 @@
         "slice_hpc_dtu",
         "slice_hpc_env"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": true,
       "group": "",
       "desc": "merge_official_30 --strict-roster --pure-new -> merged_8to11",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-09T10:16:56+08:00"
     },
     {
       "id": "coverage",
@@ -207,13 +207,13 @@
       "deps": [
         "merge"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "build_coverage_matrix 逐格核漏,空缺记原因",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-09T10:36:56+08:00"
     },
     {
       "id": "pool",
@@ -222,13 +222,13 @@
       "deps": [
         "coverage"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "p0e2_pool_clean --w811 -> recompute effN8 -> R1_recomputed_rerun_8to11mer",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-09T10:43:32+08:00"
     },
     {
       "id": "dai",
@@ -237,13 +237,13 @@
       "deps": [
         "pool"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "build_dai_pool MT-WT -> recompute DAI版(WT已跑)",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-09T10:43:32+08:00"
     },
     {
       "id": "recheck",
@@ -252,13 +252,13 @@
       "deps": [
         "dai"
       ],
-      "status": "pending",
+      "status": "done",
       "gate": false,
       "group": "",
       "desc": "三方对账+出图9mer vs 8-11对比+落04_LOG",
       "out": "",
       "owner": "",
-      "ts": ""
+      "ts": "2026-07-09T10:56:00+08:00"
     }
   ]
 }

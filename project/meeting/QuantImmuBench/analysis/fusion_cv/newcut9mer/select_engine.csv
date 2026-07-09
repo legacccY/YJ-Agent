@@ -1,0 +1,24 @@
+# ★诚实边界: n=9 无「唯一最优」确定性证明; 交付=无泄漏 CV 程序 + 选出的(成员×k×算子) + 稳定性/不可分带 + 每选择的受控证明。措辞禁 proven optimal/the best/SOTA; null 写「无可检测的整合净优势」不写「证伪整合优势」。
+# 口径: 外层 LOPO 9 折; 内层 8 患者选; pooling=_max; 池=cover_pool(≥8)=24 工具; CV 评估全走 guarded_perpat_metric (退化守卫); seed=42; 纯 numpy 禁 scipy.stats。
+# A2(joint_all8/consensus3/fixed_geomean/op_*_subsetsel) + A3(forward/backward/exhaustive/topk/decorr×λ[0.05, 0.1, 0.2]主0.1); op 固定 geomean(除A2)。
+# indistinguishable_set_size=38 (全局: A1∪A2∪A3∪best_single 中与 CV-最优 paired-p>0.05 或 bootstrap-CI 重叠者); CV-最优=A1:greedy_to_k:k1:lenctrl; 连 best_single 都不可分=True。
+# lambda 仅 decorr_greedy 有值 (固定先验扫, 绝不用外层ρ̄挑λ); 其余 NaN。
+procedure,arm,op_set,lambda,caliber,k_selected,members_selected,cv_rho,cv_ci_lo,cv_ci_hi,oracle_rho,inflation,paired_p_vs_best_single,delta_vs_best_single,indistinguishable_set_size,interpretation
+joint_select,joint_all8,all8,,raw,4,netMHCpan_BA;PredIG;TransHLA;MHCnuggets,0.209895,0.039222,0.386465,0.504647,0.294752,0.289062,-0.162317,38,"无可检测的整合净优势 (Δvs单=-0.1623, p=0.2891); 在CV最优不可分带内"
+joint_select,joint_consensus3,consensus3,,raw,5,netMHCpan_BA;PredIG;DeepImmuno;MHCnuggets;IEDB_Calis,0.140384,-0.004086,0.283589,0.485034,0.34465,0.140625,-0.231828,38,"无可检测的整合净优势 (Δvs单=-0.2318, p=0.1406); 在CV最优不可分带内"
+fixed_geomean,fixed_geomean,geomean,,raw,5,netMHCpan_BA;BigMHC_IM;deepHLApan;MHCseqNet;DeepImmuno,0.170691,0.017392,0.332683,0.464961,0.294271,0.21875,-0.201522,38,"无可检测的整合净优势 (Δvs单=-0.2015, p=0.2188); 在CV最优不可分带内"
+op_subsetsel,op_mean_rank_subsetsel,mean_rank,,raw,3,netMHCpan_BA;PredIG;MHCseqNet,0.134032,0.002574,0.283466,0.432667,0.298635,0.078125,-0.23818,38,"无可检测的整合净优势 (Δvs单=-0.2382, p=0.0781); 在CV最优不可分带内"
+op_subsetsel,op_geomean_subsetsel,geomean,,raw,5,netMHCpan_BA;BigMHC_IM;deepHLApan;MHCseqNet;DeepImmuno,0.170691,0.017392,0.332683,0.464961,0.294271,0.21875,-0.201522,38,"无可检测的整合净优势 (Δvs单=-0.2015, p=0.2188); 在CV最优不可分带内"
+op_subsetsel,op_median_subsetsel,median,,raw,5,netMHCpan_BA;PredIG;DeepImmuno;MHCnuggets;IEDB_Calis,0.177321,-0.01069,0.352814,0.485034,0.307713,0.109375,-0.194891,38,"无可检测的整合净优势 (Δvs单=-0.1949, p=0.1094); 在CV最优不可分带内"
+op_subsetsel,op_powmean_subsetsel,powmean,,raw,2,netMHCpan_BA;PredIG,0.370926,0.208676,0.515373,0.440537,0.069611,1.0,-0.001286,38,"无可检测的整合净优势 (Δvs单=-0.0013, p=1.0000); 在CV最优不可分带内"
+op_subsetsel,op_max_subsetsel,max,,raw,3,netMHCpan_BA;PredIG;TransHLA,0.28697,0.116598,0.4247,0.480444,0.193473,0.445312,-0.085242,38,"无可检测的整合净优势 (Δvs单=-0.0852, p=0.4453); 在CV最优不可分带内"
+op_subsetsel,op_min_subsetsel,min,,raw,3,netMHCpan_BA;BigMHC_IM;DeepNetBim,0.208262,0.085772,0.318169,0.483128,0.274865,0.25,-0.16395,38,"无可检测的整合净优势 (Δvs单=-0.1640, p=0.2500); 在CV最优不可分带内"
+op_subsetsel,op_weighted_mean_rank_subsetsel,weighted_mean_rank,,raw,5,netMHCpan_BA;PredIG;MHCflurry;IEDB_Calis;deepHLApan,0.210046,0.03502,0.385996,0.460741,0.250696,0.203125,-0.162166,38,"无可检测的整合净优势 (Δvs单=-0.1622, p=0.2031); 在CV最优不可分带内"
+op_subsetsel,op_softmax_rank_subsetsel,softmax_rank,,raw,4,netMHCpan_BA;PredIG;TransHLA;MHCnuggets,0.366565,0.196243,0.510211,0.504647,0.138082,0.960938,-0.005648,38,"无可检测的整合净优势 (Δvs单=-0.0056, p=0.9609); 在CV最优不可分带内"
+forward_greedy,forward_greedy,geomean,,raw,5,netMHCpan_BA;BigMHC_IM;deepHLApan;MHCseqNet;DeepImmuno,0.170691,0.017392,0.332683,0.464961,0.294271,0.21875,-0.201522,38,"无可检测的整合净优势 (Δvs单=-0.2015, p=0.2188); 在CV最优不可分带内"
+backward_elim,backward_elim,geomean,,raw,10,netMHCpan_BA;MHCnuggets;PredIG;ICERFIRE;MHCseqNet;MHCflurry;PRIME;MUNIS;deepHLApan;NeoTImmuML,0.307799,0.181553,0.427359,0.399881,0.092082,0.523438,-0.064413,38,"无可检测的整合净优势 (Δvs单=-0.0644, p=0.5234); 在CV最优不可分带内"
+exhaustive_k,exhaustive_k,geomean,,raw,3,netMHCpan_BA;PRIME;deepHLApan,0.201805,0.020693,0.363631,0.445595,0.24379,0.117188,-0.170407,38,"无可检测的整合净优势 (Δvs单=-0.1704, p=0.1172); 在CV最优不可分带内"
+topk_single,topk_single,geomean,,raw,3,netMHCpan_BA;MHCnuggets;PredIG,0.217189,0.069463,0.34946,0.385913,0.168724,0.21875,-0.155023,38,"无可检测的整合净优势 (Δvs单=-0.1550, p=0.2188); 在CV最优不可分带内"
+decorr_greedy,decorr_greedy_lam0.05,geomean,0.05,raw,2,netMHCpan_BA;BigMHC_IM,0.163621,0.027157,0.314935,0.41025,0.246628,0.09375,-0.208591,38,"无可检测的整合净优势 (Δvs单=-0.2086, p=0.0938); 在CV最优不可分带内"
+decorr_greedy,decorr_greedy_lam0.1_main,geomean,0.1,raw,2,netMHCpan_BA;BigMHC_IM,0.220735,0.119641,0.334962,0.41025,0.189515,0.125,-0.151477,38,"无可检测的整合净优势 (Δvs单=-0.1515, p=0.1250); 在CV最优不可分带内"
+decorr_greedy,decorr_greedy_lam0.2,geomean,0.2,raw,2,netMHCpan_BA;BigMHC_IM,0.245673,0.139392,0.355891,0.41025,0.164576,0.125,-0.126539,38,"无可检测的整合净优势 (Δvs单=-0.1265, p=0.1250); 在CV最优不可分带内"

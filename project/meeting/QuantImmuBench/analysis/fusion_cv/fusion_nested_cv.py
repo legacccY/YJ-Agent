@@ -496,13 +496,23 @@ def main():
                     help="患者内打乱 Elispot (null 对照; 期望所有臂≈0), 写 _shuffle.csv")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--min_pep", type=int, default=C.MIN_PEP,
-                    help="[已由退化守卫 N_EFF_MIN=4 取代, 保留兼容] per-patient 最少肽数")
+                    help="病人级最少肽数: load_frozen 后剔掉肽数<此的病人 (与 R2-R7 per_patient_spearman "
+                         "min_pep NaN 机制同口径; 新切用 --min_pep 8 剔病人102 防 COVER_MIN 退化)。"
+                         "退化守卫 N_EFF_MIN=4 另在度量层, 与此正交。")
     ap.add_argument("--eps", type=float, default=EPS, help="前向贪心接受阈 (默认 0.01)")
     ap.add_argument("--maxdim", type=int, default=MAXDIM, help="融合成员数封顶 (默认 6)")
     ap.add_argument("--n_boot", type=int, default=2000, help="cluster bootstrap 次数")
+    ap.add_argument("--outdir", default=None,
+                    help="[新切输出隔离] 输出目录 (默认=脚本同目录 analysis/fusion_cv/; 亦可用 env "
+                         "QIB_OUTDIR 覆盖, --outdir 优先)。相对路径按 ROOT 解析; 只改落盘位置, 不影响计算。")
     args = ap.parse_args()
 
     df = C.load_frozen(args.input)
+    # [口径对齐 · task#5] load_frozen 后剔掉肽数 < min_pep 的病人 (与 R2-R7 per_patient_spearman 的
+    #   min_pep NaN 机制同口径): 防某病人肽数 < COVER_MIN 把整候选池刷光致 n_folds=0 退化 (新切病人
+    #   102 仅 6 肽, min=6<8 → 29 工具全被 COVER_MIN=8 刷光)。只改数据装载口径, 不碰任何统计/选择/
+    #   bootstrap 逻辑; 默认 min_pep 不传时 (老切各病人≥8肽) 行为逐字节不变。
+    df = df.groupby("Patient_ID").filter(lambda g: len(g) >= args.min_pep).reset_index(drop=True)
     pats = C.present_patients(df)
     rng = np.random.default_rng(args.seed)
     if args.shuffle:
@@ -561,15 +571,21 @@ def main():
     print_stability(all_folds, "fullcov", "raw")
     print_stability(all_folds, "fullcov_no_dtu", "raw")
 
-    # ── 写出 ──
-    HERE.mkdir(parents=True, exist_ok=True)
+    # ── 写出 (输出目录: --outdir > env QIB_OUTDIR > HERE; 只改落盘位置, 不影响计算) ──
+    if args.outdir:
+        out_base = Path(args.outdir)
+        if not out_base.is_absolute():
+            out_base = ROOT / out_base
+    else:
+        out_base = C.resolve_out_dir(HERE)
+    out_base.mkdir(parents=True, exist_ok=True)
     input_name = Path(args.input).name
     if args.shuffle:
-        write_main_csv(rows, HERE / "fusion_nested_cv_shuffle.csv", input_name)
-        write_members_csv(all_folds, HERE / "fusion_nested_cv_members_shuffle.csv")
+        write_main_csv(rows, out_base / "fusion_nested_cv_shuffle.csv", input_name)
+        write_members_csv(all_folds, out_base / "fusion_nested_cv_members_shuffle.csv")
     else:
-        write_main_csv(rows, HERE / "fusion_nested_cv.csv", input_name)
-        write_members_csv(all_folds, HERE / "fusion_nested_cv_members.csv")
+        write_main_csv(rows, out_base / "fusion_nested_cv.csv", input_name)
+        write_members_csv(all_folds, out_base / "fusion_nested_cv_members.csv")
 
     print("\n[DONE] fusion_nested_cv")
 

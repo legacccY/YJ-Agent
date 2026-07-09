@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-07-08",
+ "updated": "2026-07-09",
  "note": "跨论文协调单一真源。多终端窗口共享此文件 + locks/。规避 context 压缩断链，仿 run-experiment state.json 模式。",
  "projects": {
   "gdn2vessel": {
@@ -141,15 +141,15 @@
    "name": "QuantImmuBench",
    "venue": "Briefings in Bioinformatics (主; 袁老师 QuantImmu 论文) → NeurIPS D&B / ML4H workshop (fallback)",
    "deadline": "TBD",
-   "status": "active-改动②③全量重跑",
+   "status": "active-新切9mer下游收口·答老师§8四问",
    "priority": 5,
-   "phase": "🔄2026-07-07 会后拍板改动②(原始蛋白定点切含突变窗,SLP锚定83.4%+MANE补溢出16.6%,窗数恒定9→肽长混杂ρ(窗数,SLP长)0.463→-0.011构造消除)+③(WT/DAI全102 SNV)+①(raw ELISpot不矫正). 本地全备ready-to-run:重建WT 102SNV(AMACR捞回)+MANE v1.5映射(HGNC别名补CCDC104/CCDC130/KIAA1429 3旧名)+cut_from_protein 914成窗(756SLP+158MANE,isoform冲突0)+完整30工具输入包scripts/out_rerun/(MT/WT双侧,manifest全非空). 多窗分配=Conductor图quantimmu-rerun(4切片:2本地slice_local_a/b[15工具WSL2/docker/R/RTX4070免上传]+2HPC slice_hpc_dtu/env[15工具])→merge --strict-roster→coverage覆盖矩阵(不能漏命门)→pool max→dai→recheck. 启动指南RERUN_LAUNCH_GUIDE.md. 本窗=分配者+收口(停在全量跑前不跑切片). 见LOG Entry2026-07-07b. ||[归档-await-advisor]🔄2026-07-04 管道收敛单一真源(rebuild_canonical.py --verify 0差异,复现零偏离)+§3.2-3.4在干净canonical重跑(三大claim全幸存/更强)+1000次置换null p0.013(信号真非泄漏)+presentation层(合并benchmark deck 12页+outline fig1-4修+4种工具相关结构图待袁老师选+9v8-11对比图)+stage-gate=CONDITIONAL(数字层PASS/tex成文层FAIL头号缺口). 0.447控肽长后稳0.413=真信号(非0.627长度伪迹). 见LOG Entry54. ||[2026-07-01]从零重建数据处理:含突变窗过滤+4 outline pooling(去sum count混杂)+9mer+等权+控肽长多变量偏相关+bootstrap CI+肽级AUPRC副指标. verifier全PASS+skeptic 0致命. 干净结果真源=RESULTS_CLEAN_SUMMARY.md+data/frozen/pooled_clean_9mer.csv. outline核心复现:亲和靠聚合+geomean鲁棒rank1+整合与最强单持平(covfix后 p0.46/最强单换MHCnuggets 0.447). 伪迹清:HLAthena/andy90榜首=肽长/indel搭便车(控后塌0.63→0.20). 拍板:DS2=130肽9患者(用户定)/不扩外部队列(用户定)/DTU不考虑(用户定);待袁老师2点(肽长控不控为主指标+geomean措辞强弱,见 给袁老师_两个方法学问题.md). 下一步=袁老师回后writer按干净csv重写tex§4+abstract. ||[历史]📐2026-06-29 升级论文项目:权威框架=paper/QuanImmu-Paper-Outline.md(袁老师定稿,QuantImmu三步范式 逐行打分→pooling→rank-fusion + 30工具(10呈递+20免疫原性) + 人鼠四数据(ds1/ds2/B16F10/CT26) + 三重检验 nested-LOPO/ablation/删突变robustness). 本次对齐:00_README升级+新建01_STORY/02_ACCEPTANCE+reference/GAP_ROADMAP_vs_outline.md+DEPLOY_TRACKER扩30工具表+paper/ALIGNMENT_TO_OUTLINE.md. 现状:工具17/30(4呈递+13免疫原,缺13);数据 人ds1(6例黑色素瘤)+ds2(9患者缺P103/101肽,HLA-FIX剔P101P102=7有效)✅,鼠B16F10/CT26❌缺(数据组);实验 pooling(8算子✅)/fusion(仅4法,缺geomean+8法)/LOPO单层✅,nested-LOPO/ablation/robustness删10-20%❌缺. 数字真源analysis/*.csv(Bash核不信md):per-patient Fisher-Z PRIME0.2794[.050,.481]/IMPROVE0.2502[.021,.455]唯二显著;pooling netmhcpan_ba max0.0901→geomean0.3956(DTU);fusion fixavg0.3281/rankmean0.3336 vs最优单工具MT_deepHLApan0.2519配对持平p0.974/0.833;DS1上fusion不复现(-0.16). 拍板点:口径袁92突变8患者 vs 本地101肽9患者HLA-FIX7 投稿前需袁老师/朱同学统一. 许可:netmhcpan_ba/TSCAPE/netMHCstabpan/ICERFIRE pending DTU consent. [历史]QuantImmune连续magnitude命门实测FAIL→序数/频率退守(reference/×11). 分工:余嘉=工具部署/朱同学=pooling原创/徐伊琳=QuantImmu组HPC/数据组=鼠数据",
+   "phase": "✅2026-07-09 新切(定点切窗)9mer下游全量重跑,客观回答老师§8前4问「结果在哪里」(新切9mer/8病人effN≥8/29工具NeoaPred已剔/F1判据跑前冻结/verifier+analyst双核/reviewer去偏审PASS): ①融合无净优势=不可检测(4臂Δ全负-0.20~-0.07 p>0.2,k曲线CV最优k=1单工具netMHCpan_BA,18选择器全不显著)②a geomean非唯一最优(两drop rank1都是单工具,geomean与ridge差<std)②b免疫原max非最优(best==max仅1/13 DeepImmuno)③推翻§8③(实为geomean≫median Δ=-0.11,注:p极小来自30seed子采样伪重复非独立总体)④max非最优=方向弱支持(87%工具最优≠max)/n=8严判未达显著. overarching:报告§8悲观判断①②a②b④被新切结果大体证实、§8③「median略优」被推翻,全有真实图表(figA/B/C)背书,不再拿旧切充数. 🛑拍板:②a/③触承重Claim(ii)headline回退=袁老师拍板项(据实呈报未自决,并请确认§8③出处);⑥DTU consent=DeWitt条款投稿前发邮件即可;⑤小鼠人源定稿后启. 途中修口径bug:fusion_cv COVER_MIN=8被病人102(n=6)拖垮致退化→coder加--min_pep病人过滤(只碰装载口径). 8-11mer保补充口径不动.",
    "home": "project/meeting/QuantImmuBench/",
    "story": "project/meeting/QuantImmuBench/01_STORY.md",
    "acceptance": "project/meeting/QuantImmuBench/02_ACCEPTANCE.md",
    "log": "project/meeting/QuantImmuBench/04_LOG.md",
    "updated": "2026-06-29",
-   "last_update": "2026-07-05: fusion-CV选择引擎落档(§5+13 rationale ledger)+决策档拍板点3补充；CV最优=小k/单工具MHCnuggets足矣、SURV6无CV依据但互证=待袁+朱拍板"
+   "last_update": "2026-07-09: 新切9mer下游收口答老师§8四问(全PASS);下一步待袁老师拍板headline回退(②a/③)+④补lenctrl bootstrap CI+⑤小鼠+⑥DTU邮件"
   },
   "hyperfid": {
    "name": "HyperFidBench",

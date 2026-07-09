@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-09 · ✅ Phase1a 收敛(越过发散风险) + A2 cyst 3seed 提交 + A3 UNet 烟测 PASS
+
+**背景**：用户「继续一直走到计划结束」→ 自主推进 Phase 1 全部三判据（A1 管线复现 / A2 M3D-NCA 囊肿多 seed / A3 UNet 同口径对照）到出数字。
+
+**做的事 + 结果**：
+- **A1 实测达成**：Phase1a full baseline（job 1514946，binary_all/seed0/[10,10]/1000ep/(64,64,32)→(128,128,64)）**稳定收敛**——RUNNING 11h20min，epoch 988/1000，**avg_loss 0.145、dice 0.833、无发散**（发散阈值 loss>3+Dice<0.05 全程没触发）。→ **越过项目头号风险**：立项标注「高分辨率 3D 配置历史 0/11 全发散、KiTS23 体积更大正撞最难区间」——实证零偏离官方复现在 KiTS23 稳定收敛。A1 PASS（等 1000ep 自然收尾落终值）。
+- **A2 铺开**：Phase1b M3D-NCA 囊肿 `--label_mode cyst`（label==3）**3 seed 提交 HPC**（job 1515817/1515818/1515819，seed 0/1/2，同 full config）。走 gpu_slot 各占 1 卡（GO 95cce6e2/515299e3/1666b1cc）。当前 PENDING(Priority) 排队等卡（gpu4090 全校 congestion）。目标=A2 多 seed 收敛率 + 均值±std。
+- **A3 就绪**：Phase1c UNet3D **本地烟测 PASS**（`--config smoke binary_all`，5case/30ep/(64,64,32)）——无形状错（整除约束 32 倍数验通，`unet-0.8.1` num_encoding_blocks 兼容）、loss 1.196→1.188 健康降、Dice 0.046（未收敛预期）、34.5s。UNet 管线机械正确 → 待 Phase1a 腾卡后提交 UNet full cyst 对照。
+
+**判读**：Phase 1 三条腿全部推到「在跑 / 就绪」。最大不确定性（NCA 在 KiTS23 会不会发散）已由 Phase1a 实证消除。cyst 能否收敛是下一个观察点（囊肿极端类不平衡，中位仅 65/百万体素）。
+
+**下一步（挂监控走到结束）**：Phase1a done→release+提交 UNet full cyst；cyst 3seed 陆续起跑→盯前几 ep 发散 signature；全 done→收 dice 落 `06_experiments/` + `/stage-gate`。零偏离纪律：不因 cyst 发散改超参（触发 K1 则诚实报收敛率）。
+
+**补记（10:40）— A1 落定 + 本地探路否决 + 全排队**：
+- **A1 PASS 终值**：Phase1a `status=done`，epoch 1000，**dice 0.831 / loss 0.142**（与进行中 0.833 一致）。M3D-NCA 在 KiTS23 稳定收敛坐实。
+- **本地能否原样跑 cyst（用户问「本地快的话本地也可以，前提原样跑」）→ 实测否决**：原样 full config（(128,128,64)/batch2，零改超参）在本地 4070 8GB **显存 OK 不 OOM**（唯一好消息），但**单 epoch 极慢**——state.json 卡 `starting` 整 5.5min，342 train 样本的第一个 epoch 都没跑完。估单 seed 17-25h、3 seed 本地只能串行 ≈50-75h，占死本地卡 2-3 天，**打不过 HPC 3 卡并行**（起跑后 11.4h 全出）。结论=回 HPC 等（用户拍板老实等 gpu4090）。
+- **A2/A3 全提交 HPC 排队**：cyst seed0/1/2（job 1515817/818/819）+ UNet full cyst seed0（job 1516006）。全部降 TimeLimit 24h→14h 改善 backfill。**Phase1a done 后 cyst 优先级 103→245 回升**（fairshare 恢复中），SLURM 预估上界 07-13 但实际大概率更早。挂长间隔监控等起跑。
+
+---
+
 ## 2026-07-08 · ✅ Phase 1a/1b 本地烟测 PASS（管线验活）
 
 **背景**：coder 写完 KiTS23 数据适配（`code/kits23_dataset.py` 子类直读原生 case 目录免 34GB 扁平化 + label 开关 + 缓存 fix）+ 两套 config + 训练入口（state.json 监控 + 静默发散钩子）。主线本地烟测验管线。

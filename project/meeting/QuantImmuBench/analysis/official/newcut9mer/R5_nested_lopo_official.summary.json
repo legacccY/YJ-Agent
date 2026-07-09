@@ -1,0 +1,63 @@
+{
+  "design": "nested-LOPO (outer leave-one-DS2, inner LOPO θ-selection)",
+  "leakage_guard": "inner θ-selection never touches outer test patient",
+  "input": "pooled_clean_rerun_9mer.csv",
+  "integration_dims": [
+    "PredIG_max",
+    "IMPROVE_max",
+    "pTuneos_max",
+    "PRIME_max",
+    "ImmuneApp_max",
+    "deepHLApan_max"
+  ],
+  "integration_dims_TODO": "成员=selection, 待袁/朱确认 outline 表8",
+  "shuffled": false,
+  "seed": 42,
+  "min_pep": 8,
+  "theta_space": [
+    "fixavg",
+    "ridge@dof2",
+    "ridge@dof2.5",
+    "ridge@dof3"
+  ],
+  "dof_grid": [
+    2.0,
+    2.5,
+    3.0
+  ],
+  "theta_oracle": "fixavg",
+  "oracle_agg_by_theta": {
+    "fixavg": 0.284587,
+    "ridge@dof2": 0.273185,
+    "ridge@dof2.5": 0.268395,
+    "ridge@dof3": 0.269107
+  },
+  "lopo_fisherz_rho": 0.194618,
+  "lopo_ci_lo": -0.052154,
+  "lopo_ci_hi": 0.418991,
+  "lopo_n_used": 8,
+  "lopo_fisherz_rho_lenctrl": 0.183944,
+  "lenctrl_var": "peplen",
+  "oracle_fisherz_rho": 0.284587,
+  "oracle_ci_lo": 0.041492,
+  "oracle_ci_hi": 0.495872,
+  "oracle_n_used": 8,
+  "consistency_delta_lopo_minus_oracle": -0.089969,
+  "consistency_paired_spearman": 0.880952,
+  "consistency_mean_abs_dev": 0.076171,
+  "strongest_single_tool": "netMHCpan_BA_max",
+  "strongest_single_rho": 0.372212,
+  "strongest_single_rho_lenctrl": 0.400948,
+  "integration_minus_single": -0.177594,
+  "theta_selected_per_fold": {
+    "101": "fixavg",
+    "102": "ridge@dof3",
+    "104": "ridge@dof3",
+    "105": "fixavg",
+    "106": "ridge@dof3",
+    "107": "fixavg",
+    "108": "ridge@dof2.5",
+    "109": "fixavg",
+    "110": "ridge@dof2"
+  }
+}

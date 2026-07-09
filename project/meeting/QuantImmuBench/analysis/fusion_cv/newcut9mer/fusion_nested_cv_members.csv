@@ -1,0 +1,35 @@
+# fusion_nested_cv_members.csv —— 每折 × pool × caliber 选中融合成员
+# n_used_lenctrl = 控长口径下该留出患者的完整用例点数 (裸口径列空)
+pool,caliber,fold_left_out_patient,members_selected,n_members,single_selected,n_used_lenctrl
+fullcov,raw,101,netMHCpan_BA,1,netMHCpan_BA,
+fullcov,raw,104,netMHCpan_BA;BigMHC_IM;PredIG;IEDB_Calis;MHCnuggets;DeepImmuno,6,netMHCpan_BA,
+fullcov,raw,105,netMHCpan_BA;BigMHC_IM;deepHLApan,3,netMHCpan_BA,
+fullcov,raw,106,netMHCpan_BA;BigMHC_IM;deepHLApan;MHCseqNet;DeepImmuno,5,netMHCpan_BA,
+fullcov,raw,107,netMHCpan_BA,1,netMHCpan_BA,
+fullcov,raw,108,netMHCpan_BA;BigMHC_IM;PredIG;DeepImmuno;PRIME,5,netMHCpan_BA,
+fullcov,raw,109,netMHCpan_BA;MHCseqNet;PredIG;DeepImmuno,4,netMHCpan_BA,
+fullcov,raw,110,netMHCpan_BA;BigMHC_IM,2,netMHCpan_BA,
+fullcov,lenctrl,101,netMHCpan_BA;ICERFIRE;deepHLApan,3,netMHCpan_BA,9
+fullcov,lenctrl,104,netMHCpan_BA;BigMHC_IM;IEDB_Calis;MHCnuggets,4,netMHCpan_BA,14
+fullcov,lenctrl,105,netMHCpan_BA;BigMHC_IM;deepHLApan,3,netMHCpan_BA,16
+fullcov,lenctrl,106,netMHCpan_BA;BigMHC_IM;deepHLApan,3,netMHCpan_BA,13
+fullcov,lenctrl,107,netMHCpan_BA,1,netMHCpan_BA,8
+fullcov,lenctrl,108,netMHCpan_BA;BigMHC_IM,2,netMHCpan_BA,12
+fullcov,lenctrl,109,netMHCpan_BA;BigMHC_IM;deepHLApan;MHCnuggets;DeepImmuno;IMPROVE,6,netMHCpan_BA,10
+fullcov,lenctrl,110,netMHCpan_BA;BigMHC_IM,2,netMHCpan_BA,14
+fullcov_no_dtu,raw,101,MHCnuggets;PredIG;deepHLApan;PRIME,4,MHCnuggets,
+fullcov_no_dtu,raw,104,PredIG;MHCseqNet;MHCnuggets;deepHLApan,4,PredIG,
+fullcov_no_dtu,raw,105,MHCnuggets;ImmuGenX,2,MHCnuggets,
+fullcov_no_dtu,raw,106,MHCnuggets;deepHLApan;DeepImmuno;IMPROVE;IEDB_Calis,5,MHCnuggets,
+fullcov_no_dtu,raw,107,MHCnuggets;ImmuGenX,2,MHCnuggets,
+fullcov_no_dtu,raw,108,PredIG;MHCseqNet;MHCnuggets;deepHLApan,4,PredIG,
+fullcov_no_dtu,raw,109,MHCnuggets;deepHLApan;PredIG;DeepImmuno,4,MHCnuggets,
+fullcov_no_dtu,raw,110,MHCnuggets;ImmuGenX,2,MHCnuggets,
+fullcov_no_dtu,lenctrl,101,MHCnuggets;deepHLApan;PredIG;PRIME,4,MHCnuggets,9
+fullcov_no_dtu,lenctrl,104,PredIG;NeoaG;BigMHC_IM,3,PredIG,14
+fullcov_no_dtu,lenctrl,105,MHCnuggets;ImmuGenX;DeepImmuno;PredIG,4,MHCnuggets,16
+fullcov_no_dtu,lenctrl,106,BigMHC_IM;deepHLApan;DeepImmuno;IMPROVE;NeoaG,5,BigMHC_IM,13
+fullcov_no_dtu,lenctrl,107,MHCnuggets;ImmuGenX,2,MHCnuggets,8
+fullcov_no_dtu,lenctrl,108,PredIG;NeoaG,2,PredIG,12
+fullcov_no_dtu,lenctrl,109,MHCnuggets;deepHLApan;DeepImmuno;IMPROVE;IEDB_Calis,5,MHCnuggets,10
+fullcov_no_dtu,lenctrl,110,MHCnuggets;ImmuGenX,2,MHCnuggets,14

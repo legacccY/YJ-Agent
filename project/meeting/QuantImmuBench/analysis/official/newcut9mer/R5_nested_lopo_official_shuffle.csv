@@ -1,0 +1,16 @@
+# R5_nested_lopo_official.csv
+# QuantImmuBench §3.3.3 表8: nested-LOPO 整合 vs oracle vs 最强单工具
+# 输入=pooled_clean_rerun_9mer.csv; DS2 9 患者(无 DS1 训练池); 整合维度=['PredIG_max', 'IMPROVE_max', 'pTuneos_max', 'PRIME_max', 'ImmuneApp_max', 'deepHLApan_max']
+# 外层留一 DS2 病人, 内层 LOPO 选 θ*(fixavg/ridge@dof); oracle=全数据选 θ 作弊上界
+# LOPO ρ̄≈oracle ρ̄ ⇒ 超参选择零过拟合(无泄漏证据); ★整合维度=TODO 待袁/朱确认
+patient_id,n_pep,theta_selected,lopo_test_rho,oracle_rho
+101,9,fixavg,-0.10171,-0.10171
+102,6,fixavg,,
+104,14,fixavg,-0.059341,-0.059341
+105,16,ridge@dof2,0.060428,0.305085
+106,13,ridge@dof3,-0.373626,0.467033
+107,8,fixavg,-0.380952,-0.380952
+108,12,fixavg,0.136603,0.136603
+109,10,fixavg,0.043082,0.043082
+110,14,fixavg,-0.092409,-0.092409
+SUMMARY,102,oracle=fixavg,-0.100519,0.043303

@@ -1,0 +1,35 @@
+# fusion_nested_cv_members.csv —— 每折 × pool × caliber 选中融合成员
+# n_used_lenctrl = 控长口径下该留出患者的完整用例点数 (裸口径列空)
+pool,caliber,fold_left_out_patient,members_selected,n_members,single_selected,n_used_lenctrl
+fullcov,raw,101,Repitope;BigMHC_IM,2,Repitope,
+fullcov,raw,104,Repitope,1,Repitope,
+fullcov,raw,105,Repitope;BigMHC_IM,2,Repitope,
+fullcov,raw,106,Repitope,1,Repitope,
+fullcov,raw,107,PRIME;Repitope;deepHLApan;NeoaG,4,PRIME,
+fullcov,raw,108,Repitope,1,Repitope,
+fullcov,raw,109,Repitope;PRIME;MHCflurry,3,Repitope,
+fullcov,raw,110,Repitope,1,Repitope,
+fullcov,lenctrl,101,Repitope;BigMHC_IM;PRIME,3,Repitope,9
+fullcov,lenctrl,104,Repitope;PRIME;MHCnuggets,3,Repitope,14
+fullcov,lenctrl,105,Repitope;BigMHC_IM,2,Repitope,16
+fullcov,lenctrl,106,Repitope,1,Repitope,13
+fullcov,lenctrl,107,PRIME;deepHLApan;Repitope;NeoaG,4,PRIME,8
+fullcov,lenctrl,108,deepHLApan;PRIME,2,deepHLApan,12
+fullcov,lenctrl,109,HLAthena;Repitope;PRIME,3,HLAthena,10
+fullcov,lenctrl,110,Repitope;PRIME;deepHLApan;NeoaG,4,Repitope,14
+fullcov_no_dtu,raw,101,Repitope;BigMHC_IM,2,Repitope,
+fullcov_no_dtu,raw,104,Repitope,1,Repitope,
+fullcov_no_dtu,raw,105,Repitope;BigMHC_IM,2,Repitope,
+fullcov_no_dtu,raw,106,Repitope,1,Repitope,
+fullcov_no_dtu,raw,107,PRIME;Repitope;deepHLApan;NeoaG,4,PRIME,
+fullcov_no_dtu,raw,108,Repitope,1,Repitope,
+fullcov_no_dtu,raw,109,Repitope;PRIME;MHCflurry,3,Repitope,
+fullcov_no_dtu,raw,110,Repitope,1,Repitope,
+fullcov_no_dtu,lenctrl,101,Repitope;BigMHC_IM;PRIME,3,Repitope,9
+fullcov_no_dtu,lenctrl,104,Repitope;PRIME;MHCnuggets,3,Repitope,14
+fullcov_no_dtu,lenctrl,105,Repitope;BigMHC_IM,2,Repitope,16
+fullcov_no_dtu,lenctrl,106,Repitope,1,Repitope,13
+fullcov_no_dtu,lenctrl,107,PRIME;deepHLApan;Repitope;NeoaG,4,PRIME,8
+fullcov_no_dtu,lenctrl,108,deepHLApan;PRIME,2,deepHLApan,12
+fullcov_no_dtu,lenctrl,109,HLAthena;Repitope;PRIME,3,HLAthena,10
+fullcov_no_dtu,lenctrl,110,Repitope;PRIME;deepHLApan;NeoaG,4,Repitope,14

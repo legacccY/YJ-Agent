@@ -48,6 +48,7 @@ Part B 评判标准重建 (outline §2.6 口径, 本次改动核心):
 Windows 规范: UTF-8 stdout, pathlib 路径, 纯 numpy/pandas/sklearn, 零 GPU。
 """
 
+import os
 import sys
 import functools
 import itertools
@@ -862,9 +863,32 @@ FUSION_METHODS = {name: functools.partial(apply_fusion, method=name)
                   for name in METHOD_ORDER}
 
 
+def resolve_out_dir(default_base=None):
+    """[新切输出隔离] 解析输出根目录 —— 只影响【落盘位置】, 绝不影响任何读入/计算/统计/随机种子。
+
+    优先级: 环境变量 QIB_OUTDIR (设了且非空 → 用它) > default_base (默认 OUT_DIR=analysis/official/)。
+    · QIB_OUTDIR 可为绝对路径, 或相对 ROOT (QuantImmuBench/) 的路径。
+    · 默认 (未设 QIB_OUTDIR) 逐字节等价旧行为: 返回 default_base, 完全向后兼容。
+    · default_base=None → OUT_DIR。供 fusion_cv 等【非 official 目录】脚本传各自 HERE 复用同一 env
+      (设了 QIB_OUTDIR 时全体重定向到同一新切目录; 未设时各自守自己的默认目录)。
+    动机: 新切 canonical 重跑时 `set QIB_OUTDIR=.../newcut9mer` 即把全体 R/S/Q 输出重定向到独立
+      子目录, 防覆盖旧切固定文件名结果 + 防并行 sweep 互相踩踏 (零脚本逐个改)。"""
+    base = OUT_DIR if default_base is None else Path(default_base)
+    override = os.environ.get("QIB_OUTDIR", "").strip()
+    if not override:
+        return base
+    p = Path(override)
+    if not p.is_absolute():
+        p = ROOT / p
+    return p
+
+
 def ensure_out_dir():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    return OUT_DIR
+    """输出目录 (mkdir -p 后返回)。默认 OUT_DIR=analysis/official/; 若设 env QIB_OUTDIR 则重定向到它
+    (新切 canonical 重跑写独立子目录, 见 resolve_out_dir)。默认 (未设 env) 行为逐字节不变。"""
+    d = resolve_out_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def r6(v, d=6):

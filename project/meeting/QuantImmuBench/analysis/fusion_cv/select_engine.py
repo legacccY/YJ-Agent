@@ -936,10 +936,25 @@ def main():
     ap = argparse.ArgumentParser(description="QuantImmuBench 原则化 CV 融合选择 Part A (A1-A6)")
     ap.add_argument("--input", default=str(C.FROZEN_POOLED), help="冻结肽级表路径")
     ap.add_argument("--seed", type=int, default=SEED)
+    ap.add_argument("--min_pep", type=int, default=C.MIN_PEP,
+                    help="病人级最少肽数: load_frozen 后剔掉肽数<此的病人 (与 R2-R7 / fusion_nested_cv "
+                         "同口径; 新切用 --min_pep 8 剔病人102 防 COVER_MIN 退化)。")
     ap.add_argument("--fast", action="store_true", help="降 B/S/R/n_boot 快速冒烟 (非正式结果)")
     ap.add_argument("--selftest", action="store_true",
                     help="只跑 rank 缓存正确性自检 (缓存 fusion ≡ apply_fusion allclose 1e-9) 后退出")
+    ap.add_argument("--outdir", default=None,
+                    help="[新切输出隔离] 输出目录 (默认=脚本同目录 analysis/fusion_cv/; 亦可用 env "
+                         "QIB_OUTDIR 覆盖, --outdir 优先)。相对路径按 ROOT 解析; 只改落盘位置, 不影响计算。")
     args = ap.parse_args()
+
+    # 输出目录: --outdir > env QIB_OUTDIR > HERE; 只改落盘位置, 不影响任何读入/计算/统计。
+    if args.outdir:
+        out_base = Path(args.outdir)
+        if not out_base.is_absolute():
+            out_base = ROOT / out_base
+    else:
+        out_base = C.resolve_out_dir(HERE)
+    out_base.mkdir(parents=True, exist_ok=True)
 
     global STAB_B, NULL_R, NULL_S, N_BOOT
     if args.fast:
@@ -947,6 +962,11 @@ def main():
         print(f"[fast] STAB_B={STAB_B} NULL_R={NULL_R} NULL_S={NULL_S} N_BOOT={N_BOOT} (冒烟, 非正式)")
 
     df = C.load_frozen(args.input)
+    # [口径对齐 · task#5] load_frozen 后剔掉肽数 < min_pep 的病人 (同 fusion_nested_cv / R2-R7 口径):
+    #   防某病人肽数 < COVER_MIN 把整候选池刷光致 n_folds=0 退化 (新切病人 102 仅 6 肽)。只改装载口径,
+    #   不碰任何统计/选择/bootstrap; 默认 min_pep 不传时行为不变。注: 下方 tool-tool corr 仍按设计
+    #   TC.load_max_scores(args.input) 全肽独立算 (feature-feature, 患者无关, 非本退化 bug 范畴)。
+    df = df.groupby("Patient_ID").filter(lambda g: len(g) >= args.min_pep).reset_index(drop=True)
     pats = C.present_patients(df)
     all30_present = fn.filter_pool(df, C.TOOLS_30)     # 缓存建全 30 present (cover ⊂ 30, 供 rationale #5 all30)
 
@@ -964,7 +984,7 @@ def main():
     scores = TC.load_max_scores(args.input)
     corr, corr_dropped = TC.spearman_corr(scores)
     print(f"[info] tool-tool corr: {corr.shape[0]} 工具入阵 (剔 {corr_dropped})")
-    dump_tool_tool_corr(corr, HERE / "tool_tool_corr.csv")
+    dump_tool_tool_corr(corr, out_base / "tool_tool_corr.csv")
 
     # 最强单工具 CV 预测 (两口径各一份, 复用给所有臂)
     single_by_caliber = {cal: cv_single_pred(df, pool, pats, cal) for cal in CALIBERS}
@@ -972,7 +992,7 @@ def main():
     # ── A1 k 学习曲线 ──
     print("\n[A1] k 学习曲线 (greedy_to_k raw+lenctrl + exhaustive_topk raw) ...")
     k_rows, a1_cfgs = build_k_curve(df, pool, pats, single_by_caliber, args.seed)
-    _write(HERE / "k_curve.csv", k_rows, K_CURVE_COLS,
+    _write(out_base / "k_curve.csv", k_rows, K_CURVE_COLS,
            ["# A1: greedy_to_k(关eps跑满k=1..8) + exhaustive_topk(k≤3,内层top-10穷举C(10,k)); "
             "inflation(k)=oracle−cv; oracle 臂全9 in-sample, top-10 预筛在内层8。\n"])
 
@@ -1012,7 +1032,7 @@ def main():
         pp = float(pp) if pp is not None and not (isinstance(pp, float) and np.isnan(pp)) else np.nan
         row["indistinguishable_set_size"] = band_size
         row["interpretation"] = _interp(cv_rho, single_rho_raw, pp, in_band, is_best)
-    _write(HERE / "select_engine.csv", engine_rows, ENGINE_COLS,
+    _write(out_base / "select_engine.csv", engine_rows, ENGINE_COLS,
            [f"# A2(joint_all8/consensus3/fixed_geomean/op_*_subsetsel) + A3(forward/backward/exhaustive/"
             f"topk/decorr×λ{DECORR_LAMBDAS}主{DECORR_MAIN_LAMBDA}); op 固定 geomean(除A2)。\n",
             f"# indistinguishable_set_size={band_size} (全局: A1∪A2∪A3∪best_single 中与 CV-最优 "
@@ -1023,7 +1043,7 @@ def main():
     # ── A4 稳定性 ──
     print(f"[A4] 稳定性选择 (cluster bootstrap B={STAB_B}) ...")
     stab_rows = build_stability(df, pool, pats, STAB_B, args.seed)
-    _write(HERE / "select_stability.csv", stab_rows, STAB_COLS,
+    _write(out_base / "select_stability.csv", stab_rows, STAB_COLS,
            [f"# A4: 外层9折×每折内层8患者 cluster bootstrap B={STAB_B} 跑 forward_greedy(geomean) 记成员; "
             f"select_freq_boot=选中/(9×B); 共识阈 π∈{{0.5,0.6主,0.8}}。\n",
             "# 末尾 __op_churn__:<op> 行块 = 联合选每折选中算子占比 (select_freq_9fold)。\n"])
@@ -1031,7 +1051,7 @@ def main():
     # ── A5 两 null ──
     print(f"[A5] 两个正交 null (随机k-子集 R={NULL_R} + 患者内置换 S={NULL_S}) ...")
     null_rows = build_null(df, pool, pats, args.seed, NULL_R, NULL_S)
-    _write(HERE / "select_null.csv", null_rows, NULL_COLS,
+    _write(out_base / "select_null.csv", null_rows, NULL_COLS,
            ["# A5①random_ksubset: 每k从cover池随机抽R子集 in-sample geomean ρ̄ null (控『从多子集挑』天花板); "
             "observed=oracle贪心k的in-sample ρ̄; perm_p=P(null≥observed)。\n",
             "# A5②patient_perm: 患者内打乱Elispot重跑CHOSEN=forward_greedy(geomean)整条选择, S次; "

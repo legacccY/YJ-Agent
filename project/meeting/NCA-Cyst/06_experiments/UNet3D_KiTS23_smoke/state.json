@@ -1,0 +1,12 @@
+{
+  "status": "done",
+  "model": "UNet3D",
+  "config": "smoke",
+  "label_mode": "binary_all",
+  "seed": 0,
+  "epoch": 30,
+  "avg_loss": 1.187798947095871,
+  "dice": 0.04578256607055664,
+  "max_steps": 30,
+  "updated": "2026-07-09T10:15:27"
+}

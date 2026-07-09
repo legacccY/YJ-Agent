@@ -1,0 +1,16 @@
+# R7_paired_significance_official.csv
+# QuantImmuBench §3.3.5: 整合(SURV6 geomean, max 维) vs 最强单工具(全覆盖池零选择 max) 配对显著性
+# 输入=pooled_clean_rerun_9mer.csv; DS2 配对病人=[101, 104, 105, 106, 107, 108, 109, 110]
+# 整合维度(SURV6, ★TODO)=['PredIG_max', 'IMPROVE_max', 'pTuneos_max', 'PRIME_max', 'ImmuneApp_max', 'deepHLApan_max']; 最强单工具=netMHCpan_BA_max(限全覆盖29池)
+# fusion_rho/single_rho=病人内 Spearman; delta_z=arctanh(fusion)-arctanh(single)
+# SUMMARY 行 fusion_rho/single_rho=Fisher-z 加权 ρ̄, delta_z=Δ(ρ̄差); Δz̄/p(裸+控肽长)见 summary.json
+patient_id,n_pep,fusion_rho,single_rho,delta_z
+101,9,0.2034,0.2034,0.0
+104,14,0.5017,0.33,0.2086
+105,16,0.6234,0.4937,0.1896
+106,13,0.522,0.7143,-0.3168
+107,8,-0.4762,-0.0238,-0.4942
+108,12,-0.0455,0.1016,-0.1475
+109,10,-0.0062,0.5108,-0.57
+110,14,0.6557,0.462,0.2853
+SUMMARY,96,0.2779,0.3722,-0.0944

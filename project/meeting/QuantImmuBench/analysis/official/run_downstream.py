@@ -80,8 +80,17 @@ Phase A canonical (只读输入, 本脚本【不重建】; 由 scripts/rebuild_c
   python analysis/official/run_downstream.py --backup               # 只备份 stale (可先单独跑一次)
   python analysis/official/run_downstream.py                        # = --run: 备份 + 重跑 CORE
   python analysis/official/run_downstream.py --with-r10             # CORE + 预注册 R10 子链
+
+  # ── 新切「定点切窗」9mer canonical 上重跑 CORE (输出隔离到独立子目录, 不碰旧切) ──
+  # --input-canonical 换主分析表, --outdir 把全体输出经 env QIB_OUTDIR 重定向; 二者须同时给。
+  # 新切自动跳过无 argparse 的 S1/S2/Q2_peptide (硬读 FROZEN_POOLED 改不了输入); 禁 --with-r10/fig1。
+  python analysis/official/run_downstream.py --dry-run \
+      --input-canonical data/frozen/pooled_clean_rerun_9mer.csv --outdir newcut9mer   # 先看新切链
+  python analysis/official/run_downstream.py \
+      --input-canonical data/frozen/pooled_clean_rerun_9mer.csv --outdir newcut9mer   # 跑新切 CORE
 """
 
+import os
 import sys
 import argparse
 import shutil
@@ -113,55 +122,64 @@ BACKUP_DIR = OFFICIAL / f"_pre_covfix_backup_{BACKUP_STAMP}"
 Step = namedtuple("Step", ["name", "script", "args", "reads", "writes", "group"])
 
 
-def build_core_steps():
+def build_core_steps(canon=CANON_9MER, out=OFFICIAL, include_noarg=True):
     """CORE: R1-R9 + S1/S2 + Q2。彼此独立读 canonical, 顺序仅为可读性 (无 R↔R 依赖)。
-    有 --input 的脚本显式传 canonical; 无 argparse 的 (S1/S2/Q2_peptide) 硬读 FROZEN_POOLED。"""
-    C = str(CANON_9MER)
+    有 --input 的脚本显式传 canonical; 无 argparse 的 (S1/S2/Q2_peptide) 硬读 FROZEN_POOLED。
+
+    canon : 主分析 canonical 路径 (默认旧切 9mer; 新切经 --input-canonical 覆盖)。
+    out   : 输出目录 (默认 OFFICIAL=analysis/official/; 新切经 --outdir 重定向, 与子进程 env
+            QIB_OUTDIR 同一目录, 保 writes 存在性校验对齐实际落盘)。
+    include_noarg : False 时剔除无 --input、硬读 _official_common.FROZEN_POOLED 的补充步
+            (S1/S2/Q2_peptide) —— 新切下这些脚本无法改输入源, 若跑会用错(旧)输入产出, 故新切
+            一律跳过 (task 派单: 跳过无 argparse 硬读 FROZEN_POOLED 的补充脚本)。"""
+    C = str(canon)
     inp = ["--input", C]
     steps = [
         Step("R1 max-pool 单工具(§3.1 表5)", OFFICIAL / "R1_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R1_single_maxpool_official.csv"], "CORE"),
+             [canon], [out / "R1_single_maxpool_official.csv"], "CORE"),
         Step("R2 pooling sweep(§3.2)", OFFICIAL / "R2_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R2_pooling_sweep_official.csv",
-                            OFFICIAL / "R2_best_per_tool.csv"], "CORE"),
+             [canon], [out / "R2_pooling_sweep_official.csv",
+                       out / "R2_best_per_tool.csv"], "CORE"),
         Step("R3 12 融合法(§3.3)", OFFICIAL / "R3_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R3_fusion_12methods_official.csv"], "CORE"),
+             [canon], [out / "R3_fusion_12methods_official.csv"], "CORE"),
         Step("R4 维度消融(§3.3.2 表7)", OFFICIAL / "R4_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R4_ablation_official.csv"], "CORE"),
+             [canon], [out / "R4_ablation_official.csv"], "CORE"),
         Step("R5 nested-LOPO(§3.3.3 表8)", OFFICIAL / "R5_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R5_nested_lopo_official.csv",
-                            OFFICIAL / "R5_nested_lopo_official.summary.json"], "CORE"),
+             [canon], [out / "R5_nested_lopo_official.csv",
+                       out / "R5_nested_lopo_official.summary.json"], "CORE"),
         Step("R5 shuffle null(§3.3.3)", OFFICIAL / "R5_official.py", inp + ["--shuffle"],
-             [CANON_9MER], [OFFICIAL / "R5_nested_lopo_official_shuffle.csv",
-                            OFFICIAL / "R5_nested_lopo_official_shuffle.summary.json"], "CORE"),
+             [canon], [out / "R5_nested_lopo_official_shuffle.csv",
+                       out / "R5_nested_lopo_official_shuffle.summary.json"], "CORE"),
         Step("R6 鲁棒性(§3.3)", OFFICIAL / "R6_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R6_robustness_official_results.csv",
-                            OFFICIAL / "R6_robustness_official_summary.csv"], "CORE"),
+             [canon], [out / "R6_robustness_official_results.csv",
+                       out / "R6_robustness_official_summary.csv"], "CORE"),
         Step("R7 配对显著性(§3.3.5)", OFFICIAL / "R7_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R7_paired_significance_official.csv",
-                            OFFICIAL / "R7_paired_significance_official.summary.json"], "CORE"),
+             [canon], [out / "R7_paired_significance_official.csv",
+                       out / "R7_paired_significance_official.summary.json"], "CORE"),
         Step("R8 统一排名+部署(§3.4)", OFFICIAL / "R8_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R8_unified_ranking_official.csv",
-                            OFFICIAL / "R8_deployment_official.summary.json"], "CORE"),
+             [canon], [out / "R8_unified_ranking_official.csv",
+                       out / "R8_deployment_official.summary.json"], "CORE"),
         Step("R9 Pearson+分布(补充)", OFFICIAL / "R9_official.py", inp,
-             [CANON_9MER], [OFFICIAL / "R9_single_maxpool_pearson_official.csv",
-                            OFFICIAL / "R9_perpatient_distribution_official.csv",
-                            OFFICIAL / "R9_supplementary_official.summary.json"], "CORE"),
-        # 无 argparse 的三个: 硬读 _official_common.FROZEN_POOLED (=9mer canonical)
+             [canon], [out / "R9_single_maxpool_pearson_official.csv",
+                       out / "R9_perpatient_distribution_official.csv",
+                       out / "R9_supplementary_official.summary.json"], "CORE"),
+        # 无 argparse 的三个: 硬读 _official_common.FROZEN_POOLED (=9mer canonical); 新切跳过 (见 docstring)
         Step("S1 肽级 AUPRC(补充)", OFFICIAL / "S1_peptide_level_auprc.py", [],
-             [CANON_9MER], [OFFICIAL / "S1_peptide_auprc.csv",
-                            OFFICIAL / "S1_peptide_auprc_paired.csv"], "CORE"),
+             [canon], [out / "S1_peptide_auprc.csv",
+                       out / "S1_peptide_auprc_paired.csv"], "CORE"),
         Step("S2 regime 对照", OFFICIAL / "S2_regime_compare.py", [],
-             [CANON_9MER], [OFFICIAL / "S2_regime_compare.csv"], "CORE"),
+             [canon], [out / "S2_regime_compare.csv"], "CORE"),
         Step("Q2 rank 相关矩阵", OFFICIAL / "Q2_rank_corr_matrix.py", inp,
-             [CANON_9MER], [OFFICIAL / "Q2_rank_corr_matrix.csv",
-                            OFFICIAL / "Q2_rank_corr_matrix_pooled.csv",
-                            OFFICIAL / "Q2_rank_corr_perpatient.json"], "CORE"),
+             [canon], [out / "Q2_rank_corr_matrix.csv",
+                       out / "Q2_rank_corr_matrix_pooled.csv",
+                       out / "Q2_rank_corr_perpatient.json"], "CORE"),
         Step("Q2 融合亲缘配对", OFFICIAL / "Q2_fusion_kinship_paired.py", inp,
-             [CANON_9MER], [OFFICIAL / "Q2_fusion_kinship_paired.csv"], "CORE"),
+             [canon], [out / "Q2_fusion_kinship_paired.csv"], "CORE"),
         Step("Q2 肽级 AUPRC 亲缘", OFFICIAL / "Q2_peptide_auprc_kinship.py", [],
-             [CANON_9MER], [OFFICIAL / "Q2_peptide_auprc_kinship.csv"], "CORE"),
+             [canon], [out / "Q2_peptide_auprc_kinship.csv"], "CORE"),
     ]
+    if not include_noarg:
+        steps = [s for s in steps if "--input" in s.args]   # 剔 S1/S2/Q2_peptide (硬读 FROZEN_POOLED)
     return steps
 
 
@@ -220,8 +238,12 @@ def build_fig1_steps():
     return steps
 
 
-def assemble_steps(with_r10=False, with_fig1=False):
-    steps = build_core_steps()
+def assemble_steps(canon=CANON_9MER, out=OFFICIAL, include_noarg=True,
+                   with_r10=False, with_fig1=False):
+    """组装步骤链。canon/out/include_noarg 仅作用于 CORE (R1-R9/S1/S2/Q2, 全经 --input 或
+    ensure_out_dir 认 QIB_OUTDIR 隔离)。R10/FIG1 opt-in 子链内部有默认路径/自身 OUT_DIR 假设,
+    不认输出隔离, 故只在默认切 (canon=CANON_9MER, out=OFFICIAL) 编排 —— main 已守新切禁混用。"""
+    steps = build_core_steps(canon, out, include_noarg)
     if with_r10:
         steps += build_r10_steps()
     if with_fig1:
@@ -237,11 +259,14 @@ def _rel(p):
         return str(p)
 
 
-def print_chain(steps):
+def print_chain(steps, canon=CANON_9MER, out=OFFICIAL):
     print("=" * 78)
     print("Phase A canonical (只读输入, 本脚本不重建):")
-    print(f"  9mer 主分析:  {_rel(CANON_9MER)}")
-    print(f"  8-11mer 补充: {_rel(CANON_8TO11)}  (仅 FIG1 8to11mer 支路)")
+    print(f"  主分析 canonical: {_rel(canon)}"
+          + ("" if canon == CANON_9MER else "  ★新切 (--input-canonical)"))
+    print(f"  8-11mer 补充:     {_rel(CANON_8TO11)}  (仅 FIG1 8to11mer 支路)")
+    print(f"  输出目录:         {_rel(out)}"
+          + ("" if out == OFFICIAL else "  ★重定向 (--outdir / env QIB_OUTDIR)"))
     print("=" * 78)
     cur_group = None
     for i, s in enumerate(steps, 1):
@@ -297,7 +322,7 @@ def backup():
 
 
 # ── 逐步执行 (subprocess, 失败即抛非零退出) ───────────────────────────────────
-def run_step(s, idx, total):
+def run_step(s, idx, total, env=None):
     for r in s.reads:
         if not Path(r).exists():
             raise SystemExit(f"[ERR] [{idx}/{total}] {s.name} 输入不存在, 中止: {r}")
@@ -306,7 +331,7 @@ def run_step(s, idx, total):
     print(f"[RUN] [{idx}/{total}] {s.name}")
     print(f"  {' '.join(cmd)}")
     print(f"{'-' * 78}")
-    res = subprocess.run(cmd, cwd=str(ROOT))
+    res = subprocess.run(cmd, cwd=str(ROOT), env=env)
     print(f"[exit] [{idx}/{total}] {s.name} -> returncode={res.returncode}")
     if res.returncode != 0:
         # 立即停, 打印失败脚本, 非零退出 (绝不 [ERR] 后还 exit 0)
@@ -318,18 +343,18 @@ def run_step(s, idx, total):
                          + ", ".join(_rel(m) for m in missing))
 
 
-def run_all(steps):
+def run_all(steps, env=None):
     total = len(steps)
     for i, s in enumerate(steps, 1):
-        run_step(s, i, total)
+        run_step(s, i, total, env=env)
     print("\n" + "=" * 78)
     print(f"[DONE] 全部 {total} 步成功, 下游结果表已刷新到 Phase A canonical。")
     print("=" * 78)
 
 
-def preflight(steps):
+def preflight(steps, canon=CANON_9MER):
     """canonical + 所有待跑脚本存在性检查 (fail-loud, 跑前一次性核清)。"""
-    need_canon = {CANON_9MER}
+    need_canon = {canon}
     if any(s.group == "FIG1" for s in steps):
         need_canon.add(CANON_8TO11)
     miss_canon = [c for c in need_canon if not c.exists()]
@@ -352,22 +377,71 @@ def main():
                     help="含 R10 预注册特征融合子链 (opt-in; 输出从未生成过=GENERATE-NEW)")
     ap.add_argument("--with-fig1", action="store_true",
                     help="含 §3.1 图1 effN 链 (opt-in; 07-04 已 fresh, 仅 canonical 再变时需)")
+    # ── 新切「定点切窗」入口 (薄封装; 默认不传 → 行为逐字节等于旧切) ──
+    ap.add_argument("--input-canonical", default=None,
+                    help="新切 canonical 主分析表路径 (默认=旧切 pooled_clean_9mer.csv)。设了则所有有 "
+                         "--input 的 CORE 子步骤读它; 必须配 --outdir 写独立目录 (防覆盖旧切结果)。")
+    ap.add_argument("--outdir", default=None,
+                    help="输出目录 (子目录名按 analysis/official/<名> 解析, 或绝对路径)。设了则经 env "
+                         "QIB_OUTDIR 把全体 R/S/Q 输出重定向到此目录 (防覆盖旧切 + 并行踩踏)。")
     args = ap.parse_args()
 
-    steps = assemble_steps(with_r10=args.with_r10, with_fig1=args.with_fig1)
+    # ── 新切参数解析 ──
+    new_cut = args.input_canonical is not None or args.outdir is not None
+
+    if args.input_canonical is not None:
+        canon = Path(args.input_canonical).resolve()
+        if args.outdir is None:
+            raise SystemExit("[ERR] --input-canonical 必须配 --outdir (否则新切结果会覆盖旧切默认目录)。")
+    else:
+        canon = CANON_9MER
+
+    if args.outdir is not None:
+        od = Path(args.outdir)
+        if not od.is_absolute():
+            od = OFFICIAL / od                      # 子目录名 -> analysis/official/<名>
+        out_dir = od.resolve()
+    else:
+        out_dir = OFFICIAL
+
+    # opt-in 子链 R10/FIG1 内部有默认路径 (R10 --features/--manifest 默认 HERE/) / 自身 OUT_DIR
+    # (FIG1 recompute_effN 脚本), 均【不认】QIB_OUTDIR 输出隔离 → 禁与新切混用 (防串目录/覆盖)。
+    if new_cut and (args.with_r10 or args.with_fig1):
+        raise SystemExit(
+            "[ERR] --with-r10 / --with-fig1 不支持与 --input-canonical / --outdir 混用 "
+            "(R10 子链默认读同目录产物、FIG1 recompute 脚本用自身 OUT_DIR, 均不认 QIB_OUTDIR "
+            "输出隔离)。新切请只跑 CORE; opt-in 子链在默认切单独跑。")
+
+    include_noarg = not new_cut         # 新切跳过无 --input 硬读 FROZEN_POOLED 的 S1/S2/Q2_peptide
+    steps = assemble_steps(canon=canon, out=out_dir, include_noarg=include_noarg,
+                           with_r10=args.with_r10, with_fig1=args.with_fig1)
+
+    # 子进程环境: 设了 --outdir 就注入 QIB_OUTDIR, 让各脚本 ensure_out_dir/resolve_out_dir 重定向输出。
+    env = None
+    if args.outdir is not None:
+        env = dict(os.environ)
+        env["QIB_OUTDIR"] = str(out_dir)
 
     if args.dry_run:
-        print_chain(steps)
+        print_chain(steps, canon, out_dir)
         return
 
     if args.backup:
-        backup()
+        if new_cut:
+            print("[backup] 新切写独立目录, 无 stale 可覆盖, 跳过 backup。")
+        else:
+            backup()
         return
 
-    # 默认 = --run: 先备份, 再重跑
-    preflight(steps)
-    backup()
-    run_all(steps)
+    # 默认 = --run
+    preflight(steps, canon)
+    if new_cut:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        print(f"[newcut] 输入 canonical = {canon}")
+        print(f"[newcut] 输出重定向 -> {out_dir}  (env QIB_OUTDIR, 跳过 backup: 新目录无 stale)")
+    else:
+        backup()                        # 旧切原地刷新: 先备份 stale
+    run_all(steps, env=env)
 
 
 if __name__ == "__main__":
