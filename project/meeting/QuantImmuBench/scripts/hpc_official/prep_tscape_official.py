@@ -39,10 +39,12 @@ except Exception:
 MAX_PEPTIDE_LEN = 20   # T-SCAPE 支持 ≤20mer（超长跳过）
 
 
-def prep(backbone_path: Path, out_dir: Path) -> None:
+def prep(backbone_path: Path, out_dir: Path, side: str = 'MT') -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-    tscape_input_path = out_dir / 'tscape_input.csv'
-    tscape_map_path = out_dir / 'tscape_input_map.csv'
+    pep_col = 'MT_Subpeptide' if side == 'MT' else 'WT_Subpeptide'
+    suffix = '' if side == 'MT' else '_WT'   # WT 侧另存，避免覆盖 MT 输入（向后兼容）
+    tscape_input_path = out_dir / f'tscape_input{suffix}.csv'
+    tscape_map_path = out_dir / f'tscape_input_map{suffix}.csv'
 
     pair_to_bbidx: dict = defaultdict(list)   # (Peptide, Allele) → [bb_idx, ...]
     skipped_long = 0
@@ -53,7 +55,7 @@ def prep(backbone_path: Path, out_dir: Path) -> None:
         reader = csv.DictReader(f_in)
         for row in reader:
             total_rows += 1
-            mt_pep  = row['MT_Subpeptide'].strip()
+            mt_pep  = row[pep_col].strip()
             hla_raw = row['HLA_Allele'].strip()
             bb_idx  = row['bb_idx'].strip()
 
@@ -86,8 +88,9 @@ def prep(backbone_path: Path, out_dir: Path) -> None:
 
     n_unique = len(unique_pairs)
     n_total_bb = sum(len(v) for v in pair_to_bbidx.values())
+    print(f'[prep_tscape] side={side}（肽源列={pep_col}）')
     print(f'[prep_tscape] backbone 总行数        : {total_rows}')
-    print(f'[prep_tscape] 跳过（MT 空）          : {skipped_empty}')
+    print(f'[prep_tscape] 跳过（肽空）          : {skipped_empty}')
     print(f'[prep_tscape] 跳过（>{MAX_PEPTIDE_LEN}mer）        : {skipped_long}')
     print(f'[prep_tscape] unique (MT, HLA) 对     : {n_unique}')
     print(f'[prep_tscape] 覆盖 bb_idx 数           : {n_total_bb}')
@@ -107,6 +110,9 @@ def main():
                         help='master_backbone_official.csv 路径')
     parser.add_argument('--out-dir', default=str(default_out),
                         help='输出目录（default: %(default)s）')
+    parser.add_argument('--side', choices=['MT', 'WT'], default='MT',
+                        help='打分侧：MT 读 MT_Subpeptide（默认，写 tscape_input.csv）；'
+                             'WT 读 WT_Subpeptide（写 tscape_input_WT.csv，8-11 DAI 补跑）。')
     args = parser.parse_args()
 
     backbone_path = Path(args.backbone)
@@ -114,7 +120,7 @@ def main():
         print(f'[prep_tscape] ERROR: backbone 不存在: {backbone_path}', file=sys.stderr)
         sys.exit(1)
 
-    prep(backbone_path, Path(args.out_dir))
+    prep(backbone_path, Path(args.out_dir), side=args.side)
 
 
 if __name__ == '__main__':

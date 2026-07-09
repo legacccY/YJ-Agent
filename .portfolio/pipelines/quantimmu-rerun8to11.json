@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "project": "quantimmu-rerun8to11",
+  "template": "experiment",
+  "created": "2026-07-08T17:12:15+08:00",
+  "updated": "2026-07-08T23:42:57+08:00",
+  "from_phase": "",
+  "nodes": [
+    {
+      "id": "design",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "出实验矩阵，对齐判据",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-08T17:12:48+08:00"
+    },
+    {
+      "id": "redteam",
+      "stage": "红队",
+      "agent": "skeptic",
+      "deps": [
+        "design"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "攻设计致命伤（0 致命即过）",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-08T17:12:48+08:00"
+    },
+    {
+      "id": "implement",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "redteam"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "实现各 run 脚本/config，自测 pytest",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-08T17:12:48+08:00"
+    },
+    {
+      "id": "integrate",
+      "stage": "集成烟测",
+      "agent": "主线",
+      "deps": [
+        "implement"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-08T17:12:48+08:00"
+    },
+    {
+      "id": "train",
+      "stage": "跑",
+      "agent": "主线",
+      "deps": [
+        "integrate"
+      ],
+      "status": "skipped",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-08T17:12:48+08:00"
+    },
+    {
+      "id": "analyze",
+      "stage": "分析",
+      "agent": "analyst",
+      "deps": [
+        "train"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "读结果出趋势/图/对判据",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-08T17:12:48+08:00"
+    },
+    {
+      "id": "verify",
+      "stage": "核数",
+      "agent": "verifier",
+      "deps": [
+        "analyze"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "关键数字三方对账 + 写 LOG",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-08T17:12:48+08:00"
+    },
+    {
+      "id": "prep",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "切8-11肽+建输入+备份9mer+增量机器(主窗已完成)",
+      "out": "切肽3876窗/表B34176行/备份9mer/增量机器就绪",
+      "owner": "",
+      "ts": "2026-07-08T17:12:49+08:00"
+    },
+    {
+      "id": "slice_local_a",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "8工具:IEDB_Calis/DeepImmuno(9-10)/BigMHC_IM/CNNeo/MHCnuggets/ImmuGenX/MUNIS/DeepNetBim(9only) 本地CPU/WSL",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-08T20:24:37+08:00"
+    },
+    {
+      "id": "slice_local_b",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "7工具:Seq2Neo/NeoaG/Repitope/pTuneos/deepHLApan/TransHLA(GPU)/TSCAPE(GPU) 本地docker/R/GPU",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-08T19:42:11+08:00"
+    },
+    {
+      "id": "slice_hpc_dtu",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "6工具:netMHCpan_BA/EL/netMHCstabpan/andy90/NetTepi/ICERFIRE HPC DTU二进制",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-08T23:42:57+08:00"
+    },
+    {
+      "id": "slice_hpc_env",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "8工具:ImmuneApp/PRIME/PredIG/IMPROVE/MHCflurry/MHCseqNet/HLAthena/NeoTImmuML(本机R) HPC conda/sif",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-08T20:24:17+08:00"
+    },
+    {
+      "id": "merge",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "slice_local_a",
+        "slice_local_b",
+        "slice_hpc_dtu",
+        "slice_hpc_env"
+      ],
+      "status": "pending",
+      "gate": true,
+      "group": "",
+      "desc": "merge_official_30 --strict-roster --pure-new -> merged_8to11",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "coverage",
+      "stage": "自定义",
+      "agent": "verifier",
+      "deps": [
+        "merge"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "build_coverage_matrix 逐格核漏,空缺记原因",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "pool",
+      "stage": "自定义",
+      "agent": "coder",
+      "deps": [
+        "coverage"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "p0e2_pool_clean --w811 -> recompute effN8 -> R1_recomputed_rerun_8to11mer",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "dai",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "pool"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "build_dai_pool MT-WT -> recompute DAI版(WT已跑)",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    },
+    {
+      "id": "recheck",
+      "stage": "自定义",
+      "agent": "verifier",
+      "deps": [
+        "dai"
+      ],
+      "status": "pending",
+      "gate": false,
+      "group": "",
+      "desc": "三方对账+出图9mer vs 8-11对比+落04_LOG",
+      "out": "",
+      "owner": "",
+      "ts": ""
+    }
+  ]
+}

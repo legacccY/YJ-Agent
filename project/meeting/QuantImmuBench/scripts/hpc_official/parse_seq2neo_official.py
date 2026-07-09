@@ -44,7 +44,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from official_io import load_backbone_bb_order, write_official_mt_only  # noqa: E402
+from official_io import (  # noqa: E402
+    load_backbone_bb_order,
+    write_official_mt_only,
+    write_official_mt_wt,
+)
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -110,19 +114,37 @@ def load_cnn_results(path: Path, pep_col: str, hla_col: str, score_col: str) -> 
     return lookup
 
 
-def build_backbone_index(backbone: Path) -> dict:
-    """读 backbone → {(MT_Subpeptide, HLA无星号): [bb_idx_str, ...]}。"""
+def build_backbone_index(backbone: Path, pep_col: str = "MT_Subpeptide") -> dict:
+    """读 backbone → {(<pep_col>, HLA无星号): [bb_idx_str, ...]}。
+    pep_col=MT_Subpeptide 建 MT 索引（默认）；pep_col=WT_Subpeptide 建 WT 索引。"""
     idx = {}
     with open(backbone, newline="", encoding="utf-8") as f:
         rd = csv.DictReader(f)
         for r in rd:
             bb = r["bb_idx"].strip()
-            pep = clean_pep(r.get("MT_Subpeptide", ""))
+            pep = clean_pep(r.get(pep_col, ""))
             hla = norm_hla(r.get("HLA_Allele", ""))
             if not pep or not hla:
                 continue
             idx.setdefault((pep, hla), []).append(bb)
     return idx
+
+
+def map_pairs_to_bb(bb_index: dict, lookup: dict) -> tuple:
+    """(pep,hla) 命中 lookup → 广播回该对的所有 bb_idx。返回 (bb→分, 命中对数, 未命中对数, 命中等位集)。"""
+    out = {}
+    hit_pairs = miss_pairs = 0
+    alleles = set()
+    for (pep, hla), bbs in bb_index.items():
+        if (pep, hla) in lookup:
+            v = round(lookup[(pep, hla)], 6)
+            for bb in bbs:
+                out[bb] = v
+            hit_pairs += 1
+            alleles.add(hla)
+        else:
+            miss_pairs += 1
+    return out, hit_pairs, miss_pairs, alleles
 
 
 def main():
@@ -133,7 +155,11 @@ def main():
     default_out = out_dir / "Seq2Neo_official.csv"
 
     ap = argparse.ArgumentParser(description="Parse Seq2Neo cnn_results.csv → Seq2Neo_official.csv")
-    ap.add_argument("--results", default=str(default_results))
+    ap.add_argument("--results", default=str(default_results),
+                    help="MT 侧 cnn_results.csv（MT_Subpeptide 打分）")
+    ap.add_argument("--wt-results", default="",
+                    help="WT 侧 cnn_results.csv（WT_Subpeptide 打分）。给了则输出 3 列 "
+                         "bb_idx,MT_Seq2Neo,WT_Seq2Neo；不给则维持 2 列 MT-only（向后兼容 9mer）。")
     ap.add_argument("--backbone", default=str(default_backbone))
     ap.add_argument("--out", default=str(default_out))
     ap.add_argument("--pep-col", default=DEFAULT_PEP_COL)
@@ -145,38 +171,43 @@ def main():
     if not backbone.exists():
         raise FileNotFoundError(f"backbone 不存在: {backbone}")
     bb_order = load_backbone_bb_order(backbone)
-    bb_index = build_backbone_index(backbone)
+    mt_index = build_backbone_index(backbone, pep_col="MT_Subpeptide")
 
     results = Path(args.results)
     if not results.exists():
-        print(f"[parse_seq2neo] WARNING: cnn_results 不存在: {results} (HPC 跑完拉回?)。"
+        print(f"[parse_seq2neo] WARNING: MT cnn_results 不存在: {results} (HPC 跑完拉回?)。"
               f"MT_Seq2Neo 全 NaN。", file=sys.stderr)
         lookup = {}
     else:
         lookup = load_cnn_results(results, args.pep_col, args.hla_col, args.score_col)
 
-    mt_map = {}
-    hit_pairs = 0
-    miss_pairs = 0
-    alleles = set()
-    for (pep, hla), bbs in bb_index.items():
-        if (pep, hla) in lookup:
-            v = round(lookup[(pep, hla)], 6)
-            for bb in bbs:
-                mt_map[bb] = v
-            hit_pairs += 1
-            alleles.add(hla)
-        else:
-            miss_pairs += 1
-
-    print(f"[parse_seq2neo] backbone 唯一(pep,hla)对={len(bb_index)}  "
+    mt_map, hit_pairs, miss_pairs, alleles = map_pairs_to_bb(mt_index, lookup)
+    print(f"[parse_seq2neo] [MT] backbone 唯一(pep,hla)对={len(mt_index)}  "
           f"命中={hit_pairs}  未命中={miss_pairs}", file=sys.stderr)
 
-    write_official_mt_only(Path(args.out), TOOL, bb_order, mt_map,
-                           n_distinct_alleles_mt=len(alleles))
-    print("[parse_seq2neo] 方向: MT_Seq2Neo = immunogenicity (sigmoid 0-1, 越大越免疫原, 不翻转)。"
-          " 许可: Seq2Neo AFL-3.0 + netCTLpan/netMHCpan DTU 学术许可, 发表前确认条款。",
-          file=sys.stderr)
+    if args.wt_results:
+        wt_index = build_backbone_index(backbone, pep_col="WT_Subpeptide")
+        wt_results = Path(args.wt_results)
+        if not wt_results.exists():
+            print(f"[parse_seq2neo] WARNING: WT cnn_results 不存在: {wt_results}。"
+                  f"WT_Seq2Neo 全 NaN。", file=sys.stderr)
+            wt_lookup = {}
+        else:
+            wt_lookup = load_cnn_results(wt_results, args.pep_col, args.hla_col, args.score_col)
+        wt_map, wt_hit, wt_miss, wt_alleles = map_pairs_to_bb(wt_index, wt_lookup)
+        print(f"[parse_seq2neo] [WT] backbone 唯一(pep,hla)对={len(wt_index)}  "
+              f"命中={wt_hit}  未命中={wt_miss}", file=sys.stderr)
+        write_official_mt_wt(Path(args.out), TOOL, bb_order, mt_map, wt_map,
+                             n_distinct_alleles_mt=len(alleles))
+        print("[parse_seq2neo] 方向: MT_Seq2Neo/WT_Seq2Neo = immunogenicity (sigmoid 0-1, "
+              "越大越免疫原, 不翻转)。许可: Seq2Neo AFL-3.0 + netCTLpan/netMHCpan DTU 学术许可, "
+              "发表前确认条款。", file=sys.stderr)
+    else:
+        write_official_mt_only(Path(args.out), TOOL, bb_order, mt_map,
+                               n_distinct_alleles_mt=len(alleles))
+        print("[parse_seq2neo] 方向: MT_Seq2Neo = immunogenicity (sigmoid 0-1, 越大越免疫原, 不翻转)。"
+              " 许可: Seq2Neo AFL-3.0 + netCTLpan/netMHCpan DTU 学术许可, 发表前确认条款。",
+              file=sys.stderr)
 
 
 if __name__ == "__main__":

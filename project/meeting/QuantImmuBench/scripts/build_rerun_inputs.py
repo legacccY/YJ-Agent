@@ -73,9 +73,10 @@ WT_SCHEMA = ["mut_key", "Patient_ID", "Peptide_ID", "Vaccine_Peptide", "WT_FullP
 TRACE_COLS = ["abs_subpep_pos", "source", "consistency_flag"]  # prepare 忽略, 供追溯
 
 
-def build_for_tools_tables():
+def build_for_tools_tables(subpep_b=SUBPEP_B, wt_full=WT_FULL,
+                           out_mt_ft=OUT_MT_FT, out_wt_ft=OUT_WT_FT):
     """读表 B -> 合成 pair_pos -> 产 MT/WT for_tools 两表。返回 (mt_ft, wt_ft, b_kept)。"""
-    b = pd.read_csv(SUBPEP_B, dtype=str, encoding="utf-8")
+    b = pd.read_csv(subpep_b, dtype=str, encoding="utf-8")
     n_all = len(b)
     b = b[b["source"].isin(["SLP", "MANE"])].copy()  # 只留成窗(dropped 本就不在表 B)
     print(f"[info] 表 B 总行 {n_all} -> 成窗(SLP/MANE) {len(b)} "
@@ -89,7 +90,7 @@ def build_for_tools_tables():
         lambda s: pd.factorize(s)[0] + 1)  # 1-based, 每肽独立编号
 
     # WT_FullPeptide 回填 (Peptide_ID -> canonical WT 全长)
-    wt_full_df = pd.read_csv(WT_FULL, dtype=str, encoding="utf-8")
+    wt_full_df = pd.read_csv(wt_full, dtype=str, encoding="utf-8")
     wt_full_map = {}
     for r in wt_full_df.itertuples(index=False):
         v = "" if pd.isna(r.WT_FullPeptide) else str(r.WT_FullPeptide).strip()
@@ -125,27 +126,27 @@ def build_for_tools_tables():
         print(f"[WARN] {n_wt_nofull} WT 行无 WT_FullPeptide 回填 (Peptide_ID 不在 wt_full); "
               f"WT_Subpeptide 仍在, 仅全长上下文空")
 
-    mt_ft.to_csv(OUT_MT_FT, index=False, encoding="utf-8")
-    wt_ft.to_csv(OUT_WT_FT, index=False, encoding="utf-8")
-    print(f"[saved] {OUT_MT_FT}  shape={mt_ft.shape}")
-    print(f"[saved] {OUT_WT_FT}  shape={wt_ft.shape}")
+    mt_ft.to_csv(out_mt_ft, index=False, encoding="utf-8")
+    wt_ft.to_csv(out_wt_ft, index=False, encoding="utf-8")
+    print(f"[saved] {out_mt_ft}  shape={mt_ft.shape}")
+    print(f"[saved] {out_wt_ft}  shape={wt_ft.shape}")
     return mt_ft, wt_ft, b
 
 
-def record_dropped():
+def record_dropped(table_a=TABLE_A, out_dropped=OUT_DROPPED):
     """从表 A 取 source=dropped 的窗, 显式落档 (不静默丢)。返回 dropped 行数。"""
-    if not TABLE_A.exists():
-        print(f"[WARN] 表 A 缺失, 无法记 dropped: {TABLE_A}")
+    if not table_a.exists():
+        print(f"[WARN] 表 A 缺失, 无法记 dropped: {table_a}")
         pd.DataFrame(columns=["mut_key", "Peptide_ID", "window_size", "window_idx",
                               "consistency_flag", "mane_prot_acc"]).to_csv(
-            OUT_DROPPED, index=False, encoding="utf-8")
+            out_dropped, index=False, encoding="utf-8")
         return 0
-    a = pd.read_csv(TABLE_A, dtype=str, encoding="utf-8")
+    a = pd.read_csv(table_a, dtype=str, encoding="utf-8")
     dropped = a[a["source"] == "dropped"].copy()
     cols = [c for c in ["mut_key", "Peptide_ID", "window_size", "window_idx",
                         "consistency_flag", "mane_prot_acc"] if c in dropped.columns]
-    dropped[cols].to_csv(OUT_DROPPED, index=False, encoding="utf-8")
-    print(f"[saved] {OUT_DROPPED}  dropped 窗 {len(dropped)} 个 "
+    dropped[cols].to_csv(out_dropped, index=False, encoding="utf-8")
+    print(f"[saved] {out_dropped}  dropped 窗 {len(dropped)} 个 "
           f"(flag: {dropped['consistency_flag'].value_counts().to_dict() if len(dropped) else {}})")
     return len(dropped)
 
@@ -158,7 +159,7 @@ def _count_lines(p):
         return -1
 
 
-def build_manifest(mt_ft, wt_ft, n_dropped):
+def build_manifest(mt_ft, wt_ft, n_dropped, out_dir=OUT_DIR, out_manifest=OUT_MANIFEST):
     """完整性 manifest: 逐 side×source 窗/行数 + 逐工具输入文件行数 + 断言无空。"""
     rows = []
 
@@ -195,7 +196,7 @@ def build_manifest(mt_ft, wt_ft, n_dropped):
     ]
     empties = []
     for name, side, tool in single:
-        p = OUT_DIR / name
+        p = out_dir / name
         n = _count_lines(p) if p.exists() else -1
         status = "OK" if n > 1 else ("EMPTY" if n in (0, 1) else "MISSING")
         if status != "OK":
@@ -208,7 +209,7 @@ def build_manifest(mt_ft, wt_ft, n_dropped):
         for side in ("MT", "WT"):
             n_files = 0
             n_lines = 0
-            for d in sorted(OUT_DIR.glob(prefix)):
+            for d in sorted(out_dir.glob(prefix)):
                 fp = d / f"peps_{side}.txt"
                 if fp.exists():
                     n_files += 1
@@ -221,7 +222,7 @@ def build_manifest(mt_ft, wt_ft, n_dropped):
                          "note": f"{tool}-{side} 跨 {n_files} allele 目录 [{status}]"})
 
     # newtools uniq_pep_hla 的 source(MT/WT/BOTH) 分布 (side 覆盖核)
-    uph = OUT_DIR / "newtools" / "uniq_pep_hla.csv"
+    uph = out_dir / "newtools" / "uniq_pep_hla.csv"
     if uph.exists():
         try:
             u = pd.read_csv(uph, encoding="utf-8")
@@ -235,31 +236,44 @@ def build_manifest(mt_ft, wt_ft, n_dropped):
             print(f"[WARN] 读 uniq_pep_hla 分布失败: {e}")
 
     man = pd.DataFrame(rows, columns=["category", "name", "side", "n_rows", "n_windows", "note"])
-    man.to_csv(OUT_MANIFEST, index=False, encoding="utf-8")
-    print(f"[saved] {OUT_MANIFEST}  shape={man.shape}")
+    man.to_csv(out_manifest, index=False, encoding="utf-8")
+    print(f"[saved] {out_manifest}  shape={man.shape}")
     return man, empties
 
 
 def main():
     ap = argparse.ArgumentParser(description="改动② 完整窗集 -> for_tools 两表 + 全 30 工具输入 (不跑)")
     ap.add_argument("--out-dir", default=str(OUT_DIR), help="工具输入输出目录 (默认 scripts/out_rerun/)")
+    ap.add_argument("--table-b", default=str(SUBPEP_B), help="输入表 B (默认 newcut_subpep_hla.NEW.csv)")
+    ap.add_argument("--table-a", default=str(TABLE_A), help="输入表 A (取 dropped 窗)")
+    ap.add_argument("--mt-ft", default=str(OUT_MT_FT), help="输出 MT for_tools 表路径")
+    ap.add_argument("--wt-ft", default=str(OUT_WT_FT), help="输出 WT for_tools 表路径")
+    ap.add_argument("--dropped", default=str(OUT_DROPPED), help="输出 dropped 窗清单路径")
+    ap.add_argument("--manifest", default=str(OUT_MANIFEST), help="输出完整性 manifest 路径")
     args = ap.parse_args()
     out_dir = Path(args.out_dir).resolve()
+    table_b = Path(args.table_b)
+    table_a = Path(args.table_a)
+    mt_ft_path = Path(args.mt_ft)
+    wt_ft_path = Path(args.wt_ft)
+    dropped_path = Path(args.dropped)
+    manifest_path = Path(args.manifest)
 
-    for p in (SUBPEP_B, WT_FULL):
+    for p in (table_b, WT_FULL):
         if not p.exists():
             raise SystemExit(f"[ERR] 依赖缺失: {p}  (先跑 cut_from_protein.py + reconstruct_wt)")
 
     # 1. 产两张 for_tools 表 (合成 pair_pos 防坐标撞车)
-    mt_ft, wt_ft, _ = build_for_tools_tables()
+    mt_ft, wt_ft, _ = build_for_tools_tables(
+        subpep_b=table_b, out_mt_ft=mt_ft_path, out_wt_ft=wt_ft_path)
 
     # 2. 记 dropped 窗 (显式, 不静默丢)
-    n_dropped = record_dropped()
+    n_dropped = record_dropped(table_a=table_a, out_dropped=dropped_path)
 
     # 3. 调 prepare_inputs_official 导出全 30 工具输入到 out_rerun/
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"\n[info] === prepare_inputs_official 导出 -> {out_dir} ===")
-    backbone = pio.build_backbone(out_dir, mt_csv=OUT_MT_FT, wt_csv=OUT_WT_FT)
+    backbone = pio.build_backbone(out_dir, mt_csv=mt_ft_path, wt_csv=wt_ft_path)
     pio.assert_coverage(backbone, expected_peptides=None)  # 改动② 肽数动态, 软报
     pio.export_deepimmuno(backbone, out_dir)
     pio.export_predig(backbone, out_dir)
@@ -272,7 +286,8 @@ def main():
     pio.report_hla_warnings()
 
     # 4. 完整性 manifest + 断言无空 (命门: 每工具都拿到全部窗, 宁多勿漏)
-    man, empties = build_manifest(mt_ft, wt_ft, n_dropped)
+    man, empties = build_manifest(mt_ft, wt_ft, n_dropped,
+                                  out_dir=out_dir, out_manifest=manifest_path)
 
     print("\n========== 完整性汇总 ==========")
     cov = man[man["category"] == "coverage"]

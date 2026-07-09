@@ -1,10 +1,14 @@
 #!/bin/bash
-# 本地 WSL2 T-SCAPE 官方推理 —— WT 侧补跑（§3.1 DAI）。
+# 本地 WSL2 T-SCAPE 官方推理 —— MT 或 WT 侧（§3.1 DAI / 8-11 全量重跑）。
 # 用法: _run_tscape_wt_local.sh [<input_csv> [<output_csv>]]
-#   默认 input  = scripts/out_rerun/tscape_inputs/tscape_input_WT.csv （prep 产，列 Allele,peptide 带星）
-#   默认 output = scripts/out_rerun/tscape_inputs/tscape_output_WT.csv（列 Allele,peptide,score）
+#   MT 侧: bash _run_tscape_wt_local.sh <.../tscape_input.csv>    <.../tscape_output.csv>
+#   WT 侧: bash _run_tscape_wt_local.sh <.../tscape_input_WT.csv> <.../tscape_output_WT.csv>
+#   默认（不带参）= WT 侧: input=tscape_input_WT.csv  output=tscape_output_WT.csv
+#   ⚠️ GPU 单卡串行跑 —— MT、WT 不要并发（本机 RTX4070 8GB）。
+#      MODIFIED 临时文件由输入名派生（tscape_input_modified.csv / tscape_input_WT_modified.csv），
+#      故 MT/WT 各自独立，串行安全。
 #
-# ★ 复现零偏离：完全照 MT recipe（2026-06-30 本地补跑跑通版），只把肽源 MT→WT、换 WT outdir。
+# ★ 复现零偏离：完全照 MT recipe（2026-06-30 本地补跑跑通版），只换肽源/outdir。
 #   工具/权重(best_param/pmhc_im_neo)/超参/inf_type/device 一律不改。
 # 官方两步（README 权威，cwd=repo 根）:
 #   ① python mhc_pseudo_matching.py I  <input>          <input_modified>
@@ -14,7 +18,7 @@ set -u
 BASE=/mnt/d/YJ-Agent/project/meeting/QuantImmuBench/scripts/out_rerun/tscape_inputs
 IN="${1:-$BASE/tscape_input_WT.csv}"
 OUT="${2:-$BASE/tscape_output_WT.csv}"
-MODIFIED="$BASE/tscape_input_WT_modified.csv"
+MODIFIED="${IN%.csv}_modified.csv"   # 由输入名派生，MT/WT 各自独立，防临时文件相撞
 
 REPO=/root/quantimmu/tools_repos/T-SCAPE          # WSL2 官方仓库（inference_csv.py 已 device patch）
 PY=/root/miniconda3/envs/tscape/bin/python        # tscape conda env（pmhc_im_neo 权重 945M 就位）

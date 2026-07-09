@@ -4,6 +4,79 @@
 
 ---
 
+## Entry 60-8TO11-SLICE-LOCAL-B — 2026-07-08【改动②③ 8-11mer 全量重跑：slice_local_b 窗 7 工具 MT+WT 落 _8to11 全完成（抽核+覆盖全 PASS）】
+
+**背景**：Conductor 图 `quantimmu-rerun8to11` 节点 slice_local_b（本窗，win-localB 认领）。7 工具在各自已部署环境重跑 8/9/10/11 四窗长（复现零偏离），落 `scripts/out_rerun_official_8to11/<Tool>_official.csv`（17088 行对齐 backbone bb_idx）。发现上个 session 已把所有输入重生成到 8-11（build_rerun_inputs.py，backbone 17088 行），但**我这 7 工具全没在 8-11 上重跑**（现有输出都是旧 3684 行 9mer）→ 全部重跑。
+
+**7 工具全完成（各 17088 行；抽核 ≥2 真值 Bash 溯源 raw 精确一致）**：
+- **deepHLApan**（WSL docker biopharm/deephlapan:v1.1，MT+WT 各 15530 唯一对）：17088 行 MT/WT bind+immuno 双头 100%。抽核 bb0 MT(DPLSEITK/A66:01)=0.0102/WT(DPLSEITE)=0.1828 溯源一致。
+- **NeoaG**（本机 R4.3.3 GBM run_neoag_main.R，3475 对 8-11）：MT 17088/100%（WT 结构 NaN，MT-only）。抽核 bb0=13.16998 一致。**⚠️覆盖比 9mer(134) 高到 100%=新切 SNV-only 每窗 MT/WT 恰差 1 残基全是有效对，非 bug（9mer 低覆盖是旧管道 join artifact）**。修了 `run_neoag.py` subprocess gbk 编码 crash（Win 加 encoding=utf-8）+ 改用 run_neoag_main.R（非死壳 run_neoag.R）。
+- **TransHLA**（WSL transhla env RTX4070 GPU，ESM2-650M+HF cache，6950 唯一肽 HLA-agnostic）：MT/WT 各 100% 广播。抽核 bb0 MT=0.182062/WT=0.027977 一致。
+- **TSCAPE**（WSL tscape env device=cpu patch，MT/WT 各 15530）：MT/WT 100%/26 等位。抽核 bb0 MT=0.154458/bb1 MT=0.473259/bb0 WT=0.139236 一致。
+- **pTuneos**（WSL docker bm2lab/ptuneos sudo，15530 unique）：MT 17088/100%（WT 内化不产独立分，MT-only）。抽核 bb0=0.0/bb1549(RLRDDVMR/A31:01)=0.6 一致。**覆盖比 9mer(244) 高到 100% 同 NeoaG 理由（SNV-only 全有干净 WT 配对）**。
+- **Seq2Neo**（WSL seq2neo env+netMHCpan-4.1/netCTLpan-1.1 本地全有，MT/WT 各 15530，CPU）：MT/WT 100%/26 等位。抽核 bb0 MT=0.686079/WT=0.704925 一致。
+- **Repitope**（本机 R4.3.3 proven，6950 唯一肽 HLA-agnostic，ERT 5seed×5fold）：MT/WT 各 100% 广播。抽核 bb0 MT=0.36984/WT=0.31904 一致。最长的一根（feature+训练+predict 多阶段，~1h50m）。
+
+**代码改动（coder 交付，最小/向后兼容/复现零偏离）**：prep_seq2neo/prep_tscape 加 `--side {MT,WT}`（默认 MT）；parse_seq2neo 加 `--wt-results`、parse_tscape 加 `--wt-tscape-out/--wt-map`；新增 parse_transhla_official.py + parse_neoag_official.py（对齐 17088 bb_idx，肽/对级广播，仿 parse_repitope）；run_ptuneos_official.sh INPUT/WORKDIR env 可覆盖；_run_tscape_wt_local.sh MODIFIED 由输入名派生（MT/WT 不撞）；run_neoag.py subprocess 编码修。
+
+**覆盖矩阵核漏（build_coverage_matrix --scored-dir out_rerun_official_8to11）**：我的 7 工具 **unknown=0 全 clean**——Seq2Neo/TSCAPE/TransHLA/Repitope/deepHLApan 100%(34176 MT+WT)、pTuneos/NeoaG 50%(MT 17088 全，WT 结构性 N/A 非真漏)。全表唯一 8280 REAL_GAP 全属 **HLAthena**（W4 slice_hpc_env，B*27:06 无 ecdf，**非本 slice，通报主窗**）。
+
+**状态**：`pipeline.py done quantimmu-rerun8to11 slice_local_b ✓`。等 slice_local_a / slice_hpc_dtu / slice_hpc_env 三窗，全 done → 主窗收口 merge→coverage→pool→effN8→DAI。
+
+---
+
+## Entry 59-RANK-REPORT-HTML — 2026-07-08【老师要求：把两份排名 PPT 改写成可细查的自包含 HTML 复现级报告（图文并茂+LaTeX 公式+自创/引用全标注+数字零不一致）】
+
+**背景**：老师看两份 2026-07-08 排名 deck（9mer 新切 MT 排名 + 含 DAI 单工具评测）后反馈「PPT 没法细致检查，请写成 Markdown/HTML 报告，写清每一步操作/关键细节/关键结果/待讨论问题/可能计划」。涉正式投稿数据 → 每步处理、参数、工具对齐、自创 vs 引用、数字全须有据可复现零不一致零隐藏。用户三拍板：①自包含 HTML ②范围=连整个 QuantImmu 框架一起写 ③工具对齐=主表+逐工具附录。
+
+**做法（大编队扇出）**：3 Explore 摸底（PPT/流水线脚本 · 排名方法学/框架 · 数据/csv 数字）+ 2 general 扒工具对齐（29 工具主表 + 15 工具逐一部署卡）+ verifier 三方对账。主线读两份 PPT 生成器（`gen_ppt_rerun_9mer.js`/`gen_ppt_dai_deck.js`）+ 计算核心（`recompute_R1_effN.py`/`build_dai_pool.py`）取权威口径。
+
+**产物（`report/` 新建目录）**：
+- **`QuantImmuBench_单工具排名_复现级报告_2026-07-08.html`**（4.11MB，自包含，公式内联 MathJax tex-svg、3 图 base64、双主题、TOC、断网可读）。结构 §0 导读速览+三套肽口径警示 → §1 重做动机（effN bug 修正/去肽长混杂/可复现）→ §2 整个 QuantImmu 框架（三步/三重检验/CV 选择，含范围边界框）→ §3 数据 → §4 全流程（切肽改动②/29 工具对齐主表/max-pooling/6 步聚合公式）→ §5 结果（MT 完整 28 榜+哑铃+掉分归因三情景分解+DAI 完整 25 榜）→ §6 九条口径隐患 → §7 自创 vs 引用总表 → §8 待讨论 7 问 → §9 计划 → 附录 A（15 工具部署卡）/B（肽长混杂 Δ≈0.411ρ_XZ−0.081ρ_XY 一阶机制）/C（pooling4/fusion12 公式）/D（csv 真源）/E（参考文献）。徽章 25 自创/18 引用/8 混合。
+- `report/decompose_scenarios.csv`（掉分归因三情景 A0.191/B0.147/C0.113 复跑落盘，投稿级可复现，原只 print 未落盘）。
+- `report/build_report.py`（装配脚本：注 MathJax+base64 图）；`report/_report_body.html`（正文源，可再编辑重建）。
+
+**verifier 三方对账 = 全部一致 0 处 drift**：MT netMHCpan_BA 0.3722/均值 0.1127、DAI 均值 0.0071/PredIG 0.3435/恰 3-25 CI 排除 0/15-25 近零、掉分 −0.078=肽集−0.044(56%)+切法−0.034(44%)、102 肽 91/10/1、29 工具×4053、effN10 0.4549 rank1——报告显示值 ↔ csv 真源零偏差。两处「口径」（DAI 按 29 工具全集算 25+4；覆盖两粒度，「唯一缺口」已界定=未被声明覆盖规则解释的意外残缺）报告内部自洽非不一致。修 MHCseqNet 大小写统一。
+
+**遗留/待老师拍板（报告 §8）**：headline effN8 vs effN10、主分析肽集三套统一、DeepNetBim 退化救法、DAI 定位措辞、8-11mer 主/补、DTU 许可进度。
+
+**改版 v2（用户反馈重构，2026-07-08 晚）**：用户反馈「排版乱/公式没渲染/车轱辘话/别用『自创』字眼/新参数出现即说明/老师看不到本地文件/去人名隐私/去主观词如『诚实』/参数悬停出中文标签/官方引用全加超链接/把文件内容折叠扒进正文」。全部重做：
+- **公式换方案**：弃 MathJax（依赖脚本、老师端没编译出），改**纯 HTML/CSS 渲染**（分式/上下标/运算符），Playwright 实测费雪变换分式正常显示；顺带每个参数 `<span class=p data-t>` **鼠标悬停出中文标签**（33 处）。
+- **去隐私去主观**：删全部人名（袁/朱/余嘉=0）、邮箱、以人名命名的实验室；删主观/车轱辘词（诚实/苹果对苹果=0）；「自创」徽章改中性「本工作 / 文献 / 官方」。
+- **折叠 + 超链接**：老师看不到的细节（工具总表+15 部署卡/长度干扰推导/聚合菜单/术语表/文献/本地存档）全收进 8 个 `<details>` 折叠区；官方引用逐处加超链接（DOI/PMC/仓库）。
+- **嵌入「阅读助手」侧栏**：内置 20 条本报告知识库（锁定 2026-07-08 新版口径、KB 里显式「不与旧版混淆」）；**划词/划段即在右侧弹出解释**（Playwright 实测选中「有效样本」→ 正确弹出本地释义），输入框打字也走本地库；**可选在线追问**（Claude API，密钥仅存 localStorage 不进文件、含联网检索 web_search 工具、支持追问）。**用户拍板：老师端保持「离线解释即用」，不嵌密钥、不搭中转**（嵌密钥会暴露、搭中转需部署，均按用户选择放弃）。
+- 产物：`report/QuantImmuBench_单工具排名_复现级报告_2026-07-08.html`（2.10MB，重建后覆盖 v1）+ `report/_report_body.html`（正文源）+ `report/build_report.py`（改为只 base64 图不注 MathJax）。数字与 v1 一致（verifier 已核，值未变、仅排版/措辞/交互重做）。Playwright 实测：无横向溢出、8 公式块+8 折叠+助手面板正常、3 图渲染、console 仅 favicon 404 无实错。
+
+**改版 v3（用户再反馈重构，2026-07-08 深夜）**：用户反馈「细节砍太多背离全部细节初心/公式错位且悬停标签被图层挡住/徽章不如之前清晰好看/每次要出新文件别覆盖旧的/助手没匹配到就哑了/上网看别人写得好的/最重要是让老师能判断工作坚实避免AI出错」。派 researcher 上网调研（Datasheets/MLPerf/HF model card/Distill details-on-demand/BetterExplained 彩色公式/CRediT/CiteSee，吸收进设计）。全部重做为新文件 `report/_report_v3.html`→`QuantImmuBench_单工具排名报告_v3_2026-07-08.html`（旧版保留不覆盖）：
+- **细节全回来**：改为「摘要常驻 + 深度细节折叠可展开」（16 个 details）——effN bug 全过程、逐工具对齐总表+15 说明书卡、长度干扰推导、框架、方法菜单、术语、文献全在折叠里，正文仍简洁。
+- **公式修好**：分式对齐校正；悬停标签改用**贴 body 的浮动 div（永不被 overflow 裁切、z-index 99999）**，Playwright 实测折叠区内公式的 Δ 标签正常显示不被挡；每条公式下加「参数说明」legend（双保险）。
+- **可靠性专章**（新增，服务「让老师判断工作坚实」）：可靠性与复核表 + 三方核对折叠 + 每个结果配「✓证据」绿色折叠 + 可复现自查表（Yes/No+证据）+ ✎复现版标注。
+- **彩色徽章回归**：本工作(绿)/引用文献(蓝)/工具官方(紫)，38 处，带悬停释义。
+- **助手加全文兜底**：没命中现成词条时**自动在整篇报告（含折叠区）检索相关段落返回**（bigram 打分），Playwright 实测「留一患者交叉验证」等非词条问法能返回报告段落——解决「问不出来」。仍锁定新版不混淆旧版；在线追问可选（密钥仅存本机）。
+- 去主观词彻底（诚实/苹果对苹果=0）、无人名。Playwright 双宽度实测：停靠栏并排不遮正文（预留 346px）、窄屏收起、公式对齐、标签浮顶、徽章渲染、全文兜底、无横向溢出全 PASS。**用户要求：以后每次迭代出新文件不覆盖旧的。**
+
+**v3 增补（用户反馈「§8/§9 太薄、要覆盖整个项目路线图」，2026-07-08 深夜）**：用户指出报告一直在打磨已完成部分/数字核对，但没看 outline、没体现「只做完 9mer 单工具 baseline、后面 pooling/fusion/三重检验/多数据集一大片没做、还有很多探索过没拍板的方法」。派 3 agent 深读（①outline+GAP+ACCEPTANCE 全景 ②pooling/fusion/CV 探索已定/未定 ③文献查资料）。核心发现=**两代流水线**：第一代旧切 130 肽 R1-R9 全跑通（但 outline 两细粒度 headline 不复现，根因 n=9 功效不足非 bug），第二代新切只跑了 9mer 单工具+DAI，下游全待重跑。重写报告 §8/§9：
+- §8 从 7 条扩到 **16 条待拍板决策**（4 组：口径范围/方法选择/结论定位/合规）+ pooling/fusion/CV「已探索未定」专门折叠（sum 已弃/max 非最优/median vs geomean 张力/整合无净优势/DTU 命门/天花板 0.33-0.45）。
+- §9 从 5 条扩到：两代流水线现状框 + 第一代已验证发现折叠 + 7 阶段路线图表 + **文献依据的未决方法可选方案表**（AUPRC/top-K=TESLA/IMPROVE、pooling=Müller2023/pVACtools、fusion 大队列实证=Trost2007/IMPROVE、统计=BH-FDR/bootstrap、鼠数据=Yadav2014/Kreiter2015、外部=Müller harmonized、HLA-II future work），58 处外链。
+- 全程无人名（用「框架负责人/合作者」）、无内部黑话（SURV6/R1-R9 等术语化表述）、框架初稿声称值一律标「待核/无本地支撑」不当既定事实。折叠块加「点击展开/查看证据」标签（用户要求，Playwright 实测 16→19 details 全覆盖）。产物覆盖同 v3 文件（`QuantImmuBench_单工具排名报告_v3_2026-07-08.html`，2.12MB）。深度探索材料来自 `reference/{POOLING_STUDY,FUSION_CEILING,METHODOLOGY_REFOUNDATION_PROPOSAL,GAP_ROADMAP_vs_outline}.md` + `analysis/fusion_cv/` + `RESULTS_CLEAN_SUMMARY.md` + `给袁老师_方法学决策档`。
+
+**v3 §8/§9 收敛（用户反馈「给项目负责人讲、只留项目级大问题、去俗语/去已定/去细枝末节」）**：用户指出 §8/§9 写偏——不该讨论新旧切法(已定新切)、outline 已定的、肽长(已不用管)、主指标(已定唯一 Spearman)、各种细枝末节(effN/DeepNetBim/IEDB平局/突变级措辞)，且有「拍脑袋」等俗语。重写：§8 从 16 条砍到 **6 条项目负责人级大问题**（融合是否有净优势=框架第三步核心结论 / 两细粒度结论未复现是否重定 headline / 几何平均 vs 中位数 / 主分析聚合算子 / 小鼠数据跨物种定位 / 受限工具许可）；§9 去掉两代流水线框与 AUPRC(已定 Spearman)，精简为 5 阶段路线图表 + 3 行关键定位文献参照（融合大队列实证/难度参照/鼠数据源）。俗语清零(拍脑袋/命门/蹭长度/白跑/抛硬币/塌方=0)、无人名、专业用词。用 Python splice 精确替换 §8-§9 span。§5.2/§5.3 掉分拆解(旧切对照)属结果解释保留(老师原 PPT 即有)。Playwright 实测渲染 PASS。**用户随后要求去掉阅读助手功能**——删助手 CSS/面板 HTML/JS 与全文检索，保留悬停浮动标签 + 主题切换；正文恢复满宽(不再预留右栏)，Playwright 实测无面板/按钮、悬停标签仍工作、无溢出。成品 2.09MB。
+
+## Entry 58-8TO11-FLEET-SETUP — 2026-07-08【改动②③ 8-11mer 可变窗口全量重跑：地基+多窗Conductor编队铺开(主窗收口standby)】
+
+**背景**：昨天(Entry 57)改动②③新切口径只跑 9mer；用户要扩到 8/9/10/11 四窗长重跑受影响工具，出 8-11 单工具排名 + 与 9mer 对比。用户拍板 **WT 也跑**(8-11 也算 DAI)、**HPC/本地灵活选择可并行**、**必须按多窗 skill(Conductor) 做不手搓协调**。
+
+**主窗已完成地基(prep 棒 done)**：
+- **备份(命门堵点①)**：9mer frozen 表→`data/frozen/_9mer_newcut_backup_2026-07-08/`；9mer 输入→`scripts/_out_rerun_9mer_bak_2026-07-08/`；9mer 官方分数(29工具+backbone)→`scripts/out_rerun_official_9mer_2026-07-08/`。全只读别动。
+- **切 8-11 肽**：`cut_from_protein.py --window 8-11` → 表A 3876窗=102肽×(8+9+10+11) 精确对；成窗3855(SLP3035+MANE820)，dropped21(END_TRUNCATED18+ISOFORM_CONFLICT3,显式记`newcut_dropped_windows.NEW.csv`)。表B 34176行(MT/WT各17088)。`build_rerun_inputs.py`产全8-11输入→`scripts/out_rerun/`(backbone17088行含Window_Size)。
+- **复用前提已证**：8-11里的9mer子集与独立9mer逐key完全一致(MT+WT 0差异,Bash核)→9mer分可直接复用/交叉核。
+- **增量机器(coder参数化,向后兼容默认不变)**：`build_rerun_inputs.py`加`--table-b/--table-a/--mt-ft/--wt-ft/--dropped/--manifest`；`diff_scored_universe.py`加`--scored/--subpep-b/--out-suffix`。产only-new输入(window∈{8,10,11},13035行)→`scripts/out_rerun_8to11/`供HPC省时可选。
+- **收口脚本预检全过**：merge_official_30(`--in-dir/--out/--pure-new/--strict-roster`)、build_coverage_matrix(`--scored-dir`,8-11 backbone烟测unknown=0)、p0e2_pool_clean(`--input/--w811/--expect-peptides/--output`,w811专为8-11多长度设计)、recompute_R1_effN(`--input/--tag`)。
+
+**多窗编队(Conductor图`quantimmu-rerun8to11`,8/17)**：prep✓→4 slice并行就绪(slice_local_a 8工具/slice_local_b 7工具/slice_hpc_dtu 6工具/slice_hpc_env 8工具=29工具,NeoaPred已剔)→merge🛑→coverage→pool→dai→recheck。作战令单一真源=`RERUN_8TO11_FLEET_PLAN.md`。**打分策略**：各工具读默认backbone `out_rerun/master_backbone_official.csv`(17088全8-11)→跑MT+WT→落`scripts/out_rerun_official_8to11/<Tool>_official.csv`(17088对齐bb_idx)。长度受限:DeepNetBim只9mer/DeepImmuno只9-10(覆盖脚本LEN_SUPPORT自动标len_filter非真漏)。铁律:不能漏跑多跑没关系事后必核+复现零偏离。
+
+**状态(收工时快照 2026-07-08 夜)**：**编队 3/4 slice done**——slice_local_a(8工具)/slice_local_b(7工具)/slice_hpc_env(8工具)✓；**slice_hpc_dtu 还在跑**(6工具落5,缺 **andy90**,依赖netMHCpan的HPC慢活)。落盘 **28/29 工具**(NeoaPred已剔)。**质量核(Bash核真源)全对**：行数全17088=真8-11非误拷9mer；全长工具MT非空17088满覆盖；**DeepNetBim非空4053(只9mer)/DeepImmuno非空8547=9mer4053+10mer4494(只9-10)/NetTepi5316(仅6/26等位)**——长度受限NaN模式精确符预期,编队没漏没错拷。**剩:等andy90落盘+slice_hpc_dtu标done→merge硬闸解锁→主窗一条龙收口**(merge --strict-roster→覆盖核漏→pool --w811→effN8→DAI→9mer vs 8-11对比图→verifier三方对账→落总entry)。收口脚本参数已全预检通过。续窗:`python tools/pipeline.py status quantimmu-rerun8to11` 看进度,andy90齐即收口。
+
 ## Entry 57-RERUN-VERIFY+9MER-RANK-PPT — 2026-07-08【昨天改动②③重跑 29 工具独立核验(数据层全 PASS) + 复刻上一版口径出 9mer 新切单工具排名(可提交脚本替换不可溯源榜) + 可比性核验 + deepHLApan 头 provenance 坐实 + 新 PPT 5 页】
 
 **背景**：用户要①严谨核验昨天(2026-07-07/08)改动②③「原始蛋白定点切含突变窗 + WT + raw 不矫正」全量重跑 29 工具(NeoaPred 已剔,30→29)是否完整/无漏跑/无陈旧数据复用/数字对；②用昨天的 9mer 新切数复刻上一版对比 PPT 的单工具 max-pooling **病人等权 Spearman** 排序；③新建一个 PPT。全程数字 Bash 核 csv,不信 md/Read。
@@ -3643,3 +3716,57 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 **⚠️ pipeline 被别窗重构**(slice_immbox→slice_local_a/b+hpc_dtu/env按环境分组),我6工具现属 slice_local_b(Repitope/pTuneos/deepHLApan)+slice_hpc_env(PredIG/IMPROVE/NeoTImmuML)但混着别工具,故未`done`节点——**这6工具产物已在out_rerun_official/,接手窗跳过勿重跑**。
 **产物**：`out_rerun_official/{6工具}_official.csv` + `_scratch/{resume_repitope_score.R(TrainModels+Predict修正版),install_repitope*.sh,patch_install_repitope.sh,dl_*.sh}` + Repitope_src的DESCRIPTION/NAMESPACE已打补丁(有.orig备份)。
 **遗留**：cpudebug job 1513495(8h超1h限,PENDING跑不了,可`! scancel 1513495`清)。
+
+## Entry 2026-07-08c · slice_hpc_env 8工具 8-11mer 全量重跑（进行中·checkpoint）
+**触发**：quantimmu-rerun8to11 DAG 节点 slice_hpc_env（win-hpcENV 认领）。8 工具=ImmuneApp/PRIME/PredIG/IMPROVE/MHCflurry/MHCseqNet/HLAthena（HPC）+ NeoTImmuML（本机 R4.3.3）。目标=各工具 MT+WT 落 `scripts/out_rerun_official_8to11/<Tool>_official.csv`（17088 行对齐 bb_idx）。
+**隔离决策**：HPC `rerun/` 仍是 9mer 旧输入（predig 8107/improve 4054），按 brief 上传 8-11 到独立 `$BASE/rerun8to11/`（不覆盖 9mer、不撞别窗）。coder 克隆 4 个 rerun8to11 run 脚本（路径 rerun→rerun8to11，零行为改动）。
+**已完成**：
+- ✅ 上传：本地 out_rerun/ 打 5.3M tarball 传 HPC rerun8to11/ 解压，核行数 predig 34177/improve 17089/uniq 31061/immuneapp+prime 各26dirs/mhcflurry+mhcseqnet 31061 全对。9 脚本传 rerun8to11/hpc_official/（bash -n 全过）。
+- ✅ **NeoTImmuML done+核**：复用 9mer models_official（不重训防漂移）→抽 8-11 肽 6950→R 78特征(需 PYTHON env 修 findpython)→predict 6949→parse `out_rerun_official_8to11/NeoTImmuML_official.csv`(17088行,MT 17083/WT 17088,1肽AAALGFAFY R掉分同9mer documented)。**复现核验：42 个9mer肽逐点 diff=0.00e+00**。
+**执行**：7 HPC 工具登录节点(DTN 48核)后台并行(cpudebug MaxSubmit=1且被别窗repit_sc占→走登录节点,前例andy90/netMHCstabpan同法)。IMPROVE=档II STAB=1 FOREIGN=1(复现9mer真Foreignness)。
+**8/8 全交付 `scripts/out_rerun_official_8to11/`(17088行对齐bb_idx)**：
+- **7工具满覆盖**：ImmuneApp/PRIME/PredIG/MHCflurry/MHCSeqNet MT+WT 100%(34176格) ｜ IMPROVE MT 100%(无WT列by design) ｜ NeoTImmuML MT+WT 100%。
+- **HLAthena 76.8%**(13119 MT/WT)=此部署天花板,见下限制。
+**✅ 复现零偏离核验(回归 vs out_rerun_official_9mer 共享肽×HLA,MT+WT)**：PRIME/PredIG/IMPROVE/NeoTImmuML/HLAthena **bit-identical(diff=0/1e-8)** ｜ MHCflurry/MHCSeqNet float epsilon(reldiff≤1.4e-6) ｜ ImmuneApp NN浮点抖动(107MT+80WT/3684格 abs≤6e-6,近零分线程噪声非设置偏离,不影响秩相关)。每工具核3684+值远超抽核≥2 DoD。
+**🐛 修复latent bug(NeoTImmuML)**：9mer"AAALGFAFY drop"之谜=`calc_78_features.R` 的 `read.csv` 默认 header=TRUE 把**首行肽当表头吃掉**(8-11首行AAALGFAF被丢)。加 `Peptide` 表头行修复→6950肽全保留→**MT 100%(unknown清零)**。9mer版有同bug(掉AAALGFAFY),已通知主窗可回溯修。
+**⚠️ HLAthena 部署限制(root-caused,非默认降级)**：8/10/11mer部分(等位,长度)组合崩,`r-out.log` 真错=`OSError final_model_cv0_weights.h5 No such file`——**HLAthena神经pan-pan模型权重.h5在hla_arr+sif内全缺失(find证0个)**。9mer全靠ecdf路径(仅2.7%缺=B*27:06无ecdf,同9mer版);非9mer需缺失的神经模型→崩。穷尽恢复:resume补7瞬时chunk+size-20/size-1细分证实6248缺失肽全需缺失模型+fetch_models=true失败(exit126)。缺口按长度:8mer44%/10mer12%/11mer36%/9mer2.7%缺。**documented"工具不支持"非"真漏",coverage矩阵会标unknown=8280(主窗收口需知:HLAthena presentation proxy此部署仅9mer+allele-specific可覆盖,补全需外部下载神经模型权重)**。
+**卡槽**：hpc a22de51d + local d86ed901(均0卡)已释放。产物 `scripts/hpc_official/rerun8to11/{run_immuneapp/prime/predig/hlathena_8to11.sh + RUN_NOTES_8TO11.md + recover_hlathena.sh}` + HPC `$BASE/rerun8to11/`(输入+各工具raw/out)。
+
+## Entry 2026-07-08d · slice_hpc_dtu 6工具 8-11mer 全量重跑（进行中·checkpoint）
+**触发**：quantimmu-rerun8to11 DAG 节点 slice_hpc_dtu（win-hpcDTU 认领）。6 工具=netMHCpan_BA/netMHCpan_EL/netMHCstabpan/NetTepi/ICERFIRE/andy90（全 HPC DTU 二进制+andy90 R）。目标=各工具落 `scripts/out_rerun_official_8to11/<Tool>_official.csv`（17088 行对齐 bb_idx）。
+**输入重建**：backbone 已是 8-11（17088，07-08 16:56 主窗重建）但 DTU 输入还是 9mer 遗留(07-07)→ 跑 `prep_dtu_netmhcpan_official.py`/`prep_icerfire_official.py` 读 8-11 backbone 产独立 `_8to11` 输入目录(不覆盖9mer节点)：dtu pep_index 34176行/26 pep(混长)、icerfire 15492行(全SNV)、andy90 用主窗已产 newtools/uniq_pep_hla.csv(31060,与backbone双向子集核过)。
+**混长实测(命门,复现零偏离)**：连 HPC smoke 各工具对 8/9/10/11mer 行为——**netMHCpan-4.1 `-p` 不传`-l` 自动全长度✅；netMHCstabpan `-p` 只吃等长(混长报错"lenght must be equal")→必须按长度拆,每(等位×L)单跑`-l L`；NetTepi `-l 8,9,10,11` 内部自拆全4长度✅；ICERFIRE 混长正常✅**。
+**⚠️ CRLF 踩坑(已修,记教训)**：prep 在 Windows 产的 pep/allele_map/icerfire_input 是 CRLF；上传只对 run 脚本去了`\r`没去输入→(1)NetTepi 严格`grep -qx`匹配 allele 失败全跳过 ok=0 skip=26;(2)stab 的`awk length($1)==L`因肽带`\r`长度+1错位 L8=0/26。BA/EL 唯一没事(netMHCpan 自动strip `\r`)。修=dos2unix 全输入+杀首轮批次+干净重跑 stab+NetTepi+ICERFIRE(保留好的BA)。**教训=上传后必 dos2unix 全部输入(不止脚本)，见 feedback_hpc_submit_checklist**。
+**已完成/在跑**：BA/EL ✅26/26(8-11长度核过)；stab ✅104xls(26×4,拆长)；NetTepi ✅ok=6 skip=20(命中A01/A02/A03/B07/B27:05/B40,输出8-11全)；ICERFIRE 登录节点跑干净15492输入(进行中)；andy90 登录节点后台(cpudebug被别窗repit占,同env窗前例走登录节点)。
+**待做**：ICERFIRE+andy90 完→download+merge stab _L→<safe>_stab.xls+rename ba→parse 5+andy90→out_rerun_official_8to11→抽核≥2值→coverage 无unknown→pipeline done→回报主窗。
+**卡槽**：hpc slot aaa7a912(0卡)。产物 `scripts/out_rerun/{_hpc_run_8to11.sh,_hpc_run_8to11_fix.sh,dtu_netmhcpan_inputs_8to11/,icerfire_inputs_8to11/}` + `_scratch_hpc_*.py`。
+
+**【更新 19:30】核心 5 工具全交付+核验 PASS**（andy90 并行跑中）：
+- parse 落 `out_rerun_official_8to11/`，全 17088 行对齐 bb_idx：**netMHCpan_BA/EL MT+WT 100%(26等位)、netMHCstabpan MT+WT 100%(拆长合并成功)、NetTepi MT+WT 31.1%(5316,命中6等位)、ICERFIRE MT 90.7%(15492,hit=15492 miss=0)**。
+- **DoD 抽核≥2值全 PASS**（vs HPC 原始 xls/txt/csv 逐点）：BA bb5=0.0033/bb100=0.0261、EL bb5=0/bb100=0.0001、stab bb5=0.0002/bb100=0.0736、NetTepi bb288=0.012/bb291=-0.008、ICERFIRE bb1=0.184727。**ICERFIRE HLA 特异性核验 PASS**(bb1 B4001=bb2 B5701=0.1847 真同值[弱结合]，bb3 C0602=0.1757 异→按HLA正确映射非广播)。
+- **无真漏核验 PASS**：BA/EL/stab 100% 无缺；NetTepi 6支持等位 5316/5316 全填+非支持误填0；ICERFIRE 支持HLA 15492/15492 全填+unsupported误填0(1596=HLA白名单外 documented)。
+- **andy90**：首轮顺序跑单HLA就46min CPU(8-11肽数4x+amplitude超线性)→ 顺序26个要~20hr不可行；A03:01完成后改 **xargs-P4 并行重跑剩25 HLA**(skip-guard续跑，19:26起)。待完→parse(patch_add_andy90路径)→凑齐6工具→pipeline done→回报主窗。
+- 待做(andy90完): build_coverage_matrix 全6工具核 + pipeline.py done slice_hpc_dtu + 回报主窗收口装配。
+
+**【完成 23:40】slice_hpc_dtu 6/6 工具全交付 ✅ done**：
+- andy90 xargs-P4 并行 26/26 完成(merge 首轮因我 python 路径少写 quantimmu外层→用正确 `/gpfs/work/bio/jiayu2403/.conda/envs/my_torch_env/bin/python` 重跑 merge=142952行,唯一(HLA,肽)31060=uniq_pep_hla全覆盖)→按 bb_idx 建 `Andy90_official.csv` 17088行 MT+WT 100%(amplitude越高越免疫原不翻向)。抽核 bb5=1.317647/bb100=2.266667/bb1=3.06087 全 MATCH raw。
+- **6 工具全落 `out_rerun_official_8to11/`(各17088行对齐bb_idx)**：netMHCpan_BA/EL MT+WT 100%、netMHCstabpan MT+WT 100%、Andy90 MT+WT 100%、NetTepi 31.1%(6等位)、ICERFIRE MT 90.7%(MT-only)。
+- **build_coverage_matrix 全6工具 unknown=0**(NetTepi/ICERFIRE 缺口全 documented=hla_unsupported/MT-only,无真漏)。⚠️注:矩阵总 🔴unknown=7026 全来自 **HLAthena(sibling 窗 slice_hpc_env 的工具,非我 slice)**,主窗收口时提醒该窗补。
+- `python tools/pipeline.py done quantimmu-rerun8to11 slice_hpc_dtu` ✓ 解锁 merge 拍板点。卡槽 aaa7a912 released。
+- **回报主窗**：slice_hpc_dtu 6 工具 8-11mer 全量重跑完成,MT+WT 齐,抽核 PASS,我的工具 coverage 无 unknown。收口 merge 时 --strict-roster 应能纳入这 6 个;HLAthena 的 7026 unknown 需 slice_hpc_env 窗补。
+
+### Entry 2026-07-08 20:24 · slice_local_a 8 工具 8-11mer 全量重跑 ✅ 8/8 完成
+**触发**: 窗1(slice_local_a)认领改动②③ 8-11mer 可变窗全量重跑，8 工具 MT+WT 双侧，落 `scripts/out_rerun_official_8to11/`(17088 行对齐 bb_idx)。喂料=主窗备好的 `scripts/out_rerun/newtools/uniq_pep_hla.csv`(31060 unique(pep,HLA); 8:6556/9:7368/10:8168/11:8968)。
+**机制**: 各工具 prep_input(读新切 uniq)→ raw 推理(其已部署 env)→ `build_official_from_raw.py --backbone out_rerun --outdir _8to11 --key hla`(HLA-aware join, MT/WT 广播, 缺→诚实NaN)。铁律=各工具默认 uniq 路径指旧 `scripts/out/newtools/`，**必须传新切 `scripts/out_rerun/newtools/`**。
+**8/8 全通(Bash 核 csv，各 17088 行，抽核≥2(肽,等位)溯源 raw 一致)**:
+- **IEDB_Calis**(本地py 自包含): 17088 MT+WT 100%; MT≠WT 10176 行(证 WT 独立打分非复制)。
+- **CNNeo**(base py3.11/sklearn1.8, FCNN_TF): 100%; raw 31060。
+- **BigMHC_IM**(conda qib_bigmhc CPU torch): 100%; predict.py -m=im。
+- **ImmuGenX**(conda qib_immugenx): 100%; **踩坑=官方 cli `ModuleNotFoundError: immugenx_runner`**(env 的 editable 装丢+PEP660 finder 子包映射失效)→ 修=`PYTHONPATH=runner_repo` 经 `env=os.environ.copy()` 传给 cli subprocess(零代码改动，复现零偏离)。
+- **MHCnuggets**(WSL2 mhcnuggets TF2.10, 呈递): 100%; ic50 越低越强 → **--flip 取负**(MT_MHCnuggets 为负值)。9mer 曾走 HPC(权重名含冒号 Windows 存不了)，本轮 WSL 跑通。
+- **DeepImmuno**(WSL deepimmuno TF2.3, **9/10 only**): 9mer4053+10mer4494=8547 MT/WT，8/11=NaN。复用现成 9mer raw + 补跑全 9/10(15535)；RDPLSEITK×A*6601=0.7514252 与旧 raw 完全一致(复现零偏离佐证)。
+- **DeepNetBim**(WSL qib_tf1 TF1.15, **9mer only**): 9mer 4053 有值，8/10/11=NaN。**复用现成 9mer raw**(plan §0 已证 8-11 的 9mer 子集与独立 9mer 逐 key 一致，0 缺失)；额外跑 fresh predict.py 2 肽金标(PLSEITKQE×B57:01=0.4748216/RTSPVPPGA×B40:01=0.5672087)与复用 raw 完全一致，坐实复用零偏离。
+- **MUNIS**(WSL munis ESM-2 CPU, 呈递): 100%; **踩坑=孤儿进程超订**——首轮被 tracked-bg 上限杀(~17min)后 predict.py 的 4 个 DataLoader worker(硬编 num_workers=4)orphan 到 init 仍占 CPU + 与新实例撞车 → loadavg 55、75s/it(正常 5s/it)；且 kill 撞 9p D 态难杀。修=清全孤儿+`OMP_NUM_THREADS=8` 限线程(纯运行时性能设置数值不变)+`setsid` 独立进程组重启。与别窗 seq2neo 竞争时 18s/it，seq2neo 一结束加速到 5s/it，全程 ~1h45min。
+**覆盖核漏(build_coverage_matrix --scored-dir _8to11)**: 我 8 工具全 documented——6 工具 100%(34176/34176)，DeepImmuno 50.02%(8/11=len_filter)、DeepNetBim 23.72%(8/10/11=len_filter)；**零 🔴unknown**(那 8280 unknown 全归 HLAthena=别窗 slice_hpc_env)。
+**长度受限处理(plan 许可复用 9mer 分)**: DeepNetBim 只 9mer/DeepImmuno 只 9/10，不支持长度=诚实 NaN，非真漏。
+**产物**: `scripts/out_rerun_official_8to11/{IEDB_Calis,CNNeo,BigMHC,ImmugenX,MHCnuggets,DeepImmuno,DeepNetBim,MUNIS}_official.csv`(8×17088) + 各工具 `HPC/deploy/<tool>/rerun/` 8-11 输入·raw + `_scratch/{verify_slice_local_a_8to11.py,munis_8to11.*}` + WSL `/root/quantimmu/di_8to11/`(DeepImmuno result)。`pipeline.py done slice_local_a ✓`。

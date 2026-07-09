@@ -41,8 +41,11 @@ set -u
 # ---------------------------------------------------------------------------
 REPO="${REPO:-/mnt/d/YJ-Agent/project/meeting/QuantImmuBench}"
 WRAPPER="${REPO}/scripts/ptuneos/ptuneos_pre_recneo.py"   # 容器内 Py2.7 wrapper
-INPUT="${REPO}/scripts/out_official/ptuneos/ptuneos_input_unique.tsv"
-WORKDIR="${REPO}/scripts/out_official/ptuneos/work_official"  # 挂为容器 /work
+# INPUT/WORKDIR 可 env 覆盖（8-11 全量重跑指向 out_rerun；默认保持 out_official 向后兼容）。
+# 用法: sudo INPUT=/mnt/d/.../scripts/out_rerun/ptuneos/ptuneos_input_unique.tsv \
+#            WORKDIR=/mnt/d/.../scripts/out_rerun/ptuneos/work_official bash run_ptuneos_official.sh
+INPUT="${INPUT:-${REPO}/scripts/out_official/ptuneos/ptuneos_input_unique.tsv}"
+WORKDIR="${WORKDIR:-${REPO}/scripts/out_official/ptuneos/work_official}"  # 挂为容器 /work
 OUT_TSV_NAME="ptuneos_official_output.tsv"
 
 # blastdb 父目录（含 peptide.{phr,pin,psq}），挂为容器 /blastdb（见 phaseB 复盘）

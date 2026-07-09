@@ -98,7 +98,8 @@ def main() -> None:
         cmd += ["--model", args.model]
 
     print(f"[run_neoag] >>> {' '.join(cmd)}")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")  # Win: 防 R 输出非 gbk 字符崩溃
     if proc.stdout:
         sys.stdout.write(proc.stdout)
     if proc.stderr:

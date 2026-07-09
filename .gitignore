@@ -198,3 +198,12 @@ nul
 # WardAgentBench 路 W' kill-shot 派生物（可从公开数据 + build_inputs.py 确定性重生，不进 git）
 project/meeting/WardAgentBench/src/killshot_w/inputs/
 project/meeting/WardAgentBench/src/killshot_w/results/raw_calls.jsonl
+
+# Playwright 验证截图 + 输出目录（session 残渣）
+/preview_*.png
+/v3_*.png
+/fx_test.png
+/.playwright-mcp/
+# QuantImmuBench 复现级报告：成品 HTML 为 2MB base64 大文件，可由 _report_v3.html + build_report.py + figures 确定性重生，不进 git（源文件进 git）
+project/meeting/QuantImmuBench/report/QuantImmuBench_*.html
+project/meeting/QuantImmuBench/report/_s89_new.html

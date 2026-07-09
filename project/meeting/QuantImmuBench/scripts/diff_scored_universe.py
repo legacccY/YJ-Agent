@@ -35,6 +35,7 @@ diff_scored_universe.py
 """
 
 import sys
+import argparse
 from pathlib import Path
 
 import pandas as pd
@@ -107,18 +108,39 @@ def diff_side(b_side, scored, subpep_col, tools, side_name):
     return out, miss
 
 
+def _with_suffix(path, suf):
+    """在 .NEW.csv 前插后缀: rerun_needed.NEW.csv + '.8to11' -> rerun_needed.8to11.NEW.csv"""
+    if not suf:
+        return path
+    return path.with_name(path.name.replace(".NEW.csv", f"{suf}.NEW.csv"))
+
+
 def main():
-    for p in (SUBPEP_B, SCORED):
+    ap = argparse.ArgumentParser(description="切肽窗 vs 已打分 universe 差集 (只做差集, 不产分数)")
+    ap.add_argument("--scored", default=str(SCORED),
+                    help="已打分 universe csv (默认 out/merged_all_tools_30_official.csv)")
+    ap.add_argument("--subpep-b", default=str(SUBPEP_B),
+                    help="表 B (默认 newcut_subpep_hla.NEW.csv)")
+    ap.add_argument("--out-suffix", default="",
+                    help="输出文件名在 .NEW.csv 前插的后缀 (如 .8to11); 默认空=原名")
+    args = ap.parse_args()
+    subpep_b = Path(args.subpep_b)
+    scored_path = Path(args.scored)
+    out_rerun = _with_suffix(OUT_RERUN, args.out_suffix)
+    out_summary = _with_suffix(OUT_SUMMARY, args.out_suffix)
+    out_toolgap = _with_suffix(OUT_TOOLGAP, args.out_suffix)
+
+    for p in (subpep_b, scored_path):
         if not p.exists():
             raise SystemExit(f"[ERR] 依赖缺失: {p}  (表 B 需先跑 cut_from_protein.py)")
 
     # 表 B: 只需键 + side/source; 全按 str 读保 join 键稳定
-    b = pd.read_csv(SUBPEP_B, dtype=str)
+    b = pd.read_csv(subpep_b, dtype=str)
     for c in ("Peptide_ID", "subpep_seq", "hla_allele_std"):
         b[c] = b[c].astype(str).str.strip()
     print(f"[info] 表 B 行数: {len(b)}  (side: {b['side'].value_counts().to_dict()})")
 
-    scored = pd.read_csv(SCORED)
+    scored = pd.read_csv(scored_path)
     for c in ("Peptide_ID", "MT_Subpeptide", "WT_Subpeptide", "HLA_Allele"):
         scored[c] = scored[c].astype(str).str.strip()
     mt_tools = tool_cols(scored.columns, "MT_", META_MT)
@@ -141,8 +163,8 @@ def main():
                   "matched", "n_tools_total", "n_tools_missing", "missing_tools"]
     rerun_cols = [c for c in rerun_cols if c in rerun.columns]
     FROZEN_DIR.mkdir(parents=True, exist_ok=True)
-    rerun[rerun_cols].to_csv(OUT_RERUN, index=False, encoding="utf-8")
-    print(f"\n[saved] {OUT_RERUN}  shape={rerun[rerun_cols].shape}")
+    rerun[rerun_cols].to_csv(out_rerun, index=False, encoding="utf-8")
+    print(f"\n[saved] {out_rerun}  shape={rerun[rerun_cols].shape}")
 
     # ── 输出 2: side×source 统计 ──────────────────────────────────────────
     summ_rows = []
@@ -159,8 +181,8 @@ def main():
             "n_fully_reusable": n_full, "n_partial": n_partial, "n_needs_rerun": n_rerun,
         })
     summ = pd.DataFrame(summ_rows).sort_values(["side", "source"]).reset_index(drop=True)
-    summ.to_csv(OUT_SUMMARY, index=False, encoding="utf-8")
-    print(f"[saved] {OUT_SUMMARY}  shape={summ.shape}")
+    summ.to_csv(out_summary, index=False, encoding="utf-8")
+    print(f"[saved] {out_summary}  shape={summ.shape}")
 
     # ── 输出 3: 按 (side,工具) 缺口计数 (WT 各工具填充率不同, 是 WT 重跑主缺口) ──
     gap_rows = []
@@ -175,8 +197,8 @@ def main():
                 "frac_missing": round(n_miss / n_side, 4) if n_side else 0.0,
             })
     gap = pd.DataFrame(gap_rows).sort_values(["side", "n_missing"], ascending=[True, False]).reset_index(drop=True)
-    gap.to_csv(OUT_TOOLGAP, index=False, encoding="utf-8")
-    print(f"[saved] {OUT_TOOLGAP}  shape={gap.shape}")
+    gap.to_csv(out_toolgap, index=False, encoding="utf-8")
+    print(f"[saved] {out_toolgap}  shape={gap.shape}")
 
     # ── print 汇总 ───────────────────────────────────────────────────────
     print("\n========== 汇总 ==========")

@@ -1,0 +1,11 @@
+{
+  "status": "done",
+  "config": "smoke",
+  "label_mode": "binary_all",
+  "seed": 0,
+  "epoch": 30,
+  "avg_loss": 0.9991259574890137,
+  "dice": 0.03411060571670532,
+  "max_steps": 30,
+  "updated": "2026-07-08T17:09:54"
+}

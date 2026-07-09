@@ -1,0 +1,25 @@
+# decompose_scenarios.csv — §5.3 掉分归因三情景分解（0.191→0.113）
+# 生成：python _scratch/decompose.py（2026-07-08 复跑确认，值逐字采用其 stdout）
+# 口径：effN>=8 门槛 + clip±0.99 + Fisher-Z 病人等权聚合（与 recompute_R1_effN.py 完全一致）
+# A 旧SLP-130肽 / B 旧SLP-仅102SNV(只砍28 indel,切法不变) / C 新切-102SNV(只换切法,肽集不变)
+# 均值口径=28 有效工具（DeepNetBim/NeoaPred 退化或剔除不入）
+scenario,peptide_set,cut_method,n_peptides,n_tools,mean_rho_bar,delta_vs_prev,note
+A_oldSLP_130,130 官方肽(含indel),SLP 疫苗肽切,130,28,0.1909,,基线
+B_oldSLP_102SNV,102 SNV肽,SLP 疫苗肽切,102,28,0.1471,-0.0439,A→B 只砍28 indel肽(肽集效应,56%)
+C_newcut_102SNV,102 SNV肽,原始蛋白定点切固定9窗,102,28,0.1127,-0.0344,B→C 只换切法(去肽长混杂,44%)
+# 加性分解：总掉 -0.0782 = 肽集效应 -0.0439(56%) + 切法效应 -0.0344(44%)
+#
+# 逐工具三情景 rho_bar（旧130 / 旧102SNV / 新102），示头部8工具（反直觉：netMHCpan_BA/deepHLApan 反升）
+# tool,rho_old130,rho_old102SNV,rho_new102
+# netMHCpan_BA,0.392,0.454,0.372
+# MHCnuggets,0.447,0.408,0.319
+# netMHCstabpan,0.234,0.134,-0.033
+# NetTepi,0.293,0.161,0.093
+# IMPROVE,0.285,0.266,0.146
+# PRIME,0.294,0.199,0.181
+# MHCflurry,0.308,0.247,0.214
+# deepHLApan,0.052,0.097,0.174
+#
+# 病人集（netMHCpan_BA effN>=8 通过）：
+# 旧130 = 9 患者 [101,102,104,105,106,107,108,109,110]
+# 旧102SNV / 新102 = 8 患者 [101,104,105,106,107,108,109,110]（P102 因 SNV 仅6肽<8 剔）

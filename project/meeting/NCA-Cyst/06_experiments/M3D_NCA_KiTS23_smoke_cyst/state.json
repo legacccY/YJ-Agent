@@ -1,0 +1,11 @@
+{
+  "status": "done",
+  "config": "smoke",
+  "label_mode": "cyst",
+  "seed": 0,
+  "epoch": 12,
+  "avg_loss": 1.0638286471366882,
+  "dice": 0.017059385776519775,
+  "max_steps": 12,
+  "updated": "2026-07-08T17:11:53"
+}

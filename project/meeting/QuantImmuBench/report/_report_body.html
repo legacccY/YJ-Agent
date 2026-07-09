@@ -1,0 +1,887 @@
+<meta charset="utf-8">
+<title>单工具免疫原性预测排名 · 方法与结果报告</title>
+<style>
+:root{
+  --blue:#0b6ea8; --blue2:#0072B2; --orange:#c77f00; --green:#0a8f68; --red:#b23a48;
+  --ink:#1b2b31; --muted:#5f767d; --line:#e0e8ea; --card:#ffffff; --bg:#f6f9f9;
+  --dark:#123039; --code:#eef3f4; --foldbg:#f0f6f6; --tiph:#123039;
+  --workbg:#e9f6f1; --litbg:#eaf2fb;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --blue:#4bb3e6; --blue2:#4bb3e6; --orange:#e0a54a; --green:#3fc79a; --red:#e77;
+    --ink:#e7eef0; --muted:#9bb0b7; --line:#284249; --card:#12252b; --bg:#0c181c;
+    --code:#17303a; --foldbg:#132a31; --tiph:#03121a; --workbg:#123027; --litbg:#122a38;
+  }
+}
+:root[data-theme="dark"]{
+  --blue:#4bb3e6; --blue2:#4bb3e6; --orange:#e0a54a; --green:#3fc79a; --red:#e77;
+  --ink:#e7eef0; --muted:#9bb0b7; --line:#284249; --card:#12252b; --bg:#0c181c;
+  --code:#17303a; --foldbg:#132a31; --tiph:#03121a; --workbg:#123027; --litbg:#122a38;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Source Han Sans SC","Noto Sans CJK SC",-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  line-height:1.85;font-size:16px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.wrap{display:flex;max-width:1560px;margin:0 auto;gap:30px;padding:0 22px;transition:margin-right .22s ease}
+nav.toc{position:sticky;top:0;align-self:flex-start;width:250px;max-height:100vh;overflow-y:auto;
+  padding:26px 6px 40px 0;font-size:13.5px;flex:0 0 250px}
+nav.toc .brand{font-weight:700;color:var(--blue);font-size:14px;margin:4px 0 16px;line-height:1.5}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:4px 12px;border-left:2px solid transparent;border-radius:0 6px 6px 0}
+nav.toc a:hover{color:var(--ink);background:var(--card);border-left-color:var(--blue)}
+main{flex:1 1 auto;min-width:0;max-width:900px;padding:26px 0 140px}
+h1{font-size:26px;line-height:1.4;margin:.1em 0 .3em}
+h2{font-size:21px;margin:2.4em 0 .6em;padding-bottom:.3em;border-bottom:2px solid var(--line)}
+h2 .n{color:var(--blue);font-weight:800;margin-right:.45em}
+h3{font-size:17.5px;margin:1.7em 0 .5em;color:var(--blue)}
+h4{font-size:15px;margin:1.3em 0 .4em;color:var(--ink);font-weight:700}
+p{margin:.7em 0}
+a{color:var(--blue);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--blue) 40%,transparent)}
+a:hover{border-bottom-color:var(--blue)}
+a.cite{font-size:.86em;white-space:nowrap;padding:0 2px}
+ul,ol{margin:.5em 0;padding-left:1.5em}
+li{margin:.35em 0}
+hr{border:0;border-top:1px solid var(--line);margin:1.6em 0}
+small{color:var(--muted)}
+/* 悬停提示参数 */
+.p{border-bottom:1.5px dotted var(--blue);cursor:help;position:relative;font-weight:600;color:var(--blue2)}
+.t{border-bottom:1.5px dotted var(--muted);cursor:help;position:relative}
+.p:hover::after,.t:hover::after{content:attr(data-t);position:absolute;left:50%;bottom:145%;
+  transform:translateX(-50%);background:var(--tiph);color:#fff;padding:7px 11px;border-radius:8px;
+  font-size:13px;font-weight:400;line-height:1.5;white-space:normal;width:max-content;max-width:290px;
+  z-index:30;box-shadow:0 6px 20px rgba(0,0,0,.28);pointer-events:none}
+.p:hover::before,.t:hover::before{content:"";position:absolute;left:50%;bottom:145%;transform:translate(-50%,90%);
+  border:6px solid transparent;border-top-color:var(--tiph);z-index:30}
+/* 徽章 */
+.b{display:inline-block;font-size:11px;font-weight:700;padding:1px 9px;border-radius:20px;vertical-align:middle;margin:0 1px;white-space:nowrap}
+.b.work{background:var(--workbg);color:var(--green);border:1px solid var(--green)}
+.b.lit{background:var(--litbg);color:var(--blue);border:1px solid var(--blue)}
+/* 卡片/提示条 */
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:1.2em 0}
+.note{border-left:4px solid var(--blue);border-radius:0 8px 8px 0;padding:12px 18px;margin:1.2em 0;background:var(--card)}
+.note.key{border-color:var(--green);background:var(--workbg)}
+.note.watch{border-color:var(--orange);background:color-mix(in srgb,var(--card) 78%,var(--orange) 22%)}
+.note .lb{font-weight:700;display:block;margin-bottom:.25em}
+/* 表格 */
+.scroll{overflow-x:auto;margin:1.1em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--dark);color:#fff;font-weight:600}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--card) 93%,var(--blue) 7%)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:"SF Mono",Consolas,monospace}
+.up{color:var(--blue2);font-weight:600}.dn{color:var(--orange);font-weight:600}
+.top{font-weight:800;color:var(--red)}
+/* 公式（纯 HTML/CSS） */
+.math{display:block;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green);
+  border-radius:8px;padding:12px 18px;margin:1em 0;overflow-x:auto;font-size:17px;line-height:2.1;
+  font-family:"Cambria Math","Times New Roman",Georgia,serif}
+.math.inline{display:inline;border:0;background:none;padding:0;margin:0;font-size:1em}
+.frac{display:inline-flex;flex-direction:column;text-align:center;vertical-align:-0.55em;margin:0 .25em}
+.frac>span{padding:0 .5em}
+.frac>.nu{border-bottom:1.4px solid currentColor;padding-bottom:1px}
+.frac>.de{padding-top:1px}
+.op{margin:0 .28em;color:var(--muted)}
+sub,sup{font-size:.72em}
+.rad{border-top:1.4px solid currentColor;padding:0 .2em}
+/* 折叠 */
+details{border:1px solid var(--line);border-radius:10px;margin:1em 0;background:var(--foldbg);overflow:hidden}
+details[open]{background:var(--card)}
+summary{cursor:pointer;padding:12px 18px;font-weight:700;color:var(--blue);list-style:none;user-select:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ ";color:var(--blue)}
+details[open] summary::before{content:"▾ "}
+summary:hover{background:color-mix(in srgb,var(--card) 60%,var(--blue) 8%)}
+.foldbody{padding:2px 20px 16px;border-top:1px solid var(--line)}
+/* 速览卡 */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:1.1em 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+.kpi .v{font-size:23px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+.kpi .k{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+/* 图 */
+figure{margin:1.5em 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
+figure img{max-width:100%;height:auto;border-radius:6px}
+figcaption{font-size:13px;color:var(--muted);margin-top:.8em;text-align:left;line-height:1.65}
+code{background:var(--code);padding:1px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:.88em}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;border-bottom:2px solid var(--line);margin-bottom:.4em}
+.meta{font-size:13px;color:var(--muted)}
+button#tt{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:20px;padding:6px 15px;cursor:pointer;font-size:13px}
+.legend{font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:1em 0}
+@media(max-width:960px){nav.toc{display:none}.wrap{padding:0 15px}}
+</style>
+
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">单工具免疫原性预测排名<br>方法与结果报告</div>
+  <a href="#s0">摘要与速览</a>
+  <a href="#s1">1 · 为什么重做这版排名</a>
+  <a href="#s2">2 · 数据</a>
+  <a href="#s3">3 · 处理流程（含公式）</a>
+  <a href="#s4">4 · 结果</a>
+  <a href="#s5">5 · 数据边界与口径</a>
+  <a href="#s6">6 · 本工作 vs 文献来源</a>
+  <a href="#s7">7 · 需要讨论的问题</a>
+  <a href="#s8">8 · 下一步计划</a>
+  <a href="#s9">附：工具、公式、文献</a>
+</nav>
+
+<main>
+<div class="topbar">
+  <div class="meta">免疫原性预测工具系统评测 · 单工具排名 · 2026-07-08</div>
+  <button id="tt">切换深色/浅色</button>
+</div>
+
+<h1>单工具免疫原性预测排名：方法与结果报告</h1>
+<p class="meta">口径：102 条点突变肽 · 9 位患者 · 长度 9 的肽段 · 每条突变取最高分 · 患者内秩相关</p>
+
+<div class="legend">
+阅读说明：带虚线下划线的<span class="p" data-t="示例：把鼠标停在这类词上，会弹出它的中文解释">词或符号</span>把鼠标停上去会显示中文解释。
+标注含义 —— <span class="b work">本工作</span> 这次评测中由本项目做的处理或决定；<span class="b lit">文献</span> 引自公开论文或工具官方的做法（每处都带可点链接）。
+部分较深的细节（逐工具设定、公式推导、术语表）收在<b>可折叠区块</b>里，点开才展开，正文保持简洁。
+</div>
+
+<!-- ===================== 0 摘要 ===================== -->
+<h2 id="s0"><span class="n">0</span>摘要与速览</h2>
+<p><b>这份报告做什么。</b> 把此前用幻灯片汇报的「工具排名」结果，改写成可逐条核对的完整文档：写清每一步处理、每个参数的含义、每个工具如何对齐、哪些做法引自公开文献、结果数字如何得到。</p>
+<p><b>这次的工作。</b> 在一个更严格的口径下，重新评测 29 个<span class="t" data-t="预测一条突变肽能否被 T 细胞识别、引发免疫反应的软件">免疫原性/呈递预测工具</span>：用每个工具对突变肽的打分给突变排序，看谁的打分最能对上实验测得的 T 细胞反应强弱。并额外做了一版基于<span class="t" data-t="差异指数：突变肽得分减去对应正常序列得分，见第 4 节">「突变与正常序列之差」</span>的排名。</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">0.372</div><div class="k">排名第一（netMHCpan-BA）的相关系数</div></div>
+  <div class="kpi"><div class="v">0.113</div><div class="k">28 个工具的平均相关系数</div></div>
+  <div class="kpi"><div class="v">0.007</div><div class="k">「差异指数」版的平均相关系数（接近随机）</div></div>
+  <div class="kpi"><div class="v">102 / 9</div><div class="k">点突变肽数 / 患者数</div></div>
+  <div class="kpi"><div class="v">29</div><div class="k">参与排名的工具数</div></div>
+</div>
+<p class="meta">相关系数越接近 1，说明工具越能把「实验上反应强的突变」排在前面；这里的随机基线是 <b>0</b>（不是 0.5）。完整榜单见第 4 节。</p>
+
+<div class="note watch">
+<span class="lb">一个必须先说清的口径</span>
+项目历史上出现过三套不同的「肽集」，数字不能混用。<b>本报告全部用第三套：102 条点突变肽（新切法）。</b>
+<div class="scroll"><table>
+<thead><tr><th>肽集</th><th class="n">肽数</th><th>用途</th><th>本报告</th></tr></thead>
+<tbody>
+<tr><td>旧 · 二分类</td><td class="n">101</td><td>按「有/无反应」算 AUC</td><td>不用（已停用）</td></tr>
+<tr><td>官方 · 旧切法</td><td class="n">130</td><td>连续强度、秩相关</td><td>仅作对照（个别对比处会注明）</td></tr>
+<tr><td><b>本报告 · 新切法</b></td><td class="n"><b>102</b></td><td><b>仅点突变、连续强度、秩相关</b></td><td><b>全部结果</b></td></tr>
+</tbody>
+</table></div>
+<small>此前「相关只有 0.5 左右」的说法对应的是第一套（按有/无反应算 AUC），已停用；本报告用连续强度算秩相关，随机基线是 0。</small>
+</div>
+
+<!-- ===================== 1 为什么重做 ===================== -->
+<h2 id="s1"><span class="n">1</span>为什么重做这版排名</h2>
+<p>相比更早的版本，这一版做了三处改进：</p>
+<div class="card">
+<p><b>改进一 · 修正一个纳入门槛的错误。</b> <span class="b work">本工作</span> 评分时先在每位患者内部算一个相关系数，再跨患者汇总。旧做法用「该患者的<b>总行数</b>」决定是否纳入。问题是：某工具在某患者只覆盖两三条肽时，相关系数几乎必然是 ±1（两三个点必然单调），却因为总行数够而被纳入，把这些<b>由两三个点凑出的极端值</b>抬进了榜首。改法：门槛改用<span class="p" data-t="有效样本数：该患者里，工具打分与实验值同时有数值的肽的条数">有效样本数</span>（工具分与实验值<b>同时有值</b>的肽数），太少的患者不纳入。详见第 3 节。</p>
+<p><b>改进二 · 去掉「肽长度」带来的干扰。</b> <span class="b work">本工作</span> 旧切法下，一条越长的<span class="t" data-t="合成长肽：疫苗里实际使用的、较长的一段肽">疫苗长肽</span>能切出越多的短肽片段，取「片段里最高分」时片段越多、最高分越容易偏高——于是工具可以靠「肽更长」而不是「预测更准」拿到高分。量化上，片段数量与肽长度的相关高达 <b>0.46</b>。新切法固定每条突变只切 <b>9 个片段</b>，这个相关降到近 <b>0</b>（−0.10），干扰被消除。原理见<a href="#a-mech">附录·长度干扰的原理</a>（可折叠）。</p>
+<p><b>改进三 · 让榜单可以复现。</b> 旧的榜单文件没有对应的生成脚本、无法重算，且用的正是上面「无门槛」的旧口径。这一版用一个可提交、可重跑的脚本重新算出，并验证过：用它跑旧数据能逐位复现旧结果，说明脚本忠实。</p>
+</div>
+
+<!-- ===================== 2 数据 ===================== -->
+<h2 id="s2"><span class="n">2</span>数据</h2>
+<div class="scroll"><table>
+<thead><tr><th>项目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>数据来源</td><td>一项 2025 年发表于《Nature》的肾癌新抗原疫苗临床试验，人源。<a class="cite" href="https://doi.org/10.1038/s41586-024-08507-5" target="_blank" rel="noopener">［原文链接］</a></td></tr>
+<tr><td>实验真值</td><td>用 <span class="t" data-t="酶联免疫斑点实验：一种测 T 细胞反应强弱的实验，读数是斑点数，数值连续">ELISpot 实验</span> 测每条突变肽引发的 T 细胞反应强度（连续数值），作为评判工具好坏的标准</td></tr>
+<tr><td>患者</td><td>9 位（编号 101、102、104–110，无 103）</td></tr>
+<tr><td>肽集</td><td>官方 130 条 → 去掉 28 条<span class="t" data-t="插入/缺失或移码突变：会改变阅读框、没有一一对应的正常序列，因而无法做「突变 vs 正常」的差异分析">插入缺失/移码突变肽</span> → 留 <b>102 条<span class="t" data-t="单核苷酸变异，即点突变：只改一个氨基酸，有对应的正常序列">点突变肽</span></b></td></tr>
+<tr><td>反应分布</td><td>102 条里，实验反应为正 91 条、为负 10 条、为零 1 条</td></tr>
+<tr><td>每位患者肽数</td><td>101→9，102→6，104→14，105→16，106→13，107→8，108→12，109→10，110→14</td></tr>
+<tr><td>切成短肽后</td><td>用于打分的表共 4053 行（短肽 × 患者的<span class="t" data-t="HLA 等位基因：决定哪些肽能被呈递给 T 细胞的分子型别，每位患者有多个">HLA 型别</span>），涉及 26 个 HLA 型别</td></tr>
+<tr><td>小鼠数据</td><td>本次为人源数据；小鼠数据尚未纳入</td></tr>
+</tbody>
+</table></div>
+
+<!-- ===================== 3 处理流程 ===================== -->
+<h2 id="s3"><span class="n">3</span>处理流程（含公式）</h2>
+<p>从原始数据到一个排名数字，分四步：<b>A 切肽 → B 打分与对齐 → C 取最高分 → D 评分与汇总</b>。</p>
+
+<h3>A · 切肽</h3>
+<p><span class="b work">本工作</span> 围绕每个突变位点，从蛋白序列上截取长度为 9 的短肽（缺失处用<span class="t" data-t="MANE：一套权威的人类参考转录本序列，用于补齐缺失的序列">权威参考序列</span>补齐），<b>每条突变固定截 9 个短肽（窗口）</b>。固定窗口数是为了消除第 1 节说的长度干扰：窗口数不再随肽的长度变化，工具就无法靠「肽更长、片段更多」拿高分。截取时对未能成窗的片段单独记录、不丢弃。</p>
+
+<h3>B · 打分与对齐</h3>
+<p>29 个工具各自给「短肽 – HLA 型别」打分。不同工具的<b>打分方向、数值范围、需要的 HLA 写法、缺失处理都不一样</b>，必须先对齐才能横向比较：</p>
+<ul>
+<li><b>方向统一</b><span class="b work">本工作</span>：统一成「<b>分数越大 = 越可能引发免疫反应</b>」。结合类工具输出的是结合力（数值越小结合越强），取相反数后并入。全部 29 个工具里只有 4 个需要这样翻转方向（见工具总表）。</li>
+<li><b>HLA 写法不同</b>：不同工具接受的型别写法不同（如 <code>HLA-A*02:01</code> / <code>HLA-A02:01</code> / <code>HLA-A0201</code>），按各工具要求转换后再喂。</li>
+<li><b>缺失填空</b><span class="b work">本工作</span>：工具不支持的肽长、不支持的 HLA 型别、或算不出的情况，一律留<span class="t" data-t="缺失值：表示这里没有有效分数，不参与后续计算，也不会用别的值顶替">空值</span>，<b>不用别的分数顶替</b>。</li>
+</ul>
+<p>29 个工具逐一的接受格式、打分方向、缺失规则，收在下面折叠区（正文只保留对齐规则，不逐一铺开）。工具的方法、许可、来源链接见<a href="#a-tools">附录·工具总表</a>。</p>
+
+<h3>C · 取最高分（把一条突变的多个片段合成一个分）</h3>
+<p>每条突变有 9 个短肽窗口、每个窗口又对多个 HLA 型别各有一个分。<b>取所有窗口 × 型别里的最高分</b>代表这条突变（越可能被呈递/识别，用最强的那个片段代表）。这一步引自公开工具的通行做法。<a class="cite" href="https://pvactools.readthedocs.io/" target="_blank" rel="noopener">［pVACtools］</a></p>
+<div class="math">
+<span class="p" data-t="突变 m 的突变级分（这条突变最终代表分）">s<sub>m</sub></span>
+<span class="op">=</span>
+max<span style="font-size:.75em"> （对该突变的所有窗口 × 型别）</span>
+<span class="p" data-t="单个窗口 w 对某 HLA 型别的打分（已统一成越大越强）">v<sub>w</sub></span>
+</div>
+
+<h3>D · 评分与汇总（含全部公式）</h3>
+<p>把每条突变的代表分与实验反应强度做「排序是否一致」的比较，再跨患者汇总成一个数。六小步：</p>
+
+<h4>① 患者内秩相关</h4>
+<p>在每位患者内部，算工具代表分与实验值的<span class="t" data-t="Spearman 秩相关：只看两组数的排序是否一致，不看具体数值大小；范围 −1 到 1">秩相关</span>（只看排序是否一致）。<a class="cite" href="https://doi.org/10.37349/ei.2023.00091" target="_blank" rel="noopener">［同类先例］</a></p>
+<div class="math">
+<span class="p" data-t="患者 p 内的秩相关系数">ρ<sub>p</sub></span>
+<span class="op">=</span> 1 <span class="op">−</span>
+<span class="frac"><span class="nu">6 · Σ <span class="p" data-t="第 i 条突变，工具分排名与实验值排名之差">d<sub>i</sub></span><sup>2</sup></span><span class="de"><span class="p" data-t="有效样本数：该患者里工具分与实验值同时有值的肽数">n</span> ( <span class="p" data-t="有效样本数">n</span><sup>2</sup> − 1 )</span></span>
+</div>
+<p class="meta">只在<b>有效样本</b>（工具分与实验值同时有值的肽）上计算。</p>
+
+<h4>② 有效样本门槛（这一版的关键修正）</h4>
+<p><span class="b work">本工作</span> 只有<b>有效样本数达到 8</b> 的患者才纳入汇总——这正是第 1 节改进一修的问题：覆盖太少的患者，其两三个点凑出的极端相关被挡在门外。这次 9 位患者里，患者 102 只有 6 条点突变（不足 8），被排除，实际 <b>8 位患者</b>进入汇总。</p>
+<div class="math">
+<span class="p" data-t="患者 p 的有效样本数：工具分与实验值同时有值的肽数">effN<sub>p</sub></span>
+<span class="op">=</span> 同时有值的肽数
+<span class="op">，</span>
+<span class="p" data-t="进入汇总的患者集合：有效样本数 ≥ 8 的那些患者">P</span>
+<span class="op">=</span> { 患者 p ：<span class="p" data-t="患者 p 的有效样本数">effN<sub>p</sub></span> ≥ 8 }
+</div>
+
+<h4>③ 数值截断</h4>
+<p><span class="b work">本工作</span> 把相关系数限制在 ±0.99 以内，避免下一步在 ±1 处出现数值发散（不影响主结果，只是数值稳定处理）。</p>
+<div class="math">
+<span class="p" data-t="截断后的相关系数（限制在 ±0.99 内）">ρ̃<sub>p</sub></span>
+<span class="op">=</span> 截断( <span class="p" data-t="患者 p 内的秩相关">ρ<sub>p</sub></span> , −0.99 , +0.99 )
+</div>
+
+<h4>④ 跨患者汇总（费雪变换，患者等权）</h4>
+<p>用<span class="t" data-t="Fisher-Z 变换：把相关系数变换后再取平均，是元分析里合并多个相关系数的标准做法">费雪变换</span>把各患者的相关系数变换后取平均，再变换回来。每位患者权重相同。<a class="cite" href="https://doi.org/10.2307/2333825" target="_blank" rel="noopener">［标准方法］</a></p>
+<div class="math">
+<span class="p" data-t="患者 p 变换后的值">z<sub>p</sub></span>
+<span class="op">=</span> arctanh( <span class="p" data-t="截断后的相关系数">ρ̃<sub>p</sub></span> )
+<span class="op">，</span>
+<span class="p" data-t="最终榜单主指标：跨患者汇总后的相关系数">ρ̄</span>
+<span class="op">=</span> tanh(
+<span class="frac"><span class="nu">1</span><span class="de"><span class="p" data-t="进入汇总的患者数">|P|</span></span></span>
+Σ <span class="p" data-t="患者 p 变换后的值">z<sub>p</sub></span> )
+</div>
+<p class="meta"><b>ρ̄</b> 就是榜单上每个工具的主分值。</p>
+
+<h4>⑤ 置信区间</h4>
+<p>以患者为单元<span class="t" data-t="cluster-bootstrap：把患者当作重采样单元、有放回地反复抽样重算，用来估计结果的波动范围">有放回反复重抽</span>（重抽 2000 次），取结果的 2.5% 和 97.5% 分位作 95% 置信区间，反映「换一批患者结论稳不稳」。</p>
+
+<h4>⑥ 不纳入排名的判据</h4>
+<p>进入汇总的患者不足 3 位的工具，标为不纳入主排名（避免个别患者撑起的不稳定值）。这次 28 个有效工具都满足。</p>
+
+<div class="note key">
+<span class="lb">可复现</span>
+榜单由一个可重跑的脚本产出；用它跑旧数据能逐位复现旧版结果（说明脚本忠实，非临时口径）。脚本与数据存档见<a href="#a-src">附录·存档</a>。
+</div>
+
+<!-- ===================== 4 结果 ===================== -->
+<h2 id="s4"><span class="n">4</span>结果</h2>
+
+<h3>4.1 · 单工具主排名</h3>
+<p>用每个工具对突变肽的打分排序，指标是第 3 节的 <span class="p" data-t="跨患者汇总后的相关系数，榜单主指标，越接近 1 越能对上实验反应">ρ̄</span>（8 位患者进入汇总）。完整 28 个有效工具如下。</p>
+<figure>
+<img src="__FIG_RANKING__" alt="单工具排名条形图">
+<figcaption>图 1 · 28 个有效工具的相关系数排序（误差棒 = 95% 置信区间；正相关蓝、负相关橙、平均线红）。</figcaption>
+</figure>
+<div class="scroll"><table>
+<thead><tr><th class="n">名次</th><th>工具</th><th>类别</th><th class="n">ρ̄</th><th class="n">95% 置信区间</th><th>备注</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="top">netMHCpan-BA</td><td>结合/呈递</td><td class="n up">+0.372</td><td class="n">+0.200 ~ +0.525</td><td>区间不含 0</td></tr>
+<tr><td class="n">2</td><td>MHCnuggets</td><td>结合/呈递</td><td class="n up">+0.319</td><td class="n">+0.211 ~ +0.422</td><td>区间不含 0</td></tr>
+<tr><td class="n">3</td><td>PredIG</td><td>免疫原性</td><td class="n up">+0.290</td><td class="n">+0.074 ~ +0.467</td><td>区间不含 0；免疫原性专用工具中最高</td></tr>
+<tr><td class="n">4</td><td>ICERFIRE</td><td>免疫原性</td><td class="n up">+0.234</td><td class="n">+0.090 ~ +0.354</td><td>区间不含 0</td></tr>
+<tr><td class="n">5</td><td>MHCseqNet</td><td>结合/呈递</td><td class="n up">+0.228</td><td class="n">+0.069 ~ +0.377</td><td>区间不含 0</td></tr>
+<tr><td class="n">6</td><td>MHCflurry</td><td>结合/呈递</td><td class="n up">+0.214</td><td class="n">+0.089 ~ +0.318</td><td>区间不含 0</td></tr>
+<tr><td class="n">7</td><td>PRIME</td><td>免疫原性</td><td class="n up">+0.181</td><td class="n">−0.025 ~ +0.377</td><td>区间含 0</td></tr>
+<tr><td class="n">8</td><td>MUNIS</td><td>免疫原性</td><td class="n up">+0.180</td><td class="n">+0.102 ~ +0.269</td><td>区间不含 0</td></tr>
+<tr><td class="n">9</td><td>BigMHC-IM</td><td>免疫原性</td><td class="n up">+0.178</td><td class="n">−0.063 ~ +0.428</td><td>区间含 0</td></tr>
+<tr><td class="n">10</td><td>deepHLApan</td><td>免疫原性</td><td class="n up">+0.174</td><td class="n">−0.042 ~ +0.386</td><td>区间含 0</td></tr>
+<tr><td class="n">11</td><td>netMHCpan-EL</td><td>结合/呈递</td><td class="n up">+0.169</td><td class="n">−0.046 ~ +0.333</td><td>区间含 0</td></tr>
+<tr><td class="n">12</td><td>NeoTImmuML</td><td>免疫原性</td><td class="n up">+0.147</td><td class="n">−0.078 ~ +0.409</td><td>区间含 0</td></tr>
+<tr><td class="n">13</td><td>IMPROVE</td><td>免疫原性</td><td class="n up">+0.146</td><td class="n">−0.067 ~ +0.321</td><td>区间含 0</td></tr>
+<tr><td class="n">14</td><td>TransHLA</td><td>结合/呈递</td><td class="n up">+0.113</td><td class="n">−0.024 ~ +0.262</td><td>区间含 0</td></tr>
+<tr><td class="n">15</td><td>HLAthena</td><td>呈递代理</td><td class="n up">+0.110</td><td class="n">−0.072 ~ +0.283</td><td>仅提呈概率，层次不同</td></tr>
+<tr><td class="n">16</td><td>ImmuGenX</td><td>免疫原性</td><td class="n up">+0.104</td><td class="n">−0.212 ~ +0.375</td><td>区间含 0</td></tr>
+<tr><td class="n">17</td><td>IEDB-Calis</td><td>免疫原性</td><td class="n up">+0.101</td><td class="n">−0.143 ~ +0.371</td><td>区间含 0</td></tr>
+<tr><td class="n">18</td><td>DeepImmuno</td><td>免疫原性</td><td class="n up">+0.098</td><td class="n">−0.143 ~ +0.320</td><td>仅支持 9/10 长度</td></tr>
+<tr><td class="n">19</td><td>NetTepi</td><td>免疫原性</td><td class="n up">+0.093</td><td class="n">−0.064 ~ +0.243</td><td>不支持 HLA-C 型别</td></tr>
+<tr><td class="n">20</td><td>Repitope</td><td>免疫原性</td><td class="n up">+0.052</td><td class="n">−0.124 ~ +0.208</td><td>区间含 0</td></tr>
+<tr><td class="n">21</td><td>pTuneos</td><td>免疫原性</td><td class="n up">+0.008</td><td class="n">−0.173 ~ +0.194</td><td>接近零</td></tr>
+<tr><td class="n">22</td><td>andy90</td><td>免疫原性</td><td class="n dn">−0.001</td><td class="n">−0.224 ~ +0.187</td><td>接近零</td></tr>
+<tr><td class="n">23</td><td>netMHCstabpan</td><td>结合/呈递</td><td class="n dn">−0.033</td><td class="n">−0.371 ~ +0.282</td><td>见 4.2 对照</td></tr>
+<tr><td class="n">24</td><td>ImmuneApp</td><td>免疫原性</td><td class="n dn">−0.044</td><td class="n">−0.327 ~ +0.205</td><td>区间含 0</td></tr>
+<tr><td class="n">25</td><td>NeoaG</td><td>免疫原性</td><td class="n dn">−0.048</td><td class="n">−0.232 ~ +0.142</td><td>区间含 0</td></tr>
+<tr><td class="n">26</td><td>CNNeo</td><td>免疫原性</td><td class="n dn">−0.058</td><td class="n">−0.264 ~ +0.134</td><td>区间含 0</td></tr>
+<tr><td class="n">27</td><td>Seq2Neo</td><td>免疫原性</td><td class="n dn">−0.075</td><td class="n">−0.308 ~ +0.177</td><td>区间含 0</td></tr>
+<tr><td class="n">28</td><td>TSCAPE</td><td>免疫原性</td><td class="n dn">−0.099</td><td class="n">−0.210 ~ +0.007</td><td>方向为负、区间含 0</td></tr>
+</tbody>
+</table></div>
+<div class="note">
+<span class="lb">要点</span>
+<ul>
+<li><b>28 个工具平均相关系数 0.113。</b> 这个值不高，与领域现状一致：T 细胞免疫原性本身很难预测，同类研究的单指标水平也在这个量级（见 4.4 与<a href="#a-ref">文献</a>）。随机基线是 0。</li>
+<li><b>居前的多为结合/呈递类工具</b>（netMHCpan-BA、MHCnuggets、MHCflurry、MHCseqNet）；免疫原性专用工具中最高的是 PredIG（第 3）。</li>
+<li><b>置信区间不含 0 的只有 7 个</b>（前 6 名加 MUNIS）；其余工具的区间都跨过 0，即与「零相关」尚不能区分。</li>
+<li>可比性已核：28 个工具汇总在同一 8 位患者、各排同一批 102 条肽（肽层面覆盖均 100%），方向统一。</li>
+<li><b>两个不纳入排名</b>：<span class="t" data-t="该工具在取最高分后所有突变的分几乎相同，无法区分排序">DeepNetBim</span>（打分饱和成常数、无法排序）；<span class="t" data-t="严格只支持长度 9，本数据覆盖仅约 11%，已整体移出工具集">NeoaPred</span>（覆盖过低，已移出）。</li>
+</ul>
+</div>
+
+<h3>4.2 · 新切法与旧切法对照</h3>
+<figure>
+<img src="__FIG_DUMBBELL__" alt="新旧切法逐工具对照">
+<figcaption>图 2 · 新切法（去长度干扰）与旧切法逐工具对照。</figcaption>
+</figure>
+<ul>
+<li>28 个工具的平均相关系数从旧切法的 <b>0.191</b> 降到新切法的 <b>0.113</b>。</li>
+<li>逐工具看，<b>26 个下降、2 个上升</b>（PredIG、deepHLApan）。</li>
+<li>下降最多的正是此前最受长度干扰的工具：MHCnuggets 0.447→0.319、netMHCstabpan 0.234→−0.033、NetTepi 0.293→0.093、IMPROVE 0.285→0.146。</li>
+</ul>
+<p class="meta">注：新切法基于 102 条点突变肽、旧切法基于 130 条，肽集不同，本图看趋势；数值层面的拆解见 4.3。</p>
+
+<h3>4.3 · 下降从何而来（0.191 → 0.113）</h3>
+<p>用同一评分口径，把「肽集变了」和「切法变了」两个原因分开算：</p>
+<div class="scroll"><table>
+<thead><tr><th>情景</th><th>肽集 / 切法</th><th class="n">平均 ρ̄</th><th class="n">相对上一步</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>130 条 · 旧切法</td><td class="n">0.191</td><td class="n">基线</td></tr>
+<tr><td>B</td><td>102 条点突变 · 旧切法（只去 28 条插入缺失肽）</td><td class="n">0.147</td><td class="n dn">−0.044</td></tr>
+<tr><td>C</td><td>102 条点突变 · 新切法（只换切法）</td><td class="n">0.113</td><td class="n dn">−0.034</td></tr>
+</tbody>
+</table></div>
+<div class="math" style="font-size:15px">
+总下降 −0.078
+<span class="op">=</span>
+<span class="t" data-t="去掉 28 条插入缺失肽带来的下降，占 56%">肽集因素 −0.044（56%）</span>
+<span class="op">+</span>
+<span class="t" data-t="改用固定 9 窗切法、去掉长度干扰带来的下降，占 44%">切法因素 −0.034（44%）</span>
+</div>
+<ul>
+<li><b>肽集因素（占一半多）</b>：去掉的 28 条插入缺失肽，恰是实验反应偏强的肽，去掉后任务更难；同时患者 102 因点突变不足 8 条也退出汇总。</li>
+<li><b>切法因素（占另一半）</b>：固定 9 窗去掉了「长肽片段多、最高分偏高」的部分。此前最受此影响的工具下降最多。</li>
+<li>并非全部下降：netMHCpan-BA、deepHLApan 反而上升，此前被干扰压低。</li>
+</ul>
+<p class="meta">两个原因都不是程序出错，是更严格口径下的结果。</p>
+
+<h3>4.4 · 「差异指数」版排名</h3>
+<h4>什么是差异指数</h4>
+<p>思路：一条突变肽能被免疫系统识别，部分原因是它和对应的正常序列不同。于是不看突变肽的绝对分，而看「突变肽比正常序列强多少」。<span class="t" data-t="差异指数（DAI）：突变肽得分减去对应正常序列得分，差为负时记 0">差异指数</span>由一项 2014 年的研究提出 <a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4203949/" target="_blank" rel="noopener">［原文］</a>，本工作按相减取正的形式实现：</p>
+<div class="math">
+<span class="p" data-t="工具 t 对突变 m 的差异指数">DAI<sub>m,t</sub></span>
+<span class="op">=</span> max(
+<span class="p" data-t="工具 t 对突变肽（mutant）的打分">MT<sub>m,t</sub></span>
+<span class="op">−</span>
+<span class="p" data-t="工具 t 对对应正常序列（wild-type，野生型）的打分">WT<sub>m,t</sub></span>
+<span class="op">,</span> 0 )
+</div>
+<p class="meta">突变肽与正常序列的分都统一成「越大越强」后相减，差为负记 0，再取每条突变各窗口的最高值。只有能同时给突变肽和正常序列打分的工具才算得出。</p>
+<p><span class="b work">本工作</span> 初版只有 23 个工具能算：其中 4 个确实给不出正常序列的分（其输出已把差异内化、或无对应结构）。另有 2 个（Seq2Neo、TSCAPE）本可给正常序列打分、之前只跑了突变肽，本次补齐，能算的工具增至 <b>25</b> 个。</p>
+<figure>
+<img src="__FIG_DAI__" alt="差异指数版排名">
+<figcaption>图 3 · 25 个工具的差异指数版相关系数排序（95% 置信区间）。</figcaption>
+</figure>
+<div class="scroll"><table>
+<thead><tr><th class="n">名次</th><th>工具</th><th class="n">ρ̄</th><th class="n">95% 置信区间</th><th>备注</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="top">PredIG</td><td class="n up">+0.344</td><td class="n">+0.147 ~ +0.493</td><td>区间不含 0；仍未超过突变肽直接打分的最高值 0.372</td></tr>
+<tr><td class="n">2</td><td>IEDB-Calis</td><td class="n up">+0.330</td><td class="n">−0.014 ~ +0.614</td><td>102 条里 57 条差为 0，偏乐观；区间含 0</td></tr>
+<tr><td class="n">3</td><td>Repitope</td><td class="n up">+0.326</td><td class="n">+0.046 ~ +0.626</td><td>区间不含 0</td></tr>
+<tr><td class="n">4</td><td>BigMHC-IM</td><td class="n up">+0.135</td><td class="n">−0.139 ~ +0.404</td><td>区间含 0</td></tr>
+<tr><td class="n">5</td><td>MHCflurry</td><td class="n up">+0.130</td><td class="n">−0.087 ~ +0.363</td><td>区间含 0</td></tr>
+<tr><td class="n">6</td><td>TSCAPE</td><td class="n up">+0.093</td><td class="n">−0.116 ~ +0.271</td><td>本次补正常序列后可算</td></tr>
+<tr><td class="n">7</td><td>PRIME</td><td class="n up">+0.072</td><td class="n">−0.117 ~ +0.264</td><td>区间含 0</td></tr>
+<tr><td class="n">8</td><td>MUNIS</td><td class="n up">+0.027</td><td class="n">−0.158 ~ +0.250</td><td>接近零</td></tr>
+<tr><td class="n">9</td><td>Seq2Neo</td><td class="n up">+0.022</td><td class="n">−0.292 ~ +0.389</td><td>本次补正常序列后可算</td></tr>
+<tr><td class="n">10</td><td>netMHCpan-BA</td><td class="n up">+0.022</td><td class="n">−0.204 ~ +0.236</td><td>突变肽直接打分 0.372 → 差异指数 0.022</td></tr>
+<tr><td class="n">11</td><td>ImmuGenX</td><td class="n up">+0.006</td><td class="n">−0.177 ~ +0.217</td><td>接近零</td></tr>
+<tr><td class="n">12</td><td>MHCnuggets</td><td class="n dn">−0.017</td><td class="n">−0.294 ~ +0.297</td><td>接近零</td></tr>
+<tr><td class="n">13</td><td>netMHCpan-EL</td><td class="n dn">−0.022</td><td class="n">−0.279 ~ +0.165</td><td>接近零</td></tr>
+<tr><td class="n">14</td><td>DeepNetBim</td><td class="n dn">−0.032</td><td class="n">−0.309 ~ +0.242</td><td>主排名里无法排序，差异指数里可排</td></tr>
+<tr><td class="n">15</td><td>ImmuneApp</td><td class="n dn">−0.043</td><td class="n">−0.249 ~ +0.213</td><td>接近零</td></tr>
+<tr><td class="n">16</td><td>NetTepi</td><td class="n dn">−0.045</td><td class="n">−0.307 ~ +0.246</td><td>接近零</td></tr>
+<tr><td class="n">17</td><td>andy90</td><td class="n dn">−0.054</td><td class="n">−0.171 ~ +0.052</td><td>接近零</td></tr>
+<tr><td class="n">18</td><td>MHCseqNet</td><td class="n dn">−0.068</td><td class="n">−0.237 ~ +0.144</td><td>接近零</td></tr>
+<tr><td class="n">19</td><td>DeepImmuno</td><td class="n dn">−0.078</td><td class="n">−0.225 ~ +0.067</td><td>接近零</td></tr>
+<tr><td class="n">20</td><td>HLAthena</td><td class="n dn">−0.097</td><td class="n">−0.300 ~ +0.137</td><td>接近零</td></tr>
+<tr><td class="n">21</td><td>deepHLApan</td><td class="n dn">−0.115</td><td class="n">−0.357 ~ +0.127</td><td>区间含 0</td></tr>
+<tr><td class="n">22</td><td>netMHCstabpan</td><td class="n dn">−0.139</td><td class="n">−0.384 ~ +0.074</td><td>区间含 0</td></tr>
+<tr><td class="n">23</td><td>NeoTImmuML</td><td class="n dn">−0.142</td><td class="n">−0.265 ~ −0.031</td><td>区间不含 0（为负）</td></tr>
+<tr><td class="n">24</td><td>TransHLA</td><td class="n dn">−0.161</td><td class="n">−0.286 ~ +0.029</td><td>区间含 0</td></tr>
+<tr><td class="n">25</td><td>CNNeo</td><td class="n dn">−0.316</td><td class="n">−0.572 ~ +0.071</td><td>区间含 0</td></tr>
+</tbody>
+</table></div>
+<div class="note watch">
+<span class="lb">核心结果：接近随机</span>
+<ul>
+<li><b>25 个工具平均相关系数 0.007</b>，几乎为零。其中 <b>15 个的相关系数绝对值小于 0.1</b>（挤在零附近），正负各半。</li>
+<li>最高的 PredIG（0.344）也没超过用突变肽直接打分时的最高值（netMHCpan-BA 0.372）。</li>
+<li><b>置信区间不含 0 的只有 3 个</b>（PredIG、Repitope 为正，NeoTImmuML 为负）；其余 22 个区间都跨过 0，即与「零相关」无法区分，正负多是小样本波动，不代表反向预测。</li>
+<li>原因：突变肽与正常序列的分本身高度相关（0.81–0.95），单个点突变几乎不改分，两个相近的数相减后主要剩噪声。</li>
+</ul>
+</div>
+<div class="note">
+<span class="lb">与公开研究一致</span>
+<ul>
+<li>2024 年一项研究报告差异指数区分免疫原性的检验 p = 0.96（接近随机）。<a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11021644/" target="_blank" rel="noopener">［链接］</a></li>
+<li>2020 年一项大型联合研究报告：只看差异、不看呈递，效果反而更差。<a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7652061/" target="_blank" rel="noopener">［链接］</a></li>
+<li>2023 年一项研究报告差异指数 p = 0.25，同类单指标区分力普遍在 AUC 0.52–0.60。<a class="cite" href="https://doi.org/10.3389/fimmu.2023.1094236" target="_blank" rel="noopener">［链接］</a></li>
+</ul>
+<small>差异指数是「用上正常序列」的一个维度，本图作为该维度的工具排名，与主排名并列参考，不作单独结论。也有个别研究在特定条件下报告过差异指数有效 <a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4203949/" target="_blank" rel="noopener">［2014］</a>，因此结论限定为「差异指数作为单条肽的分类特征，在本数据上接近随机」。</small>
+</div>
+
+<!-- ===================== 5 边界 ===================== -->
+<h2 id="s5"><span class="n">5</span>数据边界与口径</h2>
+<p>把所有已知的口径边界一并列出，便于核对：</p>
+<div class="scroll"><table>
+<thead><tr><th>事项</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>三套肽集不可混用</td><td>101（停用）/ 130（旧切法）/ 102（本报告）；本报告数字全部属 102 条点突变新切法，引用旧 130 的地方均已注明。</td></tr>
+<tr><td>门槛取 8 还是 10</td><td>本报告主值用「有效样本 ≥ 8」（8 位患者，第一名 0.372）。若取 ≥ 10（更严，仅剩 6 位患者），第一名仍是同一工具、值为 0.455，平均升到 0.141。两档第一名不变；本数据点突变较少，取 8 保留更多患者。（见第 7 节）</td></tr>
+<tr><td>覆盖率的两种口径</td><td>主排名承重的是<b>肽层面</b>覆盖（28 个工具均 102/102 = 100%）。在更细的「短肽 × 型别」层面，仅一个工具（NeoTImmuML）有 5 格意外缺失（1 条肽 × 5 型别，需其自身补跑），不影响主排名；其余工具的空值都属各自声明的支持范围限制，不算意外缺失。</td></tr>
+<tr><td>一个工具无法排序</td><td>DeepNetBim 在取最高分后打分饱和成常数，无法区分排序，主排名列为不纳入（不是覆盖问题）；在差异指数版里可以排。</td></tr>
+<tr><td>差异指数第 2 名的注意点</td><td>IEDB-Calis 差异指数排第 2，但 102 条里有 57 条差为 0，结果偏乐观、且区间含 0，需谨慎看待。</td></tr>
+<tr><td>更长的肽尚未完成</td><td>把肽长度扩展到 8–11（可变窗）的重跑正在进行，尚未完成，本报告只含长度 9 的结果。</td></tr>
+<tr><td>小鼠数据</td><td>尚未纳入，本次为人源数据。</td></tr>
+</tbody>
+</table></div>
+<details id="fold-sens">
+<summary>展开：门槛 8 / 10 敏感性（第一名不随门槛变）</summary>
+<div class="foldbody">
+<div class="scroll"><table>
+<thead><tr><th>门槛</th><th>进入汇总患者</th><th class="n">第一名 netMHCpan-BA</th><th class="n">28 工具平均</th></tr></thead>
+<tbody>
+<tr><td>有效样本 ≥ 8（本报告）</td><td>8 位</td><td class="n">+0.372（第 1）</td><td class="n">0.113</td></tr>
+<tr><td>有效样本 ≥ 10</td><td>6 位</td><td class="n">+0.455（第 1）</td><td class="n">0.141</td></tr>
+</tbody>
+</table></div>
+<p class="meta">两档下第一名都是同一工具，稳定工具的名次不随门槛翻转。</p>
+</div>
+</details>
+
+<!-- ===================== 6 本工作 vs 文献 ===================== -->
+<h2 id="s6"><span class="n">6</span>本工作 vs 文献来源</h2>
+<p>把「哪些做法是这次评测中由本项目决定或处理的、哪些引自公开文献或工具官方」逐条分清：</p>
+<div class="scroll"><table>
+<thead><tr><th>做法</th><th>归属</th><th>依据 / 链接</th></tr></thead>
+<tbody>
+<tr><td>固定 9 窗的新切法（去长度干扰）</td><td><span class="b work">本工作</span></td><td>本项目处理</td></tr>
+<tr><td>纳入门槛改用有效样本数（修旧门槛错误）</td><td><span class="b work">本工作</span></td><td>本项目处理</td></tr>
+<tr><td>数值截断 ±0.99、方向统一、缺失留空不顶替</td><td><span class="b work">本工作</span></td><td>本项目处理</td></tr>
+<tr><td>下降拆解（肽集因素 / 切法因素）</td><td><span class="b work">本工作</span></td><td>本项目处理</td></tr>
+<tr><td>补齐两个工具的正常序列打分</td><td><span class="b work">本工作</span></td><td>本项目处理</td></tr>
+<tr><td>用患者内秩相关作主指标</td><td><span class="b lit">文献</span></td><td><a class="cite" href="https://doi.org/10.37349/ei.2023.00091" target="_blank" rel="noopener">同类先例</a></td></tr>
+<tr><td>费雪变换汇总相关系数</td><td><span class="b lit">文献</span></td><td><a class="cite" href="https://doi.org/10.2307/2333825" target="_blank" rel="noopener">标准方法</a></td></tr>
+<tr><td>取最高分代表一条突变</td><td><span class="b lit">文献</span></td><td><a class="cite" href="https://pvactools.readthedocs.io/" target="_blank" rel="noopener">pVACtools</a></td></tr>
+<tr><td>差异指数概念</td><td><span class="b lit">文献</span></td><td><a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4203949/" target="_blank" rel="noopener">2014 原文</a></td></tr>
+<tr><td>差异指数接近随机的旁证</td><td><span class="b lit">文献</span></td><td><a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11021644/" target="_blank" rel="noopener">2024</a> · <a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7652061/" target="_blank" rel="noopener">2020</a> · <a class="cite" href="https://doi.org/10.3389/fimmu.2023.1094236" target="_blank" rel="noopener">2023</a></td></tr>
+<tr><td>各工具打分方向 / 输出 / HLA 写法 / 支持范围</td><td><span class="b lit">官方</span></td><td>见<a href="#a-tools">工具总表</a>各条链接</td></tr>
+</tbody>
+</table></div>
+
+<!-- ===================== 7 待讨论 ===================== -->
+<h2 id="s7"><span class="n">7</span>需要讨论的问题</h2>
+<ol>
+<li><b>主值门槛取 8 还是 10？</b> 两档第一名都是同一工具（0.372 / 0.455）；取 8 保留 8 位患者、样本更多，取 10 更严但只剩 6 位。</li>
+<li><b>主分析肽集怎么统一？</b> 目前有 130（旧切法）与 102（新切法点突变）两套并存，投稿前需定一个。</li>
+<li><b>DeepNetBim 无法排序怎么处理？</b> 换用别的合成方式（如取平均），还是主排名就列为不纳入？</li>
+<li><b>差异指数怎么写进正文？</b> 作为「用上正常序列」的一个维度并列呈现，还是作为独立排名；接近随机的结论如何表述。</li>
+<li><b>IEDB-Calis 差异指数的 0 值过多</b>（57/102），是否在榜单里降权或加注。</li>
+<li><b>更长的肽（8–11）</b>作为主口径之一，还是以长度 9 为主、更长的作补充。</li>
+<li><b>部分工具的使用许可</b>（若干工具需其发布方书面同意后才能对外公布其结果），投稿前需落实。</li>
+</ol>
+
+<!-- ===================== 8 计划 ===================== -->
+<h2 id="s8"><span class="n">8</span>下一步计划</h2>
+<ul>
+<li>完成长度 8–11 的重跑，出对应排名并与长度 9 对比。</li>
+<li>在单工具基线之上，补充多工具组合与稳健性检验。</li>
+<li>补齐小鼠数据后，做人 / 鼠多数据集口径。</li>
+<li>核查 DeepNetBim 打分饱和的原因。</li>
+<li>投稿前：数字复核、去标识、落实工具许可、图表核对。</li>
+</ul>
+
+<!-- ===================== 9 附录 ===================== -->
+<h2 id="s9">附：工具、公式、文献、术语</h2>
+<p>以下为较深的细节，收在折叠区，点开查看。老师无需打开任何本地文件，需要说明的内容都已放进这里。</p>
+
+<details id="a-tools">
+<summary>工具总表（29 个工具：类别 · 打分方向 · 支持范围 · 许可 · 来源链接）</summary>
+<div class="foldbody">
+<p class="meta">「结合/呈递」类工具预测肽能否被呈递（是免疫反应的前提，作对照基线）；「免疫原性」类直接预测能否引发 T 细胞反应。带 ✎ 的为无官方权重、由本项目按公开方法复现的版本。</p>
+<div class="scroll"><table>
+<thead><tr><th>工具</th><th>类别</th><th>打分方向</th><th>支持范围 / 缺失</th><th>许可</th><th>来源</th></tr></thead>
+<tbody>
+<tr><td>netMHCpan-BA</td><td>结合/呈递</td><td>结合力取相反数（越大越强）</td><td>需 HLA</td><td>需发布方同意</td><td><a class="cite" href="https://services.healthtech.dtu.dk/" target="_blank" rel="noopener">官方</a></td></tr>
+<tr><td>netMHCpan-EL</td><td>结合/呈递</td><td>越大越可能呈递</td><td>需 HLA</td><td>需发布方同意</td><td><a class="cite" href="https://services.healthtech.dtu.dk/" target="_blank" rel="noopener">官方</a></td></tr>
+<tr><td>netMHCstabpan</td><td>结合/呈递</td><td>越大越稳定</td><td>需 HLA</td><td>需发布方同意</td><td><a class="cite" href="https://services.healthtech.dtu.dk/" target="_blank" rel="noopener">官方</a></td></tr>
+<tr><td>MHCflurry</td><td>结合/呈递</td><td>呈递分不翻；结合分取相反数</td><td>长度 8–15，需 HLA</td><td>开源可用</td><td><a class="cite" href="https://github.com/openvax/mhcflurry" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>MHCnuggets</td><td>结合/呈递</td><td>结合力取相反数</td><td>需 HLA</td><td>开源可用</td><td><a class="cite" href="https://github.com/KarchinLab/mhcnuggets" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>MHCseqNet</td><td>结合/呈递</td><td>越大越强</td><td>需 HLA（覆盖约 98%）</td><td>开源可用</td><td><a class="cite" href="https://github.com/cmb-chula/MHCSeqNet" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>TransHLA</td><td>结合/呈递</td><td>越大越强</td><td>不吃 HLA（同肽各型别同值）</td><td>开源可用</td><td><a class="cite" href="https://github.com/SkywalkerLuke/TransHLA" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>HLAthena</td><td>呈递代理</td><td>越大越可能呈递（非免疫原性）</td><td>长度 8–11，需 HLA</td><td>仅研究用</td><td><a class="cite" href="https://hlathena.tools/" target="_blank" rel="noopener">官方</a></td></tr>
+<tr><td>deepHLApan</td><td>免疫原性</td><td>越大越强（用免疫原性输出头）</td><td>需 HLA</td><td>开源（衍生须同协议）</td><td><a class="cite" href="https://github.com/jiujiezz/deephlapan" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>IEDB-Calis</td><td>免疫原性</td><td>越大越强（统计打分，无训练）</td><td>长度 8–15，需 HLA</td><td>开源可用</td><td><a class="cite" href="http://tools.iedb.org/immunogenicity/" target="_blank" rel="noopener">官方</a></td></tr>
+<tr><td>ImmuneApp</td><td>免疫原性</td><td>越大越强</td><td>长度 8–15，需 HLA</td><td>开源可用</td><td><a class="cite" href="https://github.com/bsml320/ImmuneApp" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>PRIME</td><td>免疫原性</td><td>越大越强</td><td>长度 8–14，需 HLA</td><td>学术免费</td><td><a class="cite" href="https://github.com/GfellerLab/PRIME" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>DeepImmuno</td><td>免疫原性</td><td>越大越强</td><td>仅长度 9/10，需 HLA</td><td>开源可用</td><td><a class="cite" href="https://github.com/frankligy/DeepImmuno" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>PredIG</td><td>免疫原性</td><td>越大越强</td><td>需 HLA</td><td>学术</td><td><a class="cite" href="https://github.com/PPPI/PredIG" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>IMPROVE</td><td>免疫原性</td><td>越大越强</td><td>长度 8–12，需 HLA</td><td>学术（部分特征受上游许可约束）</td><td><a class="cite" href="https://github.com/SRHgroup/IMPROVE" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>pTuneos</td><td>免疫原性</td><td>越大越强</td><td>需 HLA；不产正常序列分</td><td>学术</td><td><a class="cite" href="https://github.com/bm2-lab/pTuneos" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>NeoTImmuML ✎</td><td>免疫原性</td><td>越大越强</td><td>不吃 HLA（同肽各型别同值）</td><td>学术；复现版</td><td><a class="cite" href="https://github.com/01SYan19/NeoTImmuML" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>BigMHC-IM</td><td>免疫原性</td><td>越大越强</td><td>长度 8–14，需 HLA</td><td>学术非商用</td><td><a class="cite" href="https://github.com/KarchinLab/bigmhc" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>CNNeo ✎</td><td>免疫原性</td><td>越大越强</td><td>长度 8–14，需 HLA</td><td>开源；复现版</td><td><a class="cite" href="https://github.com/AaronChen007/neoantigen" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>Repitope</td><td>免疫原性</td><td>越大越强</td><td>仅长度 8–11；不吃 HLA</td><td>开源可用</td><td><a class="cite" href="https://github.com/masato-ogishi/Repitope" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>TSCAPE</td><td>免疫原性</td><td>越大越强</td><td>≤20；需 HLA；只产突变肽分</td><td>非商用、禁衍生；需同意</td><td><a class="cite" href="https://doi.org/10.1126/sciadv.adr2461" target="_blank" rel="noopener">论文</a></td></tr>
+<tr><td>NetTepi</td><td>免疫原性</td><td>越大越强</td><td>需 HLA；不支持 HLA-C</td><td>需发布方同意</td><td><a class="cite" href="https://services.healthtech.dtu.dk/" target="_blank" rel="noopener">官方</a></td></tr>
+<tr><td>ICERFIRE</td><td>免疫原性</td><td>名次取 100 − 名次（越大越强）</td><td>需 HLA、需正常序列</td><td>需发布方同意</td><td><a class="cite" href="https://services.healthtech.dtu.dk/" target="_blank" rel="noopener">官方</a></td></tr>
+<tr><td>MUNIS</td><td>免疫原性</td><td>越大越强</td><td>长度 8–15，需 HLA</td><td>开源可用</td><td><a class="cite" href="https://github.com/jwohlwend/munis" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>andy90</td><td>免疫原性</td><td>越大越强</td><td>长度 8–11，需 HLA（依赖结合工具）</td><td>开源；依赖项受上游许可</td><td><a class="cite" href="https://github.com/andy90/immunogenicity_predictor" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>ImmuGenX</td><td>免疫原性</td><td>越大越强</td><td>需 HLA</td><td>学术；结果可发表</td><td>官方发布</td></tr>
+<tr><td>Seq2Neo</td><td>免疫原性</td><td>越大越强</td><td>需 HLA（依赖结合工具）</td><td>开源；依赖项受上游许可</td><td><a class="cite" href="https://github.com/XSLiuLab/Seq2Neo" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>DeepNetBim</td><td>免疫原性</td><td>越大越强（主排名里饱和无法排序）</td><td>仅长度 9，需 HLA</td><td>无明示协议；发表前需授权</td><td><a class="cite" href="https://github.com/Li-Lab-SJTU/DeepNetBim" target="_blank" rel="noopener">仓库</a></td></tr>
+<tr><td>NeoaG</td><td>免疫原性</td><td>越大越强</td><td>不吃 HLA（同肽各型别同值）</td><td>许可待确认</td><td>官方发布</td></tr>
+</tbody>
+</table></div>
+<p class="meta"><b>需翻转方向的 4 个</b>：netMHCpan-BA、MHCflurry（结合分）、MHCnuggets（三者原本是结合力、越小越强，取相反数）；ICERFIRE（原本输出名次、越小越强，取 100 − 名次）。<b>不吃 HLA 的工具</b>（TransHLA、NeoTImmuML、Repitope、NeoaG）同一条肽对不同型别给相同分。<b>许可提示</b>：标「需发布方同意」的工具，其结果对外公布前需取得发布方书面同意。</p>
+
+<details>
+<summary>再展开：15 个工具的接受格式 / 参数 / 输出细节</summary>
+<div class="foldbody">
+<p class="meta">以下工具有独立部署说明；其余工具的对齐信息见上表。每条含：用途、输入、关键设定、输出与缺失规则。</p>
+<h4>BigMHC-IM</h4><ul><li>用途：两阶段迁移学习预测免疫原性（7 个模型取平均）。</li><li>输入：带表头 CSV（型别列、肽列），型别写法宽松；无需正常序列。</li><li>设定：固定免疫原性模式；从官方源码目录启动。</li><li>输出：0–1，越大越强；本数据无缺失。</li></ul>
+<h4>CNNeo ✎</h4><ul><li>用途：语言模型增强的卷积网络预测免疫原性（本项目用轻量子模型）。</li><li>输入：带表头 CSV（肽、型别）。</li><li>设定：无官方权重，按公开方法与内置训练数据自训。</li><li>输出：0–1；长度 &lt;8 或 &gt;14 过滤为空。</li></ul>
+<h4>DeepImmuno</h4><ul><li>用途：卷积网络预测 CD8+ T 细胞免疫原性。</li><li>输入：两列（肽、型别）。</li><li>设定：仅支持长度 9/10。</li><li>输出：0–1；非 9/10 长度为空（本数据约 1/3 有值）。</li></ul>
+<h4>deepHLApan</h4><ul><li>用途：一次同出「结合」与「免疫原性」两个分。</li><li>输入：CSV，型别写法为无星号形式。</li><li>设定：本项目采用免疫原性输出头。</li><li>输出：0–1（&gt;0.5 视为阳性）。</li></ul>
+<h4>HLAthena</h4><ul><li>用途：预测呈递概率（非免疫原性），作对照基线。</li><li>输入：肽（型别用短码）。</li><li>设定：本地仅部署部分型别的模型。</li><li>输出：呈递概率；未部署型别为空。</li></ul>
+<h4>IEDB-Calis</h4><ul><li>用途：经典统计打分，无训练、无权重。</li><li>输入：纯肽文本，型别经命令行给定。</li><li>设定：支持部分型别的锚位屏蔽，其余用默认屏蔽。</li><li>输出：无固定范围、越大越强；所有长度均出分。</li></ul>
+<h4>IMPROVE</h4><ul><li>用途：随机森林整合 22 个特征。</li><li>输入：突变肽 + 正常序列 + 型别。</li><li>设定：本项目用简化模型变体。</li><li>输出：0–1；超出长度 8–12 的片段为空（肽层面全覆盖）。</li></ul>
+<h4>ImmuneApp</h4><ul><li>用途：注意力网络预测免疫原性。</li><li>输入：纯肽 + 型别列表。</li><li>设定：长度 8–15 校验。</li><li>输出：0–1；每肽每型别一行。</li></ul>
+<h4>MHCflurry</h4><ul><li>用途：常用呈递代理，同出结合力与呈递分。</li><li>输入：肽 + 型别（写法直接可用）。</li><li>设定：按型别分组预测；65 型别全覆盖。</li><li>输出：呈递分直接用、结合力取相反数并入；本数据无缺失。</li></ul>
+<h4>netMHCpan-BA</h4><ul><li>用途：结合亲和力标准工具，作结合信号的对照上限。</li><li>输入：肽文件（按型别分文件）。</li><li>设定：批量按型别运行。</li><li>输出：名次/亲和力（越小越强），取相反数并入；覆盖 100%。</li></ul>
+<h4>NeoTImmuML ✎</h4><ul><li>用途：集成模型，基于 78 个理化特征，不依赖 HLA。</li><li>输入：肽 + 预先算好的理化特征。</li><li>设定：无官方权重，按公开方法复现。</li><li>输出：0–1；同肽对各型别同值。</li></ul>
+<h4>PRIME</h4><ul><li>用途：轻量模型（呈递分 + 接触位氨基酸频率 + 长度）。</li><li>输入：纯肽 + 型别。</li><li>设定：依赖一个同源的呈递工具。</li><li>输出：越大越强；覆盖 100%。</li></ul>
+<h4>PredIG</h4><ul><li>用途：可解释模型，整合 12 个特征。</li><li>输入：肽 + 型别 + 蛋白序列。</li><li>设定：用新抗原模型、重组模式。</li><li>输出：0–1；主输出覆盖 100%。</li></ul>
+<h4>pTuneos</h4><ul><li>用途：优先级排序流程的子模块。</li><li>输入：突变肽 + 正常序列 + 型别（只用少数纯肽特征）。</li><li>设定：本地容器运行。</li><li>输出：0–1；分布高度集中在 0（偏二分）；不产正常序列分。</li></ul>
+<h4>Repitope</h4><ul><li>用途：不依赖 HLA，模拟接触势能测序列内在免疫原性。</li><li>输入：仅肽序列（长度 8–11）。</li><li>设定：每次运行重训集成模型。</li><li>输出：0–1；超出长度为空；同肽对各型别同值。</li></ul>
+<h4>TSCAPE</h4><ul><li>用途：跨任务深度学习预测免疫原性，只产突变肽分。</li><li>输入：型别 + 肽（肽列须小写）。</li><li>设定：需修正官方代码的几处小问题后运行。</li><li>输出：0–1；不支持的型别为空。方向为负但不达显著。</li></ul>
+</div>
+</details>
+</div>
+</details>
+
+<details id="a-mech">
+<summary>长度干扰的原理（第 1 节改进二的展开）</summary>
+<div class="foldbody">
+<p>记 <span class="p" data-t="某工具对突变的打分">X</span> = 工具分、<span class="p" data-t="实验测得的反应强度">Y</span> = 实验反应、<span class="p" data-t="疫苗肽的长度">Z</span> = 肽长度。长度干扰 = Z 同时影响 X（长肽片段多、最高分偏高）和 Y（长肽反应偏强），于是 X 与 Y 的相关里混进一段「借道 Z」的成分。控住长度后相关会变多少，可由偏相关一阶展开估计：</p>
+<div class="math" style="font-size:15px">
+<span class="p" data-t="控住长度后相关的变化量">Δ</span>
+<span class="op">≈</span> 0.411 ·
+<span class="p" data-t="工具分与肽长度的相关，决定该工具被干扰多少">ρ<sub>XZ</sub></span>
+<span class="op">−</span> 0.081 ·
+<span class="p" data-t="工具分与实验值的相关">ρ<sub>XY</sub></span>
+</div>
+<p class="meta">（代入实测「长度 ↔ 实验值」相关 ≈ 0.38。）</p>
+<ul>
+<li>关键：真正决定某工具被干扰多少的，是它<b>自己</b>的「工具分 ↔ 长度」相关 <span class="p" data-t="工具分与肽长度的相关">ρ<sub>XZ</sub></span>。数据里 28 个工具中有 22 个这个相关小于 0.2（中位 0.13），所以纯长度效应对多数工具其实很小。</li>
+<li>长度经「片段数量（≈ 肽长度，相关 0.755）」传导；固定片段数为 9，就掐断了这条传导，相关从 0.46 降到近 0（−0.10）。</li>
+<li>这也解释了 4.3 里「切法因素」只占下降的 44%（较小的一半）：纯长度对多数工具影响有限。</li>
+</ul>
+</div>
+</details>
+
+<details id="a-agg">
+<summary>更完整的聚合与融合方法菜单（背景，本次仅用其中「取最高分 + 单工具」一条）</summary>
+<div class="foldbody">
+<p class="meta">这次两张榜单只用了「取最高分 + 单工具 + 患者内秩相关」这一条最简单的做法。完整框架还包含多种可调的聚合与融合方式，列于此供参考：</p>
+<h4>把多个片段合成一个分（四种）</h4>
+<div class="scroll"><table>
+<thead><tr><th>方式</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>取最高分（本次用）</td><td>取片段里最大的分，无可调参数</td></tr>
+<tr><td>前 k 名加权</td><td>取前 <span class="p" data-t="取排名前几的片段">k</span> 个、按名次加权（权重随参数 <span class="p" data-t="名次衰减强度">α</span> 变）</td></tr>
+<tr><td>温度加权</td><td>按分数经指数加权（<span class="p" data-t="温度：越小越接近取最高分，越大越接近取平均">T</span> 控制软硬）</td></tr>
+<tr><td>名次衰减</td><td>按名次的对数衰减加权（参数 <span class="p" data-t="衰减强度">γ</span>）</td></tr>
+</tbody>
+</table></div>
+<h4>把多个工具的名次合成一个（背景）</h4>
+<p>各工具先在患者内转成名次再融合，常见方式有平均名次、几何平均、中位数、加权平均等十余种；核心差异是「要多个工具同时看好」还是「任一工具看好即可」。本次未做工具融合。</p>
+</div>
+</details>
+
+<details id="a-glossary">
+<summary>术语表</summary>
+<div class="foldbody">
+<div class="scroll"><table>
+<thead><tr><th>术语</th><th>解释</th></tr></thead>
+<tbody>
+<tr><td>ELISpot</td><td>一种测 T 细胞反应强弱的实验，读数是斑点数，数值连续；本报告用作评判工具的标准。</td></tr>
+<tr><td>点突变（SNV）</td><td>只改一个氨基酸的突变，有对应的正常序列。</td></tr>
+<tr><td>插入缺失 / 移码</td><td>会改变阅读框、没有一一对应正常序列的突变，本次排除。</td></tr>
+<tr><td>HLA / 型别</td><td>决定哪些肽被呈递给 T 细胞的分子，每人有多个型别。</td></tr>
+<tr><td>突变肽 / 正常序列</td><td>突变后的肽 / 未突变的对应正常肽（用于算差异指数）。</td></tr>
+<tr><td>取最高分</td><td>一条突变有多个片段，取其中最高分代表这条突变。</td></tr>
+<tr><td>有效样本数</td><td>某患者里，工具分与实验值同时有数值的肽的条数。</td></tr>
+<tr><td>秩相关</td><td>只看两组数排序是否一致的相关，范围 −1 到 1。</td></tr>
+<tr><td>ρ̄（主指标）</td><td>各患者秩相关经费雪变换后取平均、再变换回来的值，是榜单主分。</td></tr>
+<tr><td>费雪变换</td><td>合并多个相关系数的标准统计做法。</td></tr>
+<tr><td>置信区间</td><td>结果的波动范围；区间不含 0 表示与「零相关」可区分。</td></tr>
+<tr><td>差异指数</td><td>突变肽分减正常序列分（负则记 0）。</td></tr>
+</tbody>
+</table></div>
+</div>
+</details>
+
+<details id="a-ref">
+<summary>参考文献（均带链接）</summary>
+<div class="foldbody">
+<ol style="font-size:14px">
+<li>数据来源：肾癌新抗原疫苗试验，《Nature》2025。<a class="cite" href="https://doi.org/10.1038/s41586-024-08507-5" target="_blank" rel="noopener">doi.org/10.1038/s41586-024-08507-5</a></li>
+<li>患者内秩相关作主指标（同类先例）。<a class="cite" href="https://doi.org/10.37349/ei.2023.00091" target="_blank" rel="noopener">doi.org/10.37349/ei.2023.00091</a></li>
+<li>费雪变换合并相关系数（标准方法）。<a class="cite" href="https://doi.org/10.2307/2333825" target="_blank" rel="noopener">doi.org/10.2307/2333825</a></li>
+<li>取最高分代表（通行做法）。<a class="cite" href="https://pvactools.readthedocs.io/" target="_blank" rel="noopener">pvactools.readthedocs.io</a></li>
+<li>差异指数概念，《J Exp Med》2014。<a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4203949/" target="_blank" rel="noopener">PMC4203949</a></li>
+<li>差异指数接近随机（2024）。<a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11021644/" target="_blank" rel="noopener">PMC11021644</a></li>
+<li>只看差异反而更差（2020）。<a class="cite" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7652061/" target="_blank" rel="noopener">PMC7652061</a></li>
+<li>差异指数区分力有限（2023）。<a class="cite" href="https://doi.org/10.3389/fimmu.2023.1094236" target="_blank" rel="noopener">doi.org/10.3389/fimmu.2023.1094236</a></li>
+<li>同类单指标区分力概述（2022）。<a class="cite" href="https://doi.org/10.1093/bib/bbac141" target="_blank" rel="noopener">doi.org/10.1093/bib/bbac141</a></li>
+</ol>
+<p class="meta">各工具的原始论文与代码链接见上方「工具总表」每行的来源列。</p>
+</div>
+</details>
+
+<details id="a-src">
+<summary>本地存档（供复现，老师无需打开）</summary>
+<div class="foldbody">
+<p class="meta">本报告所有数字都可由以下存档重算，均已单独核对。老师阅读本报告无需打开这些文件，此处仅作复现留痕。</p>
+<ul>
+<li>主排名与差异指数排名：由一个可重跑的评分脚本产出（含各工具相关系数与置信区间）。</li>
+<li>下降拆解三情景（0.191 / 0.147 / 0.113）：由一个分解脚本产出，已存为表。</li>
+<li>各工具打分表：每工具 4053 行，逐一核对行数与缺失。</li>
+<li>数字复核：主排名第一 0.372、平均 0.113、差异指数平均 0.007、拆解三值等，均经独立复核与真源逐值一致。</li>
+</ul>
+</div>
+</details>
+
+<hr>
+<p class="meta">本报告自包含，可离线阅读；公式为纯 HTML/CSS 渲染，图片已内嵌。数字均经独立复核。</p>
+
+<!-- ==================== 阅读助手（划词解释 + 可选在线追问） ==================== -->
+<style>
+#aiFab{position:fixed;right:18px;bottom:18px;z-index:50;background:var(--blue);color:#fff;border:0;
+  border-radius:24px;padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25);display:none}
+body.ai-collapsed #aiFab{display:block}
+#aiFab:hover{filter:brightness(1.08)}
+/* 默认停靠在右侧（像目录一样常驻）；窄屏收起为浮层 */
+#aiPanel{position:fixed;top:0;right:0;height:100vh;width:344px;max-width:92vw;z-index:55;background:var(--card);
+  border-left:1px solid var(--line);box-shadow:-6px 0 22px rgba(0,0,0,.10);display:flex;flex-direction:column;
+  transform:translateX(0);transition:transform .22s ease}
+body.ai-collapsed #aiPanel{transform:translateX(100%)}
+@media(min-width:1150px){ body:not(.ai-collapsed) .wrap{margin-right:344px} }
+@media(max-width:1149px){ #aiPanel{z-index:60;box-shadow:-8px 0 30px rgba(0,0,0,.28)} }
+#aiPanel header{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--dark);color:#fff}
+#aiPanel header .ti{font-weight:700;flex:1;font-size:15px}
+#aiPanel header button{background:transparent;border:0;color:#fff;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px}
+#aiPanel header button:hover{background:rgba(255,255,255,.15)}
+#aiBody{flex:1;overflow-y:auto;padding:14px 16px;font-size:14px;line-height:1.7}
+.aiSel{background:var(--foldbg);border:1px solid var(--line);border-radius:8px;padding:8px 11px;margin-bottom:12px;font-size:13px;color:var(--muted)}
+.aiSel b{color:var(--ink)}
+.aiCard{border:1px solid var(--line);border-radius:9px;padding:10px 13px;margin:9px 0;background:var(--bg)}
+.aiCard .h{font-weight:700;color:var(--blue);margin-bottom:3px}
+.aiMsg{margin:10px 0;padding:10px 13px;border-radius:10px;font-size:13.5px;line-height:1.7;white-space:pre-wrap}
+.aiMsg.u{background:var(--litbg);border:1px solid var(--line)}
+.aiMsg.a{background:var(--workbg);border:1px solid var(--line)}
+.aiMsg.err{background:color-mix(in srgb,var(--card) 70%,var(--red) 30%);border:1px solid var(--red)}
+.aiHint{color:var(--muted);font-size:12.5px;margin:6px 0}
+#aiFoot{border-top:1px solid var(--line);padding:10px 12px;background:var(--card)}
+#aiFoot textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:13.5px;
+  resize:vertical;min-height:44px;background:var(--bg);color:var(--ink)}
+#aiFoot .row{display:flex;gap:8px;margin-top:7px;align-items:center}
+#aiFoot button.send{flex:1;background:var(--blue);color:#fff;border:0;border-radius:8px;padding:9px;font-weight:700;cursor:pointer}
+#aiFoot button.send:disabled{opacity:.5;cursor:default}
+#aiFoot .gear{background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 11px;cursor:pointer}
+#aiCfg{display:none;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--foldbg);font-size:13px}
+#aiCfg.show{display:block}
+#aiCfg input,#aiCfg select{width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin:4px 0 8px;background:var(--card);color:var(--ink);font:inherit}
+#aiCfg label{font-weight:600;font-size:12.5px}
+#aiCfg .warn{color:var(--orange);font-size:12px;line-height:1.5}
+#aiCfg button{background:var(--blue);color:#fff;border:0;border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600}
+.aiToggle{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+@media(max-width:600px){#aiPanel{width:100vw}}
+</style>
+
+<button id="aiFab">💬 阅读助手</button>
+<aside id="aiPanel" aria-label="阅读助手">
+  <header>
+    <span class="ti">📖 阅读助手</span>
+    <button id="aiGear" title="设置在线问答">⚙</button>
+    <button id="aiClose" title="收起（腾出正文空间，可再点右下按钮展开）">✕</button>
+  </header>
+  <div id="aiCfg">
+    <label>在线追问（可选）· Claude API 密钥</label>
+    <input id="aiKey" type="password" placeholder="sk-ant-... 仅保存在本机浏览器">
+    <label>模型</label>
+    <select id="aiModel">
+      <option value="claude-sonnet-5">claude-sonnet-5（推荐）</option>
+      <option value="claude-haiku-4-5-20251001">claude-haiku-4-5（更快更省）</option>
+      <option value="claude-opus-4-8">claude-opus-4-8（最强）</option>
+    </select>
+    <label class="aiToggle"><input type="checkbox" id="aiWeb" checked> 允许联网检索</label>
+    <label class="aiToggle"><input type="checkbox" id="aiAuto" checked> 划词后自动请 AI 解释</label>
+    <p class="warn">密钥只保存在你本机浏览器（localStorage），<b>不会写进本文件</b>，分享文件时不含密钥。开启后，你划选的文字和提问会发送给 AI 服务。不填密钥也能用「本地术语解释」。</p>
+    <button id="aiSave">保存</button>
+  </div>
+  <div id="aiBody">
+    <div class="aiHint">用法：在正文里<b>划选任意文字或一段话</b>，这里会给出解释；也可在下方直接提问、追问。助手已载入本报告的口径，<b>只讲 2026-07-08 新版（102 条点突变、新切法），不会与旧版混淆</b>。</div>
+  </div>
+  <div id="aiFoot">
+    <textarea id="aiInput" placeholder="就本报告提问或追问，例如：为什么平均只有 0.113？"></textarea>
+    <div class="row">
+      <button class="gear" id="aiGear2" title="设置">⚙</button>
+      <button class="send" id="aiSend">发送</button>
+    </div>
+  </div>
+</aside>
+
+<script>
+(function(){
+  var VERSION_NOTE = "本报告 = 2026-07-08 新版：102 条点突变肽、新切法（每条突变固定切 9 个长度 9 的片段）、单工具取最高分、患者内秩相关（有效样本≥8）。切勿与旧版本混淆：旧版有 101 肽二分类 AUC（已停用）、130 肽旧切法。";
+  var KB = [
+    {k:["有效样本","effN","门槛","≥8","≥ 8"],t:"有效样本数 = 某患者里工具分与实验值同时有数值的肽数。只有该数达到 8 的患者才纳入汇总。这是本版的关键修正：旧做法用患者总行数当门槛，会让只覆盖两三条肽、相关被凑成 ±1 的患者混入、抬高榜首。这次患者 102 只有 6 条点突变、不足 8，被排除，实际 8 位患者进入汇总。"},
+    {k:["秩相关","Spearman","相关系数","排序是否一致"],t:"秩相关只看两组数的排序是否一致（不看数值大小），范围 −1 到 1。这里比较「工具打分的排序」和「实验反应强度的排序」。越接近 1 越能把实验上强的突变排在前面；随机基线是 0（不是 0.5）。"},
+    {k:["费雪","Fisher","汇总","等权"],t:"费雪变换是合并多个相关系数的标准统计做法：把各患者的相关系数变换后取平均、再变换回来。这里每位患者权重相同（患者等权）。结果记作 ρ̄，是榜单主分。"},
+    {k:["ρ̄","主指标","主分","0.372","第一名","netMHCpan"],t:"ρ̄ 是各患者秩相关经费雪变换汇总后的值，是榜单主分。本版主排名第一是 netMHCpan-BA，ρ̄=0.372（有效样本≥8、8 位患者）；它是结合亲和力工具，说明结合信号对免疫原性排序的贡献不弱于免疫原性专用工具。"},
+    {k:["0.113","平均","28 个工具","平均相关"],t:"28 个有效工具的平均相关系数是 0.113。这个值不高，与领域现状一致——T 细胞免疫原性本身很难预测，同类研究的单指标水平也在这个量级。随机基线是 0。"},
+    {k:["置信区间","区间","不含 0","含 0","95%"],t:"置信区间是结果的波动范围（以患者为单元重抽 2000 次得到的 95% 区间）。区间不含 0 表示与「零相关」可区分。主排名里只有前 6 名加 MUNIS 共 7 个区间不含 0；其余工具与零相关尚不能区分。"},
+    {k:["取最高分","最高分","池化","pooling","片段","窗口"],t:"一条突变被切成 9 个长度 9 的片段、每个片段对多个 HLA 型别各有一个分；取所有片段×型别里的最高分代表这条突变（用最强的片段代表）。这是公开工具的通行做法。"},
+    {k:["差异指数","DAI","野生型","正常序列"],t:"差异指数 = 突变肽得分 − 对应正常序列得分（负则记 0）。想法是看「突变让这条肽比原来强多少」。本版结果：25 个工具能算，平均只有 0.007（接近随机），最高 0.344 也没超过突变肽直接打分的最高值 0.372。原因是突变肽与正常序列的分本身高度相关（0.81–0.95），单点突变几乎不改分，相减后主要剩噪声。这与多项公开研究一致。"},
+    {k:["点突变","SNV","102"],t:"点突变（SNV）只改一个氨基酸、有对应正常序列。本报告用 102 条点突变肽，是官方 130 条去掉 28 条插入缺失/移码肽后的结果（那 28 条没有对应正常序列，无法算差异）。"},
+    {k:["插入缺失","移码","indel","28 条"],t:"插入缺失/移码突变会改变阅读框、没有一一对应的正常序列，本次排除（共 28 条）。它们恰是实验反应偏强的肽，去掉后任务更难——这解释了下降的一半多。"},
+    {k:["HLA","型别","等位"],t:"HLA 型别决定哪些肽能被呈递给 T 细胞，每位患者有多个型别。本数据涉及 26 个型别。部分工具不吃 HLA（同肽对各型别给相同分），需注意。"},
+    {k:["ELISpot","真值","反应强度","斑点"],t:"ELISpot 是测 T 细胞反应强弱的实验，读数是斑点数、数值连续。本报告用它作为评判工具好坏的标准（工具排序越对得上它越好）。"},
+    {k:["新切法","旧切法","0.191","下降","肽长","长度干扰","混杂"],t:"旧切法下越长的疫苗肽切出越多片段、最高分越容易偏高，工具能靠肽更长而非预测更准拿高分（片段数与长度相关 0.46）。新切法固定每条突变切 9 个片段，消除这种干扰（相关降到 −0.10）。平均相关从旧切法 0.191 降到新切法 0.113，下降 0.078 = 去掉 28 条强反应肽（−0.044，56%）+ 去长度干扰（−0.034，44%），都不是程序出错。"},
+    {k:["翻转","相反数","方向","越小越强","结合力"],t:"统一成「分数越大越可能引发免疫反应」。结合类工具输出结合力（越小结合越强），取相反数并入。29 个工具里只有 4 个需翻转：netMHCpan-BA、MHCflurry 的结合分、MHCnuggets、ICERFIRE（原为名次，取 100−名次）。"},
+    {k:["DeepNetBim","饱和","无法排序","常数"],t:"DeepNetBim 在取最高分后打分饱和成几乎相同的常数、无法区分排序，主排名列为不纳入（这是退化，不是覆盖缺失）；在差异指数版里可以排。"},
+    {k:["覆盖","缺失","NeoTImmuML"],t:"主排名承重的是肽层面覆盖，28 个工具都是 102/102=100%。更细的「短肽×型别」层面只有 NeoTImmuML 有 5 格意外缺失（1 条肽×5 型别），不影响主排名；其余工具的空值都属各自声明的支持范围限制。"},
+    {k:["门槛 8","门槛 10","0.455","0.141","敏感性"],t:"主值用「有效样本≥8」（8 位患者，第一名 0.372）。若改用≥10（更严、只剩 6 位患者），第一名仍是同一工具、值 0.455，平均升到 0.141。两档第一名不变；本数据点突变较少，取 8 保留更多患者。"},
+    {k:["101","130","三套","肽集","停用","版本","新版","旧版","区别","新旧","混淆"],t:"项目历史上有三套肽集，数字不能混：101 条（按有/无反应算 AUC，已停用）、130 条（旧切法）、102 条（本报告新切法点突变）。此前「相关只有 0.5 左右」对应的是第一套 AUC，已停用；本报告用连续强度算秩相关，随机基线是 0。本报告只讲第三套（2026-07-08 新版），不与旧版混淆。"},
+    {k:["许可","同意","发布方"],t:"部分工具需其发布方书面同意后才能对外公布结果，投稿前需落实。这是待办之一。"},
+    {k:["本工作","文献","自己做"],t:"报告用标注区分：「本工作」= 这次评测中由本项目决定或处理的（如新切法、有效样本门槛、下降拆解、补正常序列打分）；「文献/官方」= 引自公开论文或工具官方（如秩相关主指标、费雪变换、取最高分、差异指数概念），每处都带可点链接。"}
+  ];
+  function offline(sel){
+    var s=(sel||"").toLowerCase(), hits=[];
+    for(var i=0;i<KB.length;i++){for(var j=0;j<KB[i].k.length;j++){
+      if(s.indexOf(KB[i].k[j].toLowerCase())>=0){hits.push(KB[i]);break;}}}
+    return hits;
+  }
+  var panel=document.getElementById('aiPanel'), body=document.getElementById('aiBody');
+  // 宽屏停靠常驻、窄屏自动收起（防遮正文）；缩窄即收、放宽即展
+  var _narrow=window.innerWidth<1150;
+  if(_narrow) document.body.classList.add('ai-collapsed');
+  window.addEventListener('resize',function(){
+    var n=window.innerWidth<1150;
+    if(n&&!document.body.classList.contains('ai-collapsed'))document.body.classList.add('ai-collapsed');
+    else if(!n&&_narrow)document.body.classList.remove('ai-collapsed');
+    _narrow=n;
+  });
+  function openP(){document.body.classList.remove('ai-collapsed');}
+  function closeP(){document.body.classList.add('ai-collapsed');}
+  document.getElementById('aiFab').onclick=function(){document.body.classList.toggle('ai-collapsed');};
+  document.getElementById('aiClose').onclick=closeP;
+  var cfg=document.getElementById('aiCfg');
+  document.getElementById('aiGear').onclick=function(){cfg.classList.toggle('show');};
+  document.getElementById('aiGear2').onclick=function(){openP();cfg.classList.add('show');};
+  var keyEl=document.getElementById('aiKey'),modelEl=document.getElementById('aiModel'),
+      webEl=document.getElementById('aiWeb'),autoEl=document.getElementById('aiAuto');
+  try{
+    keyEl.value=localStorage.getItem('yj_ai_key')||'';
+    if(localStorage.getItem('yj_ai_model'))modelEl.value=localStorage.getItem('yj_ai_model');
+    if(localStorage.getItem('yj_ai_web')!==null)webEl.checked=localStorage.getItem('yj_ai_web')==='1';
+    if(localStorage.getItem('yj_ai_auto')!==null)autoEl.checked=localStorage.getItem('yj_ai_auto')==='1';
+  }catch(e){}
+  document.getElementById('aiSave').onclick=function(){
+    try{localStorage.setItem('yj_ai_key',keyEl.value.trim());localStorage.setItem('yj_ai_model',modelEl.value);
+      localStorage.setItem('yj_ai_web',webEl.checked?'1':'0');localStorage.setItem('yj_ai_auto',autoEl.checked?'1':'0');}catch(e){}
+    cfg.classList.remove('show');
+    add('a','设置已保存。'+(keyEl.value.trim()?'在线追问已开启。':'未填密钥，当前用本地术语解释。'));
+  };
+  function add(role,txt){var d=document.createElement('div');d.className='aiMsg '+role;d.textContent=txt;
+    body.appendChild(d);body.scrollTop=body.scrollHeight;return d;}
+  function showSel(sel){
+    var box=document.createElement('div');box.className='aiSel';box.innerHTML='选中：<b></b>';
+    box.querySelector('b').textContent=sel;body.appendChild(box);
+    var hits=offline(sel);
+    if(hits.length){hits.slice(0,4).forEach(function(h){
+      var c=document.createElement('div');c.className='aiCard';c.innerHTML='<div class="h">本地释义</div>';
+      var p=document.createElement('div');p.textContent=h.t;c.appendChild(p);body.appendChild(c);});}
+    else{var c=document.createElement('div');c.className='aiCard';
+      c.innerHTML='<div class="h">本地术语库未直接命中</div><div>可在下方向 AI 追问（需在 ⚙ 设置密钥）。</div>';body.appendChild(c);}
+    body.scrollTop=body.scrollHeight;
+  }
+  var history=[];
+  function sysPrompt(){
+    var facts=KB.map(function(h){return "· "+h.t;}).join("\n");
+    return "你是嵌入在一份科研报告里的中文阅读助手，读者是老师。"+VERSION_NOTE+
+      "\n\n【本报告要点，回答须以此为准，不得与旧版混淆】\n"+facts+
+      "\n\n回答规则：用简洁中文；紧扣本报告口径；涉及数字时用上面的值；不确定或本报告未涵盖的，先说明不确定，可用联网检索补充公开知识，但要区分「本报告结论」与「外部一般知识」；不要编造本项目的内部数字。";
+  }
+  function callAI(userText){
+    var key='';try{key=(localStorage.getItem('yj_ai_key')||'').trim();}catch(e){}
+    if(!key){add('a','（未配置密钥，暂用本地术语解释。如需 AI 详解与追问，点右上 ⚙ 填入 Claude 密钥。）');return;}
+    var model='claude-sonnet-5';try{model=localStorage.getItem('yj_ai_model')||model;}catch(e){}
+    var web=true;try{web=localStorage.getItem('yj_ai_web')!=='0';}catch(e){}
+    history.push({role:'user',content:userText});
+    var wait=add('a','思考中…');
+    var reqBody={model:model,max_tokens:1024,system:sysPrompt(),messages:history};
+    if(web)reqBody.tools=[{type:"web_search_20250305",name:"web_search",max_uses:3}];
+    fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify(reqBody)
+    }).then(function(r){return r.json();}).then(function(j){
+      var txt='';if(j.content&&j.content.length){j.content.forEach(function(b){if(b.type==='text')txt+=b.text;});}
+      if(!txt&&j.error){wait.className='aiMsg err';wait.textContent='出错：'+(j.error.message||JSON.stringify(j.error));return;}
+      wait.textContent=txt||'（无返回）';history.push({role:'assistant',content:txt});
+    }).catch(function(e){wait.className='aiMsg err';wait.textContent='请求失败：'+e.message+'（可能是密钥/网络/浏览器限制；本地术语解释仍可用）';});
+  }
+  function answerOffline(q){
+    var hits=offline(q);
+    if(hits.length){hits.slice(0,4).forEach(function(h){
+      var c=document.createElement('div');c.className='aiCard';c.innerHTML='<div class="h">本地释义</div>';
+      var p=document.createElement('div');p.textContent=h.t;c.appendChild(p);body.appendChild(c);});}
+    else{add('a','本地术语库没有直接匹配到。可换个词试试（如「有效样本」「差异指数」「0.113」「新旧版区别」「差异指数为什么接近随机」），或在右上 ⚙ 配置密钥后向 AI 自由提问、追问。');}
+    body.scrollTop=body.scrollHeight;
+  }
+  var input=document.getElementById('aiInput');
+  document.getElementById('aiSend').onclick=function(){
+    var q=input.value.trim();if(!q)return;input.value='';add('u',q);
+    var key='';try{key=(localStorage.getItem('yj_ai_key')||'').trim();}catch(e){}
+    if(key)callAI(q);else answerOffline(q);
+  };
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){document.getElementById('aiSend').click();}});
+  var lastSel='';
+  document.addEventListener('mouseup',function(e){
+    if(panel.contains(e.target))return;
+    setTimeout(function(){
+      var sel=(window.getSelection?window.getSelection().toString():'').trim();
+      if(sel.length<2||sel===lastSel)return;lastSel=sel;openP();showSel(sel);
+      var auto=true;try{auto=localStorage.getItem('yj_ai_auto')!=='0';}catch(e){}
+      var key='';try{key=(localStorage.getItem('yj_ai_key')||'').trim();}catch(e){}
+      if(auto&&key){add('u','请详细解释这段：「'+sel+'」');callAI('请结合本报告，详细解释这段内容：「'+sel+'」');}
+    },10);
+  });
+})();
+</script>
+
+
+
+
+
+
+</main>
+</div>
+
+<script>
+(function(){
+  var b=document.getElementById('tt');
+  function cur(){var e=document.documentElement.getAttribute('data-theme');
+    if(e)return e;return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+  b.addEventListener('click',function(){
+    document.documentElement.setAttribute('data-theme',cur()==='dark'?'light':'dark');});
+})();
+</script>

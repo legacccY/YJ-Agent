@@ -66,8 +66,13 @@ def main():
     ap.add_argument("--out", default=str(default_out))
     ap.add_argument("--min-len", type=int, default=8)
     ap.add_argument("--max-len", type=int, default=11)  # _cnn.py encode maxlen=11
+    ap.add_argument("--side", choices=["MT", "WT"], default="MT",
+                    help="打分侧：MT 读 MT_Subpeptide（默认，向后兼容 9mer）；"
+                         "WT 读 WT_Subpeptide（8-11 DAI 补跑）。仅换肽源列，其余口径不变。")
     ap.add_argument("--smoke", type=int, default=0, help=">0 取前 N 个唯一对烟测")
     args = ap.parse_args()
+
+    pep_col = "MT_Subpeptide" if args.side == "MT" else "WT_Subpeptide"
 
     backbone = Path(args.backbone)
     if not backbone.exists():
@@ -82,7 +87,7 @@ def main():
         rd = csv.DictReader(f)
         for r in rd:
             n_rows += 1
-            pep = clean_pep(r.get("MT_Subpeptide", ""))
+            pep = clean_pep(r.get(pep_col, ""))
             hla_raw = r.get("HLA_Allele", "")
             if not pep:
                 n_skip_pep += 1
@@ -111,8 +116,8 @@ def main():
         for pep, hla in pairs:
             w.writerow([pep, hla])
 
-    print(f"[prep_seq2neo] backbone 行={n_rows}  空肽跳过={n_skip_pep}  "
-          f"肽长越界({args.min_len}-{args.max_len})跳过={n_skip_len}", file=sys.stderr)
+    print(f"[prep_seq2neo] side={args.side}（肽源列={pep_col}）  backbone 行={n_rows}  "
+          f"空肽跳过={n_skip_pep}  肽长越界({args.min_len}-{args.max_len})跳过={n_skip_len}", file=sys.stderr)
     print(f"[prep_seq2neo] 写 {out}  唯一(Pep,HLA)对={len(pairs)}  distinct等位={len(alleles)}",
           file=sys.stderr)
     print("[prep_seq2neo] 下一步(HPC): seq2neo immuno --mode multiple "
