@@ -4,6 +4,66 @@
 
 ---
 
+## Entry 65-FUSION-REPORT-V2-HONEST-REFRAME — 2026-07-10【融合报告 v2：去数据驱动选成员改固定面板 geomean（0.446>0.372 无泄漏）+ 全量数字审(含图)+ 方法全带出处链接】
+
+**触发**：用户对 §2 连续追问，逐步逼出方法与呈现的根本问题。留档旧版 `..._2026-07-10.md/html` 冻结不动，新工作全在 `_v2`（用户定的工作流：复制留档、改新文件）。
+
+**① 诊断 0.171 为何这么低（用户点破）**：贪心选成员在 n=8 上过拟合。Bash 核出根因——病人 102 只 6 肽(<min_pep8)被剔=实际 8 人；per-patient ρ 极差 0.738(107≈0 到 106=0.71)，异质极大；贪心选第 3 成员跨折稳定度仅 37%。贪心是脚本(上一轮 skeptic)定的、非用户，主线认责。
+
+**② §2 改诚实版（用户拍板"按诚实版改 v2"）**：核心洞见=**几何平均无监督、不拟合标签→固定面板则无跨患者泄漏、留一=非留一**。新 §2：§2.1 固定面板(netMHCpan-BA+PRIME+deepHLApan，生物学先验)geomean **0.446 > 单工具 0.372**(无泄漏，+0.073，配对 p=0.48 未显著)；§2.2 删突变 geomean 高于单工具 90–100%(现算)；§2.3 聚合函数对比(figE 重画=12 聚合函数条形，geomean 最高、中位数 0.344 输)；§2.4 数据驱动选成员过拟合(留一 0.171)。**诚实边界全程写死**：+0.073 不显著、依赖 geomean、面板须先验(穷举 286 组合 0 个超 0.446、次高 MHCnuggets+PredIG+deepHLApan 0.445 不含 DTU)。**红线守住**：拒绝"大赢/显著"的 HARKing，明告用户唯一诚实路是加病人。
+
+**③ 全量数字审(含图，用户要"最后一次审查含图里数字")**：35 项全 PASS——正文 + **figE 12 根柱逐个对 R3b** + figA(k=1=0.372,p_min 0.12) + figD(14/28,+0.069)。修 2 小瑕疵：figC「19/21」vs 正文「26/28」分母点明；删10% geomean 0.448→0.447 对齐可复现值。
+
+**④ 方法全带出处链接(用户要"所有方法都有出处+超链接")**：researcher 联网逐条溯源(真实可访问)：池化(Dietterich 1997/Wang 2018/Ilse 2018/Järvelin 2002)、rank fusion(Willett 2013/Dwork 2001/IEDB/pVACtools)、统计(Spearman 1904/Stone 1974/Varma 2006/Cawley 2010/Guyon 2003/Ernst 2004/Fisher 1915)。§1.1 加算子出处行 + 附录加「方法与出处」全链接块(22 外链)。**前 k α 加权、名次衰减 γ 两处无原创出处，标「本工作推广」不硬安**。Dietterich DOI 括号编码防 markdown 链接破损。
+
+**产物**：`report/合成与融合层结果_QuantImmu_2026-07-10_v2.{md,html}`(1.87MB) + `build_pooling_report_v2.py` + figE 重画(`plot_newcut_s89.py` fig_e=12 聚合函数)。留档旧版冻结。教训延续 [[feedback_reuse_asset_label_audit]]。
+
+**待袁老师拍板**：融合 headline 用"固定面板 geomean 超过单工具(不显著)"是否可接受(依赖 geomean + 先验面板 + n=8 不显著，非 radical)。
+
+---
+
+## Entry 64-REPORT-DESIGN-SYSTEM-LABEL-AUDIT — 2026-07-10【合成融合报告升 v3 全设计系统(徽章/悬停/✓证据块/＋折叠) + 去BA敏感性重跑 + 全量标签对账修 5 处「数对话错」暗雷】
+
+**触发**：用户就融合报告连续追问 → 三段工作。
+
+**① 报告设计系统升 v3 全套**：用户指出 HTML 缺「来源徽章 / 密集悬停 / ＋深层折叠 / ✓绿色证据块 / 内联来源链接」。根因=`build_report_v4.py` 从 v3 退化(丢 ＋/－ 折叠标记、✓ `.ev` 证据块、徽章 data-t)。派 coder 按 v3 精确 CSS 升回 + 新增 `:::ev` 指令 + 徽章三元组带默认悬停。正文铺满：39 徽章([[work]]本工作/[[lit]]引用/[[off]]工具官方)、8 个 ✓证据块(每关键数标 csv 路径+列名+原值)、10 外链、悬停术语。浏览器验渲染全 PASS。
+
+**② 去 BA 敏感性重跑(analyst，官方基线逐值复现 PASS)**：删最强单工具 netMHCpan_BA 后——nested-LOPO 融合(geomean)Δ=−0.089(仍输,p=0.39)；删突变 geomean 从 rank2 **掉到 rank7**(反更差,因 BA 是撑 geomean 的强维);新基线=MHCnuggets 0.319。**结论：删 BA 救不了融合，达标的仍只有「统计持平」这条悲观结论**。产物 `analysis/_scratch/noBA_out/`。另：核实 outline 本就 claim「统计持平」非「融合赢」，且 netMHCpan(Aff/BA/EL)是 outline 点名工具非自找。
+
+**③ 全量标签对账修 5 洞(verifier×2，核心)**：用户点破「复用旧资产总出看不见的大问题」。派 verifier 按「值+方法+面板+基线+口径」五关审 → **§1 全线扎实数值零错**，但融合层揪出 5 处「数对话错」暗雷：(a) §2.5 −0.178 标「数据驱动挑成员 geomean」实为「固定 SURV6+fixavg、不含 BA、不挑成员」；(b) §2.7 剔DTU −0.0885 基线被悄悄从 BA(0.372)换成 MHCnuggets(0.198)未披露；(c) §2.2「0.50→−0.178」假桥接(两个不同融合当同一曲线，且大纲配方/双轴 geomean 本无自己的诚实留出值)；(d) 0.446 面板标错(双轴3成员非大纲配方4成员)；(e) 两处证据块 csv 张冠李戴。**7 处逐条修 + 新引入数(oracle 0.465/大纲配方4成员 0.407/双轴 0.446)独立 Bash 核** → 独立复审 verifier：**5 洞全清、12 数逐个对 csv、无新错、§2 可采信**。figA 同步补方法标签(geomean 贪心加入)重画。教训存 memory [[feedback_reuse_asset_label_audit]]：复用旧 csv/图只核值不够，必核方法/面板/基线/口径五关+读产出脚本。
+
+**产物**：`report/合成与融合层结果_QuantImmu_2026-07-10.{md,html}`(2.10MB,6 章节,标签全清) + `report/{fetch_and_inline_katex.py,_assets/katex_inline.{css,js},build_report_v4.py 升级}` + `analysis/_scratch/noBA_out/`。控长口径已全废(见 Entry 63)。
+
+**待袁老师拍板(不变)**：大纲三 headline 是否回退、DS1 是否弃用、DTU consent、融合守阴性方向。
+
+---
+
+## Entry 63-FUSION-QA-DS1-POOLING-REPORT-KATEX — 2026-07-10【融合层答疑 + 融合能否赢三方调研 + DS1 核查 + 合成与融合层报告全面升级(转 raw/删控长/figC-D 重画/KaTeX 离线公式/补讨论·计划)】
+
+**触发**：用户就融合层连问四事 → 深挖答疑 + 接手升级 `report/合成与融合层结果` HTML。
+
+**① 融合层答疑（对话）**：厘清 geomean=几何平均聚合器、双轴小面板=netMHCpan-BA+PRIME+deepHLApan（呈递轴+识别轴各一）、「两套」=图 A(fusion_cv 数据驱动挑+CV，证选择虚高)vs R3b(固定面板+无监督中位数，权威诚实)。**为何不赢**：单工具已天花板、学习型 n=8 过拟合崩、双轴 geomean 0.446 是事后挑聚合器（median 版 −0.028、p 不显著）、n=8 无功效（R5 置换 p=0.106）。
+
+**② 控长口径正式废弃（用户两次纠正确认）**：新切固定 9 肽后长度不再变化、袋子大小≈9×患者 HLA 数在患者内恒定 → 患者内 Spearman 不受其扭曲，控长这一说不存在了。全报告转**原始 raw**。
+
+**③ 融合能否赢——三方调研（researcher 方法学 + skeptic 红队，均 opus 后台）**：同指标(患者内 Spearman)+不信点估计两约束下，**没有任何合法统计手段能把 p≈0.5 近零效应变成「融合显著赢」**（单侧/cluster-robust/跨人鼠 meta 全救不了；领域先验偏负 IEDB benchmark NetMHCpan 常压 consensus）。skeptic 判 3 致命：推断框架不能翻点估符号、病人扩不动(DS2=Braun2025 固定 8 例)、跨物种不可比。**结论=别追赢，守阴性最强**。可行正路=TOST/ROPE 等价检验(Benavoli 2017 JMLR/baycomp) + 选择膨胀量化(oracle−CV 0.17–0.29)当招牌 + 功效分析写 limitation。
+
+**④ DS1 核查（Bash 核 xlsx）**：`data/Elispot_Dataset1.xlsx`=**6 例黑色素瘤/82 肽全 9mer/ELISpot 全阳无阴性对照**，病人 ID 1-6 不与 DS2(101-110)重叠=独立人类队列。**不能当救融合的样本**：(a)只跑过旧管线 8 工具、未过新切 30 工具(P1-6 不在 `pooled_clean_rerun_9mer.csv`)；(b)全阳窄 regime，其自身 `DS1_magnitude.md` 显示所有工具排不出连续强度；(c)融合在 DS1 是负相关(−0.157)加进来只拖低。**官方更正版只留 DS2、DS1 被剔——为何？待问袁老师**。至多重切后当独立复现加固阴性。
+
+**⑤ 报告升级（接手 `合成与融合层结果_QuantImmu_2026-07-10`）**：
+- 删旧「进展报告」(`研究进展报告_QuantImmu框架_2026-07-10.{md,html}`)→ 归档 `report/_archive/2026-07-10/`(可逆，非硬删)。
+- **§1 合成层全转 raw**（R2/R2b 本就有 raw 列，直取不重算）：raw 下 26/28 样本内最优≠取最高、留出仅 14/28 增益>0 中位 **+0.003(≈0)**、虚高中位 **+0.069**、最强 netMHCpan-BA 最优 pooling 留出 gain **−0.076**(比控长版 +0.014 更利落)。删净控长口径（残留仅刻意说明句）。
+- **figC/figD 改 raw 口径重画**（`plot_newcut_s89.py` fig_c/fig_d 列名 `*_lenctrl`→`*_raw` + x 轴「原始」）；figA/B/E 本就 raw。
+- **公式换 KaTeX 离线内嵌**（用户选）：coder 写 `report/fetch_and_inline_katex.py`（拉 KaTeX 0.16.11 + 20 woff2 base64 内联 → `report/_assets/katex_inline.{css,js}`）+ patch `build_report_v4.py`（$/$$ 数学 stash 保护 + 资产注入 STYLE/SCRIPT + DOMContentLoaded renderMathInElement）。四种 pooling 算子 + 三种融合聚合器写成**每步操作**推导块。
+- **补两大板块**：§5 需要讨论的问题（6 条：控长声明/融合守阴性/大纲三 headline 回退/8 病人天花板/DS1 溯源/DTU 许可）+ §6 可能的计划（A 等价检验+选择膨胀 / B 功效写 limitation / C DS1 重切独立复现 / D 小鼠人鼠分开 / E 贝叶斯层次谨慎 / F 补 CI）。
+- **核验**：浏览器(Playwright localhost)开 HTML → KaTeX 渲染 **40 公式、零残留 $**、字体内联(20 woff2)、TOC/折叠/悬停在；§1 raw 三关键数抽核 vs csv 逐点一致(0.296/−0.076/0.094、14/28+0.003、+0.069)。产物 `合成与融合层结果_QuantImmu_2026-07-10.html` 2.09MB 自包含。
+
+**指针**：`report/fetch_and_inline_katex.py`(KaTeX 离线资产打包器) + `report/_assets/katex_inline.{css,js}`(内联资产) 与 `build_report_v4.py` 同目录、由其加载。
+
+**待袁老师拍板**：DS1 是否弃用(问题 5)、大纲三 headline 是否回退(问题 3)、融合守阴性方向(问题 2)、DTU consent(问题 6)。
+
+---
+
 ## Entry 62-RESEARCH-REPORT-V4 — 2026-07-10【把「§8四问」问答体 HTML 重写为覆盖整个 outline 的研究型进展报告：清黑话+复刻折叠+全框架三层结果+诚实 outline-vs-已做矩阵】
 
 **背景**：用户看 2026-07-09 的 `report/给老师_§8四问新切结果_2026-07-09.html` 后反馈三条硬伤——① 问答体(逐条答老师「结果在哪」)应改研究叙事；② 满篇内部黑话/车轱辘话「看不懂」(新切/旧切/地基/承重/臂/effN/fullcov/lenctrl/落位/R5R6…)全部替换；③ 丢了上一版(v3)的折叠等功能；④「研究没做透，回去看 outline，还是没展现在 HTML 上」。

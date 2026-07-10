@@ -138,7 +138,7 @@ def fig_a():
     ax.set_xticks(range(1, int(np.nanmax(k)) + 1))
     ax.set_xlabel("融合的工具个数 k (逐个加入)")
     ax.set_ylabel("患者内秩相关 ρ (原始)")
-    ax.set_title(f"图 A｜融合工具个数 k 下 交叉验证实际 vs 样本内理想 ({TAG})\n{sub}", fontsize=11)
+    ax.set_title(f"图 A｜geomean 融合·逐个贪心加入工具 k 下 交叉验证实际 vs 样本内理想 ({TAG})\n{sub}", fontsize=11)
     ax.legend(loc="lower left", fontsize=9, framealpha=0.9)
     # 注: 四设置"融合−单工具"差值见报告 §2.7 表, 不再内嵌(避免压住主图数据点)。
     _save(fig, "figA_newcut_fusion_no_net_gain")
@@ -204,15 +204,15 @@ def fig_b():
 def fig_c():
     df = _read(OFFICIAL_DIR / "R2_best_per_tool.csv")
     df = df.copy()
-    df["max_rho_lenctrl"] = _num(df["max_rho_lenctrl"])
-    df["best_lenctrl_rho"] = _num(df["best_lenctrl_rho"])
-    df = df[df["max_rho_lenctrl"] > 0].copy()          # 只留有信号工具 (控肽长 max>0)
-    df = df.sort_values("best_lenctrl_rho")            # 按最优 pooling ρ 升序 (强者在上)
+    df["max_rho"] = _num(df["max_rho"])
+    df["best_raw_rho"] = _num(df["best_raw_rho"])
+    df = df[df["max_rho"] > 0].copy()                  # 只留有信号工具 (原始 max>0)
+    df = df.sort_values("best_raw_rho")                # 按最优 pooling ρ 升序 (强者在上)
 
     tools = df["Tool"].tolist()
-    maxr = df["max_rho_lenctrl"].values
-    bestr = df["best_lenctrl_rho"].values
-    is_maxbest = (df["best_lenctrl"].astype(str) == "max").values   # 最优 pooling 恰为 max
+    maxr = df["max_rho"].values
+    bestr = df["best_raw_rho"].values
+    is_maxbest = (df["best_raw"].astype(str) == "max").values   # 最优 pooling 恰为 max
 
     y = np.arange(len(tools))
     fig, ax = plt.subplots(figsize=(8.2, max(5.0, len(tools) * 0.32)))
@@ -224,7 +224,7 @@ def fig_c():
 
     ax.set_yticks(y)
     ax.set_yticklabels([_lbl(t) for t in tools], fontsize=8)
-    ax.set_xlabel("患者内秩相关 ρ (已控长度)")
+    ax.set_xlabel("患者内秩相关 ρ (原始)")
     ax.axvline(0, color="gray", lw=0.6, ls=":")
 
     n_sig = len(tools)
@@ -247,14 +247,14 @@ def fig_c():
 # ═══════════════════════════════════════════════════════════════════════════════
 def fig_d():
     df = _read(OFFICIAL_DIR / "R2b_pooling_lopo_official.csv")
-    for c in ("max_rho_lenctrl", "oracle_rho_lenctrl", "lopo_rho_lenctrl"):
+    for c in ("max_rho_raw", "oracle_rho_raw", "lopo_rho_raw"):
         df[c] = _num(df[c])
-    df = df.dropna(subset=["max_rho_lenctrl", "oracle_rho_lenctrl", "lopo_rho_lenctrl"])
-    df = df.sort_values("lopo_rho_lenctrl")           # 留出值升序 (强者在上)
+    df = df.dropna(subset=["max_rho_raw", "oracle_rho_raw", "lopo_rho_raw"])
+    df = df.sort_values("lopo_rho_raw")               # 留出值升序 (强者在上)
     tools = [_lbl(t) for t in df["Tool"]]
-    mx = df["max_rho_lenctrl"].values
-    orc = df["oracle_rho_lenctrl"].values
-    lp = df["lopo_rho_lenctrl"].values
+    mx = df["max_rho_raw"].values
+    orc = df["oracle_rho_raw"].values
+    lp = df["lopo_rho_raw"].values
 
     y = np.arange(len(tools))
     fig, ax = plt.subplots(figsize=(8.6, max(5.0, len(tools) * 0.33)))
@@ -270,7 +270,7 @@ def fig_d():
 
     ax.set_yticks(y)
     ax.set_yticklabels(tools, fontsize=8)
-    ax.set_xlabel("患者内秩相关 ρ (已控长度)")
+    ax.set_xlabel("患者内秩相关 ρ (原始)")
     ax.axvline(0, color="gray", lw=0.6, ls=":")
     ax.legend(loc="lower right", fontsize=8, framealpha=0.9)
 
@@ -291,33 +291,40 @@ def fig_e():
     # ★ 新切已构造性去长度 → 融合/单工具以 raw 为主口径 (非控长; 控长仅 pooling 比较层用)
     df["fusion_rho_raw"] = _num(df["fusion_rho_raw"])
     df["single_rho_raw"] = _num(df["single_rho_raw"])
-    med = df[df["aggregator"] == "median"].copy().sort_values("fusion_rho_raw")
-    mean = df[df["aggregator"] == "mean_rank"].set_index("panel")["fusion_rho_raw"]
-    panels = med["panel"].tolist()
-    vals = med["fusion_rho_raw"].values
-    baseline = float(med["single_rho_raw"].iloc[0])   # 最强单工具 (各行同值)
+    AGG_LBL = {"geomean": "几何平均", "mean_rank": "平均名次",
+               "weighted_mean_rank": "加权平均名次", "constrained": "约束型",
+               "min": "取最低", "powmean": "幂平均", "median": "名次中位数",
+               "ridge": "岭回归", "stacking": "堆叠回归", "max": "取最高",
+               "softmax_rank": "指数加权名次", "gbdt": "梯度提升树"}
+    sub = df[df["panel"] == "双轴小面板"].copy()          # 三工具面板 12 聚合函数
+    sub = sub[sub["aggregator"].isin(AGG_LBL)].sort_values("fusion_rho_raw")
+    labels = [AGG_LBL[a] for a in sub["aggregator"].tolist()]
+    vals = sub["fusion_rho_raw"].values
+    baseline = float(sub["single_rho_raw"].iloc[0])       # 最强单工具 (各行同值)
 
-    y = np.arange(len(panels))
-    fig, ax = plt.subplots(figsize=(8.6, max(3.2, len(panels) * 0.7)))
-    ax.barh(y, vals, color=C_CV, alpha=0.85, height=0.5, label="固定面板 中位数名次融合")
-    # 最强单工具基线竖线
+    y = np.arange(len(labels))
+    colors = [C_MAXBEST if v > baseline else C_MUTE for v in vals]
+    fig, ax = plt.subplots(figsize=(8.6, max(4.2, len(labels) * 0.42)))
+    ax.barh(y, vals, color=colors, alpha=0.9, height=0.62)
     ax.axvline(baseline, color=C_HL, lw=2, ls="--",
                label=f"最强单工具 netMHCpan-BA = {baseline:.3f}")
-    # 数值标注在条内右端(白字), 不与基线/其它元素重叠
     for yi, v in zip(y, vals):
-        ax.text(v - 0.006, yi, f"{v:.3f}", va="center", ha="right",
-                fontsize=9.5, color="white", fontweight="bold")
+        ha, x, col = ("left", v + 0.006, "#222") if v < 0.03 else ("right", v - 0.006, "white")
+        ax.text(x, yi, f"{v:.3f}", va="center", ha=ha, fontsize=9, color=col, fontweight="bold")
 
     ax.set_yticks(y)
-    ax.set_yticklabels(panels, fontsize=9.5)
-    ax.set_xlabel("患者内秩相关 ρ (原始; 新切已构造性去长度)")
+    ax.set_yticklabels(labels, fontsize=9.5)
+    ax.set_xlabel("患者内秩相关 ρ")
     ax.axvline(0, color="gray", lw=0.6, ls=":")
-    ax.set_xlim(right=max(baseline, float(np.nanmax(vals))) + 0.05)
-    ax.legend(loc="lower right", fontsize=9, framealpha=0.95)
-    n_beat = int((vals > baseline).sum())
-    ax.set_title(f"图 E｜文献权威融合(预先固定面板 + 中位数名次, 零挑选) vs 最强单工具 ({TAG})\n"
-                 f"{n_beat}/{len(panels)} 个面板超过单工具基线; SURV6=旧数据驱动'存活'集(最差)",
-                 fontsize=10)
+    from matplotlib.patches import Patch
+    ax.legend(handles=[Patch(color=C_MAXBEST, label="高于单工具"),
+                       Patch(color=C_MUTE, label="低于单工具"),
+                       Line2D([0], [0], color=C_HL, lw=2, ls="--", label=f"单工具基线 {baseline:.3f}")],
+              loc="lower right", fontsize=8.5, framealpha=0.95)
+    n_win = int((vals > baseline).sum())
+    ax.set_title(f"图 E｜三工具面板 (netMHCpan-BA+PRIME+deepHLApan) 各聚合函数 vs 最强单工具 ({TAG})\n"
+                 f"几何平均最高 ({vals.max():.3f}); {n_win}/{len(labels)} 个聚合函数高于单工具基线",
+                 fontsize=9.5)
     _save(fig, "figE_newcut_fusion_authoritative")
 
 

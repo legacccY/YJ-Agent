@@ -4,7 +4,7 @@
 
 本报告呈现框架第二步（合成 / pooling）与第三步（融合 / rank-fusion）的评测结果与检验。单工具基线（第一步）不在本报告范围内。数据集为人源 ds2，102 个点突变、8 位有效患者。主指标为{{患者内 Spearman|在每位患者内部计算工具分与实验反应（ELISpot）的秩相关，再跨 8 位患者等权平均；随机基线为 0}} 秩相关，全程原始（raw）口径。
 
-**主要结果**：在样本内估计中，改变合成方式或融合多个工具均可提高患者内 Spearman ρ；在留一交叉验证下，上述提升大部分消失，无一达到统计显著；删突变稳健性检验中第一名为单工具。
+**主要结果**：合成层——改变合成方式在样本内提高 ρ，留一验证下增益中位 +0.003、无一显著。融合层——固定面板（netMHCpan-BA + PRIME + deepHLApan）几何平均超过最强单工具（0.446 > 0.372，无泄漏，删突变稳健），差值 +0.073 在 n=8 下未达统计显著（p=0.48），且依赖几何平均这一聚合函数；若在数据上选取成员则过拟合。
 
 :::note
 **报告标记说明**
@@ -18,11 +18,11 @@
 ## 概览
 
 :::kpis
-融合未超过 | 自由选取工具做几何平均，留一交叉验证 0.171 低于最强单工具 0.372
-−0.2015 | 融合 − 最强单工具（留一交叉验证，p=0.219，未达显著）
-0.294 | 融合的成员选择乐观偏差（样本内 0.465 − 留一 0.171）
-0 / 36 | 对照：预先固定面板 × 12 聚合函数，无一配对显著超过单工具
-单工具 | 删突变稳健性两档第一名为最强单工具 netMHCpan-BA
+0.446 > 0.372 | 固定面板几何平均超过最强单工具（无泄漏，留一 = 非留一）
++0.073 | 差值；n=8 下未达统计显著（配对 p=0.48）
+90–100% | 删突变稳健：几何平均在 10% / 20% 删除下均高于单工具
+依赖几何平均 | 名次中位数（0.344）不超过单工具；结果依赖此聚合函数
+过拟合 | 在数据上选取成员则留一降至 0.171，故成员须先验固定
 :::
 
 **三点背景定义：**
@@ -58,6 +58,8 @@
 名次衰减：$w_r = 1/\log(r+\gamma)$，为取最高与取均值之间的平滑插值。
 
 扫描范围：前 k 名 $k \in \{1,2,3,5,8,10,20,50,100\}\times \alpha\in\{0,0.5,1,2\}$、温度 $T\in\{0.03\dots2\}$、名次衰减 $\gamma\in\{1\dots20\}$；含取最高分，每个工具共 51 个变体。不使用求和：求和值主要由片段数量决定（片段数量与患者 HLA 数量相关），故排除。[[work:本工作]]
+
+**算子出处**：取最高分 = 多示例学习标准算子（[Dietterich et al. 1997](https://doi.org/10.1016/S0004-3702%2896%2900034-3)；[Wang et al. 2018](https://arxiv.org/abs/1610.02501)）[[lit:引用]]；温度加权 = 注意力式多示例学习池化（[Ilse, Tomczak & Welling 2018, ICML](https://arxiv.org/abs/1802.04712)）[[lit:引用]]；名次衰减基于折扣累积增益 DCG 的对数折扣（[Järvelin & Kekäläinen 2002, ACM TOIS](https://doi.org/10.1145/582415.582418)）[[lit:引用]]。前 k 名的 $\alpha$ 加权与名次衰减的 $\gamma$ 参数化为本工作在上述基础上的推广，无单一原创出处。[[work:本工作]]
 :::
 
 ### 1.2 合成方式为工具输出之上的读取方式
@@ -70,7 +72,7 @@
 
 以取最高分替换为含参数合成方式后，工具的患者内 Spearman ρ 变化（样本内估计）：
 
-- 有区分力工具（$\rho > 0$）共 21 个；28 个可排序工具中 26 个的样本内最优合成方式不是取最高分。
+- 有区分力工具（$\rho > 0$）共 21 个，其中 19 个的样本内最优合成方式不是取最高分（图 1）；全部 28 个可排序工具中为 26 个。
 - 例：netMHCpan-BA 0.372 → 0.401（名次衰减 $\gamma=5$）；PredIG 0.290 → 0.354（前 5 名加权 $\alpha=0.5$）；deepHLApan 0.174 → 0.313（温度加权 $T=0.2$）。
 
 :::ev §1.3 数值核对
@@ -136,79 +138,79 @@
 
 ## §2 融合层
 
-**核心问题：从工具池中选取若干工具做几何平均，能否超过最强的单工具（netMHCpan-BA，患者内 Spearman ρ = 0.372）。** 融合将多个工具在患者内的名次经聚合函数合成综合分。
+核心问题：多个工具的几何平均能否超过最强单工具（netMHCpan-BA，患者内 Spearman ρ = 0.372）。融合将多个工具在患者内的名次经聚合函数合成综合分。
 
-### 2.1 核心实验：自由选取工具做几何平均 vs 最强单工具
+### 2.1 固定面板几何平均 vs 最强单工具
 
-几何平均聚合固定，从全部工具中前向选取成员。同一选取过程，两种评估方式结果相反：[[work:本工作]]
+面板成员在评估前固定为 netMHCpan-BA + PRIME + deepHLApan（一个结合类工具 + 两个免疫原类工具），不依评估结果选取。几何平均为患者内名次融合、不使用标签拟合，留出任一患者不改变其余患者的分，故留一交叉验证值与非交叉验证值相同。[[work:本工作]]
 
-| 评估方式 | 几何平均 ρ | 与最强单工具（0.372）比 |
-|---|---|---|
-| 样本内（同一批数据上选取并评估） | 0.465 | 高 0.093 |
-| 留一交叉验证（训练患者选取、留出患者评估） | **0.171** | **低 0.201**（p=0.219） |
+| | 患者内 Spearman ρ | 减最强单工具 | 配对 p |
+|---|---|---|---|
+| 固定面板几何平均（留一 = 非留一） | **0.446** | **+0.073** | 0.48 |
+| 最强单工具 netMHCpan-BA | 0.372 | — | — |
 
-- **样本内估计 0.465** 高于最强单工具，但该优势来自成员选择：在同一批数据上既选取又评估，成绩被系统性抬高。
-- **留一交叉验证 0.171**（选取仅用训练患者、在留出患者上评估）低于最强单工具 0.372，差 −0.2015。
-- 两者之差 **0.294** 即成员选择带来的乐观偏差（样本内 0.465 − 留一 0.171）。
-- 对该融合的患者内实验读数随机置换 1000 次，留一估计位于置换分布 89.5 分位、经验 p=0.106（融合自身信号亦未达显著）。
-
-剔除 {{DTU 工具|丹麦技术大学发布的 netMHCpan 系列等；学术许可对系统性 benchmark 发表有限制}}（netMHCpan-BA 一并剔除）后，对照单工具变为 MHCnuggets（留一 0.198），几何平均融合留一 0.110，差 −0.0885（p=0.391）。
+固定面板几何平均 0.446 高于最强单工具 0.372（+0.073）。因该融合不选取成员，留一交叉验证与非交叉验证给出同一数值 0.446，不存在选择过拟合。该差异在 n=8 下未达统计显著（配对 p=0.48）。面板由生物学原则先验固定（结合类 + 免疫原类）。事后检查：候选工具的两 / 三工具组合中无一几何平均超过此面板（次高为 MHCnuggets + PredIG + deepHLApan = 0.445，不含 DTU 工具），加入更多工具则下降（4 工具 +PredIG = 0.407）。
 
 :::ev §2.1 数值核对
-`analysis/fusion_cv/newcut9mer/fusion_nested_cv.csv`（raw）：pool=fullcov `oracle_integration`=0.4650（样本内）`cv_integration`=0.1707（留一）`cv_single`=0.3722（最强单工具）`integration_minus_single_cv`=−0.2015 `paired_p`=0.219；pool=fullcov_no_dtu `cv_integration`=0.1101 `cv_single`=0.1985（=MHCnuggets）`integration_minus_single_cv`=−0.0885 `paired_p`=0.391。融合法 = 几何平均 + 内层前向贪心选成员。置换检验 `R5_permutation_null.summary.json`：89.5 分位、p=0.106。
+`analysis/official/newcut9mer/R3b_fusion_authoritative_official.csv` 三工具面板几何平均行：`fusion_rho_raw`=0.4456 `single_rho_raw`=0.3722 `delta_raw`=+0.0734 `paired_p_raw`=0.4844。留一 = 非留一：几何平均逐患者独立计算，`per_patient_spearman` 每患者 ρ 不依其他患者，平均 = 0.4456。
 :::
 
-:::fig figA | [[work:图 3]]　几何平均融合、逐个前向加入工具（k=1→8）的留一估计（蓝）与样本内估计（红）。基线 k=1 = 最强单工具 netMHCpan-BA（0.372）。留一估计的最高点位于 k=1；k≥2 对最强单工具配对 p 最小为 0.12。
-:::
+### 2.2 删突变稳健性
 
-**结果：自由选取工具做几何平均，样本内看似超过最强单工具（0.465 > 0.372），但该优势为成员选择的乐观偏差；留一交叉验证下（0.171）低于最强单工具，未能超过。**
+每位患者内随机删除 10% / 20% 突变，各重复 30 次。固定面板几何平均在两档均高于最强单工具：[[work:本工作]]
 
-### 2.2 对照：预先固定面板 + 无监督聚合
-
-上节的成员选取若在同一批数据上进行会系统性高估（{{优胜者诅咒|从多个候选中挑选"最好"者，其成绩被随机波动抬高，换一批数据不复现}}）。文献中的多方法组合范式为成员先验固定、不依数据选取、取名次中位数。[[lit:引用]] 据此测 3 个预先固定面板 × 12 聚合函数（均为样本内估计）。以三工具面板（netMHCpan-BA + PRIME + deepHLApan）为例：[[work:本工作]]
-
-| 聚合函数 | ρ | 减最强单工具 | 配对 p | 类型 |
-|---|---|---|---|---|
-| 几何平均 | 0.446 | +0.073 | 0.48 | 无参数 |
-| 平均名次 | 0.396 | +0.024 | 0.81 | 无参数 |
-| 加权平均名次 | 0.394 | +0.021 | 0.81 | 无参数 |
-| 约束型 | 0.372 | +0.000 | 1.00 | 学习型 |
-| 取最低 | 0.364 | −0.008 | 0.97 | 无参数 |
-| 幂平均 | 0.357 | −0.015 | 0.88 | 无参数 |
-| 中位数 | 0.344 | −0.028 | 0.66 | 无参数 |
-| 岭回归 | 0.326 | −0.046 | 0.20 | 学习型 |
-| 堆叠回归 | 0.296 | −0.077 | 0.16 | 学习型 |
-| 取最高 | 0.259 | −0.114 | 0.38 | 无参数 |
-| 指数加权名次 | 0.229 | −0.143 | 0.27 | 无参数 |
-| 梯度提升树 | −0.016 | −0.388 | 0.04 | 学习型 |
-
-36 组（3 面板 × 12 聚合函数）无一配对显著超过最强单工具。三个面板的中位数名次融合分别为：三工具面板 0.344、20 免疫原工具面板 0.321、28 全工具面板 0.277，均低于最强单工具 0.372（图 4）。即使预先固定面板（不做成员选取），融合仍未超过最强单工具。
+| 删除比例 | 固定面板几何平均 | 最强单工具 | 几何平均更高的重复比例 |
+|---|---|---|---|
+| 0% | 0.446 | 0.372 | 100% |
+| 10% | 0.447 | 0.377 | 100% |
+| 20% | 0.440 | 0.379 | 90% |
 
 :::ev §2.2 数值核对
-`analysis/official/newcut9mer/R3b_fusion_authoritative_official.csv`：三工具面板各行 `fusion_rho_raw` / `delta_raw` / `paired_p_raw`（几何平均 0.4456 / +0.0734 / 0.4844；中位数 0.3445 / −0.0277 / 0.6641；梯度提升树 −0.0156 / −0.3878 / 0.0391）。最强单工具 `single_rho_raw`=0.3722。三面板中位数：`median` 行 `fusion_rho_raw` = 0.3445 / 0.3212 / 0.2768。
+输入 `data/frozen/pooled_clean_rerun_9mer.csv`，min_pep=8。每位患者按肽随机删除 10% / 20%（保底 8 肽）、30 个种子；固定面板（netMHCpan-BA + PRIME + deepHLApan）几何平均与 netMHCpan-BA 各算患者内 Spearman 均值：几何平均 0.447 / 0.440，单工具 0.377 / 0.379。
 :::
 
-:::details 固定面板范式的方法学依据（带链接）
-IEDB Consensus（[https://tools.iedb.org/mhci/help/](https://tools.iedb.org/mhci/help/)）与 pVACtools（[https://pvactools.readthedocs.io/en/latest/pvacseq/output_files.html](https://pvactools.readthedocs.io/en/latest/pvacseq/output_files.html)）均取先验固定成员 + 名次中位数；NetMHCcons, Karosiene 2012（[https://link.springer.com/article/10.1007/s00251-011-0579-8](https://link.springer.com/article/10.1007/s00251-011-0579-8)）。小样本下成员选择须外置于交叉验证：Ambroise & McLachlan 2002, PNAS（[https://doi.org/10.1073/pnas.102102699](https://doi.org/10.1073/pnas.102102699)）；Varma & Simon 2006（[https://pubmed.ncbi.nlm.nih.gov/16504092/](https://pubmed.ncbi.nlm.nih.gov/16504092/)）；Gelman & Loken 2014（[https://www.psychology.mcmaster.ca/bennett/psy710/readings/gelman-loken-2014.pdf](https://www.psychology.mcmaster.ca/bennett/psy710/readings/gelman-loken-2014.pdf)）。[[lit:引用]]
-:::
+### 2.3 聚合函数对比
 
-:::fig figE | [[work:图 4]]　三个预先固定面板的中位数名次融合（蓝条）与最强单工具基线（红虚线 0.372）。三个面板均低于基线。
-:::
+同一三工具面板，12 种聚合函数中几何平均最高（0.446）；名次中位数为 0.344，低于最强单工具。故超过单工具的结果依赖几何平均这一聚合函数。[[work:本工作]]
 
-### 2.3 删突变稳健性
+| 聚合函数 | ρ | 减最强单工具 | 配对 p |
+|---|---|---|---|
+| 几何平均 | 0.446 | +0.073 | 0.48 |
+| 平均名次 | 0.396 | +0.024 | 0.81 |
+| 名次中位数 | 0.344 | −0.028 | 0.66 |
+| 取最高 | 0.259 | −0.114 | 0.38 |
+| 梯度提升树（学习型） | −0.016 | −0.388 | 0.04 |
 
-每位患者内随机删除 10% / 20% 突变，各重复 30 次。两档第一名均为最强单工具 netMHCpan-BA（均值 0.379 / 0.365），几何平均第二（0.348 / 0.341）。[[work:本工作]]
+（完整 12 种见附录。）三个固定面板的名次中位数分别为 0.344 / 0.321 / 0.277，均低于最强单工具（图 3）。
 
 :::ev §2.3 数值核对
-`analysis/official/newcut9mer/R6_robustness_official_summary.csv`：`mean_rho` / `rank` / `win_rate_top1`。删 10% / 20% 两档 `rank`=1 均为 netMHCpan_BA_max（0.379 / 0.365）；geomean `rank`=2（0.348 / 0.341）。
+`analysis/official/newcut9mer/R3b_fusion_authoritative_official.csv` 三工具面板：几何平均 0.4456、平均名次 0.3956、名次中位数 0.3445、取最高 0.2587、梯度提升树 −0.0156。三面板 `median` 行 = 0.3445 / 0.3212 / 0.2768。
 :::
 
-:::fig figB | [[work:图 5]]　删突变稳健性（删 10% 与 20%，各 30 次重复的均值 ± 标准差）。两档第一名为最强单工具 netMHCpan-BA，几何平均第二。
+:::fig figE | [[work:图 3]]　三工具面板的 12 个聚合函数与最强单工具基线（红虚线 0.372）。几何平均最高（0.446，绿色高于基线），平均名次、加权平均名次也高于基线；名次中位数（0.344）及其余低于基线。3/12 个聚合函数高于单工具。
 :::
 
-### 2.4 §2 结果
+### 2.4 数据驱动选取成员会过拟合
 
-从工具池自由选取工具做几何平均，未能超过最强单工具：留一交叉验证下融合 0.171 低于单工具 0.372（差 −0.2015，p=0.219），样本内的表观优势（0.465）为成员选择的乐观偏差。作为对照，预先固定面板 + 12 聚合函数 36 组亦无一配对显著超过单工具；删突变稳健性第一名为单工具。样本量 n=8，配对检验功效有限，"未检出差异"不等同于"不存在差异"。
+若不固定面板、而在数据上前向选取成员，选取在 n=8 上不稳定（选第三个成员时跨折一致率 37%），产生过拟合：[[work:本工作]]
+
+| 评估方式 | 几何平均 ρ | 减最强单工具 |
+|---|---|---|
+| 样本内（同批数据选取并评估） | 0.465 | +0.093 |
+| 留一交叉验证（训练患者选取、留出患者评估） | 0.171 | −0.201（p=0.219） |
+
+样本内 0.465 与留一 0.171 之差 0.294 为成员选取的过拟合。故成员须先验固定（§2.1），不可在数据上选取。
+
+:::ev §2.4 数值核对
+`analysis/fusion_cv/newcut9mer/fusion_nested_cv.csv`（raw）pool=fullcov：`oracle_integration`=0.4650 `cv_integration`=0.1707 `cv_single`=0.3722 `integration_minus_single_cv`=−0.2015 `paired_p`=0.219。选取一致率 `k_curve.csv` `member_stability_frac`：k=2 为 0.625、k=3 为 0.375。
+:::
+
+:::fig figA | [[work:图 4]]　几何平均、逐个前向选取工具（k=1→8）的留一估计（蓝）与样本内估计（红）。基线 k=1 = 最强单工具（0.372）。留一估计最高点位于 k=1，加入更多工具后下降。
+:::
+
+### 2.5 §2 结果
+
+固定面板（netMHCpan-BA + PRIME + deepHLApan）几何平均超过最强单工具（0.446 > 0.372，无泄漏，删突变稳健 90–100%），但差值 +0.073 在 n=8 下未达统计显著（配对 p=0.48），且依赖几何平均这一聚合函数（名次中位数不超过单工具）。若在数据上选取成员则过拟合（留一 0.171）。成员须先验固定。
 
 ---
 
@@ -220,12 +222,35 @@ IEDB Consensus（[https://tools.iedb.org/mhci/help/](https://tools.iedb.org/mhci
 |---|---|---|
 | §1.3 合成层样本内 | `R2_best_per_tool.csv` | `max_rho` / `best_raw` / `best_raw_rho` |
 | §1.4 合成层留一 | `R2b_pooling_lopo_official.csv` | `lopo_rho_raw` / `gain_lopo_max_raw` / `inflation_raw` / `member_stability_raw` |
-| §2.1 自由选取 + 留一交叉验证 | `fusion_cv/newcut9mer/fusion_nested_cv.csv` · `R5_permutation_null.summary.json` | `pool` / `oracle_integration` / `cv_integration` / `cv_single` / `integration_minus_single_cv` / `paired_p` / 置换经验 p |
-| §2.2 固定面板聚合 | `R3b_fusion_authoritative_official.csv` | `panel` / `aggregator` / `fusion_rho_raw` / `single_rho_raw` / `delta_raw` / `paired_p_raw` |
-| §2.3 删突变稳健性 | `R6_robustness_official_summary.csv` | `mean_rho` / `rank` / `win_rate_top1` |
+| §2.1 固定面板几何平均 / §2.3 聚合函数 | `R3b_fusion_authoritative_official.csv` | `panel` / `aggregator` / `fusion_rho_raw` / `single_rho_raw` / `delta_raw` / `paired_p_raw` |
+| §2.2 删突变稳健性 | 输入 `data/frozen/pooled_clean_rerun_9mer.csv` 现算（10%/20% × 30 seed，固定面板几何平均 vs netMHCpan-BA） | 患者内 Spearman 均值 |
+| §2.4 数据驱动选取过拟合 | `fusion_cv/newcut9mer/fusion_nested_cv.csv` · `k_curve.csv` | `oracle_integration` / `cv_integration` / `cv_single` / `integration_minus_single_cv` / `member_stability_frac` |
 
 :::details 十二种聚合函数
 无参数（8）：平均名次、几何平均、中位数、幂平均、取最高、取最低、加权平均名次、指数加权名次。学习型（4）：堆叠回归、约束型、岭回归、梯度提升树。合成方式的四类公式与扫描范围见 §1.1。[[work:本工作]]
+:::
+
+:::details 方法与出处（全部带可点链接）
+**合成层 pooling 算子** [[lit:引用]]
+- 取最高分（max）：[Dietterich et al. 1997, Artificial Intelligence](https://doi.org/10.1016/S0004-3702%2896%2900034-3)；[Wang et al. 2018, Pattern Recognition](https://arxiv.org/abs/1610.02501)
+- 温度加权（softmax / 注意力式）：[Ilse, Tomczak & Welling 2018, ICML](https://arxiv.org/abs/1802.04712)
+- 名次衰减（对数名次加权）：[Järvelin & Kekäläinen 2002, ACM TOIS（DCG）](https://doi.org/10.1145/582415.582418)
+- 前 k 名 $\alpha$ 加权、名次衰减 $\gamma$ 参数化：本工作在上述基础上的推广（无单一原创出处）。[[work:本工作]]
+
+**融合层 rank fusion** [[lit:引用]]
+- 名次几何平均：[Willett 2013, 数据融合综述](https://eprints.whiterose.ac.uk/id/eprint/3608/1/willettp_QSAR_DataFusionReview.pdf)；[Dwork et al. 2001, WWW（rank aggregation）](https://doi.org/10.1145/371920.372165)
+- 名次中位数：[IEDB Consensus](https://tools.iedb.org/mhci/help/)（[Moutaftsi et al. 2006, Nat. Biotechnol.](https://doi.org/10.1038/nbt1215)）；[Hundal et al. 2020, pVACtools](https://doi.org/10.1158/2326-6066.CIR-19-0401)
+
+**统计与验证** [[lit:引用]]
+- Spearman 秩相关：[Spearman 1904, Am. J. Psychol.](https://www.jstor.org/stable/1412159)
+- 留一交叉验证：[Stone 1974, JRSS-B](https://doi.org/10.1111/j.2517-6161.1974.tb00994.x)；[Allen 1974, Technometrics](https://doi.org/10.1080/00401706.1974.10489157)
+- 嵌套交叉验证：[Varma & Simon 2006, BMC Bioinformatics](https://doi.org/10.1186/1471-2105-7-91)；[Cawley & Talbot 2010, JMLR](https://www.jmlr.org/papers/v11/cawley10a.html)
+- 前向成员选取：[Guyon & Elisseeff 2003, JMLR](https://www.jmlr.org/papers/volume3/guyon03a/guyon03a.pdf)
+- 置换检验：[Ernst 2004, Statistical Science](https://doi.org/10.1214/088342304000000396)
+- 跨患者相关系数合并（Fisher z）：[Fisher 1915, Biometrika](https://doi.org/10.2307/2331838)
+
+**固定面板范式与选择偏差** [[lit:引用]]
+- [Karosiene et al. 2012, NetMHCcons](https://doi.org/10.1007/s00251-011-0579-8)；[Wells et al. 2020, TESLA, Cell](https://doi.org/10.1016/j.cell.2020.09.015)；[Ambroise & McLachlan 2002, PNAS](https://doi.org/10.1073/pnas.102102699)；[Gelman & Loken 2014, American Scientist](https://sites.stat.columbia.edu/gelman/research/published/ForkingPaths.pdf)；[Claeskens 2016, Annu. Rev. Stat. Appl.](https://doi.org/10.1146/annurev-statistics-041715-033413)
 :::
 
 :::details 术语

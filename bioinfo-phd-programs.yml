@@ -1,0 +1,683 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e3]:
+    - banner [ref=f2e4]:
+      - generic [ref=f2e6]:
+        - generic [ref=f2e7]:
+          - link "logo" [ref=f2e8] [cursor=pointer]:
+            - /url: /
+            - img "logo" [ref=f2e9]
+          - generic [ref=f2e10]:
+            - link "我的申请" [ref=f2e12] [cursor=pointer]:
+              - /url: /my
+              - generic [ref=f2e13]: 我的申请
+            - link "数据库" [ref=f2e15] [cursor=pointer]:
+              - /url: /db
+              - generic [ref=f2e16]: 数据库
+            - link "发帖" [ref=f2e18] [cursor=pointer]:
+              - /url: /db/programs/BioInfo-PhD-#
+              - generic [ref=f2e19]: 发帖
+            - link "Offer白金卡" [ref=f2e21] [cursor=pointer]:
+              - /url: /pricing
+              - generic [ref=f2e22]: Offer白金卡
+            - link "新手导读" [ref=f2e24] [cursor=pointer]:
+              - /url: /guide
+              - generic [ref=f2e25]: 新手导读
+            - img "search" [ref=f2e27] [cursor=pointer]:
+              - img [ref=f2e28]
+        - generic [ref=f2e30]:
+          - link "🧙" [ref=f2e31] [cursor=pointer]:
+            - /url: /ps/draft
+            - generic [ref=f2e32]: 🧙
+          - button "登 录" [ref=f2e33] [cursor=pointer]:
+            - generic [ref=f2e34]: 登 录
+    - main [ref=f2e35]:
+      - generic [ref=f2e36]:
+        - generic [ref=f2e37]:
+          - generic [ref=f2e38]:
+            - img "home" [ref=f2e39]:
+              - img [ref=f2e40]
+            - link "Offer多多" [ref=f2e42] [cursor=pointer]:
+              - /url: /
+            - generic [ref=f2e43]: ">"
+            - link "数据库" [ref=f2e44] [cursor=pointer]:
+              - /url: /db
+            - generic [ref=f2e45]: ">"
+            - link "项目库" [ref=f2e46] [cursor=pointer]:
+              - /url: /db/programs
+          - generic [ref=f2e47]:
+            - generic [ref=f2e49]:
+              - link "大学库" [ref=f2e50] [cursor=pointer]:
+                - /url: /db/colleges
+                - generic [ref=f2e51]: 大学库
+              - link "项目库" [ref=f2e52] [cursor=pointer]:
+                - /url: /db/programs
+                - generic [ref=f2e53]: 项目库
+              - link "专业库" [ref=f2e54] [cursor=pointer]:
+                - /url: /db/majors
+                - generic [ref=f2e55]: 专业库
+              - link "录取结果库" [ref=f2e56] [cursor=pointer]:
+                - /url: /results
+                - generic [ref=f2e57]: 录取结果库
+              - link "OFFER榜" [ref=f2e58] [cursor=pointer]:
+                - /url: /admission
+                - generic [ref=f2e59]: OFFER榜
+              - link "出国报告" [ref=f2e60] [cursor=pointer]:
+                - /url: /db/cn-colleges
+                - generic [ref=f2e61]: 出国报告
+              - link "申请指南电子书" [ref=f2e62] [cursor=pointer]:
+                - /url: /db/faq
+                - generic [ref=f2e63]: 申请指南电子书
+            - generic [ref=f2e64]:
+              - generic [ref=f2e65]:
+                - heading "项目库" [level=1] [ref=f2e66]
+                - generic [ref=f2e67]:
+                  - generic [ref=f2e68]:
+                    - textbox "搜索项目的全称或简称" [ref=f2e69]
+                    - img "search" [ref=f2e71]:
+                      - img [ref=f2e72]
+                  - generic [ref=f2e74]:
+                    - generic [ref=f2e76]:
+                      - generic [ref=f2e78]:
+                        - generic "学校" [ref=f2e80]
+                        - generic [ref=f2e86]:
+                          - combobox "学校" [ref=f2e88]
+                          - generic: 请选择
+                      - generic [ref=f2e90]:
+                        - generic "学位" [ref=f2e92]
+                        - generic [ref=f2e96]:
+                          - generic [ref=f2e97] [cursor=pointer]:
+                            - generic [ref=f2e98]:
+                              - radio "PhD"
+                            - generic [ref=f2e99]: PhD
+                          - generic [ref=f2e100] [cursor=pointer]:
+                            - generic [ref=f2e101]:
+                              - radio "MS"
+                            - generic [ref=f2e102]: MS
+                          - generic [ref=f2e103] [cursor=pointer]:
+                            - generic [ref=f2e104]:
+                              - radio "Meng"
+                            - generic [ref=f2e105]: Meng
+                          - generic [ref=f2e106] [cursor=pointer]:
+                            - generic [ref=f2e107]:
+                              - radio "MA"
+                            - generic [ref=f2e108]: MA
+                          - generic [ref=f2e109] [cursor=pointer]:
+                            - generic [ref=f2e110]:
+                              - radio "MPhil"
+                            - generic [ref=f2e111]: MPhil
+                          - generic [ref=f2e112] [cursor=pointer]:
+                            - generic [ref=f2e113]:
+                              - radio "MPH"
+                            - generic [ref=f2e114]: MPH
+                          - generic [ref=f2e115] [cursor=pointer]:
+                            - generic [ref=f2e116]:
+                              - radio "MBA"
+                            - generic [ref=f2e117]: MBA
+                          - generic [ref=f2e118] [cursor=pointer]:
+                            - generic [ref=f2e119]:
+                              - radio "LLM"
+                            - generic [ref=f2e120]: LLM
+                          - generic [ref=f2e121] [cursor=pointer]:
+                            - generic [ref=f2e122]:
+                              - radio "MEd"
+                            - generic [ref=f2e123]: MEd
+                          - generic [ref=f2e124] [cursor=pointer]:
+                            - generic [ref=f2e125]:
+                              - radio "JD"
+                            - generic [ref=f2e126]: JD
+                          - generic [ref=f2e127] [cursor=pointer]:
+                            - generic [ref=f2e128]:
+                              - radio "BS"
+                            - generic [ref=f2e129]: BS
+                          - generic [ref=f2e130] [cursor=pointer]:
+                            - generic [ref=f2e131]:
+                              - radio "BA"
+                            - generic [ref=f2e132]: BA
+                      - generic [ref=f2e134]:
+                        - generic "专业" [ref=f2e136]
+                        - generic [ref=f2e140] [cursor=pointer]:
+                          - generic [ref=f2e142]:
+                            - combobox "专业" [ref=f2e144]
+                            - generic "BioInfo" [ref=f2e145]
+                          - generic:
+                            - img:
+                              - img
+                      - generic [ref=f2e146]:
+                        - generic [ref=f2e148]:
+                          - generic "GPA成绩" [ref=f2e150]
+                          - generic [ref=f2e154]:
+                            - generic [ref=f2e155] [cursor=pointer]:
+                              - generic [ref=f2e156]:
+                                - radio "3.5-4"
+                              - generic [ref=f2e157]: 3.5-4
+                            - generic [ref=f2e158] [cursor=pointer]:
+                              - generic [ref=f2e159]:
+                                - radio "3.0-3.4"
+                              - generic [ref=f2e160]: 3.0-3.4
+                            - generic [ref=f2e161] [cursor=pointer]:
+                              - generic [ref=f2e162]:
+                                - radio "<3.0"
+                              - generic [ref=f2e163]: <3.0
+                            - generic [ref=f2e164] [cursor=pointer]:
+                              - generic [ref=f2e165]:
+                                - radio "N/A"
+                              - generic [ref=f2e166]: N/A
+                        - generic [ref=f2e168]:
+                          - generic "英语成绩" [ref=f2e170]
+                          - generic [ref=f2e174] [cursor=pointer]:
+                            - generic [ref=f2e176]:
+                              - combobox "英语成绩" [ref=f2e178]
+                              - generic: TOEFL/雅思
+                            - generic:
+                              - img:
+                                - img
+                        - generic [ref=f2e180]:
+                          - generic "GRE成绩" [ref=f2e182]
+                          - generic [ref=f2e186] [cursor=pointer]:
+                            - generic [ref=f2e188]:
+                              - combobox "GRE成绩" [ref=f2e190]
+                              - generic: GRE/GMAT
+                            - generic:
+                              - img:
+                                - img
+                    - generic [ref=f2e191]:
+                      - button "全部清空 x" [ref=f2e192] [cursor=pointer]:
+                        - generic [ref=f2e193]: 全部清空
+                        - generic [ref=f2e194]: x
+                      - button "BioInfo x" [ref=f2e195] [cursor=pointer]:
+                        - generic [ref=f2e196]: BioInfo
+                        - generic [ref=f2e197]: x
+                      - button "PhD x" [ref=f2e198] [cursor=pointer]:
+                        - generic [ref=f2e199]: PhD
+                        - generic [ref=f2e200]: x
+              - generic [ref=f2e270]: 共27+个结果
+              - generic [ref=f2e201]:
+                - generic [ref=f2e272]:
+                  - img [ref=f2e274]
+                  - generic [ref=f2e275]:
+                    - link "PhD in Bioinformatics" [ref=f2e277] [cursor=pointer]:
+                      - /url: /program/ucla-phd-in-bioinformatics-1629
+                    - generic [ref=f2e278]: Bioinformatics@University of California, Los Angeles
+                    - generic [ref=f2e279]:
+                      - link "BioInfo" [ref=f2e280] [cursor=pointer]:
+                        - /url: /university/UCLA/majors/8
+                        - generic [ref=f2e281]: BioInfo
+                      - generic [ref=f2e282]: PhD
+                  - generic [ref=f2e283]:
+                    - generic [ref=f2e284]:
+                      - generic [ref=f2e285]:
+                        - generic [ref=f2e286]: "9"
+                        - generic [ref=f2e287]: 录取
+                      - generic [ref=f2e288]:
+                        - generic [ref=f2e289]: "9"
+                        - generic [ref=f2e290]: 申请人
+                      - generic [ref=f2e291]:
+                        - generic [ref=f2e292]: "4"
+                        - generic [ref=f2e293]: 中位GPA
+                      - generic [ref=f2e294]:
+                        - generic [ref=f2e295]: "0"
+                        - generic [ref=f2e296]: TOEFL
+                      - generic [ref=f2e297]:
+                        - generic [ref=f2e298]: "0"
+                        - generic [ref=f2e299]: GRE
+                    - generic [ref=f2e301]:
+                      - button "添加到我的选校" [ref=f2e302] [cursor=pointer]:
+                        - img [ref=f2e303]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e304] [cursor=pointer]:
+                        - generic [ref=f2e305]:
+                          - img "star" [ref=f2e306]:
+                            - img [ref=f2e307]
+                          - text: 关注
+                - generic [ref=f2e310]:
+                  - img [ref=f2e312]
+                  - generic [ref=f2e313]:
+                    - link "PhD in Biomedical Informatics and Data Science" [ref=f2e315] [cursor=pointer]:
+                      - /url: /program/wustl-phd-in-biomedical-informatics-and-data-science-4661
+                    - generic [ref=f2e316]: BIDS@Washington University in St. Louis
+                    - generic [ref=f2e317]:
+                      - link "BioInfo" [ref=f2e318] [cursor=pointer]:
+                        - /url: /university/WUSTL/majors/8
+                        - generic [ref=f2e319]: BioInfo
+                      - generic [ref=f2e320]: PhD
+                  - generic [ref=f2e321]:
+                    - generic [ref=f2e322]:
+                      - generic [ref=f2e323]:
+                        - generic [ref=f2e324]: "2"
+                        - generic [ref=f2e325]: 录取
+                      - generic [ref=f2e326]:
+                        - generic [ref=f2e327]: "5"
+                        - generic [ref=f2e328]: 申请人
+                      - generic [ref=f2e329]:
+                        - generic [ref=f2e330]: "3.83"
+                        - generic [ref=f2e331]: 中位GPA
+                      - generic [ref=f2e332]:
+                        - generic [ref=f2e333]: "101"
+                        - generic [ref=f2e334]: TOEFL
+                      - generic [ref=f2e335]:
+                        - generic [ref=f2e336]: "324"
+                        - generic [ref=f2e337]: GRE
+                    - generic [ref=f2e339]:
+                      - button "添加到我的选校" [ref=f2e340] [cursor=pointer]:
+                        - img [ref=f2e341]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e342] [cursor=pointer]:
+                        - generic [ref=f2e343]:
+                          - img "star" [ref=f2e344]:
+                            - img [ref=f2e345]
+                          - text: 关注
+                - generic [ref=f2e348]:
+                  - img [ref=f2e350]
+                  - generic [ref=f2e351]:
+                    - link "PhD in Computational Medicine and Bioinformatics" [ref=f2e353] [cursor=pointer]:
+                      - /url: /program/umich-phd-in-computational-medicine-and-bioinformatics-1930
+                    - generic [ref=f2e354]: Computational Medicine and Bioinformatics@University of Michigan, Ann Arbor
+                    - generic [ref=f2e355]:
+                      - link "BioInfo" [ref=f2e356] [cursor=pointer]:
+                        - /url: /university/UMICH/majors/8
+                        - generic [ref=f2e357]: BioInfo
+                      - generic [ref=f2e358]: PhD
+                  - generic [ref=f2e359]:
+                    - generic [ref=f2e360]:
+                      - generic [ref=f2e361]:
+                        - generic [ref=f2e362]: "4"
+                        - generic [ref=f2e363]: 录取
+                      - generic [ref=f2e364]:
+                        - generic [ref=f2e365]: "4"
+                        - generic [ref=f2e366]: 申请人
+                      - generic [ref=f2e367]:
+                        - generic [ref=f2e368]: "3.96"
+                        - generic [ref=f2e369]: 中位GPA
+                      - generic [ref=f2e370]:
+                        - generic [ref=f2e371]: "100"
+                        - generic [ref=f2e372]: TOEFL
+                      - generic [ref=f2e373]:
+                        - generic [ref=f2e374]: "0"
+                        - generic [ref=f2e375]: GRE
+                    - generic [ref=f2e377]:
+                      - button "添加到我的选校" [ref=f2e378] [cursor=pointer]:
+                        - img [ref=f2e379]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e380] [cursor=pointer]:
+                        - generic [ref=f2e381]:
+                          - img "star" [ref=f2e382]:
+                            - img [ref=f2e383]
+                          - text: 关注
+                - generic [ref=f2e386]:
+                  - img [ref=f2e388]
+                  - generic [ref=f2e389]:
+                    - link "PhD in Computational Biology" [ref=f2e391] [cursor=pointer]:
+                      - /url: /program/cmu-phd-in-computational-biology-2213
+                    - generic [ref=f2e392]: CPCB@Carnegie Mellon University
+                    - generic [ref=f2e393]:
+                      - link "BioInfo" [ref=f2e394] [cursor=pointer]:
+                        - /url: /university/CMU/majors/8
+                        - generic [ref=f2e395]: BioInfo
+                      - generic [ref=f2e396]: PhD
+                  - generic [ref=f2e397]:
+                    - generic [ref=f2e398]:
+                      - generic [ref=f2e399]:
+                        - generic [ref=f2e400]: "2"
+                        - generic [ref=f2e401]: 录取
+                      - generic [ref=f2e402]:
+                        - generic [ref=f2e403]: "4"
+                        - generic [ref=f2e404]: 申请人
+                      - generic [ref=f2e405]:
+                        - generic [ref=f2e406]: "3.78"
+                        - generic [ref=f2e407]: 中位GPA
+                      - generic [ref=f2e408]:
+                        - generic [ref=f2e409]: "108"
+                        - generic [ref=f2e410]: TOEFL
+                      - generic [ref=f2e411]:
+                        - generic [ref=f2e412]: "330"
+                        - generic [ref=f2e413]: GRE
+                    - generic [ref=f2e415]:
+                      - button "添加到我的选校" [ref=f2e416] [cursor=pointer]:
+                        - img [ref=f2e417]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e418] [cursor=pointer]:
+                        - generic [ref=f2e419]:
+                          - img "star" [ref=f2e420]:
+                            - img [ref=f2e421]
+                          - text: 关注
+                - generic [ref=f2e424]:
+                  - img [ref=f2e426]
+                  - generic [ref=f2e427]:
+                    - link "PhD in Biomedical Informatics" [ref=f2e429] [cursor=pointer]:
+                      - /url: /program/uthsc-h-phd-in-biomedical-informatics-4658
+                    - generic [ref=f2e430]: SBMI@University of Texas health center at houston
+                    - generic [ref=f2e431]:
+                      - link "BioInfo" [ref=f2e432] [cursor=pointer]:
+                        - /url: /university/UTHSC-H/majors/8
+                        - generic [ref=f2e433]: BioInfo
+                      - generic [ref=f2e434]: PhD
+                  - generic [ref=f2e435]:
+                    - generic [ref=f2e436]:
+                      - generic [ref=f2e437]:
+                        - generic [ref=f2e438]: "3"
+                        - generic [ref=f2e439]: 录取
+                      - generic [ref=f2e440]:
+                        - generic [ref=f2e441]: "3"
+                        - generic [ref=f2e442]: 申请人
+                      - generic [ref=f2e443]:
+                        - generic [ref=f2e444]: "4"
+                        - generic [ref=f2e445]: 中位GPA
+                      - generic [ref=f2e446]:
+                        - generic [ref=f2e447]: "102"
+                        - generic [ref=f2e448]: TOEFL
+                      - generic [ref=f2e449]:
+                        - generic [ref=f2e450]: "321"
+                        - generic [ref=f2e451]: GRE
+                    - generic [ref=f2e453]:
+                      - button "添加到我的选校" [ref=f2e454] [cursor=pointer]:
+                        - img [ref=f2e455]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e456] [cursor=pointer]:
+                        - generic [ref=f2e457]:
+                          - img "star" [ref=f2e458]:
+                            - img [ref=f2e459]
+                          - text: 关注
+                - generic [ref=f2e462]:
+                  - img [ref=f2e464]
+                  - generic [ref=f2e465]:
+                    - link "PhD in Computational Biology" [ref=f2e467] [cursor=pointer]:
+                      - /url: /program/cornell-phd-in-computational-biology-4752
+                    - generic [ref=f2e468]: CompBio@Cornell University
+                    - generic [ref=f2e469]:
+                      - link "BioInfo" [ref=f2e470] [cursor=pointer]:
+                        - /url: /university/CORNELL/majors/8
+                        - generic [ref=f2e471]: BioInfo
+                      - generic [ref=f2e472]: PhD
+                  - generic [ref=f2e473]:
+                    - generic [ref=f2e474]:
+                      - generic [ref=f2e475]:
+                        - generic [ref=f2e476]: "1"
+                        - generic [ref=f2e477]: 录取
+                      - generic [ref=f2e478]:
+                        - generic [ref=f2e479]: "3"
+                        - generic [ref=f2e480]: 申请人
+                      - generic [ref=f2e481]:
+                        - generic [ref=f2e482]: "0"
+                        - generic [ref=f2e483]: 中位GPA
+                      - generic [ref=f2e484]:
+                        - generic [ref=f2e485]: "0"
+                        - generic [ref=f2e486]: TOEFL
+                      - generic [ref=f2e487]:
+                        - generic [ref=f2e488]: "0"
+                        - generic [ref=f2e489]: GRE
+                    - generic [ref=f2e491]:
+                      - button "添加到我的选校" [ref=f2e492] [cursor=pointer]:
+                        - img [ref=f2e493]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e494] [cursor=pointer]:
+                        - generic [ref=f2e495]:
+                          - img "star" [ref=f2e496]:
+                            - img [ref=f2e497]
+                          - text: 关注
+                - generic [ref=f2e500]:
+                  - img [ref=f2e502]
+                  - generic [ref=f2e503]:
+                    - link "PhD in Biomathematics" [ref=f2e505] [cursor=pointer]:
+                      - /url: /program/ucla-phd-in-biomathematics-1945
+                    - generic [ref=f2e506]: Biomathematics@University of California, Los Angeles
+                    - generic [ref=f2e507]:
+                      - link "BioInfo" [ref=f2e508] [cursor=pointer]:
+                        - /url: /university/UCLA/majors/8
+                        - generic [ref=f2e509]: BioInfo
+                      - generic [ref=f2e510]: PhD
+                  - generic [ref=f2e511]:
+                    - generic [ref=f2e512]:
+                      - generic [ref=f2e513]:
+                        - generic [ref=f2e514]: "0"
+                        - generic [ref=f2e515]: 录取
+                      - generic [ref=f2e516]:
+                        - generic [ref=f2e517]: "3"
+                        - generic [ref=f2e518]: 申请人
+                      - generic [ref=f2e519]:
+                        - generic [ref=f2e520]: "0"
+                        - generic [ref=f2e521]: 中位GPA
+                      - generic [ref=f2e522]:
+                        - generic [ref=f2e523]: "0"
+                        - generic [ref=f2e524]: TOEFL
+                      - generic [ref=f2e525]:
+                        - generic [ref=f2e526]: "0"
+                        - generic [ref=f2e527]: GRE
+                    - generic [ref=f2e529]:
+                      - button "添加到我的选校" [ref=f2e530] [cursor=pointer]:
+                        - img [ref=f2e531]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e532] [cursor=pointer]:
+                        - generic [ref=f2e533]:
+                          - img "star" [ref=f2e534]:
+                            - img [ref=f2e535]
+                          - text: 关注
+                - generic [ref=f2e538]:
+                  - img [ref=f2e540]
+                  - generic [ref=f2e541]:
+                    - link "PhD in Biomedical Informatics" [ref=f2e543] [cursor=pointer]:
+                      - /url: /program/columbia-phd-in-biomedical-informatics-4660
+                    - generic [ref=f2e544]: DBMI@Columbia University
+                    - generic [ref=f2e545]:
+                      - link "BioInfo" [ref=f2e546] [cursor=pointer]:
+                        - /url: /university/COLUMBIA/majors/8
+                        - generic [ref=f2e547]: BioInfo
+                      - generic [ref=f2e548]: PhD
+                  - generic [ref=f2e549]:
+                    - generic [ref=f2e550]:
+                      - generic [ref=f2e551]:
+                        - generic [ref=f2e552]: "1"
+                        - generic [ref=f2e553]: 录取
+                      - generic [ref=f2e554]:
+                        - generic [ref=f2e555]: "2"
+                        - generic [ref=f2e556]: 申请人
+                      - generic [ref=f2e557]:
+                        - generic [ref=f2e558]: "0"
+                        - generic [ref=f2e559]: 中位GPA
+                      - generic [ref=f2e560]:
+                        - generic [ref=f2e561]: "0"
+                        - generic [ref=f2e562]: TOEFL
+                      - generic [ref=f2e563]:
+                        - generic [ref=f2e564]: "0"
+                        - generic [ref=f2e565]: GRE
+                    - generic [ref=f2e567]:
+                      - button "添加到我的选校" [ref=f2e568] [cursor=pointer]:
+                        - img [ref=f2e569]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e570] [cursor=pointer]:
+                        - generic [ref=f2e571]:
+                          - img "star" [ref=f2e572]:
+                            - img [ref=f2e573]
+                          - text: 关注
+                - generic [ref=f2e576]:
+                  - img [ref=f2e578]
+                  - generic [ref=f2e579]:
+                    - link "PhD in Bioinformatics" [ref=f2e581] [cursor=pointer]:
+                      - /url: /program/bu-phd-in-bioinformatics-1631
+                    - generic [ref=f2e582]: Bioinformatics@Boston University
+                    - generic [ref=f2e583]:
+                      - link "BioInfo" [ref=f2e584] [cursor=pointer]:
+                        - /url: /university/BU/majors/8
+                        - generic [ref=f2e585]: BioInfo
+                      - generic [ref=f2e586]: PhD
+                  - generic [ref=f2e587]:
+                    - generic [ref=f2e588]:
+                      - generic [ref=f2e589]:
+                        - generic [ref=f2e590]: "0"
+                        - generic [ref=f2e591]: 录取
+                      - generic [ref=f2e592]:
+                        - generic [ref=f2e593]: "2"
+                        - generic [ref=f2e594]: 申请人
+                      - generic [ref=f2e595]:
+                        - generic [ref=f2e596]: "0"
+                        - generic [ref=f2e597]: 中位GPA
+                      - generic [ref=f2e598]:
+                        - generic [ref=f2e599]: "0"
+                        - generic [ref=f2e600]: TOEFL
+                      - generic [ref=f2e601]:
+                        - generic [ref=f2e602]: "0"
+                        - generic [ref=f2e603]: GRE
+                    - generic [ref=f2e605]:
+                      - button "添加到我的选校" [ref=f2e606] [cursor=pointer]:
+                        - img [ref=f2e607]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e608] [cursor=pointer]:
+                        - generic [ref=f2e609]:
+                          - img "star" [ref=f2e610]:
+                            - img [ref=f2e611]
+                          - text: 关注
+                - generic [ref=f2e614]:
+                  - img [ref=f2e616]
+                  - generic [ref=f2e617]:
+                    - link "PhD in Bioinformatics and Systems Biology" [ref=f2e619] [cursor=pointer]:
+                      - /url: /program/ucsd-phd-in-bioinformatics-and-systems-biology-1632
+                    - generic [ref=f2e620]: Bioinformatics@University of California, San Diego
+                    - generic [ref=f2e621]:
+                      - link "BioInfo" [ref=f2e622] [cursor=pointer]:
+                        - /url: /university/UCSD/majors/8
+                        - generic [ref=f2e623]: BioInfo
+                      - generic [ref=f2e624]: PhD
+                  - generic [ref=f2e625]:
+                    - generic [ref=f2e626]:
+                      - generic [ref=f2e627]:
+                        - generic [ref=f2e628]: "1"
+                        - generic [ref=f2e629]: 录取
+                      - generic [ref=f2e630]:
+                        - generic [ref=f2e631]: "2"
+                        - generic [ref=f2e632]: 申请人
+                      - generic [ref=f2e633]:
+                        - generic [ref=f2e634]: "0"
+                        - generic [ref=f2e635]: 中位GPA
+                      - generic [ref=f2e636]:
+                        - generic [ref=f2e637]: "0"
+                        - generic [ref=f2e638]: TOEFL
+                      - generic [ref=f2e639]:
+                        - generic [ref=f2e640]: "0"
+                        - generic [ref=f2e641]: GRE
+                    - generic [ref=f2e643]:
+                      - button "添加到我的选校" [ref=f2e644] [cursor=pointer]:
+                        - img [ref=f2e645]
+                        - text: 添加到我的选校
+                      - button "star 关注" [ref=f2e646] [cursor=pointer]:
+                        - generic [ref=f2e647]:
+                          - img "star" [ref=f2e648]:
+                            - img [ref=f2e649]
+                          - text: 关注
+              - list [ref=f2e651]:
+                - listitem "Previous Page" [ref=f2e652]:
+                  - button "left" [disabled] [ref=f2e653]:
+                    - img "left" [ref=f2e654]:
+                      - img [ref=f2e655]
+                - listitem "1" [ref=f2e657] [cursor=pointer]:
+                  - generic [ref=f2e658]: "1"
+                - listitem "2" [ref=f2e659] [cursor=pointer]:
+                  - generic [ref=f2e660]: "2"
+                - listitem "3" [ref=f2e661] [cursor=pointer]:
+                  - generic [ref=f2e662]: "3"
+                - listitem "Next Page" [ref=f2e663] [cursor=pointer]:
+                  - button "right" [ref=f2e664]:
+                    - img "right" [ref=f2e665]:
+                      - img [ref=f2e666]
+        - img [ref=f2e211]
+    - contentinfo [ref=f2e212]:
+      - generic [ref=f2e213]:
+        - generic [ref=f2e214]:
+          - link "logo" [ref=f2e215] [cursor=pointer]:
+            - /url: /
+            - img "logo" [ref=f2e216]
+          - link "关于我们" [ref=f2e217] [cursor=pointer]:
+            - /url: https://www.1point3acres.cn/
+          - link "关于价格" [ref=f2e218] [cursor=pointer]:
+            - /url: /pricing
+            - generic [ref=f2e219]: 关于价格
+          - link "隐私协议" [ref=f2e220] [cursor=pointer]:
+            - /url: https://www.1point3acres.cn/privacy_policy.html
+          - link "联系我们" [ref=f2e221] [cursor=pointer]:
+            - /url: https://www.1p3a.com/contact
+          - link "鲁ICP备18042254号" [ref=f2e222] [cursor=pointer]:
+            - /url: https://beian.miit.gov.cn/
+          - link "公司声明" [ref=f2e223] [cursor=pointer]:
+            - /url: https://www.1point3acres.cn/wp.html
+          - generic [ref=f2e224]: ©2026 1point3acres.cn
+        - generic [ref=f2e225]:
+          - generic [ref=f2e226]:
+            - link "数据库" [ref=f2e227] [cursor=pointer]:
+              - /url: /db
+            - link "申请准备" [ref=f2e228] [cursor=pointer]:
+              - /url: /my/preparations
+            - link "定位选校" [ref=f2e229] [cursor=pointer]:
+              - /url: /my/targets
+            - link "申请进展" [ref=f2e230] [cursor=pointer]:
+              - /url: /my/applications
+            - link "比较决定" [ref=f2e231] [cursor=pointer]:
+              - /url: /my/decision
+            - link "飞跃重洋" [ref=f2e232] [cursor=pointer]:
+              - /url: /my/travel
+          - generic [ref=f2e233]: Offer多多 · 飞跃重洋 · 启航明天 · 追寻梦想
+          - generic [ref=f2e234]:
+            - link "Computer Science Master Programs" [ref=f2e235] [cursor=pointer]:
+              - /url: /db/programs/CS-MS-
+            - link "Computer Science PhD Programs" [ref=f2e236] [cursor=pointer]:
+              - /url: /db/programs/CS-PhD-
+            - link "Computer Science Bachelor Programs" [ref=f2e237] [cursor=pointer]:
+              - /url: /db/programs/CS-BS-
+            - link "Electrical Engineering Master Programs" [ref=f2e238] [cursor=pointer]:
+              - /url: /db/programs/EE-MS-
+            - link "Electrical Engineering PhD Programs" [ref=f2e239] [cursor=pointer]:
+              - /url: /db/programs/EE-PhD-
+            - link "Electrical Engineering Bachelor Programs" [ref=f2e240] [cursor=pointer]:
+              - /url: /db/programs/EE-BS-
+            - link "Information Systems Master Programs" [ref=f2e241] [cursor=pointer]:
+              - /url: /db/programs/MIS-MS-
+            - link "Information Systems PhD Programs" [ref=f2e242] [cursor=pointer]:
+              - /url: /db/programs/MIS-PhD-
+            - link "Information Systems Bachelor Programs" [ref=f2e243] [cursor=pointer]:
+              - /url: /db/programs/MIS-BS-
+            - link "Mechanical Engineering Master Programs" [ref=f2e244] [cursor=pointer]:
+              - /url: /db/programs/ME-MS-
+            - link "Mechanical Engineering PhD Programs" [ref=f2e245] [cursor=pointer]:
+              - /url: /db/programs/ME-PhD-
+            - link "Mechanical Engineering Bachelor Programs" [ref=f2e246] [cursor=pointer]:
+              - /url: /db/programs/ME-BS-
+            - link "Biomedical Engineering Master Programs" [ref=f2e247] [cursor=pointer]:
+              - /url: /db/programs/BME-MS-
+            - link "Biomedical Engineering PhD Programs" [ref=f2e248] [cursor=pointer]:
+              - /url: /db/programs/BME-PhD-
+            - link "Biomedical Engineering Bachelor Programs" [ref=f2e249] [cursor=pointer]:
+              - /url: /db/programs/BME-BS-
+            - link "IEOR Master Programs" [ref=f2e250] [cursor=pointer]:
+              - /url: /db/programs/IEOR-MS-
+            - link "IEOR PhD Programs" [ref=f2e251] [cursor=pointer]:
+              - /url: /db/programs/IEOR-PhD-
+            - link "IEOR Bachelor Programs" [ref=f2e252] [cursor=pointer]:
+              - /url: /db/programs/IEOR-BS-
+            - link "Bioinformatics Master Programs" [ref=f2e253] [cursor=pointer]:
+              - /url: /db/programs/BioInfo-MS-
+            - link "Bioinformatics PhD Programs" [ref=f2e254] [cursor=pointer]:
+              - /url: /db/programs/BioInfo-PhD-
+            - link "Bioinformatics Bachelor Programs" [ref=f2e255] [cursor=pointer]:
+              - /url: /db/programs/BioInfo-BS-
+            - link "Accounting Master Programs" [ref=f2e256] [cursor=pointer]:
+              - /url: /db/programs/Accounting-MS-
+            - link "Accounting PhD Programs" [ref=f2e257] [cursor=pointer]:
+              - /url: /db/programs/Accounting-PhD-
+            - link "Accounting Bachelor Programs" [ref=f2e258] [cursor=pointer]:
+              - /url: /db/programs/Accounting-BS-
+            - link "Materials Master Programs" [ref=f2e259] [cursor=pointer]:
+              - /url: /db/programs/Material-MS-
+            - link "Materials PhD Programs" [ref=f2e260] [cursor=pointer]:
+              - /url: /db/programs/Material-PhD-
+            - link "Materials Bachelor Programs" [ref=f2e261] [cursor=pointer]:
+              - /url: /db/programs/Material-BS-
+            - link "Physics Master Programs" [ref=f2e262] [cursor=pointer]:
+              - /url: /db/programs/Physics-MS-
+            - link "Physics PhD Programs" [ref=f2e263] [cursor=pointer]:
+              - /url: /db/programs/Physics-PhD-
+            - link "Physics Bachelor Programs" [ref=f2e264] [cursor=pointer]:
+              - /url: /db/programs/Physics-BS-
+            - link "Civil Engineering Master Programs" [ref=f2e265] [cursor=pointer]:
+              - /url: /db/programs/CivilEng-MS-
+            - link "Civil Engineering PhD Programs" [ref=f2e266] [cursor=pointer]:
+              - /url: /db/programs/CivilEng-PhD-
+            - link "Civil Engineering Bachelor Programs" [ref=f2e267] [cursor=pointer]:
+              - /url: /db/programs/CivilEng-BS-
+  - alert [ref=f2e268]

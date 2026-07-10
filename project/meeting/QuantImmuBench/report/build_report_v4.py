@@ -127,13 +127,22 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:"SF Mon
 /* 折叠 */
 details{border:1px solid var(--line);border-radius:10px;margin:.9em 0;background:var(--fold);overflow:hidden}
 details[open]{background:var(--card)}
-details>summary{cursor:pointer;padding:11px 16px;font-weight:700;color:var(--blue);list-style:none;user-select:none;font-size:14px;display:flex;align-items:center;gap:8px}
+details>summary{cursor:pointer;padding:11px 16px;font-weight:700;color:var(--blue);list-style:none;user-select:none;font-size:14px;display:flex;align-items:center;gap:7px}
 details>summary::-webkit-details-marker{display:none}
-details>summary::before{content:"▸";color:var(--blue);font-size:12px;transition:transform .15s}
-details[open]>summary::before{transform:rotate(90deg)}
-details>summary:hover{color:var(--blue2)}
+details>summary::before{content:"＋";color:var(--blue);font-weight:800;flex:0 0 auto}
+details[open]>summary::before{content:"－"}
+details>summary::after{content:"点击展开 ▾";margin-left:auto;flex:0 0 auto;color:var(--muted);font-size:11.5px;font-weight:600;background:var(--litbg);border:1px solid var(--line);padding:1px 9px;border-radius:12px;white-space:nowrap}
+details[open]>summary::after{content:"点击收起 ▴"}
+details>summary:hover{background:color-mix(in srgb,var(--card) 55%,var(--blue) 9%)}
+details>summary:hover::after{background:var(--blue);color:#fff;border-color:var(--blue)}
 .dbody{padding:2px 18px 14px}
 .dbody>:first-child{margin-top:.4em}
+/* 证据块（绿） */
+details.ev>summary::after{content:"查看证据 ▾"}
+details.ev[open]>summary::after{content:"收起 ▴"}
+details.ev{background:color-mix(in srgb,var(--card) 82%,var(--green) 18%);border-color:color-mix(in srgb,var(--line) 60%,var(--green) 40%)}
+details.ev>summary{color:var(--green)}
+details.ev>summary::before{content:"✓";color:var(--green)}
 /* KPI 速览卡 */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin:1.2em 0}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
@@ -168,6 +177,41 @@ SCRIPT = r"""
 
 
 # ---------------------------------------------------------------------------
+# KaTeX 0.16.11 离线资产注入（自包含、无 CDN）
+# 由 fetch_and_inline_katex.py 预生成 _assets/katex_inline.{css,js}（字体已 base64）。
+# 存在则内联进 STYLE / SCRIPT（两个 wrapper 报告都用 {eng.STYLE}/{eng.SCRIPT}，自动获得公式）；
+# 缺资产时静默跳过，报告照常出，仅公式不渲染 —— 绝不因缺资产报错。
+# ---------------------------------------------------------------------------
+_KATEX_CSS = HERE / "_assets" / "katex_inline.css"
+_KATEX_JS = HERE / "_assets" / "katex_inline.js"
+if _KATEX_CSS.exists():
+    STYLE += "\n/* ===== KaTeX 0.16.11 内联（离线，字体 base64）===== */\n"
+    STYLE += _KATEX_CSS.read_text(encoding="utf-8")
+if _KATEX_JS.exists():
+    SCRIPT += "\n/* ===== KaTeX 0.16.11（katex + auto-render，离线）===== */\n"
+    SCRIPT += _KATEX_JS.read_text(encoding="utf-8")
+    # 独立 IIFE：DOM 就绪后对全文做公式渲染；资产缺失（无 renderMathInElement）时不报错。
+    SCRIPT += r"""
+(function(){
+  function _renderMath(){
+    if(window.renderMathInElement){
+      renderMathInElement(document.body,{
+        delimiters:[
+          {left:'$$',right:'$$',display:true},
+          {left:'$',right:'$',display:false}
+        ],
+        throwOnError:false
+      });
+    }
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',_renderMath);
+  }else{ _renderMath(); }
+})();
+"""
+
+
+# ---------------------------------------------------------------------------
 # 行内格式
 # ---------------------------------------------------------------------------
 def esc(s: str) -> str:
@@ -184,6 +228,12 @@ def inline(text: str) -> str:
         store.append((kind, payload))
         return f"{NUL}{len(store) - 1}{NUL}"
 
+    # -1 数学公式 $$...$$ / $...$：原样透传给浏览器里的 KaTeX auto-render 渲染。
+    #    须在其余一切规则（%%raw、代码、徽章、esc、加粗…）之前 stash 掉，
+    #    保证公式内容不被转义、不被 ** / `` / [[..]] 等规则吃掉。
+    #    先 $$（display）再 $（inline），均非贪婪、单行。
+    text = re.sub(r"\$\$(.+?)\$\$", lambda m: stash("math", (True, m.group(1))), text)
+    text = re.sub(r"\$([^$]+?)\$", lambda m: stash("math", (False, m.group(1))), text)
     # 0 原始 HTML 透传 %%...%%（公式/分式用，不转义）
     text = re.sub(r"%%(.+?)%%", lambda m: stash("raw", m.group(1)), text)
     # 1 代码
@@ -195,9 +245,12 @@ def inline(text: str) -> str:
     def badge(m):
         raw = m.group(1)
         if ":" in raw:
-            cls, txt = raw.split(":", 1)
-            return stash("badge", (cls.strip(), txt.strip()))
-        return stash("badge", (raw.strip(), None))
+            cls, rest = raw.split(":", 1)
+            if "|" in rest:                      # [[work:文字|自定义悬停]]
+                label, tip = rest.split("|", 1)
+                return stash("badge", (cls.strip(), label.strip(), tip.strip()))
+            return stash("badge", (cls.strip(), rest.strip(), None))
+        return stash("badge", (raw.strip(), None, None))
     text = re.sub(r"\[\[([^\]]+)\]\]", badge, text)
     # 4 md 链接 [文字](url)
     text = re.sub(r"\[([^\]]+)\]\((https?://[^)]+)\)",
@@ -211,9 +264,17 @@ def inline(text: str) -> str:
                   r'<a href="\1" target="_blank" rel="noopener">\1</a>', text)
 
     BADGE_TXT = {"done": "已完成", "part": "部分", "miss": "未做"}
+    BADGE_DEFAULT_TIP = {
+        "work": "本项目在这次评测中的处理 / 决定",
+        "lit": "引自公开发表的论文 / 通行做法，均带可点链接",
+        "off": "引自各工具官方的设定 / 文档",
+    }
 
     def restore(m):
         kind, payload = store[int(m.group(1))]
+        if kind == "math":
+            disp, expr = payload              # 带定界符原样吐回，交浏览器 KaTeX 渲染
+            return f"$${expr}$$" if disp else f"${expr}$"
         if kind == "raw":
             return payload                    # 原始 HTML（公式），不转义
         if kind == "code":
@@ -222,9 +283,12 @@ def inline(text: str) -> str:
             term, tp = payload
             return f'<span class="t" data-t="{esc(tp)}">{esc(term)}</span>'
         if kind == "badge":
-            cls, txt = payload
+            cls, txt, tip = payload
             label = txt if txt is not None else BADGE_TXT.get(cls, cls)
-            return f'<span class="b {esc(cls)}">{esc(label)}</span>'
+            if tip is None:
+                tip = BADGE_DEFAULT_TIP.get(cls)   # work/lit/off 有默认悬停；done/part/miss 无
+            data_t = f' data-t="{esc(tip)}"' if tip else ""
+            return f'<span class="b {esc(cls)}"{data_t}>{esc(label)}</span>'
         if kind == "link":
             txt, url = payload
             return f'<a href="{esc(url)}" target="_blank" rel="noopener">{esc(txt)}</a>'
@@ -421,6 +485,11 @@ def render(blocks) -> str:
         if kind == "details":
             summary = inline(b[1].strip())
             out.append(f'<details><summary>{summary}</summary>'
+                       f'<div class="dbody">{render(parse_blocks(b[2]))}</div></details>')
+            continue
+        if kind == "ev":
+            summary = inline(b[1].strip())
+            out.append(f'<details class="ev"><summary>{summary}</summary>'
                        f'<div class="dbody">{render(parse_blocks(b[2]))}</div></details>')
             continue
     return "\n".join(out)

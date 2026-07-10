@@ -1,0 +1,243 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e3]:
+    - banner [ref=f1e4]:
+      - generic [ref=f1e6]:
+        - generic [ref=f1e7]:
+          - link "logo" [ref=f1e8] [cursor=pointer]:
+            - /url: /
+            - img "logo" [ref=f1e9]
+          - generic [ref=f1e10]:
+            - link "我的申请" [ref=f1e12] [cursor=pointer]:
+              - /url: /my
+              - generic [ref=f1e13]: 我的申请
+            - link "数据库" [ref=f1e15] [cursor=pointer]:
+              - /url: /db
+              - generic [ref=f1e16]: 数据库
+            - link "发帖" [ref=f1e18] [cursor=pointer]:
+              - /url: /db#
+              - generic [ref=f1e19]: 发帖
+            - link "Offer白金卡" [ref=f1e21] [cursor=pointer]:
+              - /url: /pricing
+              - generic [ref=f1e22]: Offer白金卡
+            - link "新手导读" [ref=f1e24] [cursor=pointer]:
+              - /url: /guide
+              - generic [ref=f1e25]: 新手导读
+            - img "search" [ref=f1e27] [cursor=pointer]:
+              - img [ref=f1e28]
+        - generic [ref=f1e30]:
+          - link "🧙" [ref=f1e31] [cursor=pointer]:
+            - /url: /ps/draft
+            - generic [ref=f1e32]: 🧙
+          - button "登 录" [ref=f1e33] [cursor=pointer]:
+            - generic [ref=f1e34]: 登 录
+    - main [ref=f1e35]:
+      - generic [ref=f1e36]:
+        - generic [ref=f1e37]:
+          - generic [ref=f1e38]:
+            - heading "OFFER多多数据库" [level=1] [ref=f1e39]
+            - paragraph [ref=f1e40]: 搜索海量真实数据，知己知彼，彻底消灭信息差，获取梦校 offer
+            - generic [ref=f1e42]:
+              - generic [ref=f1e44]:
+                - textbox "输入关键字" [ref=f1e50]
+                - generic [ref=f1e56] [cursor=pointer]:
+                  - generic [ref=f1e58]:
+                    - combobox [ref=f1e60]
+                    - generic "大学库" [ref=f1e61]
+                  - generic:
+                    - img:
+                      - img
+              - button "搜索" [ref=f1e62] [cursor=pointer]
+          - generic [ref=f1e63]:
+            - generic [ref=f1e64]:
+              - link "大学库 涵盖美加、欧洲等地 共1000+所大学数据" [ref=f1e65] [cursor=pointer]:
+                - /url: /db/colleges
+                - generic [ref=f1e66]:
+                  - heading "大学库" [level=2] [ref=f1e67]
+                  - generic [ref=f1e68]:
+                    - text: 涵盖美加、欧洲等地
+                    - text: 共1000+所大学数据
+                  - img [ref=f1e69]
+              - link "项目库 按专业分类的热门项目 共5000+项目" [ref=f1e70] [cursor=pointer]:
+                - /url: /db/programs
+                - generic [ref=f1e71]:
+                  - heading "项目库" [level=2] [ref=f1e72]
+                  - generic [ref=f1e73]:
+                    - text: 按专业分类的热门项目
+                    - text: 共5000+项目
+                  - img [ref=f1e74]
+              - link "Fiverr文书修改 查看一亩三分地申请人的真实评价,选择最适合你的文书编辑" [ref=f1e75] [cursor=pointer]:
+                - /url: /fiverr
+                - generic [ref=f1e76]:
+                  - heading "Fiverr文书修改" [level=2] [ref=f1e77]
+                  - generic [ref=f1e78]: 查看一亩三分地申请人的真实评价,选择最适合你的文书编辑
+                  - img [ref=f1e79]
+            - generic [ref=f1e80]:
+              - link "Offer榜 各学年获得录取的论坛用户 共10000+用户" [ref=f1e81] [cursor=pointer]:
+                - /url: /admission
+                - generic [ref=f1e82]:
+                  - heading "Offer榜" [level=2] [ref=f1e83]
+                  - generic [ref=f1e84]:
+                    - text: 各学年获得录取的论坛用户
+                    - text: 共10000+用户
+                  - img [ref=f1e85]
+              - link "专业库 全面覆盖各学科专业 共50+专业" [ref=f1e86] [cursor=pointer]:
+                - /url: /db/majors
+                - generic [ref=f1e87]:
+                  - heading "专业库" [level=2] [ref=f1e88]
+                  - generic [ref=f1e89]:
+                    - text: 全面覆盖各学科专业
+                    - text: 共50+专业
+                  - img [ref=f1e90]
+              - link "录取结果库 历年申请案例积累 超20万海量案例助你决策" [ref=f1e91] [cursor=pointer]:
+                - /url: /results
+                - generic [ref=f1e92]:
+                  - heading "录取结果库" [level=2] [ref=f1e93]
+                  - generic [ref=f1e94]:
+                    - text: 历年申请案例积累
+                    - text: 超20万海量案例助你决策
+                  - img [ref=f1e95]
+        - img [ref=f1e98]
+      - link "排行榜 来自学长的真实评价 多维度评估院校 选择适合自己的梦校 最大的留学社区 最丰富的的申请数据 最真实的用户评价 最高价值的分析解读 OFFER榜 大陆院校出国报告 查看大陆院校申请结果 查看本校学长申请结果，查看同档次学校申请人的 offer，了解申请难度，知己知彼。" [ref=f1e99] [cursor=pointer]:
+        - /url: /db/cn-colleges
+        - generic [ref=f1e102]:
+          - generic [ref=f1e103]:
+            - heading "排行榜" [level=2] [ref=f1e104]
+            - paragraph [ref=f1e105]:
+              - text: 来自学长的真实评价
+              - text: 多维度评估院校
+              - text: 选择适合自己的梦校
+          - generic [ref=f1e106]:
+            - paragraph [ref=f1e107]:
+              - text: 最大的留学社区
+              - text: 最丰富的的申请数据
+              - text: 最真实的用户评价
+              - text: 最高价值的分析解读
+            - heading "OFFER榜" [level=2] [ref=f1e108]
+          - generic [ref=f1e109]:
+            - heading "大陆院校出国报告" [level=2] [ref=f1e111]
+            - generic [ref=f1e112]:
+              - heading "查看大陆院校申请结果" [level=2] [ref=f1e113]
+              - paragraph [ref=f1e114]:
+                - text: 查看本校学长申请结果，查看同档次学校申请人的
+                - text: offer，了解申请难度，知己知彼。
+      - link "申请指南电子书 清华大学出版社 《你不知道的美国留学》 免费阅读电子书，搜索常见申请问题，得到权威回答 让您的申请路上不再踩坑 Q在美国读研究生要花多少钱？ A 在赴美读研的费用上，根据你的专业不同、学校性质不同(公立大学、私立大学)、学校所在城市的消费水平不一样，数据也大不相同。平均来说，研究生一年的学费在40-50万人民币左右，会根据不同学校的收费标准有所变化。很多传媒类、艺术类专业收费更贵。虽然研究生也是有提供奖学金的，但是比例较低，要做好全自费的准备。" [ref=f1e118] [cursor=pointer]:
+        - /url: /db/faq
+        - generic [ref=f1e120]:
+          - generic [ref=f1e121]:
+            - heading "申请指南电子书" [level=1] [ref=f1e123]
+            - generic [ref=f1e124]:
+              - heading "清华大学出版社 《你不知道的美国留学》" [level=2] [ref=f1e125]:
+                - generic [ref=f1e126]: 清华大学出版社
+                - generic [ref=f1e127]: 《你不知道的美国留学》
+              - paragraph [ref=f1e128]:
+                - text: 免费阅读电子书，搜索常见申请问题，得到权威回答
+                - text: 让您的申请路上不再踩坑
+              - generic [ref=f1e129]:
+                - generic [ref=f1e130]: Q在美国读研究生要花多少钱？
+                - generic [ref=f1e131]:
+                  - generic [ref=f1e132]: A
+                  - text: 在赴美读研的费用上，根据你的专业不同、学校性质不同(公立大学、私立大学)、学校所在城市的消费水平不一样，数据也大不相同。平均来说，研究生一年的学费在40-50万人民币左右，会根据不同学校的收费标准有所变化。很多传媒类、艺术类专业收费更贵。虽然研究生也是有提供奖学金的，但是比例较低，要做好全自费的准备。
+          - img [ref=f1e134]
+    - contentinfo [ref=f1e137]:
+      - generic [ref=f1e138]:
+        - generic [ref=f1e139]:
+          - link "logo" [ref=f1e140] [cursor=pointer]:
+            - /url: /
+            - img "logo" [ref=f1e141]
+          - link "关于我们" [ref=f1e142] [cursor=pointer]:
+            - /url: https://www.1point3acres.cn/
+          - link "关于价格" [ref=f1e143] [cursor=pointer]:
+            - /url: /pricing
+            - generic [ref=f1e144]: 关于价格
+          - link "隐私协议" [ref=f1e145] [cursor=pointer]:
+            - /url: https://www.1point3acres.cn/privacy_policy.html
+          - link "联系我们" [ref=f1e146] [cursor=pointer]:
+            - /url: https://www.1p3a.com/contact
+          - link "鲁ICP备18042254号" [ref=f1e147] [cursor=pointer]:
+            - /url: https://beian.miit.gov.cn/
+          - link "公司声明" [ref=f1e148] [cursor=pointer]:
+            - /url: https://www.1point3acres.cn/wp.html
+          - generic [ref=f1e149]: ©2026 1point3acres.cn
+        - generic [ref=f1e150]:
+          - generic [ref=f1e151]:
+            - link "数据库" [ref=f1e152] [cursor=pointer]:
+              - /url: /db
+            - link "申请准备" [ref=f1e153] [cursor=pointer]:
+              - /url: /my/preparations
+            - link "定位选校" [ref=f1e154] [cursor=pointer]:
+              - /url: /my/targets
+            - link "申请进展" [ref=f1e155] [cursor=pointer]:
+              - /url: /my/applications
+            - link "比较决定" [ref=f1e156] [cursor=pointer]:
+              - /url: /my/decision
+            - link "飞跃重洋" [ref=f1e157] [cursor=pointer]:
+              - /url: /my/travel
+          - generic [ref=f1e158]: Offer多多 · 飞跃重洋 · 启航明天 · 追寻梦想
+          - generic [ref=f1e159]:
+            - link "Computer Science Master Programs" [ref=f1e160] [cursor=pointer]:
+              - /url: /db/programs/CS-MS-
+            - link "Computer Science PhD Programs" [ref=f1e161] [cursor=pointer]:
+              - /url: /db/programs/CS-PhD-
+            - link "Computer Science Bachelor Programs" [ref=f1e162] [cursor=pointer]:
+              - /url: /db/programs/CS-BS-
+            - link "Electrical Engineering Master Programs" [ref=f1e163] [cursor=pointer]:
+              - /url: /db/programs/EE-MS-
+            - link "Electrical Engineering PhD Programs" [ref=f1e164] [cursor=pointer]:
+              - /url: /db/programs/EE-PhD-
+            - link "Electrical Engineering Bachelor Programs" [ref=f1e165] [cursor=pointer]:
+              - /url: /db/programs/EE-BS-
+            - link "Information Systems Master Programs" [ref=f1e166] [cursor=pointer]:
+              - /url: /db/programs/MIS-MS-
+            - link "Information Systems PhD Programs" [ref=f1e167] [cursor=pointer]:
+              - /url: /db/programs/MIS-PhD-
+            - link "Information Systems Bachelor Programs" [ref=f1e168] [cursor=pointer]:
+              - /url: /db/programs/MIS-BS-
+            - link "Mechanical Engineering Master Programs" [ref=f1e169] [cursor=pointer]:
+              - /url: /db/programs/ME-MS-
+            - link "Mechanical Engineering PhD Programs" [ref=f1e170] [cursor=pointer]:
+              - /url: /db/programs/ME-PhD-
+            - link "Mechanical Engineering Bachelor Programs" [ref=f1e171] [cursor=pointer]:
+              - /url: /db/programs/ME-BS-
+            - link "Biomedical Engineering Master Programs" [ref=f1e172] [cursor=pointer]:
+              - /url: /db/programs/BME-MS-
+            - link "Biomedical Engineering PhD Programs" [ref=f1e173] [cursor=pointer]:
+              - /url: /db/programs/BME-PhD-
+            - link "Biomedical Engineering Bachelor Programs" [ref=f1e174] [cursor=pointer]:
+              - /url: /db/programs/BME-BS-
+            - link "IEOR Master Programs" [ref=f1e175] [cursor=pointer]:
+              - /url: /db/programs/IEOR-MS-
+            - link "IEOR PhD Programs" [ref=f1e176] [cursor=pointer]:
+              - /url: /db/programs/IEOR-PhD-
+            - link "IEOR Bachelor Programs" [ref=f1e177] [cursor=pointer]:
+              - /url: /db/programs/IEOR-BS-
+            - link "Bioinformatics Master Programs" [ref=f1e178] [cursor=pointer]:
+              - /url: /db/programs/BioInfo-MS-
+            - link "Bioinformatics PhD Programs" [ref=f1e179] [cursor=pointer]:
+              - /url: /db/programs/BioInfo-PhD-
+            - link "Bioinformatics Bachelor Programs" [ref=f1e180] [cursor=pointer]:
+              - /url: /db/programs/BioInfo-BS-
+            - link "Accounting Master Programs" [ref=f1e181] [cursor=pointer]:
+              - /url: /db/programs/Accounting-MS-
+            - link "Accounting PhD Programs" [ref=f1e182] [cursor=pointer]:
+              - /url: /db/programs/Accounting-PhD-
+            - link "Accounting Bachelor Programs" [ref=f1e183] [cursor=pointer]:
+              - /url: /db/programs/Accounting-BS-
+            - link "Materials Master Programs" [ref=f1e184] [cursor=pointer]:
+              - /url: /db/programs/Material-MS-
+            - link "Materials PhD Programs" [ref=f1e185] [cursor=pointer]:
+              - /url: /db/programs/Material-PhD-
+            - link "Materials Bachelor Programs" [ref=f1e186] [cursor=pointer]:
+              - /url: /db/programs/Material-BS-
+            - link "Physics Master Programs" [ref=f1e187] [cursor=pointer]:
+              - /url: /db/programs/Physics-MS-
+            - link "Physics PhD Programs" [ref=f1e188] [cursor=pointer]:
+              - /url: /db/programs/Physics-PhD-
+            - link "Physics Bachelor Programs" [ref=f1e189] [cursor=pointer]:
+              - /url: /db/programs/Physics-BS-
+            - link "Civil Engineering Master Programs" [ref=f1e190] [cursor=pointer]:
+              - /url: /db/programs/CivilEng-MS-
+            - link "Civil Engineering PhD Programs" [ref=f1e191] [cursor=pointer]:
+              - /url: /db/programs/CivilEng-PhD-
+            - link "Civil Engineering Bachelor Programs" [ref=f1e192] [cursor=pointer]:
+              - /url: /db/programs/CivilEng-BS-
+  - alert [ref=f1e193]
