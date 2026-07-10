@@ -40,6 +40,13 @@
 
 **档位**：🔴 未验（创新模块下阶段立项 + 红队 + 实验，禁越级卖）。
 
+> **🔴 2026-07-10 双红队独立判定（Phase2 立项前，skeptic + theorist 正交，各自收敛到同一结论）**：H2 **存疑，不 greenlight，先跑 2×2 kill-shot**。
+> - **命门=因果混淆（两队一致砸中同一处）**：baseline 囊肿≈0 更 Occam 的解释是**极端类不平衡（65/百万体素）**这个一阶主因，而非「缺全局视野」。**关键反证=M3D-NCA 粗级(m=0)本就在整卷跑、有全局视野，囊肿照样≈0** → H1 机制真但**不足以推出 H2**。
+> - **theorist 理论刀**：6.5e-5 前景比下标准 Dice/focal loss 平凡解（全背景）吸引盆极深 → 类不平衡是**一阶** killer、全局视野至多**二阶**；H2a（全局视野瓶颈）vs H2b（不平衡瓶颈）**当前数据理论不可分**。信息论侧：囊肿解剖散布 → 全局先验对定位约束弱，I(全局;囊肿mask|局部patch) 可能可忽略（与「全局视野治囊肿」卖点直接张力）。
+> - **skeptic 补两刀**：①novelty 可能撞车（Backbone-NCA / global-pooling NCA 变体或已存在，立项前须查空白真伪）；②尺度失配（全局池化 broadcast 可能**稀释**定位 65/百万小目标所需的局部信号）。
+> - **kill-shot（立项前必跑，~15-20 GPU·h）**：2×2 = ±全局视野 × ±类平衡（加权 Dice/focal/前景优先采样）。关键格=**「+类平衡 / −全局视野」**：若单加类平衡就把 vanilla NCA 囊肿 Dice 拉到 ~0.1-0.3，则 H2 地基塌一半，Phase2 须转向（如改成散布小目标类不平衡分割 benchmark）。
+> - **置信更新**：低 → **低（且已识别一阶混淆变量，不先控就是押错 claim 形状）**。呼应 [[feedback_falsify_crux_first]] + [[feedback_claim_shape_decides_birth_difficulty]] + [[feedback_benchmark_is_optimal_strategy]]。
+
 ---
 
 ## H3 — 「主流模型囊肿近随机」在多类小散布设定成立

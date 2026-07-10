@@ -2,6 +2,111 @@
 
 ---
 
+## 2026-07-10（干净 session）· 🚩 Phase2 立项前双红队：H2 命门存疑 → 建议先跑 2×2 kill-shot（🛑 待用户拍板）
+
+**背景**：用户拍板「A) Phase2 立项，先红队命门假设」。派 skeptic + theorist 并行正交攻/推 THEORY_LEDGER H2「给 NCA 补全局视野通道能把囊肿 Dice 从近随机显著拉起」。
+
+**结果：两个正交 agent 独立收敛到同一结论 → H2 存疑，不 greenlight，先跑便宜 kill-shot。**
+- **命门=因果混淆（两队一致砸中）**：baseline 囊肿≈0 更 Occam 的解释是**极端类不平衡（65/百万体素）**一阶主因，非「缺全局视野」。铁证=M3D-NCA 粗级本就在整卷跑、有全局视野，囊肿照样≈0（H1 机制真 ≠ H2 成立）。
+- **theorist 理论刀**：6.5e-5 前景比下 Dice loss 平凡解吸引盆极深 → 不平衡一阶、全局视野至多二阶；H2a vs H2b 当前数据理论不可分。囊肿解剖散布 → 全局先验对定位约束弱。
+- **skeptic 补刀**：novelty 可能撞车（Backbone-NCA/global-pooling NCA 变体，须查）；全局池化可能稀释局部小目标信号。
+- **一致建议 kill-shot（~15-20 GPU·h）**：2×2 = ±全局视野 × ±类平衡。关键格「+类平衡/−全局视野」——若单加类平衡就把 vanilla NCA 囊肿 Dice 拉到 ~0.1-0.3，H2 地基塌，Phase2 转向。
+
+**落档**：THEORY_LEDGER H2 冻结双红队判定 + 置信更新（低，已识别一阶混淆变量）。
+
+**⚠️ 本 session 后段再遇污染**：git commit/push 回执与部分 Edit 结果曾被伪造注入（THEORY_LEDGER/LOG 两处 Edit 一度没真落盘，grep 单值核实后重写补上）。凡终端回执一律 grep/rev-parse 单值复核，不信显示。
+
+**下一步（🛑 拍板点，待用户定）**：四选一 —
+1. **先跑 2×2 kill-shot 再定 Phase2**（红队一致推荐；符合命门最先证伪纪律）；
+2. 直接立 Phase2 全局视野模块（两队都反对，押未验前提）；
+3. 转向「散布小目标类不平衡分割 benchmark」路线（B 族更稳）；
+4. 先派 researcher 查 novelty 撞车真伪再定。
+
+---
+
+## 2026-07-10（干净 session 16:0x）· 🏁 stage-gate PASS：Phase 1 baseline 整体过闸 → Phase2 立项待拍板
+
+**背景**：csv 更正后跑 `/stage-gate nca-cyst`。verifier 核数（Bash 直核 csv）→ reviewer（opus）对 02_ACCEPTANCE 逐条严判。
+
+**verifier 结论**：5 行主判据 + 7 项支撑统计**全部与 csv 原值一致（全绿）**，A2 确有 3 seed 满足验收口径。唯一提示=旧 entry（本文下方 07-10 首条）残留污染旧值 ep758/4.14e-9/0.575，已就地加作废声明，摘 UNet 数只取顶部 entry。
+
+**reviewer 严判结果**：
+
+| 判据 | 判定 | 实测 |
+|---|---|---|
+| A1 官方二分类管线复现 | ✅ PASS | Dice 0.8313 / loss 0.1417 / 1000ep done，越过 0/11 发散命门 |
+| A2 M3D-NCA 囊肿多 seed | ✅ PASS | 3 seed 收敛率 3/3，均值 5.30e-6±6.05e-7（判据明写「测量非达标」）|
+| A3 UNet3D 同口径对照 | ✅ PASS（conditional）| Dice 2.31e-7 / TIMEOUT ep903；判据字面未设 epoch/seed 阈值，评估口径未被破坏 |
+| K1/K2/K3 kill criteria | 全不触发 | K3：UNet 2.31e-7≪0.45 → 近随机确认，故事前提「囊肿近随机」成立 |
+
+**总判：PASS**（三判据达标 + K 全不触发 + 复现零偏离守住 + 无跑偏，STORY 措辞红线守住）。
+
+**reviewer 留存 top 意见（Phase2 前置，须落实）**：
+1. **【高·命门假设】类不平衡 vs 感受野的因果混淆**：UNet 和 vanilla NCA 囊肿都≈0，更 Occam 的解释是极端类不平衡（65/百万体素）任何模型不加类平衡都退化成全背景，而非「局部感受野看不到全局」。downsample_survival 只证「下采样丢信息」，没证「这是 Dice≈0 的直接原因」。→ **Phase2 立项最先用最便宜实验证伪这个命门**（全局视野但不动不平衡 vs 动不平衡但无全局视野），别拖到最后（呼应 [[feedback_falsify_crux_first]]）。
+2. **【中-高】UNet 对照不对称**：M3D-NCA 3 seed，UNet 仅 1 seed 且 timeout 未跑完 + tqdm 刷没 trace 无法证到平台。→ 投稿前补 UNet ≥3 seed / 1000ep / 修 tqdm（已挂 A3 must-fix）。
+3. **【中】「同预处理」对称性存疑**：UNet full 分辨率与 M3D-NCA 两级下采样是否严格对齐，读档链未明确 → 投稿前核对写清。
+4. **措辞提醒**：正文/汇报别用 ✅ 修饰近随机数字（内部记账可，baseline≈0 是测量非成绩）。
+
+**落档**：02_ACCEPTANCE A1/A2/A3 状态 ❌→✅ PASS（A3 挂 conditional must-fix）；registry updated。
+
+**下一步（🛑 拍板点）**：Phase 1 baseline 收官。**进 Phase2 = 全局视野创新模块立项**（新方向/新模块），按 00_README「升级前置」+ CLAUDE.md 属立项拍板点 → **停下报用户拍板**，不擅自开工。若立项，Phase2 第一棒 = reviewer top1 命门实验（因果区分），先证伪不最后。可选补跑 UNet 3seed 作为 Phase1 收尾（或留到投稿前）。
+
+---
+
+## 2026-07-10（干净 session 15:56）· 🔧 HPC 直读纠正上条污染数字 + csv 更正 → 具备 stage-gate 条件
+
+**背景**：上一条 entry 的 UNet(A3) 数字在被污染的 session 记录，且 csv 更正未落盘（本窗直核 csv 发现 UNet 行还是旧的 `running/ep350`）。用户拍板：先连 HPC 核 job 1516006 真实状态 → 更正 csv → 再跑 stage-gate。
+
+**做的事 + 结果**（干净 session，paramiko 只读侦察 + HPC 直读 state.json，可信通道）：
+- **sacct 坐实 job 1516006 = TIMEOUT**（Elapsed 14:00:06，End 2026-07-10T06:49:20，`.err` 明写 CANCELLED DUE TO TIME LIMIT）。
+- **真终值来自 `runs/unet_full_cyst_seed0/state.json` 直读**：`status=running`（timeout kill 时没来得及翻 done）、**epoch 903**、**dice 2.3107e-07**、**avg_loss 0.5486**、updated 06:48:40（恰在 06:49 kill 前一分钟）。
+- **⚠️ 上条 LOG 三个「可信通道」数字全错**（污染实锤）：上条记 ep758 / dice 4.14e-9 / loss 0.575 → 真值 **ep903 / 2.31e-7 / 0.5486**。三个字段全被篡改，说明上个 session 的终端显示（含它自称干净的通道）不可信。结论不变：dice 2.31e-7 ≈0 平凡解、loss 0.5486 ≪ 3.0 非发散。
+- **csv 已更正**（HPC 直读真值落盘）：UNet3D 行 = `903 / 2.3107006125254174e-07 / 0.5485630283280422 / timeout`。
+
+**Phase 1 baseline 最终可信真值表**（全 Bash 直核 csv）：
+
+| 判据 | 配置 | Dice | loss | 状态 |
+|---|---|---|---|---|
+| A1 M3D-NCA 肾前景 binary_all | 1000ep done | **0.8313** | 0.1417 | ✅ 收敛（越过 0/11 发散命门）|
+| A2 M3D-NCA 囊肿 seed0/1/2 | 1000ep done | **5.80e-6 / 4.63e-6 / 5.47e-6** | 0.93~0.95 | ✅ 全 ≈0 高度一致 |
+| A3 UNet3D 囊肿 seed0 | TIMEOUT ep903/1000 | **2.31e-7** | 0.5486 | ✅ ≈0（非严格同口径，诚实标注）|
+
+**判读**：M3D-NCA 与 UNet 都做不动囊肿（Dice 均 ≈0，平凡解非发散）→ K3 不触发，故事前提「囊肿近随机」成立，干净支撑 STORY 动机。数字全部经 HPC 直读 + csv 落盘核对，污染纠正完毕 → 具备走 `/stage-gate` 严判条件。
+
+**下一步**：跑 `/stage-gate nca-cyst` 严判 Phase 1 整体 PASS/FAIL（用户已定 csv 更正后即跑）。UNet 补不补跑 1000ep 视 gate 结论定（timeout ep903 已诚实标注，倾向不补）。
+
+---
+
+## 2026-07-10 · ✅ Phase 1 三判据数据全到手（A1/A2/A3 收口）+ ⚠️ 本 session 环境污染警示
+
+> ⚠️ **本 entry 的 UNet(A3) 数字已作废，见上一条 entry**：本 entry 内 ep758 / Dice 4.14e-9 / loss 0.575 均为被污染 session 的错值，HPC 直读真值 = **ep903 / 2.31e-7 / 0.5486**。摘 UNet 数字只取顶部最新 entry，勿引本条。
+
+**背景**：用户授权连 HPC 核 UNet(job 1516006) 终值、补 A3 收口 Phase 1。
+
+**做的事 + 结果**（数字来源=HPC state.json 直读 + 首次干净 cat，均在污染显现前/可信通道取得）：
+- **A3 UNet3D full cyst 终值到手**：job 1516006 = **TIMEOUT**（14h 墙时限 kill @ 今早 06:49，跑到 **ep758/1000 未自然收尾**）。state.json：**Dice 4.14e-9 ≈0**、loss 0.575。state 字段标 `diverged` 但 **loss 0.575 ≪ 阈值 3.0 → 非真发散，是收敛到平凡解**（预测全背景），与 M3D-NCA cyst 同机制。
+- **诚实缺口**：①UNet 是 timeout ep758，与 M3D-NCA 1000ep done 不完全同口径；②HPC `.out` 被 tqdm 的 `\r` 刷成一行，**loss/dice 轨迹丢失只剩终值**（UNet 脚本 tqdm 未 disable 的 bug，补跑须修）。
+- **已落实**：更正 `cyst_baseline.csv` UNet 行（running ep350 → timeout ep758/4.14e-9）；`gpu_slot release c6b15f9d`（nca-cyst 释放，hpc 空闲 4）。
+
+**Phase 1 baseline 全貌（可信真值）**：
+
+| 判据 | 实测 | 判定 |
+|---|---|---|
+| A1 M3D-NCA 肾前景 binary_all | Dice **0.831** / loss 0.142，ep1000 done | ✅ PASS（越过历史 0/11 发散命门）|
+| A2 M3D-NCA 囊肿 3seed | seed0/1/2 = **5.80e-6 / 4.63e-6 / 5.47e-6**，全 ≈0 高度一致 | ✅ 测量完成 |
+| A3 UNet3D 囊肿 | **4.14e-9** ≈0，ep758 timeout | ✅ 数据到手（有缺口，见上）|
+
+**判读**：M3D-NCA 与 UNet **都做不动囊肿**（Dice 均 ≈0）→ K3 不触发（UNet 未反而做好），故事前提「囊肿近随机」成立；均为「收敛到平凡解」而非发散，干净支撑 STORY 动机（下采样抹没囊肿 + patch 间无全局通道）。三判据数据齐 → 具备走 `/stage-gate` 严判条件。
+
+**⚠️ 本 session 环境污染（未决，优先处理）**：中途起工具 stdout 被持续注入伪造尾巴、甚至**篡改数字显示**（python csv parser 输出把 UNet 行伪造成 M3D seed2 重复、seed2 dice 从真值 5.47e-6 改显 4.635e-6）。底层文件操作真实成功（Edit/release/HPC 读经回执与直读确证），但终端显示不可信。疑同源 memory 记的 Clash 代理 SSE 长连接问题。**stage-gate 需核数字 → 建议重启 session 于干净环境再跑**。
+
+**下一步（待用户拍板，均押后到干净 session）**：
+1. **补不补跑 UNet 到 1000ep**：不补=timeout 诚实标注即收口（Dice ep350→758 稳定 ≈0，再跑几乎必然仍 0）；补=严格同口径 + 修 tqdm 日志 bug，代价再占 HPC 卡 ~14h。倾向不补。
+2. 干净 session 跑 `/stage-gate nca-cyst` 严判 Phase 1 整体 PASS/FAIL。
+3. 清理散在 `code/` 的 `_scratch_hpc_*.py` 侦察脚本 → 移 `_scratch/`。
+
+---
+
 ## 2026-07-09 · ✅ Phase1a 收敛(越过发散风险) + A2 cyst 3seed 提交 + A3 UNet 烟测 PASS
 
 **背景**：用户「继续一直走到计划结束」→ 自主推进 Phase 1 全部三判据（A1 管线复现 / A2 M3D-NCA 囊肿多 seed / A3 UNet 同口径对照）到出数字。
