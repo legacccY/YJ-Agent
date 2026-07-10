@@ -42,14 +42,40 @@ ROOT = HERE.parents[2]                                  # QuantImmuBench/
 FUSION_DIR = ROOT / "analysis" / "fusion_cv" / "newcut9mer"   # fusion_cv 新切产物
 OFFICIAL_DIR = HERE                                     # 新切 R*/S* 产物即本目录
 FIG_DIR = HERE / "figures"                              # ★ 唯一输出目录 (不碰 paper/figures)
-TAG = "新切9mer·8患者·n=8"
+TAG = "固定窗口9肽 · 8位患者 · n=8"
+
+# ── 图内标签白话映射 (与报告正文用词一致, 去内部黑话) ────────────────────────────
+# 融合法 / 单工具方法名 -> 中文
+LBL = {
+    "geomean": "几何平均", "median": "中位数", "mean_rank": "平均名次",
+    "weighted_mean_rank": "加权平均名次", "ridge": "岭回归", "powmean": "幂平均",
+    "min": "取最低", "max": "取最高", "constrained": "约束型",
+    "stacking": "堆叠回归", "softmax_rank": "指数加权名次", "gbdt": "梯度提升树",
+}
+# 四设置组合: 工具集 · 相关口径
+POOL_LBL = {"fullcov": "全部工具", "fullcov_no_dtu": "剔除DTU"}
+CAL_LBL = {"raw": "原始", "lenctrl": "控长"}
+# 工具名下划线 -> 连字符 (与报告正文一致)
+_TOOL_HYPHEN = {"netMHCpan_BA": "netMHCpan-BA", "netMHCpan_EL": "netMHCpan-EL",
+                "BigMHC_IM": "BigMHC-IM", "IEDB_Calis": "IEDB-Calis"}
+
+
+def _lbl(m):
+    """融合法名 -> 中文; 单工具「<工具>_max」-> 去 _max 后缀 + 下划线转连字符 (图内零黑话)。"""
+    s = str(m)
+    if s in LBL:
+        return LBL[s]
+    if s.endswith("_max"):
+        s = s[:-4]
+    return _TOOL_HYPHEN.get(s, s)
+
 
 # ── 中性配色 ──────────────────────────────────────────────────────────────────
-C_CV = "#1f77b4"        # 诚实 CV / 零选择 max
-C_ORACLE = "#d62728"    # 样本内 oracle / 最优 pooling
+C_CV = "#1f77b4"        # 交叉验证实际 / 取最高分
+C_ORACLE = "#d62728"    # 样本内理想上界 / 最优合成方式
 C_HL = "#d62728"        # 高亮
 C_MUTE = "#9aa0a6"      # 灰 (连线/次要)
-C_MAXBEST = "#2ca02c"   # best==max 工具
+C_MAXBEST = "#2ca02c"   # 最优即取最高分 工具
 
 
 def _read(path):
@@ -87,51 +113,34 @@ def fig_a():
     orc = _num(kc["oracle_rho"])     # 样本内选择, 随 k 上升
 
     fig, ax = plt.subplots(figsize=(7.4, 5.2))
-    ax.plot(k, cv, "-o", color=C_CV, lw=2, ms=6, label="cv_rho (诚实 nested-CV)")
-    ax.plot(k, orc, "-s", color=C_ORACLE, lw=2, ms=6, label="oracle_rho (样本内选择上界)")
+    ax.plot(k, cv, "-o", color=C_CV, lw=2, ms=6, label="交叉验证实际成绩(无泄漏)")
+    ax.plot(k, orc, "-s", color=C_ORACLE, lw=2, ms=6, label="样本内理想上界")
     good = (~np.isnan(cv)) & (~np.isnan(orc))
     ax.fill_between(k, cv, orc, where=good & (orc >= cv), color=C_ORACLE, alpha=0.12,
-                    label="选择膨胀 = oracle − cv")
+                    label="选择造成的虚高 = 理想上界 − 实际")
 
     # k=1 单工具标注: 工具名从 modal_members 读取 (不硬编码)
     k1 = kc[kc["k"] == 1]
     if len(k1):
         tool1 = str(k1["modal_members"].values[0]) or "单工具"
         cv1 = float(_num(k1["cv_rho"])[0])
-        ax.annotate(f"k=1 单工具 {tool1}\ncv_rho={cv1:.3f}",
+        ax.annotate(f"k=1 单工具 {_lbl(tool1)}\n实际成绩={cv1:.3f}",
                     xy=(1, cv1), xytext=(1.6, cv1 - 0.13), fontsize=9,
                     arrowprops=dict(arrowstyle="->", color="black", lw=0.8))
 
     # 副标题: k>=2 对最强单工具的配对 p (读表, 不臆断结论)
     p_ge2 = _num(kc[kc["k"] >= 2]["paired_p_vs_best_single"])
     p_ge2 = p_ge2[~np.isnan(p_ge2)]
-    sub = (f"k≥2 对最强单工具 paired_p 最小 = {np.min(p_ge2):.2f} (均 >0.05)"
-           if len(p_ge2) else "k≥2 对最强单工具 paired_p 见 k_curve 表")
+    sub = (f"融合≥2个工具 对最强单工具 配对 p 最小 = {np.min(p_ge2):.2f} (均 >0.05)"
+           if len(p_ge2) else "融合≥2个工具 对最强单工具 配对 p 见结果表")
 
     ax.axhline(0, color="gray", lw=0.6, ls=":")
     ax.set_xticks(range(1, int(np.nanmax(k)) + 1))
-    ax.set_xlabel("融合成员数 k (前向贪心)")
-    ax.set_ylabel("per-patient Fisher-z ρ (raw)")
-    ax.set_title(f"Fig A｜融合成员数 k 下 诚实CV vs 样本内 ({TAG})\n{sub}", fontsize=11)
-    ax.legend(loc="lower left", fontsize=8, framealpha=0.9)
-
-    # ── 内嵌小条形: fusion_nested_cv 4 臂 Δ=integration_minus_single_cv (全负) ──
-    try:
-        fn = _read(FUSION_DIR / "fusion_nested_cv.csv")
-        labels = [f"{r['pool']}·{r['caliber']}" for _, r in fn.iterrows()]
-        delta = _num(fn["integration_minus_single_cv"])
-        iax = ax.inset_axes([0.55, 0.60, 0.42, 0.36])
-        xp = np.arange(len(labels))
-        iax.bar(xp, delta, color=[C_HL if (not np.isnan(d) and d < 0) else C_MUTE
-                                  for d in delta], alpha=0.85)
-        iax.axhline(0, color="black", lw=0.6)
-        iax.set_xticks(xp)
-        iax.set_xticklabels(labels, rotation=30, ha="right", fontsize=6)
-        iax.set_title("整合−单工具 Δ (nested-CV, 4 臂)", fontsize=7)
-        iax.tick_params(labelsize=6)
-    except Exception as e:                    # 内嵌图非关键, 失败不拖垮主图
-        print(f"[fig_a] 内嵌 Δ 条形跳过: {e}")
-
+    ax.set_xlabel("融合的工具个数 k (逐个加入)")
+    ax.set_ylabel("患者内秩相关 ρ (原始)")
+    ax.set_title(f"图 A｜融合工具个数 k 下 交叉验证实际 vs 样本内理想 ({TAG})\n{sub}", fontsize=11)
+    ax.legend(loc="lower left", fontsize=9, framealpha=0.9)
+    # 注: 四设置"融合−单工具"差值见报告 §2.7 表, 不再内嵌(避免压住主图数据点)。
     _save(fig, "figA_newcut_fusion_no_net_gain")
 
 
@@ -167,9 +176,9 @@ def fig_b():
     col1 = [C_HL if m in HL_METHODS else C_CV for m in methods]
     col2 = [C_HL if m in HL_METHODS else C_MUTE for m in methods]
     ax.bar(x - w / 2, mean1.values, w, yerr=std1.values, capsize=2, color=col1,
-           alpha=0.92, error_kw=dict(lw=0.7), label="drop=0.1")
+           alpha=0.92, error_kw=dict(lw=0.7), label="删 10%")
     ax.bar(x + w / 2, mean2.values, w, yerr=std2.values, capsize=2, color=col2,
-           alpha=0.55, error_kw=dict(lw=0.7), label="drop=0.2")
+           alpha=0.55, error_kw=dict(lw=0.7), label="删 20%")
 
     # 高亮法标 rank (drop=0.1)
     for xi, m in zip(x, methods):
@@ -180,10 +189,10 @@ def fig_b():
 
     ax.axhline(0, color="gray", lw=0.6, ls=":")
     ax.set_xticks(x)
-    ax.set_xticklabels(methods, rotation=45, ha="right", fontsize=8)
-    ax.set_ylabel("子采样 mean ρ ± std (30 seed)")
-    ax.set_title(f"Fig B｜病人内随机删突变子采样鲁棒性 ({TAG})\n"
-                 f"红=高亮: netMHCpan_BA_max(单工具) / geomean / median (rank 见标注, 按 drop=0.1 排序)",
+    ax.set_xticklabels([_lbl(m) for m in methods], rotation=45, ha="right", fontsize=8)
+    ax.set_ylabel("子采样均值 ρ ± 标准差 (30 次)")
+    ax.set_title(f"图 B｜随机删突变的稳健性 ({TAG})\n"
+                 f"红色高亮: netMHCpan-BA取最高(单工具) / 几何平均 / 中位数 (名次见标注, 按删10%排序)",
                  fontsize=10.5)
     ax.legend(loc="upper right", fontsize=9)
     _save(fig, "figB_newcut_robustness")
@@ -214,23 +223,102 @@ def fig_c():
                s=38, zorder=3)
 
     ax.set_yticks(y)
-    ax.set_yticklabels(tools, fontsize=8)
-    ax.set_xlabel("per-patient 控肽长偏相关 ρ (lenctrl)")
+    ax.set_yticklabels([_lbl(t) for t in tools], fontsize=8)
+    ax.set_xlabel("患者内秩相关 ρ (已控长度)")
     ax.axvline(0, color="gray", lw=0.6, ls=":")
 
     n_sig = len(tools)
     n_maxbest = int(is_maxbest.sum())
     n_notmax = n_sig - n_maxbest
     handles = [
-        Line2D([0], [0], marker="o", ls="", color=C_CV, label="max_rho_lenctrl (零选择 max)"),
-        Line2D([0], [0], marker="o", ls="", color=C_ORACLE, label="best_lenctrl_rho (样本内最优 pooling)"),
-        Line2D([0], [0], marker="o", ls="", color=C_MAXBEST, label="最优 pooling == max"),
+        Line2D([0], [0], marker="o", ls="", color=C_CV, label="取最高分(无可调参数)"),
+        Line2D([0], [0], marker="o", ls="", color=C_ORACLE, label="样本内最优合成方式"),
+        Line2D([0], [0], marker="o", ls="", color=C_MAXBEST, label="最优即取最高分"),
     ]
     ax.legend(handles=handles, loc="lower right", fontsize=8, framealpha=0.9)
-    ax.set_title(f"Fig C｜每工具 零选择max vs 样本内最优pooling ({TAG})\n"
-                 f"best 为样本内乐观上界·非 held-out 增益; {n_notmax}/{n_sig} 有信号工具最优≠max",
+    ax.set_title(f"图 C｜每个工具 取最高分 vs 样本内最优合成方式 ({TAG})\n"
+                 f"右侧点为样本内乐观上界(非留出增益); {n_notmax}/{n_sig} 个有区分力工具最优合成方式≠取最高分",
                  fontsize=10)
     _save(fig, "figC_newcut_max_vs_bestpooling")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Fig D — pooling 选择的留出验证: 每工具 取最高分 / 样本内最优(乐观上界) / 留出验证(nested-LOPO)
+# ═══════════════════════════════════════════════════════════════════════════════
+def fig_d():
+    df = _read(OFFICIAL_DIR / "R2b_pooling_lopo_official.csv")
+    for c in ("max_rho_lenctrl", "oracle_rho_lenctrl", "lopo_rho_lenctrl"):
+        df[c] = _num(df[c])
+    df = df.dropna(subset=["max_rho_lenctrl", "oracle_rho_lenctrl", "lopo_rho_lenctrl"])
+    df = df.sort_values("lopo_rho_lenctrl")           # 留出值升序 (强者在上)
+    tools = [_lbl(t) for t in df["Tool"]]
+    mx = df["max_rho_lenctrl"].values
+    orc = df["oracle_rho_lenctrl"].values
+    lp = df["lopo_rho_lenctrl"].values
+
+    y = np.arange(len(tools))
+    fig, ax = plt.subplots(figsize=(8.6, max(5.0, len(tools) * 0.33)))
+    for i in range(len(tools)):
+        # 样本内虚高段 (留出 → 样本内上界): 淡红, 直观显示「挑最优造成的虚高」
+        ax.plot([lp[i], orc[i]], [y[i], y[i]], color=C_ORACLE, lw=2.0, alpha=0.30, zorder=1)
+        # 基线 → 留出段: 灰
+        ax.plot([mx[i], lp[i]], [y[i], y[i]], color=C_MUTE, lw=1.0, alpha=0.55, zorder=1)
+    ax.scatter(mx, y, color=C_CV, s=34, zorder=3, label="取最高分(零选择基线)")
+    ax.scatter(orc, y, facecolors="none", edgecolors=C_ORACLE, s=44, lw=1.4,
+               zorder=3, label="样本内最优(乐观上界)")
+    ax.scatter(lp, y, color=C_MAXBEST, s=42, zorder=4, label="留出验证(嵌套交叉验证)")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(tools, fontsize=8)
+    ax.set_xlabel("患者内秩相关 ρ (已控长度)")
+    ax.axvline(0, color="gray", lw=0.6, ls=":")
+    ax.legend(loc="lower right", fontsize=8, framealpha=0.9)
+
+    n = len(tools)
+    n_pos = int((lp > mx).sum())
+    med_infl = float(np.median(orc - lp))
+    ax.set_title(f"图 D｜合成方式选择的留出验证 vs 样本内上界 ({TAG})\n"
+                 f"红空心=样本内最优(乐观); 绿=无泄漏留出; {n_pos}/{n} 工具留出增益>0, "
+                 f"但无一达显著; 样本内上界中位虚高 {med_infl:+.3f}", fontsize=10)
+    _save(fig, "figD_newcut_pooling_lopo")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Fig E — 权威融合(预先固定面板 + median 名次) vs 最强单工具: 无一超过基线
+# ═══════════════════════════════════════════════════════════════════════════════
+def fig_e():
+    df = _read(OFFICIAL_DIR / "R3b_fusion_authoritative_official.csv")
+    # ★ 新切已构造性去长度 → 融合/单工具以 raw 为主口径 (非控长; 控长仅 pooling 比较层用)
+    df["fusion_rho_raw"] = _num(df["fusion_rho_raw"])
+    df["single_rho_raw"] = _num(df["single_rho_raw"])
+    med = df[df["aggregator"] == "median"].copy().sort_values("fusion_rho_raw")
+    mean = df[df["aggregator"] == "mean_rank"].set_index("panel")["fusion_rho_raw"]
+    panels = med["panel"].tolist()
+    vals = med["fusion_rho_raw"].values
+    baseline = float(med["single_rho_raw"].iloc[0])   # 最强单工具 (各行同值)
+
+    y = np.arange(len(panels))
+    fig, ax = plt.subplots(figsize=(8.6, max(3.2, len(panels) * 0.7)))
+    ax.barh(y, vals, color=C_CV, alpha=0.85, height=0.5, label="固定面板 中位数名次融合")
+    # 最强单工具基线竖线
+    ax.axvline(baseline, color=C_HL, lw=2, ls="--",
+               label=f"最强单工具 netMHCpan-BA = {baseline:.3f}")
+    # 数值标注在条内右端(白字), 不与基线/其它元素重叠
+    for yi, v in zip(y, vals):
+        ax.text(v - 0.006, yi, f"{v:.3f}", va="center", ha="right",
+                fontsize=9.5, color="white", fontweight="bold")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(panels, fontsize=9.5)
+    ax.set_xlabel("患者内秩相关 ρ (原始; 新切已构造性去长度)")
+    ax.axvline(0, color="gray", lw=0.6, ls=":")
+    ax.set_xlim(right=max(baseline, float(np.nanmax(vals))) + 0.05)
+    ax.legend(loc="lower right", fontsize=9, framealpha=0.95)
+    n_beat = int((vals > baseline).sum())
+    ax.set_title(f"图 E｜文献权威融合(预先固定面板 + 中位数名次, 零挑选) vs 最强单工具 ({TAG})\n"
+                 f"{n_beat}/{len(panels)} 个面板超过单工具基线; SURV6=旧数据驱动'存活'集(最差)",
+                 fontsize=10)
+    _save(fig, "figE_newcut_fusion_authoritative")
 
 
 def main():
@@ -241,7 +329,9 @@ def main():
     made = 0
     for name, fn in [("Fig A 融合无净优势", fig_a),
                      ("Fig B 鲁棒性", fig_b),
-                     ("Fig C max vs 最优pooling", fig_c)]:
+                     ("Fig C max vs 最优pooling", fig_c),
+                     ("Fig D pooling留出验证", fig_d),
+                     ("Fig E 权威融合vs单工具", fig_e)]:
         try:
             fn()
             made += 1

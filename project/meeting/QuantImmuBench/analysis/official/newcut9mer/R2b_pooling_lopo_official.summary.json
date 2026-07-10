@@ -1,0 +1,12 @@
+{
+  "caliber_primary": "lenctrl(控肽长)",
+  "n_tools": 28,
+  "n_tools_holdout_gain_positive": 17,
+  "n_tools_holdout_gain_significant": 0,
+  "n_tools_holdout_loss_significant": 0,
+  "median_holdout_gain": 0.0285,
+  "median_inflation": 0.0656,
+  "binding_class_n": 8,
+  "binding_class_holdout_gain_positive": 5,
+  "note": "留出增益=内层选最优 pooling 再外层测 − 零选择 max; >0 且 p<0.05 才是统计站得住的「换 pooling 真涨」。样本内 oracle 与 lopo 之差=选择虚高。n_pat 见各行, 8 病人下功效有限, 检不出≠证明无用。"
+}

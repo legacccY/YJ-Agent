@@ -4,6 +4,51 @@
 
 ---
 
+## Entry 62-RESEARCH-REPORT-V4 — 2026-07-10【把「§8四问」问答体 HTML 重写为覆盖整个 outline 的研究型进展报告：清黑话+复刻折叠+全框架三层结果+诚实 outline-vs-已做矩阵】
+
+**背景**：用户看 2026-07-09 的 `report/给老师_§8四问新切结果_2026-07-09.html` 后反馈三条硬伤——① 问答体(逐条答老师「结果在哪」)应改研究叙事；② 满篇内部黑话/车轱辘话「看不懂」(新切/旧切/地基/承重/臂/effN/fullcov/lenctrl/落位/R5R6…)全部替换；③ 丢了上一版(v3)的折叠等功能；④「研究没做透，回去看 outline，还是没展现在 HTML 上」。
+
+**做法（大编队 gather → 主线亲写 → 双验证）**：
+- **4 路并行核素材**(workflow `quantimmu-report-gather`，全 opus)：verifier 核 R1–R8 全框架已核数字账本(揪出**口径陷阱**：R2–R7=newcut min_pep8/8病人/29工具才是 headline 正源，R1/R8 是旧切 9病人30工具、`rerun_maxpool_ranking`是 min_pep3 敏感性，勿混)；general 扒 v3 六块可复用白话内容(三步框架/29工具表/pooling·fusion菜单/肽长混杂/术语/文献)；skeptic 产 outline-vs-已做状态矩阵+三必答；general 产黑话→白话对照表+车轱辘话清单。
+- **主线亲写**：新 md `report/研究进展报告_QuantImmu框架_2026-07-10.md` + 新 build 脚本 `report/build_report_v4.py`(承 v3/s89 设计系统：深浅主题/折叠/悬停浮标/徽章/KPI/图 base64，扩展 `:::details/:::note/:::kpis/:::fig` 指令 + `[[work/lit/off/done/part/miss]]` 徽章 + `{{术语|悬停}}`)。结构=概览(全景状态+5 KPI)→§1 研究问题(两错配)→§2 三步框架(5 折叠:框架/29工具/方法菜单/肽长/文献)→§3 三层结果(单工具排名→pooling重排→fusion+四重检验，3 图 figA/B/C)→§4 结果与大纲预期对照(老师四问判定融进「大纲声称→实测→判定」表，非问答)→§5 讨论局限→§6 与 outline 差距+5 决策点+路线图→§7 许可→附录数据复核。产 `report/研究进展报告_QuantImmu框架_2026-07-10.html`(0.92MB 自包含，**新文件不覆盖旧的**)。
+
+**诚实核心结论(回应「做透没」)**：方法学管道**做透了**——三步框架+4 pooling+12 fusion+四重检验(无泄漏留一/消融/删突变/配对显著+置换)在人源 ds2(102 突变/8 病人/29 工具)完整可复现无泄漏跑通，工具从 17 补到 29。但对 outline 三硬缺口：**①小鼠 B16F10/CT26 零数据**(跨物种半壁空)；②单数据集 8 病人功效天生不足；③**几条大纲 headline 被自家诚实重跑推翻/反向**——geomean 不再唯一最优(删突变 rank1 是单工具 netMHCpan_BA)、免疫原类取 max 最优不成立、加权其实略优等权、fusion 整合点估从略正翻负(留一 −0.178)。活下来的是更保守可靠的结论。→ headline 改写 + 补鼠/第二数据集属**袁老师拍板点**(报告 §6 列 5 决策点)。
+
+**双验证 PASS**：
+- **verifier 核报告数字 vs csv**：60+ 项逐条 Bash 核，全一致；揪 2 处已修——§3.3b ImmuneApp「+0.086」(实为 7 维值)改「+0.085」(6 维 geomean 真值)；§3.2「免疫原类 13 个里仅 1」口径存疑(「13」无 csv 类别真源、且报告自表把 ICERFIRE 标免疫原而它恰是 best==max→「仅1」应≥2)→改为 csv 站得住的「大纲点名 PRIME/deepHLApan/PredIG 三个本轮最优都非取最高分，全部工具 best==max 仅 3(MHCnuggets/ICERFIRE/DeepImmuno)」。另任务清单 p=5.8e-8 未进报告(实为 5.6e-9)，无入稿风险。
+- **Playwright 渲染实测**(2560/1440/768 三档)：浅/深主题、5 折叠、3 图全 base64 加载、10 表、24 徽章、7 悬停、9 TOC、无横向溢出、窄屏 TOC 收起；console 仅 favicon 404 无实错。
+
+**图内标签也白话化(用户拍板「重画」)**：改 `analysis/official/newcut9mer/plot_newcut_s89.py` 图内文案(加 `LBL`/`POOL_LBL`/`CAL_LBL`/`_lbl` 白话映射)——TAG「新切9mer」→「固定窗口9肽」、图例「零选择max/oracle/lenctrl」→「取最高分/样本内理想上界/已控长度」、fusion 法名 geomean/ridge→几何平均/岭回归、单工具 `<tool>_max` 去后缀+下划线转连字符(netMHCpan-BA)、四设置 `fullcov·raw`→「含全部工具·原始」。重跑出 3 图(数据未变仅标签)+ 重建 HTML(Playwright 复验 figB/figC 图内零黑话)。旧 §8 问答 HTML 与 v3 报告均保留不覆盖。
+
+**§3.2 pooling 留出验证补做（用户追加：「先把 pooling 的验证做了」）**：R2 的每工具「最优 pooling」是样本内乐观上界（`best_pooling_for_tool` docstring 明示），缺无泄漏验证。新写 `analysis/official/R2b_pooling_lopo_official.py`（**全复用 `_official_common` 函数保口径**：per_patient_spearman/per_patient_partial_spearman(ctrl=peplen)/fisherz 等权/paired 置换）做**嵌套留一**：外层留一病人、内层用其余病人选最优 pooling 变体、应用留出病人 → 留出增益 vs max + 样本内虚高(oracle−lopo) + 配对 p，裸+控长两口径。新切口径跑（`QIB_OUTDIR=…/newcut9mer --input pooled_clean_rerun_9mer.csv --min_pep 8`）。
+- **口径对账 PASS**：R2b 的 max/oracle 与 R2 的 max/best_lenctrl 逐值完全对上（netMHCpan_BA 0.4009/0.4761、PredIG 0.270/0.330、deepHLApan 0.169/0.331…），证明管道与 R2 一致，lopo 是新算。
+- **核心发现（控长，28 工具）**：**样本内上界中位虚高 +0.0656**（约打对折）；**17/28 留出增益>0（中位 +0.0285）但 0/28 达显著**（8 病人功效低）、0 显著变差；结合类 5/8 正。头名 **netMHCpan_BA 样本内 +0.075→留出仅 +0.0136（p=0.80）**、deepHLApan +0.161→+0.052。→ 结论：pooling「重排/max 非普遍最优」的**方向**站得住，但**增益幅度经留出后温和且不显著**，样本内报的增益约半是选择虚高（与 §3.3 融合层无泄漏后缩水一致）。
+- **接进报告**：§3.2 拆「(a) 样本内扫描 +(b) 留出验证」、新增**图 D**（plot_newcut_s89.py 加 fig_d：每工具 取最高分/样本内最优/留出 三点 + 虚高线段）、更新 §4 对照行 + §6 §3.2 状态 + 附录数据索引。verifier 复核报告 R2b 数字 vs csv 全 PASS（28/17/0/中位虚高+0.066/中位增益+0.03/netMHCpan-BA 0.414+0.014/deepHLApan 0.221+0.052 逐值对上）；Playwright 复验图 D 渲染+图内白话。**注：ds1 复现集仍未过本框架、小鼠仍缺（用户暂缓）。**
+
+**聚焦报告补做（用户追加：「只报告 pooling 往后的成果，图文并茂、清晰无车轱辘话/自创词」）**：新建独立 HTML `report/合成与融合层结果_QuantImmu_2026-07-10.html`（+ md 源 + `report/build_pooling_report.py`，**复用 build_report_v4 引擎**：import STYLE/SCRIPT/parse_blocks/render/FIG_FILES，只换 md 源+标题+TOC 品牌）。只讲框架第二步合成(pooling，含留出验证)+第三步融合(fusion+四重检验)，单工具基线不含。6 章节 + 4 图(figA-D)全 base64 + 折叠 + 5 KPI；Playwright 实测无横向溢出、图全加载、图内白话。**§1 合成层按用户要求扩写**(「详细写公式、讲明白怎么合成、工具与合成方式的关系为什么、每个工具最优合成方式」)：§1.1 怎么合成(生物学"炸开"→4 公式带示例算值 0.90/0.75…+51 变体扫描范围+禁 sum)、§1.2 工具×合成方式关系与机制(信号集中→取最高/分散→聚合；诚实标"不按类别干净分开")、§1.4 **每工具最优合成方式表**(28 工具×样本内最优+留出最常选中+稳定度，变体代号全翻白话如"名次衰减(γ=5)/前5名加权(α=0.5)"，真值从 R2/R2b csv 拉)。修 ``` 围栏渲染 bug(引擎不支持三反引号→改行内 code)。**fusion 完整性核（回用户问）**：按 outline §2.5/§3.3，12 融合法 × 全 4 维度(3/4/6/7) + 消融 R4 + nested-LOPO R5 + 删突变 R6 + 配对显著 R7/fusion_cv 全在 → 方法学完整（比 pooling 更全，留出验证本就内建 R5/四设置）；缺口=§3.4 部署实例 T01/T04 未跑 + 鼠(用户暂缓) + headline 被推翻。
+
+**融合成员选择：改为文献权威做法（用户/袁老师追问"多维融合怎么选成员，按文献权威办法"→深挖）**：
+- **命门发现（代码考古）**：R3 的多维成员 = `SURV6=[PredIG,IMPROVE,pTuneos,PRIME,ImmuneApp,deepHLApan]` + 3/4/7 维扩展，是从旧 `fusion_12methods.py` **原样继承的"存活者"（数据驱动/拍脑袋）**，代码自己标 `TODO 待袁/朱确认`、select_engine 标"CV说单工具最优 vs SURV6 冲突=拍板点"。既非文献权威、也没论证过。
+- **文献调研（workflow `fusion-authoritative-selection` 3 researcher 联网，带引用）**：免疫信息学权威组合范式高度一致 = **成员先验固定（按覆盖/生物学，不按评估集表现挑）+ 百分位名次中位数（median rank，parameter-free 不学权重）**——IEDB Consensus（median percentile rank）、pVACtools（全部所选算法取 median）、TESLA/Wells2020（固定呈递+识别轴面板）、NetMHCcons（按训练覆盖先验规则）。**为什么固定不挑**：小样本"又选又评"→优胜者诅咒/选择偏差（Ambroise&McLachlan 2002 PNAS：特征选择须外置于 CV；Cawley&Talbot 2010 JMLR；Gelman&Loken 2014 forking paths；Claeskens 2016 forecast-combination puzzle 等权常打不败）——**正是本项目实测的"选择虚高≈0.09 + 成员跨fold不稳"**。即我的 inflation 发现 = 该按文献固定面板的实证理由（同一枚硬币）。
+- **实现（R3b_fusion_authoritative_official.py，复用 _official_common）**：median/mean 名次融合无监督无参数→固定面板下**零选择虚高、无需嵌套CV**。4 个**预先固定**面板（全用免疫原/全用全部/双轴小面板 netMHCpan_BA+PRIME+deepHLApan/SURV6对照）× **全 12 融合法**（大纲§3.3.1；前 8 无参数零挑选 + 后 4 学习型病人级LOPO学权重）vs 最强单工具 netMHCpan_BA_max。**全 12 法结果（用户追问"12 法都跑了吗"→补全，Bash核）：48 组里 0 组显著打过单工具；仅 4 组点估为正、全在双轴小面板——geomean 0.446(Δ+0.073,p0.48,=大纲headline数)/mean_rank+0.024/加权+0.021；权威 median 0.344(低于单工具)；学习型 4 法明显更差(gbdt Δ−0.39 p0.04 显著变差)——印证 §2.1"估计权重注入偏差方差"。****结果（控长，Bash核）：0/4 面板打过单工具**——双轴0.370(Δ−0.031,p0.61)/全用免疫原0.352/全用全部0.303/SURV6**最差0.197**(Δ−0.204)；全负全不显著。内建对账：R3b双轴 median裸0.3445/mean0.3962 = R3 3维逐值对上。**结论更硬**：用最严格最合文献的做法（零挑选），融合仍打不过最强单工具，SURV6数据驱动集反而最差。
+- **接进 HTML**：聚焦报告 §2 重写——§2.1 权威做法+为什么+引用折叠、§2.2 R3b结果+**图E**（plot 加 fig_e：各面板 median 条+mean 菱+单工具基线红线）、§2.3-2.7 旧数据驱动内容重构为"反证（选择虚高实证）"、更新 note.key+KPI。verifier/Bash 核 R3b 报告数字逐值对上；Playwright 核 §2.2+图E 渲染。
+
+**融合成员 pooling 校正（用户红队："看 outline 回溯有没有做错导致融合没赢"）——又一处真错误，已修**：核 R3 全配置 geomean 发现——R3b 融合成员**一律用 max 求"零挑选"，但削弱了融合**：大纲配方亲和维用**预先指定的聚合分 netMHCpan_BA_topk_k20_a0（netAffneg，§3.2 惯例，非数据驱动挑）**，用它 4 维 geomean=**0.5005**（我 max 版仅 0.446）。审计脚本 `analysis/official/newcut9mer/audit_fusion_fair_recipe.py`（复用 _official_common，公平配对）：**大纲配方融合 geomean 裸 0.50/控长 0.52 vs 最强单工具(亲和最佳pooling rankdecay) 0.40/0.48 → 点估领先约 +0.10(裸)，但配对 p=0.38(裸)/0.63(控长) 仍不显著(n=8)**。即"零挑选"洁癖用过头(聚合亲和是预指定惯例不该换 max)，**低估了融合**。修正后诚实结论：**融合点估确实超最强单工具(+0.10，与大纲方向一致)，但不显著、不稳健（删突变单工具仍第一）**——恰合大纲 §3.3.5 自陈"统计持平 p≈0.70"。非"融合输了"。已写进报告 §2.2 修正块+对照表、更新 note.key。R3b 全 12 法(48组)0 显著仍成立(那是 max 成员口径)。
+
+**口径校正（用户红队："新切已构造性去长度→不该再控长，反思是否出错"）——真错误，已修**：确认我把旧切"控长为准"惯例无脑继承到新切。核数据：新切 n_subpep 非固定(27–54)、peplen↔ELISpot +0.31、工具分↔peplen +0.06~0.22 逐工具不同 → 长度**大幅削弱(片段↔肽长 0.46→0.18)但未全消**。正确框架：**单工具(max)+融合(max成员)以 raw 为主口径**(max 对行数不敏感，长度已构造性去掉，再控长=双重扣除+可能扣掉长肽真信号)；**唯 pooling 比较层保留控长**(大 k topk≈mean 会随 n_subpep 27→54 捡回残余长度)。修：R3b headline 从 lenctrl 换 raw（双轴 0.344/全用免疫原 0.321/全用全部 0.277/SURV6 0.194，基线 0.372，**仍 0/4 打过单工具**、控长口径同 0/4 结论一致）、图 E 重画 raw、两份报告口径声明 + §1 pooling 例外说明补齐。**结论不翻**（raw/控长下单工具 netMHCpan-BA 均居首、融合均 0/4）——是 headline 口径框错非科学错。
+
+**图审+§2重排（用户红队："方法都用了吗/写不清/很乱/车轱辘话/图有遮盖没审"）**：逐张读 5 图审——**figA 右上内嵌小图压住主图 k=5/6/7 数据点(真遮盖)**→删内嵌(四设置差值 §2.7 表已有)；**figE 数值标签与红菱重叠(+0.194 被挡)**→去红菱+白字条内标；figD/figE 标题清英文残留(pooling/median→合成方式/中位数)、figA annotation netMHCpan_BA→连字符；figB/figC 本 OK。重生成核过。**§2.2 一轮轮补丁堆成"median表+全12法表+修正表"三块叠着**→重排成一条线：(1) 最有利情形(大纲配方 geomean 0.50 vs 单工具 0.40 +0.10 不显著)前置 →(2) 全12法48组0显著(表)→figE→干净结论，删与 figE 重复的 median 单表。渲染核过无溢出。
+
+**全文通稿清理 + 公式渲染 + 链接核（用户："方法用全没/写不清很乱/车轱辘话自创词/排版乱/图有遮盖/公式没渲染/链接没问题吧"）**：
+- **公式真渲染**：build_report_v4 加原始 HTML 透传（`%%…%%`）+ 分式 CSS（.frac/.mf 分子分母上下叠+真上下标），§1.1 四个 pooling 公式从斜杠纯文字改成真分式（Playwright 核过）。
+- **reviewer 审全文（opus）出 23 条**+主线自查，派 writer 定向清理（保数字/公式零改）：图号乱序(图1→2→5→3→4)重排为顺序 figC=1/figD=2/figE=3/figB=4/figA=5；"最强单工具"基线 0.372/0.40 统一命名(取最高分/最佳合成方式)；§2.2 "融合领先 vs 输"圆场（0.50 是样本内点估+用了不在48格的聚合亲和成员+带~0.09虚高+无泄漏后−0.178）、删第一人称"诚实交代"护航词、新增**面板一览表**(双轴/大纲配方/全免疫原/全部/SURV6 成员清单)；§2.3 删与§2.2 重复的12法表；结论砍复述(§3压成3句跨层综合、note key 各压一句)；附录小节引用错位(§1.1→§1.3等)全改对；英文黑话清(median rank/parameter-free/headline/承重/炸开/钉死→白话)。verifier-Bash 核：数字全保真、0.345→0.344、公式4块完好、图号1-5顺序、工具表28行完整、附录引用改对。
+- **链接核（curl 逐条）**：8/11 通(200)；Cell(Wells2020) URL 括号截断=真断链→两份报告都换规范 DOI `10.1016/j.cell.2020.09.015`(核200)；PNAS(Ambroise) `/content/99/10/6562` 403(挡爬非死链)→换 DOI `10.1073/pnas.102102699`。两份报告断链清零。
+- **图审修**：5 图逐张读——figA 内嵌小图压住主图 k=5/6/7 数据点(删内嵌)、figE 数值标签与红菱重叠(去红菱+白字条内标)、figD/figE/figA 标题清英文残留。
+
+**产物**：`report/{研究进展报告_QuantImmu框架_2026-07-10.md, .html, build_report_v4.py, 合成与融合层结果_QuantImmu_2026-07-10.md, .html, build_pooling_report.py}`、`analysis/official/{R2b_pooling_lopo_official.py, R3b_fusion_authoritative_official.py, newcut9mer/audit_fusion_fair_recipe.py}`、`analysis/official/newcut9mer/{R2b_pooling_lopo_official.csv+.summary.json, R3b_fusion_authoritative_official.csv+.summary.json, figures/figD/figE_*.png/pdf}`、`analysis/official/newcut9mer/plot_newcut_s89.py`（图内白话化 + fig_d/fig_e）；素材/文献账本见 workflow `quantimmu-report-gather`、`fusion-authoritative-selection` 归档。
+
+---
+
 ## Entry 61-8TO11-RECOMPUTE-收口 — 2026-07-09【改动②③ 8-11mer 全量重跑：merge 后 recompute 链收口 + 溯源审计，DAG quantimmu-rerun8to11 17/17 全完成】
 
 **背景**：接手 Conductor 图 `quantimmu-rerun8to11`（13/17，merge 已过🛑）从 recompute 续跑，推完最后 4 棒 coverage→pool→dai→recheck。新全量重跑宽表 `scripts/out/merged_all_tools_30_rerun_8to11.csv`（Jul 9 09:58，17088 行对齐 bb_idx，29 工具 MT+部分 WT）。旧 `R1_recomputed_8to11mer_*`（Jul 4）是 covfix 版，本轮在**新全量 merged 上重算**产 `*_rerun_8to11mer_*`（新命名，不覆盖旧的）。命令序列取自 `RERUN_8to11_LAUNCH.md`（`--w811 --expect-peptides 102`、`--tag rerun_8to11mer`）。
