@@ -21,14 +21,14 @@
 
 | 源 | 能否作 evidence | 许可 | 规模 | 判定 |
 |---|---|---|---|---|
-| **Huatuo-26M** | ✅ encyclopedia_qa/KG_qa 可作证据 | **Apache 2.0**（最宽松）| 2600万 QA | 🟢 首选，可随数据集分发 |
-| **CMExam** | ✅ 85% 题带解释，解释当证据段 | ⚠️ **冲突降级**：数据卡"学术禁商用"与 repo `williamliujl/CMExam` 声称的 Apache-2.0 冲突 | 60K+ 执业医考（68,119 MCQ，解释均 192 tok）| 🔴 **保守只作内部构造，不进公开发布集**（或只发生成的幻觉答案 + 证据指针，不发原文）|
+| **Huatuo-26M** | ❌ **实测退化**（researcher 2026-07-11 核字段）：encyclopedia_qa/KG_qa 均只有 questions/answers **无独立证据段**（答案即证据，做不了 evidence-conditioned）| Apache 2.0 | 2600万 QA | 🔴 **不能作 evidence-conditioned 证据源**（可分发但无独立证据）|
+| **CMExam** | ✅✅ **唯一可行 evidence-conditioned 源**（researcher 2026-07-11 实测）：`Explanation` 临床解析段(4-3k字，可空)→独立证据，`Question`+正确选项文本→忠实答案 | ⚠️ 国家医师考题许可受限（数据卡"学术禁商用"vs repo `williamliujl/CMExam` Apache-2.0 冲突，正式发布前核 LICENSE）| 68,119 MCQ（train54497/val6811/test6811）| 🟡 **zh-med 主证据源（内部构造）**；发布只发生成幻觉答案+CMExam题目ID指针，不重分发 Explanation 原文 |
 | **中文维基医学条目** | ✅ | CC BY-SA（署名+同协议）| 全站医学 | 🟢 可用，注意 share-alike |
 | CMB (FreedomIntelligence) | ✅ 分层临床 QA | 待核 HF 卡 | 11,200 题 | 🟡 核许可后用 |
 | MRAG-CLFQA | ⚠️ 1253 中文问诊 | 拟 CC-BY-4.0 "upon acceptance" | 1253 | 🟡 待确认是否已 release |
 | 默沙东中文/中华医学会指南/UpToDate | ⚠️ 权威但**版权受限禁再分发** | 商业/版权 | — | 🔴 只可内部构造不分发，或改用其派生公开 QA |
 
-> 选源红线：**分发的数据集只用可再分发许可的证据源**（Huatuo-26M/维基）；**CMExam 因许可冲突降级为只内部构造不分发**；版权受限源（指南/UpToDate）不进公开发布。
+> 选源红线 + **🔴 承重张力（researcher 2026-07-11）**：可分发的 Huatuo-26M **实测无独立证据段、做不了 evidence-conditioned**（核心护城河）；唯一有独立证据段的 CMExam **许可受限**。**解法**=CMExam 内部构造作 **zh-med 主证据源**，发布只发生成的幻觉答案+题目ID指针（不重分发 Explanation 原文），核 CMExam LICENSE 确认（MedHallu 外常见合规做法）。⚠️ CMExam 是选择题解析当证据，与典型 RAG 检索文档段性质略异，数据构造说明须写清。版权受限源（指南/UpToDate）不进发布。
 
 ### B2. 构造范式（照 MedHallu 半自动四阶段，本科团队可行）
 

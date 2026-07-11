@@ -4,6 +4,23 @@
 
 ---
 
+## Entry 71-PANEL-CHERRYPICK-JUDGE-CORRECTION — 2026-07-11【⚠️主线自纠：错误判「现面板=cherry-pick/最大软肋」已收回——cherry-pick 判据=按评估目标 argmax，非「in-sample 值高」；现面板按规则确定性选出=干净】
+
+**触发**：袁老师/同学就报告 v2 §2.2 面板选取连续追问（为什么选3/怎么选/固定依据/「你怎么不说真相」），主线逐层答，最后跑 in-sample geomean 对比后**下了一个错误的斩钉截铁负面结论**，用户拦下「严重违背红线自己却不知道」。
+
+**主线的错误（已收回，记此防误传）**：算出 in-sample geomean（成员 max，同 R3b 口径）——现面板 `netMHCpan-BA+PredIG+deepHLApan`=**0.3945**、旧作废面板 `netMHCpan-BA+PRIME+deepHLApan`=**0.3939**（旧面板是穷举 #2/3276 真 cherry-pick，Entry 65 line 4110 拆穿作废）。主线据此错误推断「现面板 in-sample 也顶部→也是 cherry-pick/post-hoc/报告最大方法学软肋/该跟老师摊开讲」。**这是用错误判据下的动摇论文核心的负面定论。**
+
+**正确判据（纠正）**：**cherry-pick 的定义=「按评估目标（in-sample geomean 或 CV ρ）从所有组合 argmax 挑最高」，不是「这个面板的值恰好高」。**
+- 旧面板=真 cherry-pick：项目查明它就是按 in-sample geomean argmax 挑（#2/3276 + 选 geomean 不选 median 又一层）。
+- **现面板≠cherry-pick**：它按「识别轴单工具 ρ 最高(PredIG 0.290)+ 与呈递轴名次相关最低(deepHLApan 0.102)」**确定性选出**，全程不看融合 geomean 去 argmax。in-sample 0.3945 恰好高=**规则有效的副产品**（选强+互补的工具融合自然好），非作弊。类比：按「数学最强+英语最强」组队、总分恰好接近全校最高≠按总分作弊挑。
+- 佐证现面板非 argmax：CV 最优 3 工具面板=IEDB_Calis+PredIG+netMHCpan-BA(**0.474**)，现面板 CV **0.451**<它=**现面板不是 CV 最优**，没按融合结果挑。
+
+**现面板真正的边界**（与 cherry-pick 是两码事）：规则有操作自由度（为什么识别轴取 2 个、为什么组合「最强」和「最互补」两条标准）——报告 §2.2 已诚实标「非唯一解」+ 敏感性表。这是**方法透明度**问题，非造假/post-hoc。现面板恰恰是为**摆脱**旧面板 cherry-pick 而改的（换成不看融合结果的规则），这一步是对的、干净的。
+
+**教训（[[feedback_validate_test_before_negative_verdict]] 又栽，本轮已记 memory）**：①判 cherry-pick/post-hoc 看「是否按评估目标 argmax」，不是「值高不高」；②下动摇结论的负面定论前先核判据本身对不对——主线急着给用户耸动「真相」，没自问「我这 cherry-pick 判据成立吗」。**现面板方法是干净的，那句「最大软肋」错误，收回。**
+
+---
+
 ## Entry 70-REPORT-V2-DEEP-CLEAN — 2026-07-11【融合报告 v2 深度精修(响应用户"车轱辘话/自创词太多")：3 路诊断(数字90+PASS/车轱辘话清单/图审)→writer清文字+coder重画figA/B/E+主线补figB诚实漏；数字零改验证 + figB视觉验PASS】
 
 **触发**：用户要报告 v2「更多背景/逻辑/rationale、语言简单直接、不要车轱辘话和自创词、审数字审图、有些图重画、坚定 nested pooling selection + 交叉验证、选工具写道理」。**⚠️ 本窗=quantimmu-bench-ds1，改的是 DS2 融合报告 v2（跨窗，与 quantimmu-fusion 窗 Entry 67 撞同一份报告，注意协调）。**

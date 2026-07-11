@@ -32,7 +32,18 @@
 - ✅ **R-P1.0 全量复现精确命中冻结锚**：MedHallu 0.4277/PsiloQA-en 0.7204/G_domain 0.2927 CI[0.184,0.391] 三值全中(Bash核 code/results/)。统一评测 harness(三级+BA/F1/MCC/AUROC/AUPRC+bootstrap10000+paired bootstrap+Holm)建成验证。**L2基线地基牢**。
 - ✅ **四处文档更新**：PLAN §0.6定稿 / ACCEPTANCE(K0修正留痕+K2重述+IAA口径+L2-b统计规范) / KILLSHOT(三🔴红队+方案A预注册冻结防HARKing+对称锚同筛清单) / DATA_INVENTORY+STORY(writer在改)。
 - **命门修正**：K0张冠李戴(MedHallu-ZH不存在,实为SelfElicit通用域)→真对照CMHE(非evidence-conditioned不撞)已改档。
-- **下一步（真拍板点）**：P1 中文数据构造 pilot(跑 MedHallu 管线中文复刻,3-LLM投票+TextGrad **花 API 钱=拍板**)；或先派 researcher 选对称锚证据源(中文百科同粒度)+skeptic复核修订版两残留点(K1/K2是否重复判据·证据源残余confound能否只声明)。D2-D15检测器接入 harness 可并行。
+- **代码就绪（两脚本 + 双烟测 PASS）**：
+  - `code/eval_harness.py`（统一评测 harness，R-P1.0 全量复现精确命中冻结锚）。
+  - `code/build_zh_med.py`（R-P1.1 中文构造，MedHallu 四阶段复刻，开源为主+`--use-openai`可选，🔴-2 硬校验解耦）。**mock 烟测 PASS**（生成18候选→投票保留9→蕴含过滤→兜底2条,管线逻辑通,不占卡不联网）。
+- **用户决策**：API「迟早要搞」但 pilot 先零成本开源版（GPT-4o-mini pilot<$1/全量$25-50 其实极便宜；开源中文模型当投票器更合理）。
+- **前置选型已定（researcher 2026-07-11）**：[V3]第三投票器=**Yi-1.5-9B-Chat**(Apache2.0,避开GLM/InternLM满🔴-2)；[EMB]=**bge-base-zh-v1.5**(MIT,C-MTEB 63.13)。
+- **🔴 承重张力（证据源）**：Huatuo-26M(可分发Apache2.0)的 encyclopedia_qa/KG_qa **都只有Q/A无独立证据段→做不了evidence-conditioned**(核心护城河)；唯一有独立证据段的=**CMExam**(`Explanation`临床解析4-3k字→context / `Question+Answer`→忠实answer,结构完美,Apache2.0)但**国家医师考题许可受限**(DATA_INVENTORY已标只内部构造不分发)。矛盾=可分发的做不了evidence-conditioned,能做的不能分发原文。**推荐解法**：CMExam内部构造,发布只发生成的幻觉答案+CMExam指针(不重分发Explanation原文),核CMExam LICENSE确认(MedHallu外常见合规做法)。⚠️CMExam是选择题解析当证据,与典型RAG检索文档段性质略异,需在数据构造说明写清。
+- ✅ **build_zh_med.py 改CMExam + 选型填好 + 端到端验证通过（用户选A，2026-07-11）**：coder 改 loader(Huatuo→CMExam)+填V3=Yi-1.5-9B/EMB=bge-base-zh；主线核 CMExam features(`Question/Options/Answer/Explanation`匹配)+**修 `_parse_options` bug**(HF版Options是`[{key,value}]`dict-list非字符串,原解析全空→加dict-list分支)；端到端验证 load_cmexam **0 skip**,evidence=Explanation解析段/gt_answer="针对问题「Q」正确答案是X"/correct_letters正确=**真 evidence-conditioned 结构**。mock 烟测管线通。🔴-2 解耦确认(Yi不在judge臂放行,GLM/InternLM仍拦)。
+- **⚠️ 待拍板（上 HPC 跑正式 pilot）**：脚本全就绪,差上传 HPC+占卡。HPC 跑 `build_zh_med.py --backend vllm --limit 150`(Qwen2.5-14B生成+3投票器Qwen7B/Gemma9B/Yi9B+mDeBERTa NLI+bge,模型串行加载,14B可能超单卡24GB需量化/tp2)。上传新代码=拍板点已报方案待用户点头。
+- **算力转向全 API（2026-07-11，用户选）**：本地8GB放不下(三9B投票器)，HPC核查发现 gpu4090 **配额被别项目占满**(账号下已7个GPU job PD排队:ncacyst×3+r1/r3×4)+login无python要配环境+上传硬门禁+50GB模型下载 → 真跑pilot卡在GPU算力/环境(非设计/代码,那些全绿)。**转全API绕开GPU**：coder 扩 build_zh_med `--backend api`(OpenAICompatBackend 可配base_url指向DeepSeek/Qwen/OpenAI,生成器+投票器走API不占GPU,本地CPU只跑mDeBERTa NLI+bge embedding),含retry/超时/`--api-max-calls`成本保护。mock验通过。
+- **推荐 DeepSeek**(中文医学好/极便宜150条<¥1/国内免梯子)：`--backend api --api-base-url https://api.deepseek.com --api-key-env DEEPSEEK_API_KEY --gen-model deepseek-chat --voter-models deepseek-chat deepseek-reasoner deepseek-chat --device cpu`。投票器多样性:DeepSeek仅chat+reasoner两款,正式pilot要三家多样性可用OpenRouter聚合器(一key跑deepseek/gpt-4o-mini/qwen三家)。
+- **⚠️ 待用户提供 API key** → 设环境变量 → 主线跑 limit3 小试看真数据 → 通了放 20/150 条。**这是唯一卡点**(脚本+设计全就绪,mock验通)。
+- **下一步**：key到→跑mini-pilot看真中文医学幻觉数据质量→P1闸(管线通+抽检合格+K3初验)。D2-D15检测器接入 harness / skeptic复核修订设计 可并行。HPC作正式14B配方备选(等队列空)。
 
 ---
 

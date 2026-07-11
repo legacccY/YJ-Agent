@@ -1290,27 +1290,33 @@ def bootstrap_ci(R, D, E_ft, E_ref, ys, n_boot=BOOT):
     return ci(dauc_boot), ci(dkl_boot), dauc_boot, dkl_boot
 
 
-def per_class_melanoma(R, E, ys, E_psnr):
+def per_class_melanoma(D, E, ys, E_psnr):
     """Per-class melanoma 拆分 (对齐 E5 口径: salvage/damage).
 
-    salvage: ref 判错但 enh 判对 (true positive 救回)
-    damage : ref 判对但 enh 判错 (true positive 破坏, dangerous flip)
+    参照系 = 降质图 (degraded), 对齐 E5 e5_salvage_persample.csv 的 correct_deg,
+    NOT clean 原图 —— 这样 R1 melanoma net 与 E5 的 net 同参照系可比.
+    期望入参 D = 降质图预测 (collect_eval 里 b3_softmax(b3, x_low)), E = enhanced 预测.
+
+    salvage: degraded 判错 但 enh 判对 (救回; 对齐 E5 correct_deg==0 & correct_enh==1)
+    damage : degraded 判对 但 enh 判错 (破坏, dangerous flip; 对齐 E5 correct_deg==1 & correct_enh==0)
+    melanoma 子集只看正类 (ys==1); 正类上 "判对" <=> pred > 0.5.
 
     返回 dict (诚实负结果如实输出, 不掩盖).
     """
-    pr = R[:, 1]
+    assert D.ndim == 2 and D.shape[1] >= 2, "per_class_melanoma 期望 degraded 预测 softmax (N,2), 非 clean-ref"
+    pd_ = D[:, 1]
     pe = E[:, 1]
 
-    # 全集诊断保持
+    # melanoma 正类子集 (ys==1); 正类上 判对 <=> pred > 0.5
     pos_mask = (ys == 1)
     n_pos = int(pos_mask.sum())
 
-    # ref 判对的真阳 (pr > 0.5)
-    ref_correct_pos = pos_mask & (pr > 0.5)
+    # degraded / enh 在正类上判对 (参照系 = degraded, 对齐 E5)
+    deg_correct_pos = pos_mask & (pd_ > 0.5)
     enh_correct_pos = pos_mask & (pe > 0.5)
 
-    salvage = int(np.sum(~(pos_mask & (pr > 0.5)) & pos_mask & (pe > 0.5)))  # ref 错 enh 对
-    damage = int(np.sum((pos_mask & (pr > 0.5)) & ~(pos_mask & (pe > 0.5))))  # ref 对 enh 错
+    salvage = int(np.sum(~(pos_mask & (pd_ > 0.5)) & pos_mask & (pe > 0.5)))  # degraded 错 enh 对
+    damage = int(np.sum((pos_mask & (pd_ > 0.5)) & ~(pos_mask & (pe > 0.5))))  # degraded 对 enh 错
 
     salvage_rate = salvage / max(n_pos, 1)
     damage_rate = damage / max(n_pos, 1)
@@ -1361,8 +1367,8 @@ def eval_and_save(method_tag, display_name, mode,
     (a_lo, a_hi), (k_lo, k_hi), dauc_boot, dkl_boot = bootstrap_ci(R, D, E, None, ys)
     print(f"  ΔAUC 95%CI [{a_lo:+.4f},{a_hi:+.4f}]  ΔKL CI [{k_lo:+.4f},{k_hi:+.4f}]")
 
-    # Per-class melanoma (E5 口径)
-    mel = per_class_melanoma(R, E, ys, E_psnr)
+    # Per-class melanoma (E5 口径: 参照系=degraded, 传 D 不传 R, 与 E5 net 可比)
+    mel = per_class_melanoma(D, E, ys, E_psnr)
     print(f"  melanoma (n_pos={mel['n_pos']}): salvage={mel['mel_salvage']}({mel['mel_salvage_rate']:.1%})  "
           f"damage={mel['mel_damage']}({mel['mel_damage_rate']:.1%})  "
           f"net={mel['mel_net_change']:+d}  mel_PSNR={mel['mel_psnr_mean']:.2f}")
