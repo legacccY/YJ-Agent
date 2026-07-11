@@ -15,6 +15,15 @@
 - 中文遇英文/数字加半角空格（例：我有 3 台 iPhone）
 - 保留专业术语英文/缩写（Google Search Console、Notion、OpenAI）
 
+## 📤 所有输出规范（对话 / 报告 / tex / md / ppt / html，凡是给人看的都算）
+> 用户 2026-07-11 定的通则，对**所有输出**生效，不限格式。
+1. **假设读者不熟背景**：先给背景 → 逻辑 → rationale（为什么这么做、这个数意味着什么），别默认读者知道上下文。结论前把「问题是什么、怎么测、口径是什么」交代清楚。
+2. **语言简单直接明白**：一句话说清一件事，逻辑清楚；短句优先，少形容词。
+3. **给足可核对的细节**：数字带来源（csv 路径 / 列名 / 原值）、口径（raw / held-out / 样本量）、参数范围；让读者能自己复核，不是只给结论。
+4. **禁车轱辘话 + 禁自创词**：不重复绕圈、不堆空泛结论；一律用领域标准术语，缩写首次给全称，绝不自造黑话/生硬词。
+
+出报告前数字仍走 verifier / Bash 核 csv（红线不变）。
+
 ---
 
 ## 🧭 开门读档（每次对话开始）
@@ -40,6 +49,7 @@
 - **cxr-sslbench / CXR-SSLBench**（任务含 胸片/chest X-ray/CXR/自监督/SSL/范式横评/CheXWorld/MAE/DINO/MoCo/world-model SSL/probe/finetune/数据效率/regime 依赖；status=planning，Gate1 PASS 进全盘）：`project/meeting/CXR-SSLBench/00_README.md` → `01_STORY.md` → `02_ACCEPTANCE.md` → `DATA_INVENTORY.md` → `04_LOG.md` 最新 entry（立项提案 `~/.claude/plans/ccf-c-vivid-yeti.md`）
 - **wardagent-bench / WardAgentBench**（任务含 慧脉守护/HuimaiMed/脉枢/病房智能体/ward agent/多告警器/复合误报/alarm fatigue/告警融合/联合校准/conformal/e-value/生命体征早预警/MedGemma；status=planning **候选 B 冲 SCI 一区**，demo-only 无真实临床数据）：`project/meeting/WardAgentBench/00_README.md` → `01_STORY.md`（核心 claim=候选 B 多告警复合误报 benchmark）→ `02_ACCEPTANCE.md`（🔴KS-3 数据命门）→ `DATA_INVENTORY.md` → `04_LOG.md` 最新 entry →（深读）`reference/RECON_2026-07-02_venue_niche.md`（大编队侦察+竞品+全 URL）+ `LANDSCAPE_2026-07-02.md` + `SOURCE_MATERIALS.md`。承接决策档 `GradSchool-Prep/26_慧脉守护_论文可行性全景决策档.md`。**铁律：禁用 MedQA69/EHRQA90 开源模型文献值当自证；多告警共触发标签派生须显式声明；venue 据实 JBHI 不写 NeurIPS 主 track；方法不 claim novelty；隐私清洗。** 全押 KS-3 数据命门(动笔前必跑,翻则退腿 A 开源+SOP)。低优先 SOP+冲一区双目标，导师王水花。
 - **nca-cyst / NCA-Cyst**（任务含 NCA/神经元胞自动机/M3D-NCA/KiTS23/肾囊肿/cyst/囊肿分割/全局视野NCA/global field of view；status=active **P1 baseline**，博士生协作项目）：`project/meeting/NCA-Cyst/00_README.md` → `01_STORY.md`（headline+囊肿场景措辞红线：绝不笼统说「囊肿别人都做不了」，只锚定 KiTS23 多类小散布 cyst）→ `02_ACCEPTANCE.md`（A1-A3 + 静默发散 Decision Gate + kill criteria + 复现红线）→ `DATA_INVENTORY.md`（KiTS23：248/489含囊肿,中位占比6.5e-05）→ `04_LOG.md` 最新 entry。计划书 `~/.claude/plans/nca-m3d-nca-baseline-nca-baseline-nca-vivid-parnas.md`。**铁律：复现零偏离官方 M3D-NCA（无梯度裁剪/不改超参凑收敛）；高分辨率3D历史0/11发散是真风险；报多seed收敛率不报单值；官方 dataloader 默认label>0合并成二分类，做囊肿须改 label==3。** 官方代码 vendor 在 `../Med-NCA/M3D-NCA-official/`。
+- **cmedfaith / CMedFaith**（任务含 中文医学 faithfulness/医学幻觉/RAG忠实度/medical hallucination/CMedFaith/医学检测器失效；status=planning，走 ARR/临床 NLP，本科一作）：`project/meeting/CMedFaith/00_README.md` → `01_STORY.md`（headline+faithfulness≠factuality红线+措辞红线：不overclaim医学难度纯来自领域/不拿英文pilot当中文结论）→ `02_ACCEPTANCE.md`（L1-L2 lever + kill criteria K1补judge臂/K2控对抗confound/K3中文迁移 + 红线）→ `DATA_INVENTORY.md`（对照PsiloQA/MedHallu + 自建中文医学:证据源许可Huatuo26M-Apache/CMExam/维基 + MedHallu半自动构造范式）→ `04_LOG.md` 最新 entry。**铁律：只评faithfulness(答案vs给定证据)不评factuality；数字核csv;pilot是英文粗筛非定论;分发只用可再分发许可证据源(指南/UpToDate禁分发)。** pilot脚本 `_scratch/killshot_*.py`，冻结判据 `reference/KILLSHOT_LEDGER.md`。
 - **🗄️ 已封存（shelved，开窗只读不开工，复活需拍板）**：`nca-phasemap`（`project/meeting/NCA-PhaseMap/`）、`disagree`（`project/meeting/DisagreePred/`）——各自 `00_README → 01_STORY → 02_ACCEPTANCE → 04_LOG` 读封存原因即可；`delta-statetrack-probe`（`project/meeting/delta-statetrack-probe/PROJECT_LOG.md` 最新 entry，2026-06-23 封存：机制真但「NC1状态追踪×医学时序」结构性不存在，硬资产 Crux1 真核 PASS + Cholec80 管道可复用）。
 
 > 统一规律：除 ICLR/NCA-JEPA/BMVC 三个历史特例，其余项目入口一律 `<home>/00_README.md`（自带读档顺序）→ `01_STORY` → `02_ACCEPTANCE` →（有则 `DATA_INVENTORY`/`PLAN/`）→ `04_LOG`/`PROJECT_LOG` 最新 entry。新项目 `/spin-off-paper` 建档后**必须回此清单补一行入口**，否则新窗口选它会断链（2026-06-20 gdn2vessel 踩坑根因）。

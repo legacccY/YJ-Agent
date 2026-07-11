@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-06-29",
+ "updated": "2026-07-11",
  "note": "跨论文共享数据集地址单一真源。本地 + HPC 路径、下载源、用途、状态都在此。任何脚本/config 引用数据集前先查此表，不重复硬编码、不臆想路径。新增数据集或换路径只改这里 + 在引用处指向。状态: ready=就位可用 / partial=部分就位 / todo=待下载。",
  "hosts": {
   "local": "D:/YJ-Agent",
@@ -416,6 +416,26 @@
    ],
    "purpose": "NCA 模型医学分割新项目主数据集 (方向待定, 博士生项目); 官方 metrics 脚本 kits23_compute_metrics 可复用",
    "status": "✅DONE both(2026-07-08). local: kits_dl_local.py 8路并行下完489/489 imaging=42GB 0缺失0截断gzip全验通. hpc: kits_upload_hpc.py SFTP断点续传全传完, 489imaging+489seg逐例大小本地↔HPC完全一致, 训练可直接读 /gpfs/work/bio/jiayu2403/kits23/dataset/. 【踩坑记录】HPC登录节点直连HF仅13KB/s(cdn-lfs校内不通)+hf-mirror不可达→只能本地下再传;本机HF~3.5MB/s国际线路封顶(加并行无用);之前'HPC 389/489'系paramiko+GitBash工具串扰假象HPC从无kits23;Kaggle无逐字节一致完整镜像(全2D/解压.nii/样本/缺part2). 下一步=定NCA×KiTS23研究方向后建项目档(立项拍板点)"
+  },
+  "psiloqa": {
+   "name": "PsiloQA",
+   "project": "cmedfaith",
+   "use": "通用域对照 + 中文通用 faithfulness (pilot#1/#2 通用臂)",
+   "source": "HF s-nlp/PsiloQA",
+   "license": "CC-BY-4.0",
+   "size": "zh 5757 / en 18103 (span级, wiki证据, closed-book QA幻觉)",
+   "local": "session scratchpad psiloqa_all.parquet (临时,可从HF重下)",
+   "status": "已下载,脚本内含重下代码"
+  },
+  "medhallu": {
+   "name": "MedHallu",
+   "project": "cmedfaith",
+   "use": "英文医学 faithfulness (pilot#2 医学臂 + 中文构造蓝本)",
+   "source": "HF UTAustin-AIHealth/MedHallu",
+   "license": "MIT",
+   "size": "10k (1k人工pqa_labeled + 9k合成pqa_artificial); 每question派生忠实/不忠实各1",
+   "local": "HF cache (datasets库自动下)",
+   "status": "已下载"
   }
  },
  "fetal_us_seg": {

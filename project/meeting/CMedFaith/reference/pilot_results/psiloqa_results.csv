@@ -1,0 +1,3 @@
+detector,lang,macroF1,n_faithful,n_unfaithful,G_lang,ci_low,ci_high
+mDeBERTa-XNLI,en,0.6235,39,1059,-0.0042,-0.0894,0.0864
+mDeBERTa-XNLI,zh,0.6277,39,261,-0.0042,-0.0894,0.0864
