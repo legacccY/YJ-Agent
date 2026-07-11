@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-07-11 · ✅ 用户拍板跑 2×2 kill-shot → CB-max 代码就绪 + 双烟测 PASS + 判据冻结 → 起 b 格
+
+**背景**：上一 entry 四选一，用户选 **1 = 先跑 2×2 kill-shot 证伪 H2 命门**（再定 Phase2）。全流程走标准编队。
+
+**做的事 + 结果**：
+- **planner + researcher 并行探路**：planner 把 2×2 拆成精确矩阵（分阶段：先跑关键格 b=vanilla NCA+CB−GV，能 kill 就省掉 GV 工程）；researcher 查得 ①novelty「全图 pooling→broadcast NCA 分割」精确机制**未见发表=空白**（negative-evidence，c/d 前须人工二次核 arXiv+OpenReview）②类平衡锚：Focal Tversky α/β/γ=0.7/0.3/(4/3)、nnUNet oversample=0.33、**KiTS23 cyst 天花板仅 0.447**（现有类平衡有效证据都在 1–5% 前景，6.5e-5 是极端外推）。
+- **主线亲核 load-bearing 发现**：官方 `DiceFocalLoss`（LossFunctions.py L162-181）focal 项在 flatten 全体素上 `softmax(dim=-1)` → 每体素≈1/N → `(1-logit)^γ≈1` → **focal 退化成 BCE**。即 A2 baseline 名义有 focal、实质无类平衡 → 坐实 kill-shot 合法性（`+CB` 是真补缺失的类平衡，非重复）。
+- **skeptic 红队砸中 1 致命伤**：planner 的弱 CB（前景采样≥1体素）对 **patch 内前景占比** 无控制 → b 假阴性 → 假阳性 greenlight。实测坐实（`kits23_cyst_dist.csv`：含囊肿 248 例、囊肿绝对体素中位 **2317**、整颗落入 1.05M patch 占比也仅 **~0.22% ≪ 1–5%**）。kill 方向（b≥0.10→H2塌）本就稳健，修复只保护 greenlight 半边。
+- **用户拍板 CB-max**（AskUserQuestion）：CB arm 升级三组件——①囊肿中心采样 ②copy-paste 增广（把占比顶进有效区间）③极端 Tversky（w_fn=0.9/w_fp=0.1）。coder 两轮实现（`code/losses_cb.py` + `code/agent_m3d_nca_cb.py` + `train_kits23.py`/`config_kits23.py` 加 `--class_balance/--global_view/--tversky_wfn/--cb_copy_paste_frac`），off/GV-off 零偏离官方、CB 为受控自变量诚实注释。
+- **本地双烟测 PASS**（8GB 本地，各 ~29.5s）：
+  - 格 b CB-max（cyst+on）：三组件横幅✅ / **copy-paste 占比 0.51%→2.26%（进 1–5% 区间）✅** / loss 1.47→1.29 不 NaN✅ / Dice 0.098（vs A2 baseline 5e-6，CB 生效）✅。
+  - off 零偏离回归（cyst+off）：off 路径不打 CB 横幅、正常跑完不崩、Dice 0.031（弱 baseline）。
+- **判据冻结**：`02_ACCEPTANCE.md` 补 Phase2 kill-shot 判据块（2×2 定义 + CB-max spec + 判据改「相对效应量+3seed CI+全塌=不立项」+ 死区 + G-freeze/G-novelty/G-GVscope gate）；本 commit = G-freeze 预注册点（防 HARKing）。
+
+**判据线（预注册）**：含囊肿 test Dice 3seed 均值 —— **b≥0.10→H2 塌**（CB 一阶主因，Phase2 转向报拍板）｜**b<0.05 且 d≥0.10 且 d−max(b,c)≥0.10→H2 站得住**（GV 是 enabler，greenlight）｜**全格<0.10→inconclusive=默认不立项**（保守失败安全）。
+
+**已知缺口/TODO**：copy-paste v1 硬粘贴无 blend（reviewer 质疑可升 Poisson/CarveMix）；组件①中心采样在当前 config 粗级退化为整图，抬占比靠组件②（已烟测确认达标）；`avg_loss` UnboundLocalError（reload 到 max epoch 时崩，边缘健壮性，新 RUN 目录不触发）。
+
+**下一步（用户已授权跑）**：git commit 冻结 → gpu_slot request hpc ×3 → 上传 CB-max 代码到 HPC（一行报）→ 提交 b 格 seed 0/1/2 full → /loop 轮询。b 出数判 kill/greenlight/inconclusive 再停。
+
+---
+
 ## 2026-07-10（干净 session）· 🚩 Phase2 立项前双红队：H2 命门存疑 → 建议先跑 2×2 kill-shot（🛑 待用户拍板）
 
 **背景**：用户拍板「A) Phase2 立项，先红队命门假设」。派 skeptic + theorist 并行正交攻/推 THEORY_LEDGER H2「给 NCA 补全局视野通道能把囊肿 Dice 从近随机显著拉起」。

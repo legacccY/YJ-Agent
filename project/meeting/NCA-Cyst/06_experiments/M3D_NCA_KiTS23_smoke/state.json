@@ -1,11 +1,8 @@
 {
-  "status": "done",
+  "status": "crashed",
   "config": "smoke",
-  "label_mode": "binary_all",
+  "label_mode": "cyst",
   "seed": 0,
-  "epoch": 30,
-  "avg_loss": 0.9991259574890137,
-  "dice": 0.03411060571670532,
-  "max_steps": 30,
-  "updated": "2026-07-08T17:09:54"
+  "error": "UnboundLocalError(\"cannot access local variable 'avg_loss' where it is not associated with a value\")",
+  "updated": "2026-07-11T09:14:27"
 }

@@ -81,6 +81,14 @@ CONFIG_SMOKE = {
     'data_split': [0.7, 0, 0.3],       # [官方固定] A=B → 5 例按 index<0.7 切=4 train/0 val/1 test
     'keep_original_scale': False,      # [官方分歧->选B]
     'rescale': True,                   # [官方固定] A=B
+    # --- Phase2 类平衡(CB-max) kill-shot 开关（默认 off=零偏离官方；train 脚本可用 CLI 覆盖）---
+    'class_balance': 'off',            # off=格a/baseline / on=格b(CB-max 三组件)
+    'global_view': 'off',             # 占位；GV 模块后置未实现，本 Stage 恒 off
+    'cb_max_retries': 20,              # 组件① 无前景 case 回退用
+    'cb_copy_paste_target_frac': 0.02,  # 组件② copy-paste 目标前景占比(2%)
+    'cb_copy_paste_cap': 8,           # 组件② 粘贴份数硬上限
+    'tversky_gamma': 1.0,             # 组件③ Focal Tversky γ；1.0=纯 Tversky
+    'tversky_wfn': 0.9,               # 组件③ FN 惩罚系数(极端重罚)；w_fp=1-wfn
 }
 
 
@@ -120,6 +128,14 @@ CONFIG_FULL = {
     'data_split': [0.7, 0, 0.3],       # [官方固定] A=B
     'keep_original_scale': False,      # [官方分歧->选B]
     'rescale': True,                   # [官方固定] A=B
+    # --- Phase2 类平衡(CB-max) kill-shot 开关（默认 off=零偏离官方；train 脚本可用 CLI 覆盖）---
+    'class_balance': 'off',            # off=格a/baseline / on=格b(CB-max 三组件)
+    'global_view': 'off',             # 占位；GV 模块后置未实现，本 Stage 恒 off
+    'cb_max_retries': 20,              # 组件① 无前景 case 回退用
+    'cb_copy_paste_target_frac': 0.02,  # 组件② copy-paste 目标前景占比(2%)
+    'cb_copy_paste_cap': 8,           # 组件② 粘贴份数硬上限
+    'tversky_gamma': 1.0,             # 组件③ Focal Tversky γ；1.0=纯 Tversky
+    'tversky_wfn': 0.9,               # 组件③ FN 惩罚系数(极端重罚)；w_fp=1-wfn
 }
 
 

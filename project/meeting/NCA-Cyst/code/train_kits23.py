@@ -53,6 +53,10 @@ from src.agents.Agent_M3D_NCA import Agent_M3D_NCA           # noqa: E402
 from kits23_dataset import Dataset_KiTS23_3D                 # noqa: E402
 from config_kits23 import get_config                          # noqa: E402
 
+# Phase2 类平衡(CB)组件（本项目新写，不改官方）——仅 --class_balance on 时启用。
+from agent_m3d_nca_cb import Agent_M3D_NCA_CB                 # noqa: E402
+from losses_cb import DiceTverskyLoss                          # noqa: E402
+
 
 def set_seed(seed):
     """设 seed（见文件头：对 NCA 只是尽力而为，锁不住 epoch-1 GPU RNG）。"""
@@ -153,7 +157,23 @@ def main():
     parser.add_argument("--n_epoch", type=int, default=None, help="覆盖 config 的 n_epoch（更快烟测）")
     parser.add_argument("--state_path", default=None,
                         help="state.json 路径（缺省=<model_path>/state.json）")
+    # --- Phase2 kill-shot 开关（关键格 b = −global_view, +class_balance） ---
+    parser.add_argument("--class_balance", choices=["off", "on"], default="off",
+                        help="off=零偏离官方(格a/baseline) / on=前景优先采样+DiceTversky(格b)")
+    parser.add_argument("--global_view", choices=["off", "on"], default="off",
+                        help="全局视野模块占位；本 Stage 只支持 off（GV 模块后置未实现）")
+    parser.add_argument("--tversky_gamma", type=float, default=1.0,
+                        help="Focal Tversky γ；1.0=纯 Tversky（默认）。仅 class_balance=on 生效")
+    parser.add_argument("--tversky_wfn", type=float, default=0.9,
+                        help="Tversky FN 惩罚系数（CB-max 默认 0.9，极端重罚 FN）；w_fp 派生=1-wfn。仅 on 生效")
+    parser.add_argument("--cb_copy_paste_frac", type=float, default=0.02,
+                        help="copy-paste 增广目标前景占比（默认 0.02=2%）。仅 on 生效")
     args = parser.parse_args()
+
+    # global_view 本 Stage 未实现，on 直接报错（避免静默当 off 跑造成误读）。
+    if args.global_view == "on":
+        raise NotImplementedError(
+            "--global_view on 未实现（GV 模块本 Stage 后置）；关键格 b 需 --global_view off。")
 
     cfg = get_config(args.config)
     if args.label_mode is not None:
@@ -162,6 +182,14 @@ def main():
         cfg['model_path'] = args.model_path
     if args.n_epoch is not None:
         cfg['n_epoch'] = args.n_epoch
+    # CB 开关写入 config（供 agent 读 + state.json 存档溯源）。
+    cfg['class_balance'] = args.class_balance
+    cfg['global_view'] = args.global_view
+    cfg['tversky_gamma'] = args.tversky_gamma
+    cfg['tversky_wfn'] = args.tversky_wfn
+    cfg['cb_copy_paste_target_frac'] = args.cb_copy_paste_frac
+    cfg.setdefault('cb_max_retries', 20)         # 组件① 无前景 case 回退用（中心采样已不 retry）
+    cfg.setdefault('cb_copy_paste_cap', 8)       # 组件② 粘贴份数硬上限
 
     label_mode = cfg['label_mode']
     cases_subset = cfg.get('cases_subset', None)
@@ -185,7 +213,11 @@ def main():
     ca2 = BasicNCA3D(cfg['channel_n'], cfg['cell_fire_rate'], device,
                      hidden_size=cfg['hidden_size'], kernel_size=3, input_channels=cfg['input_channels']).to(device)
     ca = [ca1, ca2]
-    agent = Agent_M3D_NCA(ca)
+    # class_balance=on → 用前景优先采样子类（组件①）；off → 官方原类（零偏离）。
+    if args.class_balance == "on":
+        agent = Agent_M3D_NCA_CB(ca)
+    else:
+        agent = Agent_M3D_NCA(ca)
 
     exp = Experiment([cfg], dataset, ca, agent)
     dataset.set_experiment(exp)
@@ -197,7 +229,15 @@ def main():
         dataset, shuffle=True, batch_size=exp.get_from_config('batch_size'),
         num_workers=0, pin_memory=False)
 
-    loss_function = DiceFocalLoss()
+    # class_balance=on → DiceTversky（组件③，极端重罚 FN）；off → 官方 DiceFocalLoss（零偏离）。
+    if args.class_balance == "on":
+        w_fn = args.tversky_wfn
+        loss_function = DiceTverskyLoss(w_fn=w_fn, w_fp=1.0 - w_fn, gamma=args.tversky_gamma)
+        print("[train_kits23] class_balance=ON (CB-max 三组件): "
+              "①囊肿中心采样 + ②copy-paste增广(frac=%.3f) + ③DiceTversky(w_fn=%.2f,w_fp=%.2f,gamma=%.3f)"
+              % (args.cb_copy_paste_frac, w_fn, 1.0 - w_fn, args.tversky_gamma))
+    else:
+        loss_function = DiceFocalLoss()
 
     t0 = time.time()
     try:

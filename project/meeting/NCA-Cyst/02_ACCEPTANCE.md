@@ -72,3 +72,49 @@
 
 - **中等会议线（本期够用）**：M3D-NCA + UNet baseline 在 KiTS23 囊肿上的诚实对照 + 管线可复现。
 - **standout 升级线（下阶段）**：全局视野模块把囊肿 Dice 从近随机显著拉起（需另立项 + 红队）。
+
+---
+
+## Phase 2 立项前 kill-shot 判据（预注册，防 HARKing｜草稿待 git commit 冻结）
+
+> 目的=**因果区分** baseline 囊肿 Dice≈0 到底是「极端类不平衡（H2b，一阶）」还是「缺全局视野（H2a）」。双红队（skeptic+theorist）判 H2 命门存疑，用户拍板「先跑 2×2 kill-shot 再定 Phase2」。planner 设计→skeptic 红队砸中致命伤（CB 欠力假阴性）→本块固化修复。**跑 b 前须 git commit 本块冻结**（呼应 [[feedback_falsify_crux_first]] + [[feedback_validate_test_before_negative_verdict]]）。
+
+### 实验矩阵 2×2 = `--global_view {off,on}` × `--class_balance {off,on}`
+
+| 格 | GV | CB | 内容 | 状态 |
+|---|---|---|---|---|
+| **a** | off | off | vanilla M3D-NCA cyst（官方 DiceFocalLoss，实测 focal 项退化成 BCE=无有效类平衡）| = A2 复用，anchor **5.30e-6±6.05e-7**（3seed）|
+| **b** | off | on | **关键格**：vanilla NCA + **CB-max 堆栈**，仍 −全局视野 | Stage1 先跑（决定 kill）|
+| **c** | on | off | +全局视野模块，官方损失 | Stage2 条件跑（仅 b 失败才跑）|
+| **d** | on | on | +全局视野 + CB-max | Stage2 条件跑 |
+
+**分阶段执行**：Stage1 先跑 b（3seed，~36 GPU·h，**无须实现 GV 模块**）。b≥kill 线 → 止步报拍板；b 仍≈0 → 过 novelty gate 后实现 GV 跑 c/d。
+
+### CB-max 堆栈（skeptic 致命伤修复：给 CB「最强合理形态」，否则 b 假阴性）
+
+实测佐证（`06_experiments/kits23_cyst_dist.csv`，248 含囊肿 case）：囊肿绝对体素中位 **2317**（p25=585/min=17），细级 patch (128,128,64)=1.05M 体素 → 整颗中位囊肿落入 patch 内占比也仅 **~0.22% ≪ 文献有效区间 1–5%**。故 CB 须三组件叠满把 patch 内前景占比顶进有效区间：
+
+1. **囊肿中心裁剪**：patch 以囊肿 bbox 为中心 / patch 尺寸缩到囊肿量级，目标 patch 内前景占比 **≥1%**（核心组件，最该补）。
+2. **copy-paste / lesion oversampling 增广**：复制囊肿体素抬高前景占比。
+3. **极端 Tversky loss**（β≫α 重罚 FN，如 w_FN=0.7/w_FP=0.3 起，可加码到 0.9/0.1），不改官方 loss，本项目 code/ 新写。
+
+> **铁律**：只有**最强 CB（CB-max）的 b 仍 <0.05** 才可 claim「非 CB 问题」。跑弱 CB 的 b = 埋假阳性 greenlight 雷。CB/GV 均为**受控自变量**，`--class_balance off / --global_view off` 时零偏离官方（保 a/baseline 可比），代码注释诚实标注「偏离官方的受控变量」。
+
+### 判据（改绝对亮线为「相对效应量 + 3seed CI + 全格 ordering」）
+
+含囊肿 test case 上 3seed 均值 Dice（官方 `kits23_compute_metrics`，同 split [0.7,0,0.3]、同 seed {0,1,2}）：
+
+| 分支 | 触发条件 | 结论 → 行动 |
+|---|---|---|
+| **🔴 H2 塌（kill，稳健无需修复即可采信）** | **b ≥ 0.10**（CB-max 单独就逃出 ≈0，−GV）| 类不平衡一阶主因、全局视野非必要 → **Phase2 转向**（如「散布小目标类不平衡分割 benchmark」B 族路线）→ 停下报拍板 |
+| **🟢 H2 站得住（greenlight）** | **b < 0.05** 且 **d ≥ 0.10** 且 **d − max(b,c) ≥ 0.10**（3seed CI 不重叠）| CB-max 单独救不动、须叠 GV 才拉起 → GV 是 enabler → greenlight Phase2（守整卷 GV scope）|
+| **🟡 暧昧/死区** | 0.05 ≤ b < 0.10；或全格 <0.10（含天花板压制）；或 d 效应但 b 也部分抬 | 停下报拍板。**预注册：全格 ≈0 = inconclusive = 默认不立项**（保守失败安全，别读成「H2 没被杀死→推进」）|
+
+**因果读法**：Δ_CB(−GV)=b−a（CB 单独效应）｜Δ_GV(−CB)=c−a（红队预测≈0，粗级已有整卷全局却仍≈0 的直接检验）｜Δ_GV(+CB)=d−b（GV 边际增益=是否 enabler）。GV 真 enabler ⟺ b≈a 且 Δ_GV(+CB) 大；CB 一阶主因 ⟺ Δ_CB(−GV) 大。**0.10 绝对线仅作参考锚，主判据=跨 seed CI 分离 + ordering**（seed 锁不住 NCA，报收敛率+均值±std）。
+
+### 前置 gate（防跑偏）
+
+- **G-freeze**：跑 b 前 git commit 冻结本块（防 HARKing）。
+- **G-novelty**（仅 c/d 前触发）：实现 GV 花 GPU 前派 researcher 二次核「全图 pooling→broadcast NCA 分割」novelty（当前 negative-evidence 空白，须人工过 arXiv NCA 全表 + OpenReview）。撞车 → c/d 不跑、Phase2 转向。
+- **G-GVscope**（仅 c/d 前）：GV 池化范围须对齐 H2 claim 的**整卷**尺度（非仅 patch-global proxy），否则 c/d 的 null 是假阴性、正结果也不验整卷 GV；若只做 patch-scope 须显式收窄 claim。
+- **eval 对齐**：a（=A2 复用）与 b 须同 eval harness；若 A2 评估口径与 b 不完全一致 → 重跑 a 并列。
