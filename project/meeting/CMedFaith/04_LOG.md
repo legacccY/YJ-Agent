@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-07-11 · 收工（史诗场：全量设计→真数据→K3命门规模依赖发现）
+
+**本 session 完成（详见下方各 entry）**：
+1. **全量实验设计定稿**（PLAN/EXPERIMENT_MATRIX_P1-P3.md）：15检测器/4族×三级×5-6分层=12表8图8分析块（远超EACL），skeptic红队3🔴命门→用户拍板**对称化**修复+MedFact三角+K2重述，判据预注册冻结。
+2. **双管线建成验证**：`code/eval_harness.py`(评测,全量复现精确命中0.4277/0.7204/G_domain0.2927) + `code/build_zh_med.py`(中文构造,CMExam证据源,MedHallu四阶段)。
+3. **真中文医学faithfulness数据产出**：算力卡壳(本地8GB放不下/HPC队列满)→转全API(硅基流动DeepSeek-V3.2生成+多judge投票+本地CPU NLI/embedding)。20条pilot质量达标(evidence过滤守R3,幻觉塞假指南/假数值)。
+4. **K3命门初验(4 judge)**：`code/k3_probe.py`。**规模依赖发现**——中小judge(GLM-4-9B 0.14/Hunyuan-13B 0.29 recall_unfaithful≈失效)但强模型(MiniMax/GLM-4.5-Air 0.71-0.79 抓得住)。
+
+**🔴 claim 待深议(下次拍)**：核心claim「现成检测器系统性失效」**过强**,数据揭示是**规模/部署依赖的失效**(中小judge+NLI族失效,强模型挽回但仍漏20-30%)。这正是skeptic K1判据预埋分支+用户要的实验↔叙事互调。方向精化待用户定,正式措辞等P3大样本。
+
+**环境/安全**：numpy降1.26.4(修lettucedetect顶numpy2撞scipy);硅基流动key存`_scratch/api_keys.env`(gitignored,✅git不追踪)。⚠️**提醒用户:key曾在对话明文,建议硅基流动后台删重建**。总API花费这场≈¥1-2。
+
+**下次入口**：本entry + `PLAN/EXPERIMENT_MATRIX_P1-P3.md` + `reference/RESEARCH_BRIEF_2026-07-11.md`。下一步=claim方向深议→P3全套横评(D2-D15+大样本+bootstrap CI严格验规模依赖)/放量pilot。**P1(管线+质量)达标,K3揭示规模依赖失效待精化claim**。
+
+---
+
 ## 2026-07-11 · 全量实验设计情报底座（5路researcher）+ 🔴K0命门修正
 
 **本 session（推进实验设计）**：
@@ -43,7 +59,24 @@
 - **算力转向全 API（2026-07-11，用户选）**：本地8GB放不下(三9B投票器)，HPC核查发现 gpu4090 **配额被别项目占满**(账号下已7个GPU job PD排队:ncacyst×3+r1/r3×4)+login无python要配环境+上传硬门禁+50GB模型下载 → 真跑pilot卡在GPU算力/环境(非设计/代码,那些全绿)。**转全API绕开GPU**：coder 扩 build_zh_med `--backend api`(OpenAICompatBackend 可配base_url指向DeepSeek/Qwen/OpenAI,生成器+投票器走API不占GPU,本地CPU只跑mDeBERTa NLI+bge embedding),含retry/超时/`--api-max-calls`成本保护。mock验通过。
 - **推荐 DeepSeek**(中文医学好/极便宜150条<¥1/国内免梯子)：`--backend api --api-base-url https://api.deepseek.com --api-key-env DEEPSEEK_API_KEY --gen-model deepseek-chat --voter-models deepseek-chat deepseek-reasoner deepseek-chat --device cpu`。投票器多样性:DeepSeek仅chat+reasoner两款,正式pilot要三家多样性可用OpenRouter聚合器(一key跑deepseek/gpt-4o-mini/qwen三家)。
 - **⚠️ 待用户提供 API key** → 设环境变量 → 主线跑 limit3 小试看真数据 → 通了放 20/150 条。**这是唯一卡点**(脚本+设计全就绪,mock验通)。
-- **下一步**：key到→跑mini-pilot看真中文医学幻觉数据质量→P1闸(管线通+抽检合格+K3初验)。D2-D15检测器接入 harness / skeptic复核修订设计 可并行。HPC作正式14B配方备选(等队列空)。
+- **✅ 里程碑：真中文医学 faithfulness 数据产出（2026-07-11，硅基流动 API）**：key存`_scratch/api_keys.env`(gitignored)；跑 `--backend api` limit3 mini-pilot：生成器`deepseek-ai/DeepSeek-V3.2`+投票器三家`DeepSeek-V3.2/Qwen2.5-7B/Qwen2.5-72B`(避开K1 judge守🔴-2)，本地CPU跑mDeBERTa NLI+bge-base-zh。**108次API调用0失败,成本≈¥0.1-0.3**。CMExam证据源0 skip,Phase2保留8/27(骗过≥1),Phase3 8/8(ℰ<0.75滤同义),产出3条(easy2/medium1,3类型)。数据在 `code/data/zh_med_pilot.csv`。
+- **数据质量评估(诚实)**：evidence-conditioned三元组结构完全正确。样本1(机制误归因)质量高=编假机制"砂仁后下因保护生物碱抗炎活性"(真因是挥发油,证据无此说)；样本2(过度断言)中等=加"完全/绝对"绝对化；样本3(信息不全)**偏弱**=太接近正确(骗过2/3票+蕴含E最高0.0072,撞skeptic警告"难例贴近GT易假到不够假")。**P1闸"管线中文可跑性"达标**；质量提升空间=质检层更严+造幻觉prompt让偏离更明确。
+- **✅ P1 数据构造管线+质量达标（2026-07-11，20条pilot）**：coder 补两优化——① Phase3 加 evidence-grounded 过滤(nli_evi2hallu=NLI(证据,幻觉),≥τ_evi0.5=被证据蕴含=忠实=滤,守R3 faithfulness核心判据) ② 强化造幻觉prompt(引入证据外/矛盾具体内容)。20条pilot:**720 API调用0失败**,phase3-GT过滤后30→**evidence过滤滤掉6条"其实忠实"**(解决mini-pilot样本3漏网)→产出14条。nli_evi2hallu分布min0/中位0.004/max0.102全<<0.5,滤掉的≥0.5,**0.1~0.5间无样本=τ_evi0.5分得干净**(coder担心的误滤没发生)。类型覆盖5类(fabricated_guideline5/incomplete4/dosage2/mechanism2/overclaim1),难度easy7/medium7。成本≈¥1-2。
+- **质量抽检**:幻觉都塞证据外假细节=假指南引用(《神经生理学标准指南》5.3节/《2023中国血脂指南》5.2条)、假数值(特异性阈值80%/煎煮30分钟)、假机制→**结论常对但不忠于证据**=faithfulness幻觉精髓,完美契合faithfulness≠factuality定义。数据 `code/data/zh_med_pilot.csv`(14条)。
+- **✅✅ K3 初验命门信号正面（2026-07-11，强支持核心 claim）**：用**独立** LLM-judge GLM-4-9B(`THUDM/GLM-4-9B-0414`,硅基流动,未参与构造避🔴-2循环；LettuceDetect mmBERT撞transformers版本地狱`TokenizersBackend`缺失,升级会破坏已验证脚本故弃用改judge)测 28 条平衡集(14忠实+14幻觉)。**结果:recall_faithful=1.0(14/14忠实全判对)但 recall_unfaithful=0.143(14条幻觉只抓出2条,放过12条!),BA=0.571(≈随机),Macro-F1=0.475**。28次API调用0失败,成本≈¥0.x。
+- **解读**:GLM-4 放过的12条幻觉=假指南引用(《神经生理学标准指南》第5.3节-捏造)、假数值(煎煮30/15分钟、特异性阈值80%)、假机制——**judge看结论对就判faithful,抓不住藏的证据外假细节**,正是混淆factuality(结论对)与faithfulness(忠于证据)的命门。**初步支持「现成检测器中文医学faithfulness系统性失效」,值得上P3全套横评**。caveat:28条小样本粗信号非P3正式;幻觉是"骗过≥1投票器"对抗样本(构造强度有份);单judge(GLM-4-9B较小,大judge如GPT-4o/R1待P3测)。结果 `code/results/k3_probe_judge.csv`。
+- **环境变动**:装 lettucedetect 0.2.2(顶numpy2.2.6撞崩scipy)→降 numpy 1.26.4 修复(scipy/sklearn/transformers兼容,是修复);lettucedetect当前跑不了(mmBERT需新transformers,不动稳定环境)。
+- **🔴 K3 多 judge 普遍性验证：命门信号分化，claim 需精化（2026-07-11，重要诚实发现）**：4 个独立跨家 judge 测同 28 条——
+  | judge | recall_unfaithful | BA |
+  |---|---|---|
+  | GLM-4-9B | 0.143 | 0.571 |
+  | Hunyuan-A13B | 0.286 | 0.607 |
+  | MiniMax-M2.5 | **0.786** | **0.786** |
+  | GLM-4.5-Air | **0.714** | **0.786** |
+  **中小模型(9B/13B)失效(recall0.14-0.29≈随机),但强模型(MiniMax/GLM-4.5-Air)抓得住大部分(recall0.71-0.79)**。→ **claim「现成检测器系统性失效」过强,须精化**。这正是 skeptic K1 判据预埋的分支(互调表"judge臂不弱→claim收缩")+用户要的实验↔叙事互调真实发生。
+- **精化后 claim(待用户拍)**：「中小模型judge(部署常用档)+NLI族在中文医学faithfulness不可靠;能力随模型规模显著提升,但最强judge仍漏20-30%幻觉」——更nuanced/更真/更难被攻,契合MedHallu"大模型judge更好"规律。caveat:28条小样本噪声大;强模型0.79也非满分(faithfulness仍难);对抗样本构造强度有份。总成本这几轮≈¥1-2。逐judge结果 `code/results/k3_*`。
+- **🛑 拍板点(headline重心移)**：claim 从"系统性失效"精化为"规模/能力依赖的失效"——方向调整需用户定。
+- **下一步(拍板后)**:①headline精化落STORY/ACCEPTANCE(K1判据已预埋此分支);②P3全套横评(D2-D15+大样本+bootstrap CI严格验规模依赖);③放量pilot。**P1(管线+质量)达标,K3揭示规模依赖失效**。
 
 ---
 

@@ -1,0 +1,21 @@
+{
+  "note": "CMedFaith K3 初验 P1 粗信号（28 条），非 P3 正式评测；judge=GLM-4 独立臂",
+  "detector": "llm-judge",
+  "judge_model": "MiniMaxAI/MiniMax-M2.5",
+  "base_url": "https://api.siliconflow.cn/v1",
+  "n_samples": 28,
+  "api_calls": 28,
+  "api_failures": 0,
+  "api_giveup": 0,
+  "n_uncertain_or_invalid": 0,
+  "confusion_matrix": {
+    "tn": 11,
+    "fp": 3,
+    "fn": 3,
+    "tp": 11
+  },
+  "balanced_accuracy": 0.7857142857142857,
+  "recall_faithful": 0.7857142857142857,
+  "recall_unfaithful": 0.7857142857142857,
+  "macro_f1": 0.7857142857142857
+}

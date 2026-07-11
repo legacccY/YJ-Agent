@@ -26,8 +26,14 @@ lever：L1（中文医学 evidence-conditioned faithfulness 资源）。
   Phase2 质检投票   ：3-LLM 投票器（Qwen2.5-7B + Gemma2-9B + Yi-1.5-9B-Chat，[V3] 已定案）。
                       保留规则 = 骗过 ≥1 个投票模型即留；难度 = hard(全骗)/medium(部分)/easy(仅1)。
                       --use-openai：把投票器一票换成 GPT-4o-mini（对齐 MedHallu 原配方，默认关）。
-  Phase3 双向蕴含   ：中文 NLI = mDeBERTa（与检测器 D1 复现锚一致）。ℰ=min(NLI(H→GT),NLI(GT→H))，
-                      τ=0.75，保留 ℰ<τ（滤掉"其实是同义正确答案"的伪幻觉，守 R3 剔 factuality）。
+  Phase3 两道 NLI   ：中文 NLI = mDeBERTa（与检测器 D1 复现锚一致），两道都过才算合格幻觉，复用同一实例：
+                      (a) 幻觉vsGT：ℰ=min(NLI(H→GT),NLI(GT→H))，τ=0.75，保留 ℰ<τ（滤"其实是同义正确
+                          答案"的伪幻觉，防造出同义正确答案——是一层，非 faithfulness 核心判据）。
+                      (b) 🆕 幻觉vs证据（faithfulness 核心判据，守 R3）：nli_evi2hallu=NLI(证据→幻觉答案)，
+                          τ_evi=0.5（--tau-evidence 可调），保留 nli_evi2hallu<τ_evi。faithfulness 定义=答案
+                          是否被给定证据支持；真幻觉必须"不被证据蕴含"。若幻觉答案其实被证据支持（高 entailment）
+                          =忠实于证据=滤掉（mini-pilot 样本3「酸溶血试验阳性…确诊特异性」其实忠实于证据却混进来，
+                          根因就是原管线漏了这道——只查了 幻觉vsGT，没查 幻觉vs给定证据）。
   Phase4 兜底       ：选与 GT 余弦相似度最大的候选（中文句向量 BAAI/bge-base-zh-v1.5，[EMB] 已定案）。
                       TextGrad 精修 = --textgrad 可选开关，默认只兜底（先跳过精修）。
 
@@ -70,6 +76,17 @@ lever：L1（中文医学 evidence-conditioned faithfulness 资源）。
 
 [EMB]      Phase4 兜底的中文句向量 = `BAAI/bge-base-zh-v1.5`（MIT，researcher 定案）。已替换原占位
            text2vec。--embed-model 仍可覆盖。
+
+[TAU-EVI]  🆕 evidence-grounded 过滤阈值 τ_evi（Phase3 第二道，守 R3，本次修 mini-pilot 质量问题新增）：
+           默认 0.5（--tau-evidence 可调）。判据 = 真幻觉必须 NOT entailed by 给定证据
+           （nli_evi2hallu < τ_evi）；nli_evi2hallu ≥ τ_evi 说明幻觉答案其实被证据支持=忠实于证据=滤掉，
+           这才是 faithfulness 的正确判据（答案 vs 给定证据），与原「幻觉vsGT 双向蕴含」（防同义正确、是
+           另一层）**两道都过才是合格幻觉**。**⚠️ 非 brief §7 冻结超参**（brief 只定 τ=0.75 的 幻觉vsGT），
+           不动已冻结超参。TODO: 0.5 为合理初值，主线 pilot 抽检后按「被误滤的真幻觉 vs 漏进的忠实答案」
+           权衡校准（mDeBERTa entailment 概率分布经验值，证据段较长可能压低 entailment，需看实际分布微调）。
+           新增列/字段：CSV 加 `nli_evi2hallu`（证据→幻觉 entailment 分）；state.json 加
+           `skipped_faithful_to_evidence`（被这道滤掉=其实忠实于证据的计数）+ `n_after_phase3_gt_filter`
+           （幻觉vsGT 过后数）+ `nli_tau_evidence_used`（本轮 τ_evi 取值）。
 
 [PROMPT]   9 类幻觉的**中文定义**我按 DATA_INVENTORY B3 正交双轴类型学写全（我们自有 taxonomy，
            非从外库照搬）；**in-context 示例是我构造的中文占位示例**，结构对齐 MedHallu
@@ -122,7 +139,8 @@ lever：L1（中文医学 evidence-conditioned faithfulness 资源）。
   code/data/zh_med_pilot.csv         : ~100-200 行（--limit 控 CMExam 抽样数，每条一个兜底幻觉答案；
                                          **内部文件**，含 CMExam 原文列，不对外发布，见 [CMEXAM] 许可合规）
   code/data/zh_med_pilot_state.json  : {难度分布 hard/med/easy、9 类内容型分布、构造成功率、
-                                         各投票器被骗率、Phase3 过滤率、跳过计数、超参快照}
+                                         各投票器被骗率、Phase3 两道过滤率（幻觉vsGT + 🆕 evidence-grounded
+                                         skipped_faithful_to_evidence）、跳过计数、超参快照（含 τ_evi）}
 
 主线跑法（coder 不跑，只交付）
 --------------------------------------------------
@@ -157,7 +175,9 @@ lever：L1（中文医学 evidence-conditioned faithfulness 资源）。
 
 红线遵守
 --------------------------------------------------
-- 超参逐字（brief §7）：temp 0.3-0.7 / top-p 0.95 / max 512 / 幻觉长=真值±10% / τ=0.75，未私改。
+- 超参逐字（brief §7）：temp 0.3-0.7 / top-p 0.95 / max 512 / 幻觉长=真值±10% / τ=0.75（幻觉vsGT），未私改。
+  新增 τ_evi=0.5（Phase3 evidence-grounded 过滤，守 R3，--tau-evidence 可调）——**非 brief 冻结超参**，
+  是修 mini-pilot「其实忠实于证据的样本混进来」问题新加的独立一道，pilot 抽检后校准（见 [TAU-EVI]）。
 - 选型定案：第三投票器[V3]=Yi-1.5-9B-Chat、中文句向量[EMB]=bge-base-zh-v1.5；证据源[CMEXAM]=CMExam
   （Explanation→证据 / Question+正确选项→GT）。剩 TODO：CMExam 实际列名待主线核[CMEXAM]、in-context 示例[PROMPT]。
 - 🔴-2 解耦：`_assert_no_k1_judge()` 硬校验，投票器/生成器不碰 D11/D12（Yi 放行）。
@@ -199,7 +219,11 @@ TEMP_MAX = 0.7
 TOP_P = 0.95                   # 固定
 MAX_NEW_TOKENS = 512           # 生成上限
 LEN_TOL = 0.10                 # 幻觉答案长度 = 真值 ±10%（中文按字数）
-NLI_TAU = 0.75                 # Phase3 双向蕴含阈值，保留 ℰ < τ
+NLI_TAU = 0.75                 # Phase3 双向蕴含阈值（幻觉vsGT），保留 ℰ < τ
+NLI_TAU_EVIDENCE = 0.5         # 🆕 Phase3 第二道 evidence-grounded 过滤默认阈值 τ_evi（守 R3）：
+                               #    nli_evi2hallu(证据→幻觉答案 蕴含分) ≥ τ_evi = 幻觉其实被证据支持=忠实=滤掉。
+                               #    非 brief §7 冻结超参，是本次修 mini-pilot 质量问题新增；--tau-evidence 可调，
+                               #    TODO: 0.5 为合理初值，主线 pilot 抽检后校准（见头注 [TAU-EVI]）。
 NLI_MODEL_ID = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"   # 与 pilot/D1 复现锚一致（零偏离）
 
 # 每条证据尝试生成的候选数（覆盖不同幻觉类型；Phase2/3/4 逐层筛，Phase4 兜底选 1）
@@ -328,6 +352,7 @@ SYSTEM_PROMPT_ZH = """你是一个医学数据构造助手。给定一道中文�
 3. 幻觉答案的**长度 ≈ 忠实答案的字数 ±10%**（中文按汉字/字符计），不要明显更长或更短。
 4. 只输出幻觉答案本身，不要输出解释、标注、类型名或任何额外前后缀。
 5. 不要在幻觉答案里暴露"这是幻觉/这是错误示范"之类的元信息。
+6. 幻觉答案必须包含在"给定证据"中**找不到依据**、或与"给定证据"**直接冲突**的具体内容（如错误的机制/数值/因果关系/结论），而不能只做同义改写或信息省略——被给定证据支持的答案是忠实答案、不是幻觉，会被质检剔除。
 
 下面是 9 类内容型幻觉的定义与示例，你会被要求按其中**指定的某一类**生成：
 {type_catalog}
@@ -339,7 +364,8 @@ USER_PROMPT_ZH = """请按【{type_name}】这一类幻觉，为下面的样本�
 给定证据：{evidence}
 忠实答案：{gt_answer}
 
-要求：幻觉答案属于【{type_name}】类（{type_def}），长度约 {target_len} 字（忠实答案 ±10%），只输出幻觉答案本身。"""
+要求：幻觉答案属于【{type_name}】类（{type_def}），长度约 {target_len} 字（忠实答案 ±10%），只输出幻觉答案本身。
+特别注意：幻觉答案必须包含在"给定证据"中找不到依据、或与"给定证据"直接冲突的具体内容（如错误的机制/数值/因果/结论），不要只做同义改写或信息省略——否则它其实仍忠实于证据，不能作为幻觉样本。"""
 
 
 # ============================================================================
@@ -868,8 +894,14 @@ def phase2_vote(candidates, voter_backends, voter_names):
 
 
 # ============================================================================
-# Phase3：双向蕴含过滤（中文 NLI = mDeBERTa）
-#   ℰ = min(NLI(H→GT), NLI(GT→H))；保留 ℰ < τ（H 与 GT 非互相蕴含 → 真幻觉，非同义正确答案）
+# Phase3：两道 NLI 过滤（中文 NLI = mDeBERTa），两道都过才是合格幻觉：
+#   (a) 幻觉vsGT：ℰ = min(NLI(H→GT), NLI(GT→H))；保留 ℰ < τ
+#       → H 与 GT 非互相蕴含 = 真幻觉，滤掉"其实是同义正确答案"的伪幻觉（防造出同义正确答案，一层）。
+#   (b) 🆕 幻觉vs证据（faithfulness 核心判据，守 R3）：nli_evi2hallu = NLI(证据 → 幻觉答案) 的 entailment 分。
+#       faithfulness 定义 = 答案是否被给定证据支持；真幻觉必须 **NOT entailed by 证据**。
+#       nli_evi2hallu ≥ τ_evi = 幻觉答案其实被证据支持 = 忠实于证据 = 滤掉；保留 < τ_evi（真不忠实）。
+#       —— mini-pilot 样本3「酸溶血试验阳性…确诊特异性」其实忠实于证据却混进来，根因就是漏了这道。
+#   两道复用同一 mDeBERTa 实例（不重复加载）。
 # ============================================================================
 def _load_nli(device):
     import torch
@@ -897,32 +929,59 @@ def _nli_entail_prob(tok, model, entail_idx, premises, hyps, device, batch_size=
     return probs
 
 
-def phase3_entailment_filter(candidates, device, tau=NLI_TAU, use_mock=False):
+def phase3_entailment_filter(candidates, device, tau=NLI_TAU, tau_evi=NLI_TAU_EVIDENCE, use_mock=False):
+    """
+    两道 NLI 过滤，复用同一 mDeBERTa 实例（不重复加载）。返回 (kept, phase3_meta)。
+      (a) 幻觉vsGT：ℰ = min(NLI(H→GT), NLI(GT→H)) < τ（防同义正确答案，原有一层）。
+      (b) 🆕 幻觉vs证据（守 R3，faithfulness 核心判据）：nli_evi2hallu = NLI(证据 → 幻觉答案) < τ_evi
+          （幻觉必须 NOT entailed by 证据；≥τ_evi = 其实忠实于证据 = 滤掉）。
+    phase3_meta 记 n_after_gt_filter / skipped_faithful_to_evidence（写进 state.json）。
+    """
     if use_mock:
-        # --smoke：假 NLI 分，全 < τ 保留
+        # --smoke：假 NLI 分，(a)(b) 都设 < 阈值 → 全保留，验管线（含新过滤 mock 分支）
         for c in candidates:
             c["nli_h2gt"] = 0.1
             c["nli_gt2h"] = 0.1
             c["entail_E"] = 0.1
-        kept = [c for c in candidates if c["entail_E"] < tau]
-        print(f"[phase3][mock] 保留 {len(kept)}/{len(candidates)} (ℰ<{tau})", flush=True)
-        return kept
+            c["nli_evi2hallu"] = 0.1      # 证据不蕴含幻觉 → 真幻觉，保留
+        kept_gt = [c for c in candidates if c["entail_E"] < tau]
+        kept = [c for c in kept_gt if c["nli_evi2hallu"] < tau_evi]
+        skipped_evi = len(kept_gt) - len(kept)
+        print(f"[phase3][mock] 幻觉vsGT 保留 {len(kept_gt)}/{len(candidates)} (ℰ<{tau})；"
+              f"evidence-grounded 保留 {len(kept)}/{len(kept_gt)} (nli_evi2hallu<{tau_evi})", flush=True)
+        return kept, {"n_after_gt_filter": len(kept_gt),
+                      "skipped_faithful_to_evidence": skipped_evi}
 
     tok, model, entail_idx = _load_nli(device)
     H = [c["hallu_answer"] for c in candidates]
     GT = [c["gt_answer"] for c in candidates]
-    p_h2gt = _nli_entail_prob(tok, model, entail_idx, H, GT, device)   # premise=H, hyp=GT
-    p_gt2h = _nli_entail_prob(tok, model, entail_idx, GT, H, device)   # premise=GT, hyp=H
+    EVI = [c["evidence"] for c in candidates]
+    p_h2gt = _nli_entail_prob(tok, model, entail_idx, H, GT, device)     # premise=H,  hyp=GT
+    p_gt2h = _nli_entail_prob(tok, model, entail_idx, GT, H, device)     # premise=GT, hyp=H
+    p_evi2h = _nli_entail_prob(tok, model, entail_idx, EVI, H, device)   # 🆕 premise=证据, hyp=幻觉答案
     kept = []
+    n_gt_kept = 0
+    skipped_evi = 0
     for i, c in enumerate(candidates):
         E = float(min(p_h2gt[i], p_gt2h[i]))
         c["nli_h2gt"] = round(float(p_h2gt[i]), 4)
         c["nli_gt2h"] = round(float(p_gt2h[i]), 4)
         c["entail_E"] = round(E, 4)
-        if E < tau:
-            kept.append(c)
-    print(f"[phase3] 保留 {len(kept)}/{len(candidates)}（ℰ<{tau}，滤同义正确答案守 R3）", flush=True)
-    return kept
+        c["nli_evi2hallu"] = round(float(p_evi2h[i]), 4)
+        # (a) 幻觉vsGT：ℰ≥τ = 同义正确答案，滤（原有一层）
+        if E >= tau:
+            continue
+        n_gt_kept += 1
+        # (b) 🆕 evidence-grounded（守 R3）：证据蕴含幻觉答案（高分）= 幻觉其实忠实于证据 = 滤掉
+        if c["nli_evi2hallu"] >= tau_evi:
+            skipped_evi += 1
+            continue
+        kept.append(c)
+    print(f"[phase3] 幻觉vsGT 保留 {n_gt_kept}/{len(candidates)}（ℰ<{tau}，滤同义正确答案）；"
+          f"evidence-grounded 保留 {len(kept)}/{n_gt_kept}（nli_evi2hallu<{tau_evi}，滤"
+          f"「其实忠实于证据」{skipped_evi} 条，守 R3 faithfulness）", flush=True)
+    return kept, {"n_after_gt_filter": n_gt_kept,
+                  "skipped_faithful_to_evidence": skipped_evi}
 
 
 # ============================================================================
@@ -995,7 +1054,7 @@ def phase4_fallback(candidates, embed_model, device, use_mock=False, textgrad=Fa
 CSV_FIELDS = [
     "hid", "cmexam_id", "correct_letters", "question", "evidence", "gt_answer", "hallu_answer",
     "type", "type_name", "difficulty", "n_fooled", "n_voters",
-    "entail_E", "nli_h2gt", "nli_gt2h", "cos_sim_gt",
+    "entail_E", "nli_h2gt", "nli_gt2h", "nli_evi2hallu", "cos_sim_gt",
     "gen_temperature", "len_ratio", "len_ok",
 ]
 
@@ -1034,7 +1093,8 @@ def write_outputs(finals, voter_names, meta: dict):
         "hyperparams": {
             "temperature_range": [TEMP_MIN, TEMP_MAX], "top_p": TOP_P,
             "max_new_tokens": MAX_NEW_TOKENS, "len_tol": LEN_TOL,
-            "nli_tau": NLI_TAU, "nli_model": NLI_MODEL_ID,
+            "nli_tau": NLI_TAU, "nli_tau_evidence_default": NLI_TAU_EVIDENCE,
+            "nli_model": NLI_MODEL_ID,
             "n_candidates_per_item": N_CANDIDATES_PER_ITEM,
         },
         **meta,
@@ -1089,6 +1149,10 @@ def main():
                     help=f"[api] 单次 API 调用超时秒数（默认 {API_TIMEOUT_S}）")
     ap.add_argument("--api-max-retries", type=int, default=API_MAX_RETRIES,
                     help=f"[api] 单次调用失败重试次数（指数退避，默认 {API_MAX_RETRIES}）")
+    ap.add_argument("--tau-evidence", type=float, default=NLI_TAU_EVIDENCE,
+                    help="[Phase3 第二道·守 R3] evidence-grounded 过滤阈值 τ_evi：nli_evi2hallu"
+                         "(证据→幻觉答案 entailment 分) ≥ 此值 = 幻觉其实被证据支持=忠实=滤掉；"
+                         f"保留 < 此值(真不忠实)。默认 {NLI_TAU_EVIDENCE}，TODO 主线 pilot 抽检后校准（见头注 [TAU-EVI]）")
     ap.add_argument("--embed-model", default=DEFAULT_EMBED,
                     help="Phase4 中文句向量（[EMB] 定案 BAAI/bge-base-zh-v1.5）")
     ap.add_argument("--textgrad", action="store_true", help="Phase4 TextGrad 精修（TODO，默认跳过）")
@@ -1212,8 +1276,9 @@ def main():
     if not kept2:
         print("[WARN] Phase2 后无候选（无一骗过投票器）——投票器过强或生成质量低，检查后重跑。", flush=True)
 
-    # ---- Phase3 双向蕴含 ----
-    kept3 = phase3_entailment_filter(kept2, args.device, tau=NLI_TAU, use_mock=smoke)
+    # ---- Phase3：两道 NLI 过滤（幻觉vsGT 防同义正确 + 🆕 幻觉vs证据 守 R3 faithfulness）----
+    kept3, phase3_meta = phase3_entailment_filter(
+        kept2, args.device, tau=NLI_TAU, tau_evi=args.tau_evidence, use_mock=smoke)
 
     # ---- Phase4 兜底 ----
     finals = phase4_fallback(kept3, args.embed_model, args.device,
@@ -1246,6 +1311,9 @@ def main():
         "load_skip_counts": load_meta,
         "n_items": len(items), "n_candidates_generated": n_gen,
         "n_after_phase2": len(kept2), "n_after_phase3": len(kept3),
+        "n_after_phase3_gt_filter": phase3_meta["n_after_gt_filter"],       # 幻觉vsGT 过后
+        "skipped_faithful_to_evidence": phase3_meta["skipped_faithful_to_evidence"],  # 🆕 被 evidence-grounded 滤掉（其实忠实于证据）
+        "nli_tau_evidence_used": args.tau_evidence,                          # 🆕 本轮 τ_evi 实际取值
         "n_final": len(finals),
         "construct_success_rate": round(len(finals) / max(1, n_gen), 4),
         "smoke": smoke,

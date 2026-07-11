@@ -1,0 +1,21 @@
+{
+  "note": "CMedFaith K3 初验 P1 粗信号（28 条），非 P3 正式评测；judge=GLM-4 独立臂",
+  "detector": "llm-judge",
+  "judge_model": "THUDM/GLM-4-9B-0414",
+  "base_url": "https://api.siliconflow.cn/v1",
+  "n_samples": 28,
+  "api_calls": 28,
+  "api_failures": 0,
+  "api_giveup": 0,
+  "n_uncertain_or_invalid": 0,
+  "confusion_matrix": {
+    "tn": 14,
+    "fp": 0,
+    "fn": 12,
+    "tp": 2
+  },
+  "balanced_accuracy": 0.5714285714285714,
+  "recall_faithful": 1.0,
+  "recall_unfaithful": 0.14285714285714285,
+  "macro_f1": 0.47500000000000003
+}
