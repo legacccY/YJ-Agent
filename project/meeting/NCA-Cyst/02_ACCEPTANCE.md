@@ -118,3 +118,38 @@
 - **G-novelty**（仅 c/d 前触发）：实现 GV 花 GPU 前派 researcher 二次核「全图 pooling→broadcast NCA 分割」novelty（当前 negative-evidence 空白，须人工过 arXiv NCA 全表 + OpenReview）。撞车 → c/d 不跑、Phase2 转向。
 - **G-GVscope**（仅 c/d 前）：GV 池化范围须对齐 H2 claim 的**整卷**尺度（非仅 patch-global proxy），否则 c/d 的 null 是假阴性、正结果也不验整卷 GV；若只做 patch-scope 须显式收窄 claim。
 - **eval 对齐**：a（=A2 复用）与 b 须同 eval harness；若 A2 评估口径与 b 不完全一致 → 重跑 a 并列。
+
+---
+
+## Phase 2-C 判据（方向 C：3D NCA 不确定性 × 囊肿｜草稿，待 b 格确认地基后 git-freeze）
+
+> 用户 2026-07-11 拍板方向转向 C。权威叙事=`THEORY_LEDGER.md` H4。planner 设计 + skeptic 红队 + researcher 校准三方整合。**git-freeze 时点=b 格出结果、确认囊肿 Dice 拉离 0 之后、pilot 跑之前**（防 HARKing）。
+
+### 🔴 地基前置（skeptic 预注册，先于一切）
+- **C 挂在「b 格 CB-max 把囊肿 Dice 拉离 0（部分召回）」上**。b 格对方向 A=墓碑（Dice≥0.10→类不平衡一阶主因→A 死），对 C=地基（部分召回模型让不确定性有实质可谈）。
+- **stop 条件**：b 格全 seed 仍 Dice<~0.05（拉不动）→ C 无底物（零召回模型的 rollout 方差反映通用纹理/边缘非囊肿位置，评测协议退化）→ **预定义 stop，A 与 C 同时失实质 → Phase2 整体重估，停下报拍板**。
+
+### RQ + 判据（planner 4 RQ + skeptic 扩充）
+| RQ | 判据 |
+|---|---|
+| RQ1（命门 pilot，最先跑，~2-6 GPU·h 纯推理）| 三条**同时**过：① 方差图对漏检囊肿 failure-detection **AUPRC 显著 > 强度/边缘 baseline**（证方差囊肿特异非通用纹理）；② 选定模型上 AURC/selective-Dice **非退化**（有真阳性可排序）；③ 至少一校准指标在**囊肿正体素子集**有定义（非背景稀释）。|
+| RQ2（vanilla 弱则救）| resilience 式扰动(σ=0.02,12步,1−IoU)/多尺度聚合/TTA 至少一种 cyst-prong AUPRC 显著 > vanilla+single-rollout（3seed CI 不重叠）|
+| RQ3（校准+决策）| Prong A 肾 ROI ECE≤阈 + retention 单调；Prong B case-level「有无漏检囊肿」flag AUROC≥0.70 |
+| RQ4（承重 delta·多尺度）| 粗级(m=0,囊肿被抹掉)vs 细级(m=1) 不确定性行为系统差异（Wilcoxon p<0.05）+ 方向可解释（联动 H1）——2D 单尺度竞品结构上碰不到 |
+
+### 双 prong eval（planner，防零召回退化）
+- **Prong A**（肾/瘤，模型能干）：AURC/ΔDice@90/ECE/retention——证不确定性机制健全。
+- **Prong B**（囊肿，delta 承重）：不做选择性分割，做漏检定位 failure-detection **AUPRC**（类不平衡最有信息）。
+
+### 校准要点（researcher，替换 planner 占位）
+- **σ 地板阈 = 数据驱动**：本地 vanilla rollout 实测背景 σ 分位数，**不用硬编码 1e-3**（NQM 论文不报 std 绝对量级）。pilot 先测全脏器 vs 囊肿带 σ 直方图。
+- **NQM 口径对齐**：N=10 rollout voxel std，面积归一 NQM=Σstd/Σmean（arxiv 2309.02954）。
+- **指标库复用**：AURC=TorchUncertainty `metrics.classification.AURC` + resilience repo `evaluate_uncertainty.py`（含 AURC/AUROC/AUPRC）；AUSE/分割 ECE 无现成库→按 Ilg 2018 自实现（勿自造口径）。
+
+### baseline（skeptic：必对照标准 UQ 不只 resilience）
+- 3-seed deep ensemble（**已有 seed0/1/2，免费 epistemic 强基线**）+ MC-dropout/TTA + resilience(2D 移植 3D) 对照。真优势=零成本多 rollout 不改架构 + 首次测极端不平衡近零召回区制，**非 NCA 骨干本身**。
+- ⚠️ **TODO researcher**（第 4 条，agent 完成后补）：核「KiTS/肾囊肿 MC-dropout UQ」空白真伪。
+- MC-dropout 需训 dropout 变体=破零偏离→**拍板点，默认不做**。
+
+### venue
+UNSURE workshop（吃 benchmark/UQ framing、不要 Dice SOTA、接受率 65-71%）为主；MIDL/MELBA 上探。摆 B 族 benchmark 形状，不 claim 方法 novelty。博士生+导师定。

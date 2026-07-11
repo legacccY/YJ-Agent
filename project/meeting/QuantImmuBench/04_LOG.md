@@ -4,6 +4,175 @@
 
 ---
 
+## Entry 70-REPORT-V2-DEEP-CLEAN — 2026-07-11【融合报告 v2 深度精修(响应用户"车轱辘话/自创词太多")：3 路诊断(数字90+PASS/车轱辘话清单/图审)→writer清文字+coder重画figA/B/E+主线补figB诚实漏；数字零改验证 + figB视觉验PASS】
+
+**触发**：用户要报告 v2「更多背景/逻辑/rationale、语言简单直接、不要车轱辘话和自创词、审数字审图、有些图重画、坚定 nested pooling selection + 交叉验证、选工具写道理」。**⚠️ 本窗=quantimmu-bench-ds1，改的是 DS2 融合报告 v2（跨窗，与 quantimmu-fusion 窗 Entry 67 撞同一份报告，注意协调）。**
+
+**① 3 路诊断并行（省主线 context）**：
+- **verifier 核数字**：90+ 项三方对账(正文↔:::ev↔csv)**全 PASS、0 mismatch**。2 TODO：(a)§2.3 逐病人/留一 10 个数(P101 +0.80…去 P101→0.378)**仅脚本 stdout 无 csv 落盘**，投稿前应让 `nested_pooling_selection.py` 落 per-patient csv；(b)figB 图注 0.446=装饰数非承重。
+- **reviewer 抓车轱辘话/自创词**：清单+关键洞察=**把「方法可靠」与「n=8 不显著」切开**(方法用肯定句/结果用诚实句)。
+- **analyst 审图**：figA/B/E 要重画(英文黑话 oracle/pooling/max/CV-argmax + 自创词"三兄弟")，figC 保留 figD 低优先；纠定位=图由 `plot_nested_pooling_s2.py` 生成(非 plot_newcut_s89.py)。
+
+**② 执行**：
+- **writer 清文字**(数字零改)：自创词全清(双轴/诚实作形容词11处/先验固定/归约/近缺席/零成员挑选/钉/算子混用→0 残留)；nested pooling selection 站坚定(§2 intro/§2.2/§2.6 方法用肯定句)；figA 措辞"加得越多越低"→"总体下降不回 k=1 水平"(消与曲线先降后升张力)。
+- **coder 重画 figA/B/E**：改 `plot_nested_pooling_s2.py` 图内文案(oracle→样本内理想上界/pooling→合成方式/max→取最高分/CV-argmax→交叉验证取最大/三兄弟→名次平均类)，数据零改。
+- **主线补漏**：coder 漏清 figB 图内 3 处"诚实"(标题/分隔/图例)——主线直接 Edit 清(诚实交叉验证→交叉验证/最高诚实CV→最高CV)，重跑重生成。
+
+**③ 验证**：数字零改(diff 删除行↔新增行数字集合一致，只章节号 §1.1/1.3/1.4 引用变)；HTML 里自创词=0；方法名保留强化；**figB 图片实读验证 PASS**(诚实清、英文黑话清、x轴全中文、数值 0.451/0.332/0.171/0.446/0.493 在、无遮盖)；HTML rebuild(15:00，5图 base64 内联)。产物 `report/合成与融合层结果_QuantImmu_2026-07-10_v2.{md,html}` + `plot_nested_pooling_s2.py`(figA/B/E 文案) + `build_pooling_report_v2.py`。
+
+---
+
+## Entry 69-FUSION-8TO11-NEGATIVE — 2026-07-11【8-11mer 能否救 fusion？三方诊断=负结论：换口径更差 + 增维无净增益 + 同工具跨长度冗余 0.86-0.97；顺带纠一处 max 口径稀释假象】
+
+**背景**：融合层聚合不显著（9mer 双轴小面板 geomean 0.446，Δ vs 单工具 +0.073 p=0.48，n=8）。用户问：把 8-11mer 新切数据纳入能否改善 fusion，符不符 outline §2.2。本窗（fusion-8to11-explore）认领 `quantimmu-fusion-8to11.claim`，与 DS1 窗不冲突。数据=`pooled_clean_rerun_{9mer,8to11mer}.csv`（都 102 突变，mut_key 完全对齐 102/102）。
+
+**① 方案 A（换口径，复用 R3b 一字不改换 --input）**：8-11mer 双轴小面板 geomean **0.243**，单工具 netMHCpan_BA 从 0.372→**0.213**（=Entry 61 独立核过值，证 fusion 脚本无引入错误）。
+
+**② 用户直觉纠一处真坑（"不该掉那么惨"）**：R3b 融合成员默认用 `_max`（零挑选洁癖）；8-11mer 每突变肽窗袋子是 9mer 的 3-6 倍（27-54 vs 9），`max` 从大袋子捞噪声的稀释被放大。改用合理 pooling 后三成员在 8-11mer 上并不惨（BA 0.213→0.285、PRIME 0.152→**0.267 反超 9mer 0.227**、deepHLApan 0.102→0.284）。用 9mer 预定义最优 pooling 口径重建（两边同口径无 8-11 selection bias）：8-11mer 融合 mean_rank 0.324/geomean **0.337**（非 0.243），但仍 < 9mer geomean **0.490**。**即方案 A 的 0.243 是 max 口径稀释假象，真实 0.337，但换口径仍不如 9mer**。
+
+**③ 方案 B（增维=9mer 面板 + 8-11mer 面板拼一起 fusion，样本内乐观上界诊断）**：纯 9mer 3 维 geomean **0.4897**（基线）｜ 纯 8-11 3 维 0.3788 ｜ **9mer+8-11 6 维 0.4762（比纯 9mer 低）** ｜ 9mer+8-11 PRIME 4 维 0.4036。**连样本内乐观上界都无净增益**（防泄漏 nested-LOPO 版只会更差，故不投入）。
+
+**④ 根因（机制铁证）**：同工具 9mer-vs-8-11mer Pearson 相关 **netMHCpan_BA 0.905 / PRIME 0.863 / deepHLApan 0.972**。高度冗余（同工具同肽不同窗长）→ 无正交增量，融合净增益靠正交性（outline §3.3.2），8-11 对 9mer 几乎不正交，加进去只带更弱冗余信号拖低。PRIME 单看反超那点也被证伪（与 9mer PRIME 相关 0.863，进融合无正交增量）。
+
+**结论**：8-11mer 无论换口径还是增维都救不了 fusion，符合 outline §2.2「9AA 优于可变窗」，并给这条判断补了**融合层直接证据**（此前只在单工具层验过）。**融合不显著真根因=n=8 病人太少**（outline §4.3），只能加真实病人解，非肽长口径问题。诊断脚本 `analysis/official/newcut9mer/_scratch_8to11_fusion_diagnosis.py`（独立跑通，数字可复现）。DS1 是全阳窄 regime 亦救不了融合（Entry 63）。
+
+---
+
+## Entry 68-DS1-SLICE-LOCAL-B — 2026-07-11【DS1 slice_local_b 7 本地工具全跑通+parse+溯源核+覆盖自查 PASS，收 slice】
+
+**背景**：DS1（6 例黑色素瘤/82 肽/全 9mer/MT+WT 单点对，Entry 66 建输入包）全 30 工具重跑，本窗（窗3）认领 `slice_local_b`=7 个本地环境工具，复现 DS2 口径（工具/权重/超参零改，只换输入 out_ds1→输出 out_ds1_official）。DAG=`quantimmu-ds1`。
+
+**7 工具全 done（各落 `scripts/out_ds1_official/<Tool>_official.csv`，325 行 bb_idx 0..324，schema 全对齐 DS2 `out_rerun_official/`）**：
+| 工具 | env | official 列 | 抽核溯源 |
+|---|---|---|---|
+| pTuneos | WSL docker bm2lab/ptuneos:v2.1 | MT_pTuneos | 321 unique→325 广播,88 非零 max0.9,bb7 RMWSGSYIK×A03:01=0.2 ✓ |
+| deepHLApan | WSL docker biopharm/deephlapan:v1.1 | MT/WT_{bind,immuno} 4 列 | MT+WT 各 321→325,bb0 bind=0.0519/immuno=0.0315 raw ✓ |
+| Seq2Neo | WSL2 seq2neo env+netMHCpan4.1/netCTLpan | MT_Seq2Neo | 321 (Pep,HLA)对,bb120 AFSAYMPLF×B15:01=0.7002773 ✓ |
+| TSCAPE | WSL2 tscape env RTX4070(GPU) | MT_TSCAPE | 321 对,bb121 AFSAYMPLF×A24:02=0.3399608 ✓(修 Allele 归一 A2402) |
+| TransHLA | WSL2 transhla env RTX4070(GPU,ESM2-650M) | MT/WT_TransHLA | 162 唯一肽 HLA-agnostic 广播,bb0/1 同肽 0.837177 同值 ✓ |
+| NeoaG | 本机 R4.3.3 GBM(run_neoag_main.R) | MT_Neoag(WT NaN) | 81 对,bb0 RLETIRNPK=13.16998 ✓,WT 结构缺=DS2 同口径 |
+| Repitope | 本机 R4.3.3+rJava proven(mendeley fst,CV ImmunogenicityScore) | MT/WT_Repitope | 162 肽,bb0 MT(RLETIRNPK)=0.30976/WT(RLETIRDPK)=0.2764 ✓ |
+
+**编排**：主线自跑 docker/R/GPU env 命令（GPU 工具 TSCAPE/TransHLA 经 gpu_slot 登本机 local 卡串行、跑完 release）；派 1 个 coder 通读 DS2 原脚本写 5 工具 DS1 薄封装 build+parse（`scripts/_scratch/<tool>_ds1_{build,parse}.py`+RUNBOOK，coder 不跑）；seq2neo/tscape 我自建输入+自写 parse。
+
+**覆盖自查（DoD）PASS**：7 工具对 325 backbone 逐格核 → 全 325/325 覆盖、bb_idx 连续、所有主 MT 列 0 NaN（无真漏）；唯一 NaN=NeoaG WT_Neoag（结构缺=工具无 WT 侧分,mt_only,与 DS2 `out_rerun_official/Neoag` 一致）。⚠️ `build_coverage_matrix.py` 是 DS2 硬编码网格(34176 格)对 DS1 全失配 scored=0，不适用 DS1→收口窗 coverage 节点另适配。
+
+**caveat（诚实留档）**：(a) Repitope 部分 DS1 肽可能在其 21162 训练集内→proven pipeline 用 CV 版 ImmunogenicityScore（apples-to-apples,`.cv` 列在）,同 DS2 口径。(b) NeoaG shortcut 覆盖核 DS1 81 对全在 DS2 raw,但为零偏离仍跑新 run_neoag_main.R（数秒）。(c) TransHLA/NeoaG/Repitope HLA-agnostic,同肽各 allele 同值,报告须标。**DS1 诚实边界不变（Entry 63/66）**：全阳窄 regime,作独立复现加固阴性,不当救融合样本。
+
+**DoD 停**：`pipeline.py done quantimmu-ds1 slice_local_b ✓`；merge/coverage/pool/recheck 由收口窗接（本窗不冲下一棒）。
+
+---
+
+## Entry 67-REPORT-V2-AUDIT-FIGFIX — 2026-07-11【融合报告 v2 复查：30+ 数字逐个 Bash 核 csv 全 PASS 零偏差；修图 5 图例遮盖(压住 0.446/0.493 两灰柱数值标签)→ 图例移轴外右方，重画重嵌 HTML，sha 核实一致】
+
+**触发**：用户「复查数字和图片遮盖」`report/合成与融合层结果_QuantImmu_2026-07-10_v2.html`（1.72MB，内嵌 KaTeX + 5 张 base64 图）。
+
+**① 图片遮盖 — 图 5(figB 选择梯队)有真实缺陷**：`loc="upper right"` 图例框压住右侧两根最高灰柱——「固定面板 max」`0.446` 露一半、「面板 CV-argmax k=4」`0.493` 完全被挡死。图 1-4 逐张看无遮盖。**修法**：`plot_nested_pooling_s2.py:fig_b()` 图例改 `loc="upper left", bbox_to_anchor=(1.01,1.0)` 移到坐标轴外侧右方（`_save` 用 `bbox_inches="tight"` 自动撑画布）→ 重跑 `plot_nested_pooling_s2.py`（3/3 图）→ 重跑 `build_pooling_report_v2.py` 重嵌 → Read 新图确认五柱标签(0.451/0.332/0.171/0.446/0.493)全露 + md5 核 HTML 内嵌图==磁盘 figB(f441a07d)。
+
+**② 数字复查 — 全 PASS，零偏差**（逐个 Bash 核 csv 不信 Read）：§1.3 R2_best_per_tool（netMHCpan-BA 0.372→0.4008、PredIG 0.290→0.354、deepHLApan 0.174→0.313；21 有区分力/19≠max/26-28）· §1.4 R2b_pooling_lopo（netMHCpan-BA −0.076/留一0.296/p=0.094；14/28增益>0、中位0.003、inflation中位0.069）· §2.1/2.3 nested_pooling_selection（CV0.451/oracle0.525/Δz0.095/p0.59/CI[0.25,0.63]；逐折9×3合成方式选择表全对，BA 6种/PredIG·deepHLApan各2种）· §2.2 tool_tool_corr（0.1019/0.1018/0.2808/0.4877/0.5721）· §2.4 八聚合函数(0.4516/0.451/0.4508/0.3845/0.3831/0.3704/0.3353/0.3128，每折选0.390)· §2.5 阶梯(0.525/0.451/0.074·0.546/0.332/0.214·0.465/0.171/0.294；k3=0.474 k4=0.493)· 框架数(pooled_clean_rerun_9mer 102行突变级、9患者P102仅6肽<min_pep8剔→有效8位)。**唯一无独立 csv**：§2.3 逐病人融合 ρ(P101+0.803…)+留一(去P101→0.378、去P109→0.505)=脚本现跑打印未落盘，内部与 0.451 自洽但不能三方对账（建议落 csv 供投稿铁证）。
+
+**③ 附带发现(未改)**：PNG 图内标题写「图 C/D/E」正文 caption 叫「图 1-5」，同图两套编号建议统一（复用旧 figE 系列没改标题所致）。临时导出物挪 `_scratch/_imgcheck_audit_20260711/`(gitignored)。
+
+---
+
+## Entry 68-DS1-SLICE-HPC-ENV — 2026-07-11【窗4：DS1 slice_hpc_env 8 env 工具全量跑完 ✅ 8/8 落 out_ds1_official，覆盖真漏=0，抽核对 raw 全 MATCH，pipeline done】
+
+**触发**：quantimmu-ds1 DAG 节点 slice_hpc_env（窗4 认领）。8 工具=ImmuneApp/PRIME/PredIG(sif)/IMPROVE/MHCflurry/MHCSeqNet/HLAthena(sif)（HPC）+ NeoTImmuML（本机 R4.3.3）。NeoaPred 本轮搁置。目标=各工具 MT+WT 落 `scripts/out_ds1_official/<Tool>_official.csv`（325 行对齐 bb_idx）。DS1 全 9mer，无长度剔除。
+
+**① 备料（本地纯 CPU，Bash 核在盘）**：out_ds1 已由主窗产（Entry 66），补产 2 个缺的 env 输入=`mhcflurry/mhcseqnet_input_official.csv`（各 642 行，跑 `prep_presml_official.py --uniq out_ds1/newtools/uniq_pep_hla.csv`，全 9mer 0 剔除）。克隆 4 DS1 run 脚本 `scripts/hpc_official/ds1/{run_immuneapp,run_prime,run_predig,run_hlathena}_ds1.sh`（**纯路径 swap rerun8to11→ds1，工具调用/超参零改动**，bash -n 全过，CRLF→LF）+ `RUN_NOTES_DS1.md` + 并行 launcher `_launch_env_ds1.sh`。
+
+**② 🛑 上传拍板点（用户放行「授权你跑」）**：`_rerun_hpc.py putdir out_ds1 → $QD/ds1/`（182 文件/1.1M）+ 4 脚本 → `$QD/ds1/hpc_official/`。上传后 dos2unix 全输入+脚本（防 CRLF 坑，[[feedback_hpc_submit_checklist]]）。卡槽 `gpu_slot request quantimmu-ds1 hpc 0`（纯 CPU 占 0 卡恒 GO 207001a3，跑完 release）。
+
+**③ HPC 跑（DTN 登录节点 7 工具并行 nohup，DS2 precedent 同法）**：launcher 各工具独立 subshell 激活自己 env 并行，写 DONE 标记。7 工具全 DONE（ImmuneApp/PRIME/PredIG/MHCflurry/MHCSeqNet 秒级；IMPROVE 档 II STAB=1 FOREIGN=1 真 Stability+Foreignness ~3min；HLAthena 17 chunks 容器启动开销 ~9min）。IMPROVE 复用 DS2 `run_improve_official.sh` env 覆盖，MHCflurry/MHCSeqNet 复用参数化 py。
+
+**④ NeoTImmuML（本机 R4.3.3，复用 9mer models_official 不重训防漂移，Entry 65）**：extract 162 肽→R 算 78 特征→predict→parse。**踩坑复现**：(a) R findpython 报错→设 `PYTHON=D:/Anaconda/python.exe` 修（Entry 65 记过）；(b) calc_78_features.R header bug（read.csv header=TRUE 吃掉首肽 AFAKGNLTF，162→161）→加 `Peptide` 表头行修（同 Entry 65 8-11 修法）→162 肽全保留。产 325 行 MT+WT 100%（分 0.0488-0.8456）。
+
+**⑤ 8/8 全交付 `scripts/out_ds1_official/`（各 325 行对齐 bb_idx，Bash 核）**：
+- **7 工具满覆盖**：ImmuneApp/PRIME/PredIG/MHCflurry/MHCSeqNet/NeoTImmuML MT+WT 各 325/325（100%）｜ IMPROVE MT 325（无 WT 列 by design=档 II 单侧）。
+- **HLAthena 317/325**（MT+WT）=此部署天花板：缺 8 格全为 **HLA-B*15:11 无 ecdf 模型**（documented「工具不支持」非真漏，同 DS2 9mer 的 B*27:06 模式）。
+
+**⑥ 覆盖核验 PASS（真漏=0）**：DS2 `build_coverage_matrix.py` 用硬编码 `NEWCUT=newcut_subpep_hla.NEW.csv`（DS2 34176 格 universe）对 DS1 结构不兼容（跑出全 scored=0 假象）→ 写 DS1 专用核验器 `scripts/_scratch/coverage_ds1_env.py`（逐 bb_idx×side×工具核，325 grid）：**8 工具 unknown(真漏)=0** ✅（documented 缺口=HLAthena B*15:11 8 格 + IMPROVE 设计 MT-only）。
+
+**⑦ 抽核对 HPC raw 全 MATCH（DoD≥2 值，逐点）**：PredIG bb0 raw 0.026091=parsed 0.026091 ｜ MHCflurry bb0 raw 0.01018875=parsed 0.01018875、bb100 raw 0.07459161=parsed 0.07459161 ｜ NeoTImmuML MT 精确肽匹配全覆盖（parse CHECK OK）。
+
+**产物**：`scripts/out_ds1_official/{ImmuneApp,PRIME,PredIG,IMPROVE,MHCflurry,MHCSeqNet,HLAthena,NeoTImmuML}_official.csv`（8×325）+ `scripts/hpc_official/ds1/{4 run 脚本+RUN_NOTES_DS1.md+_launch_env_ds1.sh}` + HPC `$QD/ds1/`（输入+各工具 raw/out）+ 本地 raw 中间物 `out_ds1/{immuneapp_out,prime_out,predig_out,improve_official_run,*_raw.csv}`。`pipeline.py done quantimmu-ds1 slice_hpc_env ✓`，卡槽 207001a3 released。**DoD 达成停在此棒（不冲收口 merge，由收口窗接）**。诚实边界不变（Entry 63）：DS1 全阳窄 regime、独立人类复现集加固阴性，不当救融合样本。
+
+---
+
+## Entry 67-DS1-DS2-FUSION-CROSSVAL — 2026-07-11【DS1+DS2 fusion 跨队列交叉验证：DS2 固定面板 +0.073 优势搬 DS1 反转成 −0.072 劣势，0/4 打过单工具 → 加固「融合无净优势」(Claim ii)；全程 QIB_OUTDIR 隔离零污染 DS2】
+
+**背景**：用户要把 DS1 跑到 pooling/fusion 层，看 DS1+DS2 能否支持昨天(Entry 62-65)在 DS2 上做的交叉验证。铁律=**绝不污染 DS2 原产物**（用户两次强调）。
+
+**① 脚本参数化（coder 改，主线 review diff 确认 DS2 默认逐位不变）**：DS2 pooling/fusion 链深度绑 DS2——`p0e2_pool_clean` 硬编码读 `ds2_official_groundtruth`+`assert==130`；`R2b/R3b` 的 `present_patients` 默认 `DS2_PATIENTS=[101,102,104..]`（隐藏 DS2 硬编码，DS1 病人 1-6 不参数化会过滤成 0 病人空跑）。coder 加 `--gt`(默认 DS2)/`--gt-peptides`(默认 130)/`--patients`(默认 DS2_PATIENTS)——**默认全保留 DS2、pooling/fusion 口径逻辑一字未动**（git diff review：p0e2 +27/-9、R2b/R3b 各 +6，默认值全 DS2）。`_official_common.FROZEN_GT` 只在 attach_confounders 回退，不在 pooling/fusion 主路径，未改。
+
+**② DS1 pooled_clean（QIB 隔离，独立产物）**：`p0e2 --gt ds1_official_groundtruth --gt-peptides 82 --expect-peptides 82 --output pooled_clean_ds1_9mer.csv` → **82 肽×1485 列**(29 工具×51 pooling+6 元列)，G1/G2/G3 全 PASS。git 核 DS2 pooled_clean 零改动。
+
+**③ R3b fusion 固定面板 DS1（核心，QIB_OUTDIR=analysis/official/ds1 隔离）**：基线 netMHCpan_BA_max 裸 ρ=**−0.035**(DS1 最强单工具都负)。四固定面板×名次融合裸口径 vs 单工具：
+   - **双轴小面板(netMHCpan_BA+PRIME+deepHLApan，=DS2 headline 面板)geomean=−0.108 (Δ−0.072)**、median −0.065、mean_rank −0.123 —— **全负、比单工具更差**
+   - 全用-免疫原 geomean −0.060 / 全用-全部 −0.067 / SURV6 −0.101 —— 全负
+   - **median 面板打过单工具 = 0/4，显著 = 0**
+   - **⚠️ 初判过强已修正（用户 2026-07-11 拦下，避免假阴性）**：初报"双轴面板 DS2 0.446→DS1 −0.108 完全反转=加固阴性"表述**过强**。用户质疑"fusion 理论上该比单工具好，是不是口径/geomean/过程问题"→ 核测法([[feedback_validate_test_before_negative_verdict]])揪出两处：(a) R3b 基线**硬编码 `BASELINE_TOOL=netMHCpan_BA`**(DS2 最强，但 DS1 上它 ρ=−0.035 无信号非最强，DS1 真最强=PredIG 0.219)；(b) `apply_fusion` 是"病人内各维升序 rank"、**无方向对齐**(假设成员高分=高免疫原)。
+   - **根因(Bash 核 3 成员 DS1 各自 ρ)**：双轴面板成员在 DS1 **全无信号/负**——netMHCpan_BA −0.035 / **PRIME −0.111** / deepHLApan +0.030。**不是 geomean/口径 bug，是 DS2 先验面板(全亲和/呈递轴)成员在 DS1 塌**(DS1 信号在免疫原轴 PredIG/DeepImmuno/NeoaG +0.18~0.22)。
+   - **公平重测(主线独立算,不改 R3b,raw per-patient ρ)**：`全工具 median(29,不挑)=−0.06~−0.08`(诚实不挑也负,forecast-combination puzzle 印证 Entry 65)；`DS2双轴(对照)=−0.06~−0.12`；`DS1免疫原轴†(PredIG+DeepImmuno+NeoaG)=+0.23~+0.31`(>单工具,**但†=数据驱动选成员=选择虚高**,6病人比 DS2 8病人更过拟合,非真泛化=Entry 65 核心教训)。
+   - **诚实结论(修正后)**：**不能说"fusion 跨队列反转=fusion 无用"(假阴性)**。真相=**fusion 净优势依赖成员选择，而成员跨队列信号不稳(DS2 亲和轴↔DS1 免疫原轴)、一挑成员就选择虚高**。DS2 先验固定双轴面板成员在 DS1 无信号→固定面板 fusion 跟着塌。这**加固 Entry 65 诚实基调**(固定面板 +0.073 弱优势不显著 + 数据驱动选成员 0.171 过拟合)——DS1 作独立第二队列把"固定面板不跨队列 + 选成员虚高"钉更实，是同一枚硬币第二面，非打脸。
+   - ⚠️ summary.json note 模板文案"n=8 病人"是脚本遗留，DS1 实际 **6 病人**(功效更低,全 CI 跨 0)。
+
+**④ R2b pooling nested-LOPO DS1（coder 加 `--headline raw` 开关，默认 lenctrl=DS2 不变）**：DS1 全 9mer 控长口径不适用(lenctrl 全 None)，用 raw。结果：**29 工具留出增益>0 = 12，显著(p<0.05) = 0，显著变差 = 0**；结合类 8 中 4 个留出增益>0；各工具留出增益温和(−0.07~+0.10)、虚高小(0~0.20)、全不显著。**与 DS2 pooling 结论一致(Entry 62)**：pooling「重排/max 非普遍最优」方向有，但留出后增益温和且无统计支持。pooling 不像 fusion 那样跨队列塌(它是单工具内变体选择，不跨工具组合，受"哪些工具有信号"影响小)。产物 `analysis/official/ds1/R2b_*`。
+
+**⑤ 三层跨队列综合（诚实收官）**：DS1 作独立第二人类队列(6病人/全阳窄regime)——**单工具**(跨队列 rank ρ=−0.18，哪些工具有信号跨队列变：DS2 亲和轴↔DS1 免疫原轴)、**pooling**(留出增益 12/29>0 但 0 显著，同 DS2 温和不显著)、**fusion**(固定/全工具面板在 DS1 无信号=成员塌，挑成员+0.23~0.31 但选择虚高)——**三层都没有稳定显著的净优势/增益(全 CI/p 不显著)，且效应依赖"哪些工具/成员有信号"而这跨队列不稳**。加固 QuantImmuBench 核心诚实基调(Claim ii：融合/pooling 无稳定净优势、依赖选择、选择虚高)。⚠️ 因 DS1 6 病人功效低，是**"独立复现加固"而非"强证否"**——不过度解读。
+
+**⑥ DS1+DS2 合并池一次判断（用户提议，方法干净：per-patient Spearman 病人内秩相关+Fisher-Z 等权，天然支持病人池合并，不需 ELISpot 跨队列绝对值可比）**：两 pooled_clean **1485 列完全对齐**、病人 ID 不撞 → concat 成 `pooled_clean_ds1ds2_9mer.csv`（**184 肽行=82 DS1+102 DS2，15 病人 [1-6,101,102,104-110]**）。跑合并池 per-patient ρ(raw，基线用合并池真最强不硬编码 netMHCpan_BA)：
+   - **单工具排名**：**PredIG ρ=+0.245 CI[+0.058,+0.415] 显著(不跨0！15 病人功效够)**；netMHCpan_BA +0.167(合并池排名2,CI 跨0)；DeepImmuno +0.159。→ PredIG 是唯一跨两队列都稳(DS1 0.219/DS2 0.29)、合并后达显著的单工具。
+   - **fusion 多面板 vs 最强单工具 PredIG(+0.245)**：`全工具 median(不挑)=+0.13`、`DS2 双轴=+0.16~0.20`——**不挑成员的融合都打不过最强单工具**；`合并池 top3†(PredIG+netMHCpan_BA+DeepImmuno)=+0.27~0.28` 略高但**选择虚高(含 PredIG 本身+事后挑，需留一验证才算数)**。
+   - **结论(合并一次判断,比分队列更硬)**：15 病人合并池上**最强单工具 PredIG 显著有信号，而不挑选成员的融合(全工具/固定面板)都打不过它**——「融合无净优势」在样本量够的合并池上结论更硬。⚠️ 局限：top3† 虚高需 nested-LOPO 留一验证(未做)；合并掩盖跨队列异质性(DS2 亲和轴↔DS1 免疫原轴)，分队列对照(⑤)仍作机制说明，两者互补。产物 `pooled_clean_ds1ds2_9mer.csv`(独立命名,未污染 DS2)。
+
+**⑤ 零污染 DS2 确认**：DS1 产物全独立(`pooled_clean_ds1_9mer.csv` / `analysis/official/ds1/R3b_*`)；`QIB_OUTDIR` 隔离；git 核 DS2 的 `newcut9mer/R3b_*`、`pooled_clean_9mer/rerun` 产物**零改动**（改的只有 R2b/R3b/p0e2 .py 脚本本身=加参数，默认 DS2 行为不变）。
+
+---
+
+## Entry 66-DS1-ADAPTER — 2026-07-11【DS1 数据审计全 PASS + S1 适配器 build_ds1_newcut.py 写好并烟测/写盘核实 + schema 对 DS2 完全一致；S3 上 HPC 跑 30 工具=拍板点，停下待放行】
+
+**背景**：把 DS1（Elispot_Dataset1.xlsx）以新切口径在全 30 工具上跑，作 DS2 之外的**独立人类队列复现集**。⚠️ 纠错：本 session 开头误信「Entry 66 已写、适配器已存」的描述，Bash/find/git/worktree 全库核实**当时磁盘上并不存在**（无脚本/无产物/无 Entry 66）——故从零重做，每步 Bash 核产物真在盘，不靠回显自证。
+
+**① DS1 数据审计（Bash 亲核 xlsx，非信旧记录）— 全 PASS**：82 肽 / 患者 1-6（13/15/8/8/15/23）/ MT·WT **全 9mer**（82/82）/ ELISpot **全阳**（min 16 max 677，0 个 ≤0，0 缺失，印证 Entry 63「全阳无阴性对照」）/ MT-WT **82/82 恰好单点突变**（mut_pos 可导）/ HLA 每患者 2-6 个（p5 仅 2、p2 仅 3）/ 患者 ID **1-6 与 DS2 的 101-110 不撞**。存档 `analysis/_scratch_ds1_audit_2026-07-11.txt`。
+
+**② S1 适配器 `scripts/build_ds1_newcut.py`**：DS1→与 DS2 同 schema 的 for_tools 表 + groundtruth。适配逻辑（DS1 每肽本身即 9mer，非长肽滑窗）：每肽 1 窗（window_size=9, subpep_pos=0, subpep_seq=该 9mer）、abs_subpep_pos 由 MT-WT 单点 diff 求 0-indexed 位、每 HLA 展开一行、source=SLP、Patient_ID 保 1-6。**不覆盖任何 DS2 文件**（产物带 `.DS1.` 中缀）。内建 schema 校验：build 前拿 DS2 真表头逐列比对防漂移。
+
+**③ 烟测 `--check` + 写盘 — 全 PASS（Bash 核实际文件）**：82 肽、MT/WT **各 325 行**（=Σ每肽×该患者 HLA 数=78+45+48+32+30+92，与手算一致）、GT 82 行。产物：`data/frozen/{newcut_subpep_hla_MT.DS1.for_tools.csv, newcut_subpep_hla_WT.DS1.for_tools.csv, ds1_official_groundtruth.csv}`。
+   - **契约对齐修 2 处**（跑 prepare_inputs 时暴露）：(a) DS2 MT/WT schema **不对称**——MT 11 列、WT **13 列**（多 `WT_FullPeptide`+`side`，`_build_wt_lookup` 按 (mut_key,pos,hla) 逐格配 WT）。适配器 WT 表补齐这两列（Vaccine_Peptide=MT 全长作配对锚、subpep_seq/WT_FullPeptide=WT 9mer、side=WT）→ `diff` DS2 三表(MT/WT/GT)表头**全一致**。(b) DS1 源数据含 **1 对同序列/HLA 但 ELISpot 不同**的记录（GRM4 患者6，381 vs 286，同一肽两次测量）→ base Peptide_ID 撞车，加 `-r2` 后缀保 82 条唯一（不合并不丢，工具输入按肽×HLA 去重只算一次，评估各配自己 ELISpot）。
+
+**④ S2 产 30 工具输入包 — PASS**：`prepare_inputs_official.py` 的 `build_backbone` 明确支持吃 for_tools 表（docstring），跑 `--mt-csv/--wt-csv DS1表 --out-dir scripts/out_ds1 --window 9 --expected-peptides 82` → backbone **325 行/82 肽**、WT 查表 **325 键重复 0**、COVERAGE PASS。产 `scripts/out_ds1/`：deepimmuno/deephlapan/predig/prime(18 HLA)/immuneapp(18 HLA)/improve/ptuneos/newtools universe(326 行,HPC binding 通用喂料)。**注**：`build_backbone` 硬编码 join `ds2_official_groundtruth`，DS1 backbone 的 Elispot 列空——无害（工具输入只含肽+HLA，不含 Elispot），评估阶段单独 join `ds1_official_groundtruth` 即可，不改 DS2 成熟脚本（守复现零偏离）。
+
+**S3 进行中（用户已放行，DS1 是老师给的）+ 多窗编排就绪**：用户拍板 Conductor 建图 + 开 4-5 窗并行。建 DS1 跑图 `quantimmu-ds1`（结构同 DS2 rerun：prep✓ → slice_local_a/b + slice_hpc_dtu/env 4 slice 并行 → merge🛑 → coverage → pool → recheck，状态 `.portfolio/pipelines/quantimmu-ds1.json`）+ 写多窗统一启动指南 **`DS1_RERUN_LAUNCH.md`**（自包含：各 slice 工具清单/env/输入输出路径/复用 DS2 脚本改路径/HPC 上传拍板点/不漏铁律/DoD/认领命令）。各窗 `pipeline.py claim quantimmu-ds1 <slice>` 认领并行跑，输出落 `scripts/out_ds1_official/`（不覆盖 DS2）。诚实边界不变（Entry 63）：DS1 全阳窄 regime、融合在其上负相关，作独立人类复现集加固阴性，不当救融合样本。
+
+**⑤ 本窗 slice_hpc_dtu 进展（主线亲串 HPC）**：认领 `quantimmu-ds1 slice_hpc_dtu`（窗 ds1-main-dtu）+ gpu_slot 登记（CPU 工具 0 卡，GO 422c28da）。
+   - **产 DTU 输入**：`prep_dtu_netmhcpan_official.py --backbone out_ds1/master_backbone --out-dir out_ds1/dtu_netmhcpan_inputs` → 18 `.pep`(每 HLA 一) + allele_map(18 等位) + pep_index(650 行)。
+   - **上传 HPC**（对外传输，已放行）：建远端 `$QD/ds1/{dtu_netmhcpan_inputs,logs,stab_out,nettepi_out}` + `_rerun_hpc.py putdir` 上传 20 文件 + 去 CRLF。
+   - **跑 netMHCpan 家族**：DS1 版跑脚本 `out_ds1/_run_dtu_ds1.sh`（diff 原脚本**仅改 IN 路径 official_inputs→ds1 一行**，工具命令一字不改=复现零偏离）→ HPC CPU 直跑 **BA xls=18/STAB xls=18/fail=0**（18 等位全 OK）。
+   - **parse 3 工具**：拉回 xls tar → BA/EL 复用 `ba_out/*_ba.xls`→改名 `*_out.xls`（parse glob 约定）、stabpan 用 `stab_out/*_stab.xls` → parse_*_official.py → `out_ds1_official/{netMHCpan_BA,netMHCpan_EL,netMHCstabpan}_official.csv` 各 **325 行对齐 backbone、MT/WT 填充 325/325(100%)、18 distinct 等位**。DTU **3/6 工具完成**（netMHCpan_BA=DS1 最强单工具+DAI 硬输入）。
+   - **NetTepi**（+1，5/6）：复用 dtu_netmhcpan_inputs，DS1 版脚本改路径后**首跑全 SKIP(ok=0)**——确定性诊断([[feedback_diagnose_single_value]])揪出根因=**conda 环境下 `supported=$(tr -d ' ' <lst)` 变量塌成 1 行**致 `grep -qx` 全 NOMATCH。修法=清洗 alleles.lst 到临时文件+`grep -qxF` 直接比对文件+nmhc strip CR（netTepi.py 调用一字不改=复现零偏离）→ 重跑 **ok=6 skip=12**（命中 A02:01/A03:01/A24:02/B15:01/B27:05/B40:01，其余诚实 NaN=工具 13 等位边界）→ parse `NetTepi_official.csv` 325 行填充 167/325(51.4%,6 等位)。
+   - **ICERFIRE**（+1，6/6 本窗 DTU 完成 除 andy90）：prep_icerfire 产 273 行(有WT+HLA支持)+52 行 HLA 不支持 NaN → 上传 → ICERFIRE.sh(qib_icerfire env,-a false -u false, RF 10 折) exit=0，输出在 `ext_tools/ICERFIRE/output/<ts>_NoExpr_*/ICERFIRE_predictions.csv`(脚本原找位置不对,全盘定位)→ 拉回 parse `ICERFIRE_official.csv` 325 行填充 273/325(84%)。
+   - **DTU 本窗 5/6 完成**（netMHCpan_BA/EL/stabpan/NetTepi/ICERFIRE），**剩 andy90**（需 netMHCpan，已在）。
+   - **🔥 多窗并行飞快**：`out_ds1_official/` 已落 **23 工具 csv**（local_a/b/hpc_env 窗的 BigMHC/CNNeo/DeepImmuno/IEDB_Calis/IMPROVE/ImmugenX/ImmuneApp/MHCSeqNet/MHCflurry/MUNIS/NeoTImmuML/PRIME/PredIG/Seq2Neo/TSCAPE/TransHLA/deepHLApan/pTuneos + 本窗 DTU 5）全 325 行对齐 backbone。
+
+**⑥ 多窗收敛 + andy90 卡点（2026-07-11 续）**：其他 3 窗（local_a/local_b/hpc_env）**全部 ✓ done**，`out_ds1_official/` 达 **28/30 工具**（含 DeepNetBim/HLAthena/MHCnuggets/Neoag/Repitope 等各窗产出）。缺 andy90（本窗 DTU 第6）+ NeoaPred（搁置）。
+   - **andy90 进展**：prep_input 产 DS1 输入 642 (肽,HLA) 对/18 HLA fasta（`andy90_inputs_ds1/`）已上传 HPC。核现有 `andy90_raw.csv`(74591 行)对 DS1 覆盖仅 **266/642(41.4%)**、缺 376（不能纯复用；amplitude=self×foreign/binding 是 (肽,HLA) 纯函数，覆盖到的 266 对可确定性复用）。
+   - **andy90 卡点排查→跑通（用户选"查 HPC 正确 R 调用重跑"）**：首试 `run_andy90.py` 报 `envs/andy90_r/bin/python` 不存在→查明 andy90_r 是**纯 R env**（bin 有 R/Rscript 无 python）。改用 base miniconda python 跑 orchestrator + `--rscript $ROOT/envs/andy90_r/bin/Rscript`。仍全 18 HLA 失败(成功0)→单跑一个 HLA 看 R 真错([[feedback_debug_silent_failure]])：单跑成功但批量 returncode≠0。根因=**run_andy90.R 内部 setwd 到 repo → 相对 `--out` 路径写不到**(`cannot open file`)；单跑我用 /tmp 绝对路径才成功。**修法=绕过 run_andy90.py orchestrator bug，HPC bash 循环读 manifest 逐 HLA 跑 Rscript(R 命令一字不变=复现零偏离)，`--out` 用绝对路径**→ 18 HLA **全 OK**、合并 `andy90_raw_ds1.csv` **642 对全覆盖**(远好于旧 raw 41%)。
+   - **andy90 collapse→official**：写 `scripts/collapse_andy90_ds1.py`(复用 official_io.write_official_mt_wt，按 backbone (MT/WT_Subpeptide,HLA) lookup amplitude)→ `Andy90_official.csv` 325 行 **MT/WT 填充 100%**、18 等位。
+   - **✅ 本窗 slice_hpc_dtu 6/6 全完成**（netMHCpan_BA/EL/stabpan/NetTepi/ICERFIRE/andy90），pipeline done + gpu_slot release。`out_ds1_official/` 达 **29/30 工具**（缺 NeoaPred=搁置）。**4 slice 全 ✓ → 解锁 merge🛑 拍板点**（`merge_official_30 --strict-roster on out_ds1_official`；NeoaPred roster 缺口需定：排除 or 补跑）。指针：`scripts/collapse_andy90_ds1.py`。
+
+**⑦ merge 完成（用户拍板排除 NeoaPred，merge 29 工具）**：merge ROSTER 本就 29（NeoaPred 2026-07-07 已注释剔）。跑 `merge_official_30 --in-dir out_ds1_official --out merged_all_tools_30_ds1.csv --pure-new` → `scripts/out/merged_all_tools_30_ds1.csv` **326 行(325+头)×73 列**（29 工具 MT/WT + backbone 元数据）。**28 工具全覆盖 82/82 肽**，NetTepi 67/82(6 等位)=工具固有边界(13 等位限制，非漏跑)。踩坑：`--strict-roster` 的"130 全覆盖"判据对 DS1(82 肽)+NetTepi 边界误报 FAIL → 去 strict（coverage 阶段逐格核 NetTepi 缺格=工具不支持=正常）；`--out` 传带路径致嵌套 `scripts/out/scripts/out/`→ 改传纯文件名，清嵌套误产。Conductor merge 节点 done（12→13/16），解锁 coverage(verifier)→pool(coder)→recheck(verifier) 收口。
+
+**⑧ 收口分析（analyst 只读跑 + 主线独立复核）— DS1 干净、加固阴性、零污染 DS2**：
+   - **coverage：REAL_GAP=0**（29 工具）。26 工具 100%(325/325)；HLAthena 317(缺 B*15:11)、ICERFIRE 273(13/18 等位)、NetTepi 167(6/18 等位)——**空缺 100% 归 hla_unsupported 工具边界**，抽核每个不支持 HLA 均 0 分无错位，非 merge/parse 漏。⚠️ `build_coverage_matrix.py` NEWCUT+输出双硬编码 DS2（跑会覆盖 DS2 产物）→ analyst 改用只读 inline pandas 等价算，**未跑该脚本**（防污染）。
+   - **DS1 单工具排名**（口径=DS2 R1 逐位同函数 `_official_common.per_patient_spearman`，ELISpot 从 `ds1_official_groundtruth.csv` join 82/82）：top5 = **PredIG 0.219 / DeepImmuno 0.192 / NeoaG 0.181 / Repitope 0.172 / DeepNetBim 0.147**（后者仅 3 病人有效，脆弱）。全 29 名 CI 均跨 0（6 病人不显著）。尾部 netMHCpan_BA #13(-0.035)/MHCnuggets #23(-0.169)。
+   - **跨队列对照（DS1 vs DS2 rank Spearman = −0.176）加固阴性**：**DS2 头部结合亲和器 netMHCpan_BA #1→DS1 #13、MHCnuggets #2→#23 塌成负**；DS1 头部是免疫原导向(PredIG/DeepImmuno/NeoaG)在 DS2 中游；**两队列都进 top5 仅 PredIG**。→ 单工具冠军跨两独立人类队列不复现，无工具稳赢，融合无从借稳定单工具优势翻盘。
+   - **DS1 干净度审查（主线 Bash 独立复核，非信自报）**：无泄漏(DS1 分只对 DS1 ELISpot)/groundtruth 口径(82/82 join，backbone Elispot 空列未误用)/GRM4 重复对(两独立 mut_key 作两点非算两次)/部分覆盖=工具边界(REAL_GAP=0)/**andy90 lookup 主线抽 3 bb_idx 对 raw 逐位✓无错位**/数对话错五关全对 → **全 PASS**。**零污染 DS2**：DS1 产物全 `ds1` 独立命名(mtime 12:04-12:10)，newcut9mer figures 的 git-M 是 10:19 别窗 DS2 融合工作非本窗(本窗全程没碰 newcut9mer)，analyst 全程只读零写盘。
+   - **诚实边界守住**：DS1=82 肽/6 病人/全阳窄 regime，排名仅作 vs DS2 旁证不作强结论，未当救融合样本、未预焊胜利——反而其与 DS2 近零一致加固「单工具不稳、融合无净优势」主结论(Claim ii)。
+   - **修 Dataset 列误标**：`out_ds1/master_backbone` + `merged_ds1` 的 Dataset 列 prepare_inputs 硬编码误写 'DS2'（内容确为 DS1，join 走 mut_key 不受影响）→ 顺手改标 'DS1' 防后续窗口误读。coverage/pool/recheck 节点 done，quantimmu-ds1 16/16 全完成。
+
+---
+
 ## Entry 65-FUSION-REPORT-V2-HONEST-REFRAME — 2026-07-10【融合报告 v2：去数据驱动选成员改固定面板 geomean（0.446>0.372 无泄漏）+ 全量数字审(含图)+ 方法全带出处链接】
 
 **触发**：用户对 §2 连续追问，逐步逼出方法与呈现的根本问题。留档旧版 `..._2026-07-10.md/html` 冻结不动，新工作全在 `_v2`（用户定的工作流：复制留档、改新文件）。
@@ -3955,3 +4124,25 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 **协作分工**：主线拆活+核数+写 md；coder（opus）写正式脚本+绘图脚本（不跑）；主线跑+审。用户全程主导方向、多轮追问（0.451 来历/是否最大值/能否讲道理/ds1），主线逐条 Bash 坐实、诚实自纠（收回上一 session「0.446 诚实最优」误判）。
 
 **🛑 待袁老师拍板**：融合 headline 由「0.446 固定面板」改为「nested pooling selection CV 0.451，对单工具无显著优势」= 方法+口径变更（袁老师协作项目）；用户已拍板用此方法，「是否显著超单工具」措辞建议袁老师过目。
+
+---
+
+## Entry 67 · DS1 slice_local_a 全 8 本地工具跑完（2026-07-11 11:11，窗2）
+
+**做了什么**：quantimmu-ds1 DAG 的 `slice_local_a` 节点——8 个本地/WSL 工具在 DS1（6 例黑色素瘤 / 82 肽 / 全 9mer / 325 数据行 = master_backbone_official.csv）上重跑，产 `scripts/out_ds1_official/<Tool>_official.csv`。复现零偏离（工具/权重/超参不改，只换输入输出路径指向 out_ds1）。
+
+**8 工具全 325 行 / MT+WT 各 325 非空 / 100% 覆盖无真漏**（DS1 全 9mer + 18 等位全被这些工具支持 → 无长度/等位剔除）：
+| 工具 | env | 方向 | 抽核 |
+|---|---|---|---|
+| IEDB_Calis | 本地 py（predict_immunogenicity.py） | 越高越强 | AFAKGNLTF×A2402 spec/dflt mask 全跑 |
+| DeepImmuno | WSL deepimmuno（TF2.3, 9-10mer） | 越高越强 | AFAKGNLTF×A2402=0.324656 raw↔official 一致 |
+| BigMHC_IM | Windows conda qib_bigmhc（CPU torch, predict.py -m=im） | 越高越强 | AFAKGNLTF×A2402=0.07169788 |
+| CNNeo | **base Anaconda**（sklearn 1.8.0）非 qib_cnneo（1.3.2 读不出 1.8.0 存的 TfidfVectorizer `_idf_diag`）；fcnn_tf 权重 2026-06-26 就是 1.8.0 存的→base 才是正确加载 env | softmax(class=1) 越高越强 | 642 对，mean 0.778 |
+| ImmugenX | Windows conda qib_immugenx（torch1.12），subprocess 调 zenodo cli.py（需 `PYTHONPATH=runner_repo` 否则 `No module named immugenx_runner`） | sigmoid 越高越强 | AFAKGNLTF×A2402=0.70189 |
+| MUNIS | WSL munis_env（ESM-2 CPU），subprocess 调 zenodo predict.py | EL 呈递概率 越高越强 | AFAKGNLTF×A2402=0.96874 |
+| DeepNetBim | WSL qib_tf1（TF1.15/keras2.2.4, 仅9mer），手动 predict.py→result_prediction.txt→result_to_raw.py（run 脚本 TODO 路径没对齐 repo/src/predict.py，按 NOTES 手跑） | immuno_probability 越高越强；HLA 去星经 norm_hla 匹配带星 backbone | AFAKGNLTF×A2402=0.08538 |
+| MHCnuggets | WSL mhcnuggets（TF2.10，权重名含冒号 Windows 存不了必 WSL） | ic50 越低越强→**build --flip 取负** | MT 全负 325/325 已核 |
+
+**踩坑/纠偏**：①CNNeo vectorizer sklearn 版本错配（1.8.0 存/1.3.2 读），换 base python 才复现忠实，未 retrain（护零偏离）；②ImmugenX cli.py 缺 PYTHONPATH；③DeepNetBim run 脚本 TODO 路径漂移，改按官方 predict.py 手跑。
+
+**产物**：`scripts/out_ds1_official/{IEDB_Calis,DeepImmuno,BigMHC,CNNeo,ImmugenX,MUNIS,DeepNetBim,MHCnuggets}_official.csv`（8×325）+ 各工具 `HPC/deploy/<tool>/ds1_inputs/` 输入·raw + DS1 驱动 `scripts/_ds1_run_{iedb_calis,deepimmuno}.py`（薄壳覆盖路径）。`pipeline.py done quantimmu-ds1 slice_local_a ✓`，slot d4586c45 released。**到 DoD 停，不冲 merge（收口由收口窗接，待 slice_local_b/hpc_dtu/hpc_env）**。

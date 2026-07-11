@@ -1,0 +1,27 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: C0401
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/ds1/prime_input_C0401/peps_MT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_C0401	Score_C0401	%RankBinding_C0401
+AFSAYMPLF	0.165	0.097697	0.570	C0401	0.165	0.097697	0.570
+AYLNQGPAI	8.002	0.005349	3.244	C0401	8.002	0.005349	3.244
+AYPPELQFM	0.039	0.164202	0.040	C0401	0.039	0.164202	0.040
+CSASGSAAL	18.416	0.002518	16.483	C0401	18.416	0.002518	16.483
+FGSEGSLEF	2.307	0.016819	1.809	C0401	2.307	0.016819	1.809
+FVYICQASF	2.153	0.017775	1.250	C0401	2.153	0.017775	1.250
+FYRGLSLPL	2.028	0.018596	3.187	C0401	2.028	0.018596	3.187
+LQASPQQLY	31.097	0.001458	19.298	C0401	31.097	0.001458	19.298
+QQIERQLKF	27.415	0.001679	7.821	C0401	27.415	0.001679	7.821
+RFGAQLVHI	0.509	0.052471	0.485	C0401	0.509	0.052471	0.485
+SQQNQSGPL	35.495	0.001264	21.588	C0401	35.495	0.001264	21.588
+SYDNTQLQL	0.054	0.150176	0.013	C0401	0.054	0.150176	0.013
+VFAKGNLTF	0.590	0.047657	0.325	C0401	0.590	0.047657	0.325
+WQGSLGLQY	26.063	0.001774	29.127	C0401	26.063	0.001774	29.127
+YQIKSSIDF	4.446	0.009297	3.781	C0401	4.446	0.009297	3.781

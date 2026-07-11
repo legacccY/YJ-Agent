@@ -87,7 +87,7 @@ HL_OPS = {"weighted_mean_rank", "geomean", "mean_rank"}   # 名次平均三兄�
 
 
 def fig_e():
-    labels = [x[0] for x in OP_CV] + ["每折选算子"]
+    labels = [x[0] for x in OP_CV] + ["每折选聚合函数"]
     names = [x[1] for x in OP_CV] + ["__select__"]
     vals = [x[2] for x in OP_CV] + [OP_SELECT_CV]
     colors = []
@@ -113,10 +113,10 @@ def fig_e():
 
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9)
-    ax.set_ylabel("患者内秩相关 ρ (nested-pooling 交叉验证)")
+    ax.set_ylabel("患者内秩相关 ρ (嵌套合成方式 交叉验证)")
     ax.set_ylim(0, max(vals) + 0.06)
     ax.set_title(f"同一面板 8 种聚合函数的交叉验证 ρ ({TAG})\n"
-                 f"绿色 = 名次平均三兄弟 (≈0.451, 并列最高); 斜纹 = 每折另选算子 (未涨)", fontsize=10.5)
+                 f"绿色 = 名次平均类 (≈0.451, 并列最高); 斜纹 = 每折另选聚合函数 (未涨)", fontsize=10.5)
     ax.legend(handles=[Patch(color=C_HL, label="名次平均类 (最高)"),
                        Patch(color=C_MUTE, label="其余聚合函数"),
                        Line2D([0], [0], color=C_BASE, lw=1.8, ls="--",
@@ -140,7 +140,7 @@ def fig_a():
 
     fig, ax = plt.subplots(figsize=(7.6, 5.0))
     ax.plot(k, cv, "-o", color=C_CV, lw=2, ms=6, label="交叉验证估计 (无泄漏)")
-    ax.plot(k, orc, "-s", color=C_ORACLE, lw=2, ms=6, label="样本内 / oracle 估计")
+    ax.plot(k, orc, "-s", color=C_ORACLE, lw=2, ms=6, label="样本内理想上界")
     good = (~np.isnan(cv)) & (~np.isnan(orc))
     ax.fill_between(k, cv, orc, where=good & (orc >= cv), color=C_ORACLE, alpha=0.10)
     ax.axhline(SINGLE_BASELINE, color=C_BASE, lw=1.6, ls="--",
@@ -170,13 +170,13 @@ def fig_a():
 #   ★ 新文件名 figB_newcut_selection_ladder (引擎映射由主线同步)。
 # ═══════════════════════════════════════════════════════════════════════════════
 LADDER = [                      # (标签, CV ρ) —— 诚实 CV 随选择层数下降
-    ("只选 pooling\n(面板固定)", 0.451),
-    ("完全数据驱动\n(成员+pooling)", 0.332),
-    ("只选成员\n(pooling=max)", 0.171),
+    ("只选合成方式\n(面板固定)", 0.451),
+    ("完全数据驱动\n(成员+合成方式)", 0.332),
+    ("只选成员\n(合成方式固定取最高分)", 0.171),
 ]
 INSAMPLE_MAX = [                # (标签, 样本内值) —— 不进 CV, 不可复现
-    ("固定面板 max\n(样本内)", 0.446),
-    ("面板 CV-argmax k=4\n(样本内)", 0.493),
+    ("固定面板取最高分\n(样本内)", 0.446),
+    ("交叉验证取最大(k=4)\n(样本内)", 0.493),
 ]
 
 
@@ -203,21 +203,24 @@ def fig_b():
 
     # 分隔线: 诚实 CV | 样本内 (不进 CV)
     ax.axvline(n_cv - 0.5, color="#cccccc", lw=1.0, ls=":")
-    ax.text(n_cv - 0.5, max(vals) + 0.045, "诚实交叉验证 ｜ 样本内 (不进CV, 不可复现)",
+    ax.text(n_cv - 0.5, max(vals) + 0.045, "交叉验证 ｜ 样本内 (不进CV, 不可复现)",
             ha="center", va="bottom", fontsize=8.5, color="#555")
 
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=8.8)
     ax.set_ylabel("患者内秩相关 ρ")
     ax.set_ylim(0, max(vals) + 0.09)
-    ax.set_title(f"选择越多, 诚实交叉验证越低 ({TAG})", fontsize=11)
-    ax.legend(handles=[Patch(color=C_HL, label="只选pooling (最高诚实CV)"),
+    ax.set_title(f"选择越多, 交叉验证 ρ 越低 ({TAG})", fontsize=11)
+    # 图例移到坐标轴外侧右方, 不再压住右侧两根灰柱 (0.446 / 0.493) 及其数值标签;
+    # _save 用 bbox_inches="tight", 会自动把画布撑开容纳外置图例。
+    ax.legend(handles=[Patch(color=C_HL, label="只选合成方式 (最高CV)"),
                        Patch(color=C_CV, label="更深数据驱动选择"),
                        Patch(facecolor=C_MUTE, hatch="//", edgecolor="#555",
                              label="样本内挑的最大值 (不进CV)"),
                        Line2D([0], [0], color=C_BASE, lw=1.8, ls="--",
                               label=f"单工具基线 {SINGLE_BASELINE:.3f}")],
-              loc="upper right", fontsize=8.3, framealpha=0.95)
+              loc="upper left", bbox_to_anchor=(1.01, 1.0),
+              fontsize=8.3, framealpha=0.95)
     ax.spines[["top", "right"]].set_visible(False)
     _save(fig, "figB_newcut_selection_ladder")
 

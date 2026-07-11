@@ -45,3 +45,28 @@
 - K1：补 LLM-judge 第二承重臂，G_domain 是否仍显著。
 - K2：控制对抗构造 confound（自然 vs 对抗分层），医学更难是否残留。
 - K3：中文医学自建数据上，现成检测器是否同样失效。
+
+---
+
+## 2026-07-11 · 实验设计红队 + 方案A定稿（冻结防 HARKing）
+
+> 全量实验设计（PLAN/EXPERIMENT_MATRIX_P1-P3.md）经 skeptic 红队砸出 3🔴 致命，用户拍板方案A修。K 判决**预注册判据在此冻结**，跑前不改（跑后回填有利叙事=HARKing）。
+
+**skeptic 3🔴（同根=对照两侧构造/选择/模型不匹配）**：
+- 🔴-1 对照锚 PsiloQA-zh 未过"骗过≥1检测器"筛，zh-med 过了 → G_domain 是选择伪迹非域效应。
+- 🔴-2 构造投票器含 Qwen2.5-7B = K1 承重 judge D10 同体 → 循环。
+- 🔴-3 Evident/Subtle≠natural/adversarial（RAGTruth 全自然/我们全对抗构造零自然臂）→ K2 对抗 confound 控制无效。
+- 承重事实已核：RAGTruth Evident/Subtle=自然幻觉显隐性 arXiv:2502.17125；MedHallu hard/med/easy=骗过检测器过滤 2025.emnlp-main.143。
+
+**方案A修法（用户拍板）**：①对称化主力（对照通用锚也过同 MedHallu 管线+同筛=CMedFaith-zh-gen-adv）②MedFact 真自然臂三角互证 ③协变量回归 robustness。
+
+**🔒 预注册冻结（跑前定死，防 HARKing）**：
+1. **K1 承重判据**：`G_domain=MacroF1(zh-gen-adv)−MacroF1(zh-med-adv)≥0.05` 且 bootstrap95%CI下界>0，承重族=NLI(D1 `mnli-xnli`)+**非投票judge(D11 GLM-4/D12 InternLM2.5)**+专用(D5)；**D10(Qwen2.5-7B)是构造投票器成员→不进承重**。PASS=≥2族(含≥1非投票judge)医学显著弱。
+2. **K2 判据（重述）**：等构造强度下 `ΔF1(zh-gen-adv − zh-med-adv)≥0.05` 且CI下界>0 **且 ≥1 三角互证同向**（MedFact自然臂也弱/协变量回归β_domain残留）。最强claim=「等构造强度下医学域更难」，**不 claim 无条件"本身难"**。
+3. **K3 判据**：中文医学 zh-med 检测器显著弱（对照用 zh-gen-adv 对称锚），en→zh 平行迁移 ΔF1 带 CI。
+4. **🔒 对称锚同筛检测器集冻结**：CMedFaith-zh-med 与 CMedFaith-zh-gen-adv **必须用同一组"骗过≥1检测器"的检测器**（消🔴-1 的关键）。该检测器清单 = [构造 pilot 时确定，跑 R-P2.7 前冻结写此处 TODO]，两侧严格一致，跑后不改。
+5. **D1 复现锚**：pilot 冻结值 G_domain=0.2927 CI[0.184,0.391] 用 `MoritzLaurer/mDeBERTa-v3-base-mnli-xnli`；R-P1.0 全量复现须对齐此（2mil7 版会变值不可直接引）。
+
+**FAIL 退路（预注册）**：K1 非投票judge不弱→#1收缩「NLI族失效」；K2不难→#2「对抗鲁棒性」；K3不难→#3「英→中迁移诊断」。
+
+**R-P1.0 复现校验（2026-07-11 冒烟）**：smoke(20/40条+boot200)方向一致 got G_domain=0.276 CI[0.014,0.501] vs frozen 0.2927；全量复现在跑核对 frozen 0.4277/0.7204（verifier 核 code/results/）。

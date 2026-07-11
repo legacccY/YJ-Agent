@@ -204,10 +204,19 @@ def main():
     ap.add_argument("--input", default=str(FROZEN_POOLED))
     ap.add_argument("--min_pep", type=int, default=MIN_PEP)
     ap.add_argument("--ctrl", default="peplen")
+    ap.add_argument("--patients", default=None,
+                    help="逗号分隔目标患者 ID (默认 None=DS2 官方 9 人 [101,102,104-110], 零改动; "
+                         "DS1 跨队列复现传 1,2,3,4,5,6)")
+    ap.add_argument("--headline", choices=["lenctrl", "raw"], default="lenctrl",
+                    help="print/sort/聚合的 headline 口径 (default lenctrl=控肽长, DS2 逐位不变; "
+                         "DS1 全 9mer 长度无变异→控长偏相关不存在, 传 raw 走裸 Spearman)。"
+                         "两口径列(*_raw / *_lenctrl)始终并算入 CSV, 此开关只切 print/sort/聚合展示口径。")
     args = ap.parse_args()
+    suf = args.headline                        # 'raw' | 'lenctrl'; 拼列名切换 print/sort/聚合口径
 
     df = load_frozen(args.input)
-    pats = present_patients(df)
+    pat_list = [int(x) for x in args.patients.split(",")] if args.patients else None
+    pats = present_patients(df, patients=pat_list)
     print(f"[info] 表={Path(args.input).name} shape={df.shape}; DS2 患者({len(pats)})={pats}; "
           f"min_pep={args.min_pep}; nested-LOPO pooling 留出验证")
 
@@ -239,30 +248,35 @@ def main():
                 f"member_stability_{tag}": r6(res["member_stability"], 3),
             })
         rows.append(row)
-        g = row.get("gain_lopo_max_lenctrl", np.nan)
-        infl = row.get("inflation_lenctrl", np.nan)
-        print(f"  {tool:15s} [控长] max={row.get('max_rho_lenctrl'):+.3f} "
-              f"oracle={row.get('oracle_rho_lenctrl'):+.3f} lopo={row.get('lopo_rho_lenctrl'):+.3f} "
-              f"→ 留出增益={g:+.3f} 虚高={infl:+.3f} p={row.get('paired_p_lenctrl')} "
-              f"选[{row.get('modal_variant_lenctrl')}·{row.get('member_stability_lenctrl')}]")
+        label = "控长" if suf == "lenctrl" else "裸"
+        if row.get(f"max_rho_{suf}") is None:  # 该口径无有效结果(如 DS1 全 9mer 的 lenctrl) → 跳过明细 print
+            print(f"  {tool:15s} [{label}] {suf} 口径无有效结果, 跳过明细")
+            continue
+        g = row.get(f"gain_lopo_max_{suf}", np.nan)
+        infl = row.get(f"inflation_{suf}", np.nan)
+        print(f"  {tool:15s} [{label}] max={row.get(f'max_rho_{suf}'):+.3f} "
+              f"oracle={row.get(f'oracle_rho_{suf}'):+.3f} lopo={row.get(f'lopo_rho_{suf}'):+.3f} "
+              f"→ 留出增益={g:+.3f} 虚高={infl:+.3f} p={row.get(f'paired_p_{suf}')} "
+              f"选[{row.get(f'modal_variant_{suf}')}·{row.get(f'member_stability_{suf}')}]")
 
-    out_df = pd.DataFrame(rows).sort_values("gain_lopo_max_lenctrl",
+    out_df = pd.DataFrame(rows).sort_values(f"gain_lopo_max_{suf}",
                                             ascending=False, na_position="last")
 
-    # ── 聚合统计 (控长口径为准) ──────────────────────────────────────────────────
+    # ── 聚合统计 (headline 口径为准) ──────────────────────────────────────────────
     def _col(c):
         return pd.to_numeric(out_df[c], errors="coerce") if c in out_df else pd.Series(dtype=float)
-    g_len = _col("gain_lopo_max_lenctrl")
-    p_len = _col("paired_p_lenctrl")
-    infl_len = _col("inflation_lenctrl")
+    g_len = _col(f"gain_lopo_max_{suf}")
+    p_len = _col(f"paired_p_{suf}")
+    infl_len = _col(f"inflation_{suf}")
     n_tools = len(out_df)
     n_gain_pos = int((g_len > 0).sum())
     n_gain_sig = int(((g_len > 0) & (p_len < 0.05)).sum())
     n_loss_sig = int(((g_len < 0) & (p_len < 0.05)).sum())
     bind = out_df[out_df["binding_class"] == True]  # noqa: E712
-    bind_gain_pos = int((pd.to_numeric(bind.get("gain_lopo_max_lenctrl"), errors="coerce") > 0).sum()) if len(bind) else 0
+    bind_gain_pos = int((pd.to_numeric(bind.get(f"gain_lopo_max_{suf}"), errors="coerce") > 0).sum()) if len(bind) else 0
+    cal_label = "lenctrl(控肽长)" if suf == "lenctrl" else "raw(裸Spearman)"
     summary = dict(
-        caliber_primary="lenctrl(控肽长)",
+        caliber_primary=cal_label,
         n_tools=n_tools,
         n_tools_holdout_gain_positive=n_gain_pos,
         n_tools_holdout_gain_significant=n_gain_sig,
@@ -291,7 +305,8 @@ def main():
     json_path = out_dir / "R2b_pooling_lopo_official.summary.json"
     json_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[saved] {json_path}")
-    print(f"[聚合·控长] {n_tools} 工具中 留出增益>0 = {n_gain_pos}; 其中显著(p<0.05) = {n_gain_sig}; "
+    agg_label = "控长" if suf == "lenctrl" else "裸"
+    print(f"[聚合·{agg_label}] {n_tools} 工具中 留出增益>0 = {n_gain_pos}; 其中显著(p<0.05) = {n_gain_sig}; "
           f"显著变差 = {n_loss_sig}; 结合类 {len(bind)} 中留出增益>0 = {bind_gain_pos}")
     print("[DONE] R2b")
 

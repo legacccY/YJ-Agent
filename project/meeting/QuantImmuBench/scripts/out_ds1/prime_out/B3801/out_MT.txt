@@ -1,0 +1,20 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: B3801
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/ds1/prime_input_B3801/peps_MT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_B3801	Score_B3801	%RankBinding_B3801
+APAPGTASL	1.024	0.033619	0.874	B3801	1.024	0.033619	0.874
+CQATGHPFV	0.512	0.053230	1.435	B3801	0.512	0.053230	1.435
+EHHKMRMVL	0.034	0.168091	0.028	B3801	0.034	0.168091	0.028
+FMAIQNPLE	15.661	0.003283	14.755	B3801	15.661	0.003283	14.755
+GVWRGTGVL	19.119	0.002603	15.182	B3801	19.119	0.002603	15.182
+HILPPCTNA	9.664	0.004975	8.523	B3801	9.664	0.004975	8.523
+LLLTFFLRM	1.859	0.021234	6.879	B3801	1.859	0.021234	6.879
+MHRYDVSPL	0.515	0.053044	1.044	B3801	0.515	0.053044	1.044

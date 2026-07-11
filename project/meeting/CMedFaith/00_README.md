@@ -56,4 +56,6 @@
 | `DATA_INVENTORY.md` | 数据细目：对照集 + 自建方案（⏳待深调研填充） |
 | `04_LOG.md` | 时间倒序日志真源（首条=立项决策+pilot） |
 | `reference/KILLSHOT_LEDGER.md` | 两发 pilot 的冻结判据 + 结果，防 HARKing |
+| `reference/RESEARCH_BRIEF_2026-07-11.md` | **全量实验设计情报底座**（5路researcher综合：实验深度靶子/检测器全谱/数据构造管线/评测协议/venue约束/**K0命门修正**）|
+| `PLAN/` | planner 出的正式实验矩阵（P1-P3 全量设计） |
 | `_scratch/` | pilot 脚本（gitignore） |

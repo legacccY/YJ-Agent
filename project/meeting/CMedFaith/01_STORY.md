@@ -21,19 +21,19 @@
 - **Bi'an**（2502.19209）：中英双语 RAG faithfulness，但中文侧只有新闻/法律/电商**无医学** → 域差。
 - **PsiloQA**：14语通用维基 → **非医学**。
 - **CiteCheck**（2502.10881）：**中文** faithfulness，但**引用忠实度/通用域** → 域差。
-- 🔴 **MedHallu-ZH / SelfElicit**（Findings ACL2025，最强撞车嫌疑）：**中文+医学**幻觉检测（在线问诊平台），但**self-elicitation 范式（靠模型自身知识，非给定外部证据）+ 方法论文附带集非独立 benchmark** → **范式差 + 资源独立性差**。
+- 🔴 **CMHE**（Chinese Medical Hallucination Evaluation, LREC-COLING2024，真正的中文医学撞车对照）：**中文+医学**幻觉评测，但**对话式 snowballing 幻觉（多轮被误导下滚雪球）+ 非 evidence-conditioned（无"给定检索证据段"字段，判幻觉不靠外部证据）** → **范式差**（我们判"答案 vs 给定证据"，它判对话滚雪球）→ 不撞 headline #1。（⚠️ **K0 原核对象张冠李戴**：之前标"MedHallu-ZH / SelfElicit `2025.findings-acl.211`"核错了论文——该 anthology ID 真身="Long-form Hallucination Detection with Self-elicitation"，是**通用域**长文本幻觉检测方法，与中文/医学/release 全无关；"MedHallu-ZH"根本不存在，MedHallu 英文独占无 zh 分支。真正该核的中文医学 benchmark = CMHE，详 ACCEPTANCE K0 修正 + RESEARCH_BRIEF §0。）
 
 → **独有交集 = 中文 ∧ 医学 ∧ evidence-conditioned（给定检索证据判忠实/span grounding）∧ 独立 benchmark 资源 ∧ 检测器横评**。
 
-### MedHallu-ZH（✅ K0 已核，concurrent work）
-**K0 PASS**（2026-07-11 逐段核 `2025.findings-acl.211` §C.2）：MedHallu-ZH 是 (query,response) 两元组、**无外部证据字段**、self-elicitation/reference-free，**确非 evidence-conditioned** → 我们不撞，headline #1 成立。
-**写作策略（用户 2026-07-11）**：MedHallu-ZH 系**同期成果（concurrent work, Findings ACL2025）**，按学术惯例 related work **一句带过即可，不刻意处处对标强调**——我们的 evidence-conditioned RAG 定位本身独立成立，靠自己亮点立文不靠踩它。
+### CMHE（真正的中文医学撞车对照，🔴 K0 修正后重定）
+**K0 重做对象 = CMHE**（2026-07-11 修正，原"MedHallu-ZH K0 PASS"因张冠李戴作废，留痕见 ACCEPTANCE K0）：CMHE 是**对话式 snowballing 幻觉**评测，**无"给定检索证据段"字段**（判幻觉不靠外部证据），**初判非 evidence-conditioned → 不撞 headline #1**。⏳ 待下载 Google Drive 复核规模/IAA/许可后正式冻结"不撞"（TODO，ACCEPTANCE K0）。
+**写作策略（用户 2026-07-11，定调不变）**：CMHE 及其他中文医学幻觉相关工作 related work **一句带过即可，不刻意处处对标强调**——我们的 evidence-conditioned RAG 定位本身独立成立，靠自己亮点立文不靠踩它。**同期成果（concurrent work）按学术惯例不刻意对标**。
 
 ### Headline 策略（防御性组合，命门未核前不锁死）
-1. **「首个中文医学 evidence-conditioned RAG faithfulness 检测 benchmark + 检测器横评」**——最承重，死活压在 MedHallu-ZH 确非 evidence-conditioned。
-2. **「中文医学 RAG 自然 vs 对抗幻觉分层的检测器忠实度评测」**——更稳，避开纯资源撞车（自然/对抗分层在中文医学域无人做，即便 MedHallu-ZH 是 evidence-conditioned 也活）。
-3. **「英→中医学 faithfulness 检测器迁移崩塌诊断」**——跨语迁移分析，MedHallu-ZH 未做（它单语）。
-> 三者可组合成一篇：#1 当主 claim（核完 MedHallu-ZH 定），#2/#3 当兜底 + 加分章节。
+1. **「首个中文医学 evidence-conditioned RAG faithfulness 检测 benchmark + 检测器横评」**——最承重，死活压在 CMHE 确非 evidence-conditioned（K0 待复核冻结）。**方法贡献增量**：以**对称化控 confound**（对照通用域也过**同一构造管线 + 同"骗过≥1检测器"筛子**，把构造/选择强度钉成常量后再比域效应）隔离"域效应 vs 构造伪迹"——**benchmark 文献无具名先例**（MedHallu 原作医学 vs 通用仅文献综述非受控对照），matched design 原理支持，既填真空白又是方法增量（见 ACCEPTANCE K2 + PLAN §0.6 方案 A）。
+2. **「中文医学 RAG 检测器对抗鲁棒性评测」**（K2 FAIL 退路）——若等构造强度下医学域不更难，退守"现成检测器在此对抗构造集上弱、人造对抗集高估检测器真实能力"，不归因域，更稳（对抗鲁棒性发现在中文医学域无人做，即便 CMHE 是 evidence-conditioned 也活）。
+3. **「英→中医学 faithfulness 检测器迁移崩塌诊断」**——跨语迁移分析，CMHE 未做迁移诊断（对话集单一范式）。
+> 三者可组合成一篇：#1 当主 claim（K0 复核完 CMHE 定），#2 当 K2 FAIL 兜底、#3 当加分章节。
 
 **pilot 已证的立项地基**（KILLSHOT_LEDGER）：难点在**域**不在语言——通用域跨语言检测器不掉分（G_lang≈0），医学 vs 通用掉 29 分（G_domain=0.29）。动机 = 扎实的"检测器医学域失效"，非被证伪的"跨语言崩"。此 pilot 图（MedHallu 0.43 vs PsiloQA 0.72）= "域+语言双迁移崩塌"核心 figure 雏形。
 
@@ -59,7 +59,7 @@ Intro（医学 RAG 忠实度高风险 + 中文医学空白）→ Related（faith
 ## 措辞红线
 
 - 不笼统吹"解决医学幻觉"；只 claim "faithfulness 检测 benchmark + 现成检测器失效诊断"。
-- 不 claim 中文医学难度纯来自"领域"（K2 未过前）。
+- **难度归因只能 claim「等构造强度下」（方案 A 重述，红线，2026-07-11）**：K2 即便 PASS，最强 claim = 「**等构造强度下**（对称对抗锚 + 同筛）医学域检测难度显著高于通用域」，**绝不 claim 无条件"医学域本身难"**——因全集皆对抗构造、零纯自然臂，**证据源风格（通用百科 vs 医学 PubMed 风格）是已声明的残余变量**，只声明不控制（reviewer 硬要真自然臂则退方案④轻量自建，暂不启）。K2 未过前只说"现成检测器在此数据上弱"。
 - 不拿 pilot 的英文 MedHallu 粗筛数当中文结论——中文靠自建数据独立验（K3）。
 - 数据不 overclaim"专家标注"若实际是半自动+抽检——如实写标注协议与 IAA。
-- **（K0 核 MedHallu-ZH 后收紧，防 overclaim 撞车）**：检测器横评须限定**"evidence-conditioned 设定下"**（MedHallu-ZH 已横评 9 个 reference-free 方法，别泛称"首个方法横评"）；难度分层别 claim 首创（它有 severity 分层），只 claim **"自然+对抗对照"**独有；别 claim"首个中英平行医学幻觉集"（它已有 zh+en 平行集），改说 **"跨语迁移诊断分析"**。
+- **（防 overclaim 撞车，K0 修正后重定）**：检测器横评措辞保守限定**"evidence-conditioned 设定下"**（避免与已有 reference-free 幻觉检测横评混同）；相对 CMHE，我们的**同管线对称化对抗对照 + 中英跨语迁移诊断**独有，但**首创/首个类措辞在 K0 复核 CMHE 规模/分层完成前不锁死**（据实呈证不踩人）。

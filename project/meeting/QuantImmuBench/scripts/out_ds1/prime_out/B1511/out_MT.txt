@@ -1,0 +1,20 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: B1511
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/ds1/prime_input_B1511/peps_MT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_B1511	Score_B1511	%RankBinding_B1511
+APAPGTASL	0.185	0.082200	0.156	B1511	0.185	0.082200	0.156
+CQATGHPFV	6.429	0.006685	20.992	B1511	6.429	0.006685	20.992
+EHHKMRMVL	6.509	0.006615	7.653	B1511	6.509	0.006615	7.653
+FMAIQNPLE	9.753	0.004665	9.717	B1511	9.753	0.004665	9.717
+GVWRGTGVL	22.187	0.002220	18.479	B1511	22.187	0.002220	18.479
+HILPPCTNA	8.964	0.005018	8.438	B1511	8.964	0.005018	8.438
+LLLTFFLRM	3.896	0.010110	17.827	B1511	3.896	0.010110	17.827
+MHRYDVSPL	1.952	0.017603	5.106	B1511	1.952	0.017603	5.106

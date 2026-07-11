@@ -1,0 +1,109 @@
+# /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netTepi-1.0/netTepi.py -a HLA-B15:01 -p /gpfs/work/bio/jiayu2403/quantimmu/ds1/dtu_netmhcpan_inputs/HLA-B15-01.pep -l 9
+# Sat Jul 11 2026 11:01
+# USER: jiayu2403
+# CWD: /gpfs/work/bio/jiayu2403/quantimmu/ds1
+# HOST: Linux x86_64 4.18.0-372.9.1.el8.x86_64 xpszlogin2
+# COMMAND LINE PARAMETERS SET TO:
+#	input_file          /gpfs/work/bio/jiayu2403/quantimmu/ds1/dtu_netmhcpan_inputs/HLA-B15-01.pep
+#	alleles             HLA-B15:01                    
+#	cons                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCcons-1.1/netMHCcons
+#	inptype             1                             
+#	lengths             9                             
+#	pep_mode            True                          
+#	print_alleles       False                         
+#	sort                0                             
+#	stab                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCstabpan-1.0/netMHCstabpan
+#	stab_weight         0.16                          
+#	tcell_weight        0.1                           
+#	tmpdir              /gpfs/work/bio/jiayu2403/quantimmu/nettepi_tmp
+#	www                 False                         
+#	xls                 False                         
+#	xlsfile             NetTepi_out.xls               
+
+# NetTepi version 1.0
+
+# Inputfile: /gpfs/work/bio/jiayu2403/quantimmu/ds1/dtu_netmhcpan_inputs/HLA-B15-01.pep
+
+# Input is in PEPTIDE format
+
+# Peptide lengths: 9
+
+----------------------------------------------------------------------------------------------------
+ Pos       Allele         Peptide          Identity      Aff     Stab    Tcell     Comb   %Rank
+----------------------------------------------------------------------------------------------------
+   0   HLA-B15:01       AFAKGNLTF           PEPLIST    0.473    0.431   -0.164    0.403    2.00  <=Epi
+   0   HLA-B15:01       AFSAYMPLF           PEPLIST    0.301    0.093   -0.199    0.218    8.00       
+   0   HLA-B15:01       AFSAYTPLF           PEPLIST    0.327    0.131    0.003    0.263    6.00       
+   0   HLA-B15:01       AHHGGWTTK           PEPLIST    0.062    0.032    0.342    0.085   32.00       
+   0   HLA-B15:01       ALAEAVRRF           PEPLIST    0.617    0.844    0.264    0.618    0.20  <=Epi
+   0   HLA-B15:01       ALAEVVRRF           PEPLIST    0.584    0.815    0.266    0.589    0.40  <=Epi
+   0   HLA-B15:01       APAPAAAPI           PEPLIST    0.110    0.182    0.103    0.121   20.00       
+   0   HLA-B15:01       APAPVAAPI           PEPLIST    0.101    0.169    0.105    0.112   20.00       
+   0   HLA-B15:01       ARHGGWTTK           PEPLIST    0.061    0.015    0.342    0.082   32.00       
+   0   HLA-B15:01       AYLNQGPAI           PEPLIST    0.095    0.019   -0.078    0.066   50.00       
+   0   HLA-B15:01       AYLNQGQAI           PEPLIST    0.097    0.033   -0.166    0.060   50.00       
+   0   HLA-B15:01       AYPPELQFM           PEPLIST    0.077    0.020    0.043    0.064   50.00       
+   0   HLA-B15:01       AYPPELRFM           PEPLIST    0.069    0.012    0.184    0.071   50.00       
+   0   HLA-B15:01       CDNLSDLVM           PEPLIST    0.150    0.022   -0.139    0.101   32.00       
+   0   HLA-B15:01       CNNLSDLVM           PEPLIST    0.175    0.060   -0.139    0.125   20.00       
+   0   HLA-B15:01       CSASGSAAL           PEPLIST    0.380    0.470   -0.221    0.334    4.00       
+   0   HLA-B15:01       CSASGSAAS           PEPLIST    0.143    0.041   -0.221    0.090   32.00       
+   0   HLA-B15:01       DLRDGGIPF           PEPLIST    0.487    0.826    0.210    0.514    0.80  <=Epi
+   0   HLA-B15:01       DLRDGGVPF           PEPLIST    0.518    0.814    0.132    0.527    0.80  <=Epi
+   0   HLA-B15:01       ECDTDGRLI           PEPLIST    0.048    0.001    0.137    0.049   50.00       
+   0   HLA-B15:01       EYDTDGRLI           PEPLIST    0.050    0.001    0.137    0.051   50.00       
+   0   HLA-B15:01       FGNDGGYEG           PEPLIST    0.088    0.004    0.141    0.080   50.00       
+   0   HLA-B15:01       FGNDGGYGG           PEPLIST    0.089    0.002    0.102    0.076   50.00       
+   0   HLA-B15:01       FGSEDSLEF           PEPLIST    0.402    0.379   -0.038    0.354    3.00       
+   0   HLA-B15:01       FGSEGSLEF           PEPLIST    0.495    0.538   -0.027    0.450    1.50  <=Epi
+   0   HLA-B15:01       FQSIYAKFF           PEPLIST    0.553    0.702   -0.000    0.522    0.80  <=Epi
+   0   HLA-B15:01       FQSIYTKFF           PEPLIST    0.607    0.764   -0.000    0.571    0.40  <=Epi
+   0   HLA-B15:01       FVDICQASF           PEPLIST    0.260    0.607   -0.084    0.281    5.00       
+   0   HLA-B15:01       FVYICQASF           PEPLIST    0.608    0.841   -0.092    0.575    0.40  <=Epi
+   0   HLA-B15:01       FYRGLSLPL           PEPLIST    0.207    0.248   -0.131    0.180   10.00       
+   0   HLA-B15:01       FYRGLSLPV           PEPLIST    0.142    0.093   -0.131    0.107   32.00       
+   0   HLA-B15:01       GSITLVTGM           PEPLIST    0.381    0.300    0.163    0.346    3.00       
+   0   HLA-B15:01       GSVTLVTGM           PEPLIST    0.311    0.211    0.133    0.277    5.00       
+   0   HLA-B15:01       HHGGWTTKM           PEPLIST    0.072    0.317    0.204    0.124   20.00       
+   0   HLA-B15:01       HLGADLVAA           PEPLIST    0.162    0.045    0.119    0.139   15.00       
+   0   HLA-B15:01       HLGTDLVAA           PEPLIST    0.133    0.038    0.119    0.116   20.00       
+   0   HLA-B15:01       IHRAIIKFL           PEPLIST    0.072    0.134    0.197    0.094   32.00       
+   0   HLA-B15:01       IHRAIIKLL           PEPLIST    0.071    0.153    0.123    0.089   32.00       
+   0   HLA-B15:01       KLYIQMTTL           PEPLIST    0.344    0.818   -0.090    0.376    3.00       
+   0   HLA-B15:01       KLYIQTTTL           PEPLIST    0.380    0.857    0.112    0.430    2.00  <=Epi
+   0   HLA-B15:01       LQASPQQLY           PEPLIST    0.701    0.972   -0.378    0.636    0.12  <=Epi
+   0   HLA-B15:01       LQPSPQQLY           PEPLIST    0.554    0.866   -0.394    0.509    1.00  <=Epi
+   0   HLA-B15:01       LYDNTQLQL           PEPLIST    0.081    0.039   -0.148    0.051   50.00       
+   0   HLA-B15:01       QQGSLGLQY           PEPLIST    0.598    0.814   -0.211    0.552    0.80  <=Epi
+   0   HLA-B15:01       QQIERQLKC           PEPLIST    0.113    0.248   -0.050    0.118   20.00       
+   0   HLA-B15:01       QQIERQLKF           PEPLIST    0.577    0.944   -0.050    0.573    0.40  <=Epi
+   0   HLA-B15:01       RFGAQLAHI           PEPLIST    0.139    0.009   -0.021    0.102   32.00       
+   0   HLA-B15:01       RFGAQLVHI           PEPLIST    0.125    0.007   -0.019    0.092   32.00       
+   0   HLA-B15:01       RGPSFHRKM           PEPLIST    0.089    0.021   -0.108    0.058   50.00       
+   0   HLA-B15:01       RGPSFRRKM           PEPLIST    0.081    0.008   -0.090    0.052   50.00       
+   0   HLA-B15:01       RHGGWTTKM           PEPLIST    0.079    0.442    0.204    0.150   15.00       
+   0   HLA-B15:01       RINLVLALF           PEPLIST    0.486    0.734    0.043    0.481    1.50  <=Epi
+   0   HLA-B15:01       RINLVLALI           PEPLIST    0.179    0.205    0.043    0.170   15.00       
+   0   HLA-B15:01       SLGPWSLSF           PEPLIST    0.686    0.754   -0.046    0.624    0.17  <=Epi
+   0   HLA-B15:01       SLSPWSLSF           PEPLIST    0.745    0.898   -0.111    0.684    0.05  <=Epi
+   0   HLA-B15:01       SLVLYKEDV           PEPLIST    0.081    0.017   -0.107    0.052   50.00       
+   0   HLA-B15:01       SQQNQSGPL           PEPLIST    0.535    0.780   -0.291    0.492    1.00  <=Epi
+   0   HLA-B15:01       SQQNQSGPS           PEPLIST    0.262    0.102   -0.291    0.181   10.00       
+   0   HLA-B15:01       SRNIKIVGE           PEPLIST    0.054    0.000    0.102    0.050   50.00       
+   0   HLA-B15:01       SRSIKIVGE           PEPLIST    0.054    0.000    0.050    0.045   50.00       
+   0   HLA-B15:01       SSVLYKEDV           PEPLIST    0.071    0.009   -0.107    0.043   50.00       
+   0   HLA-B15:01       SYDNTQLQL           PEPLIST    0.068    0.029   -0.148    0.040   50.00       
+   0   HLA-B15:01       TVANHVAWF           PEPLIST    0.477    0.643    0.239    0.480    1.50  <=Epi
+   0   HLA-B15:01       TVANRVAWF           PEPLIST    0.410    0.570    0.258    0.420    2.00  <=Epi
+   0   HLA-B15:01       VFAKGNLTF           PEPLIST    0.446    0.372   -0.164    0.373    3.00       
+   0   HLA-B15:01       VRAGAVDMV           PEPLIST    0.062    0.038    0.040    0.056   50.00       
+   0   HLA-B15:01       VRAGAVDVV           PEPLIST    0.074    0.054    0.167    0.080   32.00       
+   0   HLA-B15:01       WQGSLGLQY           PEPLIST    0.627    0.816   -0.211    0.573    0.40  <=Epi
+   0   HLA-B15:01       YQIESSIDF           PEPLIST    0.734    0.959   -0.048    0.692    0.03  <=Epi
+   0   HLA-B15:01       YQIKSSIDF           PEPLIST    0.744    0.945   -0.365    0.665    0.05  <=Epi
+   0   HLA-B15:01       YRKFTTESD           PEPLIST    0.062    0.002    0.110    0.057   50.00       
+   0   HLA-B15:01       YRTFTTESD           PEPLIST    0.056    0.001    0.193    0.061   50.00       
+   0   HLA-B15:01       YSLLIAEAY           PEPLIST    0.470    0.617    0.259    0.472    1.50  <=Epi
+   0   HLA-B15:01       YSLLIAEVY           PEPLIST    0.479    0.559    0.260    0.470    1.50  <=Epi
+---------------------------------------------------------------------------------------------------- 
+

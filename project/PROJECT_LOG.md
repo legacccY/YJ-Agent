@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-07-11（会话 49，🔀 冻结 3 周后重启：核实 R1/R3 死活 → 转投 WACV 2027 + Hilbert-Geo 式故事重构）
+
+> 本窗原为升学策略盘点，查手上论文能投哪些时发现 VisiSkin 自会话 48（2026-06-19）后**冻结 3 周**（精力转 QuantImmu/NCA-Cyst/WardAgent），**ACCV 2026 主赛道 07-05 已错过**（官网核实 `accv2026.org/submissions` = Paper deadline July 5；registry 里 VisiSkin 写的 09-22/09-29 是**错日期**，ACCV 无 9 月截止）。用户拍板：**BIBE 弃投（太低档）、ACCV 弃（已错过）、转投 WACV 2027 R2（截止 2026-08-28，放榜 10-09）**。
+
+**① R1/R3 死活核实（HPC sacct + code/results/）**：
+- **3/6 R1 baseline 公平微调完成**（nafnet 1472609 / restormer 1472943 / mirnetv2 1472970 全 COMPLETED，4.7h/15h/11h 真训练）；结果 csv 在 **`code/results/r1_finetune_{nafnet,restormer,mirnetv2}.csv`**（不是根 `results/`，故首查根目录误判为空）。
+- **swinir/uformer/realesrgan（另 3 个 R1）+ R3（DP-Loss graft）从未跑成**——被新窗 scancel 抢 QOS 卡（会话 48 尾注），R3 只有 28s OOM 崩记录（1472946）。
+- R1 微调后诊断保真（.out 读，🟡 provisional 待 verifier 同口径核）：nafnet dAUC **−0.058** consist 0.806 / restormer **−0.057** consist 0.819 / mirnetv2 **−0.065** consist 0.787，均 FAIL（诊断掉 ~6%）。
+
+**② 判读（决定 WACV 可行性）**：
+- 🟢 **C1 主 claim 保住**：即便公平微调，baseline 诊断仍掉 ~6%（dAUC −0.057~−0.065），VisiEnhance 只掉 1.2%（E3 −0.012）→ 方法审稿人「E10 zero-shot 不公平」的攻击被挡 → WACV 接受概率从 35-50% 挪向**上沿 ~45-50%**（reviewer 评估：此为 ±20 点摇摆项，现向好落定）。
+- 🔴 **melanoma 口径雷（必核）**：R1 微调 baseline melanoma **net 正**（+60/+51/+66，E10 caliber n=351）vs paper E5 VisiEnhance melanoma **net −81**（moderate 子集 n=77）——**不同口径不可直接比**。故**严禁**「VE 保护 melanoma」叙事；melanoma 只当「所有增强器共有诚实局限 + retake 闸门理由」hedge，同口径配对**待 verifier 核**。
+
+**③ Hilbert-Geo 式故事重构（借同校朋友 Ruoran Xu CVPR2026 arXiv:2605.16385 叙事手艺）**：
+- 新钩子 = **失败开场**（微调 SOTA 仍掉 6% 诊断）→ 三诊断 First/Second/Third → 方案一一对应 → **query-for-retake 当叙事主角**（非「保护 melanoma」）。
+- 把最大死穴（三铁律负结果）**从 limitation 末尾编进「病因论证链」**，负结果转成「为何需要 retake 闸门」的论据，改 emphasis 不改 truth value（skeptic 安全线守住）。
+- 草稿：`<scratchpad>/WACV_story_skeleton.md`（writer 起草，abstract ~185词 + intro 逐段骨架 + vs 旧 ACCV 版说明；R1 数字全标 provisional \todo，melanoma 全 hedge，三铁律负结果如实带 CI，Q-VIB 脚注，Thm2 局部界）。
+
+**④ WACV 现场政策**（核实）：至少 1 名作者按 in-person 费率注册即可，**可任意 coauthor 代 + 可勾选远程 present**，论文照进 IEEE Xplore；完全没人注册/no-show 才被撤。**余嘉本人不必飞现场。**
+
+**待续（去 WACV 四步，7 周窗口）**：
+1. 补齐 R1 剩 3 baseline（swinir/uformer/realesrgan）+ R3（DP-Loss graft）——补齐+核实非从头跑，量约原估一半（~60-110 GPU·h），gpu_slot 把关。
+2. ✅ **verifier 同口径核已完成（2026-07-11）**：(a) R1 3 csv 已拉本地 `results/r1_finetune_*.csv`，.out 自报值逐列吻合 csv（dAUC −0.058/−0.0567/−0.0646 + CI + consist + mel per-class 全对）。(b) **C1 公平微调保住=代码级证成立**：VE 同口径 dAUC **−0.0172** consist **0.9545**（`e10_*.csv` VisiEnhance 行，`build_df_test` 与 `build_df_stored` 逐字对齐同为 n=10881/pos=351）vs 3 微调 baseline −0.057~−0.065 → VE 掉幅约 1/3（非 E3 −0.012/n=3627 混口径）。(c) **melanoma −81 vs +60 不可直接比**：n 其实都=351（旧记「77」实为 salvageable 池非样本数），但**参照系不同**——E5=enh-vs-降质、R1 `per_class_melanoma`=enh-vs-clean 原图。⚠️ **R1 脚本 `run_r1r3_finetune_eval.py:1365` 疑口径 bug**（docstring 称对齐 E5 却传 clean-ref）→ **补跑剩 3 baseline 前必先修/确认此参照系**，否则 6 个 baseline melanoma 口径不齐。melanoma 维持「共有局限」hedge 写法=诚实站得住。
+3. 采用新故事重构 + 压 8 页双栏（复用 `meeting/ICLR2027/ACCV_reframe_蓝图.md`）。
+4. 08-28 前投 + 有人注册远程 present。
+
+---
+
 ## 2026-06-19（会话 48，✅ R1 nafnet fp32 验通 → 铺全量 R1/R3 + 修 R3 OOM + 会场拍板坚持 ACCV）
 
 > 续会话 47。开门核 HPC：R1 nafnet 验证 job **1472609**（fp32 `--no_amp`+non-finite guard+心跳）跑通——ep1 `val_PSNR=31.20 SSIM=0.9117`、心跳 loss finite（-29~-36，PSNRLoss 负值对应 PSNR~31）、`train_PSNR~25-32` 健康爬、`skipped=0`、err 空。**NaN 发散 bug 死透**，待续 #1 绿灯达成 → 铺全量。

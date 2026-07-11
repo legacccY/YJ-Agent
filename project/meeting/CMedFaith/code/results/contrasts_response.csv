@@ -1,0 +1,2 @@
+level,detector,contrast,macroF1_general,macroF1_medical,G_domain,ci_low,ci_high,ci_method
+response,D1_mDeBERTa_XNLI,G_domain=macroF1(general)-macroF1(medical),0.7204,0.4277,0.2927,0.1844,0.3912,unpaired_bootstrap_5000

@@ -99,10 +99,14 @@ def main():
     ap.add_argument("--input", default=str(FROZEN_POOLED))
     ap.add_argument("--min_pep", type=int, default=MIN_PEP)
     ap.add_argument("--ctrl", default="peplen")
+    ap.add_argument("--patients", default=None,
+                    help="逗号分隔目标患者 ID (默认 None=DS2 官方 9 人 [101,102,104-110], 零改动; "
+                         "DS1 跨队列复现传 1,2,3,4,5,6)")
     args = ap.parse_args()
 
     df = load_frozen(args.input)
-    pats = present_patients(df)
+    pat_list = [int(x) for x in args.patients.split(",")] if args.patients else None
+    pats = present_patients(df, patients=pat_list)
     print(f"[info] 表={Path(args.input).name} shape={df.shape}; DS2 患者({len(pats)})={pats}; "
           f"min_pep={args.min_pep}; 权威融合=固定面板+median名次(零挑选)")
 

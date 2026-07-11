@@ -1,0 +1,20 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: B4006
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/ds1/prime_input_B4006/peps_MT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_B4006	Score_B4006	%RankBinding_B4006
+FERNRQNII	2.315	0.014314	0.940	B4006	2.315	0.014314	0.940
+GESSEGSVL	4.960	0.007685	5.468	B4006	4.960	0.007685	5.468
+KTKQVHFSR	5.227	0.007364	11.726	B4006	5.227	0.007364	11.726
+QEYLSSASP	0.208	0.070272	0.303	B4006	0.208	0.070272	0.303
+RWLSYFLGL	4.474	0.008392	23.911	B4006	4.474	0.008392	23.911
+RYMAICYPL	4.718	0.008027	12.055	B4006	4.718	0.008027	12.055
+SELISHENI	0.639	0.035474	1.174	B4006	0.639	0.035474	1.174
+YEREKAFQM	1.490	0.020265	0.833	B4006	1.490	0.020265	0.833

@@ -1,0 +1,25 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: B2705
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/ds1/prime_input_B2705/peps_WT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_B2705	Score_B2705	%RankBinding_B2705
+AYWFLSLTL	0.159	0.085892	0.951	B2705	0.159	0.085892	0.951
+DLLVSELYR	7.799	0.005953	21.691	B2705	7.799	0.005953	21.691
+HHKDAHVDF	3.096	0.013026	3.704	B2705	3.096	0.013026	3.704
+KRFGLPFVL	0.001	0.289722	0.003	B2705	0.001	0.289722	0.003
+KTFTWPSIL	1.600	0.021983	6.139	B2705	1.600	0.021983	6.139
+LRGAQDHLR	0.990	0.029914	0.820	B2705	0.990	0.029914	0.820
+QERIIMYEL	0.808	0.034055	5.248	B2705	0.808	0.034055	5.248
+REGARVLAL	4.798	0.009109	4.056	B2705	4.798	0.009109	4.056
+RLETIRDPK	17.323	0.002931	21.258	B2705	17.323	0.002931	21.258
+RMRSGSYIK	2.344	0.016366	6.406	B2705	2.344	0.016366	6.406
+RRVAGSVLK	0.048	0.142696	0.048	B2705	0.048	0.142696	0.048
+TMLPTFIAK	0.442	0.049147	1.995	B2705	0.442	0.049147	1.995
+VSIPELSPP	29.951	0.001593	48.629	B2705	29.951	0.001593	48.629

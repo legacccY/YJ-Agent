@@ -1,0 +1,20 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: B1302
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/ds1/prime_input_B1302/peps_MT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_B1302	Score_B1302	%RankBinding_B1302
+FERNRQNII	12.348	0.004015	4.357	B1302	12.348	0.004015	4.357
+GESSEGSVL	7.324	0.006206	7.028	B1302	7.324	0.006206	7.028
+KTKQVHFSR	2.607	0.015022	5.017	B1302	2.607	0.015022	5.017
+QEYLSSASP	18.938	0.002627	27.620	B1302	18.938	0.002627	27.620
+RWLSYFLGL	0.778	0.037731	3.587	B1302	0.778	0.037731	3.587
+RYMAICYPL	4.317	0.009821	9.515	B1302	4.317	0.009821	9.515
+SELISHENI	1.424	0.024898	1.924	B1302	1.424	0.024898	1.924
+YEREKAFQM	8.255	0.005578	3.996	B1302	8.255	0.005578	3.996

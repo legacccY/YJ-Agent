@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "project": "quantimmu-ds1",
+  "template": "experiment",
+  "created": "2026-07-11T10:10:09+08:00",
+  "updated": "2026-07-11T12:25:23+08:00",
+  "from_phase": "",
+  "nodes": [
+    {
+      "id": "design",
+      "stage": "设计",
+      "agent": "planner",
+      "deps": [],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "出实验矩阵，对齐判据",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-11T10:10:45+08:00"
+    },
+    {
+      "id": "redteam",
+      "stage": "红队",
+      "agent": "skeptic",
+      "deps": [
+        "design"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "攻设计致命伤（0 致命即过）",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-11T10:10:45+08:00"
+    },
+    {
+      "id": "implement",
+      "stage": "写码",
+      "agent": "coder",
+      "deps": [
+        "redteam"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "实现各 run 脚本/config，自测 pytest",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-11T10:10:45+08:00"
+    },
+    {
+      "id": "integrate",
+      "stage": "集成烟测",
+      "agent": "主线",
+      "deps": [
+        "implement"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "🔬真·端到端最小跑(1图1step本地<5min)踩缝:数据格式/依赖/路径/eval喂的对不对。pytest≠真验,缝在这暴露不留给HPC",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-11T10:10:45+08:00"
+    },
+    {
+      "id": "train",
+      "stage": "跑",
+      "agent": "主线",
+      "deps": [
+        "integrate"
+      ],
+      "status": "skipped",
+      "gate": true,
+      "group": "",
+      "desc": "🛑拍板：gpu_slot 申卡→/loop /run-experiment",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-11T10:10:46+08:00"
+    },
+    {
+      "id": "analyze",
+      "stage": "分析",
+      "agent": "analyst",
+      "deps": [
+        "train"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "读结果出趋势/图/对判据",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-11T10:10:46+08:00"
+    },
+    {
+      "id": "verify",
+      "stage": "核数",
+      "agent": "verifier",
+      "deps": [
+        "analyze"
+      ],
+      "status": "skipped",
+      "gate": false,
+      "group": "",
+      "desc": "关键数字三方对账 + 写 LOG",
+      "out": "skipped",
+      "owner": "",
+      "ts": "2026-07-11T10:10:46+08:00"
+    },
+    {
+      "id": "prep",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "产 DS1 30工具输入包 out_ds1/(已完成:适配器+prepare_inputs)",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T10:10:47+08:00"
+    },
+    {
+      "id": "slice_local_a",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "本地8: IEDB_Calis/DeepImmuno/BigMHC_IM/CNNeo/MHCnuggets/ImmuGenX/MUNIS/DeepNetBim",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T11:10:49+08:00"
+    },
+    {
+      "id": "slice_local_b",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "本地7: Seq2Neo/NeoaG/Repitope/pTuneos/deepHLApan/TransHLA/TSCAPE",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T11:16:33+08:00"
+    },
+    {
+      "id": "slice_hpc_dtu",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "HPC6-DTU: netMHCpan_BA/EL/stabpan/andy90/NetTepi/ICERFIRE",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T12:05:24+08:00"
+    },
+    {
+      "id": "slice_hpc_env",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "prep"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "HPC8-env: ImmuneApp/PRIME/PredIG/IMPROVE/MHCflurry/MHCseqNet/HLAthena/NeoTImmuML(NeoaPred搁置)",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T11:11:56+08:00"
+    },
+    {
+      "id": "merge",
+      "stage": "自定义",
+      "agent": "主线",
+      "deps": [
+        "slice_local_a",
+        "slice_local_b",
+        "slice_hpc_dtu",
+        "slice_hpc_env"
+      ],
+      "status": "done",
+      "gate": true,
+      "group": "",
+      "desc": "merge_official_30 --strict-roster on out_ds1_official → merged_ds1",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T12:10:44+08:00"
+    },
+    {
+      "id": "coverage",
+      "stage": "自定义",
+      "agent": "verifier",
+      "deps": [
+        "merge"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "覆盖矩阵逐格核不漏(工具不支持=正常/真漏=补)",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T12:25:23+08:00"
+    },
+    {
+      "id": "pool",
+      "stage": "自定义",
+      "agent": "coder",
+      "deps": [
+        "coverage"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "pool_clean+per_patient_spearman→DS1单工具排名",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T12:25:23+08:00"
+    },
+    {
+      "id": "recheck",
+      "stage": "自定义",
+      "agent": "verifier",
+      "deps": [
+        "pool"
+      ],
+      "status": "done",
+      "gate": false,
+      "group": "",
+      "desc": "核数字+与DS2对照+落档,独立复现加固阴性",
+      "out": "",
+      "owner": "",
+      "ts": "2026-07-11T12:25:23+08:00"
+    }
+  ]
+}

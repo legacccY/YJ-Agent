@@ -1,0 +1,61 @@
+# /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netTepi-1.0/netTepi.py -a HLA-A03:01 -p /gpfs/work/bio/jiayu2403/quantimmu/ds1/dtu_netmhcpan_inputs/HLA-A03-01.pep -l 9
+# Sat Jul 11 2026 11:01
+# USER: jiayu2403
+# CWD: /gpfs/work/bio/jiayu2403/quantimmu/ds1
+# HOST: Linux x86_64 4.18.0-372.9.1.el8.x86_64 xpszlogin2
+# COMMAND LINE PARAMETERS SET TO:
+#	input_file          /gpfs/work/bio/jiayu2403/quantimmu/ds1/dtu_netmhcpan_inputs/HLA-A03-01.pep
+#	alleles             HLA-A03:01                    
+#	cons                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCcons-1.1/netMHCcons
+#	inptype             1                             
+#	lengths             9                             
+#	pep_mode            True                          
+#	print_alleles       False                         
+#	sort                0                             
+#	stab                /gpfs/work/bio/jiayu2403/quantimmu/ext_tools/netMHCstabpan-1.0/netMHCstabpan
+#	stab_weight         0.16                          
+#	tcell_weight        0.1                           
+#	tmpdir              /gpfs/work/bio/jiayu2403/quantimmu/nettepi_tmp
+#	www                 False                         
+#	xls                 False                         
+#	xlsfile             NetTepi_out.xls               
+
+# NetTepi version 1.0
+
+# Inputfile: /gpfs/work/bio/jiayu2403/quantimmu/ds1/dtu_netmhcpan_inputs/HLA-A03-01.pep
+
+# Input is in PEPTIDE format
+
+# Peptide lengths: 9
+
+----------------------------------------------------------------------------------------------------
+ Pos       Allele         Peptide          Identity      Aff     Stab    Tcell     Comb   %Rank
+----------------------------------------------------------------------------------------------------
+   0   HLA-A03:01       AYWFLSLTL           PEPLIST    0.080    0.008    0.036    0.064   32.00       
+   0   HLA-A03:01       DLLVSELYR           PEPLIST    0.152    0.035   -0.040    0.114   10.00       
+   0   HLA-A03:01       HHKDAHVDF           PEPLIST    0.045    0.002    0.069    0.041   50.00       
+   0   HLA-A03:01       HRVAGSVLK           PEPLIST    0.134    0.166   -0.042    0.122   10.00       
+   0   HLA-A03:01       HYKDAHVDF           PEPLIST    0.044    0.004    0.069    0.040   50.00       
+   0   HLA-A03:01       KAFTWPSIL           PEPLIST    0.135    0.018    0.220    0.125    9.00       
+   0   HLA-A03:01       KRFGLPFVL           PEPLIST    0.075    0.014    0.174    0.075   32.00       
+   0   HLA-A03:01       KRFRLPFVL           PEPLIST    0.077    0.013    0.192    0.078   20.00       
+   0   HLA-A03:01       KTFTWPSIL           PEPLIST    0.206    0.075    0.220    0.186    5.00       
+   0   HLA-A03:01       LRGAQDHLR           PEPLIST    0.053    0.019   -0.021    0.040   50.00       
+   0   HLA-A03:01       LRGTQDHLR           PEPLIST    0.049    0.014   -0.021    0.036   50.00       
+   0   HLA-A03:01       MMLPTFIAK           PEPLIST    0.703    0.638    0.268    0.649    0.07  <=Epi
+   0   HLA-A03:01       NLLVSELYR           PEPLIST    0.274    0.056   -0.040    0.208    4.00       
+   0   HLA-A03:01       QEGARVLAL           PEPLIST    0.052    0.001    0.153    0.054   50.00       
+   0   HLA-A03:01       QERIIMYEL           PEPLIST    0.043    0.001    0.170    0.049   50.00       
+   0   HLA-A03:01       QEWIIMYEL           PEPLIST    0.048    0.000    0.226    0.058   50.00       
+   0   HLA-A03:01       REGARVLAL           PEPLIST    0.070    0.002    0.153    0.067   32.00       
+   0   HLA-A03:01       RLETIRDPK           PEPLIST    0.374    0.494    0.262    0.382    1.50  <=Epi
+   0   HLA-A03:01       RLETIRNPK           PEPLIST    0.499    0.761    0.238    0.515    0.40  <=Epi
+   0   HLA-A03:01       RMRSGSYIK           PEPLIST    0.639    0.861   -0.198    0.591    0.17  <=Epi
+   0   HLA-A03:01       RMWSGSYIK           PEPLIST    0.667    0.815   -0.143    0.610    0.12  <=Epi
+   0   HLA-A03:01       RRVAGSVLK           PEPLIST    0.159    0.400   -0.042    0.177    6.00       
+   0   HLA-A03:01       TMLPTFIAK           PEPLIST    0.672    0.583    0.268    0.617    0.12  <=Epi
+   0   HLA-A03:01       VSIPELSPL           PEPLIST    0.072    0.006   -0.027    0.052   50.00       
+   0   HLA-A03:01       VSIPELSPP           PEPLIST    0.053    0.004   -0.027    0.037   50.00       
+   0   HLA-A03:01       VYWFLSLTL           PEPLIST    0.079    0.005    0.036    0.063   32.00       
+---------------------------------------------------------------------------------------------------- 
+

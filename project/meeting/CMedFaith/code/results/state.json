@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "run": "R-P1.0",
+    "psiloqa_data": "C:\\Users\\yj200\\AppData\\Local\\Temp\\claude\\D--YJ-Agent\\dae4b55b-c53b-4647-b04a-e672cf4e40af\\scratchpad\\psiloqa_all.parquet",
+    "model_id": "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+    "nli_threshold": 0.5,
+    "n_bootstrap": 10000,
+    "include_artificial": false,
+    "limit": null,
+    "downsample_seed": 42,
+    "device": "cuda",
+    "detectors": [
+      "D1_mDeBERTa_XNLI"
+    ]
+  },
+  "frozen_reproduction_check": {
+    "note": "与 KILLSHOT_LEDGER #2 冻结值对照；差异应在 bootstrap/取整噪声内。仅 macro_f1/G_domain 有冻结锚。",
+    "medhallu_medical": {
+      "got": 0.4277,
+      "frozen": 0.4277
+    },
+    "psiloqa_en_general": {
+      "got": 0.7204,
+      "frozen": 0.7204
+    },
+    "G_domain": {
+      "got": 0.2927,
+      "frozen": 0.2927,
+      "frozen_ci": [
+        0.1844,
+        0.3912
+      ],
+      "got_ci": [
+        0.1844,
+        0.3912
+      ]
+    }
+  },
+  "response": {
+    "n_metric_rows": 12,
+    "n_contrast_rows": 1,
+    "n_pairwise_rows": 0,
+    "contrasts": [
+      {
+        "level": "response",
+        "detector": "D1_mDeBERTa_XNLI",
+        "contrast": "G_domain=macroF1(general)-macroF1(medical)",
+        "macroF1_general": 0.7204,
+        "macroF1_medical": 0.4277,
+        "G_domain": 0.2927,
+        "ci_low": 0.1844,
+        "ci_high": 0.3912,
+        "ci_method": "unpaired_bootstrap_5000"
+      }
+    ]
+  },
+  "claim_level": "TODO R-P3.2 claim 级未实现（原子陈述切分 + 标注待 P2）",
+  "span_level": "TODO R-P3.3 span 级未实现（char-level span 标注 + D5/D6 待接）",
+  "outputs": {
+    "results_response": "D:\\YJ-Agent\\project\\meeting\\CMedFaith\\code\\results\\results_response.csv",
+    "contrasts_response": "D:\\YJ-Agent\\project\\meeting\\CMedFaith\\code\\results\\contrasts_response.csv",
+    "pairwise_response": "D:\\YJ-Agent\\project\\meeting\\CMedFaith\\code\\results\\pairwise_response.csv",
+    "results_claim": "D:\\YJ-Agent\\project\\meeting\\CMedFaith\\code\\results\\results_claim.csv",
+    "results_span": "D:\\YJ-Agent\\project\\meeting\\CMedFaith\\code\\results\\results_span.csv"
+  }
+}

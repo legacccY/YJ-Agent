@@ -1,0 +1,54 @@
+# R3b_fusion_authoritative_official.csv
+# QuantImmuBench §3.3: 文献权威融合=预先固定面板 + median/mean 名次融合(零成员挑选) vs 最强单工具
+# 面板看结果前定死; 成员用 <tool>_max(零pooling挑选); median/mean 无监督无参数→无选择虚高、无需嵌套CV
+# fusion_rho_*=融合 per-patient Spearman(裸/控长); single_rho_*=netMHCpan_BA_max; delta=融合-单工具; paired_p=病人配对符号置换
+# 规律以 lenctrl(控长)为准; SURV6=旧数据驱动对照(非权威); n=8 功效有限
+panel,aggregator,agg_type,n_members,fusion_rho_raw,fusion_rho_lenctrl,single_rho_raw,single_rho_lenctrl,delta_raw,delta_lenctrl,paired_p_raw,paired_p_lenctrl,n_pat,members
+全用-免疫原,mean_rank,无监督零挑选,20,0.001,,-0.0354,,0.0364,,0.75,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,geomean,无监督零挑选,20,-0.0598,,-0.0354,,-0.0244,,0.9062,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,median,无监督零挑选,20,-0.0124,,-0.0354,,0.023,,0.875,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,powmean,无监督零挑选,20,-0.0013,,-0.0354,,0.034,,0.75,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,max,无监督零挑选,20,-0.0546,,-0.0354,,-0.0193,,0.8438,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,min,无监督零挑选,20,-0.0037,,-0.0354,,0.0317,,0.9062,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,weighted_mean_rank,无监督零挑选,20,0.001,,-0.0354,,0.0364,,0.75,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,softmax_rank,无监督零挑选,20,-0.0013,,-0.0354,,0.0341,,0.875,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,stacking,学习型学权重,20,-0.0567,,-0.0354,,-0.0213,,0.9688,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,constrained,学习型学权重,20,-0.0896,,-0.0354,,-0.0542,,0.875,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,ridge,学习型学权重,20,0.079,,-0.0354,,0.1144,,0.7812,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-免疫原,gbdt,学习型学权重,20,-0.0941,,-0.0354,,-0.0587,,0.8125,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG
+全用-全部,mean_rank,无监督零挑选,28,-0.083,,-0.0354,,-0.0476,,0.5,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,geomean,无监督零挑选,28,-0.0673,,-0.0354,,-0.0319,,0.6875,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,median,无监督零挑选,28,-0.0522,,-0.0354,,-0.0168,,0.9688,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,powmean,无监督零挑选,28,-0.0543,,-0.0354,,-0.0189,,0.8125,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,max,无监督零挑选,28,-0.0419,,-0.0354,,-0.0065,,0.9688,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,min,无监督零挑选,28,-0.0488,,-0.0354,,-0.0134,,0.5625,,5,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,weighted_mean_rank,无监督零挑选,28,-0.082,,-0.0354,,-0.0466,,0.5,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,softmax_rank,无监督零挑选,28,-0.0937,,-0.0354,,-0.0583,,0.7812,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,stacking,学习型学权重,28,-0.2073,,-0.0354,,-0.172,,0.5625,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,constrained,学习型学权重,28,-0.3588,,-0.0354,,-0.3234,,0.1875,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,ridge,学习型学权重,28,-0.0254,,-0.0354,,0.01,,1.0,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+全用-全部,gbdt,学习型学权重,28,-0.1203,,-0.0354,,-0.0849,,0.6875,,6,deepHLApan;IEDB_Calis;ImmuneApp;PRIME;DeepImmuno;PredIG;IMPROVE;pTuneos;NeoTImmuML;BigMHC_IM;CNNeo;Repitope;TSCAPE;NetTepi;ICERFIRE;MUNIS;andy90;ImmuGenX;Seq2Neo;NeoaG;netMHCpan_BA;netMHCpan_EL;netMHCstabpan;MHCflurry;MHCnuggets;MHCseqNet;TransHLA;HLAthena
+双轴小面板,mean_rank,无监督零挑选,3,-0.1234,,-0.0354,,-0.088,,0.5312,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,geomean,无监督零挑选,3,-0.1078,,-0.0354,,-0.0724,,0.5625,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,median,无监督零挑选,3,-0.0645,,-0.0354,,-0.0291,,0.875,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,powmean,无监督零挑选,3,-0.128,,-0.0354,,-0.0927,,0.5,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,max,无监督零挑选,3,-0.0478,,-0.0354,,-0.0124,,0.9375,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,min,无监督零挑选,3,-0.1627,,-0.0354,,-0.1273,,0.4688,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,weighted_mean_rank,无监督零挑选,3,-0.1214,,-0.0354,,-0.086,,0.5312,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,softmax_rank,无监督零挑选,3,-0.0202,,-0.0354,,0.0152,,0.875,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,stacking,学习型学权重,3,0.1374,,-0.0354,,0.1728,,0.625,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,constrained,学习型学权重,3,-0.0354,,-0.0354,,0.0,,1.0,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,ridge,学习型学权重,3,0.1489,,-0.0354,,0.1842,,0.5625,,6,netMHCpan_BA;PRIME;deepHLApan
+双轴小面板,gbdt,学习型学权重,3,0.0055,,-0.0354,,0.0409,,0.875,,6,netMHCpan_BA;PRIME;deepHLApan
+SURV6(旧对照),mean_rank,无监督零挑选,6,-0.1358,,-0.0354,,-0.1005,,0.4688,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),geomean,无监督零挑选,6,-0.1007,,-0.0354,,-0.0653,,0.6875,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),median,无监督零挑选,6,-0.08,,-0.0354,,-0.0446,,0.8125,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),powmean,无监督零挑选,6,-0.117,,-0.0354,,-0.0816,,0.5312,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),max,无监督零挑选,6,-0.045,,-0.0354,,-0.0096,,0.9062,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),min,无监督零挑选,6,-0.1113,,-0.0354,,-0.076,,0.625,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),weighted_mean_rank,无监督零挑选,6,-0.1385,,-0.0354,,-0.1032,,0.4688,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),softmax_rank,无监督零挑选,6,-0.0159,,-0.0354,,0.0195,,0.9375,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),stacking,学习型学权重,6,0.1023,,-0.0354,,0.1377,,0.625,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),constrained,学习型学权重,6,-0.0882,,-0.0354,,-0.0528,,0.9375,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),ridge,学习型学权重,6,0.1544,,-0.0354,,0.1898,,0.6875,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan
+SURV6(旧对照),gbdt,学习型学权重,6,-0.0432,,-0.0354,,-0.0078,,0.9688,,6,PredIG;IMPROVE;pTuneos;PRIME;ImmuneApp;deepHLApan

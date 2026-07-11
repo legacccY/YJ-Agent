@@ -1,0 +1,23 @@
+{
+  "method": "固定面板 + median 名次融合（零成员挑选，无监督无参数，无需嵌套CV）",
+  "baseline_single": "netMHCpan_BA_max 裸-0.0354/控长nan",
+  "n_panels": 4,
+  "aggregators": [
+    "mean_rank",
+    "geomean",
+    "median",
+    "powmean",
+    "max",
+    "min",
+    "weighted_mean_rank",
+    "softmax_rank",
+    "stacking",
+    "constrained",
+    "ridge",
+    "gbdt"
+  ],
+  "median_panels_beating_single_lenctrl": 0,
+  "median_panels_beating_single_significant": 0,
+  "best_median_panel": "全用-免疫原 控长 nan (Δ nan, p nan)",
+  "note": "median/mean 名次融合无监督无参数→固定面板下无选择虚高、无需CV；所有面板看结果前预先固定；对照 SURV6=旧数据驱动'存活'集，非权威。n=8 病人功效有限，检不出≠证明无用。"
+}

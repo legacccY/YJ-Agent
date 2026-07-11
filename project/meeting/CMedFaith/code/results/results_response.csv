@@ -1,0 +1,13 @@
+level,detector,slice,n,n_faithful,n_unfaithful,metric,value,ci_low,ci_high,ci_method
+response,D1_mDeBERTa_XNLI,medhallu_medical,2000,1000,1000,balanced_accuracy,0.536,0.5254,0.5469,bootstrap_10000
+response,D1_mDeBERTa_XNLI,medhallu_medical,2000,1000,1000,macro_f1,0.4277,0.4081,0.4477,bootstrap_10000
+response,D1_mDeBERTa_XNLI,medhallu_medical,2000,1000,1000,mcc,0.146,0.1065,0.1845,bootstrap_10000
+response,D1_mDeBERTa_XNLI,medhallu_medical,2000,1000,1000,accuracy,0.536,0.514,0.558,bootstrap_10000
+response,D1_mDeBERTa_XNLI,medhallu_medical,2000,1000,1000,auroc,0.6354,0.611,0.6592,bootstrap_10000
+response,D1_mDeBERTa_XNLI,medhallu_medical,2000,1000,1000,auprc,0.6229,0.59,0.6555,bootstrap_10000
+response,D1_mDeBERTa_XNLI,psiloqa_en_general,78,39,39,balanced_accuracy,0.7308,0.6369,0.8194,bootstrap_10000
+response,D1_mDeBERTa_XNLI,psiloqa_en_general,78,39,39,macro_f1,0.7204,0.61,0.8175,bootstrap_10000
+response,D1_mDeBERTa_XNLI,psiloqa_en_general,78,39,39,mcc,0.5,0.3106,0.6684,bootstrap_10000
+response,D1_mDeBERTa_XNLI,psiloqa_en_general,78,39,39,accuracy,0.7308,0.6282,0.8205,bootstrap_10000
+response,D1_mDeBERTa_XNLI,psiloqa_en_general,78,39,39,auroc,0.8093,0.7035,0.8987,bootstrap_10000
+response,D1_mDeBERTa_XNLI,psiloqa_en_general,78,39,39,auprc,0.8101,0.6896,0.9097,bootstrap_10000

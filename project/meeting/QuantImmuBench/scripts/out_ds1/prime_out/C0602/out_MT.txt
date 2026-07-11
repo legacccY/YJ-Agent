@@ -1,0 +1,20 @@
+####################
+# Output from PRIME (v2.1)
+# Alleles: C0602
+# Affinity predictions: MixMHCpred (/gpfs/work/bio/jiayu2403/quantimmu/tools_repos/MixMHCpred/MixMHCpred)
+# Input file: /gpfs/work/bio/jiayu2403/quantimmu/ds1/prime_input_C0602/peps_MT.txt
+#
+# PRIME is freely available for academic users.
+# Private companies should contact Nadette Bulgin (nbulgin@lcr.org) at the Ludwig Institute for Cancer Research Ltd for commercial licenses.
+# To cite PRIME2.1, please refer to:
+# Gfeller et al. Improved predictions of antigen presentation and TCR recognition with MixMHCpred2.2 and PRIME2.0 reveal potent SARS-CoV-2 CD8+ T-cell epitopes , Cell Systems (2023).
+####################
+Peptide	%Rank_bestAllele	Score_bestAllele	%RankBinding_bestAllele	BestAllele	%Rank_C0602	Score_C0602	%RankBinding_C0602
+FERNRQNII	8.767	0.005830	2.863	C0602	8.767	0.005830	2.863
+GESSEGSVL	20.127	0.002466	17.596	C0602	20.127	0.002466	17.596
+KTKQVHFSR	9.471	0.005389	21.345	C0602	9.471	0.005389	21.345
+QEYLSSASP	30.893	0.001531	49.073	C0602	30.893	0.001531	49.073
+RWLSYFLGL	3.167	0.015460	18.046	C0602	3.167	0.015460	18.046
+RYMAICYPL	3.862	0.012860	4.416	C0602	3.862	0.012860	4.416
+SELISHENI	29.265	0.001635	45.119	C0602	29.265	0.001635	45.119
+YEREKAFQM	26.297	0.001872	3.873	C0602	26.297	0.001872	3.873

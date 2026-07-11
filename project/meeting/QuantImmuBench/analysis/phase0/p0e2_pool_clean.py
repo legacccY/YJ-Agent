@@ -221,6 +221,13 @@ def main():
     ap.add_argument("--expect-peptides", type=int, default=130,
                     help="锚定期望肽数 (默认 130=官方全集, 零改动; 改动② 纯新窗重跑传 102=仅 SNV, "
                          "28 indel 无 mut-spanning 窗被排除, 不触发空肽 FAIL)")
+    ap.add_argument("--gt", default=None,
+                    help="GT 锚定表 (默认 data/frozen/ds2_official_groundtruth.csv=DS2, 零改动; "
+                         "DS1 跨队列复现传 data/frozen/ds1_official_groundtruth.csv)")
+    ap.add_argument("--gt-peptides", type=int, default=130,
+                    help="GT 锚定表【实际】肽数 (默认 130=DS2 官方全集; DS1 传 82)。与 --expect-peptides "
+                         "分离: 此为 GT 参考表肽数, --expect-peptides 为过滤后输出行数 "
+                         "(纯新窗 rerun 时 GT 仍 130 而输出 102, 二者可不等)")
     args = ap.parse_args()
 
     # ── 口径三分支 (互斥) ──────────────────────────────────────────────────
@@ -247,15 +254,20 @@ def main():
         in_path = ROOT / in_path
     if not in_path.exists():
         raise SystemExit(f"[ERR] 长表不存在: {in_path}")
-    if not GT_CSV.exists():
-        raise SystemExit(f"[ERR] GT 缺失: {GT_CSV} (先跑 p0a_build_groundtruth.py)")
+    # GT 锚定表: 默认 DS2 (GT_CSV, 零改动); DS1 跨队列传 --gt ds1_official_groundtruth.csv
+    gt_path = Path(args.gt) if args.gt else GT_CSV
+    if not gt_path.is_absolute():
+        gt_path = ROOT / gt_path
+    if not gt_path.exists():
+        raise SystemExit(f"[ERR] GT 缺失: {gt_path} (先跑 p0a_build_groundtruth.py)")
 
-    # ── 读 GT 锚定 130 肽 ────────────────────────────────────────────────
-    gt = pd.read_csv(GT_CSV)
+    # ── 读 GT 锚定肽 (默认 DS2 130; DS1 传 --gt/--gt-peptides 82) ──────────
+    gt = pd.read_csv(gt_path)
     gt["Patient_ID"] = gt["Patient_ID"].astype(int)
     gt["Peptide_ID"] = gt["Peptide_ID"].astype(str)
     gt_keys = gt["mut_key"].tolist()
-    assert len(gt_keys) == 130, f"[ERR] GT 锚定肽数={len(gt_keys)} != 130"
+    assert len(gt_keys) == args.gt_peptides, \
+        f"[ERR] GT 锚定肽数={len(gt_keys)} != {args.gt_peptides} (--gt-peptides)"
     # idx (锚定集) 在读长表后按【长表实际有的肽】定 (rerun 纯新窗只 102 SNV / official 130), 见下。
 
     # ── 读长表 ──────────────────────────────────────────────────────────
@@ -276,7 +288,8 @@ def main():
     idx = pd.Index(anchor_keys, name="mut_key")
     expect = args.expect_peptides
     print(f"[info] 锚定肽数={len(idx)} (长表实际有; --expect-peptides={expect}); "
-          f"GT 全集 130, 缺席={130 - len(idx)} (改动② 纯新窗预期 28 indel 缺席)")
+          f"GT 全集 {args.gt_peptides}, 缺席={args.gt_peptides - len(idx)} "
+          f"(改动② 纯新窗预期 28 indel 缺席)")
 
     # peplen 映射 (B2): 每 mut_key 的 MT_FullPeptide 长度, 从【过滤前】全表取, 保证覆盖。
     peplen_map = (df.groupby("mut_key")[FULLPEP_MT]

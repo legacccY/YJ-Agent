@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-07-11 · 🚩 用户拍板方向转向：Phase2 从 A（全局治囊肿）转 C（3D NCA 不确定性 × 囊肿），立项
+
+**背景**：b 格 kill-shot 排队跑期间，用户问「NCA 怎么解决囊肿 + 学长说 NCA 天然带不确定性可解释、没人做」。派 3 researcher 并行侦察（novelty / 技术可行性 / venue+价值主张）。
+
+**三 researcher 一致结论（全带 URL，落 THEORY_LEDGER H4）**：
+- 🟢 机制真：`Model_BasicNCA3D.py:69-71` fire-rate 随机 mask、推理默认开、无 dropout → 多 rollout 天然出不确定性，零架构改动。
+- 🔴 「没人做」被证伪：base model M3D-NCA 自带 NQM（N=10 rollout std）；**MICCAI'26 已接收** resilience（marrlab，github.com/marrlab/resilience）系统做了 NCA 不确定性。
+- 🟢 但 delta 合法：竞品全 2D 通用 NCA、自然图，**没碰 3D/M3D-NCA 多尺度/KiTS/囊肿/极端不平衡**。
+- 🟡 技术命门：vanilla rollout 方差可能太弱（需 pilot 最先证伪）。
+
+**关键交互（诚实纠偏）**：我一度用「顶会蓝海」标尺把撞车当否决理由，用户纠正「有人做过相似≠不能发，学术就是做增量」——**我认错、收回**（记 [[feedback_skeptic_systematic_overkill]] 模式：对大胆方向习惯性存在性否决）。重校准：真问题是 delta 清不清、够不够 venue，不是有没有撞车。
+
+**用户拍板（AskUserQuestion）**：立项，headline 核心卖点 = **不确定性/可解释**（非「分割赢别人」）。我拦下并改掉用户原话「囊肿别人做不了我们能做」——违 STORY 红线（天花板 0.447、二分类 0.82-0.90，一击破）+ 我们自己 b 格还没验（[[feedback_falsify_crux_first]]）。
+
+**Headline v1 定稿**（THEORY_LEDGER H4）：KiTS23 囊肿这种主流模型都做不好（0.447 天花板）的极端不平衡场景，用 3D 多尺度 M3D-NCA 迭代动力学给出**校准良好、空间可解释的不确定性**，把「看不清囊肿」转成临床信号（漏检定位/QC/转诊）。不追 Dice，追校准+决策价值。venue=UNSURE workshop/ACCV（博士生+导师定）。
+
+**落地**：在 NCA-Cyst 内转向（不开新项目），复用数据/骨干/baseline/b 格模型。THEORY_LEDGER 加 H4 冻结假设链。b 格 kill-shot **继续跑**（训出的囊肿模型正是 C 的 pilot 载体）。
+
+**下一步（在跑）**：派 planner 设计方向 C 方案（RQ+命门 pilot+实验矩阵+评测协议 AURC/ECE/AUROC+对标 resilience delta 表）+ skeptic 红队立项前提（重点攻「Dice≈0 的模型谈不确定性是否空中楼阁」）。回来综合 → 更新 01_STORY/02_ACCEPTANCE 为 C 方向 → b 格出模型跑命门 pilot。
+
+---
+
 ## 2026-07-11 · ✅ 用户拍板跑 2×2 kill-shot → CB-max 代码就绪 + 双烟测 PASS + 判据冻结 → 起 b 格
 
 **背景**：上一 entry 四选一，用户选 **1 = 先跑 2×2 kill-shot 证伪 H2 命门**（再定 Phase2）。全流程走标准编队。
@@ -20,7 +42,9 @@
 
 **已知缺口/TODO**：copy-paste v1 硬粘贴无 blend（reviewer 质疑可升 Poisson/CarveMix）；组件①中心采样在当前 config 粗级退化为整图，抬占比靠组件②（已烟测确认达标）；`avg_loss` UnboundLocalError（reload 到 max epoch 时崩，边缘健壮性，新 RUN 目录不触发）。
 
-**下一步（用户已授权跑）**：git commit 冻结 → gpu_slot request hpc ×3 → 上传 CB-max 代码到 HPC（一行报）→ 提交 b 格 seed 0/1/2 full → /loop 轮询。b 出数判 kill/greenlight/inconclusive 再停。
+**已执行（用户授权跑）**：git commit **45adf59** 冻结判据 ✅；上传 CB-max 5 文件到 HPC + 去 CRLF + 核 config CB 键真上去 ✅；b 格 3 seed 提交 HPC ✅ = **job 1522857/1522858/1522859（seed0/1/2）**，PENDING(Priority) 排队等 gpu4090。gpu_slot 映射：dce05f32=seed0 / d08b3357=seed1 / 9d29255b=seed2。
+
+**下一步（异步长等）**：job 排队 + ~12h/run（A2 同 config 实测 11-14h），预计明天出数。跑完拉 `runs/cbmax_cyst_seed*/state.json` 含囊肿 test Dice → 判 **b≥0.10 kill / b<0.05 待 c/d / 全塌 inconclusive**。b 出数是下一拍板点（判定 Phase2 走向）。轮询：用户喊「查 b」或挂 /loop 定时瞥 squeue（别主线守，[[feedback_no_mainthread_babysit]]）。
 
 ---
 
