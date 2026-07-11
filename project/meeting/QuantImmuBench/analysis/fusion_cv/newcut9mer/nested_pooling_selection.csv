@@ -1,0 +1,21 @@
+﻿config,panel,cv_rho,oracle_rho,inflation,delta_vs_single,paired_p,ci_lo,ci_hi,note
+headline_dualaxis3_PredIG,netMHCpan_BA+PredIG+deepHLApan,0.451,0.5248,0.0738,0.095,0.5859,0.2507,0.6315,headline; Δz=Fisher-z配对差 vs netMHCpan_BA_max; CI=患者cluster-bootstrap
+sens_single_netMHCpan_BA,netMHCpan_BA,0.2963,,,-0.0855,0.0938,,,面板敏感性; Δvs单工具(raw)=-0.0759
+sens_dual2_BA_PredIG,netMHCpan_BA+PredIG,0.3528,,,-0.0223,0.8438,,,面板敏感性; Δvs单工具(raw)=-0.0194
+sens_dual3_BA_PredIG_ICERFIRE,netMHCpan_BA+PredIG+ICERFIRE,0.3959,,,0.0277,0.7578,,,面板敏感性; Δvs单工具(raw)=0.0237
+sens_old_BA_PRIME_deepHLApan,netMHCpan_BA+PRIME+deepHLApan,0.398,,,0.0303,0.875,,,面板敏感性; Δvs单工具(raw)=0.0258
+sens_all_immuno20,all_immuno20,0.215,,,-0.1726,0.125,,,面板敏感性; Δvs单工具(raw)=-0.1573
+operator_weighted_mean_rank,netMHCpan_BA+PredIG+deepHLApan,0.4516,,,,,,,固定面板8聚合算子对比(figE)
+operator_geomean,netMHCpan_BA+PredIG+deepHLApan,0.451,,,,,,,固定面板8聚合算子对比(figE)
+operator_mean_rank,netMHCpan_BA+PredIG+deepHLApan,0.4508,,,,,,,固定面板8聚合算子对比(figE)
+operator_median,netMHCpan_BA+PredIG+deepHLApan,0.3845,,,,,,,固定面板8聚合算子对比(figE)
+operator_powmean,netMHCpan_BA+PredIG+deepHLApan,0.3831,,,,,,,固定面板8聚合算子对比(figE)
+operator_min,netMHCpan_BA+PredIG+deepHLApan,0.3704,,,,,,,固定面板8聚合算子对比(figE)
+operator_max,netMHCpan_BA+PredIG+deepHLApan,0.3353,,,,,,,固定面板8聚合算子对比(figE)
+operator_softmax_rank,netMHCpan_BA+PredIG+deepHLApan,0.3128,,,,,,,固定面板8聚合算子对比(figE)
+operator_per_fold_select,netMHCpan_BA+PredIG+deepHLApan,0.39,,,,,,,算子也嵌套选(多搜一维)
+ladder_pooling_only,netMHCpan_BA+PredIG+deepHLApan,0.451,0.5248,0.0738,,,,,梯队臂: 只选pooling(面板固定)
+ladder_fully_data_driven,greedy(28工具池),0.3322,0.546,0.2139,,,,,"梯队臂: 完全数据驱动(成员+pooling), 前向贪心 EPS=0.01"
+ladder_member_only,greedy(28工具池),0.1707,0.465,0.2943,,,,,梯队臂: 只选成员(pooling=max)
+cv_argmax_k3,IEDB_Calis+PredIG+netMHCpan_BA,0.4737,,,,,,,"面板CV-argmax天花板k=3(不进CV,不可复现)"
+cv_argmax_k4,deepHLApan+PredIG+netMHCpan_BA+MHCnuggets,0.4931,,,,,,,"面板CV-argmax天花板k=4(不进CV,不可复现)"

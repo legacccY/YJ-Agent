@@ -1,0 +1,10 @@
+﻿held_out_patient,netMHCpan_BA_pooling,PredIG_pooling,deepHLApan_pooling
+101,rankdecay_g5,topk_k5_a0p5,softmax_T0p2
+102,rankdecay_g5,topk_k5_a0p5,softmax_T0p2
+104,softmax_T0p03,topk_k5_a0p5,softmax_T0p2
+105,rankdecay_g5,topk_k5_a0p5,softmax_T0p2
+106,softmax_T2,topk_k5_a0p5,topk_k5_a0
+107,softmax_T0p2,topk_k5_a0p5,softmax_T0p2
+108,topk_k8_a0,topk_k5_a0p5,softmax_T0p2
+109,rankdecay_g5,topk_k5_a0,softmax_T0p2
+110,topk_k10_a0,topk_k5_a0p5,softmax_T0p2

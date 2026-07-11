@@ -3930,3 +3930,28 @@ NeoaPred 官方补跑完成。job 1502935 @gpu4090n9 跑 1h35m，8 块并行，2
 **overarching**：新切 9mer 下，报告 §8 悲观判断（①②a②b④）被实际结果**大体证实**，唯 §8③「median 略优」被**推翻**（实为 geomean 优）——全部有真实图表背书。**另**：⑤小鼠=老师指示人源流程定稿后再做（本步只记指针）；⑥书面同意=researcher 查实为 DTU benchmark 条款(DeWitt 类)、投稿前发邮件即可、非怪规定（`reference/TOOL_LICENSE_CONSENT_FACTS_2026-07-09.md`，TSCAPE 归属存疑+DTU 全文快照 TODO）。
 
 **产物**：`analysis/official/newcut9mer/{R2_pooling_sweep,R2_best_per_tool,R3_fusion_12methods,R4_ablation,R5_nested_lopo(+summary.json,+shuffle),R6_robustness(results+summary),R7_paired_significance(+json)}` + `analysis/fusion_cv/newcut9mer/{fusion_nested_cv(+shuffle,+members),k_curve,select_engine,select_stability,tool_tool_corr}` + `reference/{NEWCUT9MER_F1_LEDGER,TOOL_LICENSE_CONSENT_FACTS_2026-07-09}.md`。R5 置换 null 完成(①补充,1000置换)：整合 LOPO ρ=0.195 经验 p=**0.106**(分位89.5%)——**整合自身在 LOPO 下都未显著异于随机**，从另一侧印证 n=8 功效不足、支持①「检不出净优势」，已补进回复稿 §①(d)。**收口完成**：3 图 `figures/{figA_newcut_fusion_no_net_gain,figB_newcut_robustness,figC_newcut_max_vs_bestpooling}`（coder `plot_newcut_s89.py` 出，只写 newcut9mer/figures 零碰 paper/figures，主线视觉核过 + ρ̄缺字已修）；writer 终稿 `report/给老师_§8四问新切结果_2026-07-09.md`（① 表补具体臂名，图标已落盘）。**reviewer 去偏审 = PASS**：9 组关键数字全核 csv 一致、措辞黑名单零命中、「无差异」写「不可检测」非「证明无效」、证实/推翻对称、②a/③ 触承重 Claim(ii) headline 回退正确交袁老师拍板不自决；1 处 🟡 已补（③ 的 p=1e-9 来自 30seed 同一批 8 病人子采样=伪重复，加了「方向稳健非总体显著」对称 caveat 防推翻读过强）。gpu_slot d6c7aa98 已 release。**下一步（🛑待袁老师拍板）**：②a(geomean非唯一最优)/③(推翻§8③) 触 Claim(ii) headline 回退 + 确认 §8③ 数字出处；④补 lenctrl cluster-bootstrap CI 定严判；⑤小鼠 B16F10/CT26（人源定稿后启）；⑥ DTU consent 投稿前发邮件（health-software@dtu.dk）+ 厘清 TSCAPE 许可归属。
+
+---
+
+## Entry 2026-07-11 · 融合层 headline 重构为 nested pooling selection + CV，融合报告 v2 大改
+
+**触发**：用户要求把融合层做成「nested pooling selection（同一工具每折可选不同合成方式）+ 交叉验证」为主方法，重算找 CV 最优组合，并把结论写进 HTML 报告（`report/合成与融合层结果_QuantImmu_2026-07-10_v2.html`）。全程用户主导、多轮诚实追问。
+
+**关键发现（全 Bash 核 csv / 目视审图，raw 口径，ds2 8 有效患者，min_pep=8）**：
+- **拆穿旧 headline 0.446**：旧「双轴小面板 netMHCpan-BA+PRIME+deepHLApan 固定 max geomean 0.446>单工具 0.372、先验固定无泄漏」站不住。穷举 C(28,3)=3276 面板，该面板样本内 geomean **排 #2/3276（top 0.1%）= argmax cherry-pick，非真先验**；且「用 geomean 不用 median」又是一层挑选（median 仅 0.370<单工具）。**0.446 含两层未进 CV 的选择，作废。**
+- **新主方法 = nested pooling selection**：留一患者 9 折，每折在训练患者上为每工具从 51 个合成方式变体选内层 ρ 最高者（无泄漏），留出患者取名次 geomean 融合。同工具跨折可不同（netMHCpan-BA 6 种/PredIG·deepHLApan 各 2 种）。
+- **选工具的道理（写进报告）**：呈递轴=netMHCpan-BA（金标准+最强单工具）；识别轴=PredIG（最强 0.290）+deepHLApan（**最互补**，↔netMHCpan-BA 名次相关仅 0.10 vs ICERFIRE 0.49/PRIME 0.57 冗余）。诚实标注面板有依据但非唯一确定（PredIG 靠「最强」、deepHLApan 靠「最互补」两条标准）。
+- **headline 数**：本面板 nested-pooling CV **ρ=0.4510**（oracle 0.5248，膨胀 0.0738），vs 单工具 0.3722 Δraw+0.079/Δz+0.095，**配对 p=0.586 不显著**，患者 cluster-bootstrap 95%CI=[0.251,0.631] 含单工具值。**留一去 P101→0.378、去 P109→0.505，主要由 P101/P104 两病人支撑**（与 outline §3.3.5「主要由单一病人驱动」一致）。
+- **天花板/为何不多搜**：算子维 geomean(0.4510)已 CV 最优（并列 wmr 0.4516/mean_rank 0.4508），**再每折选算子反降 0.390**；面板维 CV-argmax k=3 0.4737/k=4 0.4931 但那是「拿 CV 当选择目标」的乐观值，**把面板选择也嵌套→塌 0.332**，不可复现不采用。
+- **选择膨胀梯队**：只选 pooling 膨胀 0.074 / 完全数据驱动 CV 0.332 / 只选成员 CV 0.171（膨胀 0.29）——**pooling 选择稳、成员选择过拟合**是方法学卖点。
+- **ds1 评估**：用户提议→查实 ds1=6 黑色素瘤病人、只 18 工具打分（缺 deepHLApan/PredIG），且老切割待重跑→**暂不用**（帮不上冲高，且 n=6 治不好 n=8 病根；真解药=更大外部队列，outline 已承诺）。
+
+**产物**：
+- 正式脚本 `analysis/fusion_cv/newcut9mer/nested_pooling_selection.py`（固化 7 个 _scratch，可复现全部数字）→ `nested_pooling_selection.csv`（20 配置行）+ `nested_pooling_selection_folds.csv`（逐折 pooling）。
+- 3 图重画 `analysis/official/newcut9mer/figures/{figE_newcut_fusion_authoritative(8算子CV),figA_newcut_fusion_no_net_gain(k-curve成员过拟合),figB_newcut_selection_ladder(选择梯队)}`（`plot_nested_pooling_s2.py`，主线目视审过数字全对）。
+- 报告 md 源 `report/合成与融合层结果_QuantImmu_2026-07-10_v2.md` §2 全段 + 概览 + 附录重写；引擎 `build_report_v4.py` figB 映射改名；重生成 HTML 1.71MB。新故事关键串到位、旧故事清零、5 图内嵌，审核通过。
+- 10 个 `_scratch_*.py`（穷举/拆解证据链）留 newcut9mer/ 下，待归档。
+
+**协作分工**：主线拆活+核数+写 md；coder（opus）写正式脚本+绘图脚本（不跑）；主线跑+审。用户全程主导方向、多轮追问（0.451 来历/是否最大值/能否讲道理/ds1），主线逐条 Bash 坐实、诚实自纠（收回上一 session「0.446 诚实最优」误判）。
+
+**🛑 待袁老师拍板**：融合 headline 由「0.446 固定面板」改为「nested pooling selection CV 0.451，对单工具无显著优势」= 方法+口径变更（袁老师协作项目）；用户已拍板用此方法，「是否显著超单工具」措辞建议袁老师过目。

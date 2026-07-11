@@ -42,7 +42,7 @@ OUT = HERE / "研究进展报告_QuantImmu框架_2026-07-10.html"
 FIGDIR = ROOT / "analysis" / "official" / "newcut9mer" / "figures"
 FIG_FILES = {
     "figA": FIGDIR / "figA_newcut_fusion_no_net_gain.png",
-    "figB": FIGDIR / "figB_newcut_robustness.png",
+    "figB": FIGDIR / "figB_newcut_selection_ladder.png",
     "figC": FIGDIR / "figC_newcut_max_vs_bestpooling.png",
     "figD": FIGDIR / "figD_newcut_pooling_lopo.png",
     "figE": FIGDIR / "figE_newcut_fusion_authoritative.png",
