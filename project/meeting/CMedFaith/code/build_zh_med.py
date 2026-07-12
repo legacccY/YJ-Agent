@@ -661,7 +661,7 @@ class OpenAICompatBackend(LLMBackend):
     def __init__(self, model_id: str, base_url: str | None = None,
                  api_key_env: str = DEFAULT_API_KEY_ENV, max_tokens: int = MAX_NEW_TOKENS,
                  timeout: float = API_TIMEOUT_S, max_retries: int = API_MAX_RETRIES,
-                 counter: dict | None = None):
+                 counter: dict | None = None, concurrency: int = 1):
         import os
         from openai import OpenAI
         key = os.environ.get(api_key_env)
@@ -679,22 +679,28 @@ class OpenAICompatBackend(LLMBackend):
         self.max_tokens = max_tokens
         self.max_retries = max_retries
         self.counter = counter
+        self.concurrency = max(1, concurrency)          # 🆕 API 并发度（1=串行，>1 用线程池加速放量）
+        import threading
+        self._lock = threading.Lock()                   # counter 自增线程安全（并发下防竞态计数）
         print(f"[api] backend ready: model={model_id} base_url={base_url or 'OpenAI默认'} "
-              f"key_env={api_key_env}", flush=True)
+              f"key_env={api_key_env} concurrency={self.concurrency}", flush=True)
 
     def _one_call(self, msgs, temperature) -> str:
         import time
         # 成本上限保护：达 --api-max-calls 即硬停（raise 传到 main）。计数在真正发起调用前 +1。
         if self.counter is not None:
-            cap = self.counter.get("api_max_calls")
-            if cap is not None and self.counter.get("api_calls", 0) >= cap:
+            with self._lock:
+                cap = self.counter.get("api_max_calls")
+                calls_now = self.counter.get("api_calls", 0)
+            if cap is not None and calls_now >= cap:
                 raise RuntimeError(
                     f"[api] 已达 --api-max-calls 上限 {cap} 次调用，硬停（成本保护，防意外刷爆）。"
                     f"已完成的阶段产出会随异常终止——如需更多调用，调大 --api-max-calls 后重跑。")
         last_err = None
         for attempt in range(self.max_retries):
             if self.counter is not None:
-                self.counter["api_calls"] = self.counter.get("api_calls", 0) + 1
+                with self._lock:
+                    self.counter["api_calls"] = self.counter.get("api_calls", 0) + 1
             try:
                 resp = self.client.chat.completions.create(
                     model=self.model_id, messages=msgs, temperature=temperature,
@@ -703,26 +709,32 @@ class OpenAICompatBackend(LLMBackend):
             except Exception as e:                              # 网络/限流/超时等，退避重试
                 last_err = e
                 if self.counter is not None:
-                    self.counter["api_failures"] = self.counter.get("api_failures", 0) + 1
+                    with self._lock:
+                        self.counter["api_failures"] = self.counter.get("api_failures", 0) + 1
                 wait = min(2 ** attempt, 30)
                 print(f"[api][retry {attempt + 1}/{self.max_retries}] {self.model_id} 调用失败: {e}；"
                       f"{wait}s 后重试", flush=True)
                 time.sleep(wait)
         # 重试耗尽：不硬崩，返回空串并计数放弃（保管线不中断）
         if self.counter is not None:
-            self.counter["api_giveup"] = self.counter.get("api_giveup", 0) + 1
+            with self._lock:
+                self.counter["api_giveup"] = self.counter.get("api_giveup", 0) + 1
         print(f"[api][FAIL] {self.model_id} 重试 {self.max_retries} 次仍失败，返回空串: {last_err}", flush=True)
         return ""
 
     def generate_batch(self, prompts, temperature, system=None):
-        outs = []
-        for p in prompts:
+        def _build_msgs(p):
             msgs = []
             if system:
                 msgs.append({"role": "system", "content": system})
             msgs.append({"role": "user", "content": p})
-            outs.append(self._one_call(msgs, temperature))
-        return outs
+            return msgs
+        # 串行（concurrency=1）保持原行为；>1 用线程池并发发请求（保序），放量提速关键
+        if self.concurrency <= 1:
+            return [self._one_call(_build_msgs(p), temperature) for p in prompts]
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
+            return list(ex.map(lambda p: self._one_call(_build_msgs(p), temperature), prompts))
 
 
 class MockBackend(LLMBackend):
@@ -742,7 +754,8 @@ class MockBackend(LLMBackend):
 def make_backend(kind: str, model_id: str, role: str = "gen",
                  tensor_parallel_size: int = 1, base_url: str | None = None,
                  api_key_env: str = DEFAULT_API_KEY_ENV, timeout: float = API_TIMEOUT_S,
-                 max_retries: int = API_MAX_RETRIES, counter: dict | None = None):
+                 max_retries: int = API_MAX_RETRIES, counter: dict | None = None,
+                 concurrency: int = 1):
     if kind == "mock":
         return MockBackend(role=role)
     if kind == "vllm":
@@ -753,7 +766,8 @@ def make_backend(kind: str, model_id: str, role: str = "gen",
         return OpenAIBackend(model_id)
     if kind == "api":                      # 🆕 全 API 模式（OpenAI 兼容，可配 provider，不占 GPU）
         return OpenAICompatBackend(model_id, base_url=base_url, api_key_env=api_key_env,
-                                   timeout=timeout, max_retries=max_retries, counter=counter)
+                                   timeout=timeout, max_retries=max_retries, counter=counter,
+                                   concurrency=concurrency)
     raise ValueError(f"未知 backend: {kind}")
 
 
@@ -1132,6 +1146,9 @@ def main():
     ap.add_argument("--gen-model", default=None,
                     help="[api] Phase1 生成器 model 名（如 gpt-4o-mini/deepseek-chat/qwen-plus；"
                          f"留空用占位默认 {DEFAULT_API_GEN}，⚠️可用性待用户核 TODO[API-FULL]）")
+    ap.add_argument("--api-concurrency", type=int, default=1,
+                    help="[api] 生成器/投票器 API 并发请求数（默认 1=串行；放量建议 8-16 提速，"
+                         "受 provider 限流约束，太高会 429）")
     ap.add_argument("--voter-models", nargs=3, default=None, metavar=("V1", "V2", "V3"),
                     help="[api] 3 个投票器 model 名（保多样性，建议 3 个不同 model，如 "
                          "deepseek-chat gpt-4o-mini qwen-plus；留空用占位默认（同质，会削弱难度分层，"
@@ -1240,7 +1257,8 @@ def main():
     if api_mode:
         gen_backend = make_backend("api", gen_model, role="gen", base_url=args.api_base_url,
                                    api_key_env=args.api_key_env, timeout=args.api_timeout,
-                                   max_retries=args.api_max_retries, counter=api_counter)
+                                   max_retries=args.api_max_retries, counter=api_counter,
+                                   concurrency=args.api_concurrency)
     else:
         gen_backend = make_backend(args.backend, args.generator, role="gen",
                                    tensor_parallel_size=args.tensor_parallel_size)
@@ -1258,7 +1276,8 @@ def main():
         voter_backends = [
             make_backend("api", voter_models[i], role="judge", base_url=vbu[i],
                          api_key_env=vke[i], timeout=args.api_timeout,
-                         max_retries=args.api_max_retries, counter=api_counter)
+                         max_retries=args.api_max_retries, counter=api_counter,
+                         concurrency=args.api_concurrency)
             for i in range(3)
         ]
     else:
